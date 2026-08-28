@@ -1,0 +1,23 @@
+# OS / editor noise
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.log
+
+# Claude Code's local session state (tool-permission history, schedule
+# locks) — machine/session-specific, not project configuration.
+.claude/
+
+# Backend (Laravel) — backend/.gitignore covers specifics (.env, vendor/,
+# storage/*.key, etc.); nothing here duplicates it.
+
+# Frontend (Vue/Vite) — not yet scaffolded, ignored ahead of time
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
+
+# Docker
+docker/postgres/data/
