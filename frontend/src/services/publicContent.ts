@@ -1,0 +1,120 @@
+import { apiGetWithMeta, apiPost } from '@/services/http'
+import { ApiRequestError, type LengthAwarePaginationMeta, type PaginatedResult } from '@/types/api'
+
+/**
+ * These endpoints (news, events, gallery, programs, teachers) don't exist on
+ * the backend yet — they land with the Website Management phase. Every read
+ * here is built against that intended contract and fails closed to an empty
+ * result rather than an error screen, so the public site looks intentionally
+ * "no content yet" today and needs zero frontend changes once the real
+ * endpoints ship.
+ */
+
+export interface NewsItem {
+  id: number
+  slug: string
+  title: string
+  excerpt: string
+  cover_image: string | null
+  published_at: string
+}
+
+export interface EventItem {
+  id: number
+  slug: string
+  title: string
+  location: string | null
+  starts_at: string
+  ends_at: string | null
+  cover_image: string | null
+}
+
+export interface GalleryImage {
+  id: number
+  url: string
+  caption: string | null
+}
+
+export interface HomeSlide {
+  id: number
+  image_url: string
+  title: string | null
+  subtitle: string | null
+  link_url: string | null
+  sort_order: number
+}
+
+export interface Program {
+  id: number
+  name: string
+  description: string
+}
+
+export interface Teacher {
+  id: number
+  name: string
+  title: string | null
+  photo: string | null
+}
+
+function emptyPagination(total = 0): LengthAwarePaginationMeta {
+  return {
+    type: 'length_aware',
+    current_page: 1,
+    per_page: 0,
+    total,
+    last_page: 1,
+    from: total > 0 ? 1 : null,
+    to: total > 0 ? total : null,
+  }
+}
+
+async function fetchPublicList<T>(url: string, params?: Record<string, unknown>): Promise<PaginatedResult<T>> {
+  try {
+    const result = await apiGetWithMeta<T[]>(url, { params })
+    const pagination = result.meta?.pagination as LengthAwarePaginationMeta | undefined
+    return { data: result.data, pagination: pagination ?? emptyPagination(result.data.length) }
+  } catch (error) {
+    if (error instanceof ApiRequestError && (error.status === 404 || error.status === 0)) {
+      return { data: [], pagination: emptyPagination() }
+    }
+    throw error
+  }
+}
+
+async function fetchPublicOne<T>(url: string): Promise<T | null> {
+  try {
+    return await apiGetWithMeta<T>(url).then((r) => r.data)
+  } catch (error) {
+    if (error instanceof ApiRequestError && (error.status === 404 || error.status === 0)) {
+      return null
+    }
+    throw error
+  }
+}
+
+export const publicContentService = {
+  // Unlike the other endpoints in this file, this one is real — the
+  // fetchPublicList wrapper is used anyway for consistency and because it
+  // still degrades gracefully (an empty slider, not a broken page) for a
+  // tenant on an older API version that predates it.
+  getHomeSlides: () => fetchPublicList<HomeSlide>('/public/home-slides', { per_page: 20 }),
+
+  getNews: (page = 1, perPage = 9) => fetchPublicList<NewsItem>('/public/news', { page, per_page: perPage }),
+  getNewsBySlug: (slug: string) => fetchPublicOne<NewsItem>(`/public/news/${slug}`),
+
+  getEvents: (page = 1, perPage = 9) => fetchPublicList<EventItem>('/public/events', { page, per_page: perPage }),
+
+  getGallery: (page = 1, perPage = 12) => fetchPublicList<GalleryImage>('/public/gallery', { page, per_page: perPage }),
+
+  getPrograms: () => fetchPublicList<Program>('/public/programs', { per_page: 50 }),
+
+  getTeachers: (page = 1, perPage = 12) => fetchPublicList<Teacher>('/public/teachers', { page, per_page: perPage }),
+
+  /**
+   * Submitting a message failing must be visible to the visitor, not silently
+   * swallowed — unlike the read endpoints above, this does not catch 404.
+   */
+  submitContactMessage: (payload: { name: string; email: string; subject: string; message: string }) =>
+    apiPost<void>('/public/contact-messages', payload),
+}
