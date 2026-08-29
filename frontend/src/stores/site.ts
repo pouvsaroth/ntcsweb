@@ -4,12 +4,42 @@ import { defineStore } from 'pinia'
 import { apiGet } from '@/services/http'
 import { ApiRequestError } from '@/types/api'
 
+export interface AboutStat {
+  value: string
+  label: string
+}
+
+export interface AboutPillar {
+  icon: string
+  title: string
+  description: string
+}
+
+export interface AboutAchievement {
+  icon: string
+  value: string
+  label: string
+}
+
+export interface AboutContent {
+  history_title: string
+  history_paragraph_1: string
+  history_paragraph_2: string
+  history_image_url: string | null
+  stats: AboutStat[]
+  pillars: AboutPillar[]
+  achievements_title: string
+  achievements: AboutAchievement[]
+}
+
 export interface PublicSiteInfo {
   name: string
   logo: string | null
   email: string | null
   phone: string | null
   address: string | null
+  /** null until the school has saved About content at least once. */
+  about: AboutContent | null
 }
 
 const FALLBACK: PublicSiteInfo = {
@@ -18,6 +48,7 @@ const FALLBACK: PublicSiteInfo = {
   email: null,
   phone: null,
   address: null,
+  about: null,
 }
 
 /**
