@@ -13,20 +13,31 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * Tenant-owned. Expected to be the highest-volume table in the system —
  * every index here maps to a query pattern the admin UI actually needs, per
  * docs/database.md's indexing rule.
  *
+ * Field shape (name split, structured address, social contacts, a photo)
+ * deliberately mirrors a legacy system's `t_student` table so importing real
+ * records from it is a column-to-column mapping — see the migration that
+ * introduced these columns for the exact correspondence.
+ *
  * @property int $tenant_id
  * @property string $student_code
- * @property string $name
+ * @property string $first_name
+ * @property string $last_name
+ * @property string|null $photo_path
  * @property string $status
  */
 #[Fillable([
-    'user_id', 'student_code', 'name', 'date_of_birth', 'gender', 'email', 'phone',
-    'guardian_name', 'guardian_phone', 'address', 'enrollment_date', 'status',
+    'user_id', 'student_code', 'first_name', 'last_name', 'english_name',
+    'date_of_birth', 'gender', 'email', 'phone',
+    'house_no', 'street_no', 'village_code', 'other_address',
+    'facebook', 'telegram', 'photo_path',
+    'enrollment_date', 'status',
 ])]
 class Student extends Model
 {
@@ -54,6 +65,17 @@ class Student extends Model
         ];
     }
 
+    protected static function booted(): void
+    {
+        // Mirrors HomeSlide: a soft-deleted student still holds the photo
+        // (recoverable); only a real, permanent removal takes the file too.
+        static::forceDeleted(function (self $student) {
+            if ($student->photo_path !== null) {
+                Storage::disk('public')->delete($student->photo_path);
+            }
+        });
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
@@ -64,11 +86,31 @@ class Student extends Model
         return $this->hasMany(Enrollment::class);
     }
 
+    public function guardians(): HasMany
+    {
+        return $this->hasMany(StudentGuardian::class);
+    }
+
+    public function educations(): HasMany
+    {
+        return $this->hasMany(StudentEducation::class);
+    }
+
     /**
      * @param  Builder<static>  $query
      */
     public function scopeActive(Builder $query): void
     {
         $query->where('status', self::STATUS_ACTIVE);
+    }
+
+    public function fullName(): string
+    {
+        return trim("{$this->first_name} {$this->last_name}");
+    }
+
+    public function photoUrl(): ?string
+    {
+        return $this->photo_path !== null ? Storage::disk('public')->url($this->photo_path) : null;
     }
 }
