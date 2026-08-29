@@ -51,7 +51,7 @@ NTCSWEB/
 │   ├── php/             Dockerfile — PHP 8.3-fpm, pdo_pgsql, redis, bcmath, zip
 │   └── postgres/
 ├── docs/                architecture.md, multi-tenancy.md, database.md, api.md, deployment.md
-└── docker-compose.yml   postgres, redis, php, nginx
+└── docker-compose.yml   postgres, redis, php, queue, nginx
 ```
 
 ## Getting started
@@ -121,7 +121,7 @@ API is reachable.
 
 The Vue 3 + TypeScript SPA lives in `frontend/`, built with Vite and Tailwind CSS. It runs
 on the host with Node, not in Docker (the project's Docker services are deliberately kept
-to postgres/redis/php/nginx):
+to postgres/redis/php/queue/nginx):
 
 ```bash
 cd frontend

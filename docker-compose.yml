@@ -45,6 +45,14 @@ services:
 
     volumes:
       - ./backend:/var/www/html
+      # vendor/ lives on a native Docker volume, not the Windows bind mount:
+      # Composer's ~10k+ small dependency files, read on every autoload,
+      # are painfully slow through Docker Desktop's Windows file-sharing
+      # bridge (multi-second wall-clock time per request despite near-zero
+      # actual CPU time — the classic symptom). This shadows an empty
+      # directory at first; run `composer install` once after bringing this
+      # up to populate it.
+      - backend_vendor:/var/www/html/vendor
 
     networks:
       - ntscweb
@@ -52,7 +60,36 @@ services:
     depends_on:
       - postgres
       - redis
-      
+
+  queue:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+
+    container_name: ntscweb_queue
+    restart: unless-stopped
+
+    working_dir: /var/www/html
+
+    # Same image/codebase as the `php` service — this container just runs
+    # `queue:work` instead of php-fpm. Without it, anything dispatched with
+    # QUEUE_CONNECTION=redis (e.g. ProcessStudentImport) sits in Redis
+    # forever with nothing consuming it.
+    command: php artisan queue:work redis --sleep=3 --tries=3 --timeout=600
+
+    volumes:
+      - ./backend:/var/www/html
+      # Same vendor/ volume as the php service — same codebase, same
+      # dependencies, no reason to duplicate the install.
+      - backend_vendor:/var/www/html/vendor
+
+    networks:
+      - ntscweb
+
+    depends_on:
+      - postgres
+      - redis
+
   nginx:
     image: nginx:alpine
     container_name: ntscweb_nginx
@@ -78,3 +115,4 @@ networks:
 volumes:
   postgres_data:
   redis_data:
+  backend_vendor:
