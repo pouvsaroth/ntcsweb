@@ -84,7 +84,7 @@ onMounted(() => fetch())
       </template>
       <template #cell-actions="{ row }">
         <div class="flex justify-end gap-2">
-          <button type="button" class="text-sm font-medium text-primary-600 hover:text-primary-700" @click="openEdit(row)">
+          <button type="button" class="text-sm font-medium text-secondary-600 hover:text-secondary-700" @click="openEdit(row)">
             {{ t('admin.homeSlides.edit') }}
           </button>
           <button type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row)">

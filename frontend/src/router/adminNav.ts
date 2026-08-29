@@ -46,8 +46,9 @@ export const adminNav: AdminNavGroup[] = [
     labelKey: 'adminNav.groups.academic',
     items: [
       { labelKey: 'adminNav.items.academicYears', to: '/admin/academic-years' },
-      { labelKey: 'adminNav.items.programs', to: '/admin/programs' },
+      { labelKey: 'adminNav.items.programs', to: '/admin/programs', permission: 'programs.view' },
       { labelKey: 'adminNav.items.subjects', to: '/admin/subjects' },
+      { labelKey: 'adminNav.items.books', to: '/admin/books' },
       { labelKey: 'adminNav.items.classes', to: '/admin/classes' },
     ],
   },
@@ -55,6 +56,7 @@ export const adminNav: AdminNavGroup[] = [
     labelKey: 'adminNav.groups.students',
     items: [
       { labelKey: 'adminNav.items.studentsList', to: '/admin/students' },
+      { labelKey: 'adminNav.items.studentImports', to: '/admin/student-imports', permission: 'students.create' },
       { labelKey: 'adminNav.items.enrollments', to: '/admin/enrollments' },
     ],
   },
@@ -74,6 +76,7 @@ export const adminNav: AdminNavGroup[] = [
     labelKey: 'adminNav.groups.website',
     items: [
       { labelKey: 'adminNav.items.homeSlides', to: '/admin/home-slides', permission: 'home-slides.view' },
+      { labelKey: 'adminNav.items.aboutPage', to: '/admin/about-page', permission: 'tenant-settings.view' },
       { labelKey: 'adminNav.items.news', to: '/admin/news' },
       { labelKey: 'adminNav.items.events', to: '/admin/events' },
       { labelKey: 'adminNav.items.announcements', to: '/admin/announcements' },

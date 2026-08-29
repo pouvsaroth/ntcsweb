@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
@@ -44,6 +44,25 @@ const errors = ref<Record<string, string[]>>({})
 const generalError = ref<string | null>(null)
 const submitting = ref(false)
 
+/**
+ * Remembers only the phone/email, never the password — a raw password
+ * sitting in localStorage is readable by any script on the page (an XSS
+ * exposure the rest of the app doesn't otherwise have), and doesn't buy
+ * anything the browser's own password manager doesn't already do more
+ * safely. The `autocomplete="username"`/`"current-password"` attributes
+ * below are what let the browser itself offer to save and autofill the
+ * password — this only takes care of the identifier field.
+ */
+const REMEMBERED_LOGIN_KEY = 'ntcsweb.remembered_login'
+
+onMounted(() => {
+  const remembered = localStorage.getItem(REMEMBERED_LOGIN_KEY)
+  if (remembered) {
+    form.login = remembered
+    form.remember = true
+  }
+})
+
 async function submit() {
   submitting.value = true
   errors.value = {}
@@ -51,6 +70,13 @@ async function submit() {
 
   try {
     await auth.login({ ...form, tenant: school.value.trim() || undefined })
+
+    if (form.remember) {
+      localStorage.setItem(REMEMBERED_LOGIN_KEY, form.login)
+    } else {
+      localStorage.removeItem(REMEMBERED_LOGIN_KEY)
+    }
+
     const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/admin'
     await router.push(redirect)
   } catch (error) {
@@ -116,7 +142,7 @@ async function submit() {
           <input v-model="form.remember" type="checkbox" class="rounded border-neutral-300 text-primary-600 focus:ring-primary-500" />
           {{ t('auth.login.rememberMe') }}
         </label>
-        <RouterLink to="/forgot-password" class="font-medium text-primary-600 hover:text-primary-700">
+        <RouterLink to="/forgot-password" class="font-medium text-secondary-600 hover:text-secondary-700">
           {{ t('auth.login.forgotPassword') }}
         </RouterLink>
       </div>

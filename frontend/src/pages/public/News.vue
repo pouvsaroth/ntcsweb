@@ -45,7 +45,7 @@ onMounted(() => load())
               <p class="text-xs font-medium text-neutral-400">{{ item.published_at }}</p>
               <h3 class="mt-1 font-semibold text-neutral-900">{{ item.title }}</h3>
               <p class="mt-2 line-clamp-2 text-sm text-neutral-500">{{ item.excerpt }}</p>
-              <RouterLink :to="`/news/${item.slug}`" class="mt-3 inline-block text-sm font-medium text-primary-600 hover:text-primary-700">
+              <RouterLink :to="`/news/${item.slug}`" class="mt-3 inline-block text-sm font-medium text-secondary-600 hover:text-secondary-700">
                 {{ t('common.readMore') }}
               </RouterLink>
             </div>

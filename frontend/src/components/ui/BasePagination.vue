@@ -64,7 +64,7 @@ const pages = computed<(number | '…')[]>(() => {
           class="min-w-[2rem] rounded-md px-2.5 py-1.5 text-sm"
           :class="
             p === meta.current_page
-              ? 'bg-primary-600 text-white'
+              ? 'bg-primary-600 text-secondary-900'
               : 'text-neutral-600 hover:bg-neutral-100'
           "
           :aria-current="p === meta.current_page ? 'page' : undefined"

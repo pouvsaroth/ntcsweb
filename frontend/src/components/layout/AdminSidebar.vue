@@ -93,7 +93,7 @@ watch(
     :class="open ? 'translate-x-0' : '-translate-x-full'"
   >
     <div class="flex h-16 items-center gap-2 border-b border-neutral-200 px-5">
-      <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-600 text-sm font-bold text-white">
+      <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-600 text-sm font-bold text-secondary-900">
         N
       </span>
       <span class="font-bold text-neutral-900">NTCSWEB Admin</span>
@@ -131,7 +131,7 @@ watch(
                 :key="item.to"
                 :to="item.to"
                 class="block rounded-lg px-3 py-2 text-sm font-medium text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
-                active-class="bg-primary-50 text-primary-700"
+                active-class="bg-primary-50 text-primary-800"
                 @click="emit('close')"
               >
                 {{ t(item.labelKey) }}

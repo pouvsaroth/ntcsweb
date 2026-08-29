@@ -49,7 +49,7 @@ async function handleLogout() {
           class="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-neutral-100"
           @click="menuOpen = !menuOpen"
         >
-          <span class="flex h-8 w-8 items-center justify-center rounded-full bg-primary-100 text-sm font-semibold text-primary-700">
+          <span class="flex h-8 w-8 items-center justify-center rounded-full bg-primary-100 text-sm font-semibold text-primary-800">
             {{ auth.user?.name.charAt(0) ?? '?' }}
           </span>
           <span class="hidden text-sm font-medium text-neutral-700 sm:block">{{ auth.user?.name }}</span>

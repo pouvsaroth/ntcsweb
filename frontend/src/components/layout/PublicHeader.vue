@@ -16,9 +16,9 @@ const mobileOpen = ref(false)
 <template>
   <header class="sticky top-0 z-40 border-b border-neutral-200 bg-white/95 backdrop-blur">
     <div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-      <RouterLink to="/" class="flex items-center gap-2 font-bold text-primary-700">
+      <RouterLink to="/" class="flex items-center gap-2 font-bold text-secondary-700">
         <img v-if="site.info.logo" :src="site.info.logo" alt="" class="h-9 w-9 rounded object-contain" />
-        <span v-else class="flex h-9 w-9 items-center justify-center rounded-lg bg-primary-600 text-white">
+        <span v-else class="flex h-9 w-9 items-center justify-center rounded-lg bg-primary-600 text-secondary-900">
           {{ site.info.name.charAt(0) }}
         </span>
         <span class="hidden text-lg sm:inline">{{ site.info.name }}</span>
@@ -31,7 +31,7 @@ const mobileOpen = ref(false)
           :key="item.to"
           :to="item.to"
           class="rounded-lg px-3 py-2 text-sm font-medium text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
-          active-class="text-primary-700 bg-primary-50"
+          active-class="text-primary-800 bg-primary-50"
         >
           {{ t(item.labelKey) }}
         </RouterLink>
@@ -39,7 +39,7 @@ const mobileOpen = ref(false)
 
       <div class="hidden items-center gap-2 lg:flex">
         <LanguageSwitcher />
-        <BaseButton href="/login" size="sm">{{ t('nav.portalLogin') }}</BaseButton>
+        <BaseButton href="/login" target="_blank" size="sm">{{ t('nav.portalLogin') }}</BaseButton>
       </div>
 
       <!-- Mobile menu toggle -->
@@ -75,12 +75,12 @@ const mobileOpen = ref(false)
             :key="item.to"
             :to="item.to"
             class="rounded-lg px-3 py-2.5 text-sm font-medium text-neutral-600 hover:bg-neutral-100"
-            active-class="text-primary-700 bg-primary-50"
+            active-class="text-primary-800 bg-primary-50"
             @click="mobileOpen = false"
           >
             {{ t(item.labelKey) }}
           </RouterLink>
-          <BaseButton href="/login" class="mt-2" block>{{ t('nav.portalLogin') }}</BaseButton>
+          <BaseButton href="/login" target="_blank" class="mt-2" block>{{ t('nav.portalLogin') }}</BaseButton>
         </nav>
       </div>
     </Transition>
