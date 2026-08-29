@@ -6,6 +6,7 @@ import { RouterLink } from 'vue-router'
 import BaseCard from '@/components/ui/BaseCard.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import HeroSlider from '@/components/public/HeroSlider.vue'
+import PopularPrograms from '@/components/public/PopularPrograms.vue'
 import SectionContainer from '@/components/public/SectionContainer.vue'
 import { publicContentService, type EventItem, type NewsItem } from '@/services/publicContent'
 
@@ -29,6 +30,8 @@ onMounted(async () => {
   <div>
     <HeroSlider />
 
+    <PopularPrograms />
+
     <SectionContainer :title="t('home.latestNews')" :subtitle="t('home.latestNewsSubtitle')">
       <div v-if="loading" class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         <div v-for="i in 3" :key="i" class="h-48 animate-pulse rounded-[--radius-card] bg-neutral-100" />
@@ -43,7 +46,7 @@ onMounted(async () => {
             <p class="text-xs font-medium text-neutral-400">{{ item.published_at }}</p>
             <h3 class="mt-1 font-semibold text-neutral-900">{{ item.title }}</h3>
             <p class="mt-2 line-clamp-2 text-sm text-neutral-500">{{ item.excerpt }}</p>
-            <RouterLink :to="`/news/${item.slug}`" class="mt-3 inline-block text-sm font-medium text-primary-600 hover:text-primary-700">
+            <RouterLink :to="`/news/${item.slug}`" class="mt-3 inline-block text-sm font-medium text-secondary-600 hover:text-secondary-700">
               {{ t('common.readMore') }}
             </RouterLink>
           </div>

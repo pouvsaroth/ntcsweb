@@ -2,12 +2,13 @@ import { apiGetWithMeta, apiPost } from '@/services/http'
 import { ApiRequestError, type LengthAwarePaginationMeta, type PaginatedResult } from '@/types/api'
 
 /**
- * These endpoints (news, events, gallery, programs, teachers) don't exist on
- * the backend yet — they land with the Website Management phase. Every read
+ * These endpoints (news, events, gallery, teachers) don't exist on the
+ * backend yet — they land with the Website Management phase. Every read
  * here is built against that intended contract and fails closed to an empty
  * result rather than an error screen, so the public site looks intentionally
  * "no content yet" today and needs zero frontend changes once the real
- * endpoints ship.
+ * endpoints ship. `programs` is the exception: it's real, backed by
+ * App\Http\Controllers\Api\V1\Public\ProgramController.
  */
 
 export interface NewsItem {
@@ -46,8 +47,13 @@ export interface HomeSlide {
 
 export interface Program {
   id: number
-  name: string
-  description: string
+  title: string
+  subtitle: string | null
+  category: string
+  level: 'beginner' | 'intermediate' | 'advanced'
+  duration_label: string | null
+  description: string | null
+  image_url: string | null
 }
 
 export interface Teacher {
@@ -107,7 +113,8 @@ export const publicContentService = {
 
   getGallery: (page = 1, perPage = 12) => fetchPublicList<GalleryImage>('/public/gallery', { page, per_page: perPage }),
 
-  getPrograms: () => fetchPublicList<Program>('/public/programs', { per_page: 50 }),
+  getPrograms: (options: { featured?: boolean } = {}) =>
+    fetchPublicList<Program>('/public/programs', { per_page: 50, featured: options.featured ? 1 : undefined }),
 
   getTeachers: (page = 1, perPage = 12) => fetchPublicList<Teacher>('/public/teachers', { page, per_page: perPage }),
 

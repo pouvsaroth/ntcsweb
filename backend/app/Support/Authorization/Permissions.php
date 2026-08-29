@@ -115,6 +115,16 @@ final class Permissions
 
     public const HOME_SLIDES_DELETE = 'home-slides.delete';
 
+    // Programs — the public marketing catalog of courses (not to be confused
+    // with `classes`, an actual scheduled teaching group).
+    public const PROGRAMS_VIEW = 'programs.view';
+
+    public const PROGRAMS_CREATE = 'programs.create';
+
+    public const PROGRAMS_UPDATE = 'programs.update';
+
+    public const PROGRAMS_DELETE = 'programs.delete';
+
     // System.
     public const AUDIT_LOGS_VIEW = 'audit-logs.view';
 
@@ -191,6 +201,12 @@ final class Permissions
                 self::HOME_SLIDES_UPDATE => 'Update homepage slides',
                 self::HOME_SLIDES_DELETE => 'Delete homepage slides',
             ],
+            'Programs' => [
+                self::PROGRAMS_VIEW => 'View programs',
+                self::PROGRAMS_CREATE => 'Create programs',
+                self::PROGRAMS_UPDATE => 'Update programs',
+                self::PROGRAMS_DELETE => 'Delete programs',
+            ],
             'System' => [
                 self::AUDIT_LOGS_VIEW => 'View audit logs',
             ],
@@ -224,6 +240,7 @@ final class Permissions
             self::CLASSES_VIEW, self::CLASSES_CREATE, self::CLASSES_UPDATE, self::CLASSES_DELETE,
             self::ENROLLMENTS_VIEW, self::ENROLLMENTS_CREATE, self::ENROLLMENTS_UPDATE, self::ENROLLMENTS_DELETE,
             self::HOME_SLIDES_VIEW, self::HOME_SLIDES_CREATE, self::HOME_SLIDES_UPDATE, self::HOME_SLIDES_DELETE,
+            self::PROGRAMS_VIEW, self::PROGRAMS_CREATE, self::PROGRAMS_UPDATE, self::PROGRAMS_DELETE,
         ];
 
         return [
