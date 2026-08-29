@@ -28,6 +28,7 @@ class UpdateBookRequest extends FormRequest
             'description' => ['nullable', 'string', 'max:5000'],
             'cover_image' => ['nullable', 'string', 'max:2048'],
             'quantity' => ['sometimes', 'integer', 'min:0', 'max:1000000'],
+            'fee' => ['nullable', 'numeric', 'min:0', 'max:999999.99'],
             'status' => ['sometimes', Rule::in([Book::STATUS_ACTIVE, Book::STATUS_INACTIVE])],
         ];
     }

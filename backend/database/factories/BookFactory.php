@@ -25,6 +25,7 @@ class BookFactory extends Factory
             'description' => fake()->paragraph(),
             'cover_image' => null,
             'quantity' => fake()->numberBetween(1, 20),
+            'fee' => fake()->randomFloat(2, 10, 100),
             'status' => Book::STATUS_ACTIVE,
         ];
     }

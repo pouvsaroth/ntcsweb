@@ -13,18 +13,29 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * Tenant-owned. Student <-> Class, with the metadata that makes it more than
- * a bare pivot: when they joined, and whether they're still active in it.
- * Modelled as a full Eloquent model (its own `id`, queryable on its own)
- * rather than a `belongsToMany` pivot, so it can carry that metadata and be
- * looked up directly without always going through one side's relation.
+ * Tenant-owned. Student <-> Class <-> Book: which specific book a student
+ * picked from that class session's book menu (`SchoolClass::books()`), and
+ * what they're being charged for it. Modelled as a full Eloquent model (its
+ * own `id`, queryable on its own) rather than a `belongsToMany` pivot, so it
+ * can carry that metadata and be looked up directly without always going
+ * through one side's relation.
+ *
+ * A class is a shared session (teacher, room, schedule), not a shared
+ * curriculum — two students in the same session can each be on a different
+ * book at a different fee, so `book_id`/`fee` live here, per student, rather
+ * than on the class itself. `fee` is a snapshot taken at enrollment time
+ * (see StoreEnrollmentRequest), not a live read of `books.fee` — a later
+ * catalog price change must never retroactively alter what an
+ * already-enrolled student owes.
  *
  * @property int $tenant_id
  * @property int $student_id
  * @property int $class_id
+ * @property int $book_id
+ * @property string $fee
  * @property string $status
  */
-#[Fillable(['student_id', 'class_id', 'enrolled_at', 'status'])]
+#[Fillable(['student_id', 'class_id', 'book_id', 'enrolled_at', 'fee', 'status'])]
 class Enrollment extends Model
 {
     use BelongsToTenant, HasFactory;
@@ -45,6 +56,7 @@ class Enrollment extends Model
     {
         return [
             'enrolled_at' => 'date',
+            'fee' => 'decimal:2',
         ];
     }
 
@@ -56,6 +68,11 @@ class Enrollment extends Model
     public function schoolClass(): BelongsTo
     {
         return $this->belongsTo(SchoolClass::class, 'class_id');
+    }
+
+    public function book(): BelongsTo
+    {
+        return $this->belongsTo(Book::class);
     }
 
     /**
