@@ -6,16 +6,23 @@ use App\Http\Controllers\Api\V1\Admin\AboutPageController;
 use App\Http\Controllers\Api\V1\Admin\BookController;
 use App\Http\Controllers\Api\V1\Admin\ClassroomController;
 use App\Http\Controllers\Api\V1\Admin\EnrollmentController;
+use App\Http\Controllers\Api\V1\Admin\GalleryController as AdminGalleryController;
+use App\Http\Controllers\Api\V1\Admin\GeneralSettingsController;
 use App\Http\Controllers\Api\V1\Admin\HomeSlideController as AdminHomeSlideController;
+use App\Http\Controllers\Api\V1\Admin\PositionController;
 use App\Http\Controllers\Api\V1\Admin\ProgramController as AdminProgramController;
+use App\Http\Controllers\Api\V1\Admin\RoleController;
 use App\Http\Controllers\Api\V1\Admin\SchoolClassController;
+use App\Http\Controllers\Api\V1\Admin\StaffController;
 use App\Http\Controllers\Api\V1\Admin\StudentController;
 use App\Http\Controllers\Api\V1\Admin\StudentImportController;
 use App\Http\Controllers\Api\V1\Admin\TeacherController;
+use App\Http\Controllers\Api\V1\Admin\UserController;
 use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\V1\Auth\EmailVerificationController;
 use App\Http\Controllers\Api\V1\Auth\PasswordController;
 use App\Http\Controllers\Api\V1\GeographyController;
+use App\Http\Controllers\Api\V1\Public\GalleryController as PublicGalleryController;
 use App\Http\Controllers\Api\V1\Public\HomeSlideController as PublicHomeSlideController;
 use App\Http\Controllers\Api\V1\Public\ProgramController as PublicProgramController;
 use App\Http\Controllers\Api\V1\Public\SiteSettingsController;
@@ -85,6 +92,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
 
         Route::middleware(['auth:sanctum', 'active'])->group(function () {
             Route::get('me', [AuthController::class, 'me'])->name('me');
+            Route::post('me', [AuthController::class, 'updateProfile'])->name('me.update');
             Route::post('logout', [AuthController::class, 'logout'])->name('logout');
             Route::post('change-password', [PasswordController::class, 'change'])->name('change-password');
 
@@ -133,11 +141,31 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::apiResource('enrollments', EnrollmentController::class);
 
         Route::apiResource('home-slides', AdminHomeSlideController::class);
+        Route::apiResource('gallery', AdminGalleryController::class);
         Route::apiResource('programs', AdminProgramController::class);
+
+        // Position-based automatic user roles: Staff belongs to a Position,
+        // a Position carries a Role — see UserProvisioningService and
+        // StaffController::store()/update() for how the three tie together.
+        Route::apiResource('positions', PositionController::class);
+        Route::apiResource('staff', StaffController::class);
+        Route::apiResource('roles', RoleController::class)->except(['show']);
+
+        // index/store only for now: editing/removing an existing account is a
+        // separate, bigger "user management" surface not yet built. `store`
+        // is how an already-imported (never auto-provisioned) Student gets
+        // portal access, or how an extra standalone account gets created.
+        Route::apiResource('users', UserController::class)->only(['index', 'store']);
 
         // Singleton, not a resource — see AboutPageController.
         Route::get('settings/about', [AboutPageController::class, 'show'])->name('settings.about.show');
         Route::post('settings/about', [AboutPageController::class, 'update'])->name('settings.about.update');
+
+        // Same shape — see GeneralSettingsController. Currently just
+        // `student_id_prefix`; a later general setting adds a key here
+        // rather than a new endpoint.
+        Route::get('settings/general', [GeneralSettingsController::class, 'show'])->name('settings.general.show');
+        Route::post('settings/general', [GeneralSettingsController::class, 'update'])->name('settings.general.update');
 
         // Cambodia's administrative hierarchy — platform-wide reference data
         // for the student registration form's cascading address selects.
@@ -164,6 +192,10 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
     Route::prefix('public')->name('public.')->middleware('tenant.required')->group(function () {
         Route::get('settings', [SiteSettingsController::class, 'show'])->name('settings');
         Route::get('home-slides', [PublicHomeSlideController::class, 'index'])->name('home-slides.index');
+        Route::get('gallery', [PublicGalleryController::class, 'index'])->name('gallery.index');
+        Route::get('gallery/{id}/download', [PublicGalleryController::class, 'download'])
+            ->whereNumber('id')
+            ->name('gallery.download');
         Route::get('programs', [PublicProgramController::class, 'index'])->name('programs.index');
     });
 });

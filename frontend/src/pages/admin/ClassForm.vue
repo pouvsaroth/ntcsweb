@@ -157,7 +157,6 @@ onMounted(load)
       <h1 class="text-xl font-semibold text-neutral-900">
         {{ isEditing ? t('admin.classes.editTitle') : t('admin.classes.addClass') }}
       </h1>
-      <p class="mt-1 text-sm text-neutral-500">{{ t('admin.classes.formSubtitle') }}</p>
     </div>
 
     <BaseSpinner v-if="loading" class="mx-auto" />

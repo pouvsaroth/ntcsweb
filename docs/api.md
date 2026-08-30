@@ -70,6 +70,15 @@ Every list query gets a final deterministic tiebreak order automatically
 (`ORDER BY id DESC` appended) — required for cursor pagination to be stable, and it stops
 plain offset pagination from occasionally repeating or skipping rows when sort values tie.
 
+`students` started on `cursorPaginate()` specifically (see below) — it's the one table
+this platform is explicitly designed to hold very large row counts in. It moved to
+`paginate()` after an explicit request for standard numbered/jump-to-page pagination,
+which cursor pagination cannot provide (there's no "page 4" when the only handles you have
+are opaque next/previous tokens). This is a deliberate, acknowledged trade: a realistic
+single school's enrollment (thousands of students) makes the `COUNT(*)`/`OFFSET` cost
+negligible, but it reintroduces the exact scaling concern cursor pagination existed to
+avoid. Revisit if a tenant's real row count ever gets large enough for that to matter.
+
 ## Authentication
 
 `POST /api/v1/auth/login` — `{ email, password, device_name?, remember?, tenant? }`.
@@ -148,7 +157,7 @@ listing and for a direct `{id}` lookup.
 | Endpoint | Notes |
 |---|---|
 | `/api/v1/teachers` | `paginate()` — small table, a page count is cheap and useful in the UI |
-| `/api/v1/students` | **`cursorPaginate()`**, not `paginate()` — this is the table designed to hold millions of rows, so it never computes a total count. `meta.pagination.type` is `"cursor"` here, `"length_aware"` everywhere else. `index` returns `guardians_count`/`educations_count` (not the full arrays); `show`/`store`/`update` return the full `guardians`/`educations` arrays instead. `store`/`update` accept optional `guardians[]`/`educations[]` — see [docs/database.md#student-registration-guardians-and-education-are-their-own-tables](database.md#student-registration-guardians-and-education-are-their-own-tables) |
+| `/api/v1/students` | `paginate()` (length-aware, numbered pages) — see the pagination section above for why this table, alone among "millions of rows" candidates, moved off `cursorPaginate()`. `index` returns `guardians_count`/`educations_count` (not the full arrays); `show`/`store`/`update` return the full `guardians`/`educations` arrays instead. `store`/`update` accept optional `guardians[]`/`educations[]` — see [docs/database.md#student-registration-guardians-and-education-are-their-own-tables](database.md#student-registration-guardians-and-education-are-their-own-tables) |
 | `/api/v1/classrooms` | |
 | `/api/v1/books` | `fee` is a nullable default/list price, not what a specific enrolled student is charged — see [docs/database.md#dynamic-classes-one-session-many-books-many-fees](database.md#dynamic-classes-one-session-many-books-many-fees) |
 | `/api/v1/classes` | Route parameter is `{class}` (model is `SchoolClass` — `class` is a PHP reserved word, can't name a class `Class`). `POST`/`PUT` accept a nested `schedules` array (the "study day"/"study time" — `day_of_week` 1–7, `start_time`/`end_time` as `"HH:MM"`) and a `book_ids` array in the same request; an update's `schedules` **replaces** the class's entire weekly schedule rather than merging into it |

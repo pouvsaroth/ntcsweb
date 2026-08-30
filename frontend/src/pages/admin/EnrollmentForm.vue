@@ -136,7 +136,6 @@ onMounted(async () => {
   <div class="max-w-2xl">
     <div class="mb-6">
       <h1 class="text-xl font-semibold text-neutral-900">{{ t('admin.enrollments.createTitle') }}</h1>
-      <p class="mt-1 text-sm text-neutral-500">{{ t('admin.enrollments.createSubtitle') }}</p>
     </div>
 
     <form class="space-y-6" @submit.prevent="submit">

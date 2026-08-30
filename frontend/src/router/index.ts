@@ -39,8 +39,6 @@ const comingSoon = () => import('@/pages/admin/ComingSoon.vue')
 /** path -> adminNav.items translation key, so ComingSoon.vue's title always matches the sidebar label it was clicked from. */
 const comingSoonPages: [string, string][] = [
   ['tenants', 'adminNav.items.tenants'],
-  ['roles', 'adminNav.items.roles'],
-  ['settings', 'adminNav.items.settings'],
   ['academic-years', 'adminNav.items.academicYears'],
   ['subjects', 'adminNav.items.subjects'],
   ['teachers', 'adminNav.items.teachersList'],
@@ -50,7 +48,6 @@ const comingSoonPages: [string, string][] = [
   ['news', 'adminNav.items.news'],
   ['events', 'adminNav.items.events'],
   ['announcements', 'adminNav.items.announcements'],
-  ['gallery', 'adminNav.items.gallery'],
   ['documents', 'adminNav.items.documents'],
   ['contact-messages', 'adminNav.items.contactMessages'],
   ['notifications', 'adminNav.items.notifications'],
@@ -75,6 +72,12 @@ const adminRoutes: RouteRecordRaw[] = [
     name: 'admin.home-slides',
     component: () => import('@/pages/admin/HomeSlides.vue'),
     meta: { titleKey: 'adminNav.items.homeSlides' },
+  },
+  {
+    path: 'gallery',
+    name: 'admin.gallery',
+    component: () => import('@/pages/admin/Gallery.vue'),
+    meta: { titleKey: 'adminNav.items.gallery' },
   },
   {
     path: 'student-imports',
@@ -147,6 +150,30 @@ const adminRoutes: RouteRecordRaw[] = [
     name: 'admin.enrollments.new',
     component: () => import('@/pages/admin/EnrollmentForm.vue'),
     meta: { titleKey: 'adminNav.items.enrollments' },
+  },
+  {
+    path: 'staff',
+    name: 'admin.staff',
+    component: () => import('@/pages/admin/Staff.vue'),
+    meta: { titleKey: 'adminNav.items.staffList' },
+  },
+  {
+    path: 'positions',
+    name: 'admin.positions',
+    component: () => import('@/pages/admin/Positions.vue'),
+    meta: { titleKey: 'adminNav.items.positions' },
+  },
+  {
+    path: 'roles',
+    name: 'admin.roles',
+    component: () => import('@/pages/admin/Roles.vue'),
+    meta: { titleKey: 'adminNav.items.roles' },
+  },
+  {
+    path: 'settings',
+    name: 'admin.settings',
+    component: () => import('@/pages/admin/GeneralSettings.vue'),
+    meta: { titleKey: 'adminNav.items.settings' },
   },
   ...comingSoonPages.map(
     ([path, titleKey]): RouteRecordRaw => ({

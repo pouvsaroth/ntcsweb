@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
+import EditIconButton from '@/components/ui/EditIconButton.vue'
 import BasePagination from '@/components/ui/BasePagination.vue'
 import DataTable from '@/components/ui/DataTable.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
@@ -51,7 +52,6 @@ onMounted(() => fetch())
     <div class="mb-6 flex items-center justify-between">
       <div>
         <h1 class="text-xl font-semibold text-neutral-900">{{ t('admin.classes.title') }}</h1>
-        <p class="mt-1 text-sm text-neutral-500">{{ t('admin.classes.pageSubtitle') }}</p>
       </div>
       <BaseButton to="/admin/classes/new">{{ t('admin.classes.addClass') }}</BaseButton>
     </div>
@@ -84,7 +84,7 @@ onMounted(() => fetch())
       </template>
       <template #cell-actions="{ row }">
         <div class="flex justify-end gap-2">
-          <BaseButton :to="`/admin/classes/${row.id}/edit`" variant="ghost" size="sm">{{ t('admin.classes.edit') }}</BaseButton>
+          <EditIconButton :to="`/admin/classes/${row.id}/edit`" />
           <button type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row)">
             {{ t('admin.classes.delete') }}
           </button>
@@ -92,6 +92,6 @@ onMounted(() => fetch())
       </template>
     </DataTable>
 
-    <BasePagination v-if="meta" :meta="meta" class="mt-4" @update:page="setPage" />
+    <BasePagination v-if="meta" :meta="meta" sticky class="mt-4" @update:page="setPage" />
   </div>
 </template>

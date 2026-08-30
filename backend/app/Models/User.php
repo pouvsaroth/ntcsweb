@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\HasApiTokens;
 
 /**
@@ -39,7 +40,7 @@ use Laravel\Sanctum\HasApiTokens;
  * @property string|null $phone
  * @property string $status
  */
-#[Fillable(['name', 'email', 'phone', 'password', 'status', 'locale'])]
+#[Fillable(['name', 'email', 'phone', 'password', 'status', 'locale', 'avatar_path'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements MustVerifyEmailContract
 {
@@ -119,5 +120,15 @@ class User extends Authenticatable implements MustVerifyEmailContract
             'last_login_at' => now(),
             'last_login_ip' => $ip,
         ])->saveQuietly(['timestamps' => false]);
+    }
+
+    /**
+     * Stored under `tenants/{id}/avatars` for a school user, or
+     * `platform/avatars` for a super admin (tenant_id NULL) — see
+     * AuthController::updateProfile(), the only place avatar_path is set.
+     */
+    public function avatarUrl(): ?string
+    {
+        return $this->avatar_path !== null ? Storage::disk('public')->url($this->avatar_path) : null;
     }
 }

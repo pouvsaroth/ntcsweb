@@ -73,6 +73,16 @@ class RolePermissionSeeder extends Seeder
                 level: Role::LEVELS[$slug],
             );
 
+            // Only a brand-new role gets the catalog's default permission
+            // set. Once it exists, its name/level are locked but its
+            // permissions and description belong to whoever administers
+            // this school (see RolePolicy::update()) — re-syncing here on
+            // every deploy would silently discard that customization the
+            // next time this seeder runs.
+            if (! $role->wasRecentlyCreated) {
+                continue;
+            }
+
             $ids = collect($defaultSlugs)->map(fn ($slug) => $permissionIds[$slug] ?? null)->filter()->values();
 
             $role->permissions()->sync($ids);
@@ -80,18 +90,25 @@ class RolePermissionSeeder extends Seeder
     }
 
     /**
-     * updateOrCreate() fills through the model's normal guarded $fillable,
-     * which deliberately excludes tenant_id and is_system (see Role's
-     * docblock) so that request input can never set them. Seeded roles are
-     * trusted, so this sets every column explicitly via forceFill instead.
+     * Creates a system role once and never touches it again. Before roles
+     * were admin-editable this could safely forceFill+save unconditionally
+     * on every run; now that RoleController::update() lets a school adjust a
+     * system role's description/permissions, doing that here would silently
+     * revert their changes on the next deploy.
      */
     private function putRole(?int $tenantId, string $slug, string $name, int $level, ?string $description = null): Role
     {
-        $role = Role::query()
+        $existing = Role::query()
             ->withoutGlobalScopes()
             ->where('tenant_id', $tenantId)
             ->where('slug', $slug)
-            ->first() ?? new Role;
+            ->first();
+
+        if ($existing !== null) {
+            return $existing;
+        }
+
+        $role = new Role;
 
         $role->forceFill([
             'tenant_id' => $tenantId,

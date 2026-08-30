@@ -25,11 +25,11 @@ class UpdateStudentRequest extends FormRequest
         $student = $this->route('student');
 
         return [
-            'student_code' => [
-                'sometimes', 'required', 'string', 'max:32',
-                Rule::unique('students')->where('tenant_id', $tenantId)->ignore($student),
-            ],
-
+            // Not editable through the normal edit form — a Student ID is an
+            // official, generated identifier (see StudentIdGenerator); no
+            // rule here means a client-submitted `student_code` is silently
+            // dropped by FormRequest::validated(), same treatment as a
+            // system Role's locked name/level (see UpdateRoleRequest).
             'first_name' => ['sometimes', 'required', 'string', 'max:255'],
             'last_name' => ['sometimes', 'required', 'string', 'max:255'],
             'english_name' => ['nullable', 'string', 'max:255'],

@@ -1,5 +1,6 @@
 import { apiGetWithMeta, apiPost } from '@/services/http'
-import type { CursorPaginationMeta, PaginatedResult } from '@/types/api'
+import type { PaginatedQuery } from '@/composables/usePaginatedResource'
+import type { LengthAwarePaginationMeta, PaginatedResult } from '@/types/api'
 
 export interface StudentGuardian {
   id?: number
@@ -55,7 +56,6 @@ export interface Student {
 export interface StudentInput {
   /** Omitted on update when the admin isn't replacing the photo. */
   photo?: File
-  student_code: string
   first_name: string
   last_name: string
   english_name: string
@@ -84,7 +84,6 @@ function toFormData(input: StudentInput, methodOverride?: 'PUT'): FormData {
   const form = new FormData()
 
   if (input.photo) form.append('photo', input.photo)
-  form.append('student_code', input.student_code)
   form.append('first_name', input.first_name)
   form.append('last_name', input.last_name)
   if (input.english_name) form.append('english_name', input.english_name)
@@ -126,15 +125,17 @@ function toFormData(input: StudentInput, methodOverride?: 'PUT'): FormData {
 
 export const studentsService = {
   /**
-   * Cursor pagination, not page numbers — `students` is designed to hold
-   * millions of rows, so there's no numbered pager here, only "next".
+   * `page`/`per_page` are optional here (unlike usePaginatedResource's own
+   * PaginatedQuery) so a simple one-off search — e.g. EnrollmentForm's
+   * student picker, which doesn't paginate at all — doesn't have to invent
+   * values for fields it has no use for.
    */
-  async list(params: { search?: string; cursor?: string | null } = {}): Promise<PaginatedResult<Student>> {
+  async list(query: Partial<PaginatedQuery> = {}): Promise<PaginatedResult<Student>> {
     const result = await apiGetWithMeta<Student[]>('/students', {
-      params: { search: params.search || undefined, cursor: params.cursor || undefined, per_page: 25 },
+      params: { page: query.page, per_page: query.per_page, search: query.search, sort: query.sort },
     })
 
-    return { data: result.data, pagination: result.meta?.pagination as CursorPaginationMeta }
+    return { data: result.data, pagination: result.meta?.pagination as LengthAwarePaginationMeta }
   },
 
   get: (id: number) => apiGetWithMeta<Student>(`/students/${id}`).then((r) => r.data),

@@ -74,6 +74,25 @@ export async function apiGetWithMeta<T>(
   }
 }
 
+/**
+ * Same as apiGetWithMeta, but for a create call — used where `meta` carries
+ * a one-time value the response body's `data` shape doesn't otherwise have
+ * room for, e.g. `meta.temporary_password` on Student/Staff/User creation
+ * (see UserProvisioningService on the backend).
+ */
+export async function apiPostWithMeta<T>(
+  url: string,
+  body?: unknown,
+  config?: AxiosRequestConfig,
+): Promise<ApiSuccess<T>> {
+  try {
+    const response = await http.post<ApiSuccess<T>>(url, body, config)
+    return response.data
+  } catch (error) {
+    throw toApiRequestError(error)
+  }
+}
+
 async function unwrap<T>(request: Promise<{ data: ApiSuccess<T> }>): Promise<T> {
   try {
     const response = await request

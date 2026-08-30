@@ -1,18 +1,27 @@
-import { apiGetWithMeta } from '@/services/http'
+import { apiGetWithMeta, apiPostWithMeta } from '@/services/http'
 import type { PaginatedQuery } from '@/composables/usePaginatedResource'
 import type { LengthAwarePaginationMeta, PaginatedResult } from '@/types/api'
 import type { User } from '@/types/models'
 
-/**
- * `GET /api/v1/admin/users` doesn't exist yet — it's Phase 6 (Admin API).
- * This is written against that endpoint's intended contract (same
- * search/filter/sort/pagination shape as every other admin list, per
- * App\Support\Query\ApiQuery on the backend) so the Users page needs no
- * changes once it ships.
- */
+export interface CreateUserInput {
+  name: string
+  phone: string
+  email: string
+  /** Links an existing, not-yet-linked Student instead of a standalone account — its role is always forced to Student. */
+  student_id?: number
+  /** Required when student_id is absent. */
+  role_id?: number
+}
+
+export interface UserCreated {
+  user: User
+  /** Shown once, right after creation — see UserProvisioningService on the backend. */
+  temporaryPassword: string | null
+}
+
 export const adminUsersService = {
   async list(query: PaginatedQuery): Promise<PaginatedResult<User>> {
-    const result = await apiGetWithMeta<User[]>('/admin/users', {
+    const result = await apiGetWithMeta<User[]>('/users', {
       params: {
         page: query.page,
         per_page: query.per_page,
@@ -25,5 +34,10 @@ export const adminUsersService = {
     const pagination = result.meta?.pagination as LengthAwarePaginationMeta
 
     return { data: result.data, pagination }
+  },
+
+  async create(input: CreateUserInput): Promise<UserCreated> {
+    const result = await apiPostWithMeta<User>('/users', input)
+    return { user: result.data, temporaryPassword: (result.meta?.temporary_password as string) ?? null }
   },
 }

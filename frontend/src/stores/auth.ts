@@ -67,6 +67,11 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  /** Roles/permissions/tenant don't change from a profile edit — only the user object itself needs replacing. */
+  async function updateProfile(payload: { name: string; phone: string; avatar?: File | null }): Promise<void> {
+    user.value = await authService.updateProfile(payload)
+  }
+
   return {
     user,
     permissions,
@@ -79,5 +84,6 @@ export const useAuthStore = defineStore('auth', () => {
     initialize,
     login,
     logout,
+    updateProfile,
   }
 })

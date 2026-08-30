@@ -32,17 +32,6 @@ export const adminNav: AdminNavGroup[] = [
     items: [{ labelKey: 'adminNav.items.tenants', to: '/admin/tenants', superAdminOnly: true }],
   },
   {
-    labelKey: 'adminNav.groups.school',
-    items: [{ labelKey: 'adminNav.items.settings', to: '/admin/settings', permission: 'tenant-settings.view' }],
-  },
-  {
-    labelKey: 'adminNav.groups.usersAccess',
-    items: [
-      { labelKey: 'adminNav.items.users', to: '/admin/users', permission: 'users.view' },
-      { labelKey: 'adminNav.items.roles', to: '/admin/roles', permission: 'roles.view' },
-    ],
-  },
-  {
     labelKey: 'adminNav.groups.academic',
     items: [
       { labelKey: 'adminNav.items.academicYears', to: '/admin/academic-years' },
@@ -62,7 +51,10 @@ export const adminNav: AdminNavGroup[] = [
   },
   {
     labelKey: 'adminNav.groups.teachers',
-    items: [{ labelKey: 'adminNav.items.teachersList', to: '/admin/teachers' }],
+    items: [
+      { labelKey: 'adminNav.items.teachersList', to: '/admin/teachers' },
+      { labelKey: 'adminNav.items.staffList', to: '/admin/staff', permission: 'staff.view' },
+    ],
   },
   {
     labelKey: 'adminNav.groups.academicRecords',
@@ -80,7 +72,7 @@ export const adminNav: AdminNavGroup[] = [
       { labelKey: 'adminNav.items.news', to: '/admin/news' },
       { labelKey: 'adminNav.items.events', to: '/admin/events' },
       { labelKey: 'adminNav.items.announcements', to: '/admin/announcements' },
-      { labelKey: 'adminNav.items.gallery', to: '/admin/gallery' },
+      { labelKey: 'adminNav.items.gallery', to: '/admin/gallery', permission: 'gallery.view' },
       { labelKey: 'adminNav.items.documents', to: '/admin/documents' },
     ],
   },
@@ -92,7 +84,13 @@ export const adminNav: AdminNavGroup[] = [
     ],
   },
   {
-    labelKey: 'adminNav.groups.system',
-    items: [{ labelKey: 'adminNav.items.auditLogs', to: '/admin/audit-logs', permission: 'audit-logs.view' }],
+    labelKey: 'adminNav.groups.settings',
+    items: [
+      { labelKey: 'adminNav.items.settings', to: '/admin/settings', permission: 'tenant-settings.view' },
+      { labelKey: 'adminNav.items.users', to: '/admin/users', permission: 'users.view' },
+      { labelKey: 'adminNav.items.roles', to: '/admin/roles', permission: 'roles.view' },
+      { labelKey: 'adminNav.items.positions', to: '/admin/positions', permission: 'positions.view' },
+      { labelKey: 'adminNav.items.auditLogs', to: '/admin/audit-logs', permission: 'audit-logs.view' },
+    ],
   },
 ]

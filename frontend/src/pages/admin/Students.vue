@@ -1,27 +1,26 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { RouterLink } from 'vue-router'
 
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
+import EditIconButton from '@/components/ui/EditIconButton.vue'
+import BasePagination from '@/components/ui/BasePagination.vue'
 import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import DataTable from '@/components/ui/DataTable.vue'
+import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { studentsService, type Student, type StudentStatus } from '@/services/students'
-import { ApiRequestError } from '@/types/api'
+import { useAdminUiStore } from '@/stores/adminUi'
 
 const { t } = useI18n()
+const adminUi = useAdminUiStore()
 
-const items = ref<Student[]>([])
-const loading = ref(true)
-const loadingMore = ref(false)
-const error = ref<string | null>(null)
-const search = ref('')
-const cursor = ref<string | null>(null)
-const hasMore = ref(false)
+const { items, meta, loading, error, perPage, setPage, setSearch, fetch } = usePaginatedResource<Student>((query) =>
+  studentsService.list(query),
+)
 
-let searchDebounce: ReturnType<typeof setTimeout> | undefined
+const perPageOptions = [10, 25, 50, 100]
 
 const columns = [
   { key: 'photo_url', label: t('admin.students.columnPhoto') },
@@ -44,34 +43,7 @@ function statusLabel(status: StudentStatus): string {
   return t(`admin.students.status${status.charAt(0).toUpperCase()}${status.slice(1)}`)
 }
 
-async function fetch(reset: boolean) {
-  if (reset) {
-    loading.value = true
-    cursor.value = null
-  } else {
-    loadingMore.value = true
-  }
-  error.value = null
-
-  try {
-    const result = await studentsService.list({ search: search.value, cursor: reset ? null : cursor.value })
-    items.value = reset ? result.data : [...items.value, ...result.data]
-    cursor.value = result.pagination.type === 'cursor' ? result.pagination.next_cursor : null
-    hasMore.value = result.pagination.type === 'cursor' ? result.pagination.has_more : false
-  } catch (e) {
-    error.value = e instanceof ApiRequestError ? e.message : t('admin.students.loadFailed')
-  } finally {
-    loading.value = false
-    loadingMore.value = false
-  }
-}
-
-function onSearchInput() {
-  clearTimeout(searchDebounce)
-  searchDebounce = setTimeout(() => fetch(true), 350)
-}
-
-onMounted(() => fetch(true))
+onMounted(() => fetch())
 </script>
 
 <template>
@@ -79,18 +51,16 @@ onMounted(() => fetch(true))
     <div class="mb-6 flex items-center justify-between">
       <div>
         <h1 class="text-xl font-semibold text-neutral-900">{{ t('admin.students.title') }}</h1>
-        <p class="mt-1 text-sm text-neutral-500">{{ t('admin.students.listSubtitle') }}</p>
       </div>
       <BaseButton to="/admin/students/new">{{ t('admin.students.registerTitle') }}</BaseButton>
     </div>
 
     <div class="mb-4">
       <input
-        v-model="search"
         type="search"
         :placeholder="t('common.searchPlaceholder')"
         class="block w-full max-w-sm rounded-lg border border-neutral-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
-        @input="onSearchInput"
+        @input="setSearch(($event.target as HTMLInputElement).value)"
       />
     </div>
 
@@ -112,15 +82,7 @@ onMounted(() => fetch(true))
             <p class="truncate text-sm font-medium text-neutral-800">{{ row.full_name }}</p>
             <p class="truncate text-xs text-neutral-500">{{ row.phone || '—' }}</p>
           </div>
-          <RouterLink
-            :to="`/admin/students/${row.id}/edit`"
-            :aria-label="t('admin.students.edit')"
-            class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700"
-          >
-            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-            </svg>
-          </RouterLink>
+          <EditIconButton :to="`/admin/students/${row.id}/edit`" />
         </div>
       </div>
     </div>
@@ -151,15 +113,33 @@ onMounted(() => fetch(true))
           </BaseBadge>
         </template>
         <template #cell-actions="{ row }">
-          <div class="flex justify-end gap-2">
-            <BaseButton :to="`/admin/students/${row.id}/edit`" variant="ghost" size="sm">{{ t('admin.students.edit') }}</BaseButton>
+          <div class="flex justify-end">
+            <EditIconButton :to="`/admin/students/${row.id}/edit`" />
           </div>
         </template>
       </DataTable>
     </div>
 
-    <div v-if="hasMore" class="mt-4 flex justify-center">
-      <BaseButton variant="outline" :loading="loadingMore" @click="fetch(false)">{{ t('common.loadMore') }}</BaseButton>
+    <!-- The per-page selector and pager stick together as one bar — sticky
+         only on the BasePagination inside would leave this selector behind
+         when the pager pins to the bottom. `fixed`, not `sticky` — see
+         BasePagination's `sticky` prop doc for why. -->
+    <div
+      v-if="meta"
+      class="fixed inset-x-0 bottom-0 z-10 mt-4 flex flex-col items-center gap-3 border-t border-neutral-200 bg-white/95 px-4 py-3 backdrop-blur sm:flex-row sm:justify-between sm:px-6"
+      :class="adminUi.sidebarCollapsed ? 'lg:left-16' : 'lg:left-64'"
+    >
+      <label class="flex items-center gap-2 text-sm text-neutral-500">
+        {{ t('admin.students.perPage') }}
+        <select
+          v-model.number="perPage"
+          class="rounded-lg border border-neutral-300 py-1.5 pl-2 pr-7 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+        >
+          <option v-for="option in perPageOptions" :key="option" :value="option">{{ option }}</option>
+        </select>
+      </label>
+
+      <BasePagination :meta="meta" @update:page="setPage" />
     </div>
   </div>
 </template>

@@ -6,6 +6,7 @@ import ProgramFormModal from '@/components/admin/ProgramFormModal.vue'
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
+import EditIconButton from '@/components/ui/EditIconButton.vue'
 import BasePagination from '@/components/ui/BasePagination.vue'
 import DataTable from '@/components/ui/DataTable.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
@@ -60,7 +61,6 @@ onMounted(() => fetch())
     <div class="mb-6 flex items-center justify-between">
       <div>
         <h1 class="text-xl font-semibold text-neutral-900">{{ t('admin.programs.title') }}</h1>
-        <p class="mt-1 text-sm text-neutral-500">{{ t('admin.programs.pageSubtitle') }}</p>
       </div>
       <BaseButton @click="openCreate">{{ t('admin.programs.addProgram') }}</BaseButton>
     </div>
@@ -101,9 +101,7 @@ onMounted(() => fetch())
       </template>
       <template #cell-actions="{ row }">
         <div class="flex justify-end gap-2">
-          <button type="button" class="text-sm font-medium text-secondary-700 hover:text-secondary-800" @click="openEdit(row)">
-            {{ t('admin.programs.edit') }}
-          </button>
+          <EditIconButton @click="openEdit(row)" />
           <button type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row)">
             {{ t('admin.programs.delete') }}
           </button>
@@ -111,7 +109,7 @@ onMounted(() => fetch())
       </template>
     </DataTable>
 
-    <BasePagination v-if="meta" :meta="meta" class="mt-4" @update:page="setPage" />
+    <BasePagination v-if="meta" :meta="meta" sticky class="mt-4" @update:page="setPage" />
 
     <ProgramFormModal v-model="modalOpen" :program="editingProgram" @saved="fetch" />
   </div>

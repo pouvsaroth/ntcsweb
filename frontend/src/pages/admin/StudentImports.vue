@@ -92,7 +92,6 @@ onUnmounted(() => clearInterval(pollHandle))
   <div>
     <div class="mb-6">
       <h1 class="text-xl font-semibold text-neutral-900">{{ t('admin.studentImports.title') }}</h1>
-      <p class="mt-1 text-sm text-neutral-500">{{ t('admin.studentImports.pageSubtitle') }}</p>
     </div>
 
     <div class="mb-6 rounded-[--radius-card] border border-neutral-200 bg-white p-6">
@@ -145,7 +144,7 @@ onUnmounted(() => clearInterval(pollHandle))
       </template>
     </DataTable>
 
-    <BasePagination v-if="meta" :meta="meta" class="mt-4" @update:page="setPage" />
+    <BasePagination v-if="meta" :meta="meta" sticky class="mt-4" @update:page="setPage" />
 
     <BaseModal
       v-model="errorsModalOpen"

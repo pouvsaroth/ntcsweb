@@ -46,7 +46,9 @@ export interface Tenant {
 export interface User {
   id: number
   name: string
-  email: string
+  email: string | null
+  phone: string | null
+  avatar_url: string | null
   status: 'active' | 'invited' | 'suspended'
   locale: string | null
   email_verified: boolean

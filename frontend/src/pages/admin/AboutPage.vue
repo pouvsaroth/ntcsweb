@@ -92,7 +92,6 @@ onMounted(load)
   <div class="max-w-4xl">
     <div class="mb-6">
       <h1 class="text-xl font-semibold text-neutral-900">{{ t('admin.aboutPage.title') }}</h1>
-      <p class="mt-1 text-sm text-neutral-500">{{ t('admin.aboutPage.pageSubtitle') }}</p>
     </div>
 
     <BaseAlert v-if="loadError" variant="danger" class="mb-4">{{ loadError }}</BaseAlert>

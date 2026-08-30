@@ -21,8 +21,11 @@ class StoreStudentRequest extends FormRequest
         $tenantId = app(TenantContext::class)->idOrFail();
 
         return [
-            'student_code' => ['required', 'string', 'max:32', Rule::unique('students')->where('tenant_id', $tenantId)],
-
+            // No `student_code` rule at all — it is always server-generated
+            // (see StudentController::store() -> StudentIdGenerator), so a
+            // client-supplied value is simply never read, not merely
+            // rejected. See UpdateStudentRequest for why the same is true
+            // on edit.
             'first_name' => ['required', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],
             'english_name' => ['nullable', 'string', 'max:255'],
@@ -30,7 +33,13 @@ class StoreStudentRequest extends FormRequest
             'date_of_birth' => ['nullable', 'date', 'before:today'],
             'gender' => ['nullable', 'string', 'max:10'],
             'email' => ['nullable', 'email:rfc', 'max:255'],
-            'phone' => ['nullable', 'string', 'max:32'],
+            // Required, not email: this is what an auto-provisioned login
+            // account (see StudentController::store()) is keyed on — a
+            // school may have no email on file for a student, but always has
+            // a phone number. Bulk import (StoreStudentImportRequest) is
+            // untouched and keeps this nullable, since those rows are
+            // historical/legacy data, not new enrollments needing an account.
+            'phone' => ['required', 'string', 'max:32'],
 
             // Structured to match the legacy system's address shape — see
             // the restructuring migration for the full field-by-field

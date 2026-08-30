@@ -115,6 +115,15 @@ final class Permissions
 
     public const HOME_SLIDES_DELETE = 'home-slides.delete';
 
+    // Gallery — photos on the public site's Gallery page.
+    public const GALLERY_VIEW = 'gallery.view';
+
+    public const GALLERY_CREATE = 'gallery.create';
+
+    public const GALLERY_UPDATE = 'gallery.update';
+
+    public const GALLERY_DELETE = 'gallery.delete';
+
     // Programs — the public marketing catalog of courses (not to be confused
     // with `classes`, an actual scheduled teaching group).
     public const PROGRAMS_VIEW = 'programs.view';
@@ -124,6 +133,24 @@ final class Permissions
     public const PROGRAMS_UPDATE = 'programs.update';
 
     public const PROGRAMS_DELETE = 'programs.delete';
+
+    // Positions — a job title carrying a Role, see Staff.
+    public const POSITIONS_VIEW = 'positions.view';
+
+    public const POSITIONS_CREATE = 'positions.create';
+
+    public const POSITIONS_UPDATE = 'positions.update';
+
+    public const POSITIONS_DELETE = 'positions.delete';
+
+    // Staff — non-teaching personnel (Accountant, HR, Librarian, ...).
+    public const STAFF_VIEW = 'staff.view';
+
+    public const STAFF_CREATE = 'staff.create';
+
+    public const STAFF_UPDATE = 'staff.update';
+
+    public const STAFF_DELETE = 'staff.delete';
 
     // System.
     public const AUDIT_LOGS_VIEW = 'audit-logs.view';
@@ -201,11 +228,29 @@ final class Permissions
                 self::HOME_SLIDES_UPDATE => 'Update homepage slides',
                 self::HOME_SLIDES_DELETE => 'Delete homepage slides',
             ],
+            'Gallery' => [
+                self::GALLERY_VIEW => 'View gallery photos',
+                self::GALLERY_CREATE => 'Upload gallery photos',
+                self::GALLERY_UPDATE => 'Update gallery photos',
+                self::GALLERY_DELETE => 'Delete gallery photos',
+            ],
             'Programs' => [
                 self::PROGRAMS_VIEW => 'View programs',
                 self::PROGRAMS_CREATE => 'Create programs',
                 self::PROGRAMS_UPDATE => 'Update programs',
                 self::PROGRAMS_DELETE => 'Delete programs',
+            ],
+            'Positions' => [
+                self::POSITIONS_VIEW => 'View positions',
+                self::POSITIONS_CREATE => 'Create positions',
+                self::POSITIONS_UPDATE => 'Update positions',
+                self::POSITIONS_DELETE => 'Delete positions',
+            ],
+            'Staff' => [
+                self::STAFF_VIEW => 'View staff',
+                self::STAFF_CREATE => 'Create staff',
+                self::STAFF_UPDATE => 'Update staff',
+                self::STAFF_DELETE => 'Delete staff',
             ],
             'System' => [
                 self::AUDIT_LOGS_VIEW => 'View audit logs',
@@ -240,7 +285,10 @@ final class Permissions
             self::CLASSES_VIEW, self::CLASSES_CREATE, self::CLASSES_UPDATE, self::CLASSES_DELETE,
             self::ENROLLMENTS_VIEW, self::ENROLLMENTS_CREATE, self::ENROLLMENTS_UPDATE, self::ENROLLMENTS_DELETE,
             self::HOME_SLIDES_VIEW, self::HOME_SLIDES_CREATE, self::HOME_SLIDES_UPDATE, self::HOME_SLIDES_DELETE,
+            self::GALLERY_VIEW, self::GALLERY_CREATE, self::GALLERY_UPDATE, self::GALLERY_DELETE,
             self::PROGRAMS_VIEW, self::PROGRAMS_CREATE, self::PROGRAMS_UPDATE, self::PROGRAMS_DELETE,
+            self::POSITIONS_VIEW, self::POSITIONS_CREATE, self::POSITIONS_UPDATE, self::POSITIONS_DELETE,
+            self::STAFF_VIEW, self::STAFF_CREATE, self::STAFF_UPDATE, self::STAFF_DELETE,
         ];
 
         return [
@@ -272,6 +320,8 @@ final class Permissions
                 self::BOOKS_VIEW,
                 self::CLASSES_VIEW,
                 self::ENROLLMENTS_VIEW,
+                self::POSITIONS_VIEW,
+                self::STAFF_VIEW,
             ],
             // Staff commonly handle front-desk registration, so they can
             // create/update students and enrollments, but not delete them
@@ -279,6 +329,8 @@ final class Permissions
             // teaching catalog (teachers/classrooms/books/classes) itself.
             \App\Models\Role::STAFF => [
                 self::USERS_VIEW,
+                self::POSITIONS_VIEW,
+                self::STAFF_VIEW,
                 self::TEACHERS_VIEW,
                 self::STUDENTS_VIEW,
                 self::STUDENTS_CREATE,

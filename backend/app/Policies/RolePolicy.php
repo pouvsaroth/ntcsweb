@@ -28,15 +28,24 @@ class RolePolicy
 
     public function update(User $actor, Role $role): bool
     {
-        // System roles are seeded and referenced by slug across the codebase;
-        // letting a school rewrite them would break those assumptions.
-        if ($role->is_system) {
+        if (! $this->sameTenant($actor, $role) || ! $actor->hasPermission(Permissions::ROLES_UPDATE)) {
             return false;
         }
 
-        return $this->sameTenant($actor, $role)
-            && $actor->hasPermission(Permissions::ROLES_UPDATE)
-            && $this->outranks($actor, $role);
+        // A system role's name/slug/level are locked (RoleController::update()
+        // silently drops those fields via UpdateRoleRequest) — they're
+        // referenced by slug across the codebase (auto-provisioning,
+        // hierarchy levels), and rewriting them would break those
+        // assumptions. Only description/permissions are actually editable
+        // here, so the "must strictly outrank" guard below doesn't apply the
+        // same way: nobody outranks their own highest-held role, which would
+        // otherwise make it impossible for a School Admin to ever adjust the
+        // School Admin role's own permissions.
+        if ($role->is_system) {
+            return true;
+        }
+
+        return $this->outranks($actor, $role);
     }
 
     public function delete(User $actor, Role $role): bool

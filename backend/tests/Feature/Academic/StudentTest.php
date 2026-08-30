@@ -9,6 +9,7 @@ use App\Models\Tenant;
 use App\Support\Authorization\Permissions;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Tests\Concerns\HasAcademicAdmin;
 use Tests\TestCase;
@@ -17,7 +18,7 @@ class StudentTest extends TestCase
 {
     use HasAcademicAdmin, RefreshDatabase;
 
-    public function test_it_lists_students_for_the_current_tenant_only_using_cursor_pagination(): void
+    public function test_it_lists_students_for_the_current_tenant_only_with_numbered_pagination(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::STUDENTS_VIEW]);
 
@@ -28,9 +29,11 @@ class StudentTest extends TestCase
 
         $response->assertOk();
         $response->assertJsonCount(3, 'data');
-        // Cursor, not length-aware — this table is designed for millions of
-        // rows, so it must never expose (or compute) a total row count.
-        $response->assertJsonPath('meta.pagination.type', 'cursor');
+        // Length-aware, not cursor — the admin UI needs real page numbers
+        // and a total count; see StudentController::index() for the
+        // deliberate scale trade-off this represents.
+        $response->assertJsonPath('meta.pagination.type', 'length_aware');
+        $response->assertJsonPath('meta.pagination.total', 3);
     }
 
     public function test_it_creates_a_student(): void
@@ -38,14 +41,80 @@ class StudentTest extends TestCase
         $this->actingAsAdminWithPermissions([Permissions::STUDENTS_CREATE]);
 
         $response = $this->postJson('/api/v1/students', [
-            'student_code' => 'S-00001',
             'first_name' => 'Sopheak',
             'last_name' => 'Chan',
+            'phone' => '012345678',
         ]);
 
         $response->assertCreated();
         $response->assertJsonPath('data.full_name', 'Sopheak Chan');
-        $this->assertDatabaseHas('students', ['student_code' => 'S-00001', 'tenant_id' => $this->tenant->id]);
+        $response->assertJsonPath('data.student_code', 'NTS-000001');
+        $this->assertDatabaseHas('students', ['student_code' => 'NTS-000001', 'tenant_id' => $this->tenant->id]);
+    }
+
+    /**
+     * A student_code submitted by the client is not merely rejected — it is
+     * never read at all (see StoreStudentRequest, which defines no rule for
+     * it), so the server-generated sequential code wins regardless.
+     */
+    public function test_a_client_supplied_student_code_is_ignored(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::STUDENTS_CREATE]);
+
+        $response = $this->postJson('/api/v1/students', [
+            'student_code' => 'NTS-999999',
+            'first_name' => 'Someone',
+            'last_name' => 'Else',
+            'phone' => '098765432',
+        ]);
+
+        $response->assertCreated();
+        $response->assertJsonPath('data.student_code', 'NTS-000001');
+        $this->assertDatabaseMissing('students', ['student_code' => 'NTS-999999']);
+    }
+
+    /**
+     * The headline behavior this feature adds: creating a Student with no
+     * `user_id` auto-provisions a login account and gives it the tenant's
+     * Student role — see StudentController::store()/UserProvisioningService.
+     */
+    public function test_creating_a_student_auto_provisions_a_user_with_the_student_role(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::STUDENTS_CREATE]);
+
+        $response = $this->postJson('/api/v1/students', [
+            'first_name' => 'Sopheak',
+            'last_name' => 'Chan',
+            'phone' => '012345678',
+        ]);
+
+        $response->assertCreated();
+        $response->assertJsonPath('data.full_name', 'Sopheak Chan');
+        $response->assertJsonStructure(['meta' => ['temporary_password']]);
+
+        $student = Student::where('phone', '012345678')->firstOrFail();
+        $this->assertNotNull($student->user_id);
+        $this->assertSame($this->tenant->id, $student->user->tenant_id);
+        $this->assertSame('012345678', $student->user->phone);
+        $this->assertTrue($student->user->hasRole('student'));
+
+        // Default password is the phone number itself — see
+        // UserProvisioningService — since there's no email/SMS channel to
+        // deliver a random generated one through.
+        $response->assertJsonPath('meta.temporary_password', '012345678');
+        $this->assertTrue(Hash::check('012345678', $student->user->password));
+    }
+
+    public function test_creating_a_student_without_a_phone_number_fails_validation(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::STUDENTS_CREATE]);
+
+        $response = $this->postJson('/api/v1/students', [
+            'first_name' => 'No', 'last_name' => 'Phone',
+        ]);
+
+        $response->assertUnprocessable();
+        $response->assertJsonValidationErrors('phone');
     }
 
     /**
@@ -59,7 +128,6 @@ class StudentTest extends TestCase
         $this->actingAsAdminWithPermissions([Permissions::STUDENTS_CREATE]);
 
         $response = $this->post('/api/v1/students', [
-            'student_code' => 'S-00099',
             'first_name' => 'Sopheak',
             'last_name' => 'Chan',
             'english_name' => 'Sophea Chan',
@@ -69,6 +137,7 @@ class StudentTest extends TestCase
             'other_address' => 'Phnom Penh',
             'facebook' => 'sopheak.chan',
             'telegram' => '@sopheakchan',
+            'phone' => '012345678',
             'photo' => UploadedFile::fake()->image('student.jpg'),
         ], ['Accept' => 'application/json']);
 
@@ -81,17 +150,15 @@ class StudentTest extends TestCase
         $this->assertStringContainsString("tenants/{$this->tenant->id}/students/", $student->photo_path);
     }
 
-    public function test_student_code_must_be_unique_within_the_tenant(): void
+    public function test_student_codes_are_sequential_per_tenant(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::STUDENTS_CREATE]);
-        Student::factory()->create(['student_code' => 'S-00001']);
 
-        $response = $this->postJson('/api/v1/students', [
-            'student_code' => 'S-00001', 'first_name' => 'Someone', 'last_name' => 'Else',
-        ]);
+        $first = $this->postJson('/api/v1/students', ['first_name' => 'One', 'last_name' => 'Student', 'phone' => '011111111']);
+        $second = $this->postJson('/api/v1/students', ['first_name' => 'Two', 'last_name' => 'Student', 'phone' => '022222222']);
 
-        $response->assertUnprocessable();
-        $response->assertJsonValidationErrors('student_code');
+        $first->assertJsonPath('data.student_code', 'NTS-000001');
+        $second->assertJsonPath('data.student_code', 'NTS-000002');
     }
 
     public function test_staff_can_create_but_not_delete_a_student(): void
@@ -99,8 +166,9 @@ class StudentTest extends TestCase
         $this->actingAsAdminWithPermissions([Permissions::STUDENTS_VIEW, Permissions::STUDENTS_CREATE]);
         $student = Student::factory()->create();
 
-        $this->postJson('/api/v1/students', ['student_code' => 'S-00002', 'first_name' => 'New', 'last_name' => 'Student'])
-            ->assertCreated();
+        $this->postJson('/api/v1/students', [
+            'first_name' => 'New', 'last_name' => 'Student', 'phone' => '098765432',
+        ])->assertCreated();
 
         $this->deleteJson("/api/v1/students/{$student->id}")->assertForbidden();
     }
@@ -137,9 +205,9 @@ class StudentTest extends TestCase
         $this->actingAsAdminWithPermissions([Permissions::STUDENTS_CREATE]);
 
         $response = $this->postJson('/api/v1/students', [
-            'student_code' => 'S-00050',
             'first_name' => 'Sopheak',
             'last_name' => 'Chan',
+            'phone' => '012345678',
             'guardians' => [
                 ['guardian_name' => 'Chan Vuthy', 'guardian_type' => 'Father', 'phone' => '012345678'],
                 ['guardian_name' => 'Sok Bopha', 'guardian_type' => 'Mother', 'phone' => '098765432', 'email' => 'bopha@example.com'],
@@ -156,7 +224,7 @@ class StudentTest extends TestCase
         $response->assertJsonCount(1, 'data.educations');
         $response->assertJsonPath('data.educations.0.school_name', 'Preah Sisowath High School');
 
-        $student = Student::where('student_code', 'S-00050')->firstOrFail();
+        $student = Student::where('phone', '012345678')->firstOrFail();
         $this->assertSame(2, $student->guardians()->count());
         $this->assertSame($this->tenant->id, $student->guardians()->first()->tenant_id);
     }
@@ -166,7 +234,7 @@ class StudentTest extends TestCase
         $this->actingAsAdminWithPermissions([Permissions::STUDENTS_CREATE]);
 
         $response = $this->postJson('/api/v1/students', [
-            'student_code' => 'S-00051', 'first_name' => 'New', 'last_name' => 'Student',
+            'first_name' => 'New', 'last_name' => 'Student', 'phone' => '012345678',
             'guardians' => [['guardian_name' => 'No Phone', 'guardian_type' => 'Father']],
         ]);
 
