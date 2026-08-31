@@ -129,4 +129,11 @@ jobs:
             docker compose -f docker-compose.prod.yml exec -T php php artisan config:clear
             docker compose -f docker-compose.prod.yml exec -T php chown -R www-data:www-data storage bootstrap/cache
             docker compose -f docker-compose.prod.yml restart queue
+
+            # `up --build` recreates php (new container IP) whenever its image
+            # changes, but leaves nginx running — its fastcgi_pass hostname
+            # resolves to the *old* IP until nginx itself restarts, otherwise
+            # every request 502s until someone notices. Restarting it here is
+            # a ~1s blip, versus a silent outage after every rebuild.
+            docker compose -f docker-compose.prod.yml restart nginx
           '
