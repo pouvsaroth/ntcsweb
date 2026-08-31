@@ -58,9 +58,11 @@ jobs:
           cp .env.example .env
           php artisan key:generate
 
-      - name: Run migrations
-        run: php artisan migrate --force
-
+      # No separate `artisan migrate` step: the Feature tests' RefreshDatabase
+      # trait migrates the DB itself, using phpunit.xml's ntcsdb_testing
+      # overrides — those only apply inside a phpunit/artisan-test run, not to
+      # a bare `artisan migrate` invocation (which would read the blank
+      # DB_PASSWORD from .env.example instead and fail to connect).
       - name: Run test suite
         run: php artisan test
 
