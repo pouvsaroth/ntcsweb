@@ -480,6 +480,20 @@ const ja: MessageSchema = {
       emptyMessage: 'まだ登録された生徒がいません。',
       perPage: '表示件数',
     },
+    school: {
+      title: '学校情報',
+      loadFailed: '学校情報を読み込めませんでした。',
+      saveFailed: '学校情報を保存できませんでした。',
+      saveSuccess: '学校情報を保存しました。',
+      logoSection: 'ロゴ',
+      logoHint: '公開サイトのヘッダーとフッターに表示されます。',
+      chooseLogo: 'ロゴを選択',
+      infoSection: '連絡先情報',
+      nameLabel: '学校名',
+      emailLabel: 'メールアドレス',
+      phoneLabel: '電話番号',
+      addressLabel: '住所',
+    },
     settings: {
       title: '一般設定',
       pageSubtitle: '学校全体の設定です。',
@@ -700,6 +714,7 @@ const ja: MessageSchema = {
       settings: '設定',
     },
     items: {
+      school: '学校',
       dashboard: 'ダッシュボード',
       tenants: '学校（テナント）',
       settings: '一般',

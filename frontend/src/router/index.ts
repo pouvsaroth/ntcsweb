@@ -170,6 +170,12 @@ const adminRoutes: RouteRecordRaw[] = [
     meta: { titleKey: 'adminNav.items.roles' },
   },
   {
+    path: 'school-settings',
+    name: 'admin.school-settings',
+    component: () => import('@/pages/admin/SchoolSettings.vue'),
+    meta: { titleKey: 'adminNav.items.school' },
+  },
+  {
     path: 'settings',
     name: 'admin.settings',
     component: () => import('@/pages/admin/GeneralSettings.vue'),

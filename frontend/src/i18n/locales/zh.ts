@@ -479,6 +479,20 @@ const zh: MessageSchema = {
       emptyMessage: '尚无已注册的学生。',
       perPage: '显示',
     },
+    school: {
+      title: '学校信息',
+      loadFailed: '无法加载学校信息。',
+      saveFailed: '无法保存学校信息。',
+      saveSuccess: '学校信息已保存。',
+      logoSection: '校徽',
+      logoHint: '显示在公开网站的页头和页脚。',
+      chooseLogo: '选择校徽',
+      infoSection: '联系信息',
+      nameLabel: '学校名称',
+      emailLabel: '邮箱',
+      phoneLabel: '电话',
+      addressLabel: '地址',
+    },
     settings: {
       title: '常规设置',
       pageSubtitle: '全校范围的配置。',
@@ -699,6 +713,7 @@ const zh: MessageSchema = {
       settings: '设置',
     },
     items: {
+      school: '学校',
       dashboard: '仪表盘',
       tenants: '学校（租户）',
       settings: '常规',

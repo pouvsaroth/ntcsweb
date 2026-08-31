@@ -86,6 +86,7 @@ export const adminNav: AdminNavGroup[] = [
   {
     labelKey: 'adminNav.groups.settings',
     items: [
+      { labelKey: 'adminNav.items.school', to: '/admin/school-settings', permission: 'tenant-settings.view' },
       { labelKey: 'adminNav.items.settings', to: '/admin/settings', permission: 'tenant-settings.view' },
       { labelKey: 'adminNav.items.users', to: '/admin/users', permission: 'users.view' },
       { labelKey: 'adminNav.items.roles', to: '/admin/roles', permission: 'roles.view' },

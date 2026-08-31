@@ -13,12 +13,17 @@ services:
     ports:
       - "5433:5432"
 
+    # A real folder on the host, not a Docker-managed named volume — so the
+    # local dev database (and everything in it: tenants, gallery/home-slide
+    # rows, etc.) survives Docker Desktop resets/cleanups that only a
+    # deliberate `-v` used to be safe from. See docker/postgres/data/.gitignore
+    # for why the actual data files aren't committed.
     volumes:
-      - postgres_data:/var/lib/postgresql
+      - ./docker/postgres/data:/var/lib/postgresql
 
     networks:
       - ntscweb
-      
+
   redis:
     image: redis:7-alpine
     container_name: ntscweb_redis
@@ -113,6 +118,5 @@ networks:
     driver: bridge
 
 volumes:
-  postgres_data:
   redis_data:
   backend_vendor:

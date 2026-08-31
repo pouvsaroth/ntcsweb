@@ -484,6 +484,20 @@ const en = {
       emptyMessage: 'No students registered yet.',
       perPage: 'Show',
     },
+    school: {
+      title: 'School Information',
+      loadFailed: 'Could not load school information.',
+      saveFailed: 'Could not save school information.',
+      saveSuccess: 'School information saved.',
+      logoSection: 'Logo',
+      logoHint: 'Shown in the site header and footer across the public website.',
+      chooseLogo: 'Choose Logo',
+      infoSection: 'Contact Information',
+      nameLabel: 'School Name',
+      emailLabel: 'Email',
+      phoneLabel: 'Phone',
+      addressLabel: 'Address',
+    },
     settings: {
       title: 'General Settings',
       pageSubtitle: 'School-wide configuration.',
@@ -706,6 +720,7 @@ const en = {
     items: {
       dashboard: 'Dashboard',
       tenants: 'Tenants',
+      school: 'School',
       settings: 'General',
       users: 'Users',
       roles: 'Roles',

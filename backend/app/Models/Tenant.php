@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * A school. Platform-wide table — this is the root of tenancy, so it is the one
@@ -100,6 +101,15 @@ class Tenant extends Model
     public function setting(string $key, mixed $default = null): mixed
     {
         return Arr::get($this->settings ?? [], $key, $default);
+    }
+
+    /**
+     * `logo` stores a bare disk path (see SchoolSettingsController) — this is
+     * the one place that turns it into something an `<img>` tag can load.
+     */
+    public function logoUrl(): ?string
+    {
+        return $this->logo ? Storage::disk('public')->url($this->logo) : null;
     }
 
     /**

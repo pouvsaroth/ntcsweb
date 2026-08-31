@@ -480,6 +480,20 @@ const ko: MessageSchema = {
       emptyMessage: '아직 등록된 학생이 없습니다.',
       perPage: '표시',
     },
+    school: {
+      title: '학교 정보',
+      loadFailed: '학교 정보를 불러올 수 없습니다.',
+      saveFailed: '학교 정보를 저장할 수 없습니다.',
+      saveSuccess: '학교 정보가 저장되었습니다.',
+      logoSection: '로고',
+      logoHint: '공개 웹사이트의 헤더와 푸터에 표시됩니다.',
+      chooseLogo: '로고 선택',
+      infoSection: '연락처 정보',
+      nameLabel: '학교 이름',
+      emailLabel: '이메일',
+      phoneLabel: '전화번호',
+      addressLabel: '주소',
+    },
     settings: {
       title: '일반 설정',
       pageSubtitle: '학교 전체 설정입니다.',
@@ -700,6 +714,7 @@ const ko: MessageSchema = {
       settings: '설정',
     },
     items: {
+      school: '학교',
       dashboard: '대시보드',
       tenants: '학교(테넌트)',
       settings: '일반',

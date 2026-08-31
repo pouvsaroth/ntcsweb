@@ -480,6 +480,20 @@ const km: MessageSchema = {
       emptyMessage: 'មិនទាន់មានសិស្សបានចុះឈ្មោះទេ។',
       perPage: 'បង្ហាញ',
     },
+    school: {
+      title: 'ព័ត៌មានសាលា',
+      loadFailed: 'មិនអាចផ្ទុកព័ត៌មានសាលាបានទេ។',
+      saveFailed: 'មិនអាចរក្សាទុកព័ត៌មានសាលាបានទេ។',
+      saveSuccess: 'បានរក្សាទុកព័ត៌មានសាលា។',
+      logoSection: 'និមិត្តសញ្ញា',
+      logoHint: 'បង្ហាញនៅក្នុងក្បាល និងបាតគេហទំព័រសាធារណៈ។',
+      chooseLogo: 'ជ្រើសរើសនិមិត្តសញ្ញា',
+      infoSection: 'ព័ត៌មានទំនាក់ទំនង',
+      nameLabel: 'ឈ្មោះសាលា',
+      emailLabel: 'អ៊ីមែល',
+      phoneLabel: 'លេខទូរស័ព្ទ',
+      addressLabel: 'អាសយដ្ឋាន',
+    },
     settings: {
       title: 'ការកំណត់ទូទៅ',
       pageSubtitle: 'ការកំណត់រចនាសម្ព័ន្ធទូទាំងសាលា។',
@@ -700,6 +714,7 @@ const km: MessageSchema = {
       settings: 'ការកំណត់',
     },
     items: {
+      school: 'សាលា',
       dashboard: 'ផ្ទាំងគ្រប់គ្រង',
       tenants: 'សាលារៀន (ភតិកៈ)',
       settings: 'ទូទៅ',

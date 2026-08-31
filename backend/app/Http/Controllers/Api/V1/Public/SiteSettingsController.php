@@ -31,7 +31,7 @@ final class SiteSettingsController extends Controller
 
         return ApiResponse::success([
             'name' => $tenant->name,
-            'logo' => $tenant->logo,
+            'logo' => $tenant->logoUrl(),
             'email' => $tenant->email,
             'phone' => $tenant->phone,
             'address' => $tenant->address,

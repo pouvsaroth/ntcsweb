@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\V1\Admin\PositionController;
 use App\Http\Controllers\Api\V1\Admin\ProgramController as AdminProgramController;
 use App\Http\Controllers\Api\V1\Admin\RoleController;
 use App\Http\Controllers\Api\V1\Admin\SchoolClassController;
+use App\Http\Controllers\Api\V1\Admin\SchoolSettingsController;
 use App\Http\Controllers\Api\V1\Admin\StaffController;
 use App\Http\Controllers\Api\V1\Admin\StudentController;
 use App\Http\Controllers\Api\V1\Admin\StudentImportController;
@@ -166,6 +167,12 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         // rather than a new endpoint.
         Route::get('settings/general', [GeneralSettingsController::class, 'show'])->name('settings.general.show');
         Route::post('settings/general', [GeneralSettingsController::class, 'update'])->name('settings.general.update');
+
+        // Same shape — see SchoolSettingsController. Writes straight to the
+        // tenants table's own name/email/phone/address/logo columns; this is
+        // what the public site's header/footer branding reads back.
+        Route::get('settings/school', [SchoolSettingsController::class, 'show'])->name('settings.school.show');
+        Route::post('settings/school', [SchoolSettingsController::class, 'update'])->name('settings.school.update');
 
         // Cambodia's administrative hierarchy — platform-wide reference data
         // for the student registration form's cascading address selects.
