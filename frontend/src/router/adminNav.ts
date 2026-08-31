@@ -59,7 +59,7 @@ export const adminNav: AdminNavGroup[] = [
   {
     labelKey: 'adminNav.groups.academicRecords',
     items: [
-      { labelKey: 'adminNav.items.attendance', to: '/admin/attendance' },
+      { labelKey: 'adminNav.items.attendance', to: '/admin/attendance', permission: 'attendance.view' },
       { labelKey: 'adminNav.items.exams', to: '/admin/exams' },
       { labelKey: 'adminNav.items.grades', to: '/admin/grades' },
     ],

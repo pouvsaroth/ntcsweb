@@ -44,7 +44,6 @@ const comingSoonPages: [string, string][] = [
   ['academic-years', 'adminNav.items.academicYears'],
   ['subjects', 'adminNav.items.subjects'],
   ['teachers', 'adminNav.items.teachersList'],
-  ['attendance', 'adminNav.items.attendance'],
   ['exams', 'adminNav.items.exams'],
   ['grades', 'adminNav.items.grades'],
   ['news', 'adminNav.items.news'],
@@ -56,7 +55,6 @@ const comingSoonPages: [string, string][] = [
   // Not in adminNav.ts's sidebar — reachable only via StudentBottomNav's
   // mobile tab bar, shown to a signed-in student.
   ['my-scores', 'studentNav.score'],
-  ['my-attendance', 'studentNav.attendant'],
   ['my-videos', 'studentNav.video'],
 ]
 
@@ -156,6 +154,18 @@ const adminRoutes: RouteRecordRaw[] = [
     name: 'admin.enrollments.new',
     component: () => import('@/pages/admin/EnrollmentForm.vue'),
     meta: { titleKey: 'adminNav.items.enrollments' },
+  },
+  {
+    path: 'attendance',
+    name: 'admin.attendance',
+    component: () => import('@/pages/admin/Attendance.vue'),
+    meta: { titleKey: 'adminNav.items.attendance' },
+  },
+  {
+    path: 'my-attendance',
+    name: 'admin.my-attendance',
+    component: () => import('@/pages/admin/MyAttendance.vue'),
+    meta: { titleKey: 'studentNav.attendant' },
   },
   {
     path: 'staff',

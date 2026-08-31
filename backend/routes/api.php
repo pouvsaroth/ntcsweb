@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Api\V1\Admin\AboutPageController;
+use App\Http\Controllers\Api\V1\Admin\AttendanceController;
 use App\Http\Controllers\Api\V1\Admin\AuditLogController;
 use App\Http\Controllers\Api\V1\Admin\BillingDashboardController;
 use App\Http\Controllers\Api\V1\Admin\BookController;
@@ -29,6 +30,7 @@ use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\V1\Auth\EmailVerificationController;
 use App\Http\Controllers\Api\V1\Auth\PasswordController;
 use App\Http\Controllers\Api\V1\GeographyController;
+use App\Http\Controllers\Api\V1\MyAttendanceController;
 use App\Http\Controllers\Api\V1\MyInvoiceController;
 use App\Http\Controllers\Api\V1\Public\EnrollmentInquiryController;
 use App\Http\Controllers\Api\V1\Public\GalleryController as PublicGalleryController;
@@ -150,6 +152,13 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
 
         Route::apiResource('enrollments', EnrollmentController::class);
 
+        // Attendance — history/review list, plus per-class "take attendance"
+        // (roster + save) nested under the class it belongs to. See
+        // AttendanceService/AttendancePolicy/SchoolClassPolicy::recordAttendance().
+        Route::apiResource('attendance', AttendanceController::class)->only(['index', 'show']);
+        Route::get('classes/{class}/attendance', [AttendanceController::class, 'roster'])->name('classes.attendance.roster');
+        Route::post('classes/{class}/attendance', [AttendanceController::class, 'store'])->name('classes.attendance.store');
+
         Route::apiResource('home-slides', AdminHomeSlideController::class);
         Route::apiResource('gallery', AdminGalleryController::class);
         Route::apiResource('programs', AdminProgramController::class);
@@ -212,6 +221,9 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('my-invoices', [MyInvoiceController::class, 'index'])->name('my-invoices.index');
         Route::get('my-invoices/{invoice}', [MyInvoiceController::class, 'show'])->name('my-invoices.show');
         Route::get('my-invoices/{invoice}/pdf', [MyInvoiceController::class, 'downloadPdf'])->name('my-invoices.pdf');
+
+        // Student self-service — identity-gated, same pattern as my-invoices.
+        Route::get('my-attendance', [MyAttendanceController::class, 'index'])->name('my-attendance.index');
 
         // Singleton, not a resource — see AboutPageController.
         Route::get('settings/about', [AboutPageController::class, 'show'])->name('settings.about.show');

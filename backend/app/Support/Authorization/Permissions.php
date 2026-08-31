@@ -187,6 +187,15 @@ final class Permissions
 
     public const NOTIFICATIONS_SEND = 'notifications.send';
 
+    // Attendance — taking/viewing a class's daily roll call. No `.delete`:
+    // a taken record is corrected via `.update`, never removed, so a day's
+    // roll call can't quietly disappear from a student's history.
+    public const ATTENDANCE_VIEW = 'attendance.view';
+
+    public const ATTENDANCE_CREATE = 'attendance.create';
+
+    public const ATTENDANCE_UPDATE = 'attendance.update';
+
     // System.
     public const AUDIT_LOGS_VIEW = 'audit-logs.view';
 
@@ -306,6 +315,11 @@ final class Permissions
                 self::BILLING_REPORTS_VIEW => 'View billing reports and dashboard',
                 self::NOTIFICATIONS_SEND => 'Send invoice notifications',
             ],
+            'Attendance' => [
+                self::ATTENDANCE_VIEW => 'View attendance records',
+                self::ATTENDANCE_CREATE => 'Take attendance',
+                self::ATTENDANCE_UPDATE => 'Correct attendance records',
+            ],
             'System' => [
                 self::AUDIT_LOGS_VIEW => 'View audit logs',
             ],
@@ -373,14 +387,17 @@ final class Permissions
                 self::ROLES_DELETE,
                 self::ROLES_ASSIGN,
                 self::AUDIT_LOGS_VIEW,
+                self::ATTENDANCE_VIEW,
+                self::ATTENDANCE_CREATE,
+                self::ATTENDANCE_UPDATE,
                 ...$academicManagement,
                 ...$billing,
             ],
-            // Read-only across the board: a teacher needs to see their
-            // roster, room, and materials, but the catalog itself (who
-            // teaches what, in which room) is a school-admin decision. Write
-            // access to teaching-specific records (attendance, grades) is a
-            // later phase, not blanket write access to these master records.
+            // Read-only across the board, with one write exception: teaching
+            // records (who teaches what, in which room) stay a school-admin
+            // decision, but attendance is a teacher's own daily task —
+            // AttendancePolicy further restricts create/update to the
+            // classes a teacher account is actually assigned to teach.
             \App\Models\Role::TEACHER => [
                 self::USERS_VIEW,
                 self::TEACHERS_VIEW,
@@ -391,6 +408,9 @@ final class Permissions
                 self::ENROLLMENTS_VIEW,
                 self::POSITIONS_VIEW,
                 self::STAFF_VIEW,
+                self::ATTENDANCE_VIEW,
+                self::ATTENDANCE_CREATE,
+                self::ATTENDANCE_UPDATE,
             ],
             // Staff commonly handle front-desk registration, so they can
             // create/update students and enrollments, but not delete them

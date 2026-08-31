@@ -81,6 +81,16 @@ class User extends Authenticatable implements MustVerifyEmailContract
     }
 
     /**
+     * The Teacher record this account is linked to, if this is a teacher's
+     * own login — used to scope attendance-taking to a teacher's own classes.
+     * Null for every non-teacher account.
+     */
+    public function teacher(): HasOne
+    {
+        return $this->hasOne(Teacher::class);
+    }
+
+    /**
      * Constrain to one school. Every admin-facing user query must go through
      * this or through the tenant relation.
      *

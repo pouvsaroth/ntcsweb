@@ -63,4 +63,8 @@ final class AuditAction
     public const INVOICE_SENT = 'INVOICE_SENT';
 
     public const INVOICE_SEND_FAILED = 'INVOICE_SEND_FAILED';
+
+    // Attendance — one entry per batch save (a whole class roster on one
+    // date), not one per student; see AttendanceRecord's docblock.
+    public const ATTENDANCE_RECORDED = 'ATTENDANCE_RECORDED';
 }

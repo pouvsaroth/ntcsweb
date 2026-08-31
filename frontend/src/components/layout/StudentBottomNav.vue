@@ -10,9 +10,10 @@ const editProfileOpen = ref(false)
 </script>
 
 <template>
-  <!-- A student's mobile-only quick-access bar — Score/Attendant/Video are
-       placeholders (ComingSoon.vue) until those features are built; Profile
-       reuses the same EditProfileModal every other account menu opens. -->
+  <!-- A student's mobile-only quick-access bar — Score/Video are still
+       placeholders (ComingSoon.vue); Attendant links to the real
+       MyAttendance.vue. Profile reuses the same EditProfileModal every
+       other account menu opens. -->
   <nav
     class="fixed inset-x-0 bottom-0 z-40 border-t border-neutral-200 bg-white pb-[env(safe-area-inset-bottom)] lg:hidden"
     :aria-label="t('common.primaryNav')"
