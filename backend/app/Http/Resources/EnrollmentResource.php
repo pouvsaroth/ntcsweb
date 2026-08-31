@@ -18,9 +18,11 @@ class EnrollmentResource extends JsonResource
         return [
             'id' => $this->id,
             'enrolled_at' => $this->enrolled_at?->toDateString(),
+            'fee' => (float) $this->fee,
             'status' => $this->status,
             'student' => new StudentResource($this->whenLoaded('student')),
             'class' => new SchoolClassResource($this->whenLoaded('schoolClass')),
+            'book' => new BookResource($this->whenLoaded('book')),
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }

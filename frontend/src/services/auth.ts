@@ -75,4 +75,14 @@ export const authService = {
   }) {
     return apiPost<void>('/auth/change-password', payload)
   },
+
+  /** Multipart — `avatar` is only appended when the admin actually picked a new file. */
+  updateProfile(payload: { name: string; phone: string; avatar?: File | null }) {
+    const form = new FormData()
+    form.append('name', payload.name)
+    form.append('phone', payload.phone)
+    if (payload.avatar) form.append('avatar', payload.avatar)
+
+    return apiPost<User>('/auth/me', form)
+  },
 }

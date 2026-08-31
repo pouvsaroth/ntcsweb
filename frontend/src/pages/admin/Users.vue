@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import CreateUserModal from '@/components/admin/CreateUserModal.vue'
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
+import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BasePagination from '@/components/ui/BasePagination.vue'
 import DataTable from '@/components/ui/DataTable.vue'
@@ -24,6 +26,8 @@ const columns = computed(() => [
   { key: 'created_at', label: t('admin.users.columnJoined'), sortable: true },
 ])
 
+const modalOpen = ref(false)
+
 onMounted(() => fetch())
 </script>
 
@@ -31,18 +35,19 @@ onMounted(() => fetch())
   <div>
     <div class="mb-6 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
       <h1 class="text-xl font-semibold text-neutral-900">{{ t('admin.users.title') }}</h1>
-      <div class="w-full sm:w-72">
-        <BaseInput
-          :model-value="search"
-          :placeholder="t('admin.users.searchPlaceholder')"
-          @update:model-value="setSearch"
-        />
+      <div class="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
+        <div class="w-full sm:w-72">
+          <BaseInput
+            :model-value="search"
+            :placeholder="t('admin.users.searchPlaceholder')"
+            @update:model-value="setSearch"
+          />
+        </div>
+        <BaseButton @click="modalOpen = true">{{ t('admin.users.addUser') }}</BaseButton>
       </div>
     </div>
 
-    <BaseAlert v-if="error" variant="warning" class="mb-4">
-      {{ error }} — {{ t('admin.users.apiNotReady') }}
-    </BaseAlert>
+    <BaseAlert v-if="error" variant="danger" class="mb-4">{{ error }}</BaseAlert>
 
     <DataTable
       :columns="columns"
@@ -53,6 +58,7 @@ onMounted(() => fetch())
       :empty-message="t('admin.users.emptyMessage')"
       @sort="(col) => setSort(sort === col ? `-${col}` : col)"
     >
+      <template #cell-email="{ row }">{{ row.email ?? row.phone ?? '—' }}</template>
       <template #cell-status="{ row }">
         <BaseBadge :variant="row.status === 'active' ? 'success' : row.status === 'suspended' ? 'danger' : 'neutral'">
           {{ row.status }}
@@ -65,6 +71,8 @@ onMounted(() => fetch())
       </template>
     </DataTable>
 
-    <BasePagination v-if="meta" :meta="meta" class="mt-4" @update:page="setPage" />
+    <BasePagination v-if="meta" :meta="meta" sticky class="mt-4" @update:page="setPage" />
+
+    <CreateUserModal v-model="modalOpen" @saved="fetch" />
   </div>
 </template>

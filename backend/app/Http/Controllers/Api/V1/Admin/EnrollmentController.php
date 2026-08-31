@@ -21,7 +21,7 @@ final class EnrollmentController extends Controller
         $this->authorize('viewAny', Enrollment::class);
 
         $enrollments = ApiQuery::for(
-            Enrollment::query()->with(['student', 'schoolClass']),
+            Enrollment::query()->with(['student', 'schoolClass', 'book']),
             $request,
         )
             ->filterable(['status', 'student_id', 'class_id'])
@@ -35,21 +35,21 @@ final class EnrollmentController extends Controller
     {
         $enrollment = Enrollment::query()->create($request->validated());
 
-        return ApiResponse::created(new EnrollmentResource($enrollment->load(['student', 'schoolClass'])));
+        return ApiResponse::created(new EnrollmentResource($enrollment->load(['student', 'schoolClass', 'book'])));
     }
 
     public function show(Enrollment $enrollment): JsonResponse
     {
         $this->authorize('view', $enrollment);
 
-        return ApiResponse::success(new EnrollmentResource($enrollment->load(['student', 'schoolClass'])));
+        return ApiResponse::success(new EnrollmentResource($enrollment->load(['student', 'schoolClass', 'book'])));
     }
 
     public function update(UpdateEnrollmentRequest $request, Enrollment $enrollment): JsonResponse
     {
         $enrollment->update($request->validated());
 
-        return ApiResponse::success(new EnrollmentResource($enrollment->load(['student', 'schoolClass'])));
+        return ApiResponse::success(new EnrollmentResource($enrollment->load(['student', 'schoolClass', 'book'])));
     }
 
     public function destroy(Enrollment $enrollment): JsonResponse

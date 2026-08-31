@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Factories;
 
+use App\Models\Book;
 use App\Models\Enrollment;
 use App\Models\SchoolClass;
 use App\Models\Student;
@@ -22,7 +23,9 @@ class EnrollmentFactory extends Factory
         return [
             'student_id' => Student::factory(),
             'class_id' => SchoolClass::factory(),
+            'book_id' => Book::factory(),
             'enrolled_at' => fake()->dateTimeBetween('-6 months', 'now')->format('Y-m-d'),
+            'fee' => fake()->randomFloat(2, 10, 100),
             'status' => Enrollment::STATUS_ACTIVE,
         ];
     }
@@ -44,6 +47,11 @@ class EnrollmentFactory extends Factory
     public function forClass(SchoolClass $class): static
     {
         return $this->state(['class_id' => $class->getKey()]);
+    }
+
+    public function forBook(Book $book): static
+    {
+        return $this->state(['book_id' => $book->getKey(), 'fee' => $book->fee ?? fake()->randomFloat(2, 10, 100)]);
     }
 
     public function dropped(): static

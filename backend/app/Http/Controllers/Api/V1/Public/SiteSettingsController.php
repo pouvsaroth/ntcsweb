@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api\V1\Public;
 
 use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponse;
+use App\Support\Content\AboutPageContent;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
 
@@ -34,6 +35,9 @@ final class SiteSettingsController extends Controller
             'email' => $tenant->email,
             'phone' => $tenant->phone,
             'address' => $tenant->address,
+            // null until the school has saved About content at least once —
+            // the public About page falls back to static copy until then.
+            'about' => AboutPageContent::isConfigured($tenant) ? AboutPageContent::forTenant($tenant) : null,
         ]);
     }
 }

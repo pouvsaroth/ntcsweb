@@ -70,6 +70,15 @@ Every list query gets a final deterministic tiebreak order automatically
 (`ORDER BY id DESC` appended) — required for cursor pagination to be stable, and it stops
 plain offset pagination from occasionally repeating or skipping rows when sort values tie.
 
+`students` started on `cursorPaginate()` specifically (see below) — it's the one table
+this platform is explicitly designed to hold very large row counts in. It moved to
+`paginate()` after an explicit request for standard numbered/jump-to-page pagination,
+which cursor pagination cannot provide (there's no "page 4" when the only handles you have
+are opaque next/previous tokens). This is a deliberate, acknowledged trade: a realistic
+single school's enrollment (thousands of students) makes the `COUNT(*)`/`OFFSET` cost
+negligible, but it reintroduces the exact scaling concern cursor pagination existed to
+avoid. Revisit if a tenant's real row count ever gets large enough for that to matter.
+
 ## Authentication
 
 `POST /api/v1/auth/login` — `{ email, password, device_name?, remember?, tenant? }`.
@@ -125,6 +134,19 @@ tenant boundary and role hierarchy — see [docs/multi-tenancy.md](multi-tenancy
 `App\Policies\UserPolicy` for the pattern. Full permission catalog:
 `App\Support\Authorization\Permissions::catalog()`.
 
+## Cambodia geography reference data
+
+Platform-wide, read-only, no tenant scoping — any authenticated admin can read these.
+Powers the student registration form's cascading address selects.
+
+| Endpoint | Notes |
+|---|---|
+| `/api/v1/geo/provinces` | All 25 provinces |
+| `/api/v1/geo/districts?province_id=` | Districts for one province |
+| `/api/v1/geo/communes?district_id=` | Communes for one district |
+| `/api/v1/geo/villages?commune_id=` | Villages for one commune |
+| `/api/v1/geo/lookup?village_code=` | A village's full ancestry (province/district/commune/village) from its code alone — see [docs/database.md#cambodia-geography-reference-data](database.md#cambodia-geography-reference-data) |
+
 ## Academic domain
 
 Standard `Route::apiResource` CRUD (`index`/`store`/`show`/`update`/`destroy`), all under
@@ -135,13 +157,17 @@ listing and for a direct `{id}` lookup.
 | Endpoint | Notes |
 |---|---|
 | `/api/v1/teachers` | `paginate()` — small table, a page count is cheap and useful in the UI |
-| `/api/v1/students` | **`cursorPaginate()`**, not `paginate()` — this is the table designed to hold millions of rows, so it never computes a total count. `meta.pagination.type` is `"cursor"` here, `"length_aware"` everywhere else |
+| `/api/v1/students` | `paginate()` (length-aware, numbered pages) — see the pagination section above for why this table, alone among "millions of rows" candidates, moved off `cursorPaginate()`. `index` returns `guardians_count`/`educations_count` (not the full arrays); `show`/`store`/`update` return the full `guardians`/`educations` arrays instead. `store`/`update` accept optional `guardians[]`/`educations[]` — see [docs/database.md#student-registration-guardians-and-education-are-their-own-tables](database.md#student-registration-guardians-and-education-are-their-own-tables) |
 | `/api/v1/classrooms` | |
-| `/api/v1/books` | |
+| `/api/v1/books` | `fee` is a nullable default/list price, not what a specific enrolled student is charged — see [docs/database.md#dynamic-classes-one-session-many-books-many-fees](database.md#dynamic-classes-one-session-many-books-many-fees) |
 | `/api/v1/classes` | Route parameter is `{class}` (model is `SchoolClass` — `class` is a PHP reserved word, can't name a class `Class`). `POST`/`PUT` accept a nested `schedules` array (the "study day"/"study time" — `day_of_week` 1–7, `start_time`/`end_time` as `"HH:MM"`) and a `book_ids` array in the same request; an update's `schedules` **replaces** the class's entire weekly schedule rather than merging into it |
-| `/api/v1/enrollments` | Links a student to a class; `student_id`/`class_id` are immutable after creation — re-enrolling is a new record, not an edit |
+| `/api/v1/enrollments` | Links a student to a class *and* a book, with a `fee` snapshot; `student_id`/`class_id`/`book_id` are all immutable after creation — re-enrolling (a different book, a re-take) is a new record, not an edit. `book_id` must be on that class's `class_book` menu, and `fee` is required on create (the frontend pre-fills it from the book's own `fee`, but it can be adjusted for a discount). See [docs/database.md#dynamic-classes-one-session-many-books-many-fees](database.md#dynamic-classes-one-session-many-books-many-fees) |
 | `/api/v1/home-slides` | The admin side of the homepage image slider. `store`/`update` take `multipart/form-data`, not JSON — see [docs/database.md#file-storage](database.md#file-storage) for the upload plumbing (upload limits, the `_method=PUT` requirement for updates, soft-vs-force delete) |
 | `/api/v1/public/home-slides` | Unauthenticated — the public homepage's slider reads from here: active slides only, ordered by `sort_order` |
+| `/api/v1/programs` | The admin side of the course catalog. Same `multipart/form-data` + `_method=PUT` upload pattern as `/home-slides` |
+| `/api/v1/public/programs` | Unauthenticated — active programs, ordered by `sort_order`. `?featured=1` restricts to the homepage's "Popular Programs" subset; omitted, it returns the full catalog for the `/programs` page |
+| `/api/v1/settings/about` | `GET`/`POST` only — a singleton, not a REST resource (there is exactly one About page per school). `POST` takes `multipart/form-data` (nested arrays as bracket-notation keys, e.g. `stats[0][value]`) and an optional `history_image`. See [docs/database.md#the-about-page-a-settings-blob-not-a-table](database.md#the-about-page-a-settings-blob-not-a-table) |
+| `/api/v1/student-imports` | `index`/`store`/`show` only (never `update`/`destroy` — an import is a one-shot background job, not an editable record). `store` takes `multipart/form-data` (a `file` field, CSV/plain-text, max 10MB) and returns immediately with `status: "pending"`; the actual row-by-row import runs in `App\Jobs\ProcessStudentImport` on the queue. Poll `show` for `status` (`pending`/`processing`/`completed`/`failed`), `imported_count`/`skipped_count`, and a capped `errors` array. See [docs/database.md#bulk-student-import-from-a-legacy-system](database.md#bulk-student-import-from-a-legacy-system) |
 
 Every `teacher_id`/`classroom_id`/`student_id`/`class_id`/`book_id` reference in a request
 body is validated against the *current tenant's* rows specifically (`Rule::exists(...)->where('tenant_id', ...)`)

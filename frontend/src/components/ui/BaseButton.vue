@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { RouterLink } from 'vue-router'
 
 interface Props {
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger'
@@ -7,8 +8,21 @@ interface Props {
   type?: 'button' | 'submit' | 'reset'
   disabled?: boolean
   loading?: boolean
-  /** Renders as an <a> when set, styled identically to a button. */
+  /**
+   * Client-side SPA navigation via vue-router — use this for any in-app
+   * route. Renders a <RouterLink>, so no full page reload happens.
+   */
+  to?: string
+  /**
+   * Renders a plain <a>, styled identically to a button — reserve this for
+   * genuinely external URLs, or an internal route that should deliberately
+   * open in a new tab/window (pass target="_blank" alongside it). Using it
+   * for an internal route that should stay in the same tab, use `to`
+   * instead — a plain href there forces a full page reload.
+   */
   href?: string
+  /** Only meaningful together with `href`, e.g. target="_blank". */
+  target?: string
   block?: boolean
 }
 
@@ -18,14 +32,16 @@ const props = withDefaults(defineProps<Props>(), {
   type: 'button',
   disabled: false,
   loading: false,
+  to: undefined,
   href: undefined,
+  target: undefined,
   block: false,
 })
 
-const tag = computed(() => (props.href ? 'a' : 'button'))
+const tag = computed(() => (props.to ? RouterLink : props.href ? 'a' : 'button'))
 
 const variantClasses: Record<NonNullable<Props['variant']>, string> = {
-  primary: 'bg-primary-600 text-white hover:bg-primary-700 focus-visible:outline-primary-600',
+  primary: 'bg-primary-600 text-secondary-900 hover:bg-primary-700 focus-visible:outline-primary-600',
   secondary: 'bg-secondary-500 text-white hover:bg-secondary-600 focus-visible:outline-secondary-500',
   outline: 'border border-neutral-300 text-neutral-700 hover:bg-neutral-100 focus-visible:outline-primary-600',
   ghost: 'text-neutral-700 hover:bg-neutral-100 focus-visible:outline-primary-600',
@@ -43,7 +59,10 @@ const sizeClasses: Record<NonNullable<Props['size']>, string> = {
   <component
     :is="tag"
     :type="tag === 'button' ? type : undefined"
-    :href="href"
+    :to="to"
+    :href="to ? undefined : href"
+    :target="to ? undefined : target"
+    :rel="!to && target === '_blank' ? 'noopener noreferrer' : undefined"
     :disabled="tag === 'button' ? disabled || loading : undefined"
     :aria-disabled="disabled || loading"
     class="inline-flex items-center justify-center rounded-lg font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50 disabled:pointer-events-none"

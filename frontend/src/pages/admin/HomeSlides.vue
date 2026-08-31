@@ -6,6 +6,7 @@ import HomeSlideFormModal from '@/components/admin/HomeSlideFormModal.vue'
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
+import EditIconButton from '@/components/ui/EditIconButton.vue'
 import BasePagination from '@/components/ui/BasePagination.vue'
 import DataTable from '@/components/ui/DataTable.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
@@ -52,7 +53,6 @@ onMounted(() => fetch())
     <div class="mb-6 flex items-center justify-between">
       <div>
         <h1 class="text-xl font-semibold text-neutral-900">{{ t('admin.homeSlides.title') }}</h1>
-        <p class="mt-1 text-sm text-neutral-500">{{ t('admin.homeSlides.pageSubtitle') }}</p>
       </div>
       <BaseButton @click="openCreate">{{ t('admin.homeSlides.addSlide') }}</BaseButton>
     </div>
@@ -84,9 +84,7 @@ onMounted(() => fetch())
       </template>
       <template #cell-actions="{ row }">
         <div class="flex justify-end gap-2">
-          <button type="button" class="text-sm font-medium text-primary-600 hover:text-primary-700" @click="openEdit(row)">
-            {{ t('admin.homeSlides.edit') }}
-          </button>
+          <EditIconButton @click="openEdit(row)" />
           <button type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row)">
             {{ t('admin.homeSlides.delete') }}
           </button>
@@ -94,7 +92,7 @@ onMounted(() => fetch())
       </template>
     </DataTable>
 
-    <BasePagination v-if="meta" :meta="meta" class="mt-4" @update:page="setPage" />
+    <BasePagination v-if="meta" :meta="meta" sticky class="mt-4" @update:page="setPage" />
 
     <HomeSlideFormModal v-model="modalOpen" :slide="editingSlide" @saved="fetch" />
   </div>

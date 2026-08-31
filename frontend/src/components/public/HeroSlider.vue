@@ -143,7 +143,7 @@ watch(loading, (isLoading) => {
 
   <!-- No slides uploaded yet — the original gradient hero, so the homepage
        never looks broken for a school that hasn't added images. -->
-  <section v-else class="bg-gradient-to-br from-primary-700 to-primary-900 text-white">
+  <section v-else class="bg-gradient-to-br from-primary-800 to-primary-900 text-white">
     <div class="mx-auto grid max-w-7xl gap-10 px-4 py-16 sm:px-6 sm:py-24 lg:grid-cols-2 lg:px-8 lg:py-32">
       <div class="flex flex-col justify-center">
         <h1 class="text-3xl font-bold tracking-tight sm:text-5xl">
@@ -151,8 +151,8 @@ watch(loading, (isLoading) => {
         </h1>
         <p class="mt-4 max-w-lg text-lg text-primary-100">{{ t('home.heroSubtitle') }}</p>
         <div class="mt-8 flex flex-wrap gap-3">
-          <BaseButton href="/programs" variant="secondary" size="lg">{{ t('home.exploreProgramsCta') }}</BaseButton>
-          <BaseButton href="/contact" variant="outline" size="lg" class="!border-white/40 !text-white hover:!bg-white/10">
+          <BaseButton to="/programs" variant="secondary" size="lg">{{ t('home.exploreProgramsCta') }}</BaseButton>
+          <BaseButton to="/contact" variant="outline" size="lg" class="!border-white/40 !text-white hover:!bg-white/10">
             {{ t('home.contactUsCta') }}
           </BaseButton>
         </div>

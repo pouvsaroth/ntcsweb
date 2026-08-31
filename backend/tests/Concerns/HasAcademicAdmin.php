@@ -41,6 +41,18 @@ trait HasAcademicAdmin
 
         $this->actingAsTenantUser($this->admin);
 
+        // A real tenant always has its RolePermissionSeeder-provided system
+        // roles by the time anyone can act in it. Student/Staff creation now
+        // looks one of those up (see StudentController/StaffController), so
+        // fixture tenants need the same guarantee — not the whole seeder
+        // (which also touches every other tenant in the database), just the
+        // one row that would otherwise be missing.
+        Role::factory()->forTenant($this->tenant)->system()->create([
+            'slug' => Role::STUDENT,
+            'name' => 'Student',
+            'level' => Role::LEVELS[Role::STUDENT],
+        ]);
+
         return $this->admin;
     }
 

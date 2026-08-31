@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api\V1\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Auth\LoginRequest;
+use App\Http\Requests\Api\V1\Auth\UpdateProfileRequest;
 use App\Http\Resources\UserResource;
 use App\Http\Responses\ApiResponse;
 use App\Models\User;
@@ -15,6 +16,7 @@ use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * Sign-in and sign-out for both supported transports.
@@ -110,6 +112,50 @@ final class AuthController extends Controller
                     : null,
             ],
         );
+    }
+
+    /**
+     * The acting user's own name/phone/picture — never a route parameter,
+     * always `$request->user()`. Deliberately separate from the tenant
+     * admin's Staff/Student edit forms: this is "edit myself", reachable by
+     * every authenticated user regardless of their role or permissions.
+     */
+    public function updateProfile(UpdateProfileRequest $request): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+        $previousAvatarPath = $user->avatar_path;
+        $newAvatarPath = $request->hasFile('avatar') ? $this->storeAvatar($request, $user) : null;
+
+        $user->update([
+            'name' => $request->validated('name'),
+            'phone' => $request->validated('phone'),
+            ...($newAvatarPath !== null ? ['avatar_path' => $newAvatarPath] : []),
+        ]);
+
+        // Only removed once the new path is safely persisted — see
+        // HomeSlideController::update() for why this ordering matters.
+        if ($newAvatarPath !== null && $previousAvatarPath !== null) {
+            Storage::disk('public')->delete($previousAvatarPath);
+        }
+
+        return ApiResponse::success(new UserResource($user->fresh()->loadMissing('roles', 'tenant')));
+    }
+
+    private function storeAvatar(UpdateProfileRequest $request, User $user): string
+    {
+        // Not TenantContext::getOrFail(): a platform super admin (tenant_id
+        // NULL) has no tenant to fail on, and this is "where does this
+        // user's own file live", not a tenant-scoped write.
+        $prefix = $user->tenant_id !== null ? "tenants/{$user->tenant_id}/avatars" : 'platform/avatars';
+
+        $path = $request->file('avatar')->store($prefix, 'public');
+
+        if ($path === false) {
+            abort(500, 'Failed to store the uploaded avatar.');
+        }
+
+        return $path;
     }
 
     private function tokenResponse(User $user, string $deviceName): JsonResponse

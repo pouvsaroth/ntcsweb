@@ -24,6 +24,7 @@ class BookResource extends JsonResource
             'description' => $this->description,
             'cover_image' => $this->cover_image,
             'quantity' => $this->quantity,
+            'fee' => $this->fee !== null ? (float) $this->fee : null,
             'status' => $this->status,
             'classes_count' => $this->whenCounted('classes'),
             'created_at' => $this->created_at?->toIso8601String(),

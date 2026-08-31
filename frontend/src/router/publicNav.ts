@@ -8,9 +8,7 @@ export const publicNav: NavItem[] = [
   { labelKey: 'nav.home', to: '/' },
   { labelKey: 'nav.about', to: '/about' },
   { labelKey: 'nav.programs', to: '/programs' },
-  { labelKey: 'nav.teachers', to: '/teachers' },
   { labelKey: 'nav.news', to: '/news' },
-  { labelKey: 'nav.events', to: '/events' },
   { labelKey: 'nav.gallery', to: '/gallery' },
   { labelKey: 'nav.contact', to: '/contact' },
 ]

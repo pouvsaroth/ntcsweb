@@ -32,22 +32,12 @@ export const adminNav: AdminNavGroup[] = [
     items: [{ labelKey: 'adminNav.items.tenants', to: '/admin/tenants', superAdminOnly: true }],
   },
   {
-    labelKey: 'adminNav.groups.school',
-    items: [{ labelKey: 'adminNav.items.settings', to: '/admin/settings', permission: 'tenant-settings.view' }],
-  },
-  {
-    labelKey: 'adminNav.groups.usersAccess',
-    items: [
-      { labelKey: 'adminNav.items.users', to: '/admin/users', permission: 'users.view' },
-      { labelKey: 'adminNav.items.roles', to: '/admin/roles', permission: 'roles.view' },
-    ],
-  },
-  {
     labelKey: 'adminNav.groups.academic',
     items: [
       { labelKey: 'adminNav.items.academicYears', to: '/admin/academic-years' },
-      { labelKey: 'adminNav.items.programs', to: '/admin/programs' },
+      { labelKey: 'adminNav.items.programs', to: '/admin/programs', permission: 'programs.view' },
       { labelKey: 'adminNav.items.subjects', to: '/admin/subjects' },
+      { labelKey: 'adminNav.items.books', to: '/admin/books' },
       { labelKey: 'adminNav.items.classes', to: '/admin/classes' },
     ],
   },
@@ -55,12 +45,16 @@ export const adminNav: AdminNavGroup[] = [
     labelKey: 'adminNav.groups.students',
     items: [
       { labelKey: 'adminNav.items.studentsList', to: '/admin/students' },
+      { labelKey: 'adminNav.items.studentImports', to: '/admin/student-imports', permission: 'students.create' },
       { labelKey: 'adminNav.items.enrollments', to: '/admin/enrollments' },
     ],
   },
   {
     labelKey: 'adminNav.groups.teachers',
-    items: [{ labelKey: 'adminNav.items.teachersList', to: '/admin/teachers' }],
+    items: [
+      { labelKey: 'adminNav.items.teachersList', to: '/admin/teachers' },
+      { labelKey: 'adminNav.items.staffList', to: '/admin/staff', permission: 'staff.view' },
+    ],
   },
   {
     labelKey: 'adminNav.groups.academicRecords',
@@ -74,10 +68,11 @@ export const adminNav: AdminNavGroup[] = [
     labelKey: 'adminNav.groups.website',
     items: [
       { labelKey: 'adminNav.items.homeSlides', to: '/admin/home-slides', permission: 'home-slides.view' },
+      { labelKey: 'adminNav.items.aboutPage', to: '/admin/about-page', permission: 'tenant-settings.view' },
       { labelKey: 'adminNav.items.news', to: '/admin/news' },
       { labelKey: 'adminNav.items.events', to: '/admin/events' },
       { labelKey: 'adminNav.items.announcements', to: '/admin/announcements' },
-      { labelKey: 'adminNav.items.gallery', to: '/admin/gallery' },
+      { labelKey: 'adminNav.items.gallery', to: '/admin/gallery', permission: 'gallery.view' },
       { labelKey: 'adminNav.items.documents', to: '/admin/documents' },
     ],
   },
@@ -89,7 +84,13 @@ export const adminNav: AdminNavGroup[] = [
     ],
   },
   {
-    labelKey: 'adminNav.groups.system',
-    items: [{ labelKey: 'adminNav.items.auditLogs', to: '/admin/audit-logs', permission: 'audit-logs.view' }],
+    labelKey: 'adminNav.groups.settings',
+    items: [
+      { labelKey: 'adminNav.items.settings', to: '/admin/settings', permission: 'tenant-settings.view' },
+      { labelKey: 'adminNav.items.users', to: '/admin/users', permission: 'users.view' },
+      { labelKey: 'adminNav.items.roles', to: '/admin/roles', permission: 'roles.view' },
+      { labelKey: 'adminNav.items.positions', to: '/admin/positions', permission: 'positions.view' },
+      { labelKey: 'adminNav.items.auditLogs', to: '/admin/audit-logs', permission: 'audit-logs.view' },
+    ],
   },
 ]

@@ -31,6 +31,7 @@ class UserFactory extends Factory
             // from a hydrated model, which a factory-built row otherwise would
             // be for every nullable column it doesn't mention.
             'locale' => null,
+            'avatar_path' => null,
             'last_login_at' => null,
             'last_login_ip' => null,
             'remember_token' => Str::random(10),

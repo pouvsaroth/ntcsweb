@@ -7,9 +7,13 @@ namespace App\Providers;
 use App\Models\Book;
 use App\Models\Classroom;
 use App\Models\Enrollment;
+use App\Models\GalleryImage;
 use App\Models\HomeSlide;
+use App\Models\Position;
+use App\Models\Program;
 use App\Models\Role;
 use App\Models\SchoolClass;
+use App\Models\Staff;
 use App\Models\Student;
 use App\Models\Teacher;
 use App\Models\Tenant;
@@ -17,9 +21,13 @@ use App\Models\User;
 use App\Policies\BookPolicy;
 use App\Policies\ClassroomPolicy;
 use App\Policies\EnrollmentPolicy;
+use App\Policies\GalleryImagePolicy;
 use App\Policies\HomeSlidePolicy;
+use App\Policies\PositionPolicy;
+use App\Policies\ProgramPolicy;
 use App\Policies\RolePolicy;
 use App\Policies\SchoolClassPolicy;
+use App\Policies\StaffPolicy;
 use App\Policies\StudentPolicy;
 use App\Policies\TeacherPolicy;
 use App\Policies\TenantPolicy;
@@ -46,6 +54,10 @@ class AuthServiceProvider extends ServiceProvider
         SchoolClass::class => SchoolClassPolicy::class,
         Enrollment::class => EnrollmentPolicy::class,
         HomeSlide::class => HomeSlidePolicy::class,
+        GalleryImage::class => GalleryImagePolicy::class,
+        Program::class => ProgramPolicy::class,
+        Position::class => PositionPolicy::class,
+        Staff::class => StaffPolicy::class,
     ];
 
     public function register(): void

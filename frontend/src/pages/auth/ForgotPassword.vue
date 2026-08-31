@@ -73,7 +73,7 @@ async function submit() {
       <BaseButton type="submit" :loading="submitting" block>{{ t('auth.forgotPassword.submit') }}</BaseButton>
     </form>
 
-    <RouterLink to="/login" class="mt-6 block text-center text-sm font-medium text-primary-600 hover:text-primary-700">
+    <RouterLink to="/login" class="mt-6 block text-center text-sm font-medium text-secondary-600 hover:text-secondary-700">
       {{ t('auth.forgotPassword.backToSignIn') }}
     </RouterLink>
   </div>

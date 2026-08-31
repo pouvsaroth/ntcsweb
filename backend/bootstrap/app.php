@@ -44,6 +44,24 @@ return Application::configure(basePath: dirname(__DIR__))
             EnsureTenantMatchesUser::class,
         ]);
 
+        // Laravel's default middlewarePriority list runs SubstituteBindings
+        // right after auth, regardless of where these two were registered
+        // above — and since ResolveTenant isn't in that list at all, it was
+        // simply left running *after* SubstituteBindings. That's a real bug,
+        // not a theoretical one: SubstituteBindings is what queries a
+        // tenant-scoped model for implicit route-model binding (every
+        // show/update/destroy route), so on any live request that reaches
+        // authentication lazily (a Bearer token, not a pre-seeded test
+        // session), that query ran with no tenant in context yet and threw.
+        // Anchoring on the *interface* Authenticate implements, because
+        // that's the literal string Laravel's default priority array
+        // contains — anchoring on the concrete Authenticate class would
+        // silently no-op here since `in_array` requires an exact match.
+        $middleware->appendToPriorityList(
+            after: \Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests::class,
+            append: ResolveTenant::class,
+        );
+
         $middleware->alias([
             'tenant.required' => RequireTenant::class,
             'active' => EnsureUserIsActive::class,

@@ -4,8 +4,8 @@ import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
 
 import BaseCard from '@/components/ui/BaseCard.vue'
-import EmptyState from '@/components/ui/EmptyState.vue'
 import HeroSlider from '@/components/public/HeroSlider.vue'
+import PopularPrograms from '@/components/public/PopularPrograms.vue'
 import SectionContainer from '@/components/public/SectionContainer.vue'
 import { publicContentService, type EventItem, type NewsItem } from '@/services/publicContent'
 
@@ -29,11 +29,15 @@ onMounted(async () => {
   <div>
     <HeroSlider />
 
-    <SectionContainer :title="t('home.latestNews')" :subtitle="t('home.latestNewsSubtitle')">
+    <PopularPrograms />
+
+    <!-- Hidden entirely once loaded with nothing to show — a "no news yet"
+         placeholder box reads as an unfinished site to a first-time visitor,
+         unlike the admin side where an empty state is expected/useful. -->
+    <SectionContainer v-if="loading || news.length > 0" :title="t('home.latestNews')" :subtitle="t('home.latestNewsSubtitle')">
       <div v-if="loading" class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         <div v-for="i in 3" :key="i" class="h-48 animate-pulse rounded-[--radius-card] bg-neutral-100" />
       </div>
-      <EmptyState v-else-if="news.length === 0" :title="t('home.noNewsTitle')" :message="t('home.noNewsMessage')" />
       <div v-else class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         <BaseCard v-for="item in news" :key="item.id" hoverable :padded="false" class="overflow-hidden">
           <div class="aspect-video bg-neutral-100">
@@ -43,7 +47,7 @@ onMounted(async () => {
             <p class="text-xs font-medium text-neutral-400">{{ item.published_at }}</p>
             <h3 class="mt-1 font-semibold text-neutral-900">{{ item.title }}</h3>
             <p class="mt-2 line-clamp-2 text-sm text-neutral-500">{{ item.excerpt }}</p>
-            <RouterLink :to="`/news/${item.slug}`" class="mt-3 inline-block text-sm font-medium text-primary-600 hover:text-primary-700">
+            <RouterLink :to="`/news/${item.slug}`" class="mt-3 inline-block text-sm font-medium text-secondary-600 hover:text-secondary-700">
               {{ t('common.readMore') }}
             </RouterLink>
           </div>
@@ -51,9 +55,11 @@ onMounted(async () => {
       </div>
     </SectionContainer>
 
-    <SectionContainer :title="t('home.upcomingEvents')" :subtitle="t('home.upcomingEventsSubtitle')" class="bg-neutral-50">
-      <EmptyState v-if="!loading && events.length === 0" :title="t('home.noEventsTitle')" :message="t('home.noEventsMessage')" />
-      <div v-else class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+    <!-- Same treatment as the Latest News section above — hidden entirely
+         once loaded with nothing to show, rather than a "no events yet"
+         placeholder. -->
+    <SectionContainer v-if="loading || events.length > 0" :title="t('home.upcomingEvents')" :subtitle="t('home.upcomingEventsSubtitle')" class="bg-neutral-50">
+      <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         <BaseCard v-for="item in events" :key="item.id" hoverable>
           <p class="text-xs font-medium text-secondary-600">{{ item.starts_at }}</p>
           <h3 class="mt-1 font-semibold text-neutral-900">{{ item.title }}</h3>

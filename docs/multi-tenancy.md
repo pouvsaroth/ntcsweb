@@ -38,6 +38,43 @@ grant access to that tenant's data. `EnsureTenantMatchesUser` (runs right after
 doesn't match the resolved tenant, with a `403 TENANT_MISMATCH` — before any tenant-scoped
 query runs. A Tenant A user sending `X-Tenant: tenant-b` gets refused, not Tenant B's data.
 
+### A middleware-ordering trap: `SubstituteBindings` vs. `ResolveTenant`
+
+Laravel has a built-in, undocumented-in-application-code `middlewarePriority` list that
+silently reorders middleware at runtime *regardless of the order they were registered in*
+`bootstrap/app.php`. By default it runs `SubstituteBindings` (the middleware that performs
+implicit route-model binding — i.e. the query behind every `show`/`update`/`destroy` route
+typed as `Student $student`) immediately after authentication, and `ResolveTenant` — a
+custom, unlisted middleware — was left running *after* it, no matter where it was appended.
+
+The practical effect: on a real request authenticated by a bearer token (not a pre-seeded
+test session), Laravel resolved `{student}` into a `Student` model — running the
+tenant-scoped query — **before** `ResolveTenant` had set `TenantContext` from that same
+token. Every implicit-bound route on every tenant-scoped model threw
+`TenantNotResolvedException` on a live request, while the entire test suite passed, because
+`TestCase::actingAsTenantUser()` sets `TenantContext` directly before the request begins,
+which sidesteps this timing path completely.
+
+The fix, in `bootstrap/app.php`:
+
+```php
+$middleware->appendToPriorityList(
+    after: \Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests::class,
+    append: ResolveTenant::class,
+);
+```
+
+This must anchor on the **interface** `Authenticate` implements
+(`AuthenticatesRequests`), not the concrete `Authenticate::class` — Laravel's internal
+priority-insertion helper does an exact `in_array` match against its own default list,
+which contains the interface, not the class.
+
+`tests/Feature/Tenancy/MiddlewareOrderingTest.php` is the regression guard: it
+authenticates with a real `createToken()` bearer token and deliberately avoids
+`actingAsTenantUser()`/`actingInTenant()`, so it's the one test in the suite that actually
+exercises this ordering. Reverting the `appendToPriorityList()` call reproduces the 500
+immediately if this test is run — verified by hand while diagnosing the bug.
+
 ### Adding subdomain / custom domain support later
 
 Nothing changes. `DomainTenantResolver` already handles both cases; a school gets a

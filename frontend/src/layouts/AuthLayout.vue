@@ -21,7 +21,7 @@ onMounted(() => site.load())
       </div>
 
       <div class="mb-8 flex flex-col items-center gap-3 text-center">
-        <span class="flex h-12 w-12 items-center justify-center rounded-xl bg-primary-600 text-lg font-bold text-white">
+        <span class="flex h-12 w-12 items-center justify-center rounded-xl bg-primary-600 text-lg font-bold text-secondary-900">
           {{ site.info.name.charAt(0) }}
         </span>
         <h1 class="text-xl font-bold text-neutral-900">{{ site.info.name }}</h1>
