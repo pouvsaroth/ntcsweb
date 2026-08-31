@@ -24,23 +24,27 @@ class UpdateGeneralSettingsRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
-        if ($this->has('student_id_prefix')) {
-            $this->merge([
-                'student_id_prefix' => Str::upper(trim((string) $this->input('student_id_prefix'))),
-            ]);
+        foreach (['student_id_prefix', 'invoice_prefix', 'receipt_prefix'] as $field) {
+            if ($this->has($field)) {
+                $this->merge([
+                    $field => Str::upper(trim((string) $this->input($field))),
+                ]);
+            }
         }
     }
 
     public function rules(): array
     {
+        // Same shape for all three: uppercase letters/digits only, no `-`
+        // (which would make `{prefix}-{number}` ambiguous to parse back
+        // apart — invoice/receipt numbers additionally interpose a year,
+        // e.g. `INV-2026-000001`, so the prefix itself must stay dash-free).
+        $prefixRule = ['string', 'max:20', 'regex:/^[A-Z0-9]+$/'];
+
         return [
-            // Uppercase letters/digits only, no spaces or punctuation — this
-            // becomes the literal left half of every Student ID
-            // (StudentIdGenerator), and a `-` inside the prefix itself would
-            // make `{prefix}-{number}` ambiguous to parse back apart.
-            // max:20 leaves room under the students.student_code varchar(32)
-            // column even at the full 6-digit sequence plus its separator.
-            'student_id_prefix' => ['required', 'string', 'max:20', 'regex:/^[A-Z0-9]+$/'],
+            'student_id_prefix' => ['sometimes', 'required', ...$prefixRule],
+            'invoice_prefix' => ['sometimes', 'required', ...$prefixRule],
+            'receipt_prefix' => ['sometimes', 'required', ...$prefixRule],
         ];
     }
 }

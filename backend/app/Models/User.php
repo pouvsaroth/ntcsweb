@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -67,6 +68,16 @@ class User extends Authenticatable implements MustVerifyEmailContract
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class);
+    }
+
+    /**
+     * The Student record this account is linked to, if this is a student's
+     * own login — used to scope "my invoices" and similar self-service
+     * views to the right student. Null for every non-student account.
+     */
+    public function student(): HasOne
+    {
+        return $this->hasOne(Student::class);
     }
 
     /**

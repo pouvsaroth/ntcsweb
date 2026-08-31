@@ -4,13 +4,18 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Api\V1\Admin\AboutPageController;
 use App\Http\Controllers\Api\V1\Admin\AuditLogController;
+use App\Http\Controllers\Api\V1\Admin\BillingDashboardController;
 use App\Http\Controllers\Api\V1\Admin\BookController;
 use App\Http\Controllers\Api\V1\Admin\ClassroomController;
 use App\Http\Controllers\Api\V1\Admin\EnrollmentController;
 use App\Http\Controllers\Api\V1\Admin\GalleryController as AdminGalleryController;
 use App\Http\Controllers\Api\V1\Admin\GeneralSettingsController;
 use App\Http\Controllers\Api\V1\Admin\HomeSlideController as AdminHomeSlideController;
+use App\Http\Controllers\Api\V1\Admin\InvoiceController;
+use App\Http\Controllers\Api\V1\Admin\PaymentController;
 use App\Http\Controllers\Api\V1\Admin\PositionController;
+use App\Http\Controllers\Api\V1\Admin\ProductController;
+use App\Http\Controllers\Api\V1\Admin\ProductVariantController;
 use App\Http\Controllers\Api\V1\Admin\ProgramController as AdminProgramController;
 use App\Http\Controllers\Api\V1\Admin\RoleController;
 use App\Http\Controllers\Api\V1\Admin\SchoolClassController;
@@ -24,6 +29,7 @@ use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\V1\Auth\EmailVerificationController;
 use App\Http\Controllers\Api\V1\Auth\PasswordController;
 use App\Http\Controllers\Api\V1\GeographyController;
+use App\Http\Controllers\Api\V1\MyInvoiceController;
 use App\Http\Controllers\Api\V1\Public\EnrollmentInquiryController;
 use App\Http\Controllers\Api\V1\Public\GalleryController as PublicGalleryController;
 use App\Http\Controllers\Api\V1\Public\HomeSlideController as PublicHomeSlideController;
@@ -164,6 +170,48 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         // Read-only — see AuditLogPolicy/AuditLogController's docblocks for
         // why there is deliberately no store/update/destroy route here.
         Route::apiResource('audit-logs', AuditLogController::class)->only(['index', 'show']);
+
+        /*
+        |------------------------------------------------------------------
+        | Billing: Products, Invoices, Payments
+        |------------------------------------------------------------------
+        |
+        | Generic catalog-based billing — see Product/Invoice/Payment model
+        | docblocks. Access is gated per-route via the billing.* permissions
+        | (ProductPolicy/InvoicePolicy/PaymentPolicy), not by being inside
+        | this group — a Student account reaching these hits 403/404 the
+        | same way any other unauthorized request would; students use the
+        | separate `my-invoices` endpoints below instead.
+        |
+        */
+
+        Route::apiResource('products', ProductController::class);
+        Route::post('products/{product}/variants', [ProductVariantController::class, 'store'])->name('products.variants.store');
+        Route::put('product-variants/{variant}', [ProductVariantController::class, 'update'])->name('product-variants.update');
+        Route::delete('product-variants/{variant}', [ProductVariantController::class, 'destroy'])->name('product-variants.destroy');
+
+        Route::apiResource('invoices', InvoiceController::class)->only(['index', 'store', 'show']);
+        Route::post('invoices/{invoice}/cancel', [InvoiceController::class, 'cancel'])->name('invoices.cancel');
+        Route::post('invoices/{invoice}/void', [InvoiceController::class, 'void'])->name('invoices.void');
+        Route::get('invoices/{invoice}/pdf', [InvoiceController::class, 'downloadPdf'])->name('invoices.pdf');
+        Route::post('invoices/{invoice}/send', [InvoiceController::class, 'send'])->name('invoices.send');
+        Route::get('invoices/{invoice}/notifications', [InvoiceController::class, 'notifications'])->name('invoices.notifications');
+        Route::post('invoices/{invoice}/payments', [PaymentController::class, 'store'])->name('invoices.payments.store');
+
+        Route::get('payments', [PaymentController::class, 'index'])->name('payments.index');
+        Route::get('payments/{payment}', [PaymentController::class, 'show'])->name('payments.show');
+        Route::post('payments/{payment}/cancel', [PaymentController::class, 'cancel'])->name('payments.cancel');
+        Route::post('payments/{payment}/refund', [PaymentController::class, 'refund'])->name('payments.refund');
+        Route::get('payments/{payment}/receipt', [PaymentController::class, 'receipt'])->name('payments.receipt');
+
+        Route::get('billing/dashboard', [BillingDashboardController::class, 'summary'])->name('billing.dashboard');
+        Route::get('billing/reports/payments-by-method', [BillingDashboardController::class, 'paymentsByMethod'])->name('billing.reports.payments-by-method');
+
+        // Student self-service — identity-gated (User::student()), not
+        // permission-gated. See MyInvoiceController's docblock.
+        Route::get('my-invoices', [MyInvoiceController::class, 'index'])->name('my-invoices.index');
+        Route::get('my-invoices/{invoice}', [MyInvoiceController::class, 'show'])->name('my-invoices.show');
+        Route::get('my-invoices/{invoice}/pdf', [MyInvoiceController::class, 'downloadPdf'])->name('my-invoices.pdf');
 
         // Singleton, not a resource — see AboutPageController.
         Route::get('settings/about', [AboutPageController::class, 'show'])->name('settings.about.show');

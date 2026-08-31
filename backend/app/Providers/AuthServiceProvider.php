@@ -10,7 +10,10 @@ use App\Models\Classroom;
 use App\Models\Enrollment;
 use App\Models\GalleryImage;
 use App\Models\HomeSlide;
+use App\Models\Invoice;
+use App\Models\Payment;
 use App\Models\Position;
+use App\Models\Product;
 use App\Models\Program;
 use App\Models\Role;
 use App\Models\SchoolClass;
@@ -25,7 +28,10 @@ use App\Policies\ClassroomPolicy;
 use App\Policies\EnrollmentPolicy;
 use App\Policies\GalleryImagePolicy;
 use App\Policies\HomeSlidePolicy;
+use App\Policies\InvoicePolicy;
+use App\Policies\PaymentPolicy;
 use App\Policies\PositionPolicy;
+use App\Policies\ProductPolicy;
 use App\Policies\ProgramPolicy;
 use App\Policies\RolePolicy;
 use App\Policies\SchoolClassPolicy;
@@ -61,6 +67,9 @@ class AuthServiceProvider extends ServiceProvider
         Position::class => PositionPolicy::class,
         Staff::class => StaffPolicy::class,
         AuditLog::class => AuditLogPolicy::class,
+        Product::class => ProductPolicy::class,
+        Invoice::class => InvoicePolicy::class,
+        Payment::class => PaymentPolicy::class,
     ];
 
     public function register(): void

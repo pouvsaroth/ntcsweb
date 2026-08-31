@@ -152,6 +152,41 @@ final class Permissions
 
     public const STAFF_DELETE = 'staff.delete';
 
+    // Products — the sellable catalog every invoice item bills against.
+    public const PRODUCTS_VIEW = 'products.view';
+
+    public const PRODUCTS_CREATE = 'products.create';
+
+    public const PRODUCTS_UPDATE = 'products.update';
+
+    public const PRODUCTS_DELETE = 'products.delete';
+
+    // Invoices/Payments/Receipts — financial records. Deliberately no
+    // `invoices.delete`/`payments.delete`: a financial record is never
+    // deleted, only cancelled/voided/refunded (see InvoiceService/
+    // PaymentService), which `.cancel` covers on both.
+    public const INVOICES_VIEW = 'invoices.view';
+
+    public const INVOICES_CREATE = 'invoices.create';
+
+    public const INVOICES_UPDATE = 'invoices.update';
+
+    public const INVOICES_CANCEL = 'invoices.cancel';
+
+    public const PAYMENTS_VIEW = 'payments.view';
+
+    public const PAYMENTS_CREATE = 'payments.create';
+
+    public const PAYMENTS_UPDATE = 'payments.update';
+
+    public const PAYMENTS_CANCEL = 'payments.cancel';
+
+    public const RECEIPTS_VIEW = 'receipts.view';
+
+    public const BILLING_REPORTS_VIEW = 'billing-reports.view';
+
+    public const NOTIFICATIONS_SEND = 'notifications.send';
+
     // System.
     public const AUDIT_LOGS_VIEW = 'audit-logs.view';
 
@@ -252,6 +287,25 @@ final class Permissions
                 self::STAFF_UPDATE => 'Update staff',
                 self::STAFF_DELETE => 'Delete staff',
             ],
+            'Products' => [
+                self::PRODUCTS_VIEW => 'View products',
+                self::PRODUCTS_CREATE => 'Create products',
+                self::PRODUCTS_UPDATE => 'Update products',
+                self::PRODUCTS_DELETE => 'Delete products',
+            ],
+            'Billing' => [
+                self::INVOICES_VIEW => 'View invoices',
+                self::INVOICES_CREATE => 'Create invoices',
+                self::INVOICES_UPDATE => 'Update invoices',
+                self::INVOICES_CANCEL => 'Cancel or void invoices',
+                self::PAYMENTS_VIEW => 'View payments',
+                self::PAYMENTS_CREATE => 'Record payments',
+                self::PAYMENTS_UPDATE => 'Update payments',
+                self::PAYMENTS_CANCEL => 'Cancel or refund payments',
+                self::RECEIPTS_VIEW => 'View receipts',
+                self::BILLING_REPORTS_VIEW => 'View billing reports and dashboard',
+                self::NOTIFICATIONS_SEND => 'Send invoice notifications',
+            ],
             'System' => [
                 self::AUDIT_LOGS_VIEW => 'View audit logs',
             ],
@@ -291,6 +345,20 @@ final class Permissions
             self::STAFF_VIEW, self::STAFF_CREATE, self::STAFF_UPDATE, self::STAFF_DELETE,
         ];
 
+        // Not folded into $academicManagement: financial access is
+        // deliberately its own, tighter group — school-admin only by
+        // default (see the class docblock's example: "not all users access
+        // financial functions"). A school that wants an Accountant role
+        // creates one via the existing Position/Role UI and grants these
+        // through the permission-matrix editor, the same way any other
+        // custom role is built — no hardcoded "Accountant" role needed here.
+        $billing = [
+            self::PRODUCTS_VIEW, self::PRODUCTS_CREATE, self::PRODUCTS_UPDATE, self::PRODUCTS_DELETE,
+            self::INVOICES_VIEW, self::INVOICES_CREATE, self::INVOICES_UPDATE, self::INVOICES_CANCEL,
+            self::PAYMENTS_VIEW, self::PAYMENTS_CREATE, self::PAYMENTS_UPDATE, self::PAYMENTS_CANCEL,
+            self::RECEIPTS_VIEW, self::BILLING_REPORTS_VIEW, self::NOTIFICATIONS_SEND,
+        ];
+
         return [
             \App\Models\Role::SCHOOL_ADMIN => [
                 self::TENANT_SETTINGS_VIEW,
@@ -306,6 +374,7 @@ final class Permissions
                 self::ROLES_ASSIGN,
                 self::AUDIT_LOGS_VIEW,
                 ...$academicManagement,
+                ...$billing,
             ],
             // Read-only across the board: a teacher needs to see their
             // roster, room, and materials, but the catalog itself (who

@@ -38,4 +38,29 @@ final class AuditAction
     public const STATUS_CHANGE = 'STATUS_CHANGE';
 
     public const POSITION_CHANGE = 'POSITION_CHANGE';
+
+    // Billing — deliberately more specific than the generic CREATE/UPDATE
+    // above: Invoice/Payment don't use the Auditable trait at all (see their
+    // own docblocks), every one of these is an explicit call from
+    // InvoiceService/PaymentService/InvoiceNotificationService, because a
+    // financial event needs a richer description than column-diffing gives.
+    public const INVOICE_CREATED = 'INVOICE_CREATED';
+
+    public const INVOICE_UPDATED = 'INVOICE_UPDATED';
+
+    public const INVOICE_CANCELLED = 'INVOICE_CANCELLED';
+
+    public const INVOICE_VOIDED = 'INVOICE_VOIDED';
+
+    public const PAYMENT_CREATED = 'PAYMENT_CREATED';
+
+    public const PAYMENT_CANCELLED = 'PAYMENT_CANCELLED';
+
+    public const PAYMENT_REFUNDED = 'PAYMENT_REFUNDED';
+
+    public const RECEIPT_CREATED = 'RECEIPT_CREATED';
+
+    public const INVOICE_SENT = 'INVOICE_SENT';
+
+    public const INVOICE_SEND_FAILED = 'INVOICE_SEND_FAILED';
 }

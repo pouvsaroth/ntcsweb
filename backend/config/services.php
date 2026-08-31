@@ -35,4 +35,12 @@ return [
         ],
     ],
 
+    // See App\Services\Billing\Notifications\TelegramChannel. The bot token
+    // lives here (env-only), never in the database — a `recipient` is a
+    // per-send Telegram chat ID, not a secret, so that one does travel with
+    // the request/NotificationLog row.
+    'telegram' => [
+        'bot_token' => env('TELEGRAM_BOT_TOKEN'),
+    ],
+
 ];
