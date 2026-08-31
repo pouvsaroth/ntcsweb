@@ -15,14 +15,28 @@ use App\Services\Auth\UserProvisioningService;
 use App\Support\Audit\AuditAction;
 use App\Support\Audit\AuditLogger;
 use App\Support\Query\ApiQuery;
+use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\Response;
 
 final class StaffController extends Controller
 {
+    /**
+     * A small, fixed palette of pleasant, readable-on-white colors — the
+     * avatar background fallback for a staff member with no photo. Picked
+     * deterministically (see profileColorFor()) rather than randomly, so the
+     * same name always lands on the same color.
+     */
+    private const PROFILE_COLORS = [
+        '#F87171', '#FB923C', '#FBBF24', '#4ADE80',
+        '#2DD4BF', '#60A5FA', '#818CF8', '#F472B6',
+    ];
+
     public function __construct(
+        private readonly TenantContext $context,
         private readonly UserProvisioningService $provisioning,
         private readonly AuditLogger $audit,
     ) {}
@@ -32,9 +46,9 @@ final class StaffController extends Controller
         $this->authorize('viewAny', Staff::class);
 
         $staff = ApiQuery::for(Staff::query()->with(['position.role', 'user']), $request)
-            ->searchable('name', 'employee_code', 'email')
+            ->searchable('first_name', 'last_name', 'employee_code', 'email')
             ->filterable(['status', 'position_id'])
-            ->sortable(['name', 'employee_code', 'hire_date', 'created_at'], default: '-created_at')
+            ->sortable(['first_name', 'last_name', 'employee_code', 'hire_date', 'created_at'], default: '-created_at')
             ->paginate();
 
         return ApiResponse::success(StaffResource::collection($staff));
@@ -48,17 +62,30 @@ final class StaffController extends Controller
      */
     public function store(StoreStaffRequest $request): JsonResponse
     {
-        [$staff, $temporaryPassword] = DB::transaction(function () use ($request) {
+        $fullName = trim("{$request->safe()->input('first_name')} {$request->safe()->input('last_name')}");
+
+        [$staff, $temporaryPassword] = DB::transaction(function () use ($request, $fullName) {
             $position = Position::query()->with('role')->findOrFail($request->validated('position_id'));
 
             $provisioned = $this->provisioning->provision([
-                'name' => $request->validated('name'),
+                'name' => $fullName,
                 'email' => $request->validated('email'),
                 'phone' => $request->validated('phone'),
             ], $position->role);
 
-            $staff = Staff::query()->create($request->validated());
-            $staff->forceFill(['user_id' => $provisioned['user']->id])->save();
+            $staff = Staff::query()->create($request->safe()->except(['photo', 'national_id_photo']));
+
+            // Excluded from Fillable (see the Staff class docblock) — set
+            // via forceFill exactly like `user_id`, never through mass
+            // assignment, since none of these may ever be client-supplied.
+            $staff->forceFill([
+                'user_id' => $provisioned['user']->id,
+                'photo_path' => $request->hasFile('photo') ? $this->storeFile($request, 'photo') : null,
+                'national_id_photo_path' => $request->hasFile('national_id_photo')
+                    ? $this->storeFile($request, 'national_id_photo')
+                    : null,
+                'profile_color' => $this->profileColorFor($fullName),
+            ])->save();
 
             return [$staff, $provisioned['temporary_password']];
         });
@@ -85,10 +112,29 @@ final class StaffController extends Controller
      */
     public function update(UpdateStaffRequest $request, Staff $staff): JsonResponse
     {
-        DB::transaction(function () use ($request, $staff) {
+        $previousPhotoPath = $staff->photo_path;
+        $previousNationalIdPhotoPath = $staff->national_id_photo_path;
+
+        $newPhotoPath = $request->hasFile('photo') ? $this->storeFile($request, 'photo') : null;
+        $newNationalIdPhotoPath = $request->hasFile('national_id_photo')
+            ? $this->storeFile($request, 'national_id_photo')
+            : null;
+
+        DB::transaction(function () use ($request, $staff, $newPhotoPath, $newNationalIdPhotoPath) {
             $previousPositionId = $staff->position_id;
 
-            $staff->update($request->validated());
+            $staff->update($request->safe()->except(['photo', 'national_id_photo']));
+
+            // Excluded from Fillable (see the Staff class docblock) — same
+            // forceFill treatment as store(); only touched when a new file
+            // actually came in, so an edit that doesn't replace either photo
+            // never overwrites the existing path with null.
+            if ($newPhotoPath !== null || $newNationalIdPhotoPath !== null) {
+                $staff->forceFill([
+                    ...($newPhotoPath !== null ? ['photo_path' => $newPhotoPath] : []),
+                    ...($newNationalIdPhotoPath !== null ? ['national_id_photo_path' => $newNationalIdPhotoPath] : []),
+                ])->save();
+            }
 
             $positionChanged = $request->safe()->has('position_id')
                 && (int) $request->validated('position_id') !== $previousPositionId;
@@ -115,6 +161,16 @@ final class StaffController extends Controller
             }
         });
 
+        // Only removed once the new path is safely persisted — see
+        // StudentController::update() for why this ordering matters.
+        if ($newPhotoPath !== null && $previousPhotoPath !== null) {
+            Storage::disk('public')->delete($previousPhotoPath);
+        }
+
+        if ($newNationalIdPhotoPath !== null && $previousNationalIdPhotoPath !== null) {
+            Storage::disk('public')->delete($previousNationalIdPhotoPath);
+        }
+
         return ApiResponse::success(new StaffResource($staff->fresh(['position.role', 'user'])));
     }
 
@@ -130,5 +186,30 @@ final class StaffController extends Controller
         $staff->delete();
 
         return ApiResponse::noContent();
+    }
+
+    private function storeFile(StoreStaffRequest|UpdateStaffRequest $request, string $field): string
+    {
+        $tenant = $this->context->getOrFail();
+
+        $path = $request->file($field)->store($tenant->storagePath('staff'), 'public');
+
+        if ($path === false) {
+            abort(500, "Failed to store the uploaded {$field}.");
+        }
+
+        return $path;
+    }
+
+    /**
+     * Deterministic, not random: the same name always lands on the same
+     * palette entry, and it's computed once here at creation time — see the
+     * class docblock on Staff for why it's never regenerated on update.
+     */
+    private function profileColorFor(string $fullName): string
+    {
+        $index = crc32($fullName) % count(self::PROFILE_COLORS);
+
+        return self::PROFILE_COLORS[$index];
     }
 }

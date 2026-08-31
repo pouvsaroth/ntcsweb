@@ -19,7 +19,7 @@ const emit = defineEmits<{ 'update:modelValue': [value: boolean]; saved: [] }>()
 
 const { t } = useI18n()
 
-type Action = 'view' | 'create' | 'update' | 'delete' | 'assign'
+type Action = 'view' | 'create' | 'update' | 'delete' | 'assign' | 'cancel' | 'send'
 
 /**
  * Mirrors App\Support\Authorization\Permissions::catalog() on the backend,
@@ -53,12 +53,20 @@ const MODULES: { name: string; actions: Partial<Record<Action, string>> }[] = [
   { name: 'Books', actions: { view: 'books.view', create: 'books.create', update: 'books.update', delete: 'books.delete' } },
   { name: 'Classes', actions: { view: 'classes.view', create: 'classes.create', update: 'classes.update', delete: 'classes.delete' } },
   { name: 'Enrollments', actions: { view: 'enrollments.view', create: 'enrollments.create', update: 'enrollments.update', delete: 'enrollments.delete' } },
+  { name: 'Attendance', actions: { view: 'attendance.view', create: 'attendance.create', update: 'attendance.update' } },
   { name: 'Home slides', actions: { view: 'home-slides.view', create: 'home-slides.create', update: 'home-slides.update', delete: 'home-slides.delete' } },
+  { name: 'Gallery', actions: { view: 'gallery.view', create: 'gallery.create', update: 'gallery.update', delete: 'gallery.delete' } },
   { name: 'Programs', actions: { view: 'programs.view', create: 'programs.create', update: 'programs.update', delete: 'programs.delete' } },
+  { name: 'Products', actions: { view: 'products.view', create: 'products.create', update: 'products.update', delete: 'products.delete' } },
+  { name: 'Invoices', actions: { view: 'invoices.view', create: 'invoices.create', update: 'invoices.update', cancel: 'invoices.cancel' } },
+  { name: 'Payments', actions: { view: 'payments.view', create: 'payments.create', update: 'payments.update', cancel: 'payments.cancel' } },
+  { name: 'Receipts', actions: { view: 'receipts.view' } },
+  { name: 'Billing reports', actions: { view: 'billing-reports.view' } },
+  { name: 'Billing notifications', actions: { send: 'notifications.send' } },
   { name: 'System', actions: { view: 'audit-logs.view' } },
 ]
 
-const COLUMNS: Action[] = ['view', 'create', 'update', 'delete', 'assign']
+const COLUMNS: Action[] = ['view', 'create', 'update', 'delete', 'cancel', 'send', 'assign']
 
 const isEditing = computed(() => props.role != null)
 

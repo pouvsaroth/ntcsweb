@@ -27,13 +27,14 @@ class StaffControllerTest extends TestCase
 
         $response = $this->postJson('/api/v1/staff', [
             'employee_code' => 'S-0001',
-            'name' => 'John Smith',
+            'first_name' => 'John',
+            'last_name' => 'Smith',
             'phone' => '012345678',
             'position_id' => $position->id,
         ]);
 
         $response->assertCreated();
-        $response->assertJsonPath('data.name', 'John Smith');
+        $response->assertJsonPath('data.full_name', 'John Smith');
         $response->assertJsonPath('data.position.name', 'Accountant');
         // Default password is the phone number itself — see
         // UserProvisioningService — since there's no email/SMS channel to
@@ -54,7 +55,8 @@ class StaffControllerTest extends TestCase
 
         $response = $this->postJson('/api/v1/staff', [
             'employee_code' => 'S-0002',
-            'name' => 'Jane Doe',
+            'first_name' => 'Jane',
+            'last_name' => 'Doe',
             'phone' => '098765432',
             'position_id' => $position->id,
         ]);
@@ -80,7 +82,8 @@ class StaffControllerTest extends TestCase
 
         $response = $this->postJson('/api/v1/staff', [
             'employee_code' => 'S-0003',
-            'name' => 'Attacker',
+            'first_name' => 'Attacker',
+            'last_name' => 'Test',
             'phone' => '011112222',
             'position_id' => $position->id,
             'role' => 'Administrator',
@@ -107,7 +110,8 @@ class StaffControllerTest extends TestCase
         try {
             $this->postJson('/api/v1/staff', [
                 'employee_code' => 'S-0004',
-                'name' => 'Should Not Exist',
+                'first_name' => 'Should',
+                'last_name' => 'Not Exist',
                 'phone' => '010101010',
                 'position_id' => $position->id,
             ]);
@@ -130,7 +134,8 @@ class StaffControllerTest extends TestCase
 
         $created = $this->postJson('/api/v1/staff', [
             'employee_code' => 'S-0005',
-            'name' => 'Mover',
+            'first_name' => 'Mo',
+            'last_name' => 'Ver',
             'phone' => '019999999',
             'position_id' => $accountantPosition->id,
         ])->assertCreated();
@@ -155,7 +160,8 @@ class StaffControllerTest extends TestCase
 
         $this->postJson('/api/v1/staff', [
             'employee_code' => 'S-0006',
-            'name' => 'Kept User',
+            'first_name' => 'Kept',
+            'last_name' => 'User',
             'phone' => '017777777',
             'position_id' => $position->id,
         ])->assertCreated();

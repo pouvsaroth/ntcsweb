@@ -39,8 +39,13 @@ const historyImagePreview = ref<string | null>(null)
 const loading = ref(true)
 const loadError = ref<string | null>(null)
 const saveError = ref<string | null>(null)
+const fieldErrors = ref<Record<string, string[]>>({})
 const saved = ref(false)
 const saving = ref(false)
+
+function fieldError(field: string): string | undefined {
+  return fieldErrors.value[field]?.[0]
+}
 
 async function load() {
   loading.value = true
@@ -74,6 +79,7 @@ function onFileChange(event: Event) {
 async function save() {
   saving.value = true
   saveError.value = null
+  fieldErrors.value = {}
   saved.value = false
 
   try {
@@ -85,7 +91,12 @@ async function save() {
     site.loaded = false
     await site.load()
   } catch (error) {
-    saveError.value = error instanceof ApiRequestError ? error.message : t('admin.aboutPage.saveFailed')
+    if (error instanceof ApiRequestError && error.errors) {
+      fieldErrors.value = error.errors
+      saveError.value = t('admin.aboutPage.saveValidationError')
+    } else {
+      saveError.value = error instanceof ApiRequestError ? error.message : t('admin.aboutPage.saveFailed')
+    }
   } finally {
     saving.value = false
   }
@@ -112,8 +123,18 @@ onMounted(load)
         <p class="mb-4 text-sm text-neutral-500">{{ t('admin.aboutPage.statsHint') }}</p>
         <div class="grid gap-4 sm:grid-cols-2">
           <div v-for="(stat, index) in form.stats" :key="index" class="flex gap-3 rounded-lg border border-neutral-200 p-3">
-            <BaseInput v-model="stat.value" :placeholder="t('admin.aboutPage.statValuePlaceholder')" class="w-24 shrink-0" />
-            <BaseInput v-model="stat.label" :placeholder="t('admin.aboutPage.statLabelPlaceholder')" class="flex-1" />
+            <BaseInput
+              v-model="stat.value"
+              :placeholder="t('admin.aboutPage.statValuePlaceholder')"
+              :error="fieldError(`stats.${index}.value`)"
+              class="w-24 shrink-0"
+            />
+            <BaseInput
+              v-model="stat.label"
+              :placeholder="t('admin.aboutPage.statLabelPlaceholder')"
+              :error="fieldError(`stats.${index}.label`)"
+              class="flex-1"
+            />
           </div>
         </div>
       </section>
@@ -124,15 +145,21 @@ onMounted(load)
         <p class="mb-4 text-sm text-neutral-500">{{ t('admin.aboutPage.historyHint') }}</p>
 
         <div class="space-y-4">
-          <BaseInput v-model="form.history_title" :label="t('admin.aboutPage.historyTitle')" />
+          <BaseInput v-model="form.history_title" :label="t('admin.aboutPage.historyTitle')" :error="fieldError('history_title')" />
 
           <div>
             <label class="mb-1.5 block text-sm font-medium text-neutral-700">{{ t('admin.aboutPage.historyParagraph1') }}</label>
             <textarea
               v-model="form.history_paragraph_1"
               rows="3"
-              class="block w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm text-neutral-900 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+              class="block w-full rounded-lg border px-3 py-2 text-sm text-neutral-900 shadow-sm focus:outline-none focus:ring-2"
+              :class="
+                fieldError('history_paragraph_1')
+                  ? 'border-danger-400 focus:border-danger-500 focus:ring-danger-200'
+                  : 'border-neutral-300 focus:border-primary-500 focus:ring-primary-200'
+              "
             />
+            <p v-if="fieldError('history_paragraph_1')" class="mt-1.5 text-sm text-danger-600">{{ fieldError('history_paragraph_1') }}</p>
           </div>
 
           <div>
@@ -140,8 +167,14 @@ onMounted(load)
             <textarea
               v-model="form.history_paragraph_2"
               rows="3"
-              class="block w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm text-neutral-900 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+              class="block w-full rounded-lg border px-3 py-2 text-sm text-neutral-900 shadow-sm focus:outline-none focus:ring-2"
+              :class="
+                fieldError('history_paragraph_2')
+                  ? 'border-danger-400 focus:border-danger-500 focus:ring-danger-200'
+                  : 'border-neutral-300 focus:border-primary-500 focus:ring-primary-200'
+              "
             />
+            <p v-if="fieldError('history_paragraph_2')" class="mt-1.5 text-sm text-danger-600">{{ fieldError('history_paragraph_2') }}</p>
           </div>
 
           <div>
@@ -158,6 +191,7 @@ onMounted(load)
               class="block w-full text-sm text-neutral-600 file:mr-3 file:rounded-lg file:border-0 file:bg-primary-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-primary-800 hover:file:bg-primary-100"
               @change="onFileChange"
             />
+            <p v-if="fieldError('history_image')" class="mt-1.5 text-sm text-danger-600">{{ fieldError('history_image') }}</p>
           </div>
         </div>
       </section>
@@ -168,9 +202,9 @@ onMounted(load)
         <p class="mb-4 text-sm text-neutral-500">{{ t('admin.aboutPage.pillarsHint') }}</p>
         <div class="space-y-4">
           <div v-for="(pillar, index) in form.pillars" :key="index" class="grid gap-3 rounded-lg border border-neutral-200 p-4 sm:grid-cols-[5rem_1fr_2fr]">
-            <BaseInput v-model="pillar.icon" :placeholder="t('admin.aboutPage.pillarIconPlaceholder')" />
-            <BaseInput v-model="pillar.title" :placeholder="t('admin.aboutPage.pillarTitlePlaceholder')" />
-            <BaseInput v-model="pillar.description" :placeholder="t('admin.aboutPage.pillarDescriptionPlaceholder')" />
+            <BaseInput v-model="pillar.icon" :placeholder="t('admin.aboutPage.pillarIconPlaceholder')" :error="fieldError(`pillars.${index}.icon`)" />
+            <BaseInput v-model="pillar.title" :placeholder="t('admin.aboutPage.pillarTitlePlaceholder')" :error="fieldError(`pillars.${index}.title`)" />
+            <BaseInput v-model="pillar.description" :placeholder="t('admin.aboutPage.pillarDescriptionPlaceholder')" :error="fieldError(`pillars.${index}.description`)" />
           </div>
         </div>
       </section>
@@ -180,13 +214,13 @@ onMounted(load)
         <h2 class="mb-1 text-sm font-semibold text-neutral-800">{{ t('admin.aboutPage.achievementsSection') }}</h2>
         <p class="mb-4 text-sm text-neutral-500">{{ t('admin.aboutPage.achievementsHint') }}</p>
 
-        <BaseInput v-model="form.achievements_title" :label="t('admin.aboutPage.achievementsTitle')" class="mb-4" />
+        <BaseInput v-model="form.achievements_title" :label="t('admin.aboutPage.achievementsTitle')" :error="fieldError('achievements_title')" class="mb-4" />
 
         <div class="grid gap-4 sm:grid-cols-2">
           <div v-for="(achievement, index) in form.achievements" :key="index" class="grid grid-cols-[3.5rem_1fr_1fr] gap-2 rounded-lg border border-neutral-200 p-3">
-            <BaseInput v-model="achievement.icon" :placeholder="t('admin.aboutPage.achievementIconPlaceholder')" />
-            <BaseInput v-model="achievement.value" :placeholder="t('admin.aboutPage.achievementValuePlaceholder')" />
-            <BaseInput v-model="achievement.label" :placeholder="t('admin.aboutPage.achievementLabelPlaceholder')" />
+            <BaseInput v-model="achievement.icon" :placeholder="t('admin.aboutPage.achievementIconPlaceholder')" :error="fieldError(`achievements.${index}.icon`)" />
+            <BaseInput v-model="achievement.value" :placeholder="t('admin.aboutPage.achievementValuePlaceholder')" :error="fieldError(`achievements.${index}.value`)" />
+            <BaseInput v-model="achievement.label" :placeholder="t('admin.aboutPage.achievementLabelPlaceholder')" :error="fieldError(`achievements.${index}.label`)" />
           </div>
         </div>
       </section>

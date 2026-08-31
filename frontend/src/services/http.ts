@@ -116,3 +116,39 @@ function toApiRequestError(error: unknown): ApiRequestError {
 
   return new ApiRequestError('An unexpected error occurred.', 0)
 }
+
+/**
+ * For an endpoint that returns a raw file (a PDF invoice/receipt) rather than
+ * an { success, data } envelope — GETs it as a blob, then hands the browser a
+ * throwaway <a download> to save it, the same way a plain navigation to the
+ * URL would, except this one carries the session cookie via `withCredentials`
+ * and survives the axios instance's baseURL. An error response still arrives
+ * as a Blob (the server doesn't know the client wanted JSON), so it's read
+ * back out as text and parsed the same way a normal failure would be.
+ */
+export async function apiDownload(url: string, filename: string): Promise<void> {
+  try {
+    const response = await http.get<Blob>(url, { responseType: 'blob' })
+    const blobUrl = URL.createObjectURL(response.data)
+    const link = document.createElement('a')
+    link.href = blobUrl
+    link.download = filename
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    URL.revokeObjectURL(blobUrl)
+  } catch (error) {
+    if (isAxiosError(error) && error.response?.data instanceof Blob) {
+      const status = error.response.status
+      try {
+        const body = JSON.parse(await error.response.data.text()) as ApiError
+        throw new ApiRequestError(body.message, status, body.error?.code, body.errors)
+      } catch (parseError) {
+        if (parseError instanceof ApiRequestError) throw parseError
+        throw new ApiRequestError('The file could not be downloaded.', status)
+      }
+    }
+
+    throw toApiRequestError(error)
+  }
+}

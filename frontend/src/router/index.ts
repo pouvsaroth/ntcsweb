@@ -174,6 +174,18 @@ const adminRoutes: RouteRecordRaw[] = [
     meta: { titleKey: 'adminNav.items.staffList' },
   },
   {
+    path: 'staff/new',
+    name: 'admin.staff.new',
+    component: () => import('@/pages/admin/StaffForm.vue'),
+    meta: { titleKey: 'adminNav.items.staffList' },
+  },
+  {
+    path: 'staff/:id/edit',
+    name: 'admin.staff.edit',
+    component: () => import('@/pages/admin/StaffForm.vue'),
+    meta: { titleKey: 'adminNav.items.staffList' },
+  },
+  {
     path: 'positions',
     name: 'admin.positions',
     component: () => import('@/pages/admin/Positions.vue'),
@@ -196,6 +208,42 @@ const adminRoutes: RouteRecordRaw[] = [
     name: 'admin.school-settings',
     component: () => import('@/pages/admin/SchoolSettings.vue'),
     meta: { titleKey: 'adminNav.items.school' },
+  },
+  {
+    path: 'billing',
+    name: 'admin.billing',
+    component: () => import('@/pages/admin/BillingDashboard.vue'),
+    meta: { titleKey: 'adminNav.items.billingDashboard' },
+  },
+  {
+    path: 'products',
+    name: 'admin.products',
+    component: () => import('@/pages/admin/Products.vue'),
+    meta: { titleKey: 'adminNav.items.products' },
+  },
+  {
+    path: 'invoices',
+    name: 'admin.invoices',
+    component: () => import('@/pages/admin/Invoices.vue'),
+    meta: { titleKey: 'adminNav.items.invoices' },
+  },
+  {
+    path: 'invoices/new',
+    name: 'admin.invoices.new',
+    component: () => import('@/pages/admin/InvoiceForm.vue'),
+    meta: { titleKey: 'adminNav.items.invoices' },
+  },
+  {
+    path: 'invoices/:id',
+    name: 'admin.invoices.show',
+    component: () => import('@/pages/admin/InvoiceDetail.vue'),
+    meta: { titleKey: 'adminNav.items.invoices' },
+  },
+  {
+    path: 'payments',
+    name: 'admin.payments',
+    component: () => import('@/pages/admin/Payments.vue'),
+    meta: { titleKey: 'adminNav.items.payments' },
   },
   {
     path: 'settings',

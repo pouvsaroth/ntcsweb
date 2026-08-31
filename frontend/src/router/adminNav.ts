@@ -65,6 +65,15 @@ export const adminNav: AdminNavGroup[] = [
     ],
   },
   {
+    labelKey: 'adminNav.groups.billing',
+    items: [
+      { labelKey: 'adminNav.items.billingDashboard', to: '/admin/billing', permission: 'billing-reports.view' },
+      { labelKey: 'adminNav.items.products', to: '/admin/products', permission: 'products.view' },
+      { labelKey: 'adminNav.items.invoices', to: '/admin/invoices', permission: 'invoices.view' },
+      { labelKey: 'adminNav.items.payments', to: '/admin/payments', permission: 'payments.view' },
+    ],
+  },
+  {
     labelKey: 'adminNav.groups.website',
     items: [
       { labelKey: 'adminNav.items.homeSlides', to: '/admin/home-slides', permission: 'home-slides.view' },

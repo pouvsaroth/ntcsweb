@@ -22,7 +22,8 @@ class StaffFactory extends Factory
         return [
             'position_id' => Position::factory(),
             'employee_code' => 'S-'.fake()->unique()->numerify('####'),
-            'name' => fake()->name(),
+            'first_name' => fake()->firstName(),
+            'last_name' => fake()->lastName(),
             'email' => fake()->unique()->safeEmail(),
             'phone' => fake()->phoneNumber(),
             'hire_date' => fake()->dateTimeBetween('-5 years', 'now')->format('Y-m-d'),
