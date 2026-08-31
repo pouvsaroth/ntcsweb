@@ -1,0 +1,130 @@
+name: Deploy
+
+# Runs on every push to main (including a PR merge) — tests first, then a
+# frontend build, then the actual server deploy. Deploy only runs if both
+# earlier jobs pass, so a broken merge never reaches production.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  backend-tests:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_DB: ntcsdb_testing
+          POSTGRES_USER: ntcsuser
+          POSTGRES_PASSWORD: ntcspassword
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U ntcsuser"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      # phpunit.xml hardcodes DB_HOST=postgres (the Docker Compose service
+      # name, also used in local dev) — aliasing it here means the test
+      # config never needs a CI-specific fork.
+      - name: Alias the postgres hostname
+        run: echo "127.0.0.1 postgres" | sudo tee -a /etc/hosts
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: pdo_pgsql, pgsql, bcmath, zip, gd, redis
+          coverage: none
+
+      - name: Install Composer dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Run migrations
+        run: php artisan migrate --force
+
+      - name: Run test suite
+        run: php artisan test
+
+  frontend-build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm ci
+      - run: npx vue-tsc --noEmit
+      - run: npm run build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist
+          retention-days: 1
+
+  deploy:
+    needs: [backend-tests, frontend-build]
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: dist
+
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Upload frontend build
+        run: |
+          rsync -az --delete -e "ssh -i ~/.ssh/deploy_key" \
+            dist/ "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${{ secrets.DEPLOY_PATH }}/frontend/dist/"
+
+      # The backend itself is bind-mounted into the php/queue containers, so
+      # a `git reset --hard` alone already changes the code they see; `up -d
+      # --build` on top of that only rebuilds images when the Dockerfile (or
+      # docker-compose.prod.yml) actually changed — a no-op most deploys.
+      - name: Deploy backend
+        run: |
+          ssh -i ~/.ssh/deploy_key "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" '
+            set -e
+            cd "${{ secrets.DEPLOY_PATH }}"
+            git fetch origin main
+            git reset --hard origin/main
+            docker compose -f docker-compose.prod.yml up -d --build
+            docker compose -f docker-compose.prod.yml exec -T php composer install --no-dev --optimize-autoloader
+            docker compose -f docker-compose.prod.yml exec -T php php artisan migrate --force
+            docker compose -f docker-compose.prod.yml exec -T php php artisan config:clear
+            docker compose -f docker-compose.prod.yml exec -T php chown -R www-data:www-data storage bootstrap/cache
+            docker compose -f docker-compose.prod.yml restart queue
+          '
