@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Models\Concerns\Auditable;
 use App\Models\Concerns\BelongsToTenant;
+use App\Support\Audit\AuditAction;
 use Database\Factories\StudentFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -41,7 +43,7 @@ use Illuminate\Support\Facades\Storage;
 ])]
 class Student extends Model
 {
-    use BelongsToTenant, HasFactory, SoftDeletes;
+    use Auditable, BelongsToTenant, HasFactory, SoftDeletes;
 
     /** @use HasFactory<StudentFactory> */
     public const STATUS_ACTIVE = 'active';
@@ -112,5 +114,36 @@ class Student extends Model
     public function photoUrl(): ?string
     {
         return $this->photo_path !== null ? Storage::disk('public')->url($this->photo_path) : null;
+    }
+
+    public function auditModule(): string
+    {
+        return 'Students';
+    }
+
+    public function auditDisplayName(): string
+    {
+        return $this->student_code ?: $this->fullName();
+    }
+
+    /**
+     * @param  array<string, mixed>  $dirty
+     */
+    protected function auditActionForDirty(array $dirty): string
+    {
+        return array_key_exists('status', $dirty) ? AuditAction::STATUS_CHANGE : AuditAction::UPDATE;
+    }
+
+    /**
+     * @param  array<string, mixed>  $old
+     * @param  array<string, mixed>  $new
+     */
+    protected function auditDescriptionForChange(string $action, array $old, array $new): ?string
+    {
+        if ($action === AuditAction::STATUS_CHANGE) {
+            return "Changed student {$this->auditDisplayName()} status from {$old['status']} to {$new['status']}";
+        }
+
+        return null;
     }
 }

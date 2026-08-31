@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Models\Concerns\Auditable;
 use App\Models\Concerns\BelongsToTenant;
 use Database\Factories\PositionFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -28,7 +29,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 #[Fillable(['name', 'role_id', 'description', 'status'])]
 class Position extends Model
 {
-    use BelongsToTenant, HasFactory, SoftDeletes;
+    use Auditable, BelongsToTenant, HasFactory, SoftDeletes;
 
     /** @use HasFactory<PositionFactory> */
     public const STATUS_ACTIVE = 'active';
@@ -55,5 +56,10 @@ class Position extends Model
     public function scopeActive(Builder $query): void
     {
         $query->where('status', self::STATUS_ACTIVE);
+    }
+
+    public function auditModule(): string
+    {
+        return 'Positions';
     }
 }

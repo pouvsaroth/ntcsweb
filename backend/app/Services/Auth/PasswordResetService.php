@@ -6,6 +6,7 @@ namespace App\Services\Auth;
 
 use App\Models\User;
 use App\Notifications\Auth\ResetPasswordNotification;
+use App\Support\Audit\AuditAction;
 use App\Support\Audit\AuditLogger;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -52,7 +53,7 @@ final readonly class PasswordResetService
 
         $user->notify(new ResetPasswordNotification($token));
 
-        $this->audit->logFor('auth.password_reset_requested', $user->tenant_id, $user);
+        $this->audit->logFor(AuditAction::PASSWORD_RESET_REQUESTED, 'Auth', $user->tenant_id, $user);
     }
 
     public function reset(string $email, ?int $tenantId, string $token, string $password): bool
@@ -96,7 +97,7 @@ final readonly class PasswordResetService
             $this->deleteToken($user);
         });
 
-        $this->audit->logFor('auth.password_reset', $user->tenant_id, $user);
+        $this->audit->logFor(AuditAction::PASSWORD_CHANGE, 'Users', $user->tenant_id, $user);
 
         return true;
     }

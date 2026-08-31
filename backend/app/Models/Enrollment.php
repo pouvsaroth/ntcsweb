@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Models\Concerns\Auditable;
 use App\Models\Concerns\BelongsToTenant;
+use App\Support\Audit\AuditAction;
 use Database\Factories\EnrollmentFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -38,7 +40,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable(['student_id', 'class_id', 'book_id', 'enrolled_at', 'fee', 'status'])]
 class Enrollment extends Model
 {
-    use BelongsToTenant, HasFactory;
+    use Auditable, BelongsToTenant, HasFactory;
 
     /** @use HasFactory<EnrollmentFactory> */
     public const STATUS_ACTIVE = 'active';
@@ -81,5 +83,37 @@ class Enrollment extends Model
     public function scopeActive(Builder $query): void
     {
         $query->where('status', self::STATUS_ACTIVE);
+    }
+
+    /**
+     * No APPROVE/REJECT here: this system has no pending-approval workflow
+     * for an enrollment today (see $this::STATUS_*) — only CREATE, UPDATE,
+     * DELETE, and STATUS_CHANGE actually happen. Add them if/when an
+     * approval step is introduced.
+     */
+    public function auditModule(): string
+    {
+        return 'Enrollments';
+    }
+
+    /**
+     * @param  array<string, mixed>  $dirty
+     */
+    protected function auditActionForDirty(array $dirty): string
+    {
+        return array_key_exists('status', $dirty) ? AuditAction::STATUS_CHANGE : AuditAction::UPDATE;
+    }
+
+    /**
+     * @param  array<string, mixed>  $old
+     * @param  array<string, mixed>  $new
+     */
+    protected function auditDescriptionForChange(string $action, array $old, array $new): ?string
+    {
+        if ($action === AuditAction::STATUS_CHANGE) {
+            return "Changed enrollment {$this->auditDisplayName()} status from {$old['status']} to {$new['status']}";
+        }
+
+        return null;
     }
 }

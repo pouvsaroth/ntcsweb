@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { LOCALE_NAMES, SUPPORTED_LOCALES, setLocale, type Locale } from '@/i18n'
+import { LOCALE_FLAGS, LOCALE_NAMES, SUPPORTED_LOCALES, setLocale, type Locale } from '@/i18n'
 
 interface Props {
   /** 'light' for dark backgrounds (public header on a light page), 'dark' text for light backgrounds. */
@@ -30,14 +30,7 @@ function choose(next: Locale) {
       :aria-expanded="open"
       @click="open = !open"
     >
-      <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M9 5a3.75 3.75 0 01-3.75 3.75M12 20l3-6 3 6m-.75-2h-4.5"
-        />
-      </svg>
-      <span>{{ LOCALE_NAMES[locale as Locale] }}</span>
+      <span class="text-base leading-none" aria-hidden="true">{{ LOCALE_FLAGS[locale as Locale] }}</span>
     </button>
 
     <div v-if="open" class="fixed inset-0 z-40" @click="open = false" />
@@ -60,7 +53,10 @@ function choose(next: Locale) {
             :aria-selected="locale === code"
             @click="choose(code)"
           >
-            {{ LOCALE_NAMES[code] }}
+            <span class="flex items-center gap-2">
+              <span class="text-base leading-none" aria-hidden="true">{{ LOCALE_FLAGS[code] }}</span>
+              {{ LOCALE_NAMES[code] }}
+            </span>
             <svg v-if="locale === code" class="h-4 w-4 text-secondary-600" fill="currentColor" viewBox="0 0 20 20">
               <path
                 fill-rule="evenodd"

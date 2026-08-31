@@ -6,9 +6,11 @@ import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import { aboutPageService, type AboutPageInput } from '@/services/aboutPage'
+import { useSiteStore } from '@/stores/site'
 import { ApiRequestError } from '@/types/api'
 
 const { t } = useI18n()
+const site = useSiteStore()
 
 function emptyStats() {
   return Array.from({ length: 4 }, () => ({ value: '', label: '' }))
@@ -78,6 +80,10 @@ async function save() {
     await aboutPageService.save({ ...form, history_image: historyImageFile.value ?? undefined })
     historyImageFile.value = null
     saved.value = true
+    // The public About page reads from this store — refresh it so the
+    // change is visible without a hard reload, even within this same tab.
+    site.loaded = false
+    await site.load()
   } catch (error) {
     saveError.value = error instanceof ApiRequestError ? error.message : t('admin.aboutPage.saveFailed')
   } finally {

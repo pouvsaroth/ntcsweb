@@ -38,8 +38,9 @@ const mobileOpen = ref(false)
       </nav>
 
       <div class="hidden items-center gap-2 lg:flex">
-        <LanguageSwitcher />
+        <BaseButton to="/register" variant="outline" size="sm">{{ t('nav.register') }}</BaseButton>
         <BaseButton href="/login" target="_blank" size="sm">{{ t('nav.portalLogin') }}</BaseButton>
+        <LanguageSwitcher />
       </div>
 
       <!-- Mobile menu toggle -->
@@ -80,7 +81,8 @@ const mobileOpen = ref(false)
           >
             {{ t(item.labelKey) }}
           </RouterLink>
-          <BaseButton href="/login" target="_blank" class="mt-2" block>{{ t('nav.portalLogin') }}</BaseButton>
+          <BaseButton to="/register" variant="outline" class="mt-2" block @click="mobileOpen = false">{{ t('nav.register') }}</BaseButton>
+          <BaseButton href="/login" target="_blank" block>{{ t('nav.portalLogin') }}</BaseButton>
         </nav>
       </div>
     </Transition>

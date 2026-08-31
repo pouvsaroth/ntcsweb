@@ -11,6 +11,7 @@ use App\Http\Resources\UserResource;
 use App\Http\Responses\ApiResponse;
 use App\Models\User;
 use App\Services\Auth\AuthService;
+use App\Support\Audit\AuditAction;
 use App\Support\Audit\AuditLogger;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
@@ -56,7 +57,7 @@ final class AuthController extends Controller
 
         $user->recordLogin($request->ip());
 
-        $this->audit->logFor('auth.login', $user->tenant_id, $user, [
+        $this->audit->logFor(AuditAction::LOGIN, 'Auth', $user->tenant_id, $user, [
             'transport' => $request->filled('device_name') ? 'token' : 'session',
         ]);
 
@@ -76,7 +77,7 @@ final class AuthController extends Controller
     {
         $user = $request->user();
 
-        $this->audit->logFor('auth.logout', $user?->tenant_id, $user);
+        $this->audit->logFor(AuditAction::LOGOUT, 'Auth', $user?->tenant_id, $user);
 
         $token = $user?->currentAccessToken();
 

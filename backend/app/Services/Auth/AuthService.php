@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Auth;
 
 use App\Models\User;
+use App\Support\Audit\AuditAction;
 use App\Support\Audit\AuditLogger;
 use App\Support\Auth\PhoneNumber;
 use App\Support\Tenancy\TenantContext;
@@ -65,7 +66,7 @@ final readonly class AuthService
         if ($user === null) {
             Hash::check($password, self::TIMING_SAFE_DUMMY);
 
-            $this->audit->logFor('auth.login_failed', $tenantId, new: [
+            $this->audit->logFor(AuditAction::LOGIN_FAILED, 'Auth', $tenantId, new: [
                 'login' => $login,
                 'reason' => 'unknown_user',
             ]);
@@ -76,13 +77,13 @@ final readonly class AuthService
         if (! Hash::check($password, $user->password)) {
             event(new Failed(config('tenancy.auth_guard'), $user, ['login' => $login]));
 
-            $this->audit->logFor('auth.login_failed', $tenantId, $user, ['reason' => 'bad_password']);
+            $this->audit->logFor(AuditAction::LOGIN_FAILED, 'Auth', $tenantId, $user, ['reason' => 'bad_password']);
 
             $this->fail();
         }
 
         if (! $user->isActive()) {
-            $this->audit->logFor('auth.login_blocked', $tenantId, $user, ['reason' => $user->status]);
+            $this->audit->logFor(AuditAction::LOGIN_BLOCKED, 'Auth', $tenantId, $user, ['reason' => $user->status]);
 
             throw ValidationException::withMessages([
                 'login' => $user->status === User::STATUS_SUSPENDED

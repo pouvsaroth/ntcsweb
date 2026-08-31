@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Models\Concerns\Auditable;
 use App\Support\Authorization\PermissionRegistry;
 use Database\Factories\RoleFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -37,7 +38,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Role extends Model
 {
     /** @use HasFactory<RoleFactory> */
-    use HasFactory;
+    use Auditable, HasFactory;
 
     public const SUPER_ADMIN = 'super-admin';
 
@@ -132,5 +133,10 @@ class Role extends Model
     public function isSuperAdmin(): bool
     {
         return $this->slug === self::SUPER_ADMIN && $this->isPlatformRole();
+    }
+
+    public function auditModule(): string
+    {
+        return 'Roles';
     }
 }

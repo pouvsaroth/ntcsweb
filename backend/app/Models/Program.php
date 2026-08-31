@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Models\Concerns\Auditable;
 use App\Models\Concerns\BelongsToTenant;
 use Database\Factories\ProgramFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -25,13 +26,13 @@ use Illuminate\Support\Facades\Storage;
  * @property string $status
  */
 #[Fillable([
-    'title', 'subtitle', 'category', 'level', 'duration_label', 'description',
+    'title', 'subtitle', 'category', 'level', 'duration_label', 'fee', 'description',
     'image_path', 'is_featured', 'sort_order', 'status',
 ])]
 class Program extends Model
 {
     /** @use HasFactory<ProgramFactory> */
-    use BelongsToTenant, HasFactory, SoftDeletes;
+    use Auditable, BelongsToTenant, HasFactory, SoftDeletes;
 
     public const LEVEL_BEGINNER = 'beginner';
 
@@ -56,6 +57,7 @@ class Program extends Model
         return [
             'is_featured' => 'boolean',
             'sort_order' => 'integer',
+            'fee' => 'decimal:2',
         ];
     }
 
@@ -97,5 +99,15 @@ class Program extends Model
     public function scopeOrdered(Builder $query): void
     {
         $query->orderBy('sort_order')->orderBy('id');
+    }
+
+    /**
+     * Covers "Courses" too — this is the only course/program catalog entity
+     * in the system (see the class docblock); there is no separate Course
+     * model to audit under its own module name.
+     */
+    public function auditModule(): string
+    {
+        return 'Programs';
     }
 }

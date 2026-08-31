@@ -4,7 +4,6 @@ import { useI18n } from 'vue-i18n'
 
 import BaseBadge from '@/components/ui/BaseBadge.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
-import PageHero from '@/components/public/PageHero.vue'
 import SectionContainer from '@/components/public/SectionContainer.vue'
 import { publicContentService, type Program } from '@/services/publicContent'
 
@@ -33,7 +32,6 @@ onMounted(async () => {
 
 <template>
   <div>
-    <PageHero :title="t('programs.title')" :subtitle="t('programs.subtitle')" />
     <SectionContainer>
       <div v-if="loading" class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         <div v-for="i in 6" :key="i" class="h-72 animate-pulse rounded-[--radius-card] bg-neutral-100" />
@@ -56,13 +54,16 @@ onMounted(async () => {
             <p v-if="program.subtitle" class="mt-1 text-sm text-neutral-500">{{ program.subtitle }}</p>
             <p v-if="program.description" class="mt-2 line-clamp-2 text-sm text-neutral-500">{{ program.description }}</p>
 
-            <div class="mt-3 flex items-center gap-2">
+            <div class="mt-3 flex flex-wrap items-center gap-2">
               <BaseBadge :variant="levelBadgeVariant[program.level]">{{ t(levelLabel[program.level]) }}</BaseBadge>
               <span v-if="program.duration_label" class="inline-flex items-center gap-1 text-xs text-neutral-500">
                 <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 {{ program.duration_label }}
+              </span>
+              <span v-if="program.fee !== null" class="ml-auto text-sm font-semibold text-primary-700">
+                ${{ program.fee.toFixed(2) }}
               </span>
             </div>
           </div>

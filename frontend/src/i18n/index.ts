@@ -18,6 +18,15 @@ export const LOCALE_NAMES: Record<Locale, string> = {
   ja: '日本語',
 }
 
+/** Flag emoji standing in for each language in the switcher — a country flag isn't strictly a language flag, but it's the immediately recognisable convention every language switcher uses. */
+export const LOCALE_FLAGS: Record<Locale, string> = {
+  en: '🇺🇸',
+  km: '🇰🇭',
+  zh: '🇨🇳',
+  ko: '🇰🇷',
+  ja: '🇯🇵',
+}
+
 const STORAGE_KEY = 'ntcsweb.locale'
 
 function isSupportedLocale(value: string | null): value is Locale {

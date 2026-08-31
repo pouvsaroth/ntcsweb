@@ -11,6 +11,7 @@ export interface Program {
   category: string
   level: ProgramLevel
   duration_label: string | null
+  fee: number | null
   description: string | null
   image_url: string | null
   is_featured: boolean
@@ -27,6 +28,8 @@ export interface ProgramInput {
   category: string
   level: ProgramLevel
   duration_label: string
+  /** Empty string means "no fee set" — see toFormData() below. */
+  fee: string
   description: string
   is_featured: boolean
   sort_order: number
@@ -48,6 +51,7 @@ function toFormData(input: ProgramInput, methodOverride?: 'PUT'): FormData {
   form.append('category', input.category)
   form.append('level', input.level)
   if (input.duration_label) form.append('duration_label', input.duration_label)
+  if (input.fee.trim()) form.append('fee', input.fee.trim())
   if (input.description) form.append('description', input.description)
   form.append('is_featured', input.is_featured ? '1' : '0')
   form.append('sort_order', String(input.sort_order))

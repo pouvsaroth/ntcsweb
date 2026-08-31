@@ -6,6 +6,8 @@ const publicRoutes: RouteRecordRaw[] = [
   { path: '', name: 'home', component: () => import('@/pages/public/Home.vue') },
   { path: 'about', name: 'about', component: () => import('@/pages/public/About.vue') },
   { path: 'programs', name: 'programs', component: () => import('@/pages/public/Programs.vue') },
+  { path: 'schedule', name: 'schedule', component: () => import('@/pages/public/Schedule.vue') },
+  { path: 'register', name: 'register', component: () => import('@/pages/public/Register.vue') },
   { path: 'teachers', name: 'teachers', component: () => import('@/pages/public/Teachers.vue') },
   { path: 'students', name: 'students', component: () => import('@/pages/public/Students.vue') },
   { path: 'news', name: 'news', component: () => import('@/pages/public/News.vue') },
@@ -51,7 +53,11 @@ const comingSoonPages: [string, string][] = [
   ['documents', 'adminNav.items.documents'],
   ['contact-messages', 'adminNav.items.contactMessages'],
   ['notifications', 'adminNav.items.notifications'],
-  ['audit-logs', 'adminNav.items.auditLogs'],
+  // Not in adminNav.ts's sidebar — reachable only via StudentBottomNav's
+  // mobile tab bar, shown to a signed-in student.
+  ['my-scores', 'studentNav.score'],
+  ['my-attendance', 'studentNav.attendant'],
+  ['my-videos', 'studentNav.video'],
 ]
 
 const adminRoutes: RouteRecordRaw[] = [
@@ -168,6 +174,12 @@ const adminRoutes: RouteRecordRaw[] = [
     name: 'admin.roles',
     component: () => import('@/pages/admin/Roles.vue'),
     meta: { titleKey: 'adminNav.items.roles' },
+  },
+  {
+    path: 'audit-logs',
+    name: 'admin.audit-logs',
+    component: () => import('@/pages/admin/AuditLogs.vue'),
+    meta: { titleKey: 'adminNav.items.auditLogs' },
   },
   {
     path: 'school-settings',

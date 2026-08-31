@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Api\V1\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponse;
 use App\Models\User;
+use App\Support\Audit\AuditAction;
 use App\Support\Audit\AuditLogger;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
@@ -38,7 +39,7 @@ final class EmailVerificationController extends Controller
 
         event(new Verified($user));
 
-        $this->audit->logFor('auth.email_verified', $user->tenant_id, $user);
+        $this->audit->logFor(AuditAction::EMAIL_VERIFIED, 'Auth', $user->tenant_id, $user);
 
         return ApiResponse::success(message: __('Your email address has been verified.'));
     }

@@ -23,6 +23,7 @@ class StoreProgramRequest extends FormRequest
             'category' => ['required', 'string', 'max:100'],
             'level' => ['sometimes', Rule::in([Program::LEVEL_BEGINNER, Program::LEVEL_INTERMEDIATE, Program::LEVEL_ADVANCED])],
             'duration_label' => ['nullable', 'string', 'max:50'],
+            'fee' => ['nullable', 'numeric', 'min:0', 'max:999999.99'],
             'description' => ['nullable', 'string', 'max:5000'],
             // 10M matches upload_max_filesize in docker/php/uploads.ini.
             'image' => ['nullable', 'image', 'mimes:jpeg,png,webp,gif', 'max:10240'],

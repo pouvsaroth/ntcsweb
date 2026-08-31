@@ -28,6 +28,7 @@ const form = reactive({
   category: '',
   level: 'beginner' as ProgramLevel,
   duration_label: '',
+  fee: '',
   description: '',
   is_featured: false,
   sort_order: 0,
@@ -61,6 +62,7 @@ watch(
     form.category = props.program?.category ?? ''
     form.level = props.program?.level ?? 'beginner'
     form.duration_label = props.program?.duration_label ?? ''
+    form.fee = props.program?.fee != null ? String(props.program.fee) : ''
     form.description = props.program?.description ?? ''
     form.is_featured = props.program?.is_featured ?? false
     form.sort_order = props.program?.sort_order ?? 0
@@ -148,6 +150,15 @@ async function submit() {
         <BaseInput v-model="form.category" required :label="t('admin.programs.category')" :error="errors.category?.[0]" />
         <BaseInput v-model="form.duration_label" :label="t('admin.programs.durationLabel')" :hint="t('admin.programs.durationLabelHint')" :error="errors.duration_label?.[0]" />
       </div>
+
+      <BaseInput
+        v-model="form.fee"
+        type="number"
+        :label="t('admin.programs.fee')"
+        :hint="t('admin.programs.feeHint')"
+        :error="errors.fee?.[0]"
+        class="max-w-xs"
+      />
 
       <div>
         <label class="mb-1.5 block text-sm font-medium text-neutral-700">{{ t('admin.programs.description') }}</label>

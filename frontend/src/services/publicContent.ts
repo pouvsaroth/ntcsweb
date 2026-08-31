@@ -2,13 +2,13 @@ import { apiGetWithMeta, apiPost } from '@/services/http'
 import { ApiRequestError, type LengthAwarePaginationMeta, type PaginatedResult } from '@/types/api'
 
 /**
- * These endpoints (news, events, gallery, teachers) don't exist on the
- * backend yet — they land with the Website Management phase. Every read
- * here is built against that intended contract and fails closed to an empty
- * result rather than an error screen, so the public site looks intentionally
- * "no content yet" today and needs zero frontend changes once the real
- * endpoints ship. `programs` is the exception: it's real, backed by
- * App\Http\Controllers\Api\V1\Public\ProgramController.
+ * These endpoints (news, events, teachers) don't exist on the backend yet —
+ * they land with the Website Management phase. Every read here is built
+ * against that intended contract and fails closed to an empty result rather
+ * than an error screen, so the public site looks intentionally "no content
+ * yet" today and needs zero frontend changes once the real endpoints ship.
+ * `programs`, `gallery`, `home-slides`, and `schedules` are the exceptions:
+ * they're real, each backed by its own Public\*Controller.
  */
 
 export interface NewsItem {
@@ -52,6 +52,7 @@ export interface Program {
   category: string
   level: 'beginner' | 'intermediate' | 'advanced'
   duration_label: string | null
+  fee: number | null
   description: string | null
   image_url: string | null
 }
@@ -61,6 +62,20 @@ export interface Teacher {
   name: string
   title: string | null
   photo: string | null
+}
+
+export interface ClassScheduleSlot {
+  /** ISO-8601: 1 = Monday ... 7 = Sunday. */
+  day_of_week: number
+  start_time: string
+  end_time: string
+}
+
+export interface ScheduledClass {
+  id: number
+  name: string
+  teacher_name: string | null
+  schedules: ClassScheduleSlot[]
 }
 
 function emptyPagination(total = 0): LengthAwarePaginationMeta {
@@ -118,10 +133,16 @@ export const publicContentService = {
 
   getTeachers: (page = 1, perPage = 12) => fetchPublicList<Teacher>('/public/teachers', { page, per_page: perPage }),
 
+  getSchedules: () => fetchPublicList<ScheduledClass>('/public/schedules', { per_page: 100 }),
+
   /**
    * Submitting a message failing must be visible to the visitor, not silently
    * swallowed — unlike the read endpoints above, this does not catch 404.
    */
   submitContactMessage: (payload: { name: string; email: string; subject: string; message: string }) =>
     apiPost<void>('/public/contact-messages', payload),
+
+  /** Real, unlike submitContactMessage above — see EnrollmentInquiryController. */
+  submitEnrollmentInquiry: (payload: { name: string; phone: string; email: string; program_id: string; message: string }) =>
+    apiPost<void>('/public/enrollment-inquiries', payload),
 }

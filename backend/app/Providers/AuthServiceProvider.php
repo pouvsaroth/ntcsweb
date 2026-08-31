@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Models\AuditLog;
 use App\Models\Book;
 use App\Models\Classroom;
 use App\Models\Enrollment;
@@ -18,6 +19,7 @@ use App\Models\Student;
 use App\Models\Teacher;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Policies\AuditLogPolicy;
 use App\Policies\BookPolicy;
 use App\Policies\ClassroomPolicy;
 use App\Policies\EnrollmentPolicy;
@@ -58,6 +60,7 @@ class AuthServiceProvider extends ServiceProvider
         Program::class => ProgramPolicy::class,
         Position::class => PositionPolicy::class,
         Staff::class => StaffPolicy::class,
+        AuditLog::class => AuditLogPolicy::class,
     ];
 
     public function register(): void

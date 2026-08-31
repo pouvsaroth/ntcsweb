@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Api\V1\Admin\AboutPageController;
+use App\Http\Controllers\Api\V1\Admin\AuditLogController;
 use App\Http\Controllers\Api\V1\Admin\BookController;
 use App\Http\Controllers\Api\V1\Admin\ClassroomController;
 use App\Http\Controllers\Api\V1\Admin\EnrollmentController;
@@ -23,9 +24,11 @@ use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\V1\Auth\EmailVerificationController;
 use App\Http\Controllers\Api\V1\Auth\PasswordController;
 use App\Http\Controllers\Api\V1\GeographyController;
+use App\Http\Controllers\Api\V1\Public\EnrollmentInquiryController;
 use App\Http\Controllers\Api\V1\Public\GalleryController as PublicGalleryController;
 use App\Http\Controllers\Api\V1\Public\HomeSlideController as PublicHomeSlideController;
 use App\Http\Controllers\Api\V1\Public\ProgramController as PublicProgramController;
+use App\Http\Controllers\Api\V1\Public\ScheduleController as PublicScheduleController;
 use App\Http\Controllers\Api\V1\Public\SiteSettingsController;
 use App\Http\Controllers\Api\V1\TenantDirectoryController;
 use App\Http\Responses\ApiResponse;
@@ -158,6 +161,10 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         // portal access, or how an extra standalone account gets created.
         Route::apiResource('users', UserController::class)->only(['index', 'store']);
 
+        // Read-only — see AuditLogPolicy/AuditLogController's docblocks for
+        // why there is deliberately no store/update/destroy route here.
+        Route::apiResource('audit-logs', AuditLogController::class)->only(['index', 'show']);
+
         // Singleton, not a resource — see AboutPageController.
         Route::get('settings/about', [AboutPageController::class, 'show'])->name('settings.about.show');
         Route::post('settings/about', [AboutPageController::class, 'update'])->name('settings.about.update');
@@ -204,5 +211,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             ->whereNumber('id')
             ->name('gallery.download');
         Route::get('programs', [PublicProgramController::class, 'index'])->name('programs.index');
+        Route::get('schedules', [PublicScheduleController::class, 'index'])->name('schedules.index');
+        Route::post('enrollment-inquiries', [EnrollmentInquiryController::class, 'store'])->name('enrollment-inquiries.store');
     });
 });

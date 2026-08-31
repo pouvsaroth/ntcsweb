@@ -62,6 +62,59 @@ class ProgramTest extends TestCase
         $response->assertJsonPath('data.is_featured', false);
     }
 
+    public function test_it_saves_and_exposes_a_program_fee(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::PROGRAMS_CREATE]);
+
+        $response = $this->postJson('/api/v1/programs', [
+            'title' => 'Web Development',
+            'category' => 'Computer & IT',
+            'fee' => '49.90',
+        ]);
+
+        $response->assertCreated();
+        $response->assertJsonPath('data.fee', 49.9);
+    }
+
+    public function test_a_program_without_a_fee_reports_it_as_null(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::PROGRAMS_CREATE]);
+
+        $response = $this->postJson('/api/v1/programs', [
+            'title' => 'Web Development',
+            'category' => 'Computer & IT',
+        ]);
+
+        $response->assertCreated();
+        $response->assertJsonPath('data.fee', null);
+    }
+
+    public function test_a_negative_fee_is_rejected(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::PROGRAMS_CREATE]);
+
+        $response = $this->postJson('/api/v1/programs', [
+            'title' => 'Web Development',
+            'category' => 'Computer & IT',
+            'fee' => '-5',
+        ]);
+
+        $response->assertUnprocessable();
+        $response->assertJsonValidationErrors('fee');
+    }
+
+    public function test_the_public_endpoint_exposes_the_program_fee(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $this->actingInTenant($tenant);
+        Program::factory()->create(['title' => 'Priced', 'fee' => 25.5]);
+
+        $response = $this->withHeader('X-Tenant', $tenant->slug)->getJson('/api/v1/public/programs');
+
+        $response->assertOk();
+        $response->assertJsonPath('data.0.fee', 25.5);
+    }
+
     public function test_updating_with_a_new_image_deletes_the_old_file(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::PROGRAMS_UPDATE]);

@@ -12,6 +12,8 @@ use App\Http\Responses\ApiResponse;
 use App\Models\Position;
 use App\Models\Staff;
 use App\Services\Auth\UserProvisioningService;
+use App\Support\Audit\AuditAction;
+use App\Support\Audit\AuditLogger;
 use App\Support\Query\ApiQuery;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -20,7 +22,10 @@ use Symfony\Component\HttpFoundation\Response;
 
 final class StaffController extends Controller
 {
-    public function __construct(private readonly UserProvisioningService $provisioning) {}
+    public function __construct(
+        private readonly UserProvisioningService $provisioning,
+        private readonly AuditLogger $audit,
+    ) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -95,6 +100,17 @@ final class StaffController extends Controller
                 if ($oldRole !== null && $newRole !== null && $oldRole->isNot($newRole)) {
                     $staff->user->detachRoles($oldRole);
                     $staff->user->attachRoles($newRole);
+
+                    // A relationship change, invisible to Auditable's column
+                    // diffing — the one place this needs an explicit call.
+                    $this->audit->log(
+                        AuditAction::ROLE_CHANGE,
+                        'Users',
+                        $staff->user,
+                        old: ['role' => $oldRole->name],
+                        new: ['role' => $newRole->name],
+                        description: "Changed user role from {$oldRole->name} to {$newRole->name}",
+                    );
                 }
             }
         });

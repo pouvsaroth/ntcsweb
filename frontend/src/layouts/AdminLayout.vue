@@ -3,10 +3,13 @@ import { ref } from 'vue'
 
 import AdminHeader from '@/components/layout/AdminHeader.vue'
 import AdminSidebar from '@/components/layout/AdminSidebar.vue'
+import StudentBottomNav from '@/components/layout/StudentBottomNav.vue'
 import { useAdminUiStore } from '@/stores/adminUi'
+import { useAuthStore } from '@/stores/auth'
 
 const sidebarOpen = ref(false)
 const adminUi = useAdminUiStore()
+const auth = useAuthStore()
 </script>
 
 <template>
@@ -29,5 +32,7 @@ const adminUi = useAdminUiStore()
         <RouterView />
       </main>
     </div>
+
+    <StudentBottomNav v-if="auth.hasRole('student')" />
   </div>
 </template>

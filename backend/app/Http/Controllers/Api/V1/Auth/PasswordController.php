@@ -11,6 +11,7 @@ use App\Http\Requests\Api\V1\Auth\ResetPasswordRequest;
 use App\Http\Responses\ApiResponse;
 use App\Models\User;
 use App\Services\Auth\PasswordResetService;
+use App\Support\Audit\AuditAction;
 use App\Support\Audit\AuditLogger;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
@@ -84,7 +85,7 @@ final class PasswordController extends Controller
             )
             ->delete();
 
-        $this->audit->logFor('auth.password_changed', $user->tenant_id, $user);
+        $this->audit->logFor(AuditAction::PASSWORD_CHANGE, 'Users', $user->tenant_id, $user);
 
         return ApiResponse::success(message: __('Your password has been updated.'));
     }
