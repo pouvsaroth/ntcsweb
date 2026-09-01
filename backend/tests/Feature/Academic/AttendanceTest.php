@@ -110,8 +110,12 @@ class AttendanceTest extends TestCase
         $this->actingAsAdminWithPermissions([Permissions::ATTENDANCE_CREATE]);
         [$class, $enrollments] = $this->classWithStudents(1);
 
+        // +2 days, not +1: leaves a full day of margin against a CI runner's
+        // clock ticking over a day boundary between building this payload
+        // and the backend evaluating `before_or_equal:today`, which would
+        // otherwise make "tomorrow" and "today" collide once in a while.
         $this->postJson("/api/v1/classes/{$class->id}/attendance", [
-            'date' => now()->addDay()->toDateString(),
+            'date' => now()->addDays(2)->toDateString(),
             'entries' => [['enrollment_id' => $enrollments[0]->id, 'status' => AttendanceStatus::PRESENT]],
         ])->assertUnprocessable();
     }
