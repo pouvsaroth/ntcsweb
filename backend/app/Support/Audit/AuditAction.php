@@ -67,4 +67,28 @@ final class AuditAction
     // Attendance — one entry per batch save (a whole class roster on one
     // date), not one per student; see AttendanceRecord's docblock.
     public const ATTENDANCE_RECORDED = 'ATTENDANCE_RECORDED';
+
+    // Accounting — Expense/FinancialTransaction don't use the Auditable
+    // trait either, same reasoning as Invoice/Payment. Account itself DOES
+    // use Auditable (a simple config record) and reuses the generic
+    // CREATE/UPDATE/STATUS_CHANGE actions above rather than a bespoke set.
+    public const EXPENSE_CREATED = 'EXPENSE_CREATED';
+
+    public const EXPENSE_UPDATED = 'EXPENSE_UPDATED';
+
+    public const EXPENSE_APPROVED = 'EXPENSE_APPROVED';
+
+    public const EXPENSE_REJECTED = 'EXPENSE_REJECTED';
+
+    public const EXPENSE_PAID = 'EXPENSE_PAID';
+
+    public const EXPENSE_CANCELLED = 'EXPENSE_CANCELLED';
+
+    public const TRANSACTION_POSTED = 'TRANSACTION_POSTED';
+
+    public const TRANSACTION_REVERSED = 'TRANSACTION_REVERSED';
+
+    public const TRANSFER_CREATED = 'TRANSFER_CREATED';
+
+    public const ACCOUNTING_PERIOD_CLOSED = 'ACCOUNTING_PERIOD_CLOSED';
 }

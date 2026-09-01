@@ -187,6 +187,57 @@ final class Permissions
 
     public const NOTIFICATIONS_SEND = 'notifications.send';
 
+    // Accounting — the Chart of Accounts and general ledger sitting on top
+    // of Billing. Deliberately separate from the `billing.*`-flavored
+    // permissions above: a school may want billing staff who can't touch
+    // the Chart of Accounts, or an accountant with no invoice-editing
+    // rights, via the existing Position/Role permission-matrix editor.
+    public const ACCOUNTING_VIEW = 'accounting.view';
+
+    public const ACCOUNTING_DASHBOARD_VIEW = 'accounting.dashboard.view';
+
+    public const ACCOUNTS_VIEW = 'accounts.view';
+
+    public const ACCOUNTS_CREATE = 'accounts.create';
+
+    public const ACCOUNTS_UPDATE = 'accounts.update';
+
+    public const ACCOUNTS_DEACTIVATE = 'accounts.deactivate';
+
+    public const INCOME_VIEW = 'income.view';
+
+    public const INCOME_CREATE = 'income.create';
+
+    public const INCOME_UPDATE = 'income.update';
+
+    public const INCOME_CANCEL = 'income.cancel';
+
+    public const EXPENSE_VIEW = 'expense.view';
+
+    public const EXPENSE_CREATE = 'expense.create';
+
+    public const EXPENSE_UPDATE = 'expense.update';
+
+    public const EXPENSE_APPROVE = 'expense.approve';
+
+    public const EXPENSE_REJECT = 'expense.reject';
+
+    public const EXPENSE_CANCEL = 'expense.cancel';
+
+    public const EXPENSE_PAY = 'expense.pay';
+
+    public const TRANSACTIONS_VIEW = 'transactions.view';
+
+    public const TRANSACTIONS_CREATE = 'transactions.create';
+
+    public const REPORTS_FINANCIAL_VIEW = 'reports.financial.view';
+
+    public const REPORTS_FINANCIAL_EXPORT = 'reports.financial.export';
+
+    public const ACCOUNTING_PERIOD_CLOSE = 'accounting.period.close';
+
+    public const ACCOUNTING_ADJUSTMENT_CREATE = 'accounting.adjustment.create';
+
     // Attendance — taking/viewing a class's daily roll call. No `.delete`:
     // a taken record is corrected via `.update`, never removed, so a day's
     // roll call can't quietly disappear from a student's history.
@@ -315,6 +366,31 @@ final class Permissions
                 self::BILLING_REPORTS_VIEW => 'View billing reports and dashboard',
                 self::NOTIFICATIONS_SEND => 'Send invoice notifications',
             ],
+            'Accounting' => [
+                self::ACCOUNTING_VIEW => 'View the Accounting module',
+                self::ACCOUNTING_DASHBOARD_VIEW => 'View the Accounting dashboard',
+                self::ACCOUNTS_VIEW => 'View the Chart of Accounts',
+                self::ACCOUNTS_CREATE => 'Create accounts',
+                self::ACCOUNTS_UPDATE => 'Update accounts',
+                self::ACCOUNTS_DEACTIVATE => 'Deactivate accounts',
+                self::INCOME_VIEW => 'View income entries',
+                self::INCOME_CREATE => 'Record manual income',
+                self::INCOME_UPDATE => 'Update income entries',
+                self::INCOME_CANCEL => 'Cancel income entries',
+                self::EXPENSE_VIEW => 'View expenses',
+                self::EXPENSE_CREATE => 'Create expenses',
+                self::EXPENSE_UPDATE => 'Update expenses',
+                self::EXPENSE_APPROVE => 'Approve expenses',
+                self::EXPENSE_REJECT => 'Reject expenses',
+                self::EXPENSE_CANCEL => 'Cancel expenses',
+                self::EXPENSE_PAY => 'Pay expenses',
+                self::TRANSACTIONS_VIEW => 'View the general ledger',
+                self::TRANSACTIONS_CREATE => 'Create transfers and adjustments',
+                self::REPORTS_FINANCIAL_VIEW => 'View financial reports',
+                self::REPORTS_FINANCIAL_EXPORT => 'Export financial reports',
+                self::ACCOUNTING_PERIOD_CLOSE => 'Close accounting periods',
+                self::ACCOUNTING_ADJUSTMENT_CREATE => 'Create manual adjustments',
+            ],
             'Attendance' => [
                 self::ATTENDANCE_VIEW => 'View attendance records',
                 self::ATTENDANCE_CREATE => 'Take attendance',
@@ -373,6 +449,19 @@ final class Permissions
             self::RECEIPTS_VIEW, self::BILLING_REPORTS_VIEW, self::NOTIFICATIONS_SEND,
         ];
 
+        // Same reasoning as $billing above — its own tight group,
+        // school-admin only by default.
+        $accounting = [
+            self::ACCOUNTING_VIEW, self::ACCOUNTING_DASHBOARD_VIEW,
+            self::ACCOUNTS_VIEW, self::ACCOUNTS_CREATE, self::ACCOUNTS_UPDATE, self::ACCOUNTS_DEACTIVATE,
+            self::INCOME_VIEW, self::INCOME_CREATE, self::INCOME_UPDATE, self::INCOME_CANCEL,
+            self::EXPENSE_VIEW, self::EXPENSE_CREATE, self::EXPENSE_UPDATE,
+            self::EXPENSE_APPROVE, self::EXPENSE_REJECT, self::EXPENSE_CANCEL, self::EXPENSE_PAY,
+            self::TRANSACTIONS_VIEW, self::TRANSACTIONS_CREATE,
+            self::REPORTS_FINANCIAL_VIEW, self::REPORTS_FINANCIAL_EXPORT,
+            self::ACCOUNTING_PERIOD_CLOSE, self::ACCOUNTING_ADJUSTMENT_CREATE,
+        ];
+
         return [
             \App\Models\Role::SCHOOL_ADMIN => [
                 self::TENANT_SETTINGS_VIEW,
@@ -392,6 +481,7 @@ final class Permissions
                 self::ATTENDANCE_UPDATE,
                 ...$academicManagement,
                 ...$billing,
+                ...$accounting,
             ],
             // Read-only across the board, with one write exception: teaching
             // records (who teaches what, in which room) stay a school-admin

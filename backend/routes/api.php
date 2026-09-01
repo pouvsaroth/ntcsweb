@@ -3,15 +3,23 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Api\V1\Admin\AboutPageController;
+use App\Http\Controllers\Api\V1\Admin\AccountController;
+use App\Http\Controllers\Api\V1\Admin\AccountingDashboardController;
+use App\Http\Controllers\Api\V1\Admin\AccountingPeriodController;
+use App\Http\Controllers\Api\V1\Admin\AccountingReportController;
+use App\Http\Controllers\Api\V1\Admin\AccountingSettingsController;
 use App\Http\Controllers\Api\V1\Admin\AttendanceController;
 use App\Http\Controllers\Api\V1\Admin\AuditLogController;
 use App\Http\Controllers\Api\V1\Admin\BillingDashboardController;
 use App\Http\Controllers\Api\V1\Admin\BookController;
 use App\Http\Controllers\Api\V1\Admin\ClassroomController;
 use App\Http\Controllers\Api\V1\Admin\EnrollmentController;
+use App\Http\Controllers\Api\V1\Admin\ExpenseController;
+use App\Http\Controllers\Api\V1\Admin\FinancialTransactionController;
 use App\Http\Controllers\Api\V1\Admin\GalleryController as AdminGalleryController;
 use App\Http\Controllers\Api\V1\Admin\GeneralSettingsController;
 use App\Http\Controllers\Api\V1\Admin\HomeSlideController as AdminHomeSlideController;
+use App\Http\Controllers\Api\V1\Admin\IncomeController;
 use App\Http\Controllers\Api\V1\Admin\InvoiceController;
 use App\Http\Controllers\Api\V1\Admin\PaymentController;
 use App\Http\Controllers\Api\V1\Admin\PositionController;
@@ -215,6 +223,51 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
 
         Route::get('billing/dashboard', [BillingDashboardController::class, 'summary'])->name('billing.dashboard');
         Route::get('billing/reports/payments-by-method', [BillingDashboardController::class, 'paymentsByMethod'])->name('billing.reports.payments-by-method');
+
+        /*
+        |------------------------------------------------------------------
+        | Accounting: Chart of Accounts, Income, Expenses, Ledger, Reports
+        |------------------------------------------------------------------
+        |
+        | Sits on top of Billing rather than beside it — Payment -> Revenue
+        | recognition happens automatically inside PaymentService (see
+        | FinancialTransactionService), not through any route here. See
+        | ChartOfAccountsSeeder for the default accounts every tenant starts
+        | with, and AccountingSettingsController for where a school points
+        | its Cash/Bank/Revenue defaults.
+        |
+        */
+
+        Route::apiResource('accounts', AccountController::class)->except(['destroy']);
+        Route::post('accounts/{account}/deactivate', [AccountController::class, 'deactivate'])->name('accounts.deactivate');
+        Route::post('accounts/{account}/reactivate', [AccountController::class, 'reactivate'])->name('accounts.reactivate');
+
+        Route::get('income', [IncomeController::class, 'index'])->name('income.index');
+        Route::post('income', [IncomeController::class, 'store'])->name('income.store');
+
+        Route::apiResource('expenses', ExpenseController::class)->except(['destroy']);
+        Route::post('expenses/{expense}/approve', [ExpenseController::class, 'approve'])->name('expenses.approve');
+        Route::post('expenses/{expense}/reject', [ExpenseController::class, 'reject'])->name('expenses.reject');
+        Route::post('expenses/{expense}/pay', [ExpenseController::class, 'pay'])->name('expenses.pay');
+        Route::post('expenses/{expense}/cancel', [ExpenseController::class, 'cancel'])->name('expenses.cancel');
+        Route::post('expenses/{expense}/attachments', [ExpenseController::class, 'storeAttachment'])->name('expenses.attachments.store');
+        Route::delete('expenses/{expense}/attachments/{attachment}', [ExpenseController::class, 'destroyAttachment'])->name('expenses.attachments.destroy');
+
+        Route::apiResource('financial-transactions', FinancialTransactionController::class)->only(['index', 'show']);
+        Route::post('financial-transactions/transfer', [FinancialTransactionController::class, 'transfer'])->name('financial-transactions.transfer');
+        Route::post('financial-transactions/adjustment', [FinancialTransactionController::class, 'adjustment'])->name('financial-transactions.adjustment');
+
+        Route::get('accounting/dashboard', [AccountingDashboardController::class, 'summary'])->name('accounting.dashboard');
+        Route::get('accounting/reports/revenue', [AccountingReportController::class, 'revenue'])->name('accounting.reports.revenue');
+        Route::get('accounting/reports/expenses', [AccountingReportController::class, 'expenses'])->name('accounting.reports.expenses');
+        Route::get('accounting/reports/profit-loss', [AccountingReportController::class, 'profitLoss'])->name('accounting.reports.profit-loss');
+        Route::get('accounting/reports/cash-flow', [AccountingReportController::class, 'cashFlow'])->name('accounting.reports.cash-flow');
+
+        Route::get('accounting/periods', [AccountingPeriodController::class, 'index'])->name('accounting.periods.index');
+        Route::post('accounting/periods/close', [AccountingPeriodController::class, 'close'])->name('accounting.periods.close');
+
+        Route::get('settings/accounting', [AccountingSettingsController::class, 'show'])->name('settings.accounting.show');
+        Route::post('settings/accounting', [AccountingSettingsController::class, 'update'])->name('settings.accounting.update');
 
         // Student self-service — identity-gated (User::student()), not
         // permission-gated. See MyInvoiceController's docblock.

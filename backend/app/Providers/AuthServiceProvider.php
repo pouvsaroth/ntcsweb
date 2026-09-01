@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Models\Account;
 use App\Models\AttendanceRecord;
 use App\Models\AuditLog;
 use App\Models\Book;
 use App\Models\Classroom;
 use App\Models\Enrollment;
+use App\Models\Expense;
+use App\Models\FinancialTransaction;
 use App\Models\GalleryImage;
 use App\Models\HomeSlide;
 use App\Models\Invoice;
@@ -23,11 +26,14 @@ use App\Models\Student;
 use App\Models\Teacher;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Policies\AccountPolicy;
 use App\Policies\AttendancePolicy;
 use App\Policies\AuditLogPolicy;
 use App\Policies\BookPolicy;
 use App\Policies\ClassroomPolicy;
 use App\Policies\EnrollmentPolicy;
+use App\Policies\ExpensePolicy;
+use App\Policies\FinancialTransactionPolicy;
 use App\Policies\GalleryImagePolicy;
 use App\Policies\HomeSlidePolicy;
 use App\Policies\InvoicePolicy;
@@ -73,6 +79,9 @@ class AuthServiceProvider extends ServiceProvider
         Invoice::class => InvoicePolicy::class,
         Payment::class => PaymentPolicy::class,
         AttendanceRecord::class => AttendancePolicy::class,
+        Account::class => AccountPolicy::class,
+        Expense::class => ExpensePolicy::class,
+        FinancialTransaction::class => FinancialTransactionPolicy::class,
     ];
 
     public function register(): void

@@ -19,7 +19,7 @@ const emit = defineEmits<{ 'update:modelValue': [value: boolean]; saved: [] }>()
 
 const { t } = useI18n()
 
-type Action = 'view' | 'create' | 'update' | 'delete' | 'assign' | 'cancel' | 'send'
+type Action = 'view' | 'create' | 'update' | 'delete' | 'assign' | 'cancel' | 'send' | 'deactivate' | 'approve' | 'reject' | 'pay' | 'export'
 
 /**
  * Mirrors App\Support\Authorization\Permissions::catalog() on the backend,
@@ -63,10 +63,26 @@ const MODULES: { name: string; actions: Partial<Record<Action, string>> }[] = [
   { name: 'Receipts', actions: { view: 'receipts.view' } },
   { name: 'Billing reports', actions: { view: 'billing-reports.view' } },
   { name: 'Billing notifications', actions: { send: 'notifications.send' } },
+  { name: 'Accounts', actions: { view: 'accounts.view', create: 'accounts.create', update: 'accounts.update', deactivate: 'accounts.deactivate' } },
+  { name: 'Income', actions: { view: 'income.view', create: 'income.create', update: 'income.update', cancel: 'income.cancel' } },
+  {
+    name: 'Expenses',
+    actions: {
+      view: 'expense.view',
+      create: 'expense.create',
+      update: 'expense.update',
+      approve: 'expense.approve',
+      reject: 'expense.reject',
+      pay: 'expense.pay',
+      cancel: 'expense.cancel',
+    },
+  },
+  { name: 'Transactions', actions: { view: 'transactions.view', create: 'transactions.create' } },
+  { name: 'Financial reports', actions: { view: 'reports.financial.view', export: 'reports.financial.export' } },
   { name: 'System', actions: { view: 'audit-logs.view' } },
 ]
 
-const COLUMNS: Action[] = ['view', 'create', 'update', 'delete', 'cancel', 'send', 'assign']
+const COLUMNS: Action[] = ['view', 'create', 'update', 'delete', 'approve', 'reject', 'pay', 'cancel', 'deactivate', 'export', 'send', 'assign']
 
 const isEditing = computed(() => props.role != null)
 

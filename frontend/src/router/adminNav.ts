@@ -74,6 +74,17 @@ export const adminNav: AdminNavGroup[] = [
     ],
   },
   {
+    labelKey: 'adminNav.groups.accounting',
+    items: [
+      { labelKey: 'adminNav.items.accountingDashboard', to: '/admin/accounting', permission: 'accounting.dashboard.view' },
+      { labelKey: 'adminNav.items.accounts', to: '/admin/accounts', permission: 'accounts.view' },
+      { labelKey: 'adminNav.items.income', to: '/admin/income', permission: 'income.view' },
+      { labelKey: 'adminNav.items.expenses', to: '/admin/expenses', permission: 'expense.view' },
+      { labelKey: 'adminNav.items.transactions', to: '/admin/transactions', permission: 'transactions.view' },
+      { labelKey: 'adminNav.items.accountingReports', to: '/admin/accounting-reports', permission: 'reports.financial.view' },
+    ],
+  },
+  {
     labelKey: 'adminNav.groups.website',
     items: [
       { labelKey: 'adminNav.items.homeSlides', to: '/admin/home-slides', permission: 'home-slides.view' },

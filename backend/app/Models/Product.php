@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -28,7 +29,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string $price
  * @property bool $is_active
  */
-#[Fillable(['code', 'name', 'description', 'type', 'price', 'is_active'])]
+#[Fillable(['code', 'name', 'description', 'type', 'price', 'is_active', 'revenue_account_id'])]
 class Product extends Model
 {
     /** @use HasFactory<ProductFactory> */
@@ -51,6 +52,12 @@ class Product extends Model
     public function variants(): HasMany
     {
         return $this->hasMany(ProductVariant::class);
+    }
+
+    /** Optional override of which Revenue account a sale of this product posts to — see RevenueAccountResolver. */
+    public function revenueAccount(): BelongsTo
+    {
+        return $this->belongsTo(Account::class, 'revenue_account_id');
     }
 
     public function invoiceItems(): HasMany

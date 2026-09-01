@@ -7,6 +7,8 @@ namespace App\Services\Billing;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\User;
+use App\Services\Accounting\FinancialTransactionService;
+use App\Support\Accounting\TransactionType;
 use App\Support\Audit\AuditAction;
 use App\Support\Audit\AuditLogger;
 use App\Support\Billing\PaymentStatus;
@@ -19,6 +21,12 @@ use Illuminate\Validation\ValidationException;
  * the parent Invoice inside the same transaction (via InvoiceService), so a
  * Payment can never exist while its invoice's paid_amount/balance/status
  * disagree with it — see the class-level rule in both services' docblocks.
+ *
+ * Also recognizes/reverses the corresponding ledger entry via
+ * FinancialTransactionService, inside the same transaction — a payment and
+ * its accounting recognition are never allowed to disagree. That service
+ * itself no-ops quietly if Accounting isn't configured yet (no Cash/Bank
+ * account set up), so Billing keeps working standalone either way.
  */
 final class PaymentService
 {
@@ -26,6 +34,7 @@ final class PaymentService
         private readonly TenantContext $context,
         private readonly BillingNumberGenerator $numbers,
         private readonly InvoiceService $invoices,
+        private readonly FinancialTransactionService $accounting,
         private readonly AuditLogger $audit,
     ) {}
 
@@ -88,6 +97,8 @@ final class PaymentService
                 description: "Recorded payment {$payment->payment_number} of \${$amount} for invoice {$invoice->invoice_number} via {$payment->payment_method}",
             );
 
+            $this->accounting->recognizeIncomeForPayment($payment, $actor);
+
             return $payment->fresh();
         });
     }
@@ -134,6 +145,12 @@ final class PaymentService
                 new: ['status' => $status, 'reason' => $reason],
                 description: ucfirst(mb_strtolower($status))." payment {$payment->payment_number}: {$reason}",
             );
+
+            // A cancellation is an accounting correction (the original entry
+            // was a mistake); a refund is real money genuinely returned —
+            // see TransactionType and FinancialTransactionService::reverse().
+            $reversalType = $status === PaymentStatus::REFUNDED ? TransactionType::REFUND : TransactionType::ADJUSTMENT;
+            $this->accounting->reverseIncomeForPayment($payment, $reversalType, $actor);
 
             return $payment;
         });
