@@ -85,6 +85,23 @@ export const adminNav: AdminNavGroup[] = [
     ],
   },
   {
+    labelKey: 'adminNav.groups.assets',
+    items: [
+      { labelKey: 'adminNav.items.assetDashboard', to: '/admin/assets/dashboard', permission: 'assets.reports.view' },
+      { labelKey: 'adminNav.items.assets', to: '/admin/assets', permission: 'assets.view' },
+      { labelKey: 'adminNav.items.myAssets', to: '/admin/my-assets' },
+      { labelKey: 'adminNav.items.assetIssues', to: '/admin/asset-issues', permission: 'assets.issue.view' },
+      { labelKey: 'adminNav.items.assetRepairs', to: '/admin/asset-repairs', permission: 'assets.repair.view' },
+      { labelKey: 'adminNav.items.repairShops', to: '/admin/repair-shops', permission: 'assets.repair.view' },
+      { labelKey: 'adminNav.items.assetMaintenance', to: '/admin/asset-maintenance', permission: 'assets.maintenance.view' },
+      { labelKey: 'adminNav.items.assetCategories', to: '/admin/asset-categories', permission: 'assets.view' },
+      { labelKey: 'adminNav.items.assetLocations', to: '/admin/asset-locations', permission: 'assets.view' },
+      { labelKey: 'adminNav.items.departments', to: '/admin/departments', permission: 'assets.view' },
+      { labelKey: 'adminNav.items.suppliers', to: '/admin/suppliers', permission: 'assets.view' },
+      { labelKey: 'adminNav.items.assetReports', to: '/admin/asset-reports', permission: 'assets.reports.view' },
+    ],
+  },
+  {
     labelKey: 'adminNav.groups.website',
     items: [
       { labelKey: 'adminNav.items.homeSlides', to: '/admin/home-slides', permission: 'home-slides.view' },

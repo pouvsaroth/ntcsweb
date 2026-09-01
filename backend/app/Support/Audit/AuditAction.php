@@ -91,4 +91,50 @@ final class AuditAction
     public const TRANSFER_CREATED = 'TRANSFER_CREATED';
 
     public const ACCOUNTING_PERIOD_CLOSED = 'ACCOUNTING_PERIOD_CLOSED';
+
+    // Assets — see Asset's own docblock for why it doesn't use the generic
+    // Auditable trait either: AssetService/AssetLifecycleService/
+    // AssetRepairService fire these explicitly with a business-readable
+    // description, the same reasoning as Invoice/Payment/Expense. Distinct
+    // from AssetHistory (see that model's docblock): this answers "who did
+    // it in the system," AssetHistory answers "what happened to the asset."
+    public const ASSET_CREATED = 'ASSET_CREATED';
+
+    public const ASSET_UPDATED = 'ASSET_UPDATED';
+
+    public const ASSET_ASSIGNED = 'ASSET_ASSIGNED';
+
+    public const ASSET_RETURNED = 'ASSET_RETURNED';
+
+    public const ASSET_TRANSFERRED = 'ASSET_TRANSFERRED';
+
+    public const ASSET_ISSUE_REPORTED = 'ASSET_ISSUE_REPORTED';
+
+    public const ASSET_ISSUE_UPDATED = 'ASSET_ISSUE_UPDATED';
+
+    public const ASSET_ISSUE_RESOLVED = 'ASSET_ISSUE_RESOLVED';
+
+    public const ASSET_SENT_TO_REPAIR = 'ASSET_SENT_TO_REPAIR';
+
+    public const ASSET_REPAIR_STARTED = 'ASSET_REPAIR_STARTED';
+
+    public const ASSET_REPAIR_COMPLETED = 'ASSET_REPAIR_COMPLETED';
+
+    public const ASSET_REPAIR_CANCELLED = 'ASSET_REPAIR_CANCELLED';
+
+    public const ASSET_MAINTENANCE_SCHEDULED = 'ASSET_MAINTENANCE_SCHEDULED';
+
+    public const ASSET_MAINTENANCE_COMPLETED = 'ASSET_MAINTENANCE_COMPLETED';
+
+    public const ASSET_RETIRED = 'ASSET_RETIRED';
+
+    public const ASSET_DISPOSED = 'ASSET_DISPOSED';
+
+    public const ASSET_LOST = 'ASSET_LOST';
+
+    public const ASSET_FOUND = 'ASSET_FOUND';
+
+    public const ASSET_STATUS_CHANGED = 'ASSET_STATUS_CHANGED';
+
+    public const ASSET_CONDITION_CHANGED = 'ASSET_CONDITION_CHANGED';
 }

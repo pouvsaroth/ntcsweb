@@ -247,6 +247,59 @@ final class Permissions
 
     public const ATTENDANCE_UPDATE = 'attendance.update';
 
+    // Assets — physical property lifecycle management, sitting alongside but
+    // separate from Accounting: an IT Officer can hold every assets.*
+    // permission without touching the Chart of Accounts, and an Accountant
+    // can approve/pay the Expense a repair generates without holding any
+    // assets.* permission at all, via the existing Position/Role editor.
+    public const ASSETS_VIEW = 'assets.view';
+
+    public const ASSETS_CREATE = 'assets.create';
+
+    public const ASSETS_UPDATE = 'assets.update';
+
+    public const ASSETS_DELETE = 'assets.delete';
+
+    public const ASSETS_ASSIGN = 'assets.assign';
+
+    public const ASSETS_RETURN = 'assets.return';
+
+    public const ASSETS_TRANSFER = 'assets.transfer';
+
+    public const ASSETS_RETIRE = 'assets.retire';
+
+    public const ASSETS_DISPOSE = 'assets.dispose';
+
+    public const ASSETS_MARK_LOST = 'assets.mark_lost';
+
+    public const ASSETS_MARK_FOUND = 'assets.mark_found';
+
+    public const ASSET_ISSUES_VIEW = 'assets.issue.view';
+
+    public const ASSET_ISSUES_CREATE = 'assets.issue.create';
+
+    public const ASSET_ISSUES_UPDATE = 'assets.issue.update';
+
+    public const ASSET_ISSUES_RESOLVE = 'assets.issue.resolve';
+
+    public const ASSET_REPAIRS_VIEW = 'assets.repair.view';
+
+    public const ASSET_REPAIRS_CREATE = 'assets.repair.create';
+
+    public const ASSET_REPAIRS_UPDATE = 'assets.repair.update';
+
+    public const ASSET_REPAIRS_COMPLETE = 'assets.repair.complete';
+
+    public const ASSET_MAINTENANCE_VIEW = 'assets.maintenance.view';
+
+    public const ASSET_MAINTENANCE_CREATE = 'assets.maintenance.create';
+
+    public const ASSET_MAINTENANCE_UPDATE = 'assets.maintenance.update';
+
+    public const ASSET_REPORTS_VIEW = 'assets.reports.view';
+
+    public const ASSET_REPORTS_EXPORT = 'assets.reports.export';
+
     // System.
     public const AUDIT_LOGS_VIEW = 'audit-logs.view';
 
@@ -396,6 +449,32 @@ final class Permissions
                 self::ATTENDANCE_CREATE => 'Take attendance',
                 self::ATTENDANCE_UPDATE => 'Correct attendance records',
             ],
+            'Assets' => [
+                self::ASSETS_VIEW => 'View assets',
+                self::ASSETS_CREATE => 'Create assets',
+                self::ASSETS_UPDATE => 'Update assets',
+                self::ASSETS_DELETE => 'Delete assets',
+                self::ASSETS_ASSIGN => 'Assign assets',
+                self::ASSETS_RETURN => 'Return assigned assets',
+                self::ASSETS_TRANSFER => 'Transfer assets between locations/departments',
+                self::ASSETS_RETIRE => 'Retire assets',
+                self::ASSETS_DISPOSE => 'Dispose of assets',
+                self::ASSETS_MARK_LOST => 'Mark assets as lost/missing',
+                self::ASSETS_MARK_FOUND => 'Mark lost/missing assets as found',
+                self::ASSET_ISSUES_VIEW => 'View reported asset issues',
+                self::ASSET_ISSUES_CREATE => 'Report asset issues',
+                self::ASSET_ISSUES_UPDATE => 'Update asset issues',
+                self::ASSET_ISSUES_RESOLVE => 'Resolve asset issues',
+                self::ASSET_REPAIRS_VIEW => 'View asset repairs',
+                self::ASSET_REPAIRS_CREATE => 'Send assets to repair',
+                self::ASSET_REPAIRS_UPDATE => 'Update asset repairs',
+                self::ASSET_REPAIRS_COMPLETE => 'Complete asset repairs',
+                self::ASSET_MAINTENANCE_VIEW => 'View asset maintenance',
+                self::ASSET_MAINTENANCE_CREATE => 'Schedule asset maintenance',
+                self::ASSET_MAINTENANCE_UPDATE => 'Update/complete asset maintenance',
+                self::ASSET_REPORTS_VIEW => 'View asset reports and dashboard',
+                self::ASSET_REPORTS_EXPORT => 'Export asset reports',
+            ],
             'System' => [
                 self::AUDIT_LOGS_VIEW => 'View audit logs',
             ],
@@ -462,6 +541,20 @@ final class Permissions
             self::ACCOUNTING_PERIOD_CLOSE, self::ACCOUNTING_ADJUSTMENT_CREATE,
         ];
 
+        // Same reasoning as $billing/$accounting above — its own tight
+        // group, school-admin only by default. A school that wants a
+        // dedicated "IT Officer" role grants a subset of these through the
+        // existing Position/Role permission-matrix editor.
+        $assets = [
+            self::ASSETS_VIEW, self::ASSETS_CREATE, self::ASSETS_UPDATE, self::ASSETS_DELETE,
+            self::ASSETS_ASSIGN, self::ASSETS_RETURN, self::ASSETS_TRANSFER,
+            self::ASSETS_RETIRE, self::ASSETS_DISPOSE, self::ASSETS_MARK_LOST, self::ASSETS_MARK_FOUND,
+            self::ASSET_ISSUES_VIEW, self::ASSET_ISSUES_CREATE, self::ASSET_ISSUES_UPDATE, self::ASSET_ISSUES_RESOLVE,
+            self::ASSET_REPAIRS_VIEW, self::ASSET_REPAIRS_CREATE, self::ASSET_REPAIRS_UPDATE, self::ASSET_REPAIRS_COMPLETE,
+            self::ASSET_MAINTENANCE_VIEW, self::ASSET_MAINTENANCE_CREATE, self::ASSET_MAINTENANCE_UPDATE,
+            self::ASSET_REPORTS_VIEW, self::ASSET_REPORTS_EXPORT,
+        ];
+
         return [
             \App\Models\Role::SCHOOL_ADMIN => [
                 self::TENANT_SETTINGS_VIEW,
@@ -482,6 +575,7 @@ final class Permissions
                 ...$academicManagement,
                 ...$billing,
                 ...$accounting,
+                ...$assets,
             ],
             // Read-only across the board, with one write exception: teaching
             // records (who teaches what, in which room) stay a school-admin

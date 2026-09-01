@@ -8,11 +8,21 @@ use App\Http\Controllers\Api\V1\Admin\AccountingDashboardController;
 use App\Http\Controllers\Api\V1\Admin\AccountingPeriodController;
 use App\Http\Controllers\Api\V1\Admin\AccountingReportController;
 use App\Http\Controllers\Api\V1\Admin\AccountingSettingsController;
+use App\Http\Controllers\Api\V1\Admin\AssetCategoryController;
+use App\Http\Controllers\Api\V1\Admin\AssetController;
+use App\Http\Controllers\Api\V1\Admin\AssetDashboardController;
+use App\Http\Controllers\Api\V1\Admin\AssetDocumentController;
+use App\Http\Controllers\Api\V1\Admin\AssetIssueController;
+use App\Http\Controllers\Api\V1\Admin\AssetLocationController;
+use App\Http\Controllers\Api\V1\Admin\AssetMaintenanceController;
+use App\Http\Controllers\Api\V1\Admin\AssetRepairController;
+use App\Http\Controllers\Api\V1\Admin\AssetReportController;
 use App\Http\Controllers\Api\V1\Admin\AttendanceController;
 use App\Http\Controllers\Api\V1\Admin\AuditLogController;
 use App\Http\Controllers\Api\V1\Admin\BillingDashboardController;
 use App\Http\Controllers\Api\V1\Admin\BookController;
 use App\Http\Controllers\Api\V1\Admin\ClassroomController;
+use App\Http\Controllers\Api\V1\Admin\DepartmentController;
 use App\Http\Controllers\Api\V1\Admin\EnrollmentController;
 use App\Http\Controllers\Api\V1\Admin\ExpenseController;
 use App\Http\Controllers\Api\V1\Admin\FinancialTransactionController;
@@ -26,18 +36,21 @@ use App\Http\Controllers\Api\V1\Admin\PositionController;
 use App\Http\Controllers\Api\V1\Admin\ProductController;
 use App\Http\Controllers\Api\V1\Admin\ProductVariantController;
 use App\Http\Controllers\Api\V1\Admin\ProgramController as AdminProgramController;
+use App\Http\Controllers\Api\V1\Admin\RepairShopController;
 use App\Http\Controllers\Api\V1\Admin\RoleController;
 use App\Http\Controllers\Api\V1\Admin\SchoolClassController;
 use App\Http\Controllers\Api\V1\Admin\SchoolSettingsController;
 use App\Http\Controllers\Api\V1\Admin\StaffController;
 use App\Http\Controllers\Api\V1\Admin\StudentController;
 use App\Http\Controllers\Api\V1\Admin\StudentImportController;
+use App\Http\Controllers\Api\V1\Admin\SupplierController;
 use App\Http\Controllers\Api\V1\Admin\TeacherController;
 use App\Http\Controllers\Api\V1\Admin\UserController;
 use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\V1\Auth\EmailVerificationController;
 use App\Http\Controllers\Api\V1\Auth\PasswordController;
 use App\Http\Controllers\Api\V1\GeographyController;
+use App\Http\Controllers\Api\V1\MyAssetController;
 use App\Http\Controllers\Api\V1\MyAttendanceController;
 use App\Http\Controllers\Api\V1\MyInvoiceController;
 use App\Http\Controllers\Api\V1\Public\EnrollmentInquiryController;
@@ -269,6 +282,70 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('settings/accounting', [AccountingSettingsController::class, 'show'])->name('settings.accounting.show');
         Route::post('settings/accounting', [AccountingSettingsController::class, 'update'])->name('settings.accounting.update');
 
+        /*
+        |----------------------------------------------------------------------
+        | Assets — School Asset Lifecycle Management
+        |----------------------------------------------------------------------
+        |
+        | Configuration (categories/locations/departments/suppliers/repair
+        | shops) alongside the Asset lifecycle itself and its Issue/Repair/
+        | Maintenance satellites. Access is gated per-route via the assets.*
+        | permissions (AssetPolicy and friends), same pattern as Billing/
+        | Accounting above.
+        |
+        */
+
+        Route::apiResource('asset-categories', AssetCategoryController::class);
+        Route::apiResource('asset-locations', AssetLocationController::class);
+        Route::apiResource('departments', DepartmentController::class);
+        Route::apiResource('suppliers', SupplierController::class);
+        Route::apiResource('repair-shops', RepairShopController::class);
+
+        // Registered before the `assets/{asset}` wildcard resource below, so
+        // literal segments like `assets/dashboard` are matched here first
+        // instead of being swallowed as an {asset} route-model-binding
+        // lookup for a non-numeric "dashboard"/"reports" id.
+        Route::get('assets/dashboard', [AssetDashboardController::class, 'summary'])->name('assets.dashboard');
+        Route::get('assets/reports/inventory', [AssetReportController::class, 'inventory'])->name('assets.reports.inventory');
+        Route::get('assets/reports/status', [AssetReportController::class, 'status'])->name('assets.reports.status');
+        Route::get('assets/reports/repairs', [AssetReportController::class, 'repairs'])->name('assets.reports.repairs');
+        Route::get('assets/reports/repair-cost', [AssetReportController::class, 'repairCost'])->name('assets.reports.repair-cost');
+        Route::get('assets/reports/maintenance', [AssetReportController::class, 'maintenance'])->name('assets.reports.maintenance');
+        Route::get('assets/reports/assignments', [AssetReportController::class, 'assignments'])->name('assets.reports.assignments');
+        Route::get('assets/reports/history', [AssetReportController::class, 'history'])->name('assets.reports.history');
+
+        Route::apiResource('assets', AssetController::class);
+        Route::post('assets/{asset}/assign', [AssetController::class, 'assign'])->name('assets.assign');
+        Route::post('assets/{asset}/return', [AssetController::class, 'returnAsset'])->name('assets.return');
+        Route::post('assets/{asset}/transfer', [AssetController::class, 'transfer'])->name('assets.transfer');
+        Route::post('assets/{asset}/change-condition', [AssetController::class, 'changeCondition'])->name('assets.change-condition');
+        Route::post('assets/{asset}/retire', [AssetController::class, 'retire'])->name('assets.retire');
+        Route::post('assets/{asset}/dispose', [AssetController::class, 'dispose'])->name('assets.dispose');
+        Route::post('assets/{asset}/mark-lost', [AssetController::class, 'markLost'])->name('assets.mark-lost');
+        Route::post('assets/{asset}/mark-found', [AssetController::class, 'markFound'])->name('assets.mark-found');
+        Route::get('assets/{asset}/history', [AssetController::class, 'history'])->name('assets.history');
+        Route::get('assets/{asset}/assignments', [AssetController::class, 'assignments'])->name('assets.assignments');
+        Route::get('assets/{asset}/transfers', [AssetController::class, 'transfers'])->name('assets.transfers');
+
+        Route::get('assets/{asset}/documents', [AssetDocumentController::class, 'index'])->name('assets.documents.index');
+        Route::post('assets/{asset}/documents', [AssetDocumentController::class, 'store'])->name('assets.documents.store');
+        Route::delete('assets/{asset}/documents/{document}', [AssetDocumentController::class, 'destroy'])->name('assets.documents.destroy');
+
+        Route::post('assets/{asset}/issues', [AssetIssueController::class, 'store'])->name('assets.issues.store');
+        Route::apiResource('asset-issues', AssetIssueController::class)->only(['index', 'show', 'update']);
+        Route::post('asset-issues/{asset_issue}/resolve', [AssetIssueController::class, 'resolve'])->name('asset-issues.resolve');
+
+        Route::post('assets/{asset}/repairs', [AssetRepairController::class, 'store'])->name('assets.repairs.store');
+        Route::apiResource('asset-repairs', AssetRepairController::class)->only(['index', 'show', 'update']);
+        Route::post('asset-repairs/{asset_repair}/complete', [AssetRepairController::class, 'complete'])->name('asset-repairs.complete');
+        Route::post('asset-repairs/{asset_repair}/decide', [AssetRepairController::class, 'decide'])->name('asset-repairs.decide');
+        Route::post('asset-repairs/{asset_repair}/cancel', [AssetRepairController::class, 'cancel'])->name('asset-repairs.cancel');
+
+        Route::post('assets/{asset}/maintenance', [AssetMaintenanceController::class, 'store'])->name('assets.maintenance.store');
+        Route::apiResource('asset-maintenance', AssetMaintenanceController::class)->only(['index', 'show']);
+        Route::post('asset-maintenance/{asset_maintenance}/complete', [AssetMaintenanceController::class, 'complete'])->name('asset-maintenance.complete');
+        Route::post('asset-maintenance/{asset_maintenance}/cancel', [AssetMaintenanceController::class, 'cancel'])->name('asset-maintenance.cancel');
+
         // Student self-service — identity-gated (User::student()), not
         // permission-gated. See MyInvoiceController's docblock.
         Route::get('my-invoices', [MyInvoiceController::class, 'index'])->name('my-invoices.index');
@@ -277,6 +354,9 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
 
         // Student self-service — identity-gated, same pattern as my-invoices.
         Route::get('my-attendance', [MyAttendanceController::class, 'index'])->name('my-attendance.index');
+
+        // Self-service — identity-gated (Staff/Student/User's own assignments), same pattern as my-invoices.
+        Route::get('my-assets', [MyAssetController::class, 'index'])->name('my-assets.index');
 
         // Singleton, not a resource — see AboutPageController.
         Route::get('settings/about', [AboutPageController::class, 'show'])->name('settings.about.show');

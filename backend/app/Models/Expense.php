@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 /**
  * A school expense — see ExpenseStatus for its DRAFT/PENDING_APPROVAL/
@@ -34,6 +35,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'vendor', 'description', 'reference_number', 'status', 'created_by',
     'approved_by', 'approved_at', 'rejected_reason', 'paid_at',
     'cancellation_reason', 'cancelled_by', 'cancelled_at',
+    'reference_type', 'reference_id',
 ])]
 class Expense extends Model
 {
@@ -68,6 +70,12 @@ class Expense extends Model
     public function attachments(): HasMany
     {
         return $this->hasMany(ExpenseAttachment::class);
+    }
+
+    /** What created this expense (e.g. an AssetRepair) — nullable, mirrors FinancialTransaction's own reference pair. */
+    public function reference(): MorphTo
+    {
+        return $this->morphTo();
     }
 
     public function createdBy(): BelongsTo

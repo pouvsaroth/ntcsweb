@@ -19,7 +19,27 @@ const emit = defineEmits<{ 'update:modelValue': [value: boolean]; saved: [] }>()
 
 const { t } = useI18n()
 
-type Action = 'view' | 'create' | 'update' | 'delete' | 'assign' | 'cancel' | 'send' | 'deactivate' | 'approve' | 'reject' | 'pay' | 'export'
+type Action =
+  | 'view'
+  | 'create'
+  | 'update'
+  | 'delete'
+  | 'assign'
+  | 'cancel'
+  | 'send'
+  | 'deactivate'
+  | 'approve'
+  | 'reject'
+  | 'pay'
+  | 'export'
+  | 'transfer'
+  | 'return'
+  | 'retire'
+  | 'dispose'
+  | 'lost'
+  | 'found'
+  | 'resolve'
+  | 'complete'
 
 /**
  * Mirrors App\Support\Authorization\Permissions::catalog() on the backend,
@@ -79,10 +99,38 @@ const MODULES: { name: string; actions: Partial<Record<Action, string>> }[] = [
   },
   { name: 'Transactions', actions: { view: 'transactions.view', create: 'transactions.create' } },
   { name: 'Financial reports', actions: { view: 'reports.financial.view', export: 'reports.financial.export' } },
+  {
+    // Categories/Locations/Departments/Suppliers all share these exact same
+    // four slugs (see AssetCategoryPolicy and friends) rather than getting
+    // their own near-duplicate rows here — toggling "Assets" already
+    // controls all of them together.
+    name: 'Assets',
+    actions: {
+      view: 'assets.view',
+      create: 'assets.create',
+      update: 'assets.update',
+      delete: 'assets.delete',
+      assign: 'assets.assign',
+      return: 'assets.return',
+      transfer: 'assets.transfer',
+      retire: 'assets.retire',
+      dispose: 'assets.dispose',
+      lost: 'assets.mark_lost',
+      found: 'assets.mark_found',
+    },
+  },
+  { name: 'Asset issues', actions: { view: 'assets.issue.view', create: 'assets.issue.create', update: 'assets.issue.update', resolve: 'assets.issue.resolve' } },
+  { name: 'Asset repairs', actions: { view: 'assets.repair.view', create: 'assets.repair.create', update: 'assets.repair.update', complete: 'assets.repair.complete' } },
+  { name: 'Repair shops', actions: { view: 'assets.repair.view', create: 'assets.create', update: 'assets.update', delete: 'assets.delete' } },
+  { name: 'Asset maintenance', actions: { view: 'assets.maintenance.view', create: 'assets.maintenance.create', update: 'assets.maintenance.update' } },
+  { name: 'Asset reports', actions: { view: 'assets.reports.view', export: 'assets.reports.export' } },
   { name: 'System', actions: { view: 'audit-logs.view' } },
 ]
 
-const COLUMNS: Action[] = ['view', 'create', 'update', 'delete', 'approve', 'reject', 'pay', 'cancel', 'deactivate', 'export', 'send', 'assign']
+const COLUMNS: Action[] = [
+  'view', 'create', 'update', 'delete', 'approve', 'reject', 'pay', 'cancel', 'deactivate', 'export', 'send', 'assign',
+  'return', 'transfer', 'retire', 'dispose', 'lost', 'found', 'resolve', 'complete',
+]
 
 const isEditing = computed(() => props.role != null)
 
