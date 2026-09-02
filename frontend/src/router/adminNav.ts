@@ -34,8 +34,11 @@ export const adminNav: AdminNavGroup[] = [
   {
     labelKey: 'adminNav.groups.academic',
     items: [
-      { labelKey: 'adminNav.items.academicYears', to: '/admin/academic-years' },
-      { labelKey: 'adminNav.items.programs', to: '/admin/programs', permission: 'programs.view' },
+      { labelKey: 'adminNav.items.academicYears', to: '/admin/academic-years', permission: 'academic-years.view' },
+      { labelKey: 'adminNav.items.studyModes', to: '/admin/study-modes', permission: 'study-modes.view' },
+      { labelKey: 'adminNav.items.academicPrograms', to: '/admin/academic-programs', permission: 'academic-programs.view' },
+      { labelKey: 'adminNav.items.coursePackages', to: '/admin/course-packages', permission: 'course-packages.view' },
+      { labelKey: 'adminNav.items.programOfferings', to: '/admin/program-offerings', permission: 'program-offerings.view' },
       { labelKey: 'adminNav.items.subjects', to: '/admin/subjects' },
       { labelKey: 'adminNav.items.books', to: '/admin/books' },
       { labelKey: 'adminNav.items.classes', to: '/admin/classes' },
@@ -129,6 +132,8 @@ export const adminNav: AdminNavGroup[] = [
       { labelKey: 'adminNav.items.roles', to: '/admin/roles', permission: 'roles.view' },
       { labelKey: 'adminNav.items.positions', to: '/admin/positions', permission: 'positions.view' },
       { labelKey: 'adminNav.items.auditLogs', to: '/admin/audit-logs', permission: 'audit-logs.view' },
+      { labelKey: 'adminNav.items.languages', to: '/admin/languages', permission: 'base-data.manage-languages' },
+      { labelKey: 'adminNav.items.lookupCategories', to: '/admin/lookup-categories', permission: 'base-data.view' },
     ],
   },
 ]

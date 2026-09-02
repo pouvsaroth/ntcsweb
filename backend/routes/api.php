@@ -3,6 +3,9 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Api\V1\Admin\AboutPageController;
+use App\Http\Controllers\Api\V1\Admin\AcademicProgramController;
+use App\Http\Controllers\Api\V1\Admin\AcademicYearController;
+use App\Http\Controllers\Api\V1\Admin\AcademicReportController;
 use App\Http\Controllers\Api\V1\Admin\AccountController;
 use App\Http\Controllers\Api\V1\Admin\AccountingDashboardController;
 use App\Http\Controllers\Api\V1\Admin\AccountingPeriodController;
@@ -22,8 +25,10 @@ use App\Http\Controllers\Api\V1\Admin\AuditLogController;
 use App\Http\Controllers\Api\V1\Admin\BillingDashboardController;
 use App\Http\Controllers\Api\V1\Admin\BookController;
 use App\Http\Controllers\Api\V1\Admin\ClassroomController;
+use App\Http\Controllers\Api\V1\Admin\CoursePackageController;
 use App\Http\Controllers\Api\V1\Admin\DepartmentController;
 use App\Http\Controllers\Api\V1\Admin\EnrollmentController;
+use App\Http\Controllers\Api\V1\Admin\EnrollmentPackageController;
 use App\Http\Controllers\Api\V1\Admin\ExpenseController;
 use App\Http\Controllers\Api\V1\Admin\FinancialTransactionController;
 use App\Http\Controllers\Api\V1\Admin\GalleryController as AdminGalleryController;
@@ -31,11 +36,15 @@ use App\Http\Controllers\Api\V1\Admin\GeneralSettingsController;
 use App\Http\Controllers\Api\V1\Admin\HomeSlideController as AdminHomeSlideController;
 use App\Http\Controllers\Api\V1\Admin\IncomeController;
 use App\Http\Controllers\Api\V1\Admin\InvoiceController;
+use App\Http\Controllers\Api\V1\Admin\LanguageController;
+use App\Http\Controllers\Api\V1\Admin\LookupCategoryController;
+use App\Http\Controllers\Api\V1\Admin\LookupValueController;
 use App\Http\Controllers\Api\V1\Admin\PaymentController;
 use App\Http\Controllers\Api\V1\Admin\PositionController;
 use App\Http\Controllers\Api\V1\Admin\ProductController;
 use App\Http\Controllers\Api\V1\Admin\ProductVariantController;
 use App\Http\Controllers\Api\V1\Admin\ProgramController as AdminProgramController;
+use App\Http\Controllers\Api\V1\Admin\ProgramOfferingController;
 use App\Http\Controllers\Api\V1\Admin\RepairShopController;
 use App\Http\Controllers\Api\V1\Admin\RoleController;
 use App\Http\Controllers\Api\V1\Admin\SchoolClassController;
@@ -43,6 +52,7 @@ use App\Http\Controllers\Api\V1\Admin\SchoolSettingsController;
 use App\Http\Controllers\Api\V1\Admin\StaffController;
 use App\Http\Controllers\Api\V1\Admin\StudentController;
 use App\Http\Controllers\Api\V1\Admin\StudentImportController;
+use App\Http\Controllers\Api\V1\Admin\StudyModeController;
 use App\Http\Controllers\Api\V1\Admin\SupplierController;
 use App\Http\Controllers\Api\V1\Admin\TeacherController;
 use App\Http\Controllers\Api\V1\Admin\UserController;
@@ -50,6 +60,7 @@ use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\V1\Auth\EmailVerificationController;
 use App\Http\Controllers\Api\V1\Auth\PasswordController;
 use App\Http\Controllers\Api\V1\GeographyController;
+use App\Http\Controllers\Api\V1\LookupController;
 use App\Http\Controllers\Api\V1\MyAssetController;
 use App\Http\Controllers\Api\V1\MyAttendanceController;
 use App\Http\Controllers\Api\V1\MyInvoiceController;
@@ -172,6 +183,36 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::apiResource('classes', SchoolClassController::class)->parameters(['classes' => 'class']);
 
         Route::apiResource('enrollments', EnrollmentController::class);
+        Route::post('enrollments/package', [EnrollmentPackageController::class, 'store'])->name('enrollments.package.store');
+        Route::post('enrollments/{enrollment}/cancel', [EnrollmentController::class, 'cancel'])->name('enrollments.cancel');
+        Route::post('enrollments/{enrollment}/transfer', [EnrollmentController::class, 'transfer'])->name('enrollments.transfer');
+
+        /*
+        |----------------------------------------------------------------------
+        | Academic — Program / Package / Class linkage
+        |----------------------------------------------------------------------
+        |
+        | Study Mode / Academic Program / Course Package / Academic Year /
+        | Program Offering — the configurable catalog layer package-based
+        | enrollment is built on. `AcademicProgram` is deliberately not
+        | named/routed as `programs` — that resource above is the unrelated
+        | public marketing catalog (see AcademicProgram's own docblock).
+        | There is no separate "Course" resource — a Course Package bundles
+        | Books directly (see Book::coursePackages()).
+        |
+        */
+
+        Route::apiResource('study-modes', StudyModeController::class);
+        Route::apiResource('academic-programs', AcademicProgramController::class);
+        Route::apiResource('course-packages', CoursePackageController::class);
+        Route::apiResource('academic-years', AcademicYearController::class);
+        Route::apiResource('program-offerings', ProgramOfferingController::class);
+
+        Route::get('academic-reports/enrollments', [AcademicReportController::class, 'enrollments'])->name('academic-reports.enrollments');
+        Route::get('academic-reports/program-revenue', [AcademicReportController::class, 'programRevenue'])->name('academic-reports.program-revenue');
+        Route::get('academic-reports/package-sales', [AcademicReportController::class, 'packageSales'])->name('academic-reports.package-sales');
+        Route::get('academic-reports/classes', [AcademicReportController::class, 'classReport'])->name('academic-reports.classes');
+        Route::get('students/{student}/financial-summary', [AcademicReportController::class, 'studentFinancial'])->name('students.financial-summary');
 
         // Attendance — history/review list, plus per-class "take attendance"
         // (roster + save) nested under the class it belongs to. See
@@ -383,6 +424,29 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::get('villages', [GeographyController::class, 'villages'])->name('villages');
             Route::get('lookup', [GeographyController::class, 'lookup'])->name('lookup');
         });
+
+        /*
+        |----------------------------------------------------------------------
+        | Base Data / Lookups — reusable multilingual dropdown catalog
+        |----------------------------------------------------------------------
+        |
+        | The plain {id, code, name} dropdown-fetch endpoints are usable by
+        | any signed-in tenant user — same precedent as the geo group above
+        | (a teacher filling in a student's Gender needs this without a Base
+        | Data admin permission). Only the admin management resources below
+        | are permission-gated, via base-data.* policies.
+        |
+        */
+        Route::prefix('lookups')->name('lookups.')->group(function () {
+            Route::get('/', [LookupController::class, 'categories'])->name('categories');
+            Route::get('{category}', [LookupController::class, 'values'])->name('values');
+            Route::get('{category}/values', [LookupController::class, 'values'])->name('values.alias');
+            Route::get('{category}/values/{id}', [LookupController::class, 'show'])->name('values.show');
+        });
+
+        Route::apiResource('languages', LanguageController::class);
+        Route::apiResource('lookup-categories', LookupCategoryController::class);
+        Route::apiResource('lookup-values', LookupValueController::class);
     });
 
     /*

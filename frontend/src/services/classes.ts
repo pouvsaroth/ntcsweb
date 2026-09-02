@@ -1,6 +1,8 @@
 import { apiDelete, apiGetWithMeta, apiPost, apiPut } from '@/services/http'
 import type { Book } from '@/services/books'
 import type { Classroom } from '@/services/classrooms'
+import type { CoursePackage } from '@/services/coursePackages'
+import type { ProgramOffering } from '@/services/programOfferings'
 import type { Teacher } from '@/services/teachers'
 import type { PaginatedQuery } from '@/composables/usePaginatedResource'
 import type { LengthAwarePaginationMeta, PaginatedResult } from '@/types/api'
@@ -28,6 +30,11 @@ export interface SchoolClass {
   schedules: ClassSchedule[]
   /** The session's book menu — which books this class offers, not "the curriculum everyone shares" (see docs/database.md). */
   books: Book[]
+  /** Which Program Offering this session belongs to — required before a package-based enrollment can target this class. */
+  program_offering_id: number | null
+  program_offering: ProgramOffering | null
+  /** The session's course-package menu — mirrors `books` but for the package-based (Computer-class) enrollment path. */
+  course_packages: CoursePackage[]
   enrollments_count?: number
   created_at: string
 }
@@ -43,6 +50,8 @@ export interface ClassInput {
   status: ClassStatus
   schedules: { day_of_week: number; start_time: string; end_time: string }[]
   book_ids: number[]
+  program_offering_id: number | null
+  course_package_ids: number[]
 }
 
 export const classesService = {

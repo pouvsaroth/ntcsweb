@@ -31,6 +31,7 @@ class StoreSchoolClassRequest extends FormRequest
             'code' => ['nullable', 'string', 'max:32', Rule::unique('classes')->where('tenant_id', $tenantId)],
             'teacher_id' => ['nullable', Rule::exists('teachers', 'id')->where('tenant_id', $tenantId)],
             'classroom_id' => ['nullable', Rule::exists('classrooms', 'id')->where('tenant_id', $tenantId)],
+            'program_offering_id' => ['nullable', Rule::exists('program_offerings', 'id')->where('tenant_id', $tenantId)],
             'capacity' => ['nullable', 'integer', 'min:1', 'max:100000'],
             'start_date' => ['nullable', 'date'],
             'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
@@ -48,6 +49,11 @@ class StoreSchoolClassRequest extends FormRequest
 
             'book_ids' => ['sometimes', 'array'],
             'book_ids.*' => [Rule::exists('books', 'id')->where('tenant_id', $tenantId)],
+
+            // The menu of registration packages this class session offers —
+            // mirrors book_ids exactly, see class_course_package's migration.
+            'course_package_ids' => ['sometimes', 'array'],
+            'course_package_ids.*' => [Rule::exists('course_packages', 'id')->where('tenant_id', $tenantId)],
         ];
     }
 }

@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 
 import LanguageSwitcher from '@/components/ui/LanguageSwitcher.vue'
+import { adminNav } from '@/router/adminNav'
 
 defineEmits<{ 'toggle-sidebar': [] }>()
 
@@ -12,6 +13,22 @@ const { t } = useI18n()
 
 /** The current section's name (e.g. "Students", "Books") — same key each page's sidebar link and <h1> already use, so this always matches whatever menu you're on. */
 const pageTitle = computed(() => (route.meta.titleKey ? t(String(route.meta.titleKey)) : null))
+
+/** A sub-page (e.g. "Register Student") sets this to render "Students › Register Student" here instead of duplicating "Students" again in its own page body. */
+const subPageTitle = computed(() => (route.meta.pageTitleKey ? t(String(route.meta.pageTitleKey)) : null))
+
+/** Where the "Students" part of that breadcrumb links back to — the same sidebar item's own `to`, found by its label key, so this works for any future sub-page without hardcoding a route name here. */
+const sectionLink = computed(() => {
+  const labelKey = route.meta.titleKey ? String(route.meta.titleKey) : null
+  if (!labelKey) return null
+
+  for (const group of adminNav) {
+    const item = group.items.find((entry) => entry.labelKey === labelKey)
+    if (item) return item.to
+  }
+
+  return null
+})
 </script>
 
 <template>
@@ -27,8 +44,14 @@ const pageTitle = computed(() => (route.meta.titleKey ? t(String(route.meta.titl
           <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
         </svg>
       </button>
-      <p v-if="pageTitle" class="hidden text-sm font-medium text-neutral-500 sm:block">
-        {{ pageTitle }}
+      <p v-if="pageTitle" class="hidden items-center gap-2 text-sm font-medium text-neutral-500 sm:flex">
+        <template v-if="subPageTitle">
+          <RouterLink v-if="sectionLink" :to="sectionLink" class="hover:text-primary-700">{{ pageTitle }}</RouterLink>
+          <span v-else>{{ pageTitle }}</span>
+          <span class="text-neutral-300">›</span>
+          <span class="text-neutral-900">{{ subPageTitle }}</span>
+        </template>
+        <template v-else>{{ pageTitle }}</template>
       </p>
     </div>
 

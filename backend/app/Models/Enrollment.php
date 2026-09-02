@@ -34,11 +34,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $tenant_id
  * @property int $student_id
  * @property int $class_id
- * @property int $book_id
+ * @property int|null $book_id
+ * @property int|null $course_package_id
+ * @property int|null $academic_program_id
+ * @property int|null $study_mode_id
  * @property string $fee
  * @property string $status
  */
-#[Fillable(['student_id', 'class_id', 'book_id', 'enrolled_at', 'fee', 'status'])]
+#[Fillable(['student_id', 'class_id', 'book_id', 'course_package_id', 'academic_program_id', 'study_mode_id', 'enrolled_at', 'fee', 'status'])]
 class Enrollment extends Model
 {
     use Auditable, BelongsToTenant, HasFactory;
@@ -49,6 +52,19 @@ class Enrollment extends Model
     public const STATUS_COMPLETED = 'completed';
 
     public const STATUS_DROPPED = 'dropped';
+
+    /**
+     * Set by EnrollmentService::cancel()/transferClass() immediately before
+     * calling update(), purely to let auditActionForDirty()/
+     * auditDescriptionForChange() below tell "cancelled" apart from
+     * "transferred" — both just set status=dropped, and a plain column-diff
+     * can't otherwise know which one happened. Real PHP properties, not
+     * Eloquent attributes — never persisted, never touch the `enrollments`
+     * table.
+     */
+    public ?string $auditReason = null;
+
+    public ?string $auditTransferToClass = null;
 
     /** PHP-level mirror of the column's DB default — see Teacher for why. */
     protected $attributes = [
@@ -76,6 +92,21 @@ class Enrollment extends Model
     public function book(): BelongsTo
     {
         return $this->belongsTo(Book::class);
+    }
+
+    public function coursePackage(): BelongsTo
+    {
+        return $this->belongsTo(CoursePackage::class);
+    }
+
+    public function academicProgram(): BelongsTo
+    {
+        return $this->belongsTo(AcademicProgram::class);
+    }
+
+    public function studyMode(): BelongsTo
+    {
+        return $this->belongsTo(StudyMode::class);
     }
 
     public function attendanceRecords(): HasMany
@@ -107,6 +138,10 @@ class Enrollment extends Model
      */
     protected function auditActionForDirty(array $dirty): string
     {
+        if (array_key_exists('status', $dirty) && $dirty['status'] === self::STATUS_DROPPED) {
+            return $this->auditTransferToClass !== null ? AuditAction::ENROLLMENT_TRANSFERRED : AuditAction::ENROLLMENT_CANCELLED;
+        }
+
         return array_key_exists('status', $dirty) ? AuditAction::STATUS_CHANGE : AuditAction::UPDATE;
     }
 
@@ -116,6 +151,14 @@ class Enrollment extends Model
      */
     protected function auditDescriptionForChange(string $action, array $old, array $new): ?string
     {
+        if ($action === AuditAction::ENROLLMENT_CANCELLED) {
+            return "Cancelled enrollment {$this->auditDisplayName()}".($this->auditReason ? ": {$this->auditReason}" : '');
+        }
+
+        if ($action === AuditAction::ENROLLMENT_TRANSFERRED) {
+            return "Transferred enrollment {$this->auditDisplayName()} to class {$this->auditTransferToClass}";
+        }
+
         if ($action === AuditAction::STATUS_CHANGE) {
             return "Changed enrollment {$this->auditDisplayName()} status from {$old['status']} to {$new['status']}";
         }

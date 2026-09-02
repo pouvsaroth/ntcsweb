@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Database\Factories;
 
 use App\Models\Classroom;
+use App\Models\ProgramOffering;
 use App\Models\SchoolClass;
 use App\Models\Teacher;
 use App\Models\Tenant;
@@ -48,5 +49,10 @@ class SchoolClassFactory extends Factory
     public function inRoom(Classroom $classroom): static
     {
         return $this->state(['classroom_id' => $classroom->getKey()]);
+    }
+
+    public function withProgramOffering(ProgramOffering $offering): static
+    {
+        return $this->state(['program_offering_id' => $offering->getKey()]);
     }
 }

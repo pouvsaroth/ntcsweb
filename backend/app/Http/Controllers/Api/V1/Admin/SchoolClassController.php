@@ -17,18 +17,18 @@ use Illuminate\Support\Facades\DB;
 
 final class SchoolClassController extends Controller
 {
-    private const WITH = ['teacher', 'classroom', 'schedules', 'books'];
+    private const WITH = ['teacher', 'classroom', 'schedules', 'books', 'programOffering.academicProgram', 'programOffering.studyMode', 'coursePackages'];
 
     public function index(Request $request): JsonResponse
     {
         $this->authorize('viewAny', SchoolClass::class);
 
         $classes = ApiQuery::for(
-            SchoolClass::query()->with(['teacher', 'classroom'])->withCount('enrollments'),
+            SchoolClass::query()->with(self::WITH)->withCount('enrollments'),
             $request,
         )
             ->searchable('name', 'code')
-            ->filterable(['status', 'teacher_id', 'classroom_id'])
+            ->filterable(['status', 'teacher_id', 'classroom_id', 'program_offering_id'])
             ->sortable(['name', 'start_date', 'created_at'], default: '-created_at')
             ->paginate();
 
@@ -38,10 +38,11 @@ final class SchoolClassController extends Controller
     public function store(StoreSchoolClassRequest $request): JsonResponse
     {
         $class = DB::transaction(function () use ($request) {
-            $class = SchoolClass::query()->create($request->safe()->except(['schedules', 'book_ids']));
+            $class = SchoolClass::query()->create($request->safe()->except(['schedules', 'book_ids', 'course_package_ids']));
 
             $this->syncSchedules($class, $request->validated('schedules', []));
             $class->books()->sync($request->validated('book_ids', []));
+            $class->coursePackages()->sync($request->validated('course_package_ids', []));
 
             return $class;
         });
@@ -61,7 +62,7 @@ final class SchoolClassController extends Controller
     public function update(UpdateSchoolClassRequest $request, SchoolClass $class): JsonResponse
     {
         DB::transaction(function () use ($request, $class) {
-            $class->update($request->safe()->except(['schedules', 'book_ids']));
+            $class->update($request->safe()->except(['schedules', 'book_ids', 'course_package_ids']));
 
             if ($request->has('schedules')) {
                 $this->syncSchedules($class, $request->validated('schedules'));
@@ -69,6 +70,10 @@ final class SchoolClassController extends Controller
 
             if ($request->has('book_ids')) {
                 $class->books()->sync($request->validated('book_ids'));
+            }
+
+            if ($request->has('course_package_ids')) {
+                $class->coursePackages()->sync($request->validated('course_package_ids'));
             }
         });
 

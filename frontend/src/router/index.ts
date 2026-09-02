@@ -41,7 +41,6 @@ const comingSoon = () => import('@/pages/admin/ComingSoon.vue')
 /** path -> adminNav.items translation key, so ComingSoon.vue's title always matches the sidebar label it was clicked from. */
 const comingSoonPages: [string, string][] = [
   ['tenants', 'adminNav.items.tenants'],
-  ['academic-years', 'adminNav.items.academicYears'],
   ['subjects', 'adminNav.items.subjects'],
   ['teachers', 'adminNav.items.teachersList'],
   ['exams', 'adminNav.items.exams'],
@@ -111,13 +110,43 @@ const adminRoutes: RouteRecordRaw[] = [
     path: 'students/new',
     name: 'admin.students.new',
     component: () => import('@/pages/admin/StudentForm.vue'),
-    meta: { titleKey: 'adminNav.items.studentsList' },
+    meta: { titleKey: 'adminNav.items.studentsList', pageTitleKey: 'admin.students.registerTitle' },
   },
   {
     path: 'students/:id/edit',
     name: 'admin.students.edit',
     component: () => import('@/pages/admin/StudentForm.vue'),
-    meta: { titleKey: 'adminNav.items.studentsList' },
+    meta: { titleKey: 'adminNav.items.studentsList', pageTitleKey: 'admin.students.editTitle' },
+  },
+  {
+    path: 'study-modes',
+    name: 'admin.study-modes',
+    component: () => import('@/pages/admin/StudyModes.vue'),
+    meta: { titleKey: 'adminNav.items.studyModes' },
+  },
+  {
+    path: 'academic-programs',
+    name: 'admin.academic-programs',
+    component: () => import('@/pages/admin/AcademicPrograms.vue'),
+    meta: { titleKey: 'adminNav.items.academicPrograms' },
+  },
+  {
+    path: 'course-packages',
+    name: 'admin.course-packages',
+    component: () => import('@/pages/admin/CoursePackages.vue'),
+    meta: { titleKey: 'adminNav.items.coursePackages' },
+  },
+  {
+    path: 'academic-years',
+    name: 'admin.academic-years',
+    component: () => import('@/pages/admin/AcademicYears.vue'),
+    meta: { titleKey: 'adminNav.items.academicYears' },
+  },
+  {
+    path: 'program-offerings',
+    name: 'admin.program-offerings',
+    component: () => import('@/pages/admin/ProgramOfferings.vue'),
+    meta: { titleKey: 'adminNav.items.programOfferings' },
   },
   {
     path: 'books',
@@ -153,6 +182,12 @@ const adminRoutes: RouteRecordRaw[] = [
     path: 'enrollments/new',
     name: 'admin.enrollments.new',
     component: () => import('@/pages/admin/EnrollmentForm.vue'),
+    meta: { titleKey: 'adminNav.items.enrollments' },
+  },
+  {
+    path: 'enrollments/new-package',
+    name: 'admin.enrollments.new-package',
+    component: () => import('@/pages/admin/EnrollmentPackageForm.vue'),
     meta: { titleKey: 'adminNav.items.enrollments' },
   },
   {
@@ -202,6 +237,24 @@ const adminRoutes: RouteRecordRaw[] = [
     name: 'admin.audit-logs',
     component: () => import('@/pages/admin/AuditLogs.vue'),
     meta: { titleKey: 'adminNav.items.auditLogs' },
+  },
+  {
+    path: 'languages',
+    name: 'admin.languages',
+    component: () => import('@/pages/admin/Languages.vue'),
+    meta: { titleKey: 'adminNav.items.languages' },
+  },
+  {
+    path: 'lookup-categories',
+    name: 'admin.lookup-categories',
+    component: () => import('@/pages/admin/LookupCategories.vue'),
+    meta: { titleKey: 'adminNav.items.lookupCategories' },
+  },
+  {
+    path: 'lookup-categories/:id/values',
+    name: 'admin.lookup-categories.values',
+    component: () => import('@/pages/admin/LookupCategoryValues.vue'),
+    meta: { titleKey: 'adminNav.items.lookupCategories' },
   },
   {
     path: 'school-settings',

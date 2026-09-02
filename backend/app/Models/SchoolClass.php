@@ -30,7 +30,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string $name
  * @property string $status
  */
-#[Fillable(['teacher_id', 'classroom_id', 'name', 'code', 'capacity', 'start_date', 'end_date', 'status'])]
+#[Fillable(['teacher_id', 'classroom_id', 'program_offering_id', 'name', 'code', 'capacity', 'start_date', 'end_date', 'status'])]
 class SchoolClass extends Model
 {
     use BelongsToTenant, HasFactory, SoftDeletes;
@@ -67,6 +67,16 @@ class SchoolClass extends Model
     public function classroom(): BelongsTo
     {
         return $this->belongsTo(Classroom::class);
+    }
+
+    public function programOffering(): BelongsTo
+    {
+        return $this->belongsTo(ProgramOffering::class);
+    }
+
+    public function coursePackages(): BelongsToMany
+    {
+        return $this->belongsToMany(CoursePackage::class, 'class_course_package', 'class_id', 'course_package_id');
     }
 
     public function schedules(): HasMany

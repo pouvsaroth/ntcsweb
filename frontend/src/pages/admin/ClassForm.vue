@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -11,6 +11,8 @@ import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import { type Book, booksService } from '@/services/books'
 import { classesService, type ClassInput } from '@/services/classes'
 import { classroomsService, type Classroom } from '@/services/classrooms'
+import { type CoursePackage, coursePackagesService } from '@/services/coursePackages'
+import { type ProgramOffering, programOfferingsService } from '@/services/programOfferings'
 import { teachersService, type Teacher } from '@/services/teachers'
 import { ApiRequestError } from '@/types/api'
 
@@ -36,11 +38,15 @@ const form = reactive<ClassInput>({
   status: 'active',
   schedules: [emptySchedule()],
   book_ids: [],
+  program_offering_id: null,
+  course_package_ids: [],
 })
 
 const teachers = ref<Teacher[]>([])
 const classrooms = ref<Classroom[]>([])
 const books = ref<Book[]>([])
+const programOfferings = ref<ProgramOffering[]>([])
+const coursePackages = ref<CoursePackage[]>([])
 
 const loading = ref(true)
 const loadError = ref<string | null>(null)
@@ -75,6 +81,20 @@ const classroomOptions = computed(() => [
   ...classrooms.value.map((classroom) => ({ value: String(classroom.id), label: classroom.name })),
 ])
 
+const programOfferingOptions = computed(() => [
+  { value: '', label: t('admin.classes.noProgramOffering') },
+  ...programOfferings.value.map((offering) => ({ value: String(offering.id), label: offering.name })),
+])
+
+const selectedOffering = computed(() => programOfferings.value.find((o) => o.id === form.program_offering_id) ?? null)
+
+// Only packages belonging to the chosen offering's program make sense on
+// this class's menu — mirrors EnrollmentService::assertEnrollable()'s own
+// "package must belong to the class's program" server-side check.
+const availableCoursePackages = computed(() =>
+  selectedOffering.value ? coursePackages.value.filter((p) => p.academic_program_id === selectedOffering.value!.academic_program_id) : [],
+)
+
 function addSchedule() {
   form.schedules.push(emptySchedule())
 }
@@ -91,15 +111,34 @@ function toggleBook(bookId: number, checked: boolean) {
   }
 }
 
+function toggleCoursePackage(packageId: number, checked: boolean) {
+  if (checked) {
+    if (!form.course_package_ids.includes(packageId)) form.course_package_ids.push(packageId)
+  } else {
+    form.course_package_ids = form.course_package_ids.filter((id) => id !== packageId)
+  }
+}
+
+// Changing the program offering invalidates whatever packages were picked
+// for the previous one — the menu only makes sense within one program.
+watch(
+  () => form.program_offering_id,
+  () => {
+    form.course_package_ids = form.course_package_ids.filter((id) => availableCoursePackages.value.some((p) => p.id === id))
+  },
+)
+
 async function load() {
   loading.value = true
   loadError.value = null
 
   try {
-    ;[teachers.value, classrooms.value, books.value] = await Promise.all([
+    ;[teachers.value, classrooms.value, books.value, programOfferings.value, coursePackages.value] = await Promise.all([
       teachersService.listAll(),
       classroomsService.listAll(),
       booksService.listAll(),
+      programOfferingsService.listAll(),
+      coursePackagesService.listAll(),
     ])
 
     if (!classId.value) return
@@ -117,6 +156,8 @@ async function load() {
       ? schoolClass.schedules.map((s) => ({ day_of_week: s.day_of_week, start_time: s.start_time, end_time: s.end_time }))
       : [emptySchedule()]
     form.book_ids = schoolClass.books.map((b) => b.id)
+    form.program_offering_id = schoolClass.program_offering_id
+    form.course_package_ids = schoolClass.course_packages.map((p) => p.id)
   } catch (error) {
     loadError.value = error instanceof ApiRequestError ? error.message : t('admin.classes.loadFailed')
   } finally {
@@ -192,6 +233,14 @@ onMounted(load)
           <BaseSelect v-model="form.status" :options="statusOptions" :label="t('admin.classes.status')" />
           <BaseInput v-model="form.start_date" type="date" :label="t('admin.classes.startDate')" :error="errors.start_date?.[0]" />
           <BaseInput v-model="form.end_date" type="date" :label="t('admin.classes.endDate')" :error="errors.end_date?.[0]" />
+          <BaseSelect
+            :model-value="form.program_offering_id !== null ? String(form.program_offering_id) : ''"
+            :options="programOfferingOptions"
+            :label="t('admin.classes.programOffering')"
+            :hint="t('admin.classes.programOfferingHint')"
+            :error="errors.program_offering_id?.[0]"
+            @update:model-value="form.program_offering_id = $event ? Number($event) : null"
+          />
         </div>
       </section>
 
@@ -232,6 +281,26 @@ onMounted(load)
             />
             <span class="flex-1 text-neutral-700">{{ book.title }}</span>
             <span v-if="book.fee !== null" class="text-xs text-neutral-500">{{ book.fee.toFixed(2) }}</span>
+          </label>
+        </div>
+      </section>
+
+      <section>
+        <h2 class="mb-1 text-sm font-semibold text-neutral-800">{{ t('admin.classes.coursePackagesSection') }}</h2>
+        <p class="mb-4 text-sm text-neutral-500">{{ t('admin.classes.coursePackagesHint') }}</p>
+
+        <p v-if="!form.program_offering_id" class="text-sm text-neutral-500">{{ t('admin.classes.pickProgramOfferingFirst') }}</p>
+        <p v-else-if="availableCoursePackages.length === 0" class="text-sm text-neutral-500">{{ t('admin.classes.noCoursePackagesAvailable') }}</p>
+        <div v-else class="grid gap-2 sm:grid-cols-2">
+          <label v-for="pkg in availableCoursePackages" :key="pkg.id" class="flex items-center gap-2 rounded-lg border border-neutral-200 p-2.5 text-sm">
+            <input
+              type="checkbox"
+              :checked="form.course_package_ids.includes(pkg.id)"
+              class="rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+              @change="toggleCoursePackage(pkg.id, ($event.target as HTMLInputElement).checked)"
+            />
+            <span class="flex-1 text-neutral-700">{{ pkg.name }}</span>
+            <span class="text-xs text-neutral-500">{{ pkg.price.toFixed(2) }}</span>
           </label>
         </div>
       </section>

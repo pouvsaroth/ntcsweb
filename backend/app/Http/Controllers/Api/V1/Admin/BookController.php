@@ -20,7 +20,7 @@ final class BookController extends Controller
     {
         $this->authorize('viewAny', Book::class);
 
-        $books = ApiQuery::for(Book::query()->withCount('classes'), $request)
+        $books = ApiQuery::for(Book::query()->with('programs')->withCount('classes'), $request)
             ->searchable('title', 'author', 'isbn')
             ->filterable(['status'])
             ->sortable(['title', 'author', 'created_at'], default: 'title')
@@ -31,23 +31,36 @@ final class BookController extends Controller
 
     public function store(StoreBookRequest $request): JsonResponse
     {
-        $book = Book::query()->create($request->validated());
+        $data = $request->validated();
+        $programIds = $data['program_ids'] ?? [];
+        unset($data['program_ids']);
 
-        return ApiResponse::created(new BookResource($book));
+        $book = Book::query()->create($data);
+        $book->programs()->sync($programIds);
+
+        return ApiResponse::created(new BookResource($book->load('programs')));
     }
 
     public function show(Book $book): JsonResponse
     {
         $this->authorize('view', $book);
 
-        return ApiResponse::success(new BookResource($book->loadCount('classes')));
+        return ApiResponse::success(new BookResource($book->load('programs')->loadCount('classes')));
     }
 
     public function update(UpdateBookRequest $request, Book $book): JsonResponse
     {
-        $book->update($request->validated());
+        $data = $request->validated();
+        $programIds = $data['program_ids'] ?? null;
+        unset($data['program_ids']);
 
-        return ApiResponse::success(new BookResource($book));
+        $book->update($data);
+
+        if ($programIds !== null) {
+            $book->programs()->sync($programIds);
+        }
+
+        return ApiResponse::success(new BookResource($book->load('programs')));
     }
 
     public function destroy(Book $book): JsonResponse

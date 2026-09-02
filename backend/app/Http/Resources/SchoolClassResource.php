@@ -28,6 +28,9 @@ class SchoolClassResource extends JsonResource
             'classroom' => new ClassroomResource($this->whenLoaded('classroom')),
             'schedules' => ClassScheduleResource::collection($this->whenLoaded('schedules')),
             'books' => BookResource::collection($this->whenLoaded('books')),
+            'program_offering_id' => $this->program_offering_id,
+            'program_offering' => new ProgramOfferingResource($this->whenLoaded('programOffering')),
+            'course_packages' => CoursePackageResource::collection($this->whenLoaded('coursePackages')),
             'enrollments_count' => $this->whenCounted('enrollments'),
 
             'created_at' => $this->created_at?->toIso8601String(),

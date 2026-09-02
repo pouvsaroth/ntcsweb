@@ -29,6 +29,7 @@ class UpdateSchoolClassRequest extends FormRequest
             'code' => ['nullable', 'string', 'max:32', Rule::unique('classes')->where('tenant_id', $tenantId)->ignore($class)],
             'teacher_id' => ['nullable', Rule::exists('teachers', 'id')->where('tenant_id', $tenantId)],
             'classroom_id' => ['nullable', Rule::exists('classrooms', 'id')->where('tenant_id', $tenantId)],
+            'program_offering_id' => ['nullable', Rule::exists('program_offerings', 'id')->where('tenant_id', $tenantId)],
             'capacity' => ['nullable', 'integer', 'min:1', 'max:100000'],
             'start_date' => ['nullable', 'date'],
             'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
@@ -46,6 +47,9 @@ class UpdateSchoolClassRequest extends FormRequest
 
             'book_ids' => ['sometimes', 'array'],
             'book_ids.*' => [Rule::exists('books', 'id')->where('tenant_id', $tenantId)],
+
+            'course_package_ids' => ['sometimes', 'array'],
+            'course_package_ids.*' => [Rule::exists('course_packages', 'id')->where('tenant_id', $tenantId)],
         ];
     }
 }

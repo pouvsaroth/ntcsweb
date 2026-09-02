@@ -8,6 +8,8 @@ import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
 import BaseSpinner from '@/components/ui/BaseSpinner.vue'
+import LookupSelect from '@/components/ui/LookupSelect.vue'
+import WebcamCaptureModal from '@/components/ui/WebcamCaptureModal.vue'
 import { geographyService, type GeographyOption } from '@/services/geography'
 import { studentsService, type StudentEducation, type StudentGuardian, type StudentInput } from '@/services/students'
 import { ApiRequestError } from '@/types/api'
@@ -33,6 +35,15 @@ function today(): string {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
 }
 
+/** Same as today(), N years back — used to pre-fill a plausible date of birth on a brand-new registration. */
+function yearsAgo(years: number): string {
+  const now = new Date()
+  return `${now.getFullYear() - years}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+}
+
+/** Thum Tboung, Ponhea Pon Sangkat, Praek Pnov Khan, Phnom Penh — this school's own default village, pre-selected on a new registration to save re-picking it every time; staff can still change any level. */
+const DEFAULT_VILLAGE_CODE = '12110201'
+
 const form = reactive<Omit<StudentInput, 'photo'>>({
   first_name: '',
   last_name: '',
@@ -57,6 +68,7 @@ const form = reactive<Omit<StudentInput, 'photo'>>({
 
 const photoFile = ref<File | null>(null)
 const photoPreview = ref<string | null>(null)
+const webcamModalOpen = ref(false)
 /** Read-only, display-only — server-generated (see StudentIdGenerator on the backend), never part of the submitted form. */
 const studentCode = ref<string | null>(null)
 const loading = ref(isEditing.value)
@@ -64,11 +76,6 @@ const loadError = ref<string | null>(null)
 const errors = ref<Record<string, string[]>>({})
 const generalError = ref<string | null>(null)
 const submitting = ref(false)
-
-const genderOptions = computed(() => [
-  { value: 'male', label: t('admin.students.genderMale') },
-  { value: 'female', label: t('admin.students.genderFemale') },
-])
 
 const statusOptions = computed(() => [
   { value: 'active', label: t('admin.students.statusActive') },
@@ -171,12 +178,16 @@ function removeEducation(index: number) {
   form.educations.splice(index, 1)
 }
 
+function setPhotoFile(file: File) {
+  photoFile.value = file
+  photoPreview.value = URL.createObjectURL(file)
+}
+
 function onPhotoChange(event: Event) {
   const file = (event.target as HTMLInputElement).files?.[0]
   if (!file) return
 
-  photoFile.value = file
-  photoPreview.value = URL.createObjectURL(file)
+  setPhotoFile(file)
 }
 
 async function load() {
@@ -186,7 +197,16 @@ async function load() {
   try {
     provinces.value = await geographyService.provinces()
 
-    if (!studentId.value) return
+    if (!studentId.value) {
+      // Sensible starting defaults for a brand-new registration — every
+      // field here stays fully editable, this just saves re-entering the
+      // most common case each time.
+      form.gender = 'female'
+      form.date_of_birth = yearsAgo(13)
+      form.village_code = DEFAULT_VILLAGE_CODE
+      await selectAddressFromVillageCode(DEFAULT_VILLAGE_CODE)
+      return
+    }
 
     const student = await studentsService.get(studentId.value)
     studentCode.value = student.student_code
@@ -267,8 +287,30 @@ onMounted(load)
 
       <!-- Student information -->
       <section>
-        <h2 class="mb-1 text-sm font-semibold text-neutral-800">{{ t('admin.students.studentSection') }}</h2>
-        <div class="mt-4 grid gap-4 sm:grid-cols-2">
+        <h2 class="mb-1 border-b border-neutral-200 pb-2 text-sm font-semibold text-primary-800">{{ t('admin.students.studentSection') }}</h2>
+
+        <div class="mt-4 flex w-full flex-col items-center gap-3">
+          <BaseButton type="button" variant="outline" size="sm" @click="webcamModalOpen = true">
+            {{ t('admin.students.takePhoto') }}
+          </BaseButton>
+
+          <div class="flex h-28 w-28 items-center justify-center overflow-hidden rounded-full border border-neutral-200 bg-neutral-100">
+            <img v-if="photoPreview" :src="photoPreview" alt="" class="h-full w-full object-cover" />
+            <svg v-else class="h-12 w-12 text-neutral-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0ZM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+            </svg>
+          </div>
+
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            class="block text-center text-sm text-neutral-600 file:mr-3 file:rounded-lg file:border-0 file:bg-primary-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-primary-800 hover:file:bg-primary-100"
+            @change="onPhotoChange"
+          />
+          <p v-if="errors.photo?.[0]" class="text-sm text-danger-600">{{ errors.photo[0] }}</p>
+        </div>
+
+        <div class="mt-6 grid gap-4 sm:grid-cols-2">
           <!-- Read-only: the Student ID is generated by the backend (see
                StudentIdGenerator) — never editable here, on create or edit. -->
           <BaseInput
@@ -278,26 +320,17 @@ onMounted(load)
             :label="t('admin.students.studentCode')"
             :hint="t('admin.students.studentCodeHint')"
           />
-          <BaseSelect v-model="form.status" :options="statusOptions" :label="t('admin.students.status')" />
 
           <BaseInput v-model="form.first_name" required :label="t('admin.students.firstName')" :error="errors.first_name?.[0]" />
           <BaseInput v-model="form.last_name" required :label="t('admin.students.lastName')" :error="errors.last_name?.[0]" />
           <BaseInput v-model="form.english_name" :label="t('admin.students.englishName')" :error="errors.english_name?.[0]" />
-          <div>
-            <p class="mb-1.5 block text-sm font-medium text-neutral-700">{{ t('admin.students.gender') }}</p>
-            <div class="flex h-[42px] items-center gap-6">
-              <label v-for="option in genderOptions" :key="option.value" class="flex items-center gap-2 text-sm text-neutral-700">
-                <input
-                  v-model="form.gender"
-                  type="radio"
-                  name="gender"
-                  :value="option.value"
-                  class="h-4 w-4 border-neutral-300 text-primary-600 focus:ring-primary-500"
-                />
-                {{ option.label }}
-              </label>
-            </div>
-          </div>
+          <LookupSelect
+            v-model="form.gender"
+            category="GENDER"
+            :label="t('admin.students.gender')"
+            :placeholder="t('admin.students.selectGender')"
+            :error="errors.gender?.[0]"
+          />
 
           <BaseInput v-model="form.date_of_birth" type="date" :label="t('admin.students.dateOfBirth')" :error="errors.date_of_birth?.[0]" />
           <BaseInput v-model="form.enrollment_date" type="date" :label="t('admin.students.enrollmentDate')" :error="errors.enrollment_date?.[0]" />
@@ -310,6 +343,8 @@ onMounted(load)
 
           <BaseInput v-model="form.facebook" :label="t('admin.students.facebook')" :error="errors.facebook?.[0]" />
           <BaseInput v-model="form.telegram" :label="t('admin.students.telegram')" :error="errors.telegram?.[0]" />
+
+          <BaseSelect v-model="form.status" :options="statusOptions" :label="t('admin.students.status')" />
         </div>
 
         <div class="mt-4">
@@ -350,26 +385,14 @@ onMounted(load)
           </div>
           <BaseInput v-model="form.other_address" class="mt-3" :label="t('admin.students.otherAddress')" :error="errors.other_address?.[0]" />
         </div>
-
-        <div class="mt-4">
-          <label class="mb-1.5 block text-sm font-medium text-neutral-700">{{ t('admin.students.photo') }}</label>
-          <div v-if="photoPreview" class="mb-3 h-24 w-24 overflow-hidden rounded-full border border-neutral-200 bg-neutral-100">
-            <img :src="photoPreview" alt="" class="h-full w-full object-cover" />
-          </div>
-          <input
-            type="file"
-            accept="image/jpeg,image/png,image/webp,image/gif"
-            class="block w-full text-sm text-neutral-600 file:mr-3 file:rounded-lg file:border-0 file:bg-primary-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-primary-800 hover:file:bg-primary-100"
-            @change="onPhotoChange"
-          />
-          <p v-if="errors.photo?.[0]" class="mt-1.5 text-sm text-danger-600">{{ errors.photo[0] }}</p>
-        </div>
       </section>
+
+      <WebcamCaptureModal v-model="webcamModalOpen" @captured="setPhotoFile" />
 
       <!-- Guardians -->
       <section>
-        <div class="mb-1 flex items-center justify-between">
-          <h2 class="text-sm font-semibold text-neutral-800">{{ t('admin.students.guardiansSection') }}</h2>
+        <div class="mb-1 flex items-center justify-between border-b border-neutral-200 pb-2">
+          <h2 class="text-sm font-semibold text-primary-800">{{ t('admin.students.guardiansSection') }}</h2>
           <BaseButton type="button" variant="outline" size="sm" @click="addGuardian">{{ t('admin.students.addGuardian') }}</BaseButton>
         </div>
         <p class="mb-4 text-sm text-neutral-500">{{ t('admin.students.guardiansHint') }}</p>
@@ -387,7 +410,14 @@ onMounted(load)
           </div>
           <div class="grid gap-3 sm:grid-cols-2">
             <BaseInput v-model="guardian.guardian_name" required :label="t('admin.students.guardianName')" :error="rowError('guardians', index, 'guardian_name')" />
-            <BaseInput v-model="guardian.guardian_type" required :label="t('admin.students.guardianType')" :hint="t('admin.students.guardianTypeHint')" :error="rowError('guardians', index, 'guardian_type')" />
+            <LookupSelect
+              v-model="guardian.guardian_type"
+              category="GUARDIAN_TYPE"
+              required
+              :label="t('admin.students.guardianType')"
+              :placeholder="t('admin.students.selectGuardianType')"
+              :error="rowError('guardians', index, 'guardian_type')"
+            />
             <BaseInput v-model="guardian.phone" required :label="t('admin.students.guardianPhone')" :error="rowError('guardians', index, 'phone')" />
             <BaseInput v-model="guardian.email" type="email" :label="t('admin.students.guardianEmail')" :error="rowError('guardians', index, 'email')" />
             <BaseInput v-model="guardian.address" class="sm:col-span-2" :label="t('admin.students.guardianAddress')" :error="rowError('guardians', index, 'address')" />
@@ -398,8 +428,8 @@ onMounted(load)
 
       <!-- Education history -->
       <section>
-        <div class="mb-1 flex items-center justify-between">
-          <h2 class="text-sm font-semibold text-neutral-800">{{ t('admin.students.educationSection') }}</h2>
+        <div class="mb-1 flex items-center justify-between border-b border-neutral-200 pb-2">
+          <h2 class="text-sm font-semibold text-primary-800">{{ t('admin.students.educationSection') }}</h2>
           <BaseButton type="button" variant="outline" size="sm" @click="addEducation">{{ t('admin.students.addEducation') }}</BaseButton>
         </div>
         <p class="mb-4 text-sm text-neutral-500">{{ t('admin.students.educationHint') }}</p>

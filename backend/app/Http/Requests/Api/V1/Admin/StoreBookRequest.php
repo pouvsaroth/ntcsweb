@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Api\V1\Admin;
 
 use App\Models\Book;
+use App\Support\Tenancy\TenantContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -17,6 +18,8 @@ class StoreBookRequest extends FormRequest
 
     public function rules(): array
     {
+        $tenantId = app(TenantContext::class)->idOrFail();
+
         return [
             'title' => ['required', 'string', 'max:255'],
             'author' => ['nullable', 'string', 'max:255'],
@@ -30,6 +33,10 @@ class StoreBookRequest extends FormRequest
             // Enrollment::$fee.
             'fee' => ['nullable', 'numeric', 'min:0', 'max:999999.99'],
             'status' => ['sometimes', Rule::in([Book::STATUS_ACTIVE, Book::STATUS_INACTIVE])],
+            // Which academic program(s) this book belongs to — lets a Course
+            // Package's book picker filter down to just its own program.
+            'program_ids' => ['sometimes', 'array'],
+            'program_ids.*' => [Rule::exists('academic_programs', 'id')->where('tenant_id', $tenantId)],
         ];
     }
 }

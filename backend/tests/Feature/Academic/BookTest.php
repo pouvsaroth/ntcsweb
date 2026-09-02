@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Academic;
 
+use App\Models\AcademicProgram;
 use App\Models\Book;
 use App\Support\Authorization\Permissions;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -48,5 +49,29 @@ class BookTest extends TestCase
 
         $this->deleteJson("/api/v1/books/{$book->id}")->assertNoContent();
         $this->assertSoftDeleted('books', ['id' => $book->id]);
+    }
+
+    /**
+     * There is no separate "Course" model — a book is tagged directly to the
+     * academic program(s) it belongs to, which is what lets a Course
+     * Package's book picker filter down to just its own program.
+     */
+    public function test_a_book_can_be_tagged_to_academic_programs(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::BOOKS_CREATE, Permissions::BOOKS_VIEW]);
+        $computer = AcademicProgram::factory()->create(['code' => 'COM']);
+        $english = AcademicProgram::factory()->create(['code' => 'ENG']);
+
+        $bookId = $this->postJson('/api/v1/books', [
+            'title' => 'MS Word', 'program_ids' => [$computer->id],
+        ])->assertCreated()->json('data.id');
+
+        $book = Book::findOrFail($bookId);
+        $this->assertTrue($book->programs()->whereKey($computer->id)->exists());
+        $this->assertFalse($book->programs()->whereKey($english->id)->exists());
+
+        $response = $this->getJson('/api/v1/books');
+        $response->assertOk();
+        $response->assertJsonPath('data.0.programs.0.code', 'COM');
     }
 }

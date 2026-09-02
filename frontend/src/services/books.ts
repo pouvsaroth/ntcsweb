@@ -14,6 +14,8 @@ export interface Book {
   /** Default/list price — not what a specific enrolled student is charged, see Enrollment.fee. */
   fee: number | null
   status: 'active' | 'inactive'
+  /** Which academic program(s) this book belongs to — lets a Course Package's book picker filter by program. */
+  programs?: { id: number; code: string; name: string }[]
   classes_count?: number
   created_at: string
 }
@@ -27,6 +29,7 @@ export interface BookInput {
   quantity: number
   fee: number | null
   status: 'active' | 'inactive'
+  program_ids: number[]
 }
 
 export const booksService = {
@@ -38,7 +41,7 @@ export const booksService = {
     return { data: result.data, pagination: result.meta?.pagination as LengthAwarePaginationMeta }
   },
 
-  /** Every active book, for the class form's book-menu multi-select — a school's catalog is small. */
+  /** Every active book, for the class form's book-menu multi-select and the course-package book picker — a school's catalog is small. */
   async listAll(): Promise<Book[]> {
     const result = await apiGetWithMeta<Book[]>('/books', { params: { per_page: 200, filter: { status: 'active' } } })
     return result.data

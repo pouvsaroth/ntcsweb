@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
+import BaseModal from '@/components/ui/BaseModal.vue'
 import EditIconButton from '@/components/ui/EditIconButton.vue'
 import BasePagination from '@/components/ui/BasePagination.vue'
 import BaseSpinner from '@/components/ui/BaseSpinner.vue'
@@ -15,6 +16,13 @@ import { useAdminUiStore } from '@/stores/adminUi'
 
 const { t } = useI18n()
 const adminUi = useAdminUiStore()
+
+const previewStudent = ref<Student | null>(null)
+
+function openPhotoPreview(row: Student) {
+  if (!row.photo_url) return
+  previewStudent.value = row
+}
 
 const { items, meta, loading, error, perPage, setPage, setSearch, fetch } = usePaginatedResource<Student>((query) =>
   studentsService.list(query),
@@ -75,9 +83,14 @@ onMounted(() => fetch())
       </p>
       <div v-else class="space-y-2">
         <div v-for="row in items" :key="row.id" class="flex items-center gap-3 rounded-[--radius-card] border border-neutral-200 bg-white p-3 shadow-[--shadow-card]">
-          <div class="h-10 w-10 shrink-0 overflow-hidden rounded-full bg-neutral-100">
+          <button
+            type="button"
+            class="h-10 w-10 shrink-0 overflow-hidden rounded-full bg-neutral-100"
+            :class="row.photo_url ? 'cursor-pointer' : 'cursor-default'"
+            @click="openPhotoPreview(row)"
+          >
             <img v-if="row.photo_url" :src="row.photo_url" alt="" class="h-full w-full object-cover" />
-          </div>
+          </button>
           <div class="min-w-0 flex-1">
             <p class="truncate text-sm font-medium text-neutral-800">{{ row.full_name }}</p>
             <p class="truncate text-xs text-neutral-500">{{ row.phone || '—' }}</p>
@@ -96,9 +109,14 @@ onMounted(() => fetch())
         :empty-message="t('admin.students.emptyMessage')"
       >
         <template #cell-photo_url="{ row }">
-          <div class="h-10 w-10 overflow-hidden rounded-full bg-neutral-100">
+          <button
+            type="button"
+            class="h-10 w-10 overflow-hidden rounded-full bg-neutral-100"
+            :class="row.photo_url ? 'cursor-pointer' : 'cursor-default'"
+            @click="openPhotoPreview(row)"
+          >
             <img v-if="row.photo_url" :src="row.photo_url" alt="" class="h-full w-full object-cover" />
-          </div>
+          </button>
         </template>
         <template #cell-full_name="{ row }">
           <p class="font-medium text-neutral-800">{{ row.full_name }}</p>
@@ -141,5 +159,9 @@ onMounted(() => fetch())
 
       <BasePagination :meta="meta" @update:page="setPage" />
     </div>
+
+    <BaseModal :model-value="previewStudent !== null" :title="previewStudent?.full_name" @update:model-value="previewStudent = null">
+      <img v-if="previewStudent?.photo_url" :src="previewStudent.photo_url" alt="" class="mx-auto max-h-[70vh] w-auto rounded-lg object-contain" />
+    </BaseModal>
   </div>
 </template>

@@ -20,6 +20,7 @@ const { items, meta, loading, error, setPage, setSearch, fetch } = usePaginatedR
 const columns = [
   { key: 'name', label: t('admin.classes.columnName') },
   { key: 'schedule', label: t('admin.classes.columnSchedule') },
+  { key: 'programOffering', label: t('admin.classes.columnProgramOffering') },
   { key: 'books', label: t('admin.classes.columnBooks') },
   { key: 'enrollments_count', label: t('admin.classes.columnEnrollments') },
   { key: 'status', label: t('admin.classes.columnStatus') },
@@ -75,6 +76,7 @@ onMounted(() => fetch())
         </p>
       </template>
       <template #cell-schedule="{ row }">{{ scheduleSummary(row) }}</template>
+      <template #cell-programOffering="{ row }">{{ row.program_offering?.name ?? '—' }}</template>
       <template #cell-books="{ row }">{{ row.books.map((b) => b.title).join(', ') || '—' }}</template>
       <template #cell-enrollments_count="{ row }">{{ row.enrollments_count ?? 0 }}</template>
       <template #cell-status="{ row }">

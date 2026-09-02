@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import BaseAlert from '@/components/ui/BaseAlert.vue'
@@ -7,6 +7,7 @@ import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
+import { academicProgramsService, type AcademicProgram } from '@/services/academicPrograms'
 import { booksService, type Book } from '@/services/books'
 import { ApiRequestError } from '@/types/api'
 
@@ -31,8 +32,10 @@ const form = reactive({
   quantity: 1,
   fee: null as number | null,
   status: 'active' as 'active' | 'inactive',
+  program_ids: [] as number[],
 })
 
+const programs = ref<AcademicProgram[]>([])
 const errors = ref<Record<string, string[]>>({})
 const generalError = ref<string | null>(null)
 const submitting = ref(false)
@@ -41,6 +44,18 @@ const statusOptions = computed(() => [
   { value: 'active', label: t('admin.books.statusActive') },
   { value: 'inactive', label: t('admin.books.statusInactive') },
 ])
+
+function toggleProgram(programId: number, checked: boolean) {
+  if (checked) {
+    if (!form.program_ids.includes(programId)) form.program_ids.push(programId)
+  } else {
+    form.program_ids = form.program_ids.filter((id) => id !== programId)
+  }
+}
+
+onMounted(async () => {
+  programs.value = await academicProgramsService.listAll()
+})
 
 watch(
   () => [props.modelValue, props.book] as const,
@@ -55,6 +70,7 @@ watch(
     form.quantity = props.book?.quantity ?? 1
     form.fee = props.book?.fee ?? null
     form.status = props.book?.status ?? 'active'
+    form.program_ids = props.book?.programs?.map((p) => p.id) ?? []
     errors.value = {}
     generalError.value = null
   },
@@ -131,6 +147,23 @@ async function submit() {
           :error="errors.fee?.[0]"
           @update:model-value="form.fee = $event ? Number($event) : null"
         />
+      </div>
+
+      <div>
+        <label class="mb-1.5 block text-sm font-medium text-neutral-700">{{ t('admin.books.programs') }}</label>
+        <p class="mb-2 text-xs text-neutral-500">{{ t('admin.books.programsHint') }}</p>
+        <p v-if="programs.length === 0" class="text-sm text-neutral-500">{{ t('admin.books.noProgramsAvailable') }}</p>
+        <div v-else class="grid gap-2 sm:grid-cols-2">
+          <label v-for="program in programs" :key="program.id" class="flex items-center gap-2 rounded-lg border border-neutral-200 p-2.5 text-sm">
+            <input
+              type="checkbox"
+              :checked="form.program_ids.includes(program.id)"
+              class="rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+              @change="toggleProgram(program.id, ($event.target as HTMLInputElement).checked)"
+            />
+            <span class="flex-1 text-neutral-700">{{ program.code }} — {{ program.name }}</span>
+          </label>
+        </div>
       </div>
     </form>
 

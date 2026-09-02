@@ -14,6 +14,8 @@ class DatabaseSeeder extends Seeder
             RolePermissionSeeder::class,
             CambodiaGeographySeeder::class,
             ChartOfAccountsSeeder::class,
+            LanguageSeeder::class,
+            BaseDataSeeder::class,
         ]);
     }
 }

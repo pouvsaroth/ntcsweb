@@ -34,4 +34,14 @@ class EnrollmentPolicy
     {
         return $user->hasPermission(Permissions::ENROLLMENTS_DELETE);
     }
+
+    public function cancel(User $user, Enrollment $enrollment): bool
+    {
+        return $user->hasPermission(Permissions::ENROLLMENTS_CANCEL);
+    }
+
+    public function transfer(User $user, Enrollment $enrollment): bool
+    {
+        return $user->hasPermission(Permissions::ENROLLMENTS_TRANSFER);
+    }
 }

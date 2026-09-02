@@ -82,7 +82,7 @@ async function submit() {
       <BaseAlert v-if="generalError" variant="danger">{{ generalError }}</BaseAlert>
 
       <div class="rounded-lg bg-neutral-50 px-3 py-2 text-sm text-neutral-600">
-        {{ enrollment.student.full_name }} — {{ enrollment.class.name }} — {{ enrollment.book.title }}
+        {{ enrollment.student.full_name }} — {{ enrollment.class.name }} — {{ enrollment.book?.title ?? enrollment.course_package?.name ?? '—' }}
       </div>
 
       <BaseInput v-model="form.enrolled_at" type="date" required :label="t('admin.enrollments.enrolledAt')" :error="errors.enrolled_at?.[0]" />

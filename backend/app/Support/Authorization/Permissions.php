@@ -106,6 +106,86 @@ final class Permissions
 
     public const ENROLLMENTS_DELETE = 'enrollments.delete';
 
+    public const ENROLLMENTS_CANCEL = 'enrollments.cancel';
+
+    public const ENROLLMENTS_TRANSFER = 'enrollments.transfer';
+
+    // Study Modes — Full Time/Part Time and anything a school adds later.
+    public const STUDY_MODES_VIEW = 'study-modes.view';
+
+    public const STUDY_MODES_CREATE = 'study-modes.create';
+
+    public const STUDY_MODES_UPDATE = 'study-modes.update';
+
+    public const STUDY_MODES_DELETE = 'study-modes.delete';
+
+    // Academic Programs — the school's own curriculum areas (English,
+    // Chinese, Computer). Deliberately a different slug group from
+    // `programs.*` above, which is the unrelated public marketing catalog.
+    public const ACADEMIC_PROGRAMS_VIEW = 'academic-programs.view';
+
+    public const ACADEMIC_PROGRAMS_CREATE = 'academic-programs.create';
+
+    public const ACADEMIC_PROGRAMS_UPDATE = 'academic-programs.update';
+
+    public const ACADEMIC_PROGRAMS_DELETE = 'academic-programs.delete';
+
+    // Course Packages — the priced, purchasable registration item a student
+    // actually pays for (e.g. "MS Word 2024" - $24), bundling several
+    // Books (see Book::coursePackages()) — there is no separate "Course"
+    // concept; a Book already is "a subject a student can take, with a
+    // fee". Each package auto-owns a Product row (see CoursePackage's own
+    // docblock), so no separate billing permission is needed here.
+    public const COURSE_PACKAGES_VIEW = 'course-packages.view';
+
+    public const COURSE_PACKAGES_CREATE = 'course-packages.create';
+
+    public const COURSE_PACKAGES_UPDATE = 'course-packages.update';
+
+    public const COURSE_PACKAGES_DELETE = 'course-packages.delete';
+
+    // Academic Years — a real, tenant-owned school year (e.g. "2026").
+    public const ACADEMIC_YEARS_VIEW = 'academic-years.view';
+
+    public const ACADEMIC_YEARS_CREATE = 'academic-years.create';
+
+    public const ACADEMIC_YEARS_UPDATE = 'academic-years.update';
+
+    public const ACADEMIC_YEARS_DELETE = 'academic-years.delete';
+
+    // Program Offerings — a program under a given study mode/academic year
+    // (e.g. "English - Full Time - 2026") that a Class can be linked to.
+    public const PROGRAM_OFFERINGS_VIEW = 'program-offerings.view';
+
+    public const PROGRAM_OFFERINGS_CREATE = 'program-offerings.create';
+
+    public const PROGRAM_OFFERINGS_UPDATE = 'program-offerings.update';
+
+    public const PROGRAM_OFFERINGS_DELETE = 'program-offerings.delete';
+
+    public const ACADEMIC_REPORTS_VIEW = 'academic-reports.view';
+
+    public const ACADEMIC_REPORTS_EXPORT = 'academic-reports.export';
+
+    // Base Data — the shared, multilingual lookup/dropdown catalog (Gender,
+    // Guardian Type, Book Type, Payment Method, ...) every module reuses.
+    // Reading a category's resolved values (what LookupSelect calls) is
+    // deliberately NOT gated by any of these — any signed-in tenant user
+    // needs Gender/etc. to fill in a form, same as Geography's province/
+    // district/commune/village lookups. These four gate the admin
+    // management screens only.
+    public const BASE_DATA_VIEW = 'base-data.view';
+
+    public const BASE_DATA_CREATE = 'base-data.create';
+
+    public const BASE_DATA_UPDATE = 'base-data.update';
+
+    public const BASE_DATA_DELETE = 'base-data.delete';
+
+    public const BASE_DATA_MANAGE_TRANSLATIONS = 'base-data.manage-translations';
+
+    public const BASE_DATA_MANAGE_LANGUAGES = 'base-data.manage-languages';
+
     // Home slides — the public homepage's image slider.
     public const HOME_SLIDES_VIEW = 'home-slides.view';
 
@@ -369,6 +449,50 @@ final class Permissions
                 self::ENROLLMENTS_CREATE => 'Create enrollments',
                 self::ENROLLMENTS_UPDATE => 'Update enrollments',
                 self::ENROLLMENTS_DELETE => 'Delete enrollments',
+                self::ENROLLMENTS_CANCEL => 'Cancel enrollments',
+                self::ENROLLMENTS_TRANSFER => 'Transfer a student to another class',
+            ],
+            'Study Modes' => [
+                self::STUDY_MODES_VIEW => 'View study modes',
+                self::STUDY_MODES_CREATE => 'Create study modes',
+                self::STUDY_MODES_UPDATE => 'Update study modes',
+                self::STUDY_MODES_DELETE => 'Delete study modes',
+            ],
+            'Academic Programs' => [
+                self::ACADEMIC_PROGRAMS_VIEW => 'View academic programs',
+                self::ACADEMIC_PROGRAMS_CREATE => 'Create academic programs',
+                self::ACADEMIC_PROGRAMS_UPDATE => 'Update academic programs',
+                self::ACADEMIC_PROGRAMS_DELETE => 'Delete academic programs',
+            ],
+            'Course Packages' => [
+                self::COURSE_PACKAGES_VIEW => 'View course packages',
+                self::COURSE_PACKAGES_CREATE => 'Create course packages',
+                self::COURSE_PACKAGES_UPDATE => 'Update course packages',
+                self::COURSE_PACKAGES_DELETE => 'Delete course packages',
+            ],
+            'Academic Years' => [
+                self::ACADEMIC_YEARS_VIEW => 'View academic years',
+                self::ACADEMIC_YEARS_CREATE => 'Create academic years',
+                self::ACADEMIC_YEARS_UPDATE => 'Update academic years',
+                self::ACADEMIC_YEARS_DELETE => 'Delete academic years',
+            ],
+            'Program Offerings' => [
+                self::PROGRAM_OFFERINGS_VIEW => 'View program offerings',
+                self::PROGRAM_OFFERINGS_CREATE => 'Create program offerings',
+                self::PROGRAM_OFFERINGS_UPDATE => 'Update program offerings',
+                self::PROGRAM_OFFERINGS_DELETE => 'Delete program offerings',
+            ],
+            'Academic Reports' => [
+                self::ACADEMIC_REPORTS_VIEW => 'View academic/enrollment reports',
+                self::ACADEMIC_REPORTS_EXPORT => 'Export academic/enrollment reports',
+            ],
+            'Base Data' => [
+                self::BASE_DATA_VIEW => 'View base data (lookup categories & values)',
+                self::BASE_DATA_CREATE => 'Create lookup categories & values',
+                self::BASE_DATA_UPDATE => 'Update lookup categories & values',
+                self::BASE_DATA_DELETE => 'Delete lookup categories & values',
+                self::BASE_DATA_MANAGE_TRANSLATIONS => 'Manage lookup value translations',
+                self::BASE_DATA_MANAGE_LANGUAGES => 'Manage supported languages',
             ],
             'Home slides' => [
                 self::HOME_SLIDES_VIEW => 'View homepage slides',
@@ -507,6 +631,13 @@ final class Permissions
             self::BOOKS_VIEW, self::BOOKS_CREATE, self::BOOKS_UPDATE, self::BOOKS_DELETE,
             self::CLASSES_VIEW, self::CLASSES_CREATE, self::CLASSES_UPDATE, self::CLASSES_DELETE,
             self::ENROLLMENTS_VIEW, self::ENROLLMENTS_CREATE, self::ENROLLMENTS_UPDATE, self::ENROLLMENTS_DELETE,
+            self::ENROLLMENTS_CANCEL, self::ENROLLMENTS_TRANSFER,
+            self::STUDY_MODES_VIEW, self::STUDY_MODES_CREATE, self::STUDY_MODES_UPDATE, self::STUDY_MODES_DELETE,
+            self::ACADEMIC_PROGRAMS_VIEW, self::ACADEMIC_PROGRAMS_CREATE, self::ACADEMIC_PROGRAMS_UPDATE, self::ACADEMIC_PROGRAMS_DELETE,
+            self::COURSE_PACKAGES_VIEW, self::COURSE_PACKAGES_CREATE, self::COURSE_PACKAGES_UPDATE, self::COURSE_PACKAGES_DELETE,
+            self::ACADEMIC_YEARS_VIEW, self::ACADEMIC_YEARS_CREATE, self::ACADEMIC_YEARS_UPDATE, self::ACADEMIC_YEARS_DELETE,
+            self::PROGRAM_OFFERINGS_VIEW, self::PROGRAM_OFFERINGS_CREATE, self::PROGRAM_OFFERINGS_UPDATE, self::PROGRAM_OFFERINGS_DELETE,
+            self::ACADEMIC_REPORTS_VIEW, self::ACADEMIC_REPORTS_EXPORT,
             self::HOME_SLIDES_VIEW, self::HOME_SLIDES_CREATE, self::HOME_SLIDES_UPDATE, self::HOME_SLIDES_DELETE,
             self::GALLERY_VIEW, self::GALLERY_CREATE, self::GALLERY_UPDATE, self::GALLERY_DELETE,
             self::PROGRAMS_VIEW, self::PROGRAMS_CREATE, self::PROGRAMS_UPDATE, self::PROGRAMS_DELETE,
@@ -569,6 +700,12 @@ final class Permissions
                 self::ROLES_DELETE,
                 self::ROLES_ASSIGN,
                 self::AUDIT_LOGS_VIEW,
+                self::BASE_DATA_VIEW,
+                self::BASE_DATA_CREATE,
+                self::BASE_DATA_UPDATE,
+                self::BASE_DATA_DELETE,
+                self::BASE_DATA_MANAGE_TRANSLATIONS,
+                self::BASE_DATA_MANAGE_LANGUAGES,
                 self::ATTENDANCE_VIEW,
                 self::ATTENDANCE_CREATE,
                 self::ATTENDANCE_UPDATE,
@@ -590,6 +727,11 @@ final class Permissions
                 self::BOOKS_VIEW,
                 self::CLASSES_VIEW,
                 self::ENROLLMENTS_VIEW,
+                self::STUDY_MODES_VIEW,
+                self::ACADEMIC_PROGRAMS_VIEW,
+                self::COURSE_PACKAGES_VIEW,
+                self::ACADEMIC_YEARS_VIEW,
+                self::PROGRAM_OFFERINGS_VIEW,
                 self::POSITIONS_VIEW,
                 self::STAFF_VIEW,
                 self::ATTENDANCE_VIEW,
@@ -597,9 +739,12 @@ final class Permissions
                 self::ATTENDANCE_UPDATE,
             ],
             // Staff commonly handle front-desk registration, so they can
-            // create/update students and enrollments, but not delete them
-            // (deletion stays a school-admin action) and can't touch the
-            // teaching catalog (teachers/classrooms/books/classes) itself.
+            // create/update students and enrollments (including the new
+            // package-based enrollment path, which needs read access to the
+            // whole Program/Study Mode/Course Package catalog to build one),
+            // but not delete them (deletion stays a school-admin action) and
+            // can't touch the teaching catalog (teachers/classrooms/books/
+            // classes/academic programs/packages) itself.
             \App\Models\Role::STAFF => [
                 self::USERS_VIEW,
                 self::POSITIONS_VIEW,
@@ -614,6 +759,12 @@ final class Permissions
                 self::ENROLLMENTS_VIEW,
                 self::ENROLLMENTS_CREATE,
                 self::ENROLLMENTS_UPDATE,
+                self::ENROLLMENTS_TRANSFER,
+                self::STUDY_MODES_VIEW,
+                self::ACADEMIC_PROGRAMS_VIEW,
+                self::COURSE_PACKAGES_VIEW,
+                self::ACADEMIC_YEARS_VIEW,
+                self::PROGRAM_OFFERINGS_VIEW,
             ],
             \App\Models\Role::STUDENT => [],
         ];

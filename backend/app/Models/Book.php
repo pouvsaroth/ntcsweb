@@ -59,6 +59,24 @@ class Book extends Model
     }
 
     /**
+     * Which academic program(s) this book belongs to -- e.g. "MS Word" under
+     * the Computer program. This is what lets a Course Package's book picker
+     * be filtered down to just the books that make sense for its program;
+     * see CoursePackage::books().
+     */
+    public function programs(): BelongsToMany
+    {
+        return $this->belongsToMany(AcademicProgram::class, 'program_book', 'book_id', 'program_id');
+    }
+
+    public function coursePackages(): BelongsToMany
+    {
+        return $this->belongsToMany(CoursePackage::class, 'course_package_book', 'book_id', 'course_package_id')
+            ->withPivot(['sort_order', 'is_required'])
+            ->orderByPivot('sort_order');
+    }
+
+    /**
      * @param  Builder<static>  $query
      */
     public function scopeActive(Builder $query): void

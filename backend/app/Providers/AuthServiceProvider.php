@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Models\Account;
+use App\Models\AcademicProgram;
+use App\Models\AcademicYear;
 use App\Models\Asset;
 use App\Models\AssetCategory;
 use App\Models\AssetIssue;
@@ -15,6 +17,7 @@ use App\Models\AttendanceRecord;
 use App\Models\AuditLog;
 use App\Models\Book;
 use App\Models\Classroom;
+use App\Models\CoursePackage;
 use App\Models\Department;
 use App\Models\Enrollment;
 use App\Models\Expense;
@@ -22,19 +25,25 @@ use App\Models\FinancialTransaction;
 use App\Models\GalleryImage;
 use App\Models\HomeSlide;
 use App\Models\Invoice;
+use App\Models\Language;
+use App\Models\LookupCategory;
+use App\Models\LookupValue;
 use App\Models\Payment;
 use App\Models\Position;
 use App\Models\Product;
 use App\Models\Program;
+use App\Models\ProgramOffering;
 use App\Models\RepairShop;
 use App\Models\Role;
 use App\Models\SchoolClass;
 use App\Models\Staff;
 use App\Models\Student;
+use App\Models\StudyMode;
 use App\Models\Supplier;
 use App\Models\Teacher;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Policies\AcademicProgramPolicy;
 use App\Policies\AccountPolicy;
 use App\Policies\AssetCategoryPolicy;
 use App\Policies\AssetIssuePolicy;
@@ -42,10 +51,12 @@ use App\Policies\AssetLocationPolicy;
 use App\Policies\AssetMaintenancePolicy;
 use App\Policies\AssetPolicy;
 use App\Policies\AssetRepairPolicy;
+use App\Policies\AcademicYearPolicy;
 use App\Policies\AttendancePolicy;
 use App\Policies\AuditLogPolicy;
 use App\Policies\BookPolicy;
 use App\Policies\ClassroomPolicy;
+use App\Policies\CoursePackagePolicy;
 use App\Policies\DepartmentPolicy;
 use App\Policies\EnrollmentPolicy;
 use App\Policies\ExpensePolicy;
@@ -53,15 +64,20 @@ use App\Policies\FinancialTransactionPolicy;
 use App\Policies\GalleryImagePolicy;
 use App\Policies\HomeSlidePolicy;
 use App\Policies\InvoicePolicy;
+use App\Policies\LanguagePolicy;
+use App\Policies\LookupCategoryPolicy;
+use App\Policies\LookupValuePolicy;
 use App\Policies\PaymentPolicy;
 use App\Policies\PositionPolicy;
 use App\Policies\ProductPolicy;
+use App\Policies\ProgramOfferingPolicy;
 use App\Policies\ProgramPolicy;
 use App\Policies\RepairShopPolicy;
 use App\Policies\RolePolicy;
 use App\Policies\SchoolClassPolicy;
 use App\Policies\StaffPolicy;
 use App\Policies\StudentPolicy;
+use App\Policies\StudyModePolicy;
 use App\Policies\SupplierPolicy;
 use App\Policies\TeacherPolicy;
 use App\Policies\TenantPolicy;
@@ -87,6 +103,14 @@ class AuthServiceProvider extends ServiceProvider
         Book::class => BookPolicy::class,
         SchoolClass::class => SchoolClassPolicy::class,
         Enrollment::class => EnrollmentPolicy::class,
+        StudyMode::class => StudyModePolicy::class,
+        AcademicProgram::class => AcademicProgramPolicy::class,
+        CoursePackage::class => CoursePackagePolicy::class,
+        AcademicYear::class => AcademicYearPolicy::class,
+        Language::class => LanguagePolicy::class,
+        LookupCategory::class => LookupCategoryPolicy::class,
+        LookupValue::class => LookupValuePolicy::class,
+        ProgramOffering::class => ProgramOfferingPolicy::class,
         HomeSlide::class => HomeSlidePolicy::class,
         GalleryImage::class => GalleryImagePolicy::class,
         Program::class => ProgramPolicy::class,

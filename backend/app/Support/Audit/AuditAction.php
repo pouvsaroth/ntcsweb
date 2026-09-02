@@ -137,4 +137,27 @@ final class AuditAction
     public const ASSET_STATUS_CHANGED = 'ASSET_STATUS_CHANGED';
 
     public const ASSET_CONDITION_CHANGED = 'ASSET_CONDITION_CHANGED';
+
+    // Academic — AcademicProgram/Course/CoursePackage/StudyMode/
+    // ProgramOffering use the generic Auditable trait (CREATE/UPDATE/DELETE)
+    // like AssetCategory/Account, since a plain column-diff already
+    // describes editing a catalog record well. These four are the events
+    // that need a richer, business-readable description a column-diff can't
+    // produce: enrolling spans two aggregates (Enrollment + Invoice), a
+    // price change needs the old/new price called out explicitly, and
+    // cancel/transfer both collapse to the same status=dropped column-diff
+    // (see Enrollment::auditActionForDirty()) so need their own name to stay
+    // distinguishable from a routine STATUS_CHANGE.
+    public const ENROLLMENT_INVOICED = 'ENROLLMENT_INVOICED';
+
+    public const ENROLLMENT_CANCELLED = 'ENROLLMENT_CANCELLED';
+
+    public const ENROLLMENT_TRANSFERRED = 'ENROLLMENT_TRANSFERRED';
+
+    public const PACKAGE_PRICE_CHANGED = 'PACKAGE_PRICE_CHANGED';
+
+    // Base Data / Lookups — translations live in a child table, so a change
+    // to them never shows up in LookupValue's own dirty-diff; this fires
+    // explicitly from LookupValueService::syncTranslations() instead.
+    public const TRANSLATION_UPDATED = 'TRANSLATION_UPDATED';
 }

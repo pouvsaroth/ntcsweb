@@ -128,6 +128,8 @@ jobs:
             docker compose -f docker-compose.prod.yml exec -T php php artisan migrate --force
             docker compose -f docker-compose.prod.yml exec -T php php artisan db:seed --class=RolePermissionSeeder --force
             docker compose -f docker-compose.prod.yml exec -T php php artisan db:seed --class=ChartOfAccountsSeeder --force
+            docker compose -f docker-compose.prod.yml exec -T php php artisan db:seed --class=LanguageSeeder --force
+            docker compose -f docker-compose.prod.yml exec -T php php artisan db:seed --class=BaseDataSeeder --force
             docker compose -f docker-compose.prod.yml exec -T php php artisan config:clear
             docker compose -f docker-compose.prod.yml exec -T php chown -R www-data:www-data storage bootstrap/cache
             docker compose -f docker-compose.prod.yml restart queue

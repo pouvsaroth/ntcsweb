@@ -47,6 +47,13 @@ async function remove(enrollment: Enrollment) {
   await fetch()
 }
 
+async function cancel(enrollment: Enrollment) {
+  const reason = window.prompt(t('admin.enrollments.cancelPrompt'))
+  if (!reason) return
+  await enrollmentsService.cancel(enrollment.id, reason)
+  await fetch()
+}
+
 onMounted(() => fetch())
 </script>
 
@@ -56,7 +63,10 @@ onMounted(() => fetch())
       <div>
         <h1 class="text-xl font-semibold text-neutral-900">{{ t('admin.enrollments.title') }}</h1>
       </div>
-      <BaseButton to="/admin/enrollments/new">{{ t('admin.enrollments.createTitle') }}</BaseButton>
+      <div class="flex gap-2">
+        <BaseButton variant="outline" to="/admin/enrollments/new">{{ t('admin.enrollments.createTitle') }}</BaseButton>
+        <BaseButton to="/admin/enrollments/new-package">{{ t('admin.enrollments.createPackageTitle') }}</BaseButton>
+      </div>
     </div>
 
     <BaseAlert v-if="error" variant="danger" class="mb-4">{{ error }}</BaseAlert>
@@ -67,7 +77,7 @@ onMounted(() => fetch())
         <p class="text-xs text-neutral-500">{{ row.student.student_code }}</p>
       </template>
       <template #cell-class="{ row }">{{ row.class.name }}</template>
-      <template #cell-book="{ row }">{{ row.book.title }}</template>
+      <template #cell-book="{ row }">{{ row.book?.title ?? row.course_package?.name ?? '—' }}</template>
       <template #cell-fee="{ row }">{{ row.fee.toFixed(2) }}</template>
       <template #cell-status="{ row }">
         <BaseBadge :variant="statusBadgeVariant[row.status]">
@@ -77,6 +87,14 @@ onMounted(() => fetch())
       <template #cell-actions="{ row }">
         <div class="flex justify-end gap-2">
           <EditIconButton @click="openEdit(row)" />
+          <button
+            v-if="row.status === 'active'"
+            type="button"
+            class="text-sm font-medium text-neutral-600 hover:text-neutral-800"
+            @click="cancel(row)"
+          >
+            {{ t('admin.enrollments.cancel') }}
+          </button>
           <button type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row)">
             {{ t('admin.enrollments.delete') }}
           </button>
