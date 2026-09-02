@@ -1,0 +1,54 @@
+name: Backfill Default Permissions
+
+# Manual-only, deliberately never on push: RolePermissionSeeder (which runs
+# on every deploy) only sets defaults for a BRAND NEW role — an existing
+# role's permissions belong to whoever administers that school, and
+# re-granting defaults automatically on every deploy would silently discard
+# a school's own customization (see that seeder's own docblock). Every time
+# a new module ships new permission slugs, an existing role needs those
+# slugs added by hand once — this is that "once," run only when a human
+# (or an agent acting on one's explicit request) deliberately dispatches it.
+#
+# Safe to run any number of times: syncWithoutDetaching only ever ADDS a
+# tenant's default-role permissions that are missing, never removes one —
+# a permission a school deliberately revoked stays revoked.
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Sync permission catalog and backfill existing roles
+        run: |
+          ssh -i ~/.ssh/deploy_key "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" '
+            set -e
+            cd "${{ secrets.DEPLOY_PATH }}"
+            docker compose -f docker-compose.prod.yml exec -T php php artisan tinker --execute="
+              app(\App\Support\Authorization\PermissionRegistry::class)->sync();
+              \$permissionIds = \App\Models\Permission::query()->pluck(\"id\", \"slug\");
+              \$defaults = \App\Support\Authorization\Permissions::defaultsForSystemRoles();
+              \$count = 0;
+              \App\Models\Role::query()->withoutGlobalScopes()->whereIn(\"slug\", array_keys(\$defaults))->whereNotNull(\"tenant_id\")->chunkById(100, function (\$roles) use (\$permissionIds, \$defaults, &\$count) {
+                  foreach (\$roles as \$role) {
+                      \$ids = collect(\$defaults[\$role->slug])->map(fn (\$slug) => \$permissionIds[\$slug] ?? null)->filter()->values();
+                      \$role->permissions()->syncWithoutDetaching(\$ids);
+                      \$count++;
+                  }
+              });
+              app(\App\Support\Authorization\PermissionRegistry::class)->invalidate(null);
+              \App\Models\Tenant::query()->pluck(\"id\")->each(fn (\$id) => app(\App\Support\Authorization\PermissionRegistry::class)->invalidate((int) \$id));
+              echo \"Synced catalog and backfilled {\$count} roles across all tenants.\" . PHP_EOL;
+            "
+          '
