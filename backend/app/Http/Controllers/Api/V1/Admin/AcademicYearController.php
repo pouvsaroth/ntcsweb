@@ -66,10 +66,6 @@ final class AcademicYearController extends Controller
     {
         $this->authorize('delete', $academicYear);
 
-        if ($academicYear->programOfferings()->exists()) {
-            return ApiResponse::error('This academic year is in use and cannot be deleted. Delete or reassign its program offerings first.', 422);
-        }
-
         $academicYear->delete();
 
         return ApiResponse::noContent();

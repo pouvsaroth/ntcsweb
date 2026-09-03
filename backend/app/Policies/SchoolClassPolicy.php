@@ -38,9 +38,9 @@ class SchoolClassPolicy
     /**
      * Gates the "take attendance" screen for this specific class: a holder
      * of `attendance.create`/`attendance.update` may act on any class UNLESS
-     * their account is itself a teacher — in which case it must be a class
-     * they actually teach. A school-admin or office-staff account (no linked
-     * Teacher record) is never restricted this way.
+     * their account is itself linked to a Staff record — in which case it
+     * must be a class they actually teach. A school-admin account (no
+     * linked Staff record) is never restricted this way.
      */
     public function recordAttendance(User $user, SchoolClass $class): bool
     {
@@ -48,8 +48,8 @@ class SchoolClassPolicy
             return false;
         }
 
-        $teacher = $user->teacher;
+        $staff = $user->staff;
 
-        return $teacher === null || $teacher->classes()->whereKey($class->getKey())->exists();
+        return $staff === null || $staff->classes()->whereKey($class->getKey())->exists();
     }
 }

@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Database\Factories;
 
+use App\Models\AcademicProgram;
 use App\Models\Classroom;
-use App\Models\ProgramOffering;
 use App\Models\SchoolClass;
-use App\Models\Teacher;
+use App\Models\Staff;
 use App\Models\Tenant;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -41,7 +41,7 @@ class SchoolClassFactory extends Factory
         });
     }
 
-    public function withTeacher(Teacher $teacher): static
+    public function withTeacher(Staff $teacher): static
     {
         return $this->state(['teacher_id' => $teacher->getKey()]);
     }
@@ -51,8 +51,8 @@ class SchoolClassFactory extends Factory
         return $this->state(['classroom_id' => $classroom->getKey()]);
     }
 
-    public function withProgramOffering(ProgramOffering $offering): static
+    public function forProgram(AcademicProgram $program): static
     {
-        return $this->state(['program_offering_id' => $offering->getKey()]);
+        return $this->state(['academic_program_id' => $program->getKey()]);
     }
 }

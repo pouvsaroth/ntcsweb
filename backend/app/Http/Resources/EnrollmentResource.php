@@ -22,6 +22,8 @@ class EnrollmentResource extends JsonResource
             'status' => $this->status,
             'student' => new StudentResource($this->whenLoaded('student')),
             'class' => new SchoolClassResource($this->whenLoaded('schoolClass')),
+            'table_id' => $this->table_id,
+            'table' => new ClassroomTableResource($this->whenLoaded('table')),
             'book' => new BookResource($this->whenLoaded('book')),
             'course_package_id' => $this->course_package_id,
             'course_package' => new CoursePackageResource($this->whenLoaded('coursePackage')),

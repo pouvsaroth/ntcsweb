@@ -21,8 +21,8 @@ const { items, meta, loading, error, setPage, setSearch, fetch } = usePaginatedR
 const columns = [
   { key: 'title', label: t('admin.books.columnTitle') },
   { key: 'author', label: t('admin.books.columnAuthor') },
-  { key: 'fee', label: t('admin.books.columnFee') },
-  { key: 'quantity', label: t('admin.books.columnQuantity') },
+  { key: 'academic_program', label: t('admin.books.columnProgram') },
+  { key: 'category', label: t('admin.books.columnCategory') },
   { key: 'status', label: t('admin.books.columnStatus') },
   { key: 'actions', label: t('admin.books.columnActions'), align: 'text-right' },
 ]
@@ -71,7 +71,8 @@ onMounted(() => fetch())
 
     <DataTable :columns="columns" :rows="items" row-key="id" :loading="loading" :empty-message="t('admin.books.emptyMessage')">
       <template #cell-author="{ row }">{{ row.author || '—' }}</template>
-      <template #cell-fee="{ row }">{{ row.fee !== null ? row.fee.toFixed(2) : '—' }}</template>
+      <template #cell-academic_program="{ row }">{{ row.academic_program?.name ?? '—' }}</template>
+      <template #cell-category="{ row }">{{ row.book_category?.name ?? '—' }}</template>
       <template #cell-status="{ row }">
         <BaseBadge :variant="row.status === 'active' ? 'success' : 'neutral'">
           {{ row.status === 'active' ? t('admin.books.statusActive') : t('admin.books.statusInactive') }}

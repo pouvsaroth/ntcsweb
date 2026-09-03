@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Tests\Feature\Academic;
 
 use App\Models\Book;
+use App\Models\Classroom;
+use App\Models\ClassroomTable;
 use App\Models\Enrollment;
 use App\Models\SchoolClass;
 use App\Models\Student;
@@ -33,7 +35,7 @@ class EnrollmentTest extends TestCase
     {
         $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE]);
         $student = Student::factory()->create();
-        $book = Book::factory()->create(['fee' => 25]);
+        $book = Book::factory()->create();
         $class = $this->classOffering($book);
 
         $response = $this->postJson('/api/v1/enrollments', [
@@ -58,8 +60,8 @@ class EnrollmentTest extends TestCase
     public function test_two_students_can_share_a_class_session_on_different_books_at_different_fees(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE]);
-        $excel = Book::factory()->create(['title' => 'Excel', 'fee' => 30]);
-        $word = Book::factory()->create(['title' => 'Word', 'fee' => 20]);
+        $excel = Book::factory()->create(['title' => 'Excel']);
+        $word = Book::factory()->create(['title' => 'Word']);
         $class = $this->classOffering($excel, $word);
         $studentA = Student::factory()->create();
         $studentB = Student::factory()->create();
@@ -80,8 +82,8 @@ class EnrollmentTest extends TestCase
     public function test_a_student_can_take_two_books_within_the_same_class_session(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE]);
-        $excel = Book::factory()->create(['fee' => 30]);
-        $word = Book::factory()->create(['fee' => 20]);
+        $excel = Book::factory()->create();
+        $word = Book::factory()->create();
         $class = $this->classOffering($excel, $word);
         $student = Student::factory()->create();
 
@@ -102,7 +104,7 @@ class EnrollmentTest extends TestCase
     {
         $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE]);
         $student = Student::factory()->create();
-        $book = Book::factory()->create(['fee' => 25]);
+        $book = Book::factory()->create();
         $class = $this->classOffering($book);
         Enrollment::factory()->forStudent($student)->forClass($class)->forBook($book)->create();
 
@@ -186,22 +188,6 @@ class EnrollmentTest extends TestCase
         $response->assertJsonPath('data.status', 'dropped');
     }
 
-    /**
-     * The core reason `fee` is stored on the enrollment rather than always
-     * read from the book: a later catalog price change must never
-     * retroactively change what an already-enrolled student owes.
-     */
-    public function test_updating_a_books_fee_does_not_change_an_existing_enrollments_fee(): void
-    {
-        $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_UPDATE]);
-        $book = Book::factory()->create(['fee' => 30]);
-        $enrollment = Enrollment::factory()->forBook($book)->create();
-
-        $book->update(['fee' => 50]);
-
-        $this->assertSame('30.00', $enrollment->fresh()->fee);
-    }
-
     public function test_an_enrollments_fee_can_be_adjusted_for_a_discount(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_UPDATE]);
@@ -211,5 +197,125 @@ class EnrollmentTest extends TestCase
 
         $response->assertOk();
         $response->assertJsonPath('data.fee', 15);
+    }
+
+    public function test_a_class_with_no_classroom_does_not_require_a_table(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE]);
+        $student = Student::factory()->create();
+        $book = Book::factory()->create();
+        $class = $this->classOffering($book); // classroom_id is null by default
+
+        $response = $this->postJson('/api/v1/enrollments', [
+            'student_id' => $student->id, 'class_id' => $class->id, 'book_id' => $book->id,
+            'enrolled_at' => '2026-01-15', 'fee' => 25,
+        ]);
+
+        $response->assertCreated();
+    }
+
+    public function test_a_class_whose_room_has_no_tables_configured_does_not_require_a_table(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE]);
+        $student = Student::factory()->create();
+        $book = Book::factory()->create();
+        $room = Classroom::factory()->create();
+        $class = SchoolClass::factory()->inRoom($room)->create();
+        $class->books()->attach($book->id);
+
+        $response = $this->postJson('/api/v1/enrollments', [
+            'student_id' => $student->id, 'class_id' => $class->id, 'book_id' => $book->id,
+            'enrolled_at' => '2026-01-15', 'fee' => 25,
+        ]);
+
+        $response->assertCreated();
+    }
+
+    public function test_a_table_is_required_once_the_classroom_has_tables(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE]);
+        $student = Student::factory()->create();
+        $book = Book::factory()->create();
+        $room = Classroom::factory()->create();
+        ClassroomTable::factory()->create(['classroom_id' => $room->id, 'name' => 'Table 1']);
+        $class = SchoolClass::factory()->inRoom($room)->create();
+        $class->books()->attach($book->id);
+
+        $response = $this->postJson('/api/v1/enrollments', [
+            'student_id' => $student->id, 'class_id' => $class->id, 'book_id' => $book->id,
+            'enrolled_at' => '2026-01-15', 'fee' => 25,
+        ]);
+
+        $response->assertUnprocessable();
+        $response->assertJsonValidationErrors('table_id');
+    }
+
+    public function test_two_students_cannot_share_the_same_table_in_one_class(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE]);
+        $book = Book::factory()->create();
+        $room = Classroom::factory()->create();
+        $table = ClassroomTable::factory()->create(['classroom_id' => $room->id]);
+        $class = SchoolClass::factory()->inRoom($room)->create();
+        $class->books()->attach($book->id);
+        $studentA = Student::factory()->create();
+        $studentB = Student::factory()->create();
+
+        $this->postJson('/api/v1/enrollments', [
+            'student_id' => $studentA->id, 'class_id' => $class->id, 'book_id' => $book->id, 'table_id' => $table->id,
+            'enrolled_at' => '2026-01-15', 'fee' => 25,
+        ])->assertCreated();
+
+        $response = $this->postJson('/api/v1/enrollments', [
+            'student_id' => $studentB->id, 'class_id' => $class->id, 'book_id' => $book->id, 'table_id' => $table->id,
+            'enrolled_at' => '2026-01-15', 'fee' => 25,
+        ]);
+
+        $response->assertUnprocessable();
+        $response->assertJsonValidationErrors('table_id');
+    }
+
+    public function test_dropping_an_enrollment_frees_its_table_for_reuse(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE, Permissions::ENROLLMENTS_UPDATE]);
+        $book = Book::factory()->create();
+        $room = Classroom::factory()->create();
+        $table = ClassroomTable::factory()->create(['classroom_id' => $room->id]);
+        $class = SchoolClass::factory()->inRoom($room)->create();
+        $class->books()->attach($book->id);
+        $studentA = Student::factory()->create();
+        $studentB = Student::factory()->create();
+
+        $first = $this->postJson('/api/v1/enrollments', [
+            'student_id' => $studentA->id, 'class_id' => $class->id, 'book_id' => $book->id, 'table_id' => $table->id,
+            'enrolled_at' => '2026-01-15', 'fee' => 25,
+        ])->assertCreated()->json('data.id');
+
+        $this->putJson("/api/v1/enrollments/{$first}", ['status' => Enrollment::STATUS_DROPPED])->assertOk();
+
+        $this->postJson('/api/v1/enrollments', [
+            'student_id' => $studentB->id, 'class_id' => $class->id, 'book_id' => $book->id, 'table_id' => $table->id,
+            'enrolled_at' => '2026-01-15', 'fee' => 25,
+        ])->assertCreated();
+    }
+
+    public function test_a_table_from_a_different_classroom_is_rejected(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE]);
+        $student = Student::factory()->create();
+        $book = Book::factory()->create();
+        $room = Classroom::factory()->create();
+        ClassroomTable::factory()->create(['classroom_id' => $room->id]);
+        $class = SchoolClass::factory()->inRoom($room)->create();
+        $class->books()->attach($book->id);
+        $otherRoomTable = ClassroomTable::factory()->create();
+
+        $response = $this->postJson('/api/v1/enrollments', [
+            'student_id' => $student->id, 'class_id' => $class->id, 'book_id' => $book->id, 'table_id' => $otherRoomTable->id,
+            'enrolled_at' => '2026-01-15', 'fee' => 25,
+        ]);
+
+        $response->assertUnprocessable();
+        $response->assertJsonValidationErrors('table_id');
     }
 }

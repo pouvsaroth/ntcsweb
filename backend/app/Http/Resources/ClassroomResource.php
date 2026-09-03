@@ -21,6 +21,11 @@ class ClassroomResource extends JsonResource
             'code' => $this->code,
             'capacity' => $this->capacity,
             'location' => $this->location,
+            'building_id' => $this->building_id,
+            'building' => $this->whenLoaded('building', fn () => [
+                'id' => $this->building->id,
+                'name' => $this->building->name,
+            ]),
             'status' => $this->status,
             'classes_count' => $this->whenCounted('classes'),
             'created_at' => $this->created_at?->toIso8601String(),

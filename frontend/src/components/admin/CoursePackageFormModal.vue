@@ -28,11 +28,32 @@ const form = reactive({
   name: '',
   academic_program_id: null as number | null,
   description: '',
-  price: null as number | null,
+  fee_monthly: null as number | null,
+  fee_term: null as number | null,
+  fee_video: null as number | null,
+  fee_monthly_online: null as number | null,
+  fee_term_online: null as number | null,
+  currency: 'USD' as 'USD' | 'KHR',
   duration: '',
   is_active: true,
+  show_on_website: false,
+  show_in_popular: false,
   book_ids: [] as number[],
 })
+
+const hasAnyFee = computed(
+  () =>
+    form.fee_monthly !== null ||
+    form.fee_term !== null ||
+    form.fee_video !== null ||
+    form.fee_monthly_online !== null ||
+    form.fee_term_online !== null,
+)
+
+const currencyOptions = computed(() => [
+  { value: 'USD', label: t('admin.coursePackages.currencyUsd') },
+  { value: 'KHR', label: t('admin.coursePackages.currencyKhr') },
+])
 
 const programs = ref<AcademicProgram[]>([])
 const books = ref<Book[]>([])
@@ -46,7 +67,7 @@ const programOptions = computed(() => programs.value.map((p) => ({ value: String
 // package's menu — mirrors the server's own "package must belong to the
 // class's program" rule (EnrollmentService::assertEnrollable()).
 const availableBooks = computed(() =>
-  form.academic_program_id === null ? [] : books.value.filter((b) => b.programs?.some((p) => p.id === form.academic_program_id)),
+  form.academic_program_id === null ? [] : books.value.filter((b) => b.academic_program?.id === form.academic_program_id),
 )
 
 function toggleBook(bookId: number, checked: boolean) {
@@ -85,9 +106,16 @@ watch(
     form.name = props.coursePackage?.name ?? ''
     form.academic_program_id = props.coursePackage?.academic_program_id ?? null
     form.description = props.coursePackage?.description ?? ''
-    form.price = props.coursePackage?.price ?? null
+    form.fee_monthly = props.coursePackage?.fee_monthly ?? null
+    form.fee_term = props.coursePackage?.fee_term ?? null
+    form.fee_video = props.coursePackage?.fee_video ?? null
+    form.fee_monthly_online = props.coursePackage?.fee_monthly_online ?? null
+    form.fee_term_online = props.coursePackage?.fee_term_online ?? null
+    form.currency = props.coursePackage?.currency ?? 'USD'
     form.duration = props.coursePackage?.duration ?? ''
     form.is_active = props.coursePackage?.is_active ?? true
+    form.show_on_website = props.coursePackage?.show_on_website ?? false
+    form.show_in_popular = props.coursePackage?.show_in_popular ?? false
     form.book_ids = props.coursePackage?.books?.map((b) => b.id) ?? []
     errors.value = {}
     generalError.value = null
@@ -97,14 +125,14 @@ watch(
 )
 
 async function submit() {
-  if (form.academic_program_id === null || form.price === null) return
+  if (form.academic_program_id === null || !hasAnyFee.value) return
 
   submitting.value = true
   errors.value = {}
   generalError.value = null
 
   try {
-    const input = { ...form, academic_program_id: form.academic_program_id, price: form.price }
+    const input = { ...form, academic_program_id: form.academic_program_id }
 
     if (isEditing.value) {
       await coursePackagesService.update(props.coursePackage!.id, input)
@@ -149,16 +177,63 @@ async function submit() {
         @update:model-value="form.academic_program_id = $event ? Number($event) : null"
       />
 
+      <div>
+        <label class="mb-1.5 block text-sm font-medium text-neutral-700">
+          {{ t('admin.coursePackages.fees') }} <span class="text-danger-600">*</span>
+        </label>
+        <p class="mb-2 text-xs text-neutral-500">{{ t('admin.coursePackages.feesHint') }}</p>
+        <div class="grid grid-cols-2 gap-4">
+          <BaseInput
+            :model-value="form.fee_monthly !== null ? String(form.fee_monthly) : ''"
+            type="number"
+            step="0.01"
+            :label="t('admin.coursePackages.feeMonthly')"
+            :error="errors.fee_monthly?.[0]"
+            @update:model-value="form.fee_monthly = $event ? Number($event) : null"
+          />
+          <BaseInput
+            :model-value="form.fee_term !== null ? String(form.fee_term) : ''"
+            type="number"
+            step="0.01"
+            :label="t('admin.coursePackages.feeTerm')"
+            :error="errors.fee_term?.[0]"
+            @update:model-value="form.fee_term = $event ? Number($event) : null"
+          />
+          <BaseInput
+            :model-value="form.fee_video !== null ? String(form.fee_video) : ''"
+            type="number"
+            step="0.01"
+            :label="t('admin.coursePackages.feeVideo')"
+            :error="errors.fee_video?.[0]"
+            @update:model-value="form.fee_video = $event ? Number($event) : null"
+          />
+          <BaseInput
+            :model-value="form.fee_monthly_online !== null ? String(form.fee_monthly_online) : ''"
+            type="number"
+            step="0.01"
+            :label="t('admin.coursePackages.feeMonthlyOnline')"
+            :error="errors.fee_monthly_online?.[0]"
+            @update:model-value="form.fee_monthly_online = $event ? Number($event) : null"
+          />
+          <BaseInput
+            :model-value="form.fee_term_online !== null ? String(form.fee_term_online) : ''"
+            type="number"
+            step="0.01"
+            :label="t('admin.coursePackages.feeTermOnline')"
+            :error="errors.fee_term_online?.[0]"
+            @update:model-value="form.fee_term_online = $event ? Number($event) : null"
+          />
+        </div>
+        <p v-if="!hasAnyFee" class="mt-1.5 text-sm text-danger-600">{{ t('admin.coursePackages.atLeastOneFeeRequired') }}</p>
+      </div>
+
       <div class="grid grid-cols-2 gap-4">
-        <BaseInput
-          :model-value="form.price !== null ? String(form.price) : ''"
-          type="number"
-          step="0.01"
+        <BaseSelect
+          v-model="form.currency"
+          :options="currencyOptions"
           required
-          :label="t('admin.coursePackages.price')"
-          :hint="t('admin.coursePackages.priceHint')"
-          :error="errors.price?.[0]"
-          @update:model-value="form.price = $event ? Number($event) : null"
+          :label="t('admin.coursePackages.currency')"
+          :error="errors.currency?.[0]"
         />
         <BaseInput v-model="form.duration" :label="t('admin.coursePackages.duration')" :error="errors.duration?.[0]" />
       </div>
@@ -197,11 +272,27 @@ async function submit() {
         <input v-model="form.is_active" type="checkbox" class="rounded border-neutral-300 text-primary-600 focus:ring-primary-500" />
         {{ t('admin.coursePackages.statusActive') }}
       </label>
+
+      <div>
+        <label class="flex items-center gap-2 text-sm text-neutral-700">
+          <input v-model="form.show_on_website" type="checkbox" class="rounded border-neutral-300 text-primary-600 focus:ring-primary-500" />
+          {{ t('admin.coursePackages.showOnWebsite') }}
+        </label>
+        <p class="mt-1 text-xs text-neutral-500">{{ t('admin.coursePackages.showOnWebsiteHint') }}</p>
+      </div>
+
+      <div>
+        <label class="flex items-center gap-2 text-sm text-neutral-700">
+          <input v-model="form.show_in_popular" type="checkbox" class="rounded border-neutral-300 text-primary-600 focus:ring-primary-500" />
+          {{ t('admin.coursePackages.showInPopular') }}
+        </label>
+        <p class="mt-1 text-xs text-neutral-500">{{ t('admin.coursePackages.showInPopularHint') }}</p>
+      </div>
     </form>
 
     <template #footer>
       <BaseButton variant="outline" @click="emit('update:modelValue', false)">{{ t('common.close') }}</BaseButton>
-      <BaseButton :loading="submitting" :disabled="form.academic_program_id === null || form.price === null || form.book_ids.length === 0" @click="submit">
+      <BaseButton :loading="submitting" :disabled="form.academic_program_id === null || !hasAnyFee || form.book_ids.length === 0" @click="submit">
         {{ t('common.save') }}
       </BaseButton>
     </template>

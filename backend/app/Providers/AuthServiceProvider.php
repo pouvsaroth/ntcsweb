@@ -13,10 +13,13 @@ use App\Models\AssetIssue;
 use App\Models\AssetLocation;
 use App\Models\AssetMaintenance;
 use App\Models\AssetRepair;
+use App\Models\Building;
 use App\Models\AttendanceRecord;
 use App\Models\AuditLog;
 use App\Models\Book;
+use App\Models\BookCategory;
 use App\Models\Classroom;
+use App\Models\ClassroomTable;
 use App\Models\CoursePackage;
 use App\Models\Department;
 use App\Models\Enrollment;
@@ -32,7 +35,6 @@ use App\Models\Payment;
 use App\Models\Position;
 use App\Models\Product;
 use App\Models\Program;
-use App\Models\ProgramOffering;
 use App\Models\RepairShop;
 use App\Models\Role;
 use App\Models\SchoolClass;
@@ -40,7 +42,6 @@ use App\Models\Staff;
 use App\Models\Student;
 use App\Models\StudyMode;
 use App\Models\Supplier;
-use App\Models\Teacher;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Policies\AcademicProgramPolicy;
@@ -55,7 +56,10 @@ use App\Policies\AcademicYearPolicy;
 use App\Policies\AttendancePolicy;
 use App\Policies\AuditLogPolicy;
 use App\Policies\BookPolicy;
+use App\Policies\BookCategoryPolicy;
+use App\Policies\BuildingPolicy;
 use App\Policies\ClassroomPolicy;
+use App\Policies\ClassroomTablePolicy;
 use App\Policies\CoursePackagePolicy;
 use App\Policies\DepartmentPolicy;
 use App\Policies\EnrollmentPolicy;
@@ -70,7 +74,6 @@ use App\Policies\LookupValuePolicy;
 use App\Policies\PaymentPolicy;
 use App\Policies\PositionPolicy;
 use App\Policies\ProductPolicy;
-use App\Policies\ProgramOfferingPolicy;
 use App\Policies\ProgramPolicy;
 use App\Policies\RepairShopPolicy;
 use App\Policies\RolePolicy;
@@ -79,7 +82,6 @@ use App\Policies\StaffPolicy;
 use App\Policies\StudentPolicy;
 use App\Policies\StudyModePolicy;
 use App\Policies\SupplierPolicy;
-use App\Policies\TeacherPolicy;
 use App\Policies\TenantPolicy;
 use App\Policies\UserPolicy;
 use App\Support\Authorization\PermissionRegistry;
@@ -97,10 +99,12 @@ class AuthServiceProvider extends ServiceProvider
         Tenant::class => TenantPolicy::class,
         User::class => UserPolicy::class,
         Role::class => RolePolicy::class,
-        Teacher::class => TeacherPolicy::class,
         Student::class => StudentPolicy::class,
         Classroom::class => ClassroomPolicy::class,
+        ClassroomTable::class => ClassroomTablePolicy::class,
+        Building::class => BuildingPolicy::class,
         Book::class => BookPolicy::class,
+        BookCategory::class => BookCategoryPolicy::class,
         SchoolClass::class => SchoolClassPolicy::class,
         Enrollment::class => EnrollmentPolicy::class,
         StudyMode::class => StudyModePolicy::class,
@@ -110,7 +114,6 @@ class AuthServiceProvider extends ServiceProvider
         Language::class => LanguagePolicy::class,
         LookupCategory::class => LookupCategoryPolicy::class,
         LookupValue::class => LookupValuePolicy::class,
-        ProgramOffering::class => ProgramOfferingPolicy::class,
         HomeSlide::class => HomeSlidePolicy::class,
         GalleryImage::class => GalleryImagePolicy::class,
         Program::class => ProgramPolicy::class,

@@ -34,6 +34,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $tenant_id
  * @property int $student_id
  * @property int $class_id
+ * @property int|null $table_id Which physical table in the class's classroom this student sits at -- see ClassroomTable.
  * @property int|null $book_id
  * @property int|null $course_package_id
  * @property int|null $academic_program_id
@@ -41,7 +42,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $fee
  * @property string $status
  */
-#[Fillable(['student_id', 'class_id', 'book_id', 'course_package_id', 'academic_program_id', 'study_mode_id', 'enrolled_at', 'fee', 'status'])]
+#[Fillable(['student_id', 'class_id', 'table_id', 'book_id', 'course_package_id', 'academic_program_id', 'study_mode_id', 'enrolled_at', 'fee', 'status'])]
 class Enrollment extends Model
 {
     use Auditable, BelongsToTenant, HasFactory;
@@ -66,7 +67,7 @@ class Enrollment extends Model
 
     public ?string $auditTransferToClass = null;
 
-    /** PHP-level mirror of the column's DB default — see Teacher for why. */
+    /** PHP-level mirror of the column's DB default — see Building for why. */
     protected $attributes = [
         'status' => self::STATUS_ACTIVE,
     ];
@@ -87,6 +88,11 @@ class Enrollment extends Model
     public function schoolClass(): BelongsTo
     {
         return $this->belongsTo(SchoolClass::class, 'class_id');
+    }
+
+    public function table(): BelongsTo
+    {
+        return $this->belongsTo(ClassroomTable::class, 'table_id');
     }
 
     public function book(): BelongsTo

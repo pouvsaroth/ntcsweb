@@ -63,10 +63,6 @@ final class StudyModeController extends Controller
     {
         $this->authorize('delete', $studyMode);
 
-        if ($studyMode->programOfferings()->exists()) {
-            return ApiResponse::error('This study mode is in use and cannot be deleted. Deactivate it instead.', 422);
-        }
-
         $studyMode->delete();
 
         return ApiResponse::noContent();

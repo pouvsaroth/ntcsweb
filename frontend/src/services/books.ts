@@ -10,12 +10,13 @@ export interface Book {
   publisher: string | null
   description: string | null
   cover_image: string | null
-  quantity: number
-  /** Default/list price — not what a specific enrolled student is charged, see Enrollment.fee. */
-  fee: number | null
   status: 'active' | 'inactive'
-  /** Which academic program(s) this book belongs to — lets a Course Package's book picker filter by program. */
-  programs?: { id: number; code: string; name: string }[]
+  /** The one academic program this book belongs to — lets a Course Package's book picker filter by program, and drives which book_category is valid below. */
+  academic_program_id: number | null
+  academic_program?: { id: number; code: string; name: string } | null
+  /** What the book teaches within its program, e.g. "Office", "Design" — see BookCategory. */
+  book_category_id: number | null
+  book_category?: { id: number; name: string } | null
   classes_count?: number
   created_at: string
 }
@@ -26,10 +27,9 @@ export interface BookInput {
   isbn: string
   publisher: string
   description: string
-  quantity: number
-  fee: number | null
   status: 'active' | 'inactive'
-  program_ids: number[]
+  academic_program_id: number
+  book_category_id: number | null
 }
 
 export const booksService = {

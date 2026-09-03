@@ -50,7 +50,8 @@ class CoursePackagePriceChangeTest extends TestCase
             'code' => $this->msWordPackage->code,
             'name' => $this->msWordPackage->name,
             'academic_program_id' => $this->msWordPackage->academic_program_id,
-            'price' => 30,
+            'currency' => 'USD',
+            'fee_monthly' => 30,
         ])->assertOk();
 
         $this->assertSame('30.00', (string) $this->msWordPackage->fresh()->price);

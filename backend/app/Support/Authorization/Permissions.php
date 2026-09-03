@@ -51,15 +51,6 @@ final class Permissions
 
     public const ROLES_ASSIGN = 'roles.assign';
 
-    // Teachers.
-    public const TEACHERS_VIEW = 'teachers.view';
-
-    public const TEACHERS_CREATE = 'teachers.create';
-
-    public const TEACHERS_UPDATE = 'teachers.update';
-
-    public const TEACHERS_DELETE = 'teachers.delete';
-
     // Students.
     public const STUDENTS_VIEW = 'students.view';
 
@@ -69,6 +60,15 @@ final class Permissions
 
     public const STUDENTS_DELETE = 'students.delete';
 
+    // Buildings — the physical buildings a school's classrooms belong to.
+    public const BUILDINGS_VIEW = 'buildings.view';
+
+    public const BUILDINGS_CREATE = 'buildings.create';
+
+    public const BUILDINGS_UPDATE = 'buildings.update';
+
+    public const BUILDINGS_DELETE = 'buildings.delete';
+
     // Classrooms.
     public const CLASSROOMS_VIEW = 'classrooms.view';
 
@@ -77,6 +77,15 @@ final class Permissions
     public const CLASSROOMS_UPDATE = 'classrooms.update';
 
     public const CLASSROOMS_DELETE = 'classrooms.delete';
+
+    // Book Categories.
+    public const BOOK_CATEGORIES_VIEW = 'book-categories.view';
+
+    public const BOOK_CATEGORIES_CREATE = 'book-categories.create';
+
+    public const BOOK_CATEGORIES_UPDATE = 'book-categories.update';
+
+    public const BOOK_CATEGORIES_DELETE = 'book-categories.delete';
 
     // Books.
     public const BOOKS_VIEW = 'books.view';
@@ -152,16 +161,6 @@ final class Permissions
     public const ACADEMIC_YEARS_UPDATE = 'academic-years.update';
 
     public const ACADEMIC_YEARS_DELETE = 'academic-years.delete';
-
-    // Program Offerings — a program under a given study mode/academic year
-    // (e.g. "English - Full Time - 2026") that a Class can be linked to.
-    public const PROGRAM_OFFERINGS_VIEW = 'program-offerings.view';
-
-    public const PROGRAM_OFFERINGS_CREATE = 'program-offerings.create';
-
-    public const PROGRAM_OFFERINGS_UPDATE = 'program-offerings.update';
-
-    public const PROGRAM_OFFERINGS_DELETE = 'program-offerings.delete';
 
     public const ACADEMIC_REPORTS_VIEW = 'academic-reports.view';
 
@@ -414,23 +413,29 @@ final class Permissions
                 self::ROLES_DELETE => 'Delete roles',
                 self::ROLES_ASSIGN => 'Assign roles to users',
             ],
-            'Teachers' => [
-                self::TEACHERS_VIEW => 'View teachers',
-                self::TEACHERS_CREATE => 'Create teachers',
-                self::TEACHERS_UPDATE => 'Update teachers',
-                self::TEACHERS_DELETE => 'Delete teachers',
-            ],
             'Students' => [
                 self::STUDENTS_VIEW => 'View students',
                 self::STUDENTS_CREATE => 'Create students',
                 self::STUDENTS_UPDATE => 'Update students',
                 self::STUDENTS_DELETE => 'Delete students',
             ],
+            'Buildings' => [
+                self::BUILDINGS_VIEW => 'View buildings',
+                self::BUILDINGS_CREATE => 'Create buildings',
+                self::BUILDINGS_UPDATE => 'Update buildings',
+                self::BUILDINGS_DELETE => 'Delete buildings',
+            ],
             'Classrooms' => [
                 self::CLASSROOMS_VIEW => 'View classrooms',
                 self::CLASSROOMS_CREATE => 'Create classrooms',
                 self::CLASSROOMS_UPDATE => 'Update classrooms',
                 self::CLASSROOMS_DELETE => 'Delete classrooms',
+            ],
+            'Book Categories' => [
+                self::BOOK_CATEGORIES_VIEW => 'View book categories',
+                self::BOOK_CATEGORIES_CREATE => 'Create book categories',
+                self::BOOK_CATEGORIES_UPDATE => 'Update book categories',
+                self::BOOK_CATEGORIES_DELETE => 'Delete book categories',
             ],
             'Books' => [
                 self::BOOKS_VIEW => 'View books',
@@ -475,12 +480,6 @@ final class Permissions
                 self::ACADEMIC_YEARS_CREATE => 'Create academic years',
                 self::ACADEMIC_YEARS_UPDATE => 'Update academic years',
                 self::ACADEMIC_YEARS_DELETE => 'Delete academic years',
-            ],
-            'Program Offerings' => [
-                self::PROGRAM_OFFERINGS_VIEW => 'View program offerings',
-                self::PROGRAM_OFFERINGS_CREATE => 'Create program offerings',
-                self::PROGRAM_OFFERINGS_UPDATE => 'Update program offerings',
-                self::PROGRAM_OFFERINGS_DELETE => 'Delete program offerings',
             ],
             'Academic Reports' => [
                 self::ACADEMIC_REPORTS_VIEW => 'View academic/enrollment reports',
@@ -625,9 +624,10 @@ final class Permissions
     public static function defaultsForSystemRoles(): array
     {
         $academicManagement = [
-            self::TEACHERS_VIEW, self::TEACHERS_CREATE, self::TEACHERS_UPDATE, self::TEACHERS_DELETE,
             self::STUDENTS_VIEW, self::STUDENTS_CREATE, self::STUDENTS_UPDATE, self::STUDENTS_DELETE,
+            self::BUILDINGS_VIEW, self::BUILDINGS_CREATE, self::BUILDINGS_UPDATE, self::BUILDINGS_DELETE,
             self::CLASSROOMS_VIEW, self::CLASSROOMS_CREATE, self::CLASSROOMS_UPDATE, self::CLASSROOMS_DELETE,
+            self::BOOK_CATEGORIES_VIEW, self::BOOK_CATEGORIES_CREATE, self::BOOK_CATEGORIES_UPDATE, self::BOOK_CATEGORIES_DELETE,
             self::BOOKS_VIEW, self::BOOKS_CREATE, self::BOOKS_UPDATE, self::BOOKS_DELETE,
             self::CLASSES_VIEW, self::CLASSES_CREATE, self::CLASSES_UPDATE, self::CLASSES_DELETE,
             self::ENROLLMENTS_VIEW, self::ENROLLMENTS_CREATE, self::ENROLLMENTS_UPDATE, self::ENROLLMENTS_DELETE,
@@ -636,7 +636,6 @@ final class Permissions
             self::ACADEMIC_PROGRAMS_VIEW, self::ACADEMIC_PROGRAMS_CREATE, self::ACADEMIC_PROGRAMS_UPDATE, self::ACADEMIC_PROGRAMS_DELETE,
             self::COURSE_PACKAGES_VIEW, self::COURSE_PACKAGES_CREATE, self::COURSE_PACKAGES_UPDATE, self::COURSE_PACKAGES_DELETE,
             self::ACADEMIC_YEARS_VIEW, self::ACADEMIC_YEARS_CREATE, self::ACADEMIC_YEARS_UPDATE, self::ACADEMIC_YEARS_DELETE,
-            self::PROGRAM_OFFERINGS_VIEW, self::PROGRAM_OFFERINGS_CREATE, self::PROGRAM_OFFERINGS_UPDATE, self::PROGRAM_OFFERINGS_DELETE,
             self::ACADEMIC_REPORTS_VIEW, self::ACADEMIC_REPORTS_EXPORT,
             self::HOME_SLIDES_VIEW, self::HOME_SLIDES_CREATE, self::HOME_SLIDES_UPDATE, self::HOME_SLIDES_DELETE,
             self::GALLERY_VIEW, self::GALLERY_CREATE, self::GALLERY_UPDATE, self::GALLERY_DELETE,
@@ -721,9 +720,10 @@ final class Permissions
             // classes a teacher account is actually assigned to teach.
             \App\Models\Role::TEACHER => [
                 self::USERS_VIEW,
-                self::TEACHERS_VIEW,
                 self::STUDENTS_VIEW,
+                self::BUILDINGS_VIEW,
                 self::CLASSROOMS_VIEW,
+                self::BOOK_CATEGORIES_VIEW,
                 self::BOOKS_VIEW,
                 self::CLASSES_VIEW,
                 self::ENROLLMENTS_VIEW,
@@ -731,7 +731,6 @@ final class Permissions
                 self::ACADEMIC_PROGRAMS_VIEW,
                 self::COURSE_PACKAGES_VIEW,
                 self::ACADEMIC_YEARS_VIEW,
-                self::PROGRAM_OFFERINGS_VIEW,
                 self::POSITIONS_VIEW,
                 self::STAFF_VIEW,
                 self::ATTENDANCE_VIEW,
@@ -743,17 +742,18 @@ final class Permissions
             // package-based enrollment path, which needs read access to the
             // whole Program/Study Mode/Course Package catalog to build one),
             // but not delete them (deletion stays a school-admin action) and
-            // can't touch the teaching catalog (teachers/classrooms/books/
-            // classes/academic programs/packages) itself.
+            // can't touch the teaching catalog (classrooms/books/classes/
+            // academic programs/packages) itself.
             \App\Models\Role::STAFF => [
                 self::USERS_VIEW,
                 self::POSITIONS_VIEW,
                 self::STAFF_VIEW,
-                self::TEACHERS_VIEW,
                 self::STUDENTS_VIEW,
                 self::STUDENTS_CREATE,
                 self::STUDENTS_UPDATE,
+                self::BUILDINGS_VIEW,
                 self::CLASSROOMS_VIEW,
+                self::BOOK_CATEGORIES_VIEW,
                 self::BOOKS_VIEW,
                 self::CLASSES_VIEW,
                 self::ENROLLMENTS_VIEW,
@@ -764,7 +764,6 @@ final class Permissions
                 self::ACADEMIC_PROGRAMS_VIEW,
                 self::COURSE_PACKAGES_VIEW,
                 self::ACADEMIC_YEARS_VIEW,
-                self::PROGRAM_OFFERINGS_VIEW,
             ],
             \App\Models\Role::STUDENT => [],
         ];

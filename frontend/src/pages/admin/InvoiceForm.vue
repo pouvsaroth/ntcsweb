@@ -13,7 +13,7 @@ import { productsService, type Product } from '@/services/products'
 import { studentsService, type Student } from '@/services/students'
 import { ApiRequestError } from '@/types/api'
 
-/** yyyy-MM-dd in the viewer's local time — matches EnrollmentForm's own helper. */
+/** yyyy-MM-dd in the viewer's local time — matches EnrollmentPackageForm's own helper. */
 function today(): string {
   const now = new Date()
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
@@ -22,7 +22,7 @@ function today(): string {
 const { t } = useI18n()
 const router = useRouter()
 
-// --- Student picker (same search-then-select pattern as EnrollmentForm) --
+// --- Student picker (same search-then-select pattern as EnrollmentPackageForm) --
 
 const studentSearch = ref('')
 const studentResults = ref<Student[]>([])

@@ -11,13 +11,10 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
- * A real, tenant-owned academic year (e.g. "2026") that a Program Offering
- * is scheduled under. Previously a plain string on `program_offerings`,
- * deliberately left that way as a seam for exactly this table.
+ * A real, tenant-owned academic year (e.g. "2026") used across the school.
  */
 #[Fillable(['name', 'start_date', 'end_date', 'is_current'])]
 class AcademicYear extends Model
@@ -36,11 +33,6 @@ class AcademicYear extends Model
             'end_date' => 'date',
             'is_current' => 'boolean',
         ];
-    }
-
-    public function programOfferings(): HasMany
-    {
-        return $this->hasMany(ProgramOffering::class);
     }
 
     /**

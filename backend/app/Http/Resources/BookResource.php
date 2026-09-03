@@ -23,10 +23,18 @@ class BookResource extends JsonResource
             'publisher' => $this->publisher,
             'description' => $this->description,
             'cover_image' => $this->cover_image,
-            'quantity' => $this->quantity,
-            'fee' => $this->fee !== null ? (float) $this->fee : null,
             'status' => $this->status,
-            'programs' => $this->whenLoaded('programs', fn () => $this->programs->map(fn ($program) => ['id' => $program->id, 'code' => $program->code, 'name' => $program->name])),
+            'academic_program_id' => $this->academic_program_id,
+            'academic_program' => $this->whenLoaded('academicProgram', fn () => $this->academicProgram !== null ? [
+                'id' => $this->academicProgram->id,
+                'code' => $this->academicProgram->code,
+                'name' => $this->academicProgram->name,
+            ] : null),
+            'book_category_id' => $this->book_category_id,
+            'book_category' => $this->whenLoaded('bookCategory', fn () => $this->bookCategory !== null ? [
+                'id' => $this->bookCategory->id,
+                'name' => $this->bookCategory->name,
+            ] : null),
             'classes_count' => $this->whenCounted('classes'),
             'created_at' => $this->created_at?->toIso8601String(),
         ];

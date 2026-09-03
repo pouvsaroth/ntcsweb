@@ -51,7 +51,7 @@ class EnrollmentFactory extends Factory
 
     public function forBook(Book $book): static
     {
-        return $this->state(['book_id' => $book->getKey(), 'fee' => $book->fee ?? fake()->randomFloat(2, 10, 100)]);
+        return $this->state(['book_id' => $book->getKey()]);
     }
 
     public function dropped(): static

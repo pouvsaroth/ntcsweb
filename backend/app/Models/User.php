@@ -81,13 +81,14 @@ class User extends Authenticatable implements MustVerifyEmailContract
     }
 
     /**
-     * The Teacher record this account is linked to, if this is a teacher's
-     * own login — used to scope attendance-taking to a teacher's own classes.
-     * Null for every non-teacher account.
+     * The Staff record this account is linked to, if this is a staff/teacher
+     * login — used to scope attendance-taking to a teacher's own classes
+     * (see AttendancePolicy/SchoolClassPolicy). Null for every non-staff
+     * account (e.g. a student, or a school-admin with no Staff row).
      */
-    public function teacher(): HasOne
+    public function staff(): HasOne
     {
-        return $this->hasOne(Teacher::class);
+        return $this->hasOne(Staff::class);
     }
 
     /**

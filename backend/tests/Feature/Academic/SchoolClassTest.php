@@ -6,8 +6,12 @@ namespace Tests\Feature\Academic;
 
 use App\Models\Book;
 use App\Models\Classroom;
+use App\Models\ClassroomTable;
+use App\Models\Enrollment;
+use App\Models\Position;
 use App\Models\SchoolClass;
-use App\Models\Teacher;
+use App\Models\Staff;
+use App\Models\Student;
 use App\Models\Tenant;
 use App\Support\Authorization\Permissions;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -21,7 +25,8 @@ class SchoolClassTest extends TestCase
     public function test_it_creates_a_class_with_its_weekly_schedule_and_books(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::CLASSES_CREATE]);
-        $teacher = Teacher::factory()->create();
+        $teacherPosition = Position::factory()->create(['name' => 'Teacher']);
+        $teacher = Staff::factory()->create(['position_id' => $teacherPosition->id]);
         $classroom = Classroom::factory()->create();
         $book = Book::factory()->create();
 
@@ -67,11 +72,31 @@ class SchoolClassTest extends TestCase
     public function test_a_class_cannot_reference_a_teacher_from_another_tenant(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::CLASSES_CREATE]);
-        $foreignTeacher = $this->createForOtherTenant(fn () => Teacher::factory()->forTenant(Tenant::factory()->create())->create());
+        $foreignTeacher = $this->createForOtherTenant(function () {
+            $tenant = Tenant::factory()->create();
+            $position = Position::factory()->forTenant($tenant)->create(['name' => 'Teacher']);
+
+            return Staff::factory()->forTenant($tenant)->create(['position_id' => $position->id]);
+        });
 
         $response = $this->postJson('/api/v1/classes', [
             'name' => 'Suspicious Class',
             'teacher_id' => $foreignTeacher->id,
+        ]);
+
+        $response->assertUnprocessable();
+        $response->assertJsonValidationErrors('teacher_id');
+    }
+
+    public function test_a_staff_member_without_the_teacher_position_cannot_be_assigned_to_a_class(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::CLASSES_CREATE]);
+        $accountantPosition = Position::factory()->create(['name' => 'Accountant']);
+        $accountant = Staff::factory()->create(['position_id' => $accountantPosition->id]);
+
+        $response = $this->postJson('/api/v1/classes', [
+            'name' => 'Suspicious Class',
+            'teacher_id' => $accountant->id,
         ]);
 
         $response->assertUnprocessable();
@@ -101,5 +126,52 @@ class SchoolClassTest extends TestCase
         $foreignClass = $this->createForOtherTenant(fn () => SchoolClass::factory()->forTenant(Tenant::factory()->create())->create());
 
         $this->getJson("/api/v1/classes/{$foreignClass->id}")->assertNotFound();
+    }
+
+    public function test_available_tables_reports_zero_total_for_a_class_with_no_classroom(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE]);
+        $class = SchoolClass::factory()->create();
+
+        $response = $this->getJson("/api/v1/classes/{$class->id}/available-tables");
+
+        $response->assertOk();
+        $response->assertJsonPath('data.total_tables', 0);
+        $response->assertJsonCount(0, 'data.available');
+    }
+
+    public function test_available_tables_reports_zero_total_for_a_classroom_with_no_tables(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE]);
+        $room = Classroom::factory()->create();
+        $class = SchoolClass::factory()->inRoom($room)->create();
+
+        $response = $this->getJson("/api/v1/classes/{$class->id}/available-tables");
+
+        $response->assertOk();
+        $response->assertJsonPath('data.total_tables', 0);
+        $response->assertJsonCount(0, 'data.available');
+    }
+
+    public function test_available_tables_excludes_tables_taken_in_this_class_only(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE]);
+        $room = Classroom::factory()->create();
+        $tableA = ClassroomTable::factory()->create(['classroom_id' => $room->id, 'name' => 'Table A']);
+        $tableB = ClassroomTable::factory()->create(['classroom_id' => $room->id, 'name' => 'Table B']);
+        $class = SchoolClass::factory()->inRoom($room)->create();
+        $otherClass = SchoolClass::factory()->inRoom($room)->create();
+
+        // Taken in $class — must not appear as available for $class.
+        Enrollment::factory()->forClass($class)->create(['table_id' => $tableA->id]);
+        // Taken in a DIFFERENT class sharing the same room — irrelevant to $class's own availability.
+        Enrollment::factory()->forClass($otherClass)->create(['table_id' => $tableB->id]);
+
+        $response = $this->getJson("/api/v1/classes/{$class->id}/available-tables");
+
+        $response->assertOk();
+        $response->assertJsonPath('data.total_tables', 2);
+        $response->assertJsonCount(1, 'data.available');
+        $response->assertJsonPath('data.available.0.id', $tableB->id);
     }
 }

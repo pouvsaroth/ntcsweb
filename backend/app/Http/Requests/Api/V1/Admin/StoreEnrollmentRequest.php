@@ -44,6 +44,12 @@ class StoreEnrollmentRequest extends FormRequest
                 ),
             ],
 
+            // Uniqueness among the class's active enrollments — mirrors the
+            // book_id closure above — is checked in withValidator() below,
+            // alongside the "is this table even in this class's room" check,
+            // since both need the class's classroom_id resolved first.
+            'table_id' => ['nullable', Rule::exists('classroom_tables', 'id')->where('tenant_id', $tenantId)],
+
             'enrolled_at' => ['required', 'date'],
 
             // The fee is a per-enrollment snapshot, not a live read of the
@@ -75,6 +81,50 @@ class StoreEnrollmentRequest extends FormRequest
 
             if (! $onMenu) {
                 $validator->errors()->add('book_id', __('This book is not offered in the selected class.'));
+            }
+        });
+
+        $validator->after(function (Validator $validator) {
+            if ($validator->errors()->has('class_id') || $validator->errors()->has('table_id')) {
+                return;
+            }
+
+            $class = DB::table('classes')->where('id', $this->input('class_id'))->first();
+            if ($class === null || $class->classroom_id === null) {
+                return;
+            }
+
+            // Only rooms an admin has actually added tables to require a
+            // seat pick — a class in an unconfigured room enrolls exactly as
+            // it always could.
+            $hasTables = DB::table('classroom_tables')->where('classroom_id', $class->classroom_id)->exists();
+            if (! $hasTables) {
+                return;
+            }
+
+            $tableId = $this->input('table_id');
+
+            if ($tableId === null) {
+                $validator->errors()->add('table_id', __('Pick a table for this class.'));
+
+                return;
+            }
+
+            $belongsToRoom = DB::table('classroom_tables')->where('id', $tableId)->where('classroom_id', $class->classroom_id)->exists();
+            if (! $belongsToRoom) {
+                $validator->errors()->add('table_id', __("This table does not belong to the selected class's room."));
+
+                return;
+            }
+
+            $taken = DB::table('enrollments')
+                ->where('class_id', $this->input('class_id'))
+                ->where('table_id', $tableId)
+                ->where('status', '!=', Enrollment::STATUS_DROPPED)
+                ->exists();
+
+            if ($taken) {
+                $validator->errors()->add('table_id', __('This table is already taken in this class.'));
             }
         });
     }

@@ -44,7 +44,7 @@ class Program extends Model
 
     public const STATUS_INACTIVE = 'inactive';
 
-    /** PHP-level mirror of each column's DB default — see Teacher for why. */
+    /** PHP-level mirror of each column's DB default — see Building for why. */
     protected $attributes = [
         'level' => self::LEVEL_BEGINNER,
         'is_featured' => false,

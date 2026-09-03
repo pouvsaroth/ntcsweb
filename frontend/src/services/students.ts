@@ -126,7 +126,7 @@ function toFormData(input: StudentInput, methodOverride?: 'PUT'): FormData {
 export const studentsService = {
   /**
    * `page`/`per_page` are optional here (unlike usePaginatedResource's own
-   * PaginatedQuery) so a simple one-off search — e.g. EnrollmentForm's
+   * PaginatedQuery) so a simple one-off search — e.g. EnrollmentPackageForm's
    * student picker, which doesn't paginate at all — doesn't have to invent
    * values for fields it has no use for.
    */

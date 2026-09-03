@@ -30,7 +30,7 @@ class GalleryImage extends Model
 
     public const STATUS_INACTIVE = 'inactive';
 
-    /** PHP-level mirror of the column's DB default — see Teacher for why. */
+    /** PHP-level mirror of the column's DB default — see Building for why. */
     protected $attributes = [
         'status' => self::STATUS_ACTIVE,
         'sort_order' => 0,

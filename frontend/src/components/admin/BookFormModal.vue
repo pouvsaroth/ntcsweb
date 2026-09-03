@@ -8,6 +8,7 @@ import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
 import { academicProgramsService, type AcademicProgram } from '@/services/academicPrograms'
+import { bookCategoriesService, type BookCategory } from '@/services/bookCategories'
 import { booksService, type Book } from '@/services/books'
 import { ApiRequestError } from '@/types/api'
 
@@ -29,13 +30,14 @@ const form = reactive({
   isbn: '',
   publisher: '',
   description: '',
-  quantity: 1,
-  fee: null as number | null,
   status: 'active' as 'active' | 'inactive',
-  program_ids: [] as number[],
+  academic_program_id: null as number | null,
+  book_category_id: null as number | null,
 })
 
 const programs = ref<AcademicProgram[]>([])
+const categories = ref<BookCategory[]>([])
+const loadingCategories = ref(false)
 const errors = ref<Record<string, string[]>>({})
 const generalError = ref<string | null>(null)
 const submitting = ref(false)
@@ -45,17 +47,38 @@ const statusOptions = computed(() => [
   { value: 'inactive', label: t('admin.books.statusInactive') },
 ])
 
-function toggleProgram(programId: number, checked: boolean) {
-  if (checked) {
-    if (!form.program_ids.includes(programId)) form.program_ids.push(programId)
-  } else {
-    form.program_ids = form.program_ids.filter((id) => id !== programId)
-  }
-}
+const programOptions = computed(() => programs.value.map((p) => ({ value: String(p.id), label: `${p.code} — ${p.name}` })))
+const categoryOptions = computed(() => categories.value.map((c) => ({ value: String(c.id), label: c.name })))
 
 onMounted(async () => {
   programs.value = await academicProgramsService.listAll()
 })
+
+// Picking a different program invalidates whatever category was chosen for
+// the previous one — a category only ever belongs to one program. Fetching
+// is async, so by the time it resolves the fields below are already both
+// set (whether from a user's own program change or from opening the modal
+// to edit a book) — the book's own category simply survives the check
+// below when it's genuinely still valid for the resolved program.
+watch(
+  () => form.academic_program_id,
+  async (academicProgramId) => {
+    if (academicProgramId === null) {
+      categories.value = []
+      return
+    }
+
+    loadingCategories.value = true
+    try {
+      categories.value = await bookCategoriesService.listAllForProgram(academicProgramId)
+    } finally {
+      loadingCategories.value = false
+    }
+
+    if (!categories.value.some((c) => c.id === form.book_category_id)) form.book_category_id = null
+  },
+  { immediate: true },
+)
 
 watch(
   () => [props.modelValue, props.book] as const,
@@ -67,10 +90,9 @@ watch(
     form.isbn = props.book?.isbn ?? ''
     form.publisher = props.book?.publisher ?? ''
     form.description = props.book?.description ?? ''
-    form.quantity = props.book?.quantity ?? 1
-    form.fee = props.book?.fee ?? null
     form.status = props.book?.status ?? 'active'
-    form.program_ids = props.book?.programs?.map((p) => p.id) ?? []
+    form.academic_program_id = props.book?.academic_program_id ?? null
+    form.book_category_id = props.book?.book_category_id ?? null
     errors.value = {}
     generalError.value = null
   },
@@ -78,15 +100,19 @@ watch(
 )
 
 async function submit() {
+  if (form.academic_program_id === null) return
+
   submitting.value = true
   errors.value = {}
   generalError.value = null
 
   try {
+    const input = { ...form, academic_program_id: form.academic_program_id }
+
     if (isEditing.value) {
-      await booksService.update(props.book!.id, form)
+      await booksService.update(props.book!.id, input)
     } else {
-      await booksService.create(form)
+      await booksService.create(input)
     }
 
     emit('saved')
@@ -131,45 +157,36 @@ async function submit() {
         />
       </div>
 
-      <div class="grid grid-cols-2 gap-4">
-        <BaseInput
-          :model-value="String(form.quantity)"
-          type="number"
-          :label="t('admin.books.quantity')"
-          :error="errors.quantity?.[0]"
-          @update:model-value="form.quantity = Number($event) || 0"
-        />
-        <BaseInput
-          :model-value="form.fee !== null ? String(form.fee) : ''"
-          type="number"
-          :label="t('admin.books.fee')"
-          :hint="t('admin.books.feeHint')"
-          :error="errors.fee?.[0]"
-          @update:model-value="form.fee = $event ? Number($event) : null"
-        />
-      </div>
+      <BaseSelect
+        :model-value="form.academic_program_id !== null ? String(form.academic_program_id) : ''"
+        :options="programOptions"
+        required
+        :placeholder="t('admin.books.selectProgram')"
+        :label="t('admin.books.program')"
+        :error="errors.academic_program_id?.[0]"
+        @update:model-value="form.academic_program_id = $event ? Number($event) : null"
+      />
 
       <div>
-        <label class="mb-1.5 block text-sm font-medium text-neutral-700">{{ t('admin.books.programs') }}</label>
-        <p class="mb-2 text-xs text-neutral-500">{{ t('admin.books.programsHint') }}</p>
-        <p v-if="programs.length === 0" class="text-sm text-neutral-500">{{ t('admin.books.noProgramsAvailable') }}</p>
-        <div v-else class="grid gap-2 sm:grid-cols-2">
-          <label v-for="program in programs" :key="program.id" class="flex items-center gap-2 rounded-lg border border-neutral-200 p-2.5 text-sm">
-            <input
-              type="checkbox"
-              :checked="form.program_ids.includes(program.id)"
-              class="rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
-              @change="toggleProgram(program.id, ($event.target as HTMLInputElement).checked)"
-            />
-            <span class="flex-1 text-neutral-700">{{ program.code }} — {{ program.name }}</span>
-          </label>
-        </div>
+        <BaseSelect
+          :model-value="form.book_category_id !== null ? String(form.book_category_id) : ''"
+          :options="categoryOptions"
+          :disabled="form.academic_program_id === null || loadingCategories"
+          :placeholder="loadingCategories ? t('common.loading') : t('admin.books.selectCategory')"
+          :label="t('admin.books.category')"
+          :error="errors.book_category_id?.[0]"
+          @update:model-value="form.book_category_id = $event ? Number($event) : null"
+        />
+        <p v-if="form.academic_program_id === null" class="mt-1.5 text-xs text-neutral-500">{{ t('admin.books.pickProgramFirst') }}</p>
+        <p v-else-if="!loadingCategories && categories.length === 0" class="mt-1.5 text-xs text-neutral-500">
+          {{ t('admin.books.noCategoriesAvailable') }}
+        </p>
       </div>
     </form>
 
     <template #footer>
       <BaseButton variant="outline" @click="emit('update:modelValue', false)">{{ t('common.close') }}</BaseButton>
-      <BaseButton :loading="submitting" @click="submit">{{ t('common.save') }}</BaseButton>
+      <BaseButton :loading="submitting" :disabled="form.academic_program_id === null" @click="submit">{{ t('common.save') }}</BaseButton>
     </template>
   </BaseModal>
 </template>

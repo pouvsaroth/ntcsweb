@@ -38,13 +38,13 @@ final class EnrollmentService
     ) {}
 
     /**
-     * @param  array{student_id:int, class_id:int, course_package_id:int, enrolled_at?:string}  $data
+     * @param  array{student_id:int, class_id:int, course_package_id:int, table_id?:int|null, enrolled_at?:string}  $data
      */
     public function enrollInPackage(array $data, User $actor): Enrollment
     {
         return DB::transaction(function () use ($data, $actor) {
             /** @var SchoolClass $class */
-            $class = SchoolClass::query()->with('programOffering')->findOrFail($data['class_id']);
+            $class = SchoolClass::query()->with('academicProgram')->findOrFail($data['class_id']);
             /** @var CoursePackage $package */
             $package = CoursePackage::query()->with('product')->findOrFail($data['course_package_id']);
 
@@ -53,9 +53,9 @@ final class EnrollmentService
             $enrollment = Enrollment::query()->create([
                 'student_id' => $data['student_id'],
                 'class_id' => $class->getKey(),
+                'table_id' => $data['table_id'] ?? null,
                 'course_package_id' => $package->getKey(),
-                'academic_program_id' => $class->programOffering->academic_program_id,
-                'study_mode_id' => $class->programOffering->study_mode_id,
+                'academic_program_id' => $class->academic_program_id,
                 'enrolled_at' => $data['enrolled_at'] ?? now()->toDateString(),
                 'fee' => $package->price,
                 'status' => Enrollment::STATUS_ACTIVE,
@@ -72,7 +72,7 @@ final class EnrollmentService
                 ]],
             ], $actor);
 
-            $enrollment->load(['student', 'schoolClass', 'coursePackage', 'academicProgram', 'studyMode']);
+            $enrollment->load(['student', 'schoolClass', 'table', 'coursePackage', 'academicProgram', 'studyMode']);
 
             $this->audit->log(
                 AuditAction::ENROLLMENT_INVOICED,
@@ -109,13 +109,14 @@ final class EnrollmentService
      * (status=dropped) and opening a fresh one in the target class carrying
      * the same book/package/fee forward — no re-billing, full history
      * preserved on both rows. A package-based enrollment may only transfer
-     * to a class in the same program that also offers the same package; the
-     * legacy book path has no program-offering concept to validate against
-     * and is allowed to move freely, same as it always could.
+     * to a class in the same program (a class is just a schedule/room/
+     * teacher — it doesn't need to "offer" the package); the legacy book
+     * path has no program concept to validate against and is allowed to
+     * move freely, same as it always could.
      */
-    public function transferClass(Enrollment $enrollment, SchoolClass $newClass, User $actor): Enrollment
+    public function transferClass(Enrollment $enrollment, SchoolClass $newClass, User $actor, ?int $tableId = null): Enrollment
     {
-        return DB::transaction(function () use ($enrollment, $newClass, $actor) {
+        return DB::transaction(function () use ($enrollment, $newClass, $actor, $tableId) {
             /** @var Enrollment $enrollment */
             $enrollment = Enrollment::query()->whereKey($enrollment->getKey())->lockForUpdate()->firstOrFail();
 
@@ -123,15 +124,9 @@ final class EnrollmentService
                 throw ValidationException::withMessages(['status' => 'Only an active enrollment can be transferred.']);
             }
 
-            $newClass->loadMissing('programOffering');
-
             if ($enrollment->course_package_id !== null) {
-                if ($newClass->programOffering === null || $newClass->programOffering->academic_program_id !== $enrollment->academic_program_id) {
+                if ($newClass->academic_program_id === null || $newClass->academic_program_id !== $enrollment->academic_program_id) {
                     throw ValidationException::withMessages(['class_id' => "The target class does not belong to this enrollment's program."]);
-                }
-
-                if (! $newClass->coursePackages()->whereKey($enrollment->course_package_id)->exists()) {
-                    throw ValidationException::withMessages(['class_id' => 'The target class does not offer this package.']);
                 }
             }
 
@@ -141,16 +136,17 @@ final class EnrollmentService
             $new = Enrollment::query()->create([
                 'student_id' => $enrollment->student_id,
                 'class_id' => $newClass->getKey(),
+                'table_id' => $tableId,
                 'book_id' => $enrollment->book_id,
                 'course_package_id' => $enrollment->course_package_id,
                 'academic_program_id' => $enrollment->academic_program_id,
-                'study_mode_id' => $newClass->programOffering->study_mode_id ?? $enrollment->study_mode_id,
+                'study_mode_id' => $enrollment->study_mode_id,
                 'enrolled_at' => now()->toDateString(),
                 'fee' => $enrollment->fee,
                 'status' => Enrollment::STATUS_ACTIVE,
             ]);
 
-            return $new->load(['student', 'schoolClass', 'coursePackage', 'book']);
+            return $new->load(['student', 'schoolClass', 'table', 'coursePackage', 'book']);
         });
     }
 
@@ -160,16 +156,12 @@ final class EnrollmentService
             throw ValidationException::withMessages(['course_package_id' => 'This package is not active.']);
         }
 
-        if ($class->programOffering === null) {
-            throw ValidationException::withMessages(['class_id' => 'This class is not linked to a program offering and cannot be enrolled into via package registration.']);
+        if ($class->academic_program_id === null) {
+            throw ValidationException::withMessages(['class_id' => 'This class is not linked to a program and cannot be enrolled into via package registration.']);
         }
 
-        if ((int) $package->academic_program_id !== (int) $class->programOffering->academic_program_id) {
+        if ((int) $package->academic_program_id !== (int) $class->academic_program_id) {
             throw ValidationException::withMessages(['course_package_id' => "This package does not belong to the class's program."]);
-        }
-
-        if (! $class->coursePackages()->whereKey($package->getKey())->exists()) {
-            throw ValidationException::withMessages(['course_package_id' => 'This package is not offered by the selected class.']);
         }
     }
 }

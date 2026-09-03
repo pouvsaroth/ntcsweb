@@ -22,15 +22,15 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * Named `SchoolClass`, not `Class`: `class` is a reserved word in PHP and
  * cannot name a class at all. The table is still plainly `classes`.
  *
- * Deliberately not linked to a program/course/subject yet — those tables
- * don't exist until Academic Management lands, and a class has to be usable
- * standalone until then.
+ * Optionally linked to an Academic Program — a class is purely a
+ * schedule/room/teacher grouping, so the link is nullable and never gates
+ * which course packages can be enrolled into it (see EnrollmentService).
  *
  * @property int $tenant_id
  * @property string $name
  * @property string $status
  */
-#[Fillable(['teacher_id', 'classroom_id', 'program_offering_id', 'name', 'code', 'capacity', 'start_date', 'end_date', 'status'])]
+#[Fillable(['teacher_id', 'classroom_id', 'academic_program_id', 'name', 'code', 'capacity', 'start_date', 'end_date', 'status'])]
 class SchoolClass extends Model
 {
     use BelongsToTenant, HasFactory, SoftDeletes;
@@ -46,7 +46,7 @@ class SchoolClass extends Model
 
     public const STATUS_CANCELLED = 'cancelled';
 
-    /** PHP-level mirror of the column's DB default — see Teacher for why. */
+    /** PHP-level mirror of the column's DB default — see Building for why. */
     protected $attributes = [
         'status' => self::STATUS_ACTIVE,
     ];
@@ -61,7 +61,7 @@ class SchoolClass extends Model
 
     public function teacher(): BelongsTo
     {
-        return $this->belongsTo(Teacher::class);
+        return $this->belongsTo(Staff::class);
     }
 
     public function classroom(): BelongsTo
@@ -69,9 +69,9 @@ class SchoolClass extends Model
         return $this->belongsTo(Classroom::class);
     }
 
-    public function programOffering(): BelongsTo
+    public function academicProgram(): BelongsTo
     {
-        return $this->belongsTo(ProgramOffering::class);
+        return $this->belongsTo(AcademicProgram::class);
     }
 
     public function coursePackages(): BelongsToMany

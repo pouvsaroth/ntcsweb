@@ -29,9 +29,14 @@ class StoreSchoolClassRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'code' => ['nullable', 'string', 'max:32', Rule::unique('classes')->where('tenant_id', $tenantId)],
-            'teacher_id' => ['nullable', Rule::exists('teachers', 'id')->where('tenant_id', $tenantId)],
+            // Must be a Staff member holding the "Teacher" position — see
+            // TeacherPositionSeeder.
+            'teacher_id' => ['nullable', Rule::exists('staff', 'id')->where(function ($query) use ($tenantId) {
+                $query->where('tenant_id', $tenantId)
+                    ->whereIn('position_id', fn ($sub) => $sub->select('id')->from('positions')->where('tenant_id', $tenantId)->where('name', 'Teacher'));
+            })],
             'classroom_id' => ['nullable', Rule::exists('classrooms', 'id')->where('tenant_id', $tenantId)],
-            'program_offering_id' => ['nullable', Rule::exists('program_offerings', 'id')->where('tenant_id', $tenantId)],
+            'academic_program_id' => ['nullable', Rule::exists('academic_programs', 'id')->where('tenant_id', $tenantId)],
             'capacity' => ['nullable', 'integer', 'min:1', 'max:100000'],
             'start_date' => ['nullable', 'date'],
             'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],

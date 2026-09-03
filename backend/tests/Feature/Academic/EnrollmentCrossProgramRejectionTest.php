@@ -7,9 +7,11 @@ namespace Tests\Feature\Academic;
 use App\Models\AcademicProgram;
 use App\Models\CoursePackage;
 use App\Models\Enrollment;
+use App\Models\Product;
 use App\Models\SchoolClass;
 use App\Models\Student;
 use App\Support\Authorization\Permissions;
+use App\Support\Billing\ProductType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\HasAcademicAdmin;
 use Tests\Concerns\HasAcademicCatalog;
@@ -17,9 +19,10 @@ use Tests\TestCase;
 
 /**
  * The spec's own invalid-combination example: a Computer student cannot be
- * enrolled using an English package, and a package not on a class's menu
- * cannot be used to enroll into that class — the server must reject these
- * even if a broken/malicious frontend sends them.
+ * enrolled using an English package — the server must reject this even if a
+ * broken/malicious frontend sends it. A class is just a schedule/room/
+ * teacher, though — it never needs to "offer" a package on its own menu for
+ * a same-program enrollment to be valid (see the sibling test below).
  */
 class EnrollmentCrossProgramRejectionTest extends TestCase
 {
@@ -45,14 +48,17 @@ class EnrollmentCrossProgramRejectionTest extends TestCase
         $this->assertSame(0, Enrollment::count());
     }
 
-    public function test_a_package_not_on_the_classs_menu_is_rejected_even_within_the_same_program(): void
+    public function test_a_package_not_on_the_classs_menu_is_still_allowed_within_the_same_program(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE]);
         $this->setUpAcademicCatalog();
 
-        // A second package in the same program, but never attached to
-        // computerEveningClass's menu (class_course_package).
-        $excelOnlyPackage = CoursePackage::factory()->forProgram($this->computerProgram)->create(['code' => 'EXCEL2024', 'price' => 20]);
+        // A second package in the same program, deliberately never attached
+        // to computerEveningClass's menu (class_course_package) — a class is
+        // just a schedule/room/teacher, so this must still succeed.
+        $product = Product::factory()->create(['code' => 'EXCEL2024', 'name' => 'Excel 2024', 'type' => ProductType::COURSE_FEE, 'price' => 20]);
+        $excelOnlyPackage = CoursePackage::factory()->forProgram($this->computerProgram)
+            ->create(['code' => 'EXCEL2024', 'price' => 20, 'product_id' => $product->getKey()]);
         $student = Student::factory()->forTenant($this->tenant)->create();
 
         $response = $this->postJson('/api/v1/enrollments/package', [
@@ -61,17 +67,16 @@ class EnrollmentCrossProgramRejectionTest extends TestCase
             'course_package_id' => $excelOnlyPackage->id,
         ]);
 
-        $response->assertUnprocessable();
-        $this->assertSame(0, Enrollment::count());
+        $response->assertCreated();
+        $this->assertSame(1, Enrollment::count());
     }
 
-    public function test_a_class_with_no_program_offering_cannot_be_enrolled_into_via_package(): void
+    public function test_a_class_with_no_program_cannot_be_enrolled_into_via_package(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE]);
         $this->setUpAcademicCatalog();
 
         $bareClass = SchoolClass::factory()->create(['name' => 'Unlinked class']);
-        $bareClass->coursePackages()->sync([$this->msWordPackage->id]);
         $student = Student::factory()->forTenant($this->tenant)->create();
 
         $response = $this->postJson('/api/v1/enrollments/package', [
@@ -82,19 +87,5 @@ class EnrollmentCrossProgramRejectionTest extends TestCase
 
         $response->assertUnprocessable();
         $this->assertSame(0, Enrollment::count());
-    }
-
-    public function test_program_offering_uniqueness_is_enforced_per_program_mode_and_year(): void
-    {
-        $this->actingAsAdminWithPermissions([Permissions::PROGRAM_OFFERINGS_CREATE]);
-        $this->setUpAcademicCatalog();
-
-        $response = $this->postJson('/api/v1/program-offerings', [
-            'academic_program_id' => $this->computerProgram->id,
-            'study_mode_id' => $this->partTimeMode->id,
-            'academic_year_id' => $this->year2026->id,
-        ]);
-
-        $response->assertUnprocessable();
     }
 }

@@ -32,7 +32,7 @@ final class ScheduleController extends Controller
         return ApiResponse::success($classes->map(fn (SchoolClass $class) => [
             'id' => $class->id,
             'name' => $class->name,
-            'teacher_name' => $class->teacher?->name,
+            'teacher_name' => $class->teacher?->fullName(),
             'schedules' => $class->schedules->map(fn (ClassSchedule $schedule) => [
                 'day_of_week' => $schedule->day_of_week,
                 'start_time' => $schedule->start_time,

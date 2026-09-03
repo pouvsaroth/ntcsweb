@@ -67,7 +67,6 @@ const MODULES: { name: string; actions: Partial<Record<Action, string>> }[] = [
   },
   { name: 'Positions', actions: { view: 'positions.view', create: 'positions.create', update: 'positions.update', delete: 'positions.delete' } },
   { name: 'Staff', actions: { view: 'staff.view', create: 'staff.create', update: 'staff.update', delete: 'staff.delete' } },
-  { name: 'Teachers', actions: { view: 'teachers.view', create: 'teachers.create', update: 'teachers.update', delete: 'teachers.delete' } },
   { name: 'Students', actions: { view: 'students.view', create: 'students.create', update: 'students.update', delete: 'students.delete' } },
   { name: 'Classrooms', actions: { view: 'classrooms.view', create: 'classrooms.create', update: 'classrooms.update', delete: 'classrooms.delete' } },
   { name: 'Books', actions: { view: 'books.view', create: 'books.create', update: 'books.update', delete: 'books.delete' } },

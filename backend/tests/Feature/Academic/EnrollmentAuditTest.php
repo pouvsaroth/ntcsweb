@@ -43,7 +43,7 @@ class EnrollmentAuditTest extends TestCase
         $this->setUpAcademicCatalog();
 
         $this->putJson("/api/v1/course-packages/{$this->msWordPackage->id}", [
-            'price' => 30,
+            'fee_monthly' => 30,
         ])->assertOk();
 
         $log = AuditLog::where('action', AuditAction::PACKAGE_PRICE_CHANGED)->firstOrFail();

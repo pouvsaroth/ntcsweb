@@ -10,6 +10,8 @@ import type { LengthAwarePaginationMeta, PaginatedResult } from '@/types/api'
  * current catalog price; an already-issued invoice keeps whatever price it
  * was billed at forever, see backend/app/Services/Academic/CoursePackageService.php.
  */
+export type CoursePackageCurrency = 'USD' | 'KHR'
+
 export interface CoursePackage {
   id: number
   code: string
@@ -17,11 +19,22 @@ export interface CoursePackage {
   academic_program_id: number
   academic_program: { id: number; code: string; name: string } | null
   description: string | null
+  /** The legacy catalog price — still what enrollment billing reads today; derived server-side from whichever fee tier is set. */
   price: number
+  fee_monthly: number | null
+  fee_term: number | null
+  fee_video: number | null
+  fee_monthly_online: number | null
+  fee_term_online: number | null
+  currency: CoursePackageCurrency
   duration: string | null
   product_id: number | null
   is_active: boolean
-  books?: { id: number; title: string; fee: number | null; sort_order: number; is_required: boolean }[]
+  /** Independent of `is_active` — a package can be sold in-house but kept off the public site, or vice versa. */
+  show_on_website: boolean
+  /** Independent of `show_on_website` — controls the homepage's "Popular Programs" section, not the full public course catalog. */
+  show_in_popular: boolean
+  books?: { id: number; title: string; sort_order: number; is_required: boolean }[]
   created_at: string
 }
 
@@ -30,9 +43,16 @@ export interface CoursePackageInput {
   name: string
   academic_program_id: number
   description: string
-  price: number
+  fee_monthly: number | null
+  fee_term: number | null
+  fee_video: number | null
+  fee_monthly_online: number | null
+  fee_term_online: number | null
+  currency: CoursePackageCurrency
   duration: string
   is_active: boolean
+  show_on_website: boolean
+  show_in_popular: boolean
   book_ids: number[]
 }
 

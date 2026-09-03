@@ -113,6 +113,12 @@ export const staffService = {
 
   get: (id: number) => apiGetWithMeta<Staff>(`/staff/${id}`).then((r) => r.data),
 
+  /** Every active staff member matching a filter (e.g. a specific position) — for a select dropdown, mirrors every other module's listAll(). */
+  async listAll(filter: Record<string, string | number> = {}): Promise<Staff[]> {
+    const result = await apiGetWithMeta<Staff[]>('/staff', { params: { per_page: 200, filter: { status: 'active', ...filter } } })
+    return result.data
+  },
+
   async create(input: StaffInput): Promise<StaffCreated> {
     const result = await apiPostWithMeta<Staff>('/staff', toFormData(input))
     return { staff: result.data, temporaryPassword: (result.meta?.temporary_password as string) ?? null }

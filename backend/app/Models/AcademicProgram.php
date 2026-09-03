@@ -11,7 +11,6 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -40,9 +39,14 @@ class AcademicProgram extends Model
         ];
     }
 
-    public function books(): BelongsToMany
+    public function books(): HasMany
     {
-        return $this->belongsToMany(Book::class, 'program_book', 'program_id', 'book_id');
+        return $this->hasMany(Book::class);
+    }
+
+    public function bookCategories(): HasMany
+    {
+        return $this->hasMany(BookCategory::class);
     }
 
     public function coursePackages(): HasMany
@@ -50,9 +54,9 @@ class AcademicProgram extends Model
         return $this->hasMany(CoursePackage::class, 'academic_program_id');
     }
 
-    public function programOfferings(): HasMany
+    public function classes(): HasMany
     {
-        return $this->hasMany(ProgramOffering::class, 'academic_program_id');
+        return $this->hasMany(SchoolClass::class, 'academic_program_id');
     }
 
     public function enrollments(): HasMany

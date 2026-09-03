@@ -11,7 +11,7 @@ import { invoicesService } from '@/services/invoices'
 import { paymentMethods, type PaymentMethodValue } from '@/services/payments'
 import { ApiRequestError } from '@/types/api'
 
-/** yyyy-MM-dd in the viewer's local time — matches EnrollmentForm's own helper. */
+/** yyyy-MM-dd in the viewer's local time — matches EnrollmentPackageForm's own helper. */
 function today(): string {
   const now = new Date()
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`

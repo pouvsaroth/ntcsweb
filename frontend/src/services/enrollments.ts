@@ -23,6 +23,9 @@ export interface Enrollment {
   status: EnrollmentStatus
   student: EnrollmentStudent
   class: SchoolClass
+  /** Which physical table in the class's classroom this student sits at — null when the room has no tables configured. */
+  table_id: number | null
+  table: { id: number; name: string } | null
   /** Set for the legacy book-billed path; null (or omitted from the package-enrollment response) for a package-billed enrollment. */
   book?: Book | null
   course_package_id: number | null
@@ -37,6 +40,7 @@ export interface Enrollment {
 export interface EnrollmentInput {
   student_id: number
   class_id: number
+  table_id: number | null
   book_id: number
   enrolled_at: string
   fee: number
@@ -47,6 +51,7 @@ export interface EnrollmentInput {
 export interface EnrollmentPackageInput {
   student_id: number
   class_id: number
+  table_id: number | null
   course_package_id: number
   enrolled_at: string
 }

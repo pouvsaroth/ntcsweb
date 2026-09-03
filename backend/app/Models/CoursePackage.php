@@ -29,14 +29,23 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * `price` specifically changes (capturing old/new price) — mirrors
  * `Enrollment`'s own existing override for status changes.
  */
-#[Fillable(['code', 'name', 'academic_program_id', 'description', 'price', 'duration', 'product_id', 'is_active'])]
+#[Fillable([
+    'code', 'name', 'academic_program_id', 'description', 'price',
+    'fee_monthly', 'fee_term', 'fee_video', 'fee_monthly_online', 'fee_term_online', 'currency',
+    'duration', 'product_id', 'is_active', 'show_on_website', 'show_in_popular',
+])]
 class CoursePackage extends Model
 {
     /** @use HasFactory<CoursePackageFactory> */
     use Auditable, BelongsToTenant, HasFactory, SoftDeletes;
 
+    public const CURRENCY_USD = 'USD';
+
+    public const CURRENCY_KHR = 'KHR';
+
     protected $attributes = [
         'price' => 0,
+        'currency' => self::CURRENCY_USD,
         'is_active' => true,
     ];
 
@@ -44,7 +53,14 @@ class CoursePackage extends Model
     {
         return [
             'price' => 'decimal:2',
+            'fee_monthly' => 'decimal:2',
+            'fee_term' => 'decimal:2',
+            'fee_video' => 'decimal:2',
+            'fee_monthly_online' => 'decimal:2',
+            'fee_term_online' => 'decimal:2',
             'is_active' => 'boolean',
+            'show_on_website' => 'boolean',
+            'show_in_popular' => 'boolean',
         ];
     }
 

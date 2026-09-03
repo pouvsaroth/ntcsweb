@@ -54,7 +54,7 @@ final class AcademicProgramController extends Controller
     {
         $this->authorize('delete', $academicProgram);
 
-        if ($academicProgram->coursePackages()->exists() || $academicProgram->programOfferings()->exists()) {
+        if ($academicProgram->coursePackages()->exists() || $academicProgram->classes()->exists()) {
             return ApiResponse::error('This program is in use and cannot be deleted. Deactivate it instead.', 422);
         }
 

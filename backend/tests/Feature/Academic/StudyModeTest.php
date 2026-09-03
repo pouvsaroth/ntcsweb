@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Academic;
 
-use App\Models\ProgramOffering;
 use App\Models\StudyMode;
 use App\Support\Authorization\Permissions;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -46,15 +45,5 @@ class StudyModeTest extends TestCase
         $this->postJson('/api/v1/study-modes', ['code' => 'WEEKEND', 'name' => 'Weekend'])
             ->assertUnprocessable()
             ->assertJsonValidationErrors('code');
-    }
-
-    public function test_a_study_mode_in_use_by_a_program_offering_cannot_be_deleted(): void
-    {
-        $this->actingAsAdminWithPermissions([Permissions::STUDY_MODES_DELETE]);
-        $mode = StudyMode::factory()->create();
-        ProgramOffering::factory()->forStudyMode($mode)->create();
-
-        $this->deleteJson("/api/v1/study-modes/{$mode->id}")->assertStatus(422);
-        $this->assertNotNull($mode->fresh());
     }
 }

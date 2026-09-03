@@ -23,12 +23,12 @@ class LegacyBookEnrollmentRegressionTest extends TestCase
 {
     use HasAcademicAdmin, HasAcademicCatalog, RefreshDatabase;
 
-    public function test_a_book_based_enrollment_still_works_on_a_class_that_also_has_a_program_offering(): void
+    public function test_a_book_based_enrollment_still_works_on_a_class_that_also_has_a_program(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE]);
         $this->setUpAcademicCatalog();
 
-        $book = Book::factory()->create(['fee' => 15]);
+        $book = Book::factory()->create();
         $this->computerEveningClass->books()->attach($book->id);
         $student = Student::factory()->forTenant($this->tenant)->create();
 
@@ -51,7 +51,7 @@ class LegacyBookEnrollmentRegressionTest extends TestCase
         $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE]);
         $this->setUpAcademicCatalog();
 
-        $book = Book::factory()->create(['fee' => 15]);
+        $book = Book::factory()->create();
         $this->computerEveningClass->books()->attach($book->id);
         $bookStudent = Student::factory()->forTenant($this->tenant)->create();
         $packageStudent = Student::factory()->forTenant($this->tenant)->create();

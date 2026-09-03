@@ -6,9 +6,10 @@ namespace Tests\Feature\Academic;
 
 use App\Models\AuditLog;
 use App\Models\Enrollment;
+use App\Models\Position;
 use App\Models\SchoolClass;
+use App\Models\Staff;
 use App\Models\Student;
-use App\Models\Teacher;
 use App\Models\User;
 use App\Support\Academic\AttendanceStatus;
 use App\Support\Audit\AuditAction;
@@ -134,7 +135,8 @@ class AttendanceTest extends TestCase
     public function test_a_teacher_can_only_take_attendance_for_their_own_class(): void
     {
         $teacherUser = $this->actingAsAdminWithPermissions([Permissions::ATTENDANCE_CREATE, Permissions::ATTENDANCE_VIEW]);
-        $teacher = Teacher::factory()->forTenant($this->tenant)->create(['user_id' => $teacherUser->id]);
+        $teacherPosition = Position::factory()->forTenant($this->tenant)->create(['name' => 'Teacher']);
+        $teacher = Staff::factory()->forTenant($this->tenant)->withUser($teacherUser)->create(['position_id' => $teacherPosition->id]);
 
         $ownClass = SchoolClass::factory()->forTenant($this->tenant)->withTeacher($teacher)->create();
         $ownEnrollment = Enrollment::factory()->forTenant($this->tenant)->forClass($ownClass)->create();
@@ -153,7 +155,7 @@ class AttendanceTest extends TestCase
         ])->assertForbidden();
     }
 
-    public function test_a_school_admin_without_a_linked_teacher_record_can_take_attendance_for_any_class(): void
+    public function test_a_school_admin_without_a_linked_staff_record_can_take_attendance_for_any_class(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::ATTENDANCE_CREATE]);
         [$class, $enrollments] = $this->classWithStudents(1);

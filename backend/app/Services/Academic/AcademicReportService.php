@@ -154,8 +154,8 @@ final class AcademicReportService
             ->pluck('revenue', 'class_id');
 
         return DB::table('classes')
-            ->leftJoin('teachers', 'teachers.id', '=', 'classes.teacher_id')
-            ->select('classes.id as class_id', 'classes.name as class_name', 'teachers.name as teacher', 'classes.capacity as capacity')
+            ->leftJoin('staff', 'staff.id', '=', 'classes.teacher_id')
+            ->select('classes.id as class_id', 'classes.name as class_name', DB::raw("CASE WHEN staff.id IS NULL THEN NULL ELSE CONCAT_WS(' ', staff.first_name, staff.last_name) END as teacher"), 'classes.capacity as capacity')
             ->whereNull('classes.deleted_at')
             ->orderBy('classes.name')
             ->get()

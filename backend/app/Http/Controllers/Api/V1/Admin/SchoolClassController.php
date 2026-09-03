@@ -9,6 +9,8 @@ use App\Http\Requests\Api\V1\Admin\StoreSchoolClassRequest;
 use App\Http\Requests\Api\V1\Admin\UpdateSchoolClassRequest;
 use App\Http\Resources\SchoolClassResource;
 use App\Http\Responses\ApiResponse;
+use App\Models\ClassroomTable;
+use App\Models\Enrollment;
 use App\Models\SchoolClass;
 use App\Support\Query\ApiQuery;
 use Illuminate\Http\JsonResponse;
@@ -17,7 +19,7 @@ use Illuminate\Support\Facades\DB;
 
 final class SchoolClassController extends Controller
 {
-    private const WITH = ['teacher', 'classroom', 'schedules', 'books', 'programOffering.academicProgram', 'programOffering.studyMode', 'coursePackages'];
+    private const WITH = ['teacher', 'classroom', 'schedules', 'books', 'academicProgram', 'coursePackages'];
 
     public function index(Request $request): JsonResponse
     {
@@ -28,7 +30,7 @@ final class SchoolClassController extends Controller
             $request,
         )
             ->searchable('name', 'code')
-            ->filterable(['status', 'teacher_id', 'classroom_id', 'program_offering_id'])
+            ->filterable(['status', 'teacher_id', 'classroom_id', 'academic_program_id'])
             ->sortable(['name', 'start_date', 'created_at'], default: '-created_at')
             ->paginate();
 
@@ -87,6 +89,31 @@ final class SchoolClassController extends Controller
         $class->delete();
 
         return ApiResponse::noContent();
+    }
+
+    /**
+     * Which tables in this class's classroom are still free — drives the
+     * enrollment form's table picker. `total_tables` lets the frontend tell
+     * "this room has no tables configured" (0, field not required) apart
+     * from "this room is full" (>0 but `available` is empty).
+     */
+    public function availableTables(SchoolClass $class): JsonResponse
+    {
+        $this->authorize('create', Enrollment::class);
+
+        if ($class->classroom_id === null) {
+            return ApiResponse::success(['total_tables' => 0, 'available' => []]);
+        }
+
+        $totalTables = ClassroomTable::query()->where('classroom_id', $class->classroom_id)->count();
+
+        $available = ClassroomTable::query()
+            ->where('classroom_id', $class->classroom_id)
+            ->whereDoesntHave('enrollments', fn ($query) => $query->where('class_id', $class->id)->where('status', '!=', Enrollment::STATUS_DROPPED))
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
+        return ApiResponse::success(['total_tables' => $totalTables, 'available' => $available]);
     }
 
     /**

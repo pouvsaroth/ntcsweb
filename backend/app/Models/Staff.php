@@ -13,16 +13,20 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Storage;
 
 /**
- * Non-teaching personnel (Accountant, HR, Librarian, IT Officer, ...).
- * Teacher remains its own dedicated model/table — this is not a replacement
- * for it, just the equivalent for everyone else.
+ * Every non-student personnel record — teaching and non-teaching alike
+ * (Teacher, Accountant, HR, Librarian, IT Officer, ...). A "teacher" is just
+ * a Staff member whose Position is named "Teacher" (see
+ * TeacherPositionSeeder) — SchoolClass::teacher() belongs-to's this model
+ * directly, filtered to that position at the request-validation layer
+ * (StoreSchoolClassRequest).
  *
- * `user_id` is nullable at the schema level (mirrors Teacher — see the
- * migration), but in practice StaffController::store() always sets it in the
+ * `user_id` is nullable at the schema level, but in practice
+ * StaffController::store() always sets it in the
  * same transaction it creates the row in, deriving the role from
  * `position.role` rather than ever accepting one from the request. See
  * Fillable: `user_id` is deliberately absent, so a client can never point a
@@ -121,6 +125,16 @@ class Staff extends Model
     public function position(): BelongsTo
     {
         return $this->belongsTo(Position::class);
+    }
+
+    /**
+     * Classes this staff member teaches — meaningful only when their
+     * Position is "Teacher" (see TeacherPositionSeeder), same as
+     * SchoolClass::teacher().
+     */
+    public function classes(): HasMany
+    {
+        return $this->hasMany(SchoolClass::class, 'teacher_id');
     }
 
     /**

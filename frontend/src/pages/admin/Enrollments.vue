@@ -22,6 +22,7 @@ const columns = [
   { key: 'student', label: t('admin.enrollments.columnStudent') },
   { key: 'class', label: t('admin.enrollments.columnClass') },
   { key: 'book', label: t('admin.enrollments.columnBook') },
+  { key: 'table', label: t('admin.enrollments.columnTable') },
   { key: 'fee', label: t('admin.enrollments.columnFee') },
   { key: 'status', label: t('admin.enrollments.columnStatus') },
   { key: 'actions', label: t('admin.enrollments.columnActions'), align: 'text-right' },
@@ -63,10 +64,7 @@ onMounted(() => fetch())
       <div>
         <h1 class="text-xl font-semibold text-neutral-900">{{ t('admin.enrollments.title') }}</h1>
       </div>
-      <div class="flex gap-2">
-        <BaseButton variant="outline" to="/admin/enrollments/new">{{ t('admin.enrollments.createTitle') }}</BaseButton>
-        <BaseButton to="/admin/enrollments/new-package">{{ t('admin.enrollments.createPackageTitle') }}</BaseButton>
-      </div>
+      <BaseButton to="/admin/enrollments/new">{{ t('admin.enrollments.createPackageTitle') }}</BaseButton>
     </div>
 
     <BaseAlert v-if="error" variant="danger" class="mb-4">{{ error }}</BaseAlert>
@@ -78,6 +76,7 @@ onMounted(() => fetch())
       </template>
       <template #cell-class="{ row }">{{ row.class.name }}</template>
       <template #cell-book="{ row }">{{ row.book?.title ?? row.course_package?.name ?? '—' }}</template>
+      <template #cell-table="{ row }">{{ row.table?.name ?? '—' }}</template>
       <template #cell-fee="{ row }">{{ row.fee.toFixed(2) }}</template>
       <template #cell-status="{ row }">
         <BaseBadge :variant="statusBadgeVariant[row.status]">

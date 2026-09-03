@@ -25,6 +25,7 @@ class StoreClassroomRequest extends FormRequest
             'code' => ['nullable', 'string', 'max:32'],
             'capacity' => ['nullable', 'integer', 'min:1', 'max:100000'],
             'location' => ['nullable', 'string', 'max:255'],
+            'building_id' => ['nullable', Rule::exists('buildings', 'id')->where('tenant_id', $tenantId)],
             'status' => ['sometimes', Rule::in([Classroom::STATUS_ACTIVE, Classroom::STATUS_INACTIVE])],
         ];
     }

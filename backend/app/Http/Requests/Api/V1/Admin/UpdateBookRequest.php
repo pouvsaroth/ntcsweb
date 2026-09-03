@@ -22,6 +22,9 @@ class UpdateBookRequest extends FormRequest
     public function rules(): array
     {
         $tenantId = app(TenantContext::class)->idOrFail();
+        /** @var Book $book */
+        $book = $this->route('book');
+        $academicProgramId = $this->input('academic_program_id', $book->academic_program_id);
 
         return [
             'title' => ['sometimes', 'required', 'string', 'max:255'],
@@ -30,11 +33,12 @@ class UpdateBookRequest extends FormRequest
             'publisher' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:5000'],
             'cover_image' => ['nullable', 'string', 'max:2048'],
-            'quantity' => ['sometimes', 'integer', 'min:0', 'max:1000000'],
-            'fee' => ['nullable', 'numeric', 'min:0', 'max:999999.99'],
             'status' => ['sometimes', Rule::in([Book::STATUS_ACTIVE, Book::STATUS_INACTIVE])],
-            'program_ids' => ['sometimes', 'array'],
-            'program_ids.*' => [Rule::exists('academic_programs', 'id')->where('tenant_id', $tenantId)],
+            'academic_program_id' => ['sometimes', 'required', Rule::exists('academic_programs', 'id')->where('tenant_id', $tenantId)],
+            'book_category_id' => [
+                'nullable',
+                Rule::exists('book_categories', 'id')->where('tenant_id', $tenantId)->where('academic_program_id', $academicProgramId),
+            ],
         ];
     }
 }

@@ -27,16 +27,16 @@ class StoreBookRequest extends FormRequest
             'publisher' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:5000'],
             'cover_image' => ['nullable', 'string', 'max:2048'],
-            'quantity' => ['sometimes', 'integer', 'min:0', 'max:1000000'],
-            // The default fee a new enrollment for this book pre-fills —
-            // not what an already-enrolled student is charged, see
-            // Enrollment::$fee.
-            'fee' => ['nullable', 'numeric', 'min:0', 'max:999999.99'],
             'status' => ['sometimes', Rule::in([Book::STATUS_ACTIVE, Book::STATUS_INACTIVE])],
-            // Which academic program(s) this book belongs to — lets a Course
-            // Package's book picker filter down to just its own program.
-            'program_ids' => ['sometimes', 'array'],
-            'program_ids.*' => [Rule::exists('academic_programs', 'id')->where('tenant_id', $tenantId)],
+            // The one academic program this book belongs to — lets a Course
+            // Package's book picker filter down to just its own program, and
+            // determines which BookCategory rows are valid below.
+            'academic_program_id' => ['required', Rule::exists('academic_programs', 'id')->where('tenant_id', $tenantId)],
+            // Must belong to the chosen program itself, not just the tenant.
+            'book_category_id' => [
+                'nullable',
+                Rule::exists('book_categories', 'id')->where('tenant_id', $tenantId)->where('academic_program_id', $this->input('academic_program_id')),
+            ],
         ];
     }
 }

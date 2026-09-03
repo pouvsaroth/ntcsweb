@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
@@ -7,7 +7,9 @@ import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
+import { academicProgramsService, type AcademicProgram } from '@/services/academicPrograms'
 import { classesService, type SchoolClass } from '@/services/classes'
+import { coursePackagesService, type CoursePackage } from '@/services/coursePackages'
 import { enrollmentsService } from '@/services/enrollments'
 import { studentsService, type Student } from '@/services/students'
 import { ApiRequestError } from '@/types/api'
@@ -27,12 +29,16 @@ const selectedStudent = ref<Student | null>(null)
 const searchingStudents = ref(false)
 let studentSearchDebounce: ReturnType<typeof setTimeout> | undefined
 
+const programs = ref<AcademicProgram[]>([])
 const classes = ref<SchoolClass[]>([])
-const loadingClasses = ref(true)
+const packages = ref<CoursePackage[]>([])
+const loading = ref(true)
 
 const form = reactive({
+  academic_program_id: null as number | null,
   class_id: null as number | null,
   course_package_id: null as number | null,
+  table_id: null as number | null,
   enrolled_at: today(),
 })
 
@@ -40,26 +46,58 @@ const errors = ref<Record<string, string[]>>({})
 const generalError = ref<string | null>(null)
 const submitting = ref(false)
 
-// Only classes with a Program Offering and at least one package on their
-// menu can be enrolled into via this path — see EnrollmentService::
-// assertEnrollable() for the same rule enforced server-side.
-const eligibleClasses = computed(() => classes.value.filter((c) => c.program_offering_id !== null && c.course_packages.length > 0))
+const programOptions = computed(() => programs.value.map((p) => ({ value: String(p.id), label: `${p.code} — ${p.name}` })))
 
-const selectedClass = computed(() => classes.value.find((c) => c.id === form.class_id) ?? null)
-
+// A class is just a schedule/room/teacher — it doesn't need to "offer" the
+// package itself, only belong to the chosen program (see EnrollmentService::
+// assertEnrollable() for the same rule enforced server-side). Likewise the
+// course package list comes straight from the program, independent of
+// whichever class ends up picked.
 const classOptions = computed(() =>
-  eligibleClasses.value.map((c) => ({ value: String(c.id), label: `${c.name} (${c.program_offering?.name ?? ''})` })),
+  classes.value
+    .filter((c) => c.academic_program_id === form.academic_program_id)
+    .map((c) => ({ value: String(c.id), label: c.name })),
 )
 
 const packageOptions = computed(() =>
-  (selectedClass.value?.course_packages ?? []).map((pkg) => ({ value: String(pkg.id), label: `${pkg.name} — ${pkg.price.toFixed(2)}` })),
+  packages.value
+    .filter((pkg) => pkg.academic_program_id === form.academic_program_id)
+    .map((pkg) => ({ value: String(pkg.id), label: `${pkg.name} — ${pkg.price.toFixed(2)}` })),
 )
 
-const selectedPackage = computed(() => selectedClass.value?.course_packages.find((p) => p.id === form.course_package_id) ?? null)
+const selectedPackage = computed(() => packages.value.find((pkg) => pkg.id === form.course_package_id) ?? null)
 
-function onClassChange(value: string) {
+const tables = ref<{ total_tables: number; available: { id: number; name: string }[] } | null>(null)
+const loadingTables = ref(false)
+
+const tableOptions = computed(() => (tables.value?.available ?? []).map((table) => ({ value: String(table.id), label: table.name })))
+const tableRequired = computed(() => (tables.value?.total_tables ?? 0) > 0)
+
+// Picking a different program invalidates whatever class/package were
+// chosen for the previous one — both lists are scoped to the program.
+watch(
+  () => form.academic_program_id,
+  () => {
+    form.class_id = null
+    form.course_package_id = null
+    form.table_id = null
+    tables.value = null
+  },
+)
+
+async function onClassChange(value: string) {
   form.class_id = value ? Number(value) : null
-  form.course_package_id = null
+  form.table_id = null
+  tables.value = null
+
+  if (form.class_id === null) return
+
+  loadingTables.value = true
+  try {
+    tables.value = await classesService.availableTables(form.class_id)
+  } finally {
+    loadingTables.value = false
+  }
 }
 
 function onStudentSearchInput() {
@@ -87,6 +125,7 @@ function selectStudent(student: Student) {
 
 async function submit() {
   if (!selectedStudent.value || !form.class_id || !form.course_package_id) return
+  if (tableRequired.value && form.table_id === null) return
 
   submitting.value = true
   errors.value = {}
@@ -96,6 +135,7 @@ async function submit() {
     await enrollmentsService.enrollInPackage({
       student_id: selectedStudent.value.id,
       class_id: form.class_id,
+      table_id: form.table_id,
       course_package_id: form.course_package_id,
       enrolled_at: form.enrolled_at,
     })
@@ -113,11 +153,15 @@ async function submit() {
 }
 
 onMounted(async () => {
-  loadingClasses.value = true
+  loading.value = true
   try {
-    classes.value = await classesService.listAll()
+    ;[programs.value, classes.value, packages.value] = await Promise.all([
+      academicProgramsService.listAll(),
+      classesService.listAll(),
+      coursePackagesService.listAll(),
+    ])
   } finally {
-    loadingClasses.value = false
+    loading.value = false
   }
 })
 </script>
@@ -167,9 +211,31 @@ onMounted(async () => {
       </div>
 
       <BaseSelect
+        :model-value="form.academic_program_id !== null ? String(form.academic_program_id) : ''"
+        :options="programOptions"
+        :disabled="loading"
+        :placeholder="t('admin.enrollments.selectProgram')"
+        :label="t('admin.enrollments.program')"
+        required
+        :error="errors.academic_program_id?.[0]"
+        @update:model-value="form.academic_program_id = $event ? Number($event) : null"
+      />
+
+      <BaseSelect
+        :model-value="form.course_package_id !== null ? String(form.course_package_id) : ''"
+        :options="packageOptions"
+        :disabled="!form.academic_program_id"
+        :placeholder="t('admin.enrollments.selectPackage')"
+        :label="t('admin.enrollments.package')"
+        required
+        :error="errors.course_package_id?.[0]"
+        @update:model-value="form.course_package_id = $event ? Number($event) : null"
+      />
+
+      <BaseSelect
         :model-value="form.class_id !== null ? String(form.class_id) : ''"
         :options="classOptions"
-        :disabled="loadingClasses"
+        :disabled="!form.academic_program_id"
         :placeholder="t('admin.enrollments.selectClass')"
         :label="t('admin.enrollments.class')"
         :hint="t('admin.enrollments.packageClassHint')"
@@ -178,16 +244,21 @@ onMounted(async () => {
         @update:model-value="onClassChange"
       />
 
-      <BaseSelect
-        :model-value="form.course_package_id !== null ? String(form.course_package_id) : ''"
-        :options="packageOptions"
-        :disabled="!form.class_id"
-        :placeholder="t('admin.enrollments.selectPackage')"
-        :label="t('admin.enrollments.package')"
-        required
-        :error="errors.course_package_id?.[0]"
-        @update:model-value="form.course_package_id = $event ? Number($event) : null"
-      />
+      <div v-if="tableRequired || loadingTables">
+        <BaseSelect
+          :model-value="form.table_id !== null ? String(form.table_id) : ''"
+          :options="tableOptions"
+          :disabled="loadingTables"
+          :required="tableRequired"
+          :placeholder="loadingTables ? t('common.loading') : t('admin.enrollments.selectTable')"
+          :label="t('admin.enrollments.table')"
+          :error="errors.table_id?.[0]"
+          @update:model-value="form.table_id = $event ? Number($event) : null"
+        />
+        <p v-if="!loadingTables && tableOptions.length === 0" class="mt-1.5 text-sm text-danger-600">
+          {{ t('admin.enrollments.noTablesAvailable') }}
+        </p>
+      </div>
 
       <div v-if="selectedPackage" class="rounded-lg border border-neutral-200 bg-neutral-50 p-3 text-sm">
         <p class="font-medium text-neutral-800">{{ t('admin.enrollments.includedCourses') }}</p>
@@ -199,7 +270,11 @@ onMounted(async () => {
       <BaseInput v-model="form.enrolled_at" type="date" required :label="t('admin.enrollments.enrolledAt')" :error="errors.enrolled_at?.[0]" />
 
       <div class="flex gap-3">
-        <BaseButton type="submit" :loading="submitting" :disabled="!selectedStudent || !form.class_id || !form.course_package_id">
+        <BaseButton
+          type="submit"
+          :loading="submitting"
+          :disabled="!selectedStudent || !form.class_id || !form.course_package_id || (tableRequired && !form.table_id)"
+        >
           {{ t('common.save') }}
         </BaseButton>
         <BaseButton type="button" variant="outline" @click="router.push('/admin/enrollments')">{{ t('common.cancel') }}</BaseButton>

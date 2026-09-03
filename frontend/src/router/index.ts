@@ -41,8 +41,6 @@ const comingSoon = () => import('@/pages/admin/ComingSoon.vue')
 /** path -> adminNav.items translation key, so ComingSoon.vue's title always matches the sidebar label it was clicked from. */
 const comingSoonPages: [string, string][] = [
   ['tenants', 'adminNav.items.tenants'],
-  ['subjects', 'adminNav.items.subjects'],
-  ['teachers', 'adminNav.items.teachersList'],
   ['exams', 'adminNav.items.exams'],
   ['grades', 'adminNav.items.grades'],
   ['news', 'adminNav.items.news'],
@@ -143,16 +141,34 @@ const adminRoutes: RouteRecordRaw[] = [
     meta: { titleKey: 'adminNav.items.academicYears' },
   },
   {
-    path: 'program-offerings',
-    name: 'admin.program-offerings',
-    component: () => import('@/pages/admin/ProgramOfferings.vue'),
-    meta: { titleKey: 'adminNav.items.programOfferings' },
+    path: 'book-categories',
+    name: 'admin.book-categories',
+    component: () => import('@/pages/admin/BookCategories.vue'),
+    meta: { titleKey: 'adminNav.items.bookCategories' },
   },
   {
     path: 'books',
     name: 'admin.books',
     component: () => import('@/pages/admin/Books.vue'),
     meta: { titleKey: 'adminNav.items.books' },
+  },
+  {
+    path: 'buildings',
+    name: 'admin.buildings',
+    component: () => import('@/pages/admin/Buildings.vue'),
+    meta: { titleKey: 'adminNav.items.buildings' },
+  },
+  {
+    path: 'classrooms',
+    name: 'admin.classrooms',
+    component: () => import('@/pages/admin/Classrooms.vue'),
+    meta: { titleKey: 'adminNav.items.classrooms' },
+  },
+  {
+    path: 'classrooms/:id/tables',
+    name: 'admin.classrooms.tables',
+    component: () => import('@/pages/admin/ClassroomTables.vue'),
+    meta: { titleKey: 'adminNav.items.classrooms' },
   },
   {
     path: 'classes',
@@ -181,12 +197,6 @@ const adminRoutes: RouteRecordRaw[] = [
   {
     path: 'enrollments/new',
     name: 'admin.enrollments.new',
-    component: () => import('@/pages/admin/EnrollmentForm.vue'),
-    meta: { titleKey: 'adminNav.items.enrollments' },
-  },
-  {
-    path: 'enrollments/new-package',
-    name: 'admin.enrollments.new-package',
     component: () => import('@/pages/admin/EnrollmentPackageForm.vue'),
     meta: { titleKey: 'adminNav.items.enrollments' },
   },

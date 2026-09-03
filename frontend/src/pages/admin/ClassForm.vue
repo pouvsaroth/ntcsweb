@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -8,12 +8,11 @@ import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
 import BaseSpinner from '@/components/ui/BaseSpinner.vue'
-import { type Book, booksService } from '@/services/books'
+import { academicProgramsService, type AcademicProgram } from '@/services/academicPrograms'
 import { classesService, type ClassInput } from '@/services/classes'
 import { classroomsService, type Classroom } from '@/services/classrooms'
-import { type CoursePackage, coursePackagesService } from '@/services/coursePackages'
-import { type ProgramOffering, programOfferingsService } from '@/services/programOfferings'
-import { teachersService, type Teacher } from '@/services/teachers'
+import { positionsService } from '@/services/positions'
+import { staffService, type Staff } from '@/services/staff'
 import { ApiRequestError } from '@/types/api'
 
 const { t } = useI18n()
@@ -32,21 +31,16 @@ const form = reactive<ClassInput>({
   code: '',
   teacher_id: null,
   classroom_id: null,
-  capacity: null,
+  academic_program_id: null,
   start_date: '',
   end_date: '',
   status: 'active',
   schedules: [emptySchedule()],
-  book_ids: [],
-  program_offering_id: null,
-  course_package_ids: [],
 })
 
-const teachers = ref<Teacher[]>([])
+const teachers = ref<Staff[]>([])
 const classrooms = ref<Classroom[]>([])
-const books = ref<Book[]>([])
-const programOfferings = ref<ProgramOffering[]>([])
-const coursePackages = ref<CoursePackage[]>([])
+const programs = ref<AcademicProgram[]>([])
 
 const loading = ref(true)
 const loadError = ref<string | null>(null)
@@ -73,7 +67,7 @@ const statusOptions = computed(() => [
 
 const teacherOptions = computed(() => [
   { value: '', label: t('admin.classes.noTeacher') },
-  ...teachers.value.map((teacher) => ({ value: String(teacher.id), label: teacher.name })),
+  ...teachers.value.map((teacher) => ({ value: String(teacher.id), label: teacher.full_name })),
 ])
 
 const classroomOptions = computed(() => [
@@ -81,19 +75,10 @@ const classroomOptions = computed(() => [
   ...classrooms.value.map((classroom) => ({ value: String(classroom.id), label: classroom.name })),
 ])
 
-const programOfferingOptions = computed(() => [
-  { value: '', label: t('admin.classes.noProgramOffering') },
-  ...programOfferings.value.map((offering) => ({ value: String(offering.id), label: offering.name })),
+const programOptions = computed(() => [
+  { value: '', label: t('admin.classes.noProgram') },
+  ...programs.value.map((program) => ({ value: String(program.id), label: `${program.code} — ${program.name}` })),
 ])
-
-const selectedOffering = computed(() => programOfferings.value.find((o) => o.id === form.program_offering_id) ?? null)
-
-// Only packages belonging to the chosen offering's program make sense on
-// this class's menu — mirrors EnrollmentService::assertEnrollable()'s own
-// "package must belong to the class's program" server-side check.
-const availableCoursePackages = computed(() =>
-  selectedOffering.value ? coursePackages.value.filter((p) => p.academic_program_id === selectedOffering.value!.academic_program_id) : [],
-)
 
 function addSchedule() {
   form.schedules.push(emptySchedule())
@@ -103,43 +88,24 @@ function removeSchedule(index: number) {
   form.schedules.splice(index, 1)
 }
 
-function toggleBook(bookId: number, checked: boolean) {
-  if (checked) {
-    if (!form.book_ids.includes(bookId)) form.book_ids.push(bookId)
-  } else {
-    form.book_ids = form.book_ids.filter((id) => id !== bookId)
-  }
-}
-
-function toggleCoursePackage(packageId: number, checked: boolean) {
-  if (checked) {
-    if (!form.course_package_ids.includes(packageId)) form.course_package_ids.push(packageId)
-  } else {
-    form.course_package_ids = form.course_package_ids.filter((id) => id !== packageId)
-  }
-}
-
-// Changing the program offering invalidates whatever packages were picked
-// for the previous one — the menu only makes sense within one program.
-watch(
-  () => form.program_offering_id,
-  () => {
-    form.course_package_ids = form.course_package_ids.filter((id) => availableCoursePackages.value.some((p) => p.id === id))
-  },
-)
-
 async function load() {
   loading.value = true
   loadError.value = null
 
   try {
-    ;[teachers.value, classrooms.value, books.value, programOfferings.value, coursePackages.value] = await Promise.all([
-      teachersService.listAll(),
+    const [positions, loadedClassrooms, loadedPrograms] = await Promise.all([
+      positionsService.listAll(),
       classroomsService.listAll(),
-      booksService.listAll(),
-      programOfferingsService.listAll(),
-      coursePackagesService.listAll(),
+      academicProgramsService.listAll(),
     ])
+    classrooms.value = loadedClassrooms
+    programs.value = loadedPrograms
+
+    // A "teacher" is a Staff member holding the Teacher position — see
+    // TeacherPositionSeeder on the backend. A brand-new tenant may not have
+    // it yet, in which case the dropdown just stays empty.
+    const teacherPosition = positions.find((p) => p.name === 'Teacher')
+    teachers.value = teacherPosition ? await staffService.listAll({ position_id: teacherPosition.id }) : []
 
     if (!classId.value) return
 
@@ -148,16 +114,13 @@ async function load() {
     form.code = schoolClass.code ?? ''
     form.teacher_id = schoolClass.teacher?.id ?? null
     form.classroom_id = schoolClass.classroom?.id ?? null
-    form.capacity = schoolClass.capacity
+    form.academic_program_id = schoolClass.academic_program?.id ?? null
     form.start_date = schoolClass.start_date ?? ''
     form.end_date = schoolClass.end_date ?? ''
     form.status = schoolClass.status
     form.schedules = schoolClass.schedules.length > 0
       ? schoolClass.schedules.map((s) => ({ day_of_week: s.day_of_week, start_time: s.start_time, end_time: s.end_time }))
       : [emptySchedule()]
-    form.book_ids = schoolClass.books.map((b) => b.id)
-    form.program_offering_id = schoolClass.program_offering_id
-    form.course_package_ids = schoolClass.course_packages.map((p) => p.id)
   } catch (error) {
     loadError.value = error instanceof ApiRequestError ? error.message : t('admin.classes.loadFailed')
   } finally {
@@ -223,24 +186,16 @@ onMounted(load)
             :label="t('admin.classes.classroom')"
             @update:model-value="form.classroom_id = $event ? Number($event) : null"
           />
-          <BaseInput
-            :model-value="form.capacity !== null ? String(form.capacity) : ''"
-            type="number"
-            :label="t('admin.classes.capacity')"
-            :error="errors.capacity?.[0]"
-            @update:model-value="form.capacity = $event ? Number($event) : null"
+          <BaseSelect
+            :model-value="form.academic_program_id !== null ? String(form.academic_program_id) : ''"
+            :options="programOptions"
+            :label="t('admin.classes.program')"
+            :hint="t('admin.classes.programHint')"
+            @update:model-value="form.academic_program_id = $event ? Number($event) : null"
           />
           <BaseSelect v-model="form.status" :options="statusOptions" :label="t('admin.classes.status')" />
           <BaseInput v-model="form.start_date" type="date" :label="t('admin.classes.startDate')" :error="errors.start_date?.[0]" />
           <BaseInput v-model="form.end_date" type="date" :label="t('admin.classes.endDate')" :error="errors.end_date?.[0]" />
-          <BaseSelect
-            :model-value="form.program_offering_id !== null ? String(form.program_offering_id) : ''"
-            :options="programOfferingOptions"
-            :label="t('admin.classes.programOffering')"
-            :hint="t('admin.classes.programOfferingHint')"
-            :error="errors.program_offering_id?.[0]"
-            @update:model-value="form.program_offering_id = $event ? Number($event) : null"
-          />
         </div>
       </section>
 
@@ -263,45 +218,6 @@ onMounted(load)
           <button type="button" class="mb-1.5 text-sm font-medium text-danger-600 hover:text-red-700" @click="removeSchedule(index)">
             {{ t('common.remove') }}
           </button>
-        </div>
-      </section>
-
-      <section>
-        <h2 class="mb-1 text-sm font-semibold text-neutral-800">{{ t('admin.classes.booksSection') }}</h2>
-        <p class="mb-4 text-sm text-neutral-500">{{ t('admin.classes.booksHint') }}</p>
-
-        <p v-if="books.length === 0" class="text-sm text-neutral-500">{{ t('admin.classes.noBooksAvailable') }}</p>
-        <div v-else class="grid gap-2 sm:grid-cols-2">
-          <label v-for="book in books" :key="book.id" class="flex items-center gap-2 rounded-lg border border-neutral-200 p-2.5 text-sm">
-            <input
-              type="checkbox"
-              :checked="form.book_ids.includes(book.id)"
-              class="rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
-              @change="toggleBook(book.id, ($event.target as HTMLInputElement).checked)"
-            />
-            <span class="flex-1 text-neutral-700">{{ book.title }}</span>
-            <span v-if="book.fee !== null" class="text-xs text-neutral-500">{{ book.fee.toFixed(2) }}</span>
-          </label>
-        </div>
-      </section>
-
-      <section>
-        <h2 class="mb-1 text-sm font-semibold text-neutral-800">{{ t('admin.classes.coursePackagesSection') }}</h2>
-        <p class="mb-4 text-sm text-neutral-500">{{ t('admin.classes.coursePackagesHint') }}</p>
-
-        <p v-if="!form.program_offering_id" class="text-sm text-neutral-500">{{ t('admin.classes.pickProgramOfferingFirst') }}</p>
-        <p v-else-if="availableCoursePackages.length === 0" class="text-sm text-neutral-500">{{ t('admin.classes.noCoursePackagesAvailable') }}</p>
-        <div v-else class="grid gap-2 sm:grid-cols-2">
-          <label v-for="pkg in availableCoursePackages" :key="pkg.id" class="flex items-center gap-2 rounded-lg border border-neutral-200 p-2.5 text-sm">
-            <input
-              type="checkbox"
-              :checked="form.course_package_ids.includes(pkg.id)"
-              class="rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
-              @change="toggleCoursePackage(pkg.id, ($event.target as HTMLInputElement).checked)"
-            />
-            <span class="flex-1 text-neutral-700">{{ pkg.name }}</span>
-            <span class="text-xs text-neutral-500">{{ pkg.price.toFixed(2) }}</span>
-          </label>
         </div>
       </section>
 

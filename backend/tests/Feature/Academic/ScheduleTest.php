@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace Tests\Feature\Academic;
 
 use App\Models\ClassSchedule;
+use App\Models\Position;
 use App\Models\SchoolClass;
-use App\Models\Teacher;
+use App\Models\Staff;
 use App\Models\Tenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\HasAcademicAdmin;
@@ -21,7 +22,8 @@ class ScheduleTest extends TestCase
         $tenant = Tenant::factory()->create();
         $this->actingInTenant($tenant);
 
-        $teacher = Teacher::factory()->create(['name' => 'Mr. Dara']);
+        $teacherPosition = Position::factory()->create(['name' => 'Teacher']);
+        $teacher = Staff::factory()->create(['position_id' => $teacherPosition->id, 'first_name' => 'Dara', 'last_name' => 'Sok']);
         $class = SchoolClass::factory()->withTeacher($teacher)->create(['name' => 'Web Development']);
         ClassSchedule::factory()->forClass($class)->onDay(1)->at('18:00:00', '20:00:00')->create();
         ClassSchedule::factory()->forClass($class)->onDay(3)->at('18:00:00', '20:00:00')->create();
@@ -31,7 +33,7 @@ class ScheduleTest extends TestCase
         $response->assertOk();
         $response->assertJsonCount(1, 'data');
         $response->assertJsonPath('data.0.name', 'Web Development');
-        $response->assertJsonPath('data.0.teacher_name', 'Mr. Dara');
+        $response->assertJsonPath('data.0.teacher_name', 'Dara Sok');
         $response->assertJsonCount(2, 'data.0.schedules');
         $response->assertJsonPath('data.0.schedules.0.day_of_week', 1);
         $response->assertJsonPath('data.0.schedules.0.start_time', '18:00:00');

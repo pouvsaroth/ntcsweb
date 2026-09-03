@@ -57,6 +57,21 @@ export interface Program {
   image_url: string | null
 }
 
+/** A real, enrollable course from the admin's academic catalog — see Public\CoursePackageController. */
+export interface PublicCourse {
+  id: number
+  name: string
+  description: string | null
+  fee_monthly: number | null
+  fee_term: number | null
+  fee_video: number | null
+  fee_monthly_online: number | null
+  fee_term_online: number | null
+  currency: 'USD' | 'KHR'
+  duration: string | null
+  academic_program: { id: number; name: string; sort_order: number } | null
+}
+
 export interface Teacher {
   id: number
   name: string
@@ -130,6 +145,15 @@ export const publicContentService = {
 
   getPrograms: (options: { featured?: boolean } = {}) =>
     fetchPublicList<Program>('/public/programs', { per_page: 50, featured: options.featured ? 1 : undefined }),
+
+  /**
+   * Real, unlike most of this file — see Public\CoursePackageController.
+   * `featured` switches from the full catalog (`show_on_website`) to the
+   * homepage's "Popular Programs" set (`show_in_popular`) — the two flags
+   * are independent, same as `getPrograms({ featured })`'s own convention.
+   */
+  getCourses: (options: { featured?: boolean } = {}) =>
+    fetchPublicList<PublicCourse>('/public/course-packages', { per_page: 200, featured: options.featured ? 1 : undefined }),
 
   getTeachers: (page = 1, perPage = 12) => fetchPublicList<Teacher>('/public/teachers', { page, per_page: perPage }),
 

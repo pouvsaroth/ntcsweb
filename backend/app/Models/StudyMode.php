@@ -11,7 +11,6 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * Tenant-owned, configurable — Full Time / Part Time and anything a school
@@ -39,11 +38,6 @@ class StudyMode extends Model
         return [
             'is_active' => 'boolean',
         ];
-    }
-
-    public function programOfferings(): HasMany
-    {
-        return $this->hasMany(ProgramOffering::class);
     }
 
     /**

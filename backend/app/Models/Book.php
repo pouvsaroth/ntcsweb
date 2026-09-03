@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -19,9 +20,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  *
  * @property int $tenant_id
  * @property string $title
+ * @property int|null $academic_program_id The one program this book belongs to -- drives which BookCategory rows make sense for it.
+ * @property int|null $book_category_id What the book teaches within its program, e.g. "Office", "Design" -- see BookCategory.
  * @property string $status
  */
-#[Fillable(['title', 'author', 'isbn', 'publisher', 'description', 'cover_image', 'quantity', 'fee', 'status'])]
+#[Fillable(['title', 'author', 'isbn', 'publisher', 'description', 'cover_image', 'academic_program_id', 'book_category_id', 'status'])]
 class Book extends Model
 {
     use BelongsToTenant, HasFactory, SoftDeletes;
@@ -31,22 +34,10 @@ class Book extends Model
 
     public const STATUS_INACTIVE = 'inactive';
 
-    /** PHP-level mirror of the columns' DB defaults — see Teacher for why. */
+    /** PHP-level mirror of the columns' DB defaults — see Building for why. */
     protected $attributes = [
         'status' => self::STATUS_ACTIVE,
-        'quantity' => 1,
     ];
-
-    protected function casts(): array
-    {
-        return [
-            'quantity' => 'integer',
-            // A default/list fee — what a new enrollment for this book
-            // pre-fills, not what an already-enrolled student is charged
-            // (that's snapshotted onto Enrollment::$fee instead).
-            'fee' => 'decimal:2',
-        ];
-    }
 
     public function classes(): BelongsToMany
     {
@@ -59,14 +50,19 @@ class Book extends Model
     }
 
     /**
-     * Which academic program(s) this book belongs to -- e.g. "MS Word" under
+     * The one academic program this book belongs to -- e.g. "MS Word" under
      * the Computer program. This is what lets a Course Package's book picker
      * be filtered down to just the books that make sense for its program;
      * see CoursePackage::books().
      */
-    public function programs(): BelongsToMany
+    public function academicProgram(): BelongsTo
     {
-        return $this->belongsToMany(AcademicProgram::class, 'program_book', 'book_id', 'program_id');
+        return $this->belongsTo(AcademicProgram::class);
+    }
+
+    public function bookCategory(): BelongsTo
+    {
+        return $this->belongsTo(BookCategory::class);
     }
 
     public function coursePackages(): BelongsToMany

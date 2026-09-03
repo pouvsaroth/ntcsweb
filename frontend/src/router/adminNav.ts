@@ -38,9 +38,10 @@ export const adminNav: AdminNavGroup[] = [
       { labelKey: 'adminNav.items.studyModes', to: '/admin/study-modes', permission: 'study-modes.view' },
       { labelKey: 'adminNav.items.academicPrograms', to: '/admin/academic-programs', permission: 'academic-programs.view' },
       { labelKey: 'adminNav.items.coursePackages', to: '/admin/course-packages', permission: 'course-packages.view' },
-      { labelKey: 'adminNav.items.programOfferings', to: '/admin/program-offerings', permission: 'program-offerings.view' },
-      { labelKey: 'adminNav.items.subjects', to: '/admin/subjects' },
+      { labelKey: 'adminNav.items.bookCategories', to: '/admin/book-categories', permission: 'book-categories.view' },
       { labelKey: 'adminNav.items.books', to: '/admin/books' },
+      { labelKey: 'adminNav.items.buildings', to: '/admin/buildings', permission: 'buildings.view' },
+      { labelKey: 'adminNav.items.classrooms', to: '/admin/classrooms', permission: 'classrooms.view' },
       { labelKey: 'adminNav.items.classes', to: '/admin/classes' },
     ],
   },
@@ -53,11 +54,8 @@ export const adminNav: AdminNavGroup[] = [
     ],
   },
   {
-    labelKey: 'adminNav.groups.teachers',
-    items: [
-      { labelKey: 'adminNav.items.teachersList', to: '/admin/teachers' },
-      { labelKey: 'adminNav.items.staffList', to: '/admin/staff', permission: 'staff.view' },
-    ],
+    labelKey: 'adminNav.groups.staff',
+    items: [{ labelKey: 'adminNav.items.staffList', to: '/admin/staff', permission: 'staff.view' }],
   },
   {
     labelKey: 'adminNav.groups.academicRecords',

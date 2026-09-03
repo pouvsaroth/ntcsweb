@@ -22,7 +22,7 @@ final class EnrollmentController extends Controller
 {
     public function __construct(private readonly EnrollmentService $enrollments) {}
 
-    private const WITH = ['student', 'schoolClass', 'book', 'coursePackage', 'academicProgram', 'studyMode'];
+    private const WITH = ['student', 'schoolClass', 'table', 'book', 'coursePackage', 'academicProgram', 'studyMode'];
 
     public function index(Request $request): JsonResponse
     {
@@ -80,7 +80,7 @@ final class EnrollmentController extends Controller
     {
         $newClass = SchoolClass::query()->findOrFail($request->validated('class_id'));
 
-        $enrollment = $this->enrollments->transferClass($enrollment, $newClass, $request->user());
+        $enrollment = $this->enrollments->transferClass($enrollment, $newClass, $request->user(), $request->validated('table_id'));
 
         return ApiResponse::success(new EnrollmentResource($enrollment->load(self::WITH)));
     }

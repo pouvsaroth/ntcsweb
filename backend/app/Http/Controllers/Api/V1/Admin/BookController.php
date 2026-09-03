@@ -20,9 +20,9 @@ final class BookController extends Controller
     {
         $this->authorize('viewAny', Book::class);
 
-        $books = ApiQuery::for(Book::query()->with('programs')->withCount('classes'), $request)
+        $books = ApiQuery::for(Book::query()->with(['academicProgram', 'bookCategory'])->withCount('classes'), $request)
             ->searchable('title', 'author', 'isbn')
-            ->filterable(['status'])
+            ->filterable(['status', 'academic_program_id'])
             ->sortable(['title', 'author', 'created_at'], default: 'title')
             ->paginate();
 
@@ -31,36 +31,23 @@ final class BookController extends Controller
 
     public function store(StoreBookRequest $request): JsonResponse
     {
-        $data = $request->validated();
-        $programIds = $data['program_ids'] ?? [];
-        unset($data['program_ids']);
+        $book = Book::query()->create($request->validated());
 
-        $book = Book::query()->create($data);
-        $book->programs()->sync($programIds);
-
-        return ApiResponse::created(new BookResource($book->load('programs')));
+        return ApiResponse::created(new BookResource($book->load(['academicProgram', 'bookCategory'])));
     }
 
     public function show(Book $book): JsonResponse
     {
         $this->authorize('view', $book);
 
-        return ApiResponse::success(new BookResource($book->load('programs')->loadCount('classes')));
+        return ApiResponse::success(new BookResource($book->load(['academicProgram', 'bookCategory'])->loadCount('classes')));
     }
 
     public function update(UpdateBookRequest $request, Book $book): JsonResponse
     {
-        $data = $request->validated();
-        $programIds = $data['program_ids'] ?? null;
-        unset($data['program_ids']);
+        $book->update($request->validated());
 
-        $book->update($data);
-
-        if ($programIds !== null) {
-            $book->programs()->sync($programIds);
-        }
-
-        return ApiResponse::success(new BookResource($book->load('programs')));
+        return ApiResponse::success(new BookResource($book->load(['academicProgram', 'bookCategory'])));
     }
 
     public function destroy(Book $book): JsonResponse

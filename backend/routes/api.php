@@ -23,8 +23,11 @@ use App\Http\Controllers\Api\V1\Admin\AssetReportController;
 use App\Http\Controllers\Api\V1\Admin\AttendanceController;
 use App\Http\Controllers\Api\V1\Admin\AuditLogController;
 use App\Http\Controllers\Api\V1\Admin\BillingDashboardController;
+use App\Http\Controllers\Api\V1\Admin\BookCategoryController;
 use App\Http\Controllers\Api\V1\Admin\BookController;
+use App\Http\Controllers\Api\V1\Admin\BuildingController;
 use App\Http\Controllers\Api\V1\Admin\ClassroomController;
+use App\Http\Controllers\Api\V1\Admin\ClassroomTableController;
 use App\Http\Controllers\Api\V1\Admin\CoursePackageController;
 use App\Http\Controllers\Api\V1\Admin\DepartmentController;
 use App\Http\Controllers\Api\V1\Admin\EnrollmentController;
@@ -44,7 +47,6 @@ use App\Http\Controllers\Api\V1\Admin\PositionController;
 use App\Http\Controllers\Api\V1\Admin\ProductController;
 use App\Http\Controllers\Api\V1\Admin\ProductVariantController;
 use App\Http\Controllers\Api\V1\Admin\ProgramController as AdminProgramController;
-use App\Http\Controllers\Api\V1\Admin\ProgramOfferingController;
 use App\Http\Controllers\Api\V1\Admin\RepairShopController;
 use App\Http\Controllers\Api\V1\Admin\RoleController;
 use App\Http\Controllers\Api\V1\Admin\SchoolClassController;
@@ -54,7 +56,6 @@ use App\Http\Controllers\Api\V1\Admin\StudentController;
 use App\Http\Controllers\Api\V1\Admin\StudentImportController;
 use App\Http\Controllers\Api\V1\Admin\StudyModeController;
 use App\Http\Controllers\Api\V1\Admin\SupplierController;
-use App\Http\Controllers\Api\V1\Admin\TeacherController;
 use App\Http\Controllers\Api\V1\Admin\UserController;
 use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\V1\Auth\EmailVerificationController;
@@ -64,6 +65,7 @@ use App\Http\Controllers\Api\V1\LookupController;
 use App\Http\Controllers\Api\V1\MyAssetController;
 use App\Http\Controllers\Api\V1\MyAttendanceController;
 use App\Http\Controllers\Api\V1\MyInvoiceController;
+use App\Http\Controllers\Api\V1\Public\CoursePackageController as PublicCoursePackageController;
 use App\Http\Controllers\Api\V1\Public\EnrollmentInquiryController;
 use App\Http\Controllers\Api\V1\Public\GalleryController as PublicGalleryController;
 use App\Http\Controllers\Api\V1\Public\HomeSlideController as PublicHomeSlideController;
@@ -158,12 +160,11 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
     */
 
     Route::middleware(['auth:sanctum', 'active'])->group(function () {
-        // Every route below is implicitly tenant-scoped: Teacher, Student,
+        // Every route below is implicitly tenant-scoped: Staff, Student,
         // Classroom, Book, SchoolClass, and Enrollment all use BelongsToTenant,
         // so both the index queries and the {param} route-model bindings only
         // ever see the current school's rows — a stray id for another
         // tenant's record 404s the same way a nonexistent id would.
-        Route::apiResource('teachers', TeacherController::class);
         Route::apiResource('students', StudentController::class);
 
         // Bulk CSV import from the legacy `t_student` system — a separate
@@ -173,7 +174,10 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         // updated or deleted once uploaded.
         Route::apiResource('student-imports', StudentImportController::class)
             ->only(['index', 'store', 'show']);
+        Route::apiResource('buildings', BuildingController::class);
         Route::apiResource('classrooms', ClassroomController::class);
+        Route::apiResource('classroom-tables', ClassroomTableController::class);
+        Route::apiResource('book-categories', BookCategoryController::class);
         Route::apiResource('books', BookController::class);
 
         // Named {class}, not {schoolClass}: matches the SchoolClass model's
@@ -181,6 +185,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         // ("/api/v1/classes/{class}") reading naturally despite the model
         // itself being named SchoolClass to dodge PHP's `class` keyword.
         Route::apiResource('classes', SchoolClassController::class)->parameters(['classes' => 'class']);
+        Route::get('classes/{class}/available-tables', [SchoolClassController::class, 'availableTables'])->name('classes.available-tables');
 
         Route::apiResource('enrollments', EnrollmentController::class);
         Route::post('enrollments/package', [EnrollmentPackageController::class, 'store'])->name('enrollments.package.store');
@@ -192,13 +197,13 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         | Academic — Program / Package / Class linkage
         |----------------------------------------------------------------------
         |
-        | Study Mode / Academic Program / Course Package / Academic Year /
-        | Program Offering — the configurable catalog layer package-based
-        | enrollment is built on. `AcademicProgram` is deliberately not
-        | named/routed as `programs` — that resource above is the unrelated
-        | public marketing catalog (see AcademicProgram's own docblock).
-        | There is no separate "Course" resource — a Course Package bundles
-        | Books directly (see Book::coursePackages()).
+        | Study Mode / Academic Program / Course Package / Academic Year —
+        | the configurable catalog layer package-based enrollment is built
+        | on. `AcademicProgram` is deliberately not named/routed as
+        | `programs` — that resource above is the unrelated public
+        | marketing catalog (see AcademicProgram's own docblock). There is
+        | no separate "Course" resource — a Course Package bundles Books
+        | directly (see Book::coursePackages()).
         |
         */
 
@@ -206,7 +211,6 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::apiResource('academic-programs', AcademicProgramController::class);
         Route::apiResource('course-packages', CoursePackageController::class);
         Route::apiResource('academic-years', AcademicYearController::class);
-        Route::apiResource('program-offerings', ProgramOfferingController::class);
 
         Route::get('academic-reports/enrollments', [AcademicReportController::class, 'enrollments'])->name('academic-reports.enrollments');
         Route::get('academic-reports/program-revenue', [AcademicReportController::class, 'programRevenue'])->name('academic-reports.program-revenue');
@@ -468,6 +472,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             ->whereNumber('id')
             ->name('gallery.download');
         Route::get('programs', [PublicProgramController::class, 'index'])->name('programs.index');
+        Route::get('course-packages', [PublicCoursePackageController::class, 'index'])->name('course-packages.index');
         Route::get('schedules', [PublicScheduleController::class, 'index'])->name('schedules.index');
         Route::post('enrollment-inquiries', [EnrollmentInquiryController::class, 'store'])->name('enrollment-inquiries.store');
     });

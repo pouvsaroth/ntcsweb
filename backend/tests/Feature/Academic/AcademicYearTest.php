@@ -4,10 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Academic;
 
-use App\Models\AcademicProgram;
 use App\Models\AcademicYear;
-use App\Models\ProgramOffering;
-use App\Models\StudyMode;
 use App\Support\Authorization\Permissions;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\HasAcademicAdmin;
@@ -49,19 +46,5 @@ class AcademicYearTest extends TestCase
 
         $this->assertFalse((bool) $year2025->fresh()->is_current);
         $this->assertTrue((bool) AcademicYear::findOrFail($year2026Id)->is_current);
-    }
-
-    public function test_a_year_used_by_a_program_offering_cannot_be_deleted(): void
-    {
-        $this->actingAsAdminWithPermissions([Permissions::ACADEMIC_YEARS_DELETE]);
-        $year = AcademicYear::factory()->create();
-        ProgramOffering::factory()
-            ->forProgram(AcademicProgram::factory()->create())
-            ->forStudyMode(StudyMode::factory()->create())
-            ->forAcademicYear($year)
-            ->create();
-
-        $this->deleteJson("/api/v1/academic-years/{$year->id}")->assertStatus(422);
-        $this->assertNotNull($year->fresh());
     }
 }

@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Academic;
 
+use App\Models\Classroom;
+use App\Models\ClassroomTable;
 use App\Models\Enrollment;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
+use App\Models\SchoolClass;
 use App\Models\Student;
 use App\Support\Authorization\Permissions;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -41,7 +44,6 @@ class EnrollmentPackageServiceTest extends TestCase
         $response->assertJsonPath('data.class.id', $this->computerEveningClass->id);
         $response->assertJsonPath('data.course_package_id', $this->msWordPackage->id);
         $response->assertJsonPath('data.academic_program_id', $this->computerProgram->id);
-        $response->assertJsonPath('data.study_mode_id', $this->partTimeMode->id);
         $response->assertJsonPath('data.fee', 24);
 
         $this->assertSame(1, Enrollment::count());
@@ -100,5 +102,30 @@ class EnrollmentPackageServiceTest extends TestCase
         $response->assertUnprocessable();
         $response->assertJsonValidationErrors('course_package_id');
         $this->assertSame(1, Enrollment::count());
+    }
+
+    public function test_a_table_is_required_when_the_classs_room_has_tables(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE]);
+        $this->setUpAcademicCatalog();
+        $student = Student::factory()->forTenant($this->tenant)->create();
+
+        $room = Classroom::factory()->forTenant($this->tenant)->create();
+        $table = ClassroomTable::factory()->forTenant($this->tenant)->create(['classroom_id' => $room->id]);
+        $class = SchoolClass::factory()->forTenant($this->tenant)->forProgram($this->computerProgram)->inRoom($room)->create();
+        $class->coursePackages()->sync([$this->msWordPackage->id]);
+
+        $this->postJson('/api/v1/enrollments/package', [
+            'student_id' => $student->id,
+            'class_id' => $class->id,
+            'course_package_id' => $this->msWordPackage->id,
+        ])->assertUnprocessable()->assertJsonValidationErrors('table_id');
+
+        $this->postJson('/api/v1/enrollments/package', [
+            'student_id' => $student->id,
+            'class_id' => $class->id,
+            'course_package_id' => $this->msWordPackage->id,
+            'table_id' => $table->id,
+        ])->assertCreated();
     }
 }

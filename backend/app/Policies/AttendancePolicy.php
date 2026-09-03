@@ -27,8 +27,8 @@ class AttendancePolicy
             return true;
         }
 
-        $teacher = $user->teacher;
+        $staff = $user->staff;
 
-        return $teacher !== null && $teacher->classes()->whereKey($record->class_id)->exists();
+        return $staff !== null && $staff->classes()->whereKey($record->class_id)->exists();
     }
 }

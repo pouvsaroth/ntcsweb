@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -20,7 +21,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string $name
  * @property string $status
  */
-#[Fillable(['name', 'code', 'capacity', 'location', 'status'])]
+#[Fillable(['name', 'code', 'capacity', 'location', 'building_id', 'status'])]
 class Classroom extends Model
 {
     use BelongsToTenant, HasFactory, SoftDeletes;
@@ -30,7 +31,7 @@ class Classroom extends Model
 
     public const STATUS_INACTIVE = 'inactive';
 
-    /** PHP-level mirror of the column's DB default — see Teacher for why. */
+    /** PHP-level mirror of the column's DB default — see Building for why. */
     protected $attributes = [
         'status' => self::STATUS_ACTIVE,
     ];
@@ -38,6 +39,16 @@ class Classroom extends Model
     public function classes(): HasMany
     {
         return $this->hasMany(SchoolClass::class);
+    }
+
+    public function building(): BelongsTo
+    {
+        return $this->belongsTo(Building::class);
+    }
+
+    public function tables(): HasMany
+    {
+        return $this->hasMany(ClassroomTable::class);
     }
 
     /**

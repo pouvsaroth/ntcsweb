@@ -24,12 +24,12 @@ class SchoolClassResource extends JsonResource
             'end_date' => $this->end_date?->toDateString(),
             'status' => $this->status,
 
-            'teacher' => new TeacherResource($this->whenLoaded('teacher')),
+            'teacher' => $this->whenLoaded('teacher', fn () => $this->teacher !== null ? ['id' => $this->teacher->id, 'name' => $this->teacher->fullName()] : null),
             'classroom' => new ClassroomResource($this->whenLoaded('classroom')),
             'schedules' => ClassScheduleResource::collection($this->whenLoaded('schedules')),
             'books' => BookResource::collection($this->whenLoaded('books')),
-            'program_offering_id' => $this->program_offering_id,
-            'program_offering' => new ProgramOfferingResource($this->whenLoaded('programOffering')),
+            'academic_program_id' => $this->academic_program_id,
+            'academic_program' => new AcademicProgramResource($this->whenLoaded('academicProgram')),
             'course_packages' => CoursePackageResource::collection($this->whenLoaded('coursePackages')),
             'enrollments_count' => $this->whenCounted('enrollments'),
 

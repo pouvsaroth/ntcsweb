@@ -24,8 +24,11 @@ const columns = [
   { key: 'name', label: t('admin.coursePackages.columnName') },
   { key: 'program', label: t('admin.coursePackages.columnProgram') },
   { key: 'books', label: t('admin.coursePackages.columnBooks') },
-  { key: 'price', label: t('admin.coursePackages.columnPrice') },
+  { key: 'fee_monthly', label: t('admin.coursePackages.columnFeeMonthly') },
+  { key: 'currency', label: t('admin.coursePackages.columnCurrency') },
   { key: 'is_active', label: t('admin.coursePackages.columnStatus') },
+  { key: 'show_on_website', label: t('admin.coursePackages.columnShowOnWebsite') },
+  { key: 'show_in_popular', label: t('admin.coursePackages.columnShowInPopular') },
   { key: 'actions', label: t('admin.coursePackages.columnActions'), align: 'text-right' },
 ]
 
@@ -82,10 +85,21 @@ onMounted(() => fetch())
     <DataTable :columns="columns" :rows="items" row-key="id" :loading="loading" :empty-message="t('admin.coursePackages.emptyMessage')">
       <template #cell-program="{ row }">{{ row.academic_program?.code ?? '—' }}</template>
       <template #cell-books="{ row }">{{ row.books?.map((b) => b.title).join(', ') || '—' }}</template>
-      <template #cell-price="{ row }">{{ row.price.toFixed(2) }}</template>
+      <template #cell-fee_monthly="{ row }">{{ row.fee_monthly !== null ? row.fee_monthly.toFixed(2) : '—' }}</template>
+      <template #cell-currency="{ row }">{{ row.currency }}</template>
       <template #cell-is_active="{ row }">
         <BaseBadge :variant="row.is_active ? 'success' : 'neutral'">
           {{ row.is_active ? t('admin.coursePackages.statusActive') : t('admin.coursePackages.statusInactive') }}
+        </BaseBadge>
+      </template>
+      <template #cell-show_on_website="{ row }">
+        <BaseBadge :variant="row.show_on_website ? 'success' : 'neutral'">
+          {{ row.show_on_website ? t('admin.coursePackages.shown') : t('admin.coursePackages.hidden') }}
+        </BaseBadge>
+      </template>
+      <template #cell-show_in_popular="{ row }">
+        <BaseBadge :variant="row.show_in_popular ? 'success' : 'neutral'">
+          {{ row.show_in_popular ? t('admin.coursePackages.shown') : t('admin.coursePackages.hidden') }}
         </BaseBadge>
       </template>
       <template #cell-actions="{ row }">

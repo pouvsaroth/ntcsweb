@@ -20,9 +20,9 @@ final class ClassroomController extends Controller
     {
         $this->authorize('viewAny', Classroom::class);
 
-        $classrooms = ApiQuery::for(Classroom::query()->withCount('classes'), $request)
+        $classrooms = ApiQuery::for(Classroom::query()->with('building')->withCount('classes'), $request)
             ->searchable('name', 'code', 'location')
-            ->filterable(['status'])
+            ->filterable(['status', 'building_id'])
             ->sortable(['name', 'capacity', 'created_at'], default: 'name')
             ->paginate();
 
@@ -33,21 +33,21 @@ final class ClassroomController extends Controller
     {
         $classroom = Classroom::query()->create($request->validated());
 
-        return ApiResponse::created(new ClassroomResource($classroom));
+        return ApiResponse::created(new ClassroomResource($classroom->load('building')));
     }
 
     public function show(Classroom $classroom): JsonResponse
     {
         $this->authorize('view', $classroom);
 
-        return ApiResponse::success(new ClassroomResource($classroom->loadCount('classes')));
+        return ApiResponse::success(new ClassroomResource($classroom->load('building')->loadCount('classes')));
     }
 
     public function update(UpdateClassroomRequest $request, Classroom $classroom): JsonResponse
     {
         $classroom->update($request->validated());
 
-        return ApiResponse::success(new ClassroomResource($classroom));
+        return ApiResponse::success(new ClassroomResource($classroom->load('building')));
     }
 
     public function destroy(Classroom $classroom): JsonResponse
