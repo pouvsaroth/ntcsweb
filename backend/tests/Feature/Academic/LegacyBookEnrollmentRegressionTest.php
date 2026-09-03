@@ -64,6 +64,7 @@ class LegacyBookEnrollmentRegressionTest extends TestCase
         $this->postJson('/api/v1/enrollments/package', [
             'student_id' => $packageStudent->id, 'class_id' => $this->computerEveningClass->id,
             'course_package_id' => $this->msWordPackage->id,
+            'fee_type' => 'term',
         ])->assertCreated();
 
         $this->assertSame(2, Enrollment::where('class_id', $this->computerEveningClass->id)->count());

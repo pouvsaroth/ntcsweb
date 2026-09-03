@@ -42,6 +42,7 @@ class EnrollmentCrossProgramRejectionTest extends TestCase
             'student_id' => $student->id,
             'class_id' => $this->computerEveningClass->id,
             'course_package_id' => $englishPackage->id,
+            'fee_type' => 'term',
         ]);
 
         $response->assertUnprocessable();
@@ -58,13 +59,14 @@ class EnrollmentCrossProgramRejectionTest extends TestCase
         // just a schedule/room/teacher, so this must still succeed.
         $product = Product::factory()->create(['code' => 'EXCEL2024', 'name' => 'Excel 2024', 'type' => ProductType::COURSE_FEE, 'price' => 20]);
         $excelOnlyPackage = CoursePackage::factory()->forProgram($this->computerProgram)
-            ->create(['code' => 'EXCEL2024', 'price' => 20, 'product_id' => $product->getKey()]);
+            ->create(['code' => 'EXCEL2024', 'price' => 20, 'fee_term' => 20, 'product_id' => $product->getKey()]);
         $student = Student::factory()->forTenant($this->tenant)->create();
 
         $response = $this->postJson('/api/v1/enrollments/package', [
             'student_id' => $student->id,
             'class_id' => $this->computerEveningClass->id,
             'course_package_id' => $excelOnlyPackage->id,
+            'fee_type' => 'term',
         ]);
 
         $response->assertCreated();
@@ -83,6 +85,7 @@ class EnrollmentCrossProgramRejectionTest extends TestCase
             'student_id' => $student->id,
             'class_id' => $bareClass->id,
             'course_package_id' => $this->msWordPackage->id,
+            'fee_type' => 'term',
         ]);
 
         $response->assertUnprocessable();

@@ -34,7 +34,7 @@ final class InvoiceService
     ) {}
 
     /**
-     * @param  array{student_id:int, invoice_date?:string, due_date?:string|null, discount?:float, tax?:float, notes?:string|null, items:list<array<string,mixed>>}  $data
+     * @param  array{student_id:int, invoice_date?:string, due_date?:string|null, discount?:float, discount_reason?:string|null, tax?:float, notes?:string|null, items:list<array<string,mixed>>}  $data
      */
     public function create(array $data, User $actor): Invoice
     {
@@ -48,6 +48,7 @@ final class InvoiceService
                 'due_date' => $data['due_date'] ?? null,
                 'status' => InvoiceStatus::ISSUED,
                 'discount' => (float) ($data['discount'] ?? 0),
+                'discount_reason' => $data['discount_reason'] ?? null,
                 'tax' => (float) ($data['tax'] ?? 0),
                 'notes' => $data['notes'] ?? null,
                 'created_by' => $actor->getKey(),

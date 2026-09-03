@@ -36,6 +36,7 @@ class CoursePackagePriceChangeTest extends TestCase
             'student_id' => $student->id,
             'class_id' => $this->computerEveningClass->id,
             'course_package_id' => $this->msWordPackage->id,
+            'fee_type' => 'term',
             'enrolled_at' => '2026-01-15',
         ])->assertCreated();
 
@@ -69,14 +70,17 @@ class CoursePackagePriceChangeTest extends TestCase
         ]);
         $this->setUpAcademicCatalog();
 
-        CoursePackage::query()->whereKey($this->msWordPackage->id)->update(['price' => 30]);
-        $this->msWordPackage->product->update(['price' => 30]);
+        // The enrollment below selects `fee_type: term`, so it's a change to
+        // that specific tier — not the legacy `price` column — that a new
+        // enrollment must reflect.
+        CoursePackage::query()->whereKey($this->msWordPackage->id)->update(['fee_term' => 30]);
 
         $student = Student::factory()->forTenant($this->tenant)->create();
         $response = $this->postJson('/api/v1/enrollments/package', [
             'student_id' => $student->id,
             'class_id' => $this->computerEveningClass->id,
             'course_package_id' => $this->msWordPackage->id,
+            'fee_type' => 'term',
             'enrolled_at' => '2026-02-01',
         ])->assertCreated();
 

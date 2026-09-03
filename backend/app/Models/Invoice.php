@@ -35,7 +35,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 #[Fillable([
     'invoice_number', 'student_id', 'invoice_date', 'due_date', 'status',
-    'subtotal', 'discount', 'tax', 'total', 'paid_amount', 'balance', 'currency', 'notes',
+    'subtotal', 'discount', 'discount_reason', 'tax', 'total', 'paid_amount', 'balance', 'currency', 'notes',
     'created_by', 'cancellation_reason', 'cancelled_by', 'cancelled_at',
 ])]
 class Invoice extends Model

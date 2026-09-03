@@ -47,9 +47,18 @@ trait HasAcademicCatalog
             'price' => 24,
         ]);
 
+        // All 5 fee tiers are populated (not just the legacy `price`) so
+        // enrollment tests can exercise `fee_type` selection against real
+        // data — `price` stays equal to `fee_term` since that's the
+        // enrollment form's own default tier.
         $this->msWordPackage = CoursePackage::factory()
             ->forProgram($this->computerProgram)
-            ->create(['code' => 'MSWORD2024', 'name' => 'MS Word 2024', 'price' => 24, 'product_id' => $product->getKey()]);
+            ->create([
+                'code' => 'MSWORD2024', 'name' => 'MS Word 2024', 'price' => 24,
+                'fee_monthly' => 20, 'fee_term' => 24, 'fee_video' => 15,
+                'fee_monthly_online' => 18, 'fee_term_online' => 22,
+                'product_id' => $product->getKey(),
+            ]);
         $this->msWordPackage->books()->sync([$this->msWordBook->getKey(), $this->excelBook->getKey()]);
 
         $this->computerEveningClass = SchoolClass::factory()

@@ -15,11 +15,15 @@ export interface EnrollmentStudent {
   student_code: string
 }
 
+export type FeeType = 'monthly' | 'term' | 'video' | 'monthly_online' | 'term_online'
+
 export interface Enrollment {
   id: number
   enrolled_at: string
   /** Snapshotted at enrollment time — editing it never touches the book's/package's own catalog price, see docs/database.md. */
   fee: number
+  /** Which of the package's 5 fee tiers this was billed under — null for the legacy book-billed path. */
+  fee_type: FeeType | null
   status: EnrollmentStatus
   student: EnrollmentStudent
   class: SchoolClass
@@ -47,13 +51,23 @@ export interface EnrollmentInput {
   status: EnrollmentStatus
 }
 
-/** Deliberately has no fee/total field — the server computes it from the package's current price, see EnrollmentService::enrollInPackage(). */
+/**
+ * Deliberately has no fee/total field — the server computes it from the
+ * package's `fee_type` tier, see EnrollmentService::enrollInPackage().
+ * `discount_price`/`received_amount` are genuinely client-supplied (no
+ * catalog value to derive them from), but both are capped server-side.
+ */
 export interface EnrollmentPackageInput {
   student_id: number
   class_id: number
   table_id: number | null
   course_package_id: number
   enrolled_at: string
+  fee_type: FeeType
+  discount_reason: string | null
+  discount_price: number
+  received_amount: number
+  payment_method: string | null
 }
 
 export const enrollmentsService = {

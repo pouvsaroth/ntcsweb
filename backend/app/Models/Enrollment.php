@@ -42,7 +42,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $fee
  * @property string $status
  */
-#[Fillable(['student_id', 'class_id', 'table_id', 'book_id', 'course_package_id', 'academic_program_id', 'study_mode_id', 'enrolled_at', 'fee', 'status'])]
+#[Fillable(['student_id', 'class_id', 'table_id', 'book_id', 'course_package_id', 'academic_program_id', 'study_mode_id', 'enrolled_at', 'fee', 'fee_type', 'status'])]
 class Enrollment extends Model
 {
     use Auditable, BelongsToTenant, HasFactory;

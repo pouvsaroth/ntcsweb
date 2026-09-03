@@ -31,6 +31,7 @@ class EnrollmentReEnrollmentTest extends TestCase
             'student_id' => $student->id,
             'class_id' => $this->computerEveningClass->id,
             'course_package_id' => $this->msWordPackage->id,
+            'fee_type' => 'term',
         ])->assertCreated()->json('data.id');
 
         $this->postJson("/api/v1/enrollments/{$first}/cancel", ['reason' => 'Requested a break'])
@@ -41,6 +42,7 @@ class EnrollmentReEnrollmentTest extends TestCase
             'student_id' => $student->id,
             'class_id' => $this->computerEveningClass->id,
             'course_package_id' => $this->msWordPackage->id,
+            'fee_type' => 'term',
         ])->assertCreated()->json('data.id');
 
         $this->assertNotSame($first, $second);

@@ -31,6 +31,7 @@ class EnrollmentTransferTest extends TestCase
             'student_id' => $student->id,
             'class_id' => $this->computerEveningClass->id,
             'course_package_id' => $this->msWordPackage->id,
+            'fee_type' => 'term',
         ])->assertCreated()->json('data.id');
 
         $newClass = SchoolClass::factory()->forProgram($this->computerProgram)->create(['name' => 'Computer Evening B']);
@@ -66,6 +67,7 @@ class EnrollmentTransferTest extends TestCase
             'student_id' => $student->id,
             'class_id' => $this->computerEveningClass->id,
             'course_package_id' => $this->msWordPackage->id,
+            'fee_type' => 'term',
         ])->assertCreated()->json('data.id');
 
         $unrelatedClass = SchoolClass::factory()->forProgram($this->computerProgram)->create(['name' => 'No package here']);
@@ -87,6 +89,7 @@ class EnrollmentTransferTest extends TestCase
             'student_id' => $student->id,
             'class_id' => $this->computerEveningClass->id,
             'course_package_id' => $this->msWordPackage->id,
+            'fee_type' => 'term',
         ])->assertCreated()->json('data.id');
 
         $englishClass = SchoolClass::factory()->create(['name' => 'English class']);
@@ -108,6 +111,7 @@ class EnrollmentTransferTest extends TestCase
             'student_id' => $student->id,
             'class_id' => $this->computerEveningClass->id,
             'course_package_id' => $this->msWordPackage->id,
+            'fee_type' => 'term',
         ])->assertCreated()->json('data.id');
 
         $room = Classroom::factory()->forTenant($this->tenant)->create();

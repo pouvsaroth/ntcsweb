@@ -24,6 +24,7 @@ class EnrollmentCancelTest extends TestCase
             'student_id' => $student->id,
             'class_id' => $this->computerEveningClass->id,
             'course_package_id' => $this->msWordPackage->id,
+            'fee_type' => 'term',
         ])->assertCreated()->json('data.id');
     }
 

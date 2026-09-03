@@ -38,6 +38,7 @@ class EnrollmentAccountingTest extends TestCase
             'student_id' => $student->id,
             'class_id' => $this->computerEveningClass->id,
             'course_package_id' => $this->msWordPackage->id,
+            'fee_type' => 'term',
         ])->assertCreated()->json('data');
 
         $invoiceId = \App\Models\InvoiceItem::where('reference_type', \App\Models\Enrollment::class)

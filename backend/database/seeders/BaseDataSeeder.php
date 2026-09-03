@@ -209,6 +209,18 @@ class BaseDataSeeder extends Seeder
                     'OTHER' => ['en' => ['name' => 'Other'], 'km' => ['name' => 'ផ្សេងទៀត'], 'zh' => ['name' => '其他'], 'ko' => ['name' => '기타'], 'ja' => ['name' => 'その他']],
                 ],
             ],
+            'DISCOUNT_REASON' => [
+                'name' => 'Discount Reason',
+                'description' => 'Why an invoice was discounted — used by the enrollment payment panel and available for any other invoice discount.',
+                'sort_order' => 9,
+                'values' => [
+                    'SIBLING' => ['en' => ['name' => 'Sibling Discount'], 'km' => ['name' => 'បញ្ចុះតម្លៃបងប្អូន'], 'zh' => ['name' => '兄弟姐妹折扣'], 'ko' => ['name' => '형제자매 할인'], 'ja' => ['name' => '兄弟姉妹割引']],
+                    'STAFF' => ['en' => ['name' => 'Staff Discount'], 'km' => ['name' => 'បញ្ចុះតម្លៃបុគ្គលិក'], 'zh' => ['name' => '员工折扣'], 'ko' => ['name' => '직원 할인'], 'ja' => ['name' => '職員割引']],
+                    'EARLY_BIRD' => ['en' => ['name' => 'Early Bird'], 'km' => ['name' => 'ចុះឈ្មោះមុនគេ'], 'zh' => ['name' => '早鸟优惠'], 'ko' => ['name' => '얼리버드 할인'], 'ja' => ['name' => '早期割引']],
+                    'SCHOLARSHIP' => ['en' => ['name' => 'Scholarship'], 'km' => ['name' => 'អាហារូបករណ៍'], 'zh' => ['name' => '奖学金'], 'ko' => ['name' => '장학금'], 'ja' => ['name' => '奨学金']],
+                    'OTHER' => ['en' => ['name' => 'Other'], 'km' => ['name' => 'ផ្សេងទៀត'], 'zh' => ['name' => '其他'], 'ko' => ['name' => '기타'], 'ja' => ['name' => 'その他']],
+                ],
+            ],
         ];
     }
 }
