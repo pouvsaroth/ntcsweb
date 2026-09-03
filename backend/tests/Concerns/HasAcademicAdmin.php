@@ -33,7 +33,13 @@ trait HasAcademicAdmin
 
         app(PermissionRegistry::class)->sync();
 
-        $role = Role::factory()->forTenant($this->tenant)->create();
+        // A fixed name/slug, not RoleFactory's random fake()->jobTitle() —
+        // that pool includes real job titles like "Accountant", and several
+        // tests in this suite explicitly create a role literally named
+        // "Accountant" for their own tenant. A random collision with this
+        // tenant's own admin role would fail on the (tenant_id, slug)
+        // unique constraint depending on the run's random seed.
+        $role = Role::factory()->forTenant($this->tenant)->create(['name' => 'Test Admin', 'slug' => 'test-admin']);
         $role->permissions()->attach(Permission::query()->whereIn('slug', $permissions)->pluck('id'));
 
         $this->admin = User::factory()->forTenant($this->tenant)->create();
