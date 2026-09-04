@@ -336,6 +336,8 @@ async function submit() {
 }
 
 onMounted(async () => {
+  provinces.value = await publicGeographyService.provinces()
+
   coursesLoading.value = true
   try {
     const result = await publicContentService.getCourses()
