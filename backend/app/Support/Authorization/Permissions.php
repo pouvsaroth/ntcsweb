@@ -123,6 +123,8 @@ final class Permissions
 
     public const ENROLLMENTS_TRANSFER = 'enrollments.transfer';
 
+    public const ENROLLMENTS_CHANGE_STATUS = 'enrollments.change-status';
+
     // Study Modes — Full Time/Part Time and anything a school adds later.
     public const STUDY_MODES_VIEW = 'study-modes.view';
 
@@ -478,7 +480,8 @@ final class Permissions
                 self::ENROLLMENTS_UPDATE => 'Update enrollments',
                 self::ENROLLMENTS_DELETE => 'Delete enrollments',
                 self::ENROLLMENTS_CANCEL => 'Cancel enrollments',
-                self::ENROLLMENTS_TRANSFER => 'Transfer a student to another class',
+                self::ENROLLMENTS_TRANSFER => 'Transfer a student to another class or course',
+                self::ENROLLMENTS_CHANGE_STATUS => "Change a student's enrollment status (studying, completed, abandoned, ...)",
             ],
             'Study Modes' => [
                 self::STUDY_MODES_VIEW => 'View study modes',
@@ -666,7 +669,7 @@ final class Permissions
             self::BOOKS_VIEW, self::BOOKS_CREATE, self::BOOKS_UPDATE, self::BOOKS_DELETE,
             self::CLASSES_VIEW, self::CLASSES_CREATE, self::CLASSES_UPDATE, self::CLASSES_DELETE,
             self::ENROLLMENTS_VIEW, self::ENROLLMENTS_CREATE, self::ENROLLMENTS_UPDATE, self::ENROLLMENTS_DELETE,
-            self::ENROLLMENTS_CANCEL, self::ENROLLMENTS_TRANSFER,
+            self::ENROLLMENTS_CANCEL, self::ENROLLMENTS_TRANSFER, self::ENROLLMENTS_CHANGE_STATUS,
             self::STUDY_MODES_VIEW, self::STUDY_MODES_CREATE, self::STUDY_MODES_UPDATE, self::STUDY_MODES_DELETE,
             self::ACADEMIC_PROGRAMS_VIEW, self::ACADEMIC_PROGRAMS_CREATE, self::ACADEMIC_PROGRAMS_UPDATE, self::ACADEMIC_PROGRAMS_DELETE,
             self::COURSE_PACKAGES_VIEW, self::COURSE_PACKAGES_CREATE, self::COURSE_PACKAGES_UPDATE, self::COURSE_PACKAGES_DELETE,
@@ -802,6 +805,7 @@ final class Permissions
                 self::ENROLLMENTS_CREATE,
                 self::ENROLLMENTS_UPDATE,
                 self::ENROLLMENTS_TRANSFER,
+                self::ENROLLMENTS_CHANGE_STATUS,
                 self::STUDY_MODES_VIEW,
                 self::ACADEMIC_PROGRAMS_VIEW,
                 self::COURSE_PACKAGES_VIEW,

@@ -3,6 +3,9 @@ import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import EnrollmentEditModal from '@/components/admin/EnrollmentEditModal.vue'
+import EnrollmentStatusHistoryModal from '@/components/admin/EnrollmentStatusHistoryModal.vue'
+import EnrollmentStatusModal from '@/components/admin/EnrollmentStatusModal.vue'
+import EnrollmentTransferModal from '@/components/admin/EnrollmentTransferModal.vue'
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
@@ -28,30 +31,53 @@ const columns = [
   { key: 'actions', label: t('admin.enrollments.columnActions'), align: 'text-right' },
 ]
 
-const statusBadgeVariant: Record<EnrollmentStatus, 'success' | 'neutral' | 'danger'> = {
-  active: 'success',
-  completed: 'neutral',
-  dropped: 'danger',
+function statusKey(status: EnrollmentStatus): string {
+  return status
+    .split('_')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join('')
 }
 
-const modalOpen = ref(false)
-const editingEnrollment = ref<Enrollment | null>(null)
+const statusBadgeVariant: Record<EnrollmentStatus, 'success' | 'neutral' | 'danger' | 'warning' | 'primary'> = {
+  not_started: 'neutral',
+  active: 'success',
+  exam_ready: 'primary',
+  completed: 'neutral',
+  abandoned: 'danger',
+  stopped: 'danger',
+  suspended: 'warning',
+  dropped: 'neutral',
+}
+
+const editModalOpen = ref(false)
+const statusModalOpen = ref(false)
+const historyModalOpen = ref(false)
+const transferModalOpen = ref(false)
+const activeEnrollment = ref<Enrollment | null>(null)
 
 function openEdit(enrollment: Enrollment) {
-  editingEnrollment.value = enrollment
-  modalOpen.value = true
+  activeEnrollment.value = enrollment
+  editModalOpen.value = true
+}
+
+function openStatus(enrollment: Enrollment) {
+  activeEnrollment.value = enrollment
+  statusModalOpen.value = true
+}
+
+function openHistory(enrollment: Enrollment) {
+  activeEnrollment.value = enrollment
+  historyModalOpen.value = true
+}
+
+function openTransfer(enrollment: Enrollment) {
+  activeEnrollment.value = enrollment
+  transferModalOpen.value = true
 }
 
 async function remove(enrollment: Enrollment) {
   if (!window.confirm(t('admin.enrollments.deleteConfirm'))) return
   await enrollmentsService.remove(enrollment.id)
-  await fetch()
-}
-
-async function cancel(enrollment: Enrollment) {
-  const reason = window.prompt(t('admin.enrollments.cancelPrompt'))
-  if (!reason) return
-  await enrollmentsService.cancel(enrollment.id, reason)
   await fetch()
 }
 
@@ -80,20 +106,28 @@ onMounted(() => fetch())
       <template #cell-fee="{ row }">{{ row.fee.toFixed(2) }}</template>
       <template #cell-status="{ row }">
         <BaseBadge :variant="statusBadgeVariant[row.status]">
-          {{ t(`admin.enrollments.status${row.status.charAt(0).toUpperCase()}${row.status.slice(1)}`) }}
+          {{ t(`admin.enrollments.status${statusKey(row.status)}`) }}
         </BaseBadge>
       </template>
       <template #cell-actions="{ row }">
-        <div class="flex justify-end gap-2">
+        <div class="flex flex-wrap justify-end gap-x-3 gap-y-1">
           <EditIconButton @click="openEdit(row)" />
-          <button
-            v-if="row.status === 'active'"
-            type="button"
-            class="text-sm font-medium text-neutral-600 hover:text-neutral-800"
-            @click="cancel(row)"
-          >
-            {{ t('admin.enrollments.cancel') }}
+          <button type="button" class="text-sm font-medium text-neutral-600 hover:text-neutral-800" @click="openHistory(row)">
+            {{ t('admin.enrollments.statusHistory') }}
           </button>
+          <template v-if="row.status !== 'dropped'">
+            <button type="button" class="text-sm font-medium text-neutral-600 hover:text-neutral-800" @click="openStatus(row)">
+              {{ t('admin.enrollments.changeStatus') }}
+            </button>
+            <button
+              v-if="row.status === 'active'"
+              type="button"
+              class="text-sm font-medium text-neutral-600 hover:text-neutral-800"
+              @click="openTransfer(row)"
+            >
+              {{ t('admin.enrollments.changeClass') }}
+            </button>
+          </template>
           <button type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row)">
             {{ t('admin.enrollments.delete') }}
           </button>
@@ -103,6 +137,9 @@ onMounted(() => fetch())
 
     <BasePagination v-if="meta" :meta="meta" sticky class="mt-4" @update:page="setPage" />
 
-    <EnrollmentEditModal v-model="modalOpen" :enrollment="editingEnrollment" @saved="fetch" />
+    <EnrollmentEditModal v-model="editModalOpen" :enrollment="activeEnrollment" @saved="fetch" />
+    <EnrollmentStatusModal v-model="statusModalOpen" :enrollment="activeEnrollment" @saved="fetch" />
+    <EnrollmentStatusHistoryModal v-model="historyModalOpen" :enrollment="activeEnrollment" />
+    <EnrollmentTransferModal v-model="transferModalOpen" :enrollment="activeEnrollment" @saved="fetch" />
   </div>
 </template>

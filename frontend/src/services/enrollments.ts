@@ -7,7 +7,32 @@ import type { StudyMode } from '@/services/studyModes'
 import type { PaginatedQuery } from '@/composables/usePaginatedResource'
 import type { LengthAwarePaginationMeta, PaginatedResult } from '@/types/api'
 
-export type EnrollmentStatus = 'active' | 'completed' | 'dropped'
+/**
+ * `dropped` is never chosen from the status-management menu — it only ever
+ * happens as a side effect of EnrollmentService::cancel()/transferClass()
+ * (a superseded row). `not_started`/`active`/`exam_ready`/`completed` are
+ * routine; `abandoned`/`stopped`/`suspended` require a reason + effective
+ * date — see STATUSES_REQUIRING_REASON below.
+ */
+export type EnrollmentStatus = 'not_started' | 'active' | 'exam_ready' | 'completed' | 'abandoned' | 'stopped' | 'suspended' | 'dropped'
+
+/** Mirrors Enrollment::STATUSES_MANAGEABLE on the backend — the options the "change status" menu actually offers. */
+export const enrollmentStatusesManageable: EnrollmentStatus[] = [
+  'not_started', 'active', 'exam_ready', 'completed', 'abandoned', 'stopped', 'suspended',
+]
+
+/** Mirrors Enrollment::STATUSES_REQUIRING_REASON on the backend. */
+export const enrollmentStatusesRequiringReason: EnrollmentStatus[] = ['abandoned', 'stopped', 'suspended']
+
+export interface EnrollmentStatusHistoryEntry {
+  id: number
+  from_status: EnrollmentStatus
+  to_status: EnrollmentStatus
+  reason: string | null
+  effective_date: string | null
+  changed_by: string | null
+  created_at: string
+}
 
 export interface EnrollmentStudent {
   id: number
@@ -25,6 +50,11 @@ export interface Enrollment {
   /** Which of the package's 5 fee tiers this was billed under — null for the legacy book-billed path. */
   fee_type: FeeType | null
   status: EnrollmentStatus
+  /** Set only for a status in enrollmentStatusesRequiringReason. */
+  status_reason: string | null
+  status_effective_date: string | null
+  /** Whether any money has been received against this enrollment — gates changing the course (not the class) via transfer(). */
+  is_paid: boolean
   student: EnrollmentStudent
   class: SchoolClass
   /** Which physical table in the class's classroom this student sits at — null when the room has no tables configured. */
@@ -80,11 +110,25 @@ export const enrollmentsService = {
   },
 
   create: (input: EnrollmentInput) => apiPost<Enrollment>('/enrollments', input),
-  update: (id: number, input: Pick<EnrollmentInput, 'enrolled_at' | 'fee' | 'status'>) =>
-    apiPut<Enrollment>(`/enrollments/${id}`, input),
+  /** Status isn't editable here — see changeStatus() below, the one path that also logs history. */
+  update: (id: number, input: Pick<EnrollmentInput, 'enrolled_at' | 'fee'>) => apiPut<Enrollment>(`/enrollments/${id}`, input),
   remove: (id: number) => apiDelete(`/enrollments/${id}`),
 
   enrollInPackage: (input: EnrollmentPackageInput) => apiPost<Enrollment>('/enrollments/package', input),
   cancel: (id: number, reason: string) => apiPost<Enrollment>(`/enrollments/${id}/cancel`, { reason }),
-  transfer: (id: number, classId: number) => apiPost<Enrollment>(`/enrollments/${id}/transfer`, { class_id: classId }),
+
+  /**
+   * Omitting `course_package_id` (or passing the enrollment's current one)
+   * moves only the class/room — always allowed. Passing a *different*
+   * package also changes the course, which the backend refuses once
+   * anything has been paid (see Enrollment.is_paid).
+   */
+  transfer: (id: number, input: { class_id: number; table_id?: number | null; course_package_id?: number | null; fee_type?: FeeType | null }) =>
+    apiPost<Enrollment>(`/enrollments/${id}/transfer`, input),
+
+  changeStatus: (id: number, input: { status: EnrollmentStatus; reason?: string | null; effective_date?: string | null }) =>
+    apiPost<Enrollment>(`/enrollments/${id}/status`, input),
+
+  statusHistory: (id: number) =>
+    apiGetWithMeta<EnrollmentStatusHistoryEntry[]>(`/enrollments/${id}/status-history`).then((r) => r.data),
 }

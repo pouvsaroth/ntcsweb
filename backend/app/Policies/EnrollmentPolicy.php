@@ -44,4 +44,9 @@ class EnrollmentPolicy
     {
         return $user->hasPermission(Permissions::ENROLLMENTS_TRANSFER);
     }
+
+    public function changeStatus(User $user, Enrollment $enrollment): bool
+    {
+        return $user->hasPermission(Permissions::ENROLLMENTS_CHANGE_STATUS);
+    }
 }

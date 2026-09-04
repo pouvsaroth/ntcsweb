@@ -209,6 +209,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::post('enrollments/package', [EnrollmentPackageController::class, 'store'])->name('enrollments.package.store');
         Route::post('enrollments/{enrollment}/cancel', [EnrollmentController::class, 'cancel'])->name('enrollments.cancel');
         Route::post('enrollments/{enrollment}/transfer', [EnrollmentController::class, 'transfer'])->name('enrollments.transfer');
+        Route::post('enrollments/{enrollment}/status', [EnrollmentController::class, 'changeStatus'])->name('enrollments.status.update');
+        Route::get('enrollments/{enrollment}/status-history', [EnrollmentController::class, 'statusHistory'])->name('enrollments.status-history');
 
         /*
         |----------------------------------------------------------------------

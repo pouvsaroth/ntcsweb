@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 /**
  * Tenant-owned. Student <-> Class <-> Book: which specific book a student
@@ -41,18 +42,51 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int|null $study_mode_id
  * @property string $fee
  * @property string $status
+ * @property string|null $status_reason
  */
-#[Fillable(['student_id', 'class_id', 'table_id', 'book_id', 'course_package_id', 'academic_program_id', 'study_mode_id', 'enrolled_at', 'fee', 'fee_type', 'status'])]
+#[Fillable([
+    'student_id', 'class_id', 'table_id', 'book_id', 'course_package_id', 'academic_program_id', 'study_mode_id',
+    'enrolled_at', 'fee', 'fee_type', 'status', 'status_reason', 'status_effective_date',
+])]
 class Enrollment extends Model
 {
     use Auditable, BelongsToTenant, HasFactory;
 
     /** @use HasFactory<EnrollmentFactory> */
+    public const STATUS_NOT_STARTED = 'not_started';
+
     public const STATUS_ACTIVE = 'active';
+
+    public const STATUS_EXAM_READY = 'exam_ready';
 
     public const STATUS_COMPLETED = 'completed';
 
+    public const STATUS_ABANDONED = 'abandoned';
+
+    public const STATUS_STOPPED = 'stopped';
+
+    public const STATUS_SUSPENDED = 'suspended';
+
+    /**
+     * Not a status an admin ever picks from the status-management menu —
+     * purely internal bookkeeping for a row superseded by
+     * EnrollmentService::cancel()/transferClass(). See STATUSES_MANAGEABLE
+     * for the set that actually appears in that menu.
+     */
     public const STATUS_DROPPED = 'dropped';
+
+    /**
+     * The statuses selectable from the "manage status" menu — everything
+     * except STATUS_DROPPED, which only ever happens as a side effect of
+     * cancelling or transferring, never a direct choice.
+     */
+    public const STATUSES_MANAGEABLE = [
+        self::STATUS_NOT_STARTED, self::STATUS_ACTIVE, self::STATUS_EXAM_READY, self::STATUS_COMPLETED,
+        self::STATUS_ABANDONED, self::STATUS_STOPPED, self::STATUS_SUSPENDED,
+    ];
+
+    /** Which of STATUSES_MANAGEABLE require a reason + effective date — see EnrollmentService::changeStatus(). */
+    public const STATUSES_REQUIRING_REASON = [self::STATUS_ABANDONED, self::STATUS_STOPPED, self::STATUS_SUSPENDED];
 
     /**
      * Set by EnrollmentService::cancel()/transferClass() immediately before
@@ -77,6 +111,7 @@ class Enrollment extends Model
         return [
             'enrolled_at' => 'date',
             'fee' => 'decimal:2',
+            'status_effective_date' => 'date',
         ];
     }
 
@@ -118,6 +153,34 @@ class Enrollment extends Model
     public function attendanceRecords(): HasMany
     {
         return $this->hasMany(AttendanceRecord::class);
+    }
+
+    public function statusHistories(): HasMany
+    {
+        return $this->hasMany(EnrollmentStatusHistory::class);
+    }
+
+    /** The InvoiceItem(s) billed for this enrollment — see InvoiceItem::reference(). */
+    public function invoiceItems(): MorphMany
+    {
+        return $this->morphMany(InvoiceItem::class, 'reference');
+    }
+
+    /**
+     * Whether any money has actually been received against this enrollment —
+     * the gate EnrollmentService::transferClass() uses to decide whether the
+     * student's COURSE (not just class/room) may still be changed. Computed
+     * from the loaded relation when available (EnrollmentController eager
+     * loads `invoiceItems.invoice` for exactly this reason) so listing a
+     * page of enrollments doesn't fire one extra query per row.
+     */
+    public function isPaid(): bool
+    {
+        if ($this->relationLoaded('invoiceItems')) {
+            return $this->invoiceItems->contains(fn (InvoiceItem $item) => (float) $item->invoice?->paid_amount > 0);
+        }
+
+        return $this->invoiceItems()->whereHas('invoice', fn (Builder $query) => $query->where('paid_amount', '>', 0))->exists();
     }
 
     /**
@@ -166,7 +229,9 @@ class Enrollment extends Model
         }
 
         if ($action === AuditAction::STATUS_CHANGE) {
-            return "Changed enrollment {$this->auditDisplayName()} status from {$old['status']} to {$new['status']}";
+            $description = "Changed enrollment {$this->auditDisplayName()} status from {$old['status']} to {$new['status']}";
+
+            return $this->auditReason ? "{$description}: {$this->auditReason}" : $description;
         }
 
         return null;

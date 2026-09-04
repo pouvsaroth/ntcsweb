@@ -7,11 +7,14 @@ namespace Tests\Feature\Academic;
 use App\Models\AuditLog;
 use App\Models\Classroom;
 use App\Models\ClassroomTable;
+use App\Models\CoursePackage;
 use App\Models\Enrollment;
+use App\Models\Product;
 use App\Models\SchoolClass;
 use App\Models\Student;
 use App\Support\Audit\AuditAction;
 use App\Support\Authorization\Permissions;
+use App\Support\Billing\ProductType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\HasAcademicAdmin;
 use Tests\Concerns\HasAcademicCatalog;
@@ -127,5 +130,104 @@ class EnrollmentTransferTest extends TestCase
 
         $response->assertOk();
         $response->assertJsonPath('data.table.id', $table->id);
+    }
+
+    /** A second package in the same program — "the student switches from MS Word to Excel." */
+    private function excelPackage(): CoursePackage
+    {
+        $product = Product::factory()->create(['code' => 'EXCEL2024', 'name' => 'Excel 2024', 'type' => ProductType::COURSE_FEE, 'price' => 30]);
+
+        $package = CoursePackage::factory()->forProgram($this->computerProgram)->create([
+            'code' => 'EXCEL2024', 'name' => 'Excel 2024', 'price' => 30,
+            'fee_monthly' => 25, 'fee_term' => 30, 'fee_video' => 18,
+            'fee_monthly_online' => 22, 'fee_term_online' => 28,
+            'product_id' => $product->getKey(),
+        ]);
+        $package->books()->sync([$this->excelBook->getKey()]);
+
+        return $package;
+    }
+
+    public function test_transferring_to_a_different_course_recomputes_the_fee_while_unpaid(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE, Permissions::ENROLLMENTS_TRANSFER]);
+        $this->setUpAcademicCatalog();
+        $student = Student::factory()->forTenant($this->tenant)->create();
+        $excel = $this->excelPackage();
+
+        $originalId = $this->postJson('/api/v1/enrollments/package', [
+            'student_id' => $student->id,
+            'class_id' => $this->computerEveningClass->id,
+            'course_package_id' => $this->msWordPackage->id,
+            'fee_type' => 'term',
+        ])->assertCreated()->json('data.id');
+
+        $newClass = SchoolClass::factory()->forProgram($this->computerProgram)->create(['name' => 'Computer Evening B']);
+        $newClass->coursePackages()->sync([$excel->id]);
+
+        $response = $this->postJson("/api/v1/enrollments/{$originalId}/transfer", [
+            'class_id' => $newClass->id,
+            'course_package_id' => $excel->id,
+        ]);
+
+        $response->assertOk();
+        $response->assertJsonPath('data.course_package.id', $excel->id);
+        $response->assertJsonPath('data.class.id', $newClass->id);
+        $response->assertJsonPath('data.fee', 30);
+        $this->assertSame('dropped', Enrollment::findOrFail($originalId)->status);
+    }
+
+    public function test_transferring_to_a_different_course_is_rejected_once_the_enrollment_is_paid(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE, Permissions::ENROLLMENTS_TRANSFER]);
+        $this->setUpAcademicCatalog();
+        $student = Student::factory()->forTenant($this->tenant)->create();
+        $excel = $this->excelPackage();
+
+        $originalId = $this->postJson('/api/v1/enrollments/package', [
+            'student_id' => $student->id,
+            'class_id' => $this->computerEveningClass->id,
+            'course_package_id' => $this->msWordPackage->id,
+            'fee_type' => 'term',
+            'received_amount' => 24,
+            'payment_method' => 'CASH',
+        ])->assertCreated()->json('data.id');
+
+        $newClass = SchoolClass::factory()->forProgram($this->computerProgram)->create(['name' => 'Computer Evening B']);
+        $newClass->coursePackages()->sync([$excel->id]);
+
+        $response = $this->postJson("/api/v1/enrollments/{$originalId}/transfer", [
+            'class_id' => $newClass->id,
+            'course_package_id' => $excel->id,
+        ]);
+
+        $response->assertUnprocessable();
+        $response->assertJsonValidationErrors('course_package_id');
+        $this->assertSame('active', Enrollment::findOrFail($originalId)->status);
+    }
+
+    public function test_transferring_to_a_different_class_of_the_same_course_still_succeeds_once_paid(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE, Permissions::ENROLLMENTS_TRANSFER]);
+        $this->setUpAcademicCatalog();
+        $student = Student::factory()->forTenant($this->tenant)->create();
+
+        $originalId = $this->postJson('/api/v1/enrollments/package', [
+            'student_id' => $student->id,
+            'class_id' => $this->computerEveningClass->id,
+            'course_package_id' => $this->msWordPackage->id,
+            'fee_type' => 'term',
+            'received_amount' => 24,
+            'payment_method' => 'CASH',
+        ])->assertCreated()->json('data.id');
+
+        $newClass = SchoolClass::factory()->forProgram($this->computerProgram)->create(['name' => 'Computer Evening B']);
+        $newClass->coursePackages()->sync([$this->msWordPackage->id]);
+
+        $response = $this->postJson("/api/v1/enrollments/{$originalId}/transfer", ['class_id' => $newClass->id]);
+
+        $response->assertOk();
+        $response->assertJsonPath('data.class.id', $newClass->id);
+        $response->assertJsonPath('data.course_package.id', $this->msWordPackage->id);
     }
 }

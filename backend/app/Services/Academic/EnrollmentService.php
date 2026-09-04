@@ -6,6 +6,7 @@ namespace App\Services\Academic;
 
 use App\Models\CoursePackage;
 use App\Models\Enrollment;
+use App\Models\EnrollmentStatusHistory;
 use App\Models\SchoolClass;
 use App\Models\User;
 use App\Services\Billing\InvoiceService;
@@ -114,9 +115,47 @@ final class EnrollmentService
         });
     }
 
+    /**
+     * The "manage status and history" menu — every transition writes an
+     * EnrollmentStatusHistory row, and the reason/date (when required — see
+     * Enrollment::STATUSES_REQUIRING_REASON) is also denormalized onto the
+     * enrollment itself for quick display. Distinct from cancel()/
+     * transferClass() below, which both still collapse to STATUS_DROPPED —
+     * that stays internal bookkeeping, never a choice made through here.
+     */
+    public function changeStatus(Enrollment $enrollment, string $status, ?string $reason, ?string $effectiveDate, User $actor): Enrollment
+    {
+        return DB::transaction(function () use ($enrollment, $status, $reason, $effectiveDate, $actor) {
+            /** @var Enrollment $enrollment */
+            $enrollment = Enrollment::query()->whereKey($enrollment->getKey())->lockForUpdate()->firstOrFail();
+
+            if ($enrollment->status === Enrollment::STATUS_DROPPED) {
+                throw ValidationException::withMessages(['status' => 'This enrollment was closed by a cancellation or transfer and can no longer be managed here.']);
+            }
+
+            EnrollmentStatusHistory::query()->create([
+                'enrollment_id' => $enrollment->getKey(),
+                'from_status' => $enrollment->status,
+                'to_status' => $status,
+                'reason' => $reason,
+                'effective_date' => $effectiveDate,
+                'changed_by' => $actor->getKey(),
+            ]);
+
+            $enrollment->auditReason = $reason;
+            $enrollment->update([
+                'status' => $status,
+                'status_reason' => $reason,
+                'status_effective_date' => $effectiveDate,
+            ]);
+
+            return $enrollment;
+        });
+    }
+
     public function cancel(Enrollment $enrollment, string $reason, User $actor): Enrollment
     {
-        return DB::transaction(function () use ($enrollment, $reason, $actor) {
+        return DB::transaction(function () use ($enrollment, $reason) {
             /** @var Enrollment $enrollment */
             $enrollment = Enrollment::query()->whereKey($enrollment->getKey())->lockForUpdate()->firstOrFail();
 
@@ -133,17 +172,29 @@ final class EnrollmentService
 
     /**
      * Moves an active enrollment to a different class, closing the old row
-     * (status=dropped) and opening a fresh one in the target class carrying
-     * the same book/package/fee forward — no re-billing, full history
-     * preserved on both rows. A package-based enrollment may only transfer
-     * to a class in the same program (a class is just a schedule/room/
-     * teacher — it doesn't need to "offer" the package); the legacy book
-     * path has no program concept to validate against and is allowed to
-     * move freely, same as it always could.
+     * (status=dropped) and opening a fresh one in the target class — no
+     * re-billing, full history preserved on both rows. A package-based
+     * enrollment may only transfer to a class in the same program (a class
+     * is just a schedule/room/teacher — it doesn't need to "offer" the
+     * package); the legacy book path has no program concept to validate
+     * against and is allowed to move freely, same as it always could.
+     *
+     * Passing $newPackage (different from the enrollment's current one)
+     * additionally changes the COURSE, not just the room/schedule, and
+     * recomputes the fee from its $feeType tier — but only while nothing has
+     * been paid yet (Enrollment::isPaid()). A paid enrollment may still move
+     * to a different class/room of the *same* course; changing the course
+     * itself at that point would need a refund/re-invoice, not a transfer.
      */
-    public function transferClass(Enrollment $enrollment, SchoolClass $newClass, User $actor, ?int $tableId = null): Enrollment
-    {
-        return DB::transaction(function () use ($enrollment, $newClass, $actor, $tableId) {
+    public function transferClass(
+        Enrollment $enrollment,
+        SchoolClass $newClass,
+        User $actor,
+        ?int $tableId = null,
+        ?CoursePackage $newPackage = null,
+        ?string $feeType = null,
+    ): Enrollment {
+        return DB::transaction(function () use ($enrollment, $newClass, $tableId, $newPackage, $feeType) {
             /** @var Enrollment $enrollment */
             $enrollment = Enrollment::query()->whereKey($enrollment->getKey())->lockForUpdate()->firstOrFail();
 
@@ -151,10 +202,38 @@ final class EnrollmentService
                 throw ValidationException::withMessages(['status' => 'Only an active enrollment can be transferred.']);
             }
 
-            if ($enrollment->course_package_id !== null) {
-                if ($newClass->academic_program_id === null || $newClass->academic_program_id !== $enrollment->academic_program_id) {
-                    throw ValidationException::withMessages(['class_id' => "The target class does not belong to this enrollment's program."]);
+            $changingCourse = $newPackage !== null && (int) $newPackage->getKey() !== (int) $enrollment->course_package_id;
+
+            if ($changingCourse) {
+                if ($enrollment->isPaid()) {
+                    throw ValidationException::withMessages(['course_package_id' => 'This enrollment has already been paid — the course cannot be changed, but the class can.']);
                 }
+
+                if ($newClass->academic_program_id === null || (int) $newClass->academic_program_id !== (int) $newPackage->academic_program_id) {
+                    throw ValidationException::withMessages(['class_id' => "The target class does not belong to the selected course's program."]);
+                }
+
+                $resolvedFeeType = $feeType ?? $enrollment->fee_type ?? 'monthly';
+                $feeColumn = 'fee_'.$resolvedFeeType;
+                $fee = $newPackage->{$feeColumn};
+
+                if ($fee === null) {
+                    throw ValidationException::withMessages(['fee_type' => 'This course does not offer the selected fee type.']);
+                }
+
+                $packageId = $newPackage->getKey();
+                $programId = $newPackage->academic_program_id;
+            } else {
+                if ($enrollment->course_package_id !== null) {
+                    if ($newClass->academic_program_id === null || (int) $newClass->academic_program_id !== (int) $enrollment->academic_program_id) {
+                        throw ValidationException::withMessages(['class_id' => "The target class does not belong to this enrollment's program."]);
+                    }
+                }
+
+                $resolvedFeeType = $enrollment->fee_type;
+                $fee = $enrollment->fee;
+                $packageId = $enrollment->course_package_id;
+                $programId = $enrollment->academic_program_id;
             }
 
             $enrollment->auditTransferToClass = $newClass->name;
@@ -164,13 +243,13 @@ final class EnrollmentService
                 'student_id' => $enrollment->student_id,
                 'class_id' => $newClass->getKey(),
                 'table_id' => $tableId,
-                'book_id' => $enrollment->book_id,
-                'course_package_id' => $enrollment->course_package_id,
-                'academic_program_id' => $enrollment->academic_program_id,
+                'book_id' => $changingCourse ? null : $enrollment->book_id,
+                'course_package_id' => $packageId,
+                'academic_program_id' => $programId,
                 'study_mode_id' => $enrollment->study_mode_id,
                 'enrolled_at' => now()->toDateString(),
-                'fee' => $enrollment->fee,
-                'fee_type' => $enrollment->fee_type,
+                'fee' => $fee,
+                'fee_type' => $resolvedFeeType,
                 'status' => Enrollment::STATUS_ACTIVE,
             ]);
 

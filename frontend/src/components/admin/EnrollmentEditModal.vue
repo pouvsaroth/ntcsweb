@@ -6,8 +6,7 @@ import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
-import BaseSelect from '@/components/ui/BaseSelect.vue'
-import { enrollmentsService, type Enrollment, type EnrollmentStatus } from '@/services/enrollments'
+import { enrollmentsService, type Enrollment } from '@/services/enrollments'
 import { ApiRequestError } from '@/types/api'
 
 const props = defineProps<{
@@ -22,18 +21,11 @@ const { t } = useI18n()
 const form = reactive({
   enrolled_at: '',
   fee: 0,
-  status: 'active' as EnrollmentStatus,
 })
 
 const errors = ref<Record<string, string[]>>({})
 const generalError = ref<string | null>(null)
 const submitting = ref(false)
-
-const statusOptions = [
-  { value: 'active', label: 'admin.enrollments.statusActive' },
-  { value: 'completed', label: 'admin.enrollments.statusCompleted' },
-  { value: 'dropped', label: 'admin.enrollments.statusDropped' },
-].map((o) => ({ value: o.value, label: t(o.label) }))
 
 watch(
   () => [props.modelValue, props.enrollment] as const,
@@ -42,7 +34,6 @@ watch(
 
     form.enrolled_at = enrollment.enrolled_at
     form.fee = enrollment.fee
-    form.status = enrollment.status
     errors.value = {}
     generalError.value = null
   },
@@ -95,7 +86,6 @@ async function submit() {
         :error="errors.fee?.[0]"
         @update:model-value="form.fee = Number($event) || 0"
       />
-      <BaseSelect v-model="form.status" :options="statusOptions" :label="t('admin.enrollments.status')" />
     </form>
 
     <template #footer>

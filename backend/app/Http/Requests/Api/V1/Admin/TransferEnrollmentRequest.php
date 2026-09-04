@@ -31,6 +31,13 @@ class TransferEnrollmentRequest extends FormRequest
             // a different class/room and is never carried forward, see
             // EnrollmentService::transferClass().
             'table_id' => ['nullable', Rule::exists('classroom_tables', 'id')->where('tenant_id', $tenantId)],
+            // Omitted (or equal to the enrollment's current package) means
+            // "just move the room/schedule" — always allowed. Set to a
+            // *different* package means "change the course too," which
+            // EnrollmentService::transferClass() refuses once anything has
+            // been paid (see Enrollment::isPaid()).
+            'course_package_id' => ['nullable', Rule::exists('course_packages', 'id')->where('tenant_id', $tenantId)],
+            'fee_type' => ['nullable', Rule::in(['monthly', 'term', 'video', 'monthly_online', 'term_online'])],
         ];
     }
 
