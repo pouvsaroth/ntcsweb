@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * The priced, purchasable registration item a student actually pays for —
@@ -30,7 +31,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * `Enrollment`'s own existing override for status changes.
  */
 #[Fillable([
-    'code', 'name', 'academic_program_id', 'description', 'price',
+    'code', 'name', 'academic_program_id', 'description', 'thumbnail_path', 'price',
     'fee_monthly', 'fee_term', 'fee_video', 'fee_monthly_online', 'fee_term_online', 'currency',
     'duration', 'product_id', 'is_active', 'show_on_website', 'show_in_popular',
 ])]
@@ -62,6 +63,23 @@ class CoursePackage extends Model
             'show_on_website' => 'boolean',
             'show_in_popular' => 'boolean',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        // A soft-deleted package still holds its thumbnail file
+        // (recoverable); only a real, permanent removal takes the file too —
+        // mirrors HomeSlide's own booted() hook.
+        static::forceDeleted(function (self $package) {
+            if ($package->thumbnail_path !== null) {
+                Storage::disk('public')->delete($package->thumbnail_path);
+            }
+        });
+    }
+
+    public function thumbnailUrl(): ?string
+    {
+        return $this->thumbnail_path !== null ? Storage::disk('public')->url($this->thumbnail_path) : null;
     }
 
     public function academicProgram(): BelongsTo

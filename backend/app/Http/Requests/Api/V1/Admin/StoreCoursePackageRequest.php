@@ -32,6 +32,9 @@ class StoreCoursePackageRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'academic_program_id' => ['required', Rule::exists('academic_programs', 'id')->where('tenant_id', $tenantId)],
             'description' => ['nullable', 'string', 'max:2000'],
+            // 10M matches upload_max_filesize in docker/php/uploads.ini —
+            // see StoreHomeSlideRequest for why both must move together.
+            'thumbnail' => ['nullable', 'image', 'mimes:jpeg,png,webp,gif', 'max:10240'],
             'currency' => ['required', Rule::in([CoursePackage::CURRENCY_USD, CoursePackage::CURRENCY_KHR])],
             'fee_monthly' => ['nullable', 'numeric', 'min:0', 'max:999999.99'],
             'fee_term' => ['nullable', 'numeric', 'min:0', 'max:999999.99'],

@@ -1147,6 +1147,8 @@ const en = {
       currencyKhr: 'Khmer Riel (៛)',
       duration: 'Duration',
       description: 'Description',
+      thumbnail: 'Thumbnail image',
+      thumbnailHint: 'Shown as the course card image on the public website.',
       books: 'Books included',
       booksHint: 'Every subject a student taking this package actually studies — e.g. "MS Word 2024" includes MS Word, Excel, PowerPoint, and Photoshop. Only books tagged to the selected program are shown.',
       pickProgramFirst: 'Pick an academic program above first — the book list is limited to its program.',

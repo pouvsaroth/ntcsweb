@@ -31,6 +31,7 @@ class UpdateCoursePackageRequest extends FormRequest
             'name' => ['sometimes', 'required', 'string', 'max:255'],
             'academic_program_id' => ['sometimes', 'required', Rule::exists('academic_programs', 'id')->where('tenant_id', $tenantId)],
             'description' => ['nullable', 'string', 'max:2000'],
+            'thumbnail' => ['sometimes', 'nullable', 'image', 'mimes:jpeg,png,webp,gif', 'max:10240'],
             'currency' => ['sometimes', 'required', Rule::in([CoursePackage::CURRENCY_USD, CoursePackage::CURRENCY_KHR])],
             'fee_monthly' => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:999999.99'],
             'fee_term' => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:999999.99'],

@@ -1143,6 +1143,8 @@ const ja: MessageSchema = {
       currencyKhr: 'カンボジア・リエル (៛)',
       duration: '期間',
       description: '説明',
+      thumbnail: 'サムネイル画像',
+      thumbnailHint: '公開サイトのコースカード画像として表示されます。',
       books: '含まれる書籍',
       booksHint: 'このコースを受講する生徒が実際に学ぶすべての科目 — 例: 「MS Word 2024」にはMS Word、Excel、PowerPoint、Photoshopが含まれます。選択したプログラムにタグ付けされた書籍のみ表示されます。',
       pickProgramFirst: 'まず上で学習プログラムを選択してください — 書籍リストはそのプログラムに限定されます。',

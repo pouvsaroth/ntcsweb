@@ -22,6 +22,7 @@ class CoursePackageResource extends JsonResource
             'academic_program_id' => $this->academic_program_id,
             'academic_program' => $this->whenLoaded('academicProgram', fn () => $this->academicProgram !== null ? ['id' => $this->academicProgram->id, 'code' => $this->academicProgram->code, 'name' => $this->academicProgram->name] : null),
             'description' => $this->description,
+            'thumbnail_url' => $this->thumbnailUrl(),
             'price' => (float) $this->price,
             'fee_monthly' => $this->fee_monthly !== null ? (float) $this->fee_monthly : null,
             'fee_term' => $this->fee_term !== null ? (float) $this->fee_term : null,

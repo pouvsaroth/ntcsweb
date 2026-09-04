@@ -76,24 +76,30 @@ onMounted(async () => {
             <div
               v-for="course in group.courses"
               :key="course.id"
-              class="flex flex-col rounded-[--radius-card] border border-neutral-200 bg-white p-5 shadow-[--shadow-card] transition-shadow hover:shadow-[--shadow-card-hover]"
+              class="flex flex-col overflow-hidden rounded-[--radius-card] border border-neutral-200 bg-white shadow-[--shadow-card] transition-shadow hover:shadow-[--shadow-card-hover]"
             >
-              <h3 class="font-semibold text-neutral-900">{{ course.name }}</h3>
-              <p v-if="course.description" class="mt-2 line-clamp-3 text-sm text-neutral-500">{{ course.description }}</p>
+              <div v-if="course.thumbnail_url" class="aspect-video w-full overflow-hidden bg-neutral-100">
+                <img :src="course.thumbnail_url" alt="" class="h-full w-full object-cover" />
+              </div>
 
-              <dl v-if="feeRows(course).length > 0" class="mt-4 space-y-1.5 text-sm">
-                <div v-for="row in feeRows(course)" :key="row.labelKey" class="flex items-center justify-between">
-                  <dt class="text-neutral-500">{{ t(row.labelKey) }}</dt>
-                  <dd class="font-medium text-neutral-800">{{ currencySymbol[course.currency] }}{{ row.amount.toFixed(2) }}</dd>
-                </div>
-              </dl>
+              <div class="flex flex-1 flex-col p-5">
+                <h3 class="font-semibold text-neutral-900">{{ course.name }}</h3>
+                <p v-if="course.description" class="mt-2 line-clamp-3 text-sm text-neutral-500">{{ course.description }}</p>
 
-              <p v-if="course.duration" class="mt-3 inline-flex items-center gap-1 text-xs text-neutral-500">
-                <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                {{ course.duration }}
-              </p>
+                <dl v-if="feeRows(course).length > 0" class="mt-4 space-y-1.5 text-sm">
+                  <div v-for="row in feeRows(course)" :key="row.labelKey" class="flex items-center justify-between">
+                    <dt class="text-neutral-500">{{ t(row.labelKey) }}</dt>
+                    <dd class="font-medium text-neutral-800">{{ currencySymbol[course.currency] }}{{ row.amount.toFixed(2) }}</dd>
+                  </div>
+                </dl>
+
+                <p v-if="course.duration" class="mt-3 inline-flex items-center gap-1 text-xs text-neutral-500">
+                  <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  {{ course.duration }}
+                </p>
+              </div>
             </div>
           </div>
         </div>

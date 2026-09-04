@@ -62,6 +62,7 @@ export interface PublicCourse {
   id: number
   name: string
   description: string | null
+  thumbnail_url: string | null
   fee_monthly: number | null
   fee_term: number | null
   fee_video: number | null

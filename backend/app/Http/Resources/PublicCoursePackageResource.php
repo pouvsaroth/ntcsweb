@@ -23,6 +23,7 @@ class PublicCoursePackageResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'description' => $this->description,
+            'thumbnail_url' => $this->thumbnailUrl(),
             'fee_monthly' => $this->fee_monthly !== null ? (float) $this->fee_monthly : null,
             'fee_term' => $this->fee_term !== null ? (float) $this->fee_term : null,
             'fee_video' => $this->fee_video !== null ? (float) $this->fee_video : null,

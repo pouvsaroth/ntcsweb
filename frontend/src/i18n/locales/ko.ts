@@ -1143,6 +1143,8 @@ const ko: MessageSchema = {
       currencyKhr: '캄보디아 리엘 (៛)',
       duration: '기간',
       description: '설명',
+      thumbnail: '썸네일 이미지',
+      thumbnailHint: '공개 웹사이트의 코스 카드 이미지로 표시됩니다.',
       books: '포함된 책',
       booksHint: '이 코스를 수강하는 학생이 실제로 배우는 모든 과목 — 예: "MS Word 2024"에는 MS Word, Excel, PowerPoint, Photoshop이 포함됩니다. 선택한 프로그램에 태그된 책만 표시됩니다.',
       pickProgramFirst: '먼저 위에서 학업 프로그램을 선택하세요 — 책 목록이 해당 프로그램으로 제한됩니다.',

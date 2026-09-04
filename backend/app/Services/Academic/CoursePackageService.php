@@ -25,7 +25,7 @@ use Illuminate\Support\Facades\DB;
 final class CoursePackageService
 {
     /**
-     * @param  array{code:string, name:string, academic_program_id:int, description?:string|null, fee_monthly?:float|null, fee_term?:float|null, fee_video?:float|null, fee_monthly_online?:float|null, fee_term_online?:float|null, currency:string, duration?:string|null, is_active?:bool, book_ids:list<int>}  $data
+     * @param  array{code:string, name:string, academic_program_id:int, description?:string|null, thumbnail_path?:string|null, fee_monthly?:float|null, fee_term?:float|null, fee_video?:float|null, fee_monthly_online?:float|null, fee_term_online?:float|null, currency:string, duration?:string|null, is_active?:bool, book_ids:list<int>}  $data
      */
     public function create(array $data): CoursePackage
     {
@@ -55,7 +55,7 @@ final class CoursePackageService
     }
 
     /**
-     * @param  array{code?:string, name?:string, academic_program_id?:int, description?:string|null, fee_monthly?:float|null, fee_term?:float|null, fee_video?:float|null, fee_monthly_online?:float|null, fee_term_online?:float|null, currency?:string, duration?:string|null, is_active?:bool, book_ids?:list<int>}  $data
+     * @param  array{code?:string, name?:string, academic_program_id?:int, description?:string|null, thumbnail_path?:string|null, fee_monthly?:float|null, fee_term?:float|null, fee_video?:float|null, fee_monthly_online?:float|null, fee_term_online?:float|null, currency?:string, duration?:string|null, is_active?:bool, book_ids?:list<int>}  $data
      */
     public function update(CoursePackage $package, array $data): CoursePackage
     {

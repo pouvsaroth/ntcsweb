@@ -12,12 +12,17 @@ use App\Http\Responses\ApiResponse;
 use App\Models\CoursePackage;
 use App\Services\Academic\CoursePackageService;
 use App\Support\Query\ApiQuery;
+use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 final class CoursePackageController extends Controller
 {
-    public function __construct(private readonly CoursePackageService $packages) {}
+    public function __construct(
+        private readonly CoursePackageService $packages,
+        private readonly TenantContext $context,
+    ) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -34,7 +39,13 @@ final class CoursePackageController extends Controller
 
     public function store(StoreCoursePackageRequest $request): JsonResponse
     {
-        $package = $this->packages->create($request->validated());
+        $data = $request->safe()->except('thumbnail');
+
+        if ($request->hasFile('thumbnail')) {
+            $data['thumbnail_path'] = $this->storeThumbnail($request);
+        }
+
+        $package = $this->packages->create($data);
 
         return ApiResponse::created(new CoursePackageResource($package));
     }
@@ -48,7 +59,21 @@ final class CoursePackageController extends Controller
 
     public function update(UpdateCoursePackageRequest $request, CoursePackage $coursePackage): JsonResponse
     {
-        $package = $this->packages->update($coursePackage, $request->validated());
+        $data = $request->safe()->except('thumbnail');
+        $previousPath = $coursePackage->thumbnail_path;
+
+        if ($request->hasFile('thumbnail')) {
+            $data['thumbnail_path'] = $this->storeThumbnail($request);
+        }
+
+        $package = $this->packages->update($coursePackage, $data);
+
+        // Only removed after the new path is safely persisted — if the
+        // update above had failed, the old file must still be there to fall
+        // back on. Mirrors HomeSlideController::update().
+        if ($request->hasFile('thumbnail') && $previousPath !== null) {
+            Storage::disk('public')->delete($previousPath);
+        }
 
         return ApiResponse::success(new CoursePackageResource($package));
     }
@@ -64,5 +89,18 @@ final class CoursePackageController extends Controller
         $coursePackage->delete();
 
         return ApiResponse::noContent();
+    }
+
+    private function storeThumbnail(StoreCoursePackageRequest|UpdateCoursePackageRequest $request): string
+    {
+        $tenant = $this->context->getOrFail();
+
+        $path = $request->file('thumbnail')->store($tenant->storagePath('course-package-thumbnails'), 'public');
+
+        if ($path === false) {
+            abort(500, 'Failed to store the uploaded thumbnail.');
+        }
+
+        return $path;
     }
 }

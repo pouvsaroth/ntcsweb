@@ -1142,6 +1142,8 @@ const zh: MessageSchema = {
       currencyKhr: '柬埔寨瑞尔 (៛)',
       duration: '时长',
       description: '描述',
+      thumbnail: '缩略图',
+      thumbnailHint: '在公共网站上作为课程卡片图片显示。',
       books: '包含的书籍',
       booksHint: '学生学习此课程时实际学习的每个科目——例如"MS Word 2024"包括MS Word、Excel、PowerPoint和Photoshop。仅显示标记为所选项目的书籍。',
       pickProgramFirst: '请先在上方选择学术项目——书籍列表将限定于该项目。',

@@ -57,6 +57,8 @@ const currencyOptions = computed(() => [
 
 const programs = ref<AcademicProgram[]>([])
 const books = ref<Book[]>([])
+const thumbnailFile = ref<File | null>(null)
+const thumbnailPreview = ref<string | null>(null)
 const errors = ref<Record<string, string[]>>({})
 const generalError = ref<string | null>(null)
 const submitting = ref(false)
@@ -117,12 +119,22 @@ watch(
     form.show_on_website = props.coursePackage?.show_on_website ?? false
     form.show_in_popular = props.coursePackage?.show_in_popular ?? false
     form.book_ids = props.coursePackage?.books?.map((b) => b.id) ?? []
+    thumbnailFile.value = null
+    thumbnailPreview.value = props.coursePackage?.thumbnail_url ?? null
     errors.value = {}
     generalError.value = null
     hydrating = false
   },
   { immediate: true },
 )
+
+function onThumbnailChange(event: Event) {
+  const file = (event.target as HTMLInputElement).files?.[0]
+  if (!file) return
+
+  thumbnailFile.value = file
+  thumbnailPreview.value = URL.createObjectURL(file)
+}
 
 async function submit() {
   if (form.academic_program_id === null || !hasAnyFee.value) return
@@ -132,7 +144,7 @@ async function submit() {
   generalError.value = null
 
   try {
-    const input = { ...form, academic_program_id: form.academic_program_id }
+    const input = { ...form, academic_program_id: form.academic_program_id, thumbnail: thumbnailFile.value ?? undefined }
 
     if (isEditing.value) {
       await coursePackagesService.update(props.coursePackage!.id, input)
@@ -239,6 +251,26 @@ async function submit() {
       </div>
 
       <div>
+        <label class="mb-1.5 block text-sm font-medium text-neutral-700">{{ t('admin.coursePackages.thumbnail') }}</label>
+        <p class="mb-2 text-xs text-neutral-500">{{ t('admin.coursePackages.thumbnailHint') }}</p>
+
+        <div
+          v-if="thumbnailPreview"
+          class="mb-3 aspect-video w-full max-w-xs overflow-hidden rounded-lg border border-neutral-200 bg-neutral-100"
+        >
+          <img :src="thumbnailPreview" alt="" class="h-full w-full object-cover" />
+        </div>
+
+        <input
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/gif"
+          class="block w-full text-sm text-neutral-600 file:mr-3 file:rounded-lg file:border-0 file:bg-primary-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-primary-800 hover:file:bg-primary-100"
+          @change="onThumbnailChange"
+        />
+        <p v-if="errors.thumbnail?.[0]" class="mt-1.5 text-sm text-danger-600">{{ errors.thumbnail[0] }}</p>
+      </div>
+
+      <div>
         <label class="mb-1.5 block text-sm font-medium text-neutral-700">{{ t('admin.coursePackages.description') }}</label>
         <textarea
           v-model="form.description"
@@ -254,7 +286,7 @@ async function submit() {
         <p class="mb-2 text-xs text-neutral-500">{{ t('admin.coursePackages.booksHint') }}</p>
         <p v-if="form.academic_program_id === null" class="text-sm text-neutral-500">{{ t('admin.coursePackages.pickProgramFirst') }}</p>
         <p v-else-if="availableBooks.length === 0" class="text-sm text-neutral-500">{{ t('admin.coursePackages.noBooksAvailable') }}</p>
-        <div v-else class="grid gap-2 sm:grid-cols-2">
+        <div v-else class="grid max-h-56 grid-cols-2 gap-2 overflow-y-auto pr-1">
           <label v-for="book in availableBooks" :key="book.id" class="flex items-center gap-2 rounded-lg border border-neutral-200 p-2.5 text-sm">
             <input
               type="checkbox"
