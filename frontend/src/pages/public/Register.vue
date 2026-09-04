@@ -9,7 +9,6 @@ import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
 import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import WebcamCaptureModal from '@/components/ui/WebcamCaptureModal.vue'
-import PageHero from '@/components/public/PageHero.vue'
 import SectionContainer from '@/components/public/SectionContainer.vue'
 import { publicContentService, type PublicCourse, type ScheduledClass } from '@/services/publicContent'
 import { publicGeographyService } from '@/services/publicGeography'
@@ -335,13 +334,17 @@ async function submit() {
   }
 }
 
-onMounted(async () => {
-  provinces.value = await publicGeographyService.provinces()
+const pageLoadError = ref<string | null>(null)
 
+onMounted(async () => {
   coursesLoading.value = true
+
   try {
-    const result = await publicContentService.getCourses()
-    courses.value = result.data
+    const [provinceList, courseResult] = await Promise.all([publicGeographyService.provinces(), publicContentService.getCourses()])
+    provinces.value = provinceList
+    courses.value = courseResult.data
+  } catch (error) {
+    pageLoadError.value = error instanceof ApiRequestError ? error.message : t('registerWizard.submitFailed')
   } finally {
     coursesLoading.value = false
   }
@@ -350,7 +353,6 @@ onMounted(async () => {
 
 <template>
   <div>
-    <PageHero :title="t('registerWizard.title')" :subtitle="t('registerWizard.subtitle')" />
     <SectionContainer>
       <div v-if="registeredCode" class="mx-auto max-w-lg text-center">
         <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-success-100">
@@ -364,6 +366,8 @@ onMounted(async () => {
         </p>
         <p class="mt-4 text-sm text-neutral-500">{{ t('registerWizard.yourStudentCode') }}: <span class="font-mono font-semibold text-neutral-800">{{ registeredCode }}</span></p>
       </div>
+
+      <BaseAlert v-else-if="pageLoadError" variant="danger" class="mx-auto max-w-2xl">{{ pageLoadError }}</BaseAlert>
 
       <div v-else class="mx-auto max-w-2xl">
         <!-- Step indicator -->

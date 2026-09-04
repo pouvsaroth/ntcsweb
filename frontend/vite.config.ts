@@ -1,12 +1,33 @@
+import { writeFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { fileURLToPath, URL } from 'node:url'
 
 import tailwindcss from '@tailwindcss/vite'
 import vue from '@vitejs/plugin-vue'
-import { defineConfig } from 'vite'
+import { defineConfig, type Plugin } from 'vite'
+
+/**
+ * Writes `dist/version.json` with a fresh build id after every production
+ * build (build-only — `apply: 'build'` means this never runs under `vite`
+ * dev serve, so local dev never sees a version.json at all). The running
+ * SPA polls this file (see App.vue) to notice when a newer build has been
+ * deployed and reload itself, instead of a visitor silently running stale
+ * JS until they think to hard-refresh.
+ */
+function writeVersionFile(): Plugin {
+  return {
+    name: 'write-version-file',
+    apply: 'build',
+    writeBundle(options) {
+      const outDir = options.dir ?? 'dist'
+      writeFileSync(join(outDir, 'version.json'), JSON.stringify({ version: String(Date.now()) }))
+    },
+  }
+}
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [vue(), tailwindcss()],
+  plugins: [vue(), tailwindcss(), writeVersionFile()],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),

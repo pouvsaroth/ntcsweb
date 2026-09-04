@@ -23,6 +23,62 @@ export const http: AxiosInstance = axios.create({
 })
 
 /**
+ * Dev-only convenience: on a real deployment, the tenant resolves from the
+ * hostname (a school's subdomain or custom domain) — nothing here is needed.
+ * Bare `localhost`, though, is a *central* domain (see TENANCY_CENTRAL_DOMAINS
+ * and RequestTenantResolver), so it can't resolve a tenant from the host at
+ * all; without this, every public endpoint 404s in local dev, silently,
+ * because nothing else in the app ever attaches an X-Tenant header.
+ * `import.meta.env.DEV` keeps all of this entirely out of a production build.
+ *
+ * `?tenant=<slug>` on the URL still wins when present (useful with more than
+ * one local tenant), remembered in sessionStorage so client-side navigation
+ * doesn't lose it. Otherwise, since a full manual step is an easy thing for
+ * a non-technical tester to miss or get wrong, this falls back to asking the
+ * same unauthenticated `/tenants` directory the login page's own school
+ * dropdown uses — if there's exactly one tenant it's picked automatically;
+ * with several (this project's local DB carries a handful of factory-seeded
+ * test tenants alongside the real one), tenant id 1 wins if it's among
+ * them — that's the real one actually being worked on here — otherwise no
+ * guess is made and `?tenant=<slug>` is required.
+ *
+ * A top-level `await` here means every other module that (transitively)
+ * imports this one waits for it to finish before running — so this is
+ * guaranteed to have already set the header before the app's first API call,
+ * not racing it.
+ */
+if (import.meta.env.DEV) {
+  const STORAGE_KEY = 'ntcsweb.dev_tenant'
+  const fromUrl = new URLSearchParams(window.location.search).get('tenant')
+
+  if (fromUrl) sessionStorage.setItem(STORAGE_KEY, fromUrl)
+
+  let tenant = fromUrl ?? sessionStorage.getItem(STORAGE_KEY)
+
+  if (!tenant) {
+    try {
+      const response = await http.get<ApiSuccess<{ id: number; slug: string }[]>>('/tenants', { params: { per_page: 100 } })
+      const tenants = response.data.data
+      const picked = tenants.length === 1 ? tenants[0] : tenants.find((t) => t.id === 1)
+
+      if (picked) {
+        tenant = picked.slug
+        sessionStorage.setItem(STORAGE_KEY, tenant)
+        // eslint-disable-next-line no-console
+        console.info(`[dev] Auto-selected tenant "${tenant}". Add ?tenant=<slug> to the URL to pick a different one.`)
+      }
+    } catch {
+      // The tenant directory itself needs no tenant to answer, so a failure
+      // here means something bigger is wrong (backend down, etc.) — every
+      // other request is about to fail the same way regardless, so this
+      // just leaves X-Tenant unset rather than blocking app startup on it.
+    }
+  }
+
+  if (tenant) http.defaults.headers.common['X-Tenant'] = tenant
+}
+
+/**
  * Sanctum's stateful (cookie) auth requires this to be called once before the
  * first state-changing request in a session — it sets the XSRF-TOKEN cookie
  * that `http`'s xsrfCookieName/xsrfHeaderName config then attaches

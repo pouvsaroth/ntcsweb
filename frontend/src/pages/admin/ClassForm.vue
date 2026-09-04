@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -11,6 +11,7 @@ import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import { academicProgramsService, type AcademicProgram } from '@/services/academicPrograms'
 import { classesService, type ClassInput } from '@/services/classes'
 import { classroomsService, type Classroom } from '@/services/classrooms'
+import { coursePackagesService, type CoursePackage } from '@/services/coursePackages'
 import { positionsService } from '@/services/positions'
 import { staffService, type Staff } from '@/services/staff'
 import { ApiRequestError } from '@/types/api'
@@ -36,11 +37,29 @@ const form = reactive<ClassInput>({
   end_date: '',
   status: 'active',
   schedules: [emptySchedule()],
+  course_package_ids: [],
 })
 
 const teachers = ref<Staff[]>([])
 const classrooms = ref<Classroom[]>([])
 const programs = ref<AcademicProgram[]>([])
+const coursePackages = ref<CoursePackage[]>([])
+
+// Only packages tagged to the chosen program make sense here — mirrors
+// CoursePackageFormModal's own book picker and the server's own
+// "package must belong to the class's program" rule
+// (EnrollmentService::assertEnrollable()).
+const availablePackages = computed(() =>
+  form.academic_program_id === null ? [] : coursePackages.value.filter((p) => p.academic_program_id === form.academic_program_id),
+)
+
+function togglePackage(packageId: number, checked: boolean) {
+  if (checked) {
+    if (!form.course_package_ids.includes(packageId)) form.course_package_ids.push(packageId)
+  } else {
+    form.course_package_ids = form.course_package_ids.filter((id) => id !== packageId)
+  }
+}
 
 const loading = ref(true)
 const loadError = ref<string | null>(null)
@@ -88,18 +107,34 @@ function removeSchedule(index: number) {
   form.schedules.splice(index, 1)
 }
 
+// Changing the program invalidates whatever packages were picked for the
+// previous one — skipped while the form is first populated for editing (the
+// load() below sets both academic_program_id and course_package_ids together).
+let hydrating = false
+
+watch(
+  () => form.academic_program_id,
+  () => {
+    if (hydrating) return
+    form.course_package_ids = form.course_package_ids.filter((id) => availablePackages.value.some((p) => p.id === id))
+  },
+)
+
 async function load() {
   loading.value = true
   loadError.value = null
+  hydrating = true
 
   try {
-    const [positions, loadedClassrooms, loadedPrograms] = await Promise.all([
+    const [positions, loadedClassrooms, loadedPrograms, loadedPackages] = await Promise.all([
       positionsService.listAll(),
       classroomsService.listAll(),
       academicProgramsService.listAll(),
+      coursePackagesService.listAll(),
     ])
     classrooms.value = loadedClassrooms
     programs.value = loadedPrograms
+    coursePackages.value = loadedPackages
 
     // A "teacher" is a Staff member holding the Teacher position — see
     // TeacherPositionSeeder on the backend. A brand-new tenant may not have
@@ -121,10 +156,12 @@ async function load() {
     form.schedules = schoolClass.schedules.length > 0
       ? schoolClass.schedules.map((s) => ({ day_of_week: s.day_of_week, start_time: s.start_time, end_time: s.end_time }))
       : [emptySchedule()]
+    form.course_package_ids = schoolClass.course_packages.map((p) => p.id)
   } catch (error) {
     loadError.value = error instanceof ApiRequestError ? error.message : t('admin.classes.loadFailed')
   } finally {
     loading.value = false
+    hydrating = false
   }
 }
 
@@ -196,6 +233,24 @@ onMounted(load)
           <BaseSelect v-model="form.status" :options="statusOptions" :label="t('admin.classes.status')" />
           <BaseInput v-model="form.start_date" type="date" :label="t('admin.classes.startDate')" :error="errors.start_date?.[0]" />
           <BaseInput v-model="form.end_date" type="date" :label="t('admin.classes.endDate')" :error="errors.end_date?.[0]" />
+        </div>
+      </section>
+
+      <section>
+        <h2 class="mb-1 text-sm font-semibold text-neutral-800">{{ t('admin.classes.coursePackagesSection') }}</h2>
+        <p class="mb-3 text-sm text-neutral-500">{{ t('admin.classes.coursePackagesHint') }}</p>
+        <p v-if="form.academic_program_id === null" class="text-sm text-neutral-500">{{ t('admin.classes.pickProgramFirst') }}</p>
+        <p v-else-if="availablePackages.length === 0" class="text-sm text-neutral-500">{{ t('admin.classes.noPackagesAvailable') }}</p>
+        <div v-else class="grid gap-2 sm:grid-cols-2">
+          <label v-for="pkg in availablePackages" :key="pkg.id" class="flex items-center gap-2 rounded-lg border border-neutral-200 p-2.5 text-sm">
+            <input
+              type="checkbox"
+              :checked="form.course_package_ids.includes(pkg.id)"
+              class="rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+              @change="togglePackage(pkg.id, ($event.target as HTMLInputElement).checked)"
+            />
+            <span class="flex-1 text-neutral-700">{{ pkg.code }} — {{ pkg.name }}</span>
+          </label>
         </div>
       </section>
 

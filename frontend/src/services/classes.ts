@@ -49,6 +49,8 @@ export interface ClassInput {
   end_date: string
   status: ClassStatus
   schedules: { day_of_week: number; start_time: string; end_time: string }[]
+  /** Which course packages this class offers — required for a package-based (Computer-class) enrollment, and for it to appear in the public registration wizard's Schedule step. */
+  course_package_ids: number[]
 }
 
 export const classesService = {

@@ -2,17 +2,19 @@
 import { onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
-import PageHero from '@/components/public/PageHero.vue'
 import SectionContainer from '@/components/public/SectionContainer.vue'
 import { publicContentService, type PublicVideo, type PublicVideoCourse } from '@/services/publicContent'
+import { ApiRequestError } from '@/types/api'
 
 const { t } = useI18n()
 
 const courses = ref<PublicVideoCourse[]>([])
 const loading = ref(true)
+const loadError = ref<string | null>(null)
 
 const openMenuCourseId = ref<number | null>(null)
 const playerVideo = ref<PublicVideo | null>(null)
@@ -55,6 +57,8 @@ onMounted(async () => {
 
   try {
     courses.value = await publicContentService.getVideoLessons()
+  } catch (error) {
+    loadError.value = error instanceof ApiRequestError ? error.message : t('videoLessons.emptyMessage')
   } finally {
     loading.value = false
   }
@@ -65,11 +69,11 @@ onUnmounted(() => document.removeEventListener('click', onDocumentClick))
 
 <template>
   <div>
-    <PageHero :title="t('videoLessons.title')" :subtitle="t('videoLessons.subtitle')" />
     <SectionContainer>
       <div v-if="loading" class="space-y-4">
         <div v-for="i in 2" :key="i" class="h-64 animate-pulse rounded-[--radius-card] bg-neutral-100" />
       </div>
+      <BaseAlert v-else-if="loadError" variant="danger">{{ loadError }}</BaseAlert>
       <EmptyState v-else-if="courses.length === 0" :title="t('videoLessons.emptyTitle')" :message="t('videoLessons.emptyMessage')" />
 
       <div v-else class="space-y-12">
