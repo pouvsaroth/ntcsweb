@@ -4,20 +4,20 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
-use App\Models\Account;
 use App\Models\AcademicProgram;
 use App\Models\AcademicYear;
+use App\Models\Account;
 use App\Models\Asset;
 use App\Models\AssetCategory;
 use App\Models\AssetIssue;
 use App\Models\AssetLocation;
 use App\Models\AssetMaintenance;
 use App\Models\AssetRepair;
-use App\Models\Building;
 use App\Models\AttendanceRecord;
 use App\Models\AuditLog;
 use App\Models\Book;
 use App\Models\BookCategory;
+use App\Models\Building;
 use App\Models\Classroom;
 use App\Models\ClassroomTable;
 use App\Models\CoursePackage;
@@ -44,7 +44,9 @@ use App\Models\StudyMode;
 use App\Models\Supplier;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Models\Video;
 use App\Policies\AcademicProgramPolicy;
+use App\Policies\AcademicYearPolicy;
 use App\Policies\AccountPolicy;
 use App\Policies\AssetCategoryPolicy;
 use App\Policies\AssetIssuePolicy;
@@ -52,11 +54,10 @@ use App\Policies\AssetLocationPolicy;
 use App\Policies\AssetMaintenancePolicy;
 use App\Policies\AssetPolicy;
 use App\Policies\AssetRepairPolicy;
-use App\Policies\AcademicYearPolicy;
 use App\Policies\AttendancePolicy;
 use App\Policies\AuditLogPolicy;
-use App\Policies\BookPolicy;
 use App\Policies\BookCategoryPolicy;
+use App\Policies\BookPolicy;
 use App\Policies\BuildingPolicy;
 use App\Policies\ClassroomPolicy;
 use App\Policies\ClassroomTablePolicy;
@@ -84,6 +85,7 @@ use App\Policies\StudyModePolicy;
 use App\Policies\SupplierPolicy;
 use App\Policies\TenantPolicy;
 use App\Policies\UserPolicy;
+use App\Policies\VideoPolicy;
 use App\Support\Authorization\PermissionRegistry;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use Illuminate\Support\Facades\Cache;
@@ -110,6 +112,7 @@ class AuthServiceProvider extends ServiceProvider
         StudyMode::class => StudyModePolicy::class,
         AcademicProgram::class => AcademicProgramPolicy::class,
         CoursePackage::class => CoursePackagePolicy::class,
+        Video::class => VideoPolicy::class,
         AcademicYear::class => AcademicYearPolicy::class,
         Language::class => LanguagePolicy::class,
         LookupCategory::class => LookupCategoryPolicy::class,

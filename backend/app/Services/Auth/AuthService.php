@@ -86,9 +86,11 @@ final readonly class AuthService
             $this->audit->logFor(AuditAction::LOGIN_BLOCKED, 'Auth', $tenantId, $user, ['reason' => $user->status]);
 
             throw ValidationException::withMessages([
-                'login' => $user->status === User::STATUS_SUSPENDED
-                    ? __('This account has been suspended.')
-                    : __('This account is not yet active. Please check your email for an invitation.'),
+                'login' => match ($user->status) {
+                    User::STATUS_SUSPENDED => __('This account has been suspended.'),
+                    User::STATUS_PENDING_APPROVAL => __('Your registration is still awaiting the school\'s approval.'),
+                    default => __('This account is not yet active. Please check your email for an invitation.'),
+                },
             ]);
         }
 

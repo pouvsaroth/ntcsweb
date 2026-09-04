@@ -40,6 +40,8 @@ export interface PublicSiteInfo {
   address: string | null
   /** null until the school has saved About content at least once. */
   about: AboutContent | null
+  /** Whether the registration wizard's payment step should offer QR (Bakong KHQR) as an option — see School Settings. */
+  has_khqr: boolean
 }
 
 const FALLBACK: PublicSiteInfo = {
@@ -49,6 +51,7 @@ const FALLBACK: PublicSiteInfo = {
   phone: null,
   address: null,
   about: null,
+  has_khqr: false,
 }
 
 /**

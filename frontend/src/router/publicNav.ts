@@ -7,6 +7,7 @@ export interface NavItem {
 export const publicNav: NavItem[] = [
   { labelKey: 'nav.home', to: '/' },
   { labelKey: 'nav.about', to: '/about' },
+  { labelKey: 'nav.videoLesson', to: '/video-lessons' },
   { labelKey: 'nav.programs', to: '/programs' },
   { labelKey: 'nav.schedule', to: '/schedule' },
   { labelKey: 'nav.gallery', to: '/gallery' },

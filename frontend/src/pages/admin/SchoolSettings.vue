@@ -12,7 +12,7 @@ import { ApiRequestError } from '@/types/api'
 const { t } = useI18n()
 const site = useSiteStore()
 
-const form = reactive({ name: '', email: '', phone: '', address: '' })
+const form = reactive({ name: '', email: '', phone: '', address: '', khqr_template: '' })
 const logoFile = ref<File | null>(null)
 const logoPreview = ref<string | null>(null)
 const loading = ref(true)
@@ -32,6 +32,7 @@ async function load() {
     form.email = settings.email ?? ''
     form.phone = settings.phone ?? ''
     form.address = settings.address ?? ''
+    form.khqr_template = settings.khqr_template ?? ''
     logoPreview.value = settings.logo_url
   } catch (error) {
     loadError.value = error instanceof ApiRequestError ? error.message : t('admin.school.loadFailed')
@@ -60,6 +61,7 @@ async function save() {
     form.email = result.email ?? ''
     form.phone = result.phone ?? ''
     form.address = result.address ?? ''
+    form.khqr_template = result.khqr_template ?? ''
     logoPreview.value = result.logo_url
     logoFile.value = null
     saved.value = true
@@ -119,6 +121,18 @@ onMounted(load)
         <BaseInput v-model="form.email" type="email" :label="t('admin.school.emailLabel')" :error="errors.email?.[0]" />
         <BaseInput v-model="form.phone" :label="t('admin.school.phoneLabel')" :error="errors.phone?.[0]" />
         <BaseInput v-model="form.address" :label="t('admin.school.addressLabel')" :error="errors.address?.[0]" />
+      </section>
+
+      <section class="space-y-2 rounded-lg border border-neutral-200 p-4">
+        <h2 class="mb-1 text-sm font-semibold text-neutral-800">{{ t('admin.school.khqrSection') }}</h2>
+        <p class="mb-2 text-sm text-neutral-500">{{ t('admin.school.khqrHint') }}</p>
+        <textarea
+          v-model="form.khqr_template"
+          rows="3"
+          class="block w-full rounded-lg border border-neutral-300 px-3 py-2 font-mono text-xs text-neutral-900 shadow-sm placeholder:font-sans placeholder:text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+          :placeholder="t('admin.school.khqrPlaceholder')"
+        />
+        <p v-if="errors.khqr_template?.[0]" class="text-sm text-danger-600">{{ errors.khqr_template[0] }}</p>
       </section>
 
       <BaseButton type="submit" :loading="saving">{{ t('common.save') }}</BaseButton>

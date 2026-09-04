@@ -35,6 +35,7 @@ class CoursePackageResource extends JsonResource
             'is_active' => $this->is_active,
             'show_on_website' => $this->show_on_website,
             'show_in_popular' => $this->show_in_popular,
+            'show_videos' => $this->show_videos,
             'books' => $this->whenLoaded('books', fn () => $this->books->map(fn ($book) => [
                 'id' => $book->id,
                 'title' => $book->title,

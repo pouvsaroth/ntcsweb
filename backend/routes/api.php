@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Api\V1\Admin\AboutPageController;
 use App\Http\Controllers\Api\V1\Admin\AcademicProgramController;
-use App\Http\Controllers\Api\V1\Admin\AcademicYearController;
 use App\Http\Controllers\Api\V1\Admin\AcademicReportController;
+use App\Http\Controllers\Api\V1\Admin\AcademicYearController;
 use App\Http\Controllers\Api\V1\Admin\AccountController;
 use App\Http\Controllers\Api\V1\Admin\AccountingDashboardController;
 use App\Http\Controllers\Api\V1\Admin\AccountingPeriodController;
@@ -54,9 +54,11 @@ use App\Http\Controllers\Api\V1\Admin\SchoolSettingsController;
 use App\Http\Controllers\Api\V1\Admin\StaffController;
 use App\Http\Controllers\Api\V1\Admin\StudentController;
 use App\Http\Controllers\Api\V1\Admin\StudentImportController;
+use App\Http\Controllers\Api\V1\Admin\StudentRegistrationController;
 use App\Http\Controllers\Api\V1\Admin\StudyModeController;
 use App\Http\Controllers\Api\V1\Admin\SupplierController;
 use App\Http\Controllers\Api\V1\Admin\UserController;
+use App\Http\Controllers\Api\V1\Admin\VideoController;
 use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\V1\Auth\EmailVerificationController;
 use App\Http\Controllers\Api\V1\Auth\PasswordController;
@@ -69,9 +71,12 @@ use App\Http\Controllers\Api\V1\Public\CoursePackageController as PublicCoursePa
 use App\Http\Controllers\Api\V1\Public\EnrollmentInquiryController;
 use App\Http\Controllers\Api\V1\Public\GalleryController as PublicGalleryController;
 use App\Http\Controllers\Api\V1\Public\HomeSlideController as PublicHomeSlideController;
+use App\Http\Controllers\Api\V1\Public\KhqrController as PublicKhqrController;
 use App\Http\Controllers\Api\V1\Public\ProgramController as PublicProgramController;
 use App\Http\Controllers\Api\V1\Public\ScheduleController as PublicScheduleController;
 use App\Http\Controllers\Api\V1\Public\SiteSettingsController;
+use App\Http\Controllers\Api\V1\Public\StudentRegistrationController as PublicStudentRegistrationController;
+use App\Http\Controllers\Api\V1\Public\VideoLessonController;
 use App\Http\Controllers\Api\V1\TenantDirectoryController;
 use App\Http\Responses\ApiResponse;
 use Illuminate\Support\Facades\Route;
@@ -174,6 +179,17 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         // updated or deleted once uploaded.
         Route::apiResource('student-imports', StudentImportController::class)
             ->only(['index', 'store', 'show']);
+
+        // The public self-registration wizard's approval queue — pending
+        // Students awaiting confirmation of a cash payment. Separate from
+        // `students` itself since "list/approve/reject the pending ones" is
+        // a distinct workflow, not a general Student CRUD concern. See
+        // StudentRegistrationService.
+        Route::get('student-registrations', [StudentRegistrationController::class, 'index'])->name('student-registrations.index');
+        Route::get('student-registrations/{student}', [StudentRegistrationController::class, 'show'])->name('student-registrations.show');
+        Route::post('student-registrations/{student}/approve', [StudentRegistrationController::class, 'approve'])->name('student-registrations.approve');
+        Route::post('student-registrations/{student}/reject', [StudentRegistrationController::class, 'reject'])->name('student-registrations.reject');
+
         Route::apiResource('buildings', BuildingController::class);
         Route::apiResource('classrooms', ClassroomController::class);
         Route::apiResource('classroom-tables', ClassroomTableController::class);
@@ -210,6 +226,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::apiResource('study-modes', StudyModeController::class);
         Route::apiResource('academic-programs', AcademicProgramController::class);
         Route::apiResource('course-packages', CoursePackageController::class);
+        Route::apiResource('videos', VideoController::class);
         Route::apiResource('academic-years', AcademicYearController::class);
 
         Route::get('academic-reports/enrollments', [AcademicReportController::class, 'enrollments'])->name('academic-reports.enrollments');
@@ -473,7 +490,21 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             ->name('gallery.download');
         Route::get('programs', [PublicProgramController::class, 'index'])->name('programs.index');
         Route::get('course-packages', [PublicCoursePackageController::class, 'index'])->name('course-packages.index');
+        Route::get('course-packages/{course_package}/classes', [PublicCoursePackageController::class, 'classes'])->name('course-packages.classes');
+        Route::get('video-lessons', [VideoLessonController::class, 'index'])->name('video-lessons.index');
         Route::get('schedules', [PublicScheduleController::class, 'index'])->name('schedules.index');
         Route::post('enrollment-inquiries', [EnrollmentInquiryController::class, 'store'])->name('enrollment-inquiries.store');
+        Route::post('student-registrations', [PublicStudentRegistrationController::class, 'store'])->name('student-registrations.store');
+        Route::get('khqr-preview', [PublicKhqrController::class, 'preview'])->name('khqr-preview');
+
+        // Cambodia's administrative hierarchy, for the registration wizard's
+        // cascading address selects — same platform-wide reference data and
+        // controller the authenticated admin group below already uses.
+        Route::prefix('geo')->name('geo.')->group(function () {
+            Route::get('provinces', [GeographyController::class, 'provinces'])->name('provinces');
+            Route::get('districts', [GeographyController::class, 'districts'])->name('districts');
+            Route::get('communes', [GeographyController::class, 'communes'])->name('communes');
+            Route::get('villages', [GeographyController::class, 'villages'])->name('villages');
+        });
     });
 });

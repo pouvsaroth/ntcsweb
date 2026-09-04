@@ -54,10 +54,20 @@ class Student extends Model
 
     public const STATUS_INACTIVE = 'inactive';
 
+    /** A self-registered student awaiting admin approval — see StudentRegistrationService. */
+    public const STATUS_PENDING = 'pending';
+
     /** PHP-level mirror of the column's DB default — see Building for why. */
     protected $attributes = [
         'status' => self::STATUS_ACTIVE,
     ];
+
+    /**
+     * Set by StudentRegistrationService::reject() before the status update,
+     * so auditDescriptionForChange() below can fold the reason into the
+     * audit entry — same pattern as Enrollment::$auditReason.
+     */
+    public ?string $auditReason = null;
 
     protected function casts(): array
     {
@@ -86,6 +96,11 @@ class Student extends Model
     public function enrollments(): HasMany
     {
         return $this->hasMany(Enrollment::class);
+    }
+
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class);
     }
 
     public function guardians(): HasMany
@@ -141,7 +156,9 @@ class Student extends Model
     protected function auditDescriptionForChange(string $action, array $old, array $new): ?string
     {
         if ($action === AuditAction::STATUS_CHANGE) {
-            return "Changed student {$this->auditDisplayName()} status from {$old['status']} to {$new['status']}";
+            $description = "Changed student {$this->auditDisplayName()} status from {$old['status']} to {$new['status']}";
+
+            return $this->auditReason !== null ? "{$description}: {$this->auditReason}" : $description;
         }
 
         return null;

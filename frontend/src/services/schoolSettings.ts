@@ -6,6 +6,8 @@ export interface SchoolSettings {
   phone: string | null
   address: string | null
   logo_url: string | null
+  /** The school's own static Bakong KHQR string (e.g. from ACLEDA Toanchet's "My QR") — see backend App\Support\Billing\Khqr. */
+  khqr_template: string | null
 }
 
 export interface SchoolSettingsInput {
@@ -13,6 +15,7 @@ export interface SchoolSettingsInput {
   email: string
   phone: string
   address: string
+  khqr_template: string
   /** Omitted when the admin isn't replacing the logo. */
   logo?: File
 }
@@ -30,6 +33,7 @@ function toFormData(input: SchoolSettingsInput): FormData {
   if (input.email.trim()) form.append('email', input.email.trim())
   if (input.phone.trim()) form.append('phone', input.phone.trim())
   if (input.address.trim()) form.append('address', input.address.trim())
+  if (input.khqr_template.trim()) form.append('khqr_template', input.khqr_template.trim())
   if (input.logo) form.append('logo', input.logo)
 
   return form

@@ -35,6 +35,8 @@ export interface CoursePackage {
   show_on_website: boolean
   /** Independent of `show_on_website` — controls the homepage's "Popular Programs" section, not the full public course catalog. */
   show_in_popular: boolean
+  /** Whether this package's video lessons appear on the public Video Lesson page — independent of `show_on_website`/`show_in_popular`. */
+  show_videos: boolean
   books?: { id: number; title: string; sort_order: number; is_required: boolean }[]
   created_at: string
 }
@@ -56,6 +58,7 @@ export interface CoursePackageInput {
   is_active: boolean
   show_on_website: boolean
   show_in_popular: boolean
+  show_videos: boolean
   book_ids: number[]
 }
 
@@ -84,6 +87,7 @@ function toFormData(input: Partial<CoursePackageInput>, methodOverride?: 'PUT'):
   if (input.is_active !== undefined) form.append('is_active', input.is_active ? '1' : '0')
   if (input.show_on_website !== undefined) form.append('show_on_website', input.show_on_website ? '1' : '0')
   if (input.show_in_popular !== undefined) form.append('show_in_popular', input.show_in_popular ? '1' : '0')
+  if (input.show_videos !== undefined) form.append('show_videos', input.show_videos ? '1' : '0')
   if (input.book_ids !== undefined) input.book_ids.forEach((id) => form.append('book_ids[]', String(id)))
   if (methodOverride) form.append('_method', methodOverride)
 

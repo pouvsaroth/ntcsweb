@@ -29,6 +29,12 @@ class UpdateSchoolSettingsRequest extends FormRequest
             'address' => ['nullable', 'string', 'max:500'],
             // 10M matches upload_max_filesize in docker/php/uploads.ini.
             'logo' => ['nullable', 'image', 'mimes:jpeg,png,webp,gif', 'max:10240'],
+            // The raw KHQR string decoded from the school's own bank app —
+            // see App\Support\Billing\Khqr. Not validated as a real KHQR
+            // payload here (that would mean re-parsing it, the exact risk
+            // Khqr's own docblock explains avoiding); Khqr::withAmount()
+            // fails loudly at first use if this is garbage.
+            'khqr_template' => ['nullable', 'string', 'max:1000'],
         ];
     }
 }

@@ -56,6 +56,14 @@ class User extends Authenticatable implements MustVerifyEmailContract
 
     public const STATUS_SUSPENDED = 'suspended';
 
+    /**
+     * A self-registered student's account: it already has a real,
+     * user-chosen password (unlike STATUS_INVITED, which hasn't set one
+     * yet), but can't sign in until an admin confirms payment and approves
+     * the registration — see StudentRegistrationService::approve().
+     */
+    public const STATUS_PENDING_APPROVAL = 'pending_approval';
+
     protected function casts(): array
     {
         return [

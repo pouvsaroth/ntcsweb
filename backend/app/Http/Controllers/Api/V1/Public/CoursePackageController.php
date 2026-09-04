@@ -7,7 +7,9 @@ namespace App\Http\Controllers\Api\V1\Public;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\PublicCoursePackageResource;
 use App\Http\Responses\ApiResponse;
+use App\Models\ClassSchedule;
 use App\Models\CoursePackage;
+use App\Models\SchoolClass;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -31,5 +33,30 @@ final class CoursePackageController extends Controller
         $query->where($request->boolean('featured') ? 'show_in_popular' : 'show_on_website', true);
 
         return ApiResponse::success(PublicCoursePackageResource::collection($query->get()));
+    }
+
+    /**
+     * Which currently-running classes actually offer this package, with
+     * their weekly schedule — the registration wizard's "Schedule" step.
+     * Same shape as Public\ScheduleController's own listing.
+     */
+    public function classes(CoursePackage $coursePackage): JsonResponse
+    {
+        $classes = SchoolClass::query()->active()
+            ->whereHas('coursePackages', fn ($query) => $query->where('course_packages.id', $coursePackage->id))
+            ->with(['teacher', 'schedules' => fn ($query) => $query->orderBy('day_of_week')])
+            ->orderBy('name')
+            ->get();
+
+        return ApiResponse::success($classes->map(fn (SchoolClass $class) => [
+            'id' => $class->id,
+            'name' => $class->name,
+            'teacher_name' => $class->teacher?->fullName(),
+            'schedules' => $class->schedules->map(fn (ClassSchedule $schedule) => [
+                'day_of_week' => $schedule->day_of_week,
+                'start_time' => $schedule->start_time,
+                'end_time' => $schedule->end_time,
+            ]),
+        ]));
     }
 }

@@ -5,9 +5,11 @@ import { useAuthStore } from '@/stores/auth'
 const publicRoutes: RouteRecordRaw[] = [
   { path: '', name: 'home', component: () => import('@/pages/public/Home.vue') },
   { path: 'about', name: 'about', component: () => import('@/pages/public/About.vue') },
+  { path: 'video-lessons', name: 'video-lessons', component: () => import('@/pages/public/VideoLessons.vue') },
   { path: 'programs', name: 'programs', component: () => import('@/pages/public/Programs.vue') },
   { path: 'schedule', name: 'schedule', component: () => import('@/pages/public/Schedule.vue') },
   { path: 'register', name: 'register', component: () => import('@/pages/public/Register.vue') },
+  { path: 'enrollment-inquiry', name: 'enrollment-inquiry', component: () => import('@/pages/public/EnrollmentInquiry.vue') },
   { path: 'teachers', name: 'teachers', component: () => import('@/pages/public/Teachers.vue') },
   { path: 'students', name: 'students', component: () => import('@/pages/public/Students.vue') },
   { path: 'news', name: 'news', component: () => import('@/pages/public/News.vue') },
@@ -117,6 +119,12 @@ const adminRoutes: RouteRecordRaw[] = [
     meta: { titleKey: 'adminNav.items.studentsList', pageTitleKey: 'admin.students.editTitle' },
   },
   {
+    path: 'student-registrations',
+    name: 'admin.student-registrations',
+    component: () => import('@/pages/admin/StudentRegistrationsPending.vue'),
+    meta: { titleKey: 'adminNav.items.studentRegistrations' },
+  },
+  {
     path: 'study-modes',
     name: 'admin.study-modes',
     component: () => import('@/pages/admin/StudyModes.vue'),
@@ -133,6 +141,12 @@ const adminRoutes: RouteRecordRaw[] = [
     name: 'admin.course-packages',
     component: () => import('@/pages/admin/CoursePackages.vue'),
     meta: { titleKey: 'adminNav.items.coursePackages' },
+  },
+  {
+    path: 'videos',
+    name: 'admin.videos',
+    component: () => import('@/pages/admin/Videos.vue'),
+    meta: { titleKey: 'adminNav.items.videos' },
   },
   {
     path: 'academic-years',
@@ -497,8 +511,15 @@ router.beforeEach(async (to) => {
     return { name: 'login', query: { redirect: to.fullPath } }
   }
 
+  // A student account has no admin permissions at all — the admin panel has
+  // nothing for them, and a student is expected to stay on the public site
+  // (see Login.vue's own post-login redirect for the normal path here).
+  if (to.meta.requiresAuth && auth.hasRole('student')) {
+    return { path: '/' }
+  }
+
   if (to.meta.guestOnly && auth.isAuthenticated) {
-    return { name: 'admin.dashboard' }
+    return auth.hasRole('student') ? { path: '/' } : { name: 'admin.dashboard' }
   }
 
   return true

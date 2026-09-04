@@ -104,6 +104,17 @@ class Tenant extends Model
     }
 
     /**
+     * The school's static "receive any amount" Bakong KHQR string (e.g. from
+     * ACLEDA Toanchet's "My QR" screen) — see App\Support\Billing\Khqr,
+     * which turns this into a fixed-amount code per invoice. Null until a
+     * school admin sets it under School Settings.
+     */
+    public function khqrTemplate(): ?string
+    {
+        return $this->setting('khqr_template');
+    }
+
+    /**
      * `logo` stores a bare disk path (see SchoolSettingsController) — this is
      * the one place that turns it into something an `<img>` tag can load.
      */

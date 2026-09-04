@@ -38,6 +38,7 @@ export const adminNav: AdminNavGroup[] = [
       { labelKey: 'adminNav.items.studyModes', to: '/admin/study-modes', permission: 'study-modes.view' },
       { labelKey: 'adminNav.items.academicPrograms', to: '/admin/academic-programs', permission: 'academic-programs.view' },
       { labelKey: 'adminNav.items.coursePackages', to: '/admin/course-packages', permission: 'course-packages.view' },
+      { labelKey: 'adminNav.items.videos', to: '/admin/videos', permission: 'videos.view' },
       { labelKey: 'adminNav.items.bookCategories', to: '/admin/book-categories', permission: 'book-categories.view' },
       { labelKey: 'adminNav.items.books', to: '/admin/books' },
       { labelKey: 'adminNav.items.buildings', to: '/admin/buildings', permission: 'buildings.view' },
@@ -49,6 +50,7 @@ export const adminNav: AdminNavGroup[] = [
     labelKey: 'adminNav.groups.students',
     items: [
       { labelKey: 'adminNav.items.studentsList', to: '/admin/students' },
+      { labelKey: 'adminNav.items.studentRegistrations', to: '/admin/student-registrations', permission: 'students.approve-registration' },
       { labelKey: 'adminNav.items.studentImports', to: '/admin/student-imports', permission: 'students.create' },
       { labelKey: 'adminNav.items.enrollments', to: '/admin/enrollments' },
     ],

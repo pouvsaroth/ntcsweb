@@ -33,7 +33,7 @@ use Illuminate\Support\Facades\Storage;
 #[Fillable([
     'code', 'name', 'academic_program_id', 'description', 'thumbnail_path', 'price',
     'fee_monthly', 'fee_term', 'fee_video', 'fee_monthly_online', 'fee_term_online', 'currency',
-    'duration', 'product_id', 'is_active', 'show_on_website', 'show_in_popular',
+    'duration', 'product_id', 'is_active', 'show_on_website', 'show_in_popular', 'show_videos',
 ])]
 class CoursePackage extends Model
 {
@@ -62,6 +62,7 @@ class CoursePackage extends Model
             'is_active' => 'boolean',
             'show_on_website' => 'boolean',
             'show_in_popular' => 'boolean',
+            'show_videos' => 'boolean',
         ];
     }
 
@@ -107,6 +108,11 @@ class CoursePackage extends Model
     public function enrollments(): HasMany
     {
         return $this->hasMany(Enrollment::class, 'course_package_id');
+    }
+
+    public function videos(): HasMany
+    {
+        return $this->hasMany(Video::class);
     }
 
     /**

@@ -38,6 +38,7 @@ const form = reactive({
   is_active: true,
   show_on_website: false,
   show_in_popular: false,
+  show_videos: false,
   book_ids: [] as number[],
 })
 
@@ -118,6 +119,7 @@ watch(
     form.is_active = props.coursePackage?.is_active ?? true
     form.show_on_website = props.coursePackage?.show_on_website ?? false
     form.show_in_popular = props.coursePackage?.show_in_popular ?? false
+    form.show_videos = props.coursePackage?.show_videos ?? false
     form.book_ids = props.coursePackage?.books?.map((b) => b.id) ?? []
     thumbnailFile.value = null
     thumbnailPreview.value = props.coursePackage?.thumbnail_url ?? null
@@ -319,6 +321,14 @@ async function submit() {
           {{ t('admin.coursePackages.showInPopular') }}
         </label>
         <p class="mt-1 text-xs text-neutral-500">{{ t('admin.coursePackages.showInPopularHint') }}</p>
+      </div>
+
+      <div>
+        <label class="flex items-center gap-2 text-sm text-neutral-700">
+          <input v-model="form.show_videos" type="checkbox" class="rounded border-neutral-300 text-primary-600 focus:ring-primary-500" />
+          {{ t('admin.coursePackages.showVideos') }}
+        </label>
+        <p class="mt-1 text-xs text-neutral-500">{{ t('admin.coursePackages.showVideosHint') }}</p>
       </div>
     </form>
 

@@ -1,4 +1,4 @@
-import { apiGetWithMeta, apiPost } from '@/services/http'
+import { apiGet, apiGetWithMeta, apiPost } from '@/services/http'
 import { ApiRequestError, type LengthAwarePaginationMeta, type PaginatedResult } from '@/types/api'
 
 /**
@@ -94,6 +94,27 @@ export interface ScheduledClass {
   schedules: ClassScheduleSlot[]
 }
 
+/**
+ * A video lesson on the public Video Lesson page. `embed_url` is only ever
+ * present when `is_locked` is false — a locked video's playable URL is
+ * withheld server-side, not just hidden by the UI (see
+ * Public\VideoLessonController).
+ */
+export interface PublicVideo {
+  id: number
+  title: string
+  description: string | null
+  thumbnail_url: string | null
+  is_locked: boolean
+  embed_url: string | null
+}
+
+export interface PublicVideoCourse {
+  id: number
+  name: string
+  videos: PublicVideo[]
+}
+
 function emptyPagination(total = 0): LengthAwarePaginationMeta {
   return {
     type: 'length_aware',
@@ -155,6 +176,16 @@ export const publicContentService = {
    */
   getCourses: (options: { featured?: boolean } = {}) =>
     fetchPublicList<PublicCourse>('/public/course-packages', { per_page: 200, featured: options.featured ? 1 : undefined }),
+
+  /** Which currently-running classes offer this package, with their weekly schedule — the registration wizard's "Schedule" step. */
+  getCourseClasses: (coursePackageId: number) => apiGet<ScheduledClass[]>(`/public/course-packages/${coursePackageId}/classes`),
+
+  /** A fixed-amount Bakong KHQR code for one specific invoice amount — see backend App\Support\Billing\Khqr. */
+  getKhqrPreview: (amount: number, currency: 'USD' | 'KHR') =>
+    apiGet<{ khqr_string: string }>('/public/khqr-preview', { params: { amount, currency } }),
+
+  /** Real — see Public\VideoLessonController. Courses grouped with their video lessons, each flagged whether the current viewer can actually play it. */
+  getVideoLessons: () => apiGet<PublicVideoCourse[]>('/public/video-lessons'),
 
   getTeachers: (page = 1, perPage = 12) => fetchPublicList<Teacher>('/public/teachers', { page, per_page: perPage }),
 

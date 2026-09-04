@@ -7,7 +7,6 @@ namespace App\Http\Middleware;
 use App\Models\User;
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -26,9 +25,11 @@ final class EnsureUserIsActive
         }
 
         if (! $user->isActive()) {
-            return $this->deny($user->status === User::STATUS_SUSPENDED
-                ? 'This account has been suspended.'
-                : 'This account is not active.');
+            return $this->deny(match ($user->status) {
+                User::STATUS_SUSPENDED => 'This account has been suspended.',
+                User::STATUS_PENDING_APPROVAL => 'Your registration is still awaiting the school\'s approval.',
+                default => 'This account is not active.',
+            });
         }
 
         // A school that is suspended or archived takes its users with it.

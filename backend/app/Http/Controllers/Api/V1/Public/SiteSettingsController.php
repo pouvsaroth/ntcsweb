@@ -38,6 +38,10 @@ final class SiteSettingsController extends Controller
             // null until the school has saved About content at least once —
             // the public About page falls back to static copy until then.
             'about' => AboutPageContent::isConfigured($tenant) ? AboutPageContent::forTenant($tenant) : null,
+            // Never the raw template itself (that's an account reference,
+            // not public marketing content) — just whether the registration
+            // wizard's payment step should offer QR as an option at all.
+            'has_khqr' => $tenant->khqrTemplate() !== null,
         ]);
     }
 }

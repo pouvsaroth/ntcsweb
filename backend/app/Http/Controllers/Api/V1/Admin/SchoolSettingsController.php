@@ -36,7 +36,7 @@ final class SchoolSettingsController extends Controller
         $tenant = $this->context->getOrFail();
         $this->authorize('update', $tenant);
 
-        $data = $request->safe()->except('logo');
+        $data = $request->safe()->except(['logo', 'khqr_template']);
         $logoPath = $tenant->logo;
 
         if ($request->hasFile('logo')) {
@@ -54,7 +54,11 @@ final class SchoolSettingsController extends Controller
             $logoPath = $newPath;
         }
 
-        $tenant->update([...$data, 'logo' => $logoPath]);
+        $tenant->update([
+            ...$data,
+            'logo' => $logoPath,
+            'settings' => [...($tenant->settings ?? []), 'khqr_template' => $request->safe()->input('khqr_template')],
+        ]);
 
         return ApiResponse::success($this->present($tenant->fresh()));
     }
@@ -67,6 +71,7 @@ final class SchoolSettingsController extends Controller
             'phone' => $tenant->phone,
             'address' => $tenant->address,
             'logo_url' => $tenant->logoUrl(),
+            'khqr_template' => $tenant->khqrTemplate(),
         ];
     }
 }

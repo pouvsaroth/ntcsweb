@@ -77,7 +77,13 @@ async function submit() {
       localStorage.removeItem(REMEMBERED_LOGIN_KEY)
     }
 
-    const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/admin'
+    // A student logs into the public website itself, not the admin panel —
+    // there's nothing there for them (no admin permissions) and the whole
+    // point of a student login is unlocking their enrolled course's video
+    // lessons/invoices while staying on the site they arrived on. Everyone
+    // else (staff/teacher/admin) keeps going to /admin as before.
+    const fallback = auth.hasRole('student') ? '/' : '/admin'
+    const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : fallback
     await router.push(redirect)
   } catch (error) {
     if (error instanceof ApiRequestError) {

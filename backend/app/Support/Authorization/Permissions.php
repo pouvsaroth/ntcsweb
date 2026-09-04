@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Support\Authorization;
 
+use App\Models\Role;
+
 /**
  * The permission catalog.
  *
@@ -59,6 +61,8 @@ final class Permissions
     public const STUDENTS_UPDATE = 'students.update';
 
     public const STUDENTS_DELETE = 'students.delete';
+
+    public const STUDENTS_APPROVE_REGISTRATION = 'students.approve-registration';
 
     // Buildings — the physical buildings a school's classrooms belong to.
     public const BUILDINGS_VIEW = 'buildings.view';
@@ -152,6 +156,16 @@ final class Permissions
     public const COURSE_PACKAGES_UPDATE = 'course-packages.update';
 
     public const COURSE_PACKAGES_DELETE = 'course-packages.delete';
+
+    // Videos — YouTube video lessons attached to a course package, shown on
+    // the public "Video Lesson" page.
+    public const VIDEOS_VIEW = 'videos.view';
+
+    public const VIDEOS_CREATE = 'videos.create';
+
+    public const VIDEOS_UPDATE = 'videos.update';
+
+    public const VIDEOS_DELETE = 'videos.delete';
 
     // Academic Years — a real, tenant-owned school year (e.g. "2026").
     public const ACADEMIC_YEARS_VIEW = 'academic-years.view';
@@ -418,6 +432,7 @@ final class Permissions
                 self::STUDENTS_CREATE => 'Create students',
                 self::STUDENTS_UPDATE => 'Update students',
                 self::STUDENTS_DELETE => 'Delete students',
+                self::STUDENTS_APPROVE_REGISTRATION => 'Approve or reject public self-registrations',
             ],
             'Buildings' => [
                 self::BUILDINGS_VIEW => 'View buildings',
@@ -474,6 +489,12 @@ final class Permissions
                 self::COURSE_PACKAGES_CREATE => 'Create course packages',
                 self::COURSE_PACKAGES_UPDATE => 'Update course packages',
                 self::COURSE_PACKAGES_DELETE => 'Delete course packages',
+            ],
+            'Videos' => [
+                self::VIDEOS_VIEW => 'View videos',
+                self::VIDEOS_CREATE => 'Create videos',
+                self::VIDEOS_UPDATE => 'Update videos',
+                self::VIDEOS_DELETE => 'Delete videos',
             ],
             'Academic Years' => [
                 self::ACADEMIC_YEARS_VIEW => 'View academic years',
@@ -625,6 +646,7 @@ final class Permissions
     {
         $academicManagement = [
             self::STUDENTS_VIEW, self::STUDENTS_CREATE, self::STUDENTS_UPDATE, self::STUDENTS_DELETE,
+            self::STUDENTS_APPROVE_REGISTRATION,
             self::BUILDINGS_VIEW, self::BUILDINGS_CREATE, self::BUILDINGS_UPDATE, self::BUILDINGS_DELETE,
             self::CLASSROOMS_VIEW, self::CLASSROOMS_CREATE, self::CLASSROOMS_UPDATE, self::CLASSROOMS_DELETE,
             self::BOOK_CATEGORIES_VIEW, self::BOOK_CATEGORIES_CREATE, self::BOOK_CATEGORIES_UPDATE, self::BOOK_CATEGORIES_DELETE,
@@ -635,6 +657,7 @@ final class Permissions
             self::STUDY_MODES_VIEW, self::STUDY_MODES_CREATE, self::STUDY_MODES_UPDATE, self::STUDY_MODES_DELETE,
             self::ACADEMIC_PROGRAMS_VIEW, self::ACADEMIC_PROGRAMS_CREATE, self::ACADEMIC_PROGRAMS_UPDATE, self::ACADEMIC_PROGRAMS_DELETE,
             self::COURSE_PACKAGES_VIEW, self::COURSE_PACKAGES_CREATE, self::COURSE_PACKAGES_UPDATE, self::COURSE_PACKAGES_DELETE,
+            self::VIDEOS_VIEW, self::VIDEOS_CREATE, self::VIDEOS_UPDATE, self::VIDEOS_DELETE,
             self::ACADEMIC_YEARS_VIEW, self::ACADEMIC_YEARS_CREATE, self::ACADEMIC_YEARS_UPDATE, self::ACADEMIC_YEARS_DELETE,
             self::ACADEMIC_REPORTS_VIEW, self::ACADEMIC_REPORTS_EXPORT,
             self::HOME_SLIDES_VIEW, self::HOME_SLIDES_CREATE, self::HOME_SLIDES_UPDATE, self::HOME_SLIDES_DELETE,
@@ -686,7 +709,7 @@ final class Permissions
         ];
 
         return [
-            \App\Models\Role::SCHOOL_ADMIN => [
+            Role::SCHOOL_ADMIN => [
                 self::TENANT_SETTINGS_VIEW,
                 self::TENANT_SETTINGS_UPDATE,
                 self::USERS_VIEW,
@@ -718,7 +741,7 @@ final class Permissions
             // decision, but attendance is a teacher's own daily task —
             // AttendancePolicy further restricts create/update to the
             // classes a teacher account is actually assigned to teach.
-            \App\Models\Role::TEACHER => [
+            Role::TEACHER => [
                 self::USERS_VIEW,
                 self::STUDENTS_VIEW,
                 self::BUILDINGS_VIEW,
@@ -730,6 +753,7 @@ final class Permissions
                 self::STUDY_MODES_VIEW,
                 self::ACADEMIC_PROGRAMS_VIEW,
                 self::COURSE_PACKAGES_VIEW,
+                self::VIDEOS_VIEW,
                 self::ACADEMIC_YEARS_VIEW,
                 self::POSITIONS_VIEW,
                 self::STAFF_VIEW,
@@ -744,13 +768,14 @@ final class Permissions
             // but not delete them (deletion stays a school-admin action) and
             // can't touch the teaching catalog (classrooms/books/classes/
             // academic programs/packages) itself.
-            \App\Models\Role::STAFF => [
+            Role::STAFF => [
                 self::USERS_VIEW,
                 self::POSITIONS_VIEW,
                 self::STAFF_VIEW,
                 self::STUDENTS_VIEW,
                 self::STUDENTS_CREATE,
                 self::STUDENTS_UPDATE,
+                self::STUDENTS_APPROVE_REGISTRATION,
                 self::BUILDINGS_VIEW,
                 self::CLASSROOMS_VIEW,
                 self::BOOK_CATEGORIES_VIEW,
@@ -763,9 +788,10 @@ final class Permissions
                 self::STUDY_MODES_VIEW,
                 self::ACADEMIC_PROGRAMS_VIEW,
                 self::COURSE_PACKAGES_VIEW,
+                self::VIDEOS_VIEW,
                 self::ACADEMIC_YEARS_VIEW,
             ],
-            \App\Models\Role::STUDENT => [],
+            Role::STUDENT => [],
         ];
     }
 }

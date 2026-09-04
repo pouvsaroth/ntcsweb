@@ -23,9 +23,12 @@ final class PaymentMethod
 
     public const OTHER = 'OTHER';
 
+    /** A KHQR code scanned and paid via any Bakong-participating bank/wallet app — see App\Support\Billing\Khqr. */
+    public const QR = 'QR';
+
     /** @return list<string> */
     public static function all(): array
     {
-        return [self::CASH, self::BANK_TRANSFER, self::ABA, self::ACLEDA, self::CARD, self::OTHER];
+        return [self::CASH, self::BANK_TRANSFER, self::ABA, self::ACLEDA, self::CARD, self::OTHER, self::QR];
     }
 }

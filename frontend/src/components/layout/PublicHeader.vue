@@ -3,12 +3,15 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
 
+import PublicUserMenu from '@/components/layout/PublicUserMenu.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import LanguageSwitcher from '@/components/ui/LanguageSwitcher.vue'
 import { publicNav } from '@/router/publicNav'
+import { useAuthStore } from '@/stores/auth'
 import { useSiteStore } from '@/stores/site'
 
 const site = useSiteStore()
+const auth = useAuthStore()
 const { t } = useI18n()
 const mobileOpen = ref(false)
 </script>
@@ -38,13 +41,33 @@ const mobileOpen = ref(false)
       </nav>
 
       <div class="hidden items-center gap-2 lg:flex">
-        <BaseButton to="/register" variant="outline" size="sm">{{ t('nav.register') }}</BaseButton>
-        <BaseButton href="/login" target="_blank" size="sm">{{ t('nav.portalLogin') }}</BaseButton>
+        <template v-if="auth.isAuthenticated">
+          <PublicUserMenu />
+        </template>
+        <template v-else>
+          <BaseButton to="/register" variant="outline" size="sm">{{ t('nav.register') }}</BaseButton>
+          <BaseButton href="/login" size="sm">{{ t('nav.portalLogin') }}</BaseButton>
+        </template>
         <LanguageSwitcher />
       </div>
 
       <!-- Mobile menu toggle -->
       <div class="flex items-center gap-1 lg:hidden">
+        <!-- A persistent icon, not buried in the hamburger panel below —
+             Video Lesson is common enough on mobile to deserve its own
+             always-visible spot, right before the language switcher. -->
+        <RouterLink
+          to="/video-lessons"
+          class="rounded-lg p-2 text-neutral-600 hover:bg-neutral-100"
+          :aria-label="t('nav.videoLesson')"
+        >
+          <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5l4.72-2.36a.75.75 0 011.03.67v6.38a.75.75 0 01-1.03.67l-4.72-2.36M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-7.5A2.25 2.25 0 0013.5 6.75h-9A2.25 2.25 0 002.25 9v7.5a2.25 2.25 0 002.25 2.25z" />
+          </svg>
+        </RouterLink>
+        <!-- Confirms "you're logged in" at a glance, even before opening
+             the hamburger panel below. -->
+        <PublicUserMenu v-if="auth.isAuthenticated" compact />
         <LanguageSwitcher />
         <button
           type="button"
@@ -81,8 +104,10 @@ const mobileOpen = ref(false)
           >
             {{ t(item.labelKey) }}
           </RouterLink>
-          <BaseButton to="/register" variant="outline" class="mt-2" block @click="mobileOpen = false">{{ t('nav.register') }}</BaseButton>
-          <BaseButton href="/login" target="_blank" block>{{ t('nav.portalLogin') }}</BaseButton>
+          <template v-if="!auth.isAuthenticated">
+            <BaseButton to="/register" variant="outline" class="mt-2" block @click="mobileOpen = false">{{ t('nav.register') }}</BaseButton>
+            <BaseButton href="/login" block>{{ t('nav.portalLogin') }}</BaseButton>
+          </template>
         </nav>
       </div>
     </Transition>

@@ -39,4 +39,9 @@ class StudentPolicy
     {
         return $user->hasPermission(Permissions::STUDENTS_DELETE);
     }
+
+    public function approveRegistration(User $user, Student $student): bool
+    {
+        return $user->hasPermission(Permissions::STUDENTS_APPROVE_REGISTRATION);
+    }
 }

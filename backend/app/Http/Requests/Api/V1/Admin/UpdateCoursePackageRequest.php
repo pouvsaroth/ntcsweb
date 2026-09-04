@@ -42,6 +42,7 @@ class UpdateCoursePackageRequest extends FormRequest
             'is_active' => ['sometimes', 'boolean'],
             'show_on_website' => ['sometimes', 'boolean'],
             'show_in_popular' => ['sometimes', 'boolean'],
+            'show_videos' => ['sometimes', 'boolean'],
             'book_ids' => ['sometimes', 'array', 'min:1'],
             'book_ids.*' => [Rule::exists('books', 'id')->where('tenant_id', $tenantId)],
         ];
