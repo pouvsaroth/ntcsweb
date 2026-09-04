@@ -82,6 +82,11 @@ class Staff extends Model
     protected function casts(): array
     {
         return [
+            // Cast explicitly (not left to PHP's loose typing) because
+            // auditLabels() below passes this straight into a `?int`-typed
+            // closure — PDO pgsql returns integer columns as strings, which
+            // trips under strict_types without this.
+            'position_id' => 'integer',
             'hire_date' => 'date',
             'date_of_birth' => 'date',
         ];
