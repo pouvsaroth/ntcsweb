@@ -132,7 +132,7 @@ export const studentsService = {
    */
   async list(query: Partial<PaginatedQuery> = {}): Promise<PaginatedResult<Student>> {
     const result = await apiGetWithMeta<Student[]>('/students', {
-      params: { page: query.page, per_page: query.per_page, search: query.search, sort: query.sort },
+      params: { page: query.page, per_page: query.per_page, search: query.search, sort: query.sort, filter: query.filter },
     })
 
     return { data: result.data, pagination: result.meta?.pagination as LengthAwarePaginationMeta }
