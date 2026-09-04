@@ -275,6 +275,12 @@ const adminRoutes: RouteRecordRaw[] = [
     meta: { titleKey: 'adminNav.items.lookupCategories' },
   },
   {
+    path: 'leave-requests',
+    name: 'admin.leave-requests',
+    component: () => import('@/pages/admin/LeaveRequests.vue'),
+    meta: { titleKey: 'adminNav.items.leaveRequests' },
+  },
+  {
     path: 'lookup-categories/:id/values',
     name: 'admin.lookup-categories.values',
     component: () => import('@/pages/admin/LookupCategoryValues.vue'),

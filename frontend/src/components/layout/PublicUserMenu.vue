@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink, useRouter } from 'vue-router'
 
+import AskForPermissionModal from '@/components/layout/AskForPermissionModal.vue'
 import ChangePasswordModal from '@/components/layout/ChangePasswordModal.vue'
 import EditProfileModal from '@/components/layout/EditProfileModal.vue'
 import { useAuthStore } from '@/stores/auth'
@@ -25,6 +26,7 @@ const router = useRouter()
 const menuOpen = ref(false)
 const editProfileOpen = ref(false)
 const changePasswordOpen = ref(false)
+const askForPermissionOpen = ref(false)
 
 async function handleLogout() {
   menuOpen.value = false
@@ -78,6 +80,17 @@ async function handleLogout() {
         </RouterLink>
 
         <button
+          v-if="auth.hasRole('student')"
+          type="button"
+          class="block w-full px-4 py-2 text-left text-sm text-neutral-700 hover:bg-neutral-50"
+          @click="
+            menuOpen = false;
+            askForPermissionOpen = true
+          "
+        >
+          {{ t('leaveRequest.askForPermission') }}
+        </button>
+        <button
           type="button"
           class="block w-full px-4 py-2 text-left text-sm text-neutral-700 hover:bg-neutral-50"
           @click="
@@ -109,5 +122,6 @@ async function handleLogout() {
 
     <EditProfileModal v-model="editProfileOpen" />
     <ChangePasswordModal v-model="changePasswordOpen" />
+    <AskForPermissionModal v-if="auth.hasRole('student')" v-model="askForPermissionOpen" />
   </div>
 </template>

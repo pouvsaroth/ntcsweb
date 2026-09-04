@@ -40,6 +40,7 @@ use App\Http\Controllers\Api\V1\Admin\HomeSlideController as AdminHomeSlideContr
 use App\Http\Controllers\Api\V1\Admin\IncomeController;
 use App\Http\Controllers\Api\V1\Admin\InvoiceController;
 use App\Http\Controllers\Api\V1\Admin\LanguageController;
+use App\Http\Controllers\Api\V1\Admin\LeaveRequestController;
 use App\Http\Controllers\Api\V1\Admin\LookupCategoryController;
 use App\Http\Controllers\Api\V1\Admin\LookupValueController;
 use App\Http\Controllers\Api\V1\Admin\PaymentController;
@@ -67,6 +68,7 @@ use App\Http\Controllers\Api\V1\LookupController;
 use App\Http\Controllers\Api\V1\MyAssetController;
 use App\Http\Controllers\Api\V1\MyAttendanceController;
 use App\Http\Controllers\Api\V1\MyInvoiceController;
+use App\Http\Controllers\Api\V1\MyLeaveRequestController;
 use App\Http\Controllers\Api\V1\Public\CoursePackageController as PublicCoursePackageController;
 use App\Http\Controllers\Api\V1\Public\EnrollmentInquiryController;
 use App\Http\Controllers\Api\V1\Public\GalleryController as PublicGalleryController;
@@ -242,6 +244,12 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('classes/{class}/attendance', [AttendanceController::class, 'roster'])->name('classes.attendance.roster');
         Route::post('classes/{class}/attendance', [AttendanceController::class, 'store'])->name('classes.attendance.store');
 
+        // Student-submitted leave/permission requests — approving one syncs
+        // into AttendanceRecord (status Excused) via LeaveRequestService.
+        Route::apiResource('leave-requests', LeaveRequestController::class)->only(['index', 'show']);
+        Route::post('leave-requests/{leave_request}/approve', [LeaveRequestController::class, 'approve'])->name('leave-requests.approve');
+        Route::post('leave-requests/{leave_request}/reject', [LeaveRequestController::class, 'reject'])->name('leave-requests.reject');
+
         Route::apiResource('home-slides', AdminHomeSlideController::class);
         Route::apiResource('gallery', AdminGalleryController::class);
         Route::apiResource('programs', AdminProgramController::class);
@@ -416,6 +424,10 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
 
         // Student self-service — identity-gated, same pattern as my-invoices.
         Route::get('my-attendance', [MyAttendanceController::class, 'index'])->name('my-attendance.index');
+
+        // Student self-service — identity-gated, same pattern as my-attendance.
+        Route::get('my-leave-requests', [MyLeaveRequestController::class, 'index'])->name('my-leave-requests.index');
+        Route::post('my-leave-requests', [MyLeaveRequestController::class, 'store'])->name('my-leave-requests.store');
 
         // Self-service — identity-gated (Staff/Student/User's own assignments), same pattern as my-invoices.
         Route::get('my-assets', [MyAssetController::class, 'index'])->name('my-assets.index');

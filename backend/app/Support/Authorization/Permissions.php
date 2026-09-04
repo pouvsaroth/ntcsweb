@@ -167,6 +167,14 @@ final class Permissions
 
     public const VIDEOS_DELETE = 'videos.delete';
 
+    // Leave Requests — a student's own self-submitted leave/permission
+    // request, approved or rejected by an admin.
+    public const LEAVE_REQUESTS_VIEW = 'leave-requests.view';
+
+    public const LEAVE_REQUESTS_APPROVE = 'leave-requests.approve';
+
+    public const LEAVE_REQUESTS_REJECT = 'leave-requests.reject';
+
     // Academic Years — a real, tenant-owned school year (e.g. "2026").
     public const ACADEMIC_YEARS_VIEW = 'academic-years.view';
 
@@ -496,6 +504,11 @@ final class Permissions
                 self::VIDEOS_UPDATE => 'Update videos',
                 self::VIDEOS_DELETE => 'Delete videos',
             ],
+            'Leave Requests' => [
+                self::LEAVE_REQUESTS_VIEW => 'View leave requests',
+                self::LEAVE_REQUESTS_APPROVE => 'Approve leave requests',
+                self::LEAVE_REQUESTS_REJECT => 'Reject leave requests',
+            ],
             'Academic Years' => [
                 self::ACADEMIC_YEARS_VIEW => 'View academic years',
                 self::ACADEMIC_YEARS_CREATE => 'Create academic years',
@@ -731,6 +744,9 @@ final class Permissions
                 self::ATTENDANCE_VIEW,
                 self::ATTENDANCE_CREATE,
                 self::ATTENDANCE_UPDATE,
+                self::LEAVE_REQUESTS_VIEW,
+                self::LEAVE_REQUESTS_APPROVE,
+                self::LEAVE_REQUESTS_REJECT,
                 ...$academicManagement,
                 ...$billing,
                 ...$accounting,
@@ -760,6 +776,7 @@ final class Permissions
                 self::ATTENDANCE_VIEW,
                 self::ATTENDANCE_CREATE,
                 self::ATTENDANCE_UPDATE,
+                self::LEAVE_REQUESTS_VIEW,
             ],
             // Staff commonly handle front-desk registration, so they can
             // create/update students and enrollments (including the new
@@ -790,6 +807,7 @@ final class Permissions
                 self::COURSE_PACKAGES_VIEW,
                 self::VIDEOS_VIEW,
                 self::ACADEMIC_YEARS_VIEW,
+                self::LEAVE_REQUESTS_VIEW,
             ],
             Role::STUDENT => [],
         ];

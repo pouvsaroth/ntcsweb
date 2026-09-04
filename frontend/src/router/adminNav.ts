@@ -134,6 +134,7 @@ export const adminNav: AdminNavGroup[] = [
       { labelKey: 'adminNav.items.auditLogs', to: '/admin/audit-logs', permission: 'audit-logs.view' },
       { labelKey: 'adminNav.items.languages', to: '/admin/languages', permission: 'base-data.manage-languages' },
       { labelKey: 'adminNav.items.lookupCategories', to: '/admin/lookup-categories', permission: 'base-data.view' },
+      { labelKey: 'adminNav.items.leaveRequests', to: '/admin/leave-requests', permission: 'leave-requests.view' },
     ],
   },
 ]

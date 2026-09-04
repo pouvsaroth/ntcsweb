@@ -29,6 +29,7 @@ use App\Models\GalleryImage;
 use App\Models\HomeSlide;
 use App\Models\Invoice;
 use App\Models\Language;
+use App\Models\LeaveRequest;
 use App\Models\LookupCategory;
 use App\Models\LookupValue;
 use App\Models\Payment;
@@ -70,6 +71,7 @@ use App\Policies\GalleryImagePolicy;
 use App\Policies\HomeSlidePolicy;
 use App\Policies\InvoicePolicy;
 use App\Policies\LanguagePolicy;
+use App\Policies\LeaveRequestPolicy;
 use App\Policies\LookupCategoryPolicy;
 use App\Policies\LookupValuePolicy;
 use App\Policies\PaymentPolicy;
@@ -113,6 +115,7 @@ class AuthServiceProvider extends ServiceProvider
         AcademicProgram::class => AcademicProgramPolicy::class,
         CoursePackage::class => CoursePackagePolicy::class,
         Video::class => VideoPolicy::class,
+        LeaveRequest::class => LeaveRequestPolicy::class,
         AcademicYear::class => AcademicYearPolicy::class,
         Language::class => LanguagePolicy::class,
         LookupCategory::class => LookupCategoryPolicy::class,
