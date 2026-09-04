@@ -715,6 +715,8 @@ const ko: MessageSchema = {
       emailLabel: '이메일',
       phoneLabel: '전화번호',
       addressLabel: '주소',
+      invoiceLanguageLabel: '청구서 언어',
+      invoiceLanguageHint: '모든 청구서 PDF와 알림에 사용되는 언어입니다.',
       khqrSection: '결제 QR (KHQR)',
       khqrHint: '학교 자체의 Bakong KHQR 코드(예: ACLEDA Toanchet 앱의 "내 QR" 화면에서 가져옴) — 등록마다 스캔 가능한 고정 금액 결제 코드를 생성하는 데 사용됩니다.',
       khqrPlaceholder: '은행 앱의 QR 코드에서 디코딩된 원시 KHQR 텍스트를 붙여넣으세요',

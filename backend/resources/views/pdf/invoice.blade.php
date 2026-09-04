@@ -3,7 +3,23 @@
 <head>
 <meta charset="utf-8">
 <style>
-    body { font-family: DejaVu Sans, sans-serif; font-size: 12px; color: #1f2937; }
+    {{-- Static instances of Noto Sans Khmer (Regular/Bold) bundled under resources/fonts —
+         dompdf's built-in DejaVu Sans has no Khmer glyphs, so any Khmer text (school name,
+         student name, notes, ...) rendered blank/tofu without this. Latin/numerals are
+         covered by the same font, so it's the only family the body needs. --}}
+    @font-face {
+        font-family: 'Noto Sans Khmer';
+        font-style: normal;
+        font-weight: normal;
+        src: url('{{ resource_path('fonts/khmer/NotoSansKhmer-Regular.ttf') }}');
+    }
+    @font-face {
+        font-family: 'Noto Sans Khmer';
+        font-style: normal;
+        font-weight: bold;
+        src: url('{{ resource_path('fonts/khmer/NotoSansKhmer-Bold.ttf') }}');
+    }
+    body { font-family: 'Noto Sans Khmer', DejaVu Sans, sans-serif; font-size: 12px; color: #1f2937; }
     .header { display: table; width: 100%; margin-bottom: 24px; }
     .header .school { display: table-cell; width: 60%; vertical-align: top; }
     .header .school img { max-height: 56px; margin-bottom: 6px; }
@@ -43,23 +59,23 @@
             @if($tenant?->email)<p>{{ $tenant->email }}</p>@endif
         </div>
         <div class="invoice">
-            <h2>INVOICE</h2>
+            <h2>{{ __('invoice.invoice') }}</h2>
             <p><strong>{{ $invoice->invoice_number }}</strong></p>
-            <p><span class="status">{{ $invoice->status }}</span></p>
+            <p><span class="status">{{ __('invoice.statuses.'.strtolower($invoice->status)) }}</span></p>
         </div>
     </div>
 
     <div class="meta">
         <div class="student">
-            <h3>Bill To</h3>
+            <h3>{{ __('invoice.bill_to') }}</h3>
             <p><strong>{{ $invoice->student->student_code }} — {{ $invoice->student->fullName() }}</strong></p>
             @if($invoice->student->phone)<p>{{ $invoice->student->phone }}</p>@endif
         </div>
         <div class="dates">
-            <h3>Invoice Date</h3>
+            <h3>{{ __('invoice.invoice_date') }}</h3>
             <p>{{ $invoice->invoice_date->format('d M Y') }}</p>
             @if($invoice->due_date)
-                <h3 style="margin-top:8px;">Due Date</h3>
+                <h3 style="margin-top:8px;">{{ __('invoice.due_date') }}</h3>
                 <p>{{ $invoice->due_date->format('d M Y') }}</p>
             @endif
         </div>
@@ -68,11 +84,11 @@
     <table class="items">
         <thead>
             <tr>
-                <th>Description</th>
-                <th class="num">Qty</th>
-                <th class="num">Unit Price</th>
-                <th class="num">Discount</th>
-                <th class="num">Total</th>
+                <th>{{ __('invoice.description') }}</th>
+                <th class="num">{{ __('invoice.qty') }}</th>
+                <th class="num">{{ __('invoice.unit_price') }}</th>
+                <th class="num">{{ __('invoice.discount') }}</th>
+                <th class="num">{{ __('invoice.total') }}</th>
             </tr>
         </thead>
         <tbody>
@@ -90,25 +106,25 @@
 
     <div class="totals">
         <table>
-            <tr><td class="label">Subtotal</td><td class="value">${{ number_format((float) $invoice->subtotal, 2) }}</td></tr>
-            <tr><td class="label">Discount</td><td class="value">${{ number_format((float) $invoice->discount, 2) }}</td></tr>
-            <tr><td class="label">Tax</td><td class="value">${{ number_format((float) $invoice->tax, 2) }}</td></tr>
-            <tr class="total"><td class="label">Total</td><td class="value">${{ number_format((float) $invoice->total, 2) }}</td></tr>
-            <tr><td class="label">Paid</td><td class="value">${{ number_format((float) $invoice->paid_amount, 2) }}</td></tr>
-            <tr class="balance"><td class="label">Balance</td><td class="value">${{ number_format((float) $invoice->balance, 2) }}</td></tr>
+            <tr><td class="label">{{ __('invoice.subtotal') }}</td><td class="value">${{ number_format((float) $invoice->subtotal, 2) }}</td></tr>
+            <tr><td class="label">{{ __('invoice.discount') }}</td><td class="value">${{ number_format((float) $invoice->discount, 2) }}</td></tr>
+            <tr><td class="label">{{ __('invoice.tax') }}</td><td class="value">${{ number_format((float) $invoice->tax, 2) }}</td></tr>
+            <tr class="total"><td class="label">{{ __('invoice.total') }}</td><td class="value">${{ number_format((float) $invoice->total, 2) }}</td></tr>
+            <tr><td class="label">{{ __('invoice.paid') }}</td><td class="value">${{ number_format((float) $invoice->paid_amount, 2) }}</td></tr>
+            <tr class="balance"><td class="label">{{ __('invoice.balance') }}</td><td class="value">${{ number_format((float) $invoice->balance, 2) }}</td></tr>
         </table>
     </div>
 
     @if($invoice->payments->isNotEmpty())
         <table class="items">
             <thead>
-                <tr><th>Payment History</th><th class="num">Method</th><th class="num">Date</th><th class="num">Amount</th></tr>
+                <tr><th>{{ __('invoice.payment_history') }}</th><th class="num">{{ __('invoice.method') }}</th><th class="num">{{ __('invoice.date') }}</th><th class="num">{{ __('invoice.amount') }}</th></tr>
             </thead>
             <tbody>
                 @foreach($invoice->payments as $payment)
                     <tr>
                         <td>{{ $payment->payment_number }}</td>
-                        <td class="num">{{ $payment->payment_method }}</td>
+                        <td class="num">{{ __('invoice.methods.'.strtolower($payment->payment_method)) }}</td>
                         <td class="num">{{ $payment->payment_date->format('d M Y') }}</td>
                         <td class="num">${{ number_format((float) $payment->amount, 2) }}</td>
                     </tr>
@@ -119,7 +135,7 @@
 
     @if($invoice->notes)
         <div class="notes">
-            <h3>Notes</h3>
+            <h3>{{ __('invoice.notes') }}</h3>
             <p>{{ $invoice->notes }}</p>
         </div>
     @endif

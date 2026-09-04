@@ -719,6 +719,8 @@ const en = {
       emailLabel: 'Email',
       phoneLabel: 'Phone',
       addressLabel: 'Address',
+      invoiceLanguageLabel: 'Invoice Language',
+      invoiceLanguageHint: 'The language every invoice PDF and notification is issued in.',
       khqrSection: 'Payment QR (KHQR)',
       khqrHint: 'The school\'s own Bakong KHQR code (e.g. from ACLEDA Toanchet\'s "My QR" screen) — used to generate a scannable, fixed-amount payment code for each registration.',
       khqrPlaceholder: 'Paste the raw KHQR text decoded from your bank app\'s QR code',

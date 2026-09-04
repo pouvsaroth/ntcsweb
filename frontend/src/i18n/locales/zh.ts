@@ -714,6 +714,8 @@ const zh: MessageSchema = {
       emailLabel: '邮箱',
       phoneLabel: '电话',
       addressLabel: '地址',
+      invoiceLanguageLabel: '账单语言',
+      invoiceLanguageHint: '每份账单 PDF 及通知所使用的语言。',
       khqrSection: '收款二维码 (KHQR)',
       khqrHint: '学校自己的 Bakong KHQR 码（例如来自 ACLEDA Toanchet 的"我的二维码"页面）——用于为每笔注册生成可扫描的固定金额付款码。',
       khqrPlaceholder: '粘贴从您银行应用的二维码解码出的原始 KHQR 文本',

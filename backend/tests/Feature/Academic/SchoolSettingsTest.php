@@ -166,6 +166,27 @@ class SchoolSettingsTest extends TestCase
         $this->assertArrayNotHasKey('khqr_template', $response->json('data'));
     }
 
+    public function test_it_saves_the_invoice_language(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::TENANT_SETTINGS_UPDATE]);
+
+        $response = $this->postJson('/api/v1/settings/school', ['name' => 'NewTech Computer School', 'locale' => 'km']);
+
+        $response->assertOk();
+        $response->assertJsonPath('data.locale', 'km');
+        $this->assertSame('km', $this->tenant->fresh()->locale);
+    }
+
+    public function test_an_unsupported_language_is_rejected(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::TENANT_SETTINGS_UPDATE]);
+
+        $response = $this->postJson('/api/v1/settings/school', ['name' => 'NewTech Computer School', 'locale' => 'fr']);
+
+        $response->assertUnprocessable();
+        $response->assertJsonValidationErrors('locale');
+    }
+
     public function test_a_different_tenants_logo_is_not_affected(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::TENANT_SETTINGS_UPDATE]);

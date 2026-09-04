@@ -70,6 +70,7 @@ final class SchoolSettingsController extends Controller
             'email' => $tenant->email,
             'phone' => $tenant->phone,
             'address' => $tenant->address,
+            'locale' => $tenant->locale,
             'logo_url' => $tenant->logoUrl(),
             'khqr_template' => $tenant->khqrTemplate(),
         ];

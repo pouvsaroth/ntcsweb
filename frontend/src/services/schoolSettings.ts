@@ -1,10 +1,15 @@
 import { apiGet, apiPost } from '@/services/http'
 
+/** What resources/lang/{locale}/invoice.php actually has translations for — see UpdateSchoolSettingsRequest. */
+export type InvoiceLocale = 'en' | 'km'
+
 export interface SchoolSettings {
   name: string
   email: string | null
   phone: string | null
   address: string | null
+  /** Drives every invoice's language (labels + font) — see resources/views/pdf/invoice.blade.php. */
+  locale: InvoiceLocale
   logo_url: string | null
   /** The school's own static Bakong KHQR string (e.g. from ACLEDA Toanchet's "My QR") — see backend App\Support\Billing\Khqr. */
   khqr_template: string | null
@@ -15,6 +20,7 @@ export interface SchoolSettingsInput {
   email: string
   phone: string
   address: string
+  locale: InvoiceLocale
   khqr_template: string
   /** Omitted when the admin isn't replacing the logo. */
   logo?: File
@@ -33,6 +39,7 @@ function toFormData(input: SchoolSettingsInput): FormData {
   if (input.email.trim()) form.append('email', input.email.trim())
   if (input.phone.trim()) form.append('phone', input.phone.trim())
   if (input.address.trim()) form.append('address', input.address.trim())
+  form.append('locale', input.locale)
   if (input.khqr_template.trim()) form.append('khqr_template', input.khqr_template.trim())
   if (input.logo) form.append('logo', input.logo)
 

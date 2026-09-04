@@ -1,17 +1,17 @@
 @component('mail::message')
 # {{ $tenant?->name ?? config('app.name') }}
 
-Dear {{ $invoice->student->fullName() }},
+{{ __('invoice.greeting', ['name' => $invoice->student->fullName()]) }}
 
-Your invoice has been issued.
+{{ __('invoice.issued_notice') }}
 
-**Invoice:** {{ $invoice->invoice_number }}
-**Total:** ${{ number_format((float) $invoice->total, 2) }}
-**Paid:** ${{ number_format((float) $invoice->paid_amount, 2) }}
-**Balance:** ${{ number_format((float) $invoice->balance, 2) }}
+**{{ __('invoice.invoice') }}:** {{ $invoice->invoice_number }}
+**{{ __('invoice.total') }}:** ${{ number_format((float) $invoice->total, 2) }}
+**{{ __('invoice.paid') }}:** ${{ number_format((float) $invoice->paid_amount, 2) }}
+**{{ __('invoice.balance') }}:** ${{ number_format((float) $invoice->balance, 2) }}
 
-Please find your invoice attached.
+{{ __('invoice.attached_notice') }}
 
-Thanks,<br>
+{{ __('invoice.thanks') }}<br>
 {{ $tenant?->name ?? config('app.name') }}
 @endcomponent

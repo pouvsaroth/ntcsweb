@@ -5,14 +5,20 @@ import { useI18n } from 'vue-i18n'
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
-import { schoolSettingsService } from '@/services/schoolSettings'
+import BaseSelect from '@/components/ui/BaseSelect.vue'
+import { schoolSettingsService, type InvoiceLocale } from '@/services/schoolSettings'
 import { useSiteStore } from '@/stores/site'
 import { ApiRequestError } from '@/types/api'
 
 const { t } = useI18n()
 const site = useSiteStore()
 
-const form = reactive({ name: '', email: '', phone: '', address: '', khqr_template: '' })
+const localeOptions: { value: InvoiceLocale; label: string }[] = [
+  { value: 'en', label: 'English' },
+  { value: 'km', label: 'ភាសាខ្មែរ (Khmer)' },
+]
+
+const form = reactive({ name: '', email: '', phone: '', address: '', locale: 'en' as InvoiceLocale, khqr_template: '' })
 const logoFile = ref<File | null>(null)
 const logoPreview = ref<string | null>(null)
 const loading = ref(true)
@@ -32,6 +38,7 @@ async function load() {
     form.email = settings.email ?? ''
     form.phone = settings.phone ?? ''
     form.address = settings.address ?? ''
+    form.locale = settings.locale
     form.khqr_template = settings.khqr_template ?? ''
     logoPreview.value = settings.logo_url
   } catch (error) {
@@ -61,6 +68,7 @@ async function save() {
     form.email = result.email ?? ''
     form.phone = result.phone ?? ''
     form.address = result.address ?? ''
+    form.locale = result.locale
     form.khqr_template = result.khqr_template ?? ''
     logoPreview.value = result.logo_url
     logoFile.value = null
@@ -121,6 +129,13 @@ onMounted(load)
         <BaseInput v-model="form.email" type="email" :label="t('admin.school.emailLabel')" :error="errors.email?.[0]" />
         <BaseInput v-model="form.phone" :label="t('admin.school.phoneLabel')" :error="errors.phone?.[0]" />
         <BaseInput v-model="form.address" :label="t('admin.school.addressLabel')" :error="errors.address?.[0]" />
+        <BaseSelect
+          v-model="form.locale"
+          :options="localeOptions"
+          :label="t('admin.school.invoiceLanguageLabel')"
+          :hint="t('admin.school.invoiceLanguageHint')"
+          :error="errors.locale?.[0]"
+        />
       </section>
 
       <section class="space-y-2 rounded-lg border border-neutral-200 p-4">

@@ -715,6 +715,8 @@ const km: MessageSchema = {
       emailLabel: 'អ៊ីមែល',
       phoneLabel: 'លេខទូរស័ព្ទ',
       addressLabel: 'អាសយដ្ឋាន',
+      invoiceLanguageLabel: 'ភាសាវិក្កយបត្រ',
+      invoiceLanguageHint: 'ភាសាដែលវិក្កយបត្រ PDF និងសារជូនដំណឹងទាំងអស់ត្រូវបានចេញ។',
       khqrSection: 'QR ទូទាត់ប្រាក់ (KHQR)',
       khqrHint: 'កូដ Bakong KHQRផ្ទាល់របស់សាលា (ឧទាហរណ៍ ពីអេក្រង់ "KHQR របស់ខ្ញុំ" នៅក្នុងកម្មវិធី ACLEDA Toanchet) — ប្រើសម្រាប់បង្កើតកូដទូទាត់ប្រាក់ដែលអាចស្កេនបានជាមួយចំនួនទឹកប្រាក់ជាក់លាក់សម្រាប់ការចុះឈ្មោះនីមួយៗ។',
       khqrPlaceholder: 'បិទភ្ជាប់អត្ថបទ KHQR ដើមដែលបានឌិកូដពីកូដ QR នៃកម្មវិធីធនាគាររបស់អ្នក',

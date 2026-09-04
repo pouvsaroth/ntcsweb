@@ -715,6 +715,8 @@ const ja: MessageSchema = {
       emailLabel: 'メールアドレス',
       phoneLabel: '電話番号',
       addressLabel: '住所',
+      invoiceLanguageLabel: '請求書の言語',
+      invoiceLanguageHint: 'すべての請求書PDFと通知に使用される言語です。',
       khqrSection: '支払いQR（KHQR）',
       khqrHint: '学校自身のBakong KHQRコード（例：ACLEDA Toanchetアプリの「マイQR」画面から取得）— 登録ごとにスキャン可能な固定金額の支払いコードを生成するために使用されます。',
       khqrPlaceholder: '銀行アプリのQRコードから読み取った生のKHQRテキストを貼り付けてください',
