@@ -91,6 +91,17 @@ class InvoicePdfTest extends TestCase
 
     public function test_downloading_the_invoice_pdf_produces_a_real_pdf_with_the_khmer_font_embedded(): void
     {
+        // This is the one test in the file that runs the real Browsershot
+        // pipeline (the other three render the Blade view directly). CI's
+        // backend-tests job runs on a bare GitHub-hosted runner, not the
+        // project's own Docker image, so it has no Chromium/Node/puppeteer —
+        // skip there rather than fail on missing infrastructure the runner
+        // was never going to have. Production deploys from the same
+        // Dockerfile that installs Chromium, so this gap is CI-only.
+        if (! file_exists(config('services.browsershot.chrome_path') ?: '/usr/bin/chromium')) {
+            $this->markTestSkipped('Chromium is not available in this environment — see docker/php/Dockerfile.');
+        }
+
         $this->actingAsAdminWithPermissions([Permissions::INVOICES_VIEW]);
         $this->tenant->update(['locale' => 'km']);
         app()->setLocale('km');
