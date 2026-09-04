@@ -58,6 +58,18 @@ jobs:
           cp .env.example .env
           php artisan key:generate
 
+      # ubuntu-latest already has a system chromium at /usr/bin/chromium
+      # (matching BROWSERSHOT_CHROME_PATH in .env.example — see
+      # InvoicePdfTest's Chromium-availability skip guard, which only
+      # checks for the *browser*), it's just missing the `puppeteer` node
+      # package Browsershot's bundled script requires by name. Skipping its
+      # own Chromium download since the system one is already there.
+      - name: Install puppeteer for invoice PDF tests (Browsershot)
+        run: |
+          PUPPETEER_SKIP_DOWNLOAD=true npm install puppeteer --no-save
+          sed -i '/^BROWSERSHOT_NODE_MODULES_PATH=/d' .env
+          echo "BROWSERSHOT_NODE_MODULES_PATH=$(npm root)" >> .env
+
       # No separate `artisan migrate` step: the Feature tests' RefreshDatabase
       # trait migrates the DB itself, using phpunit.xml's ntcsdb_testing
       # overrides — those only apply inside a phpunit/artisan-test run, not to
