@@ -13,26 +13,45 @@ use Tests\Concerns\HasAcademicAdmin;
 use Tests\TestCase;
 
 /**
- * The invoice PDF used to render any Khmer content (school name, student
- * name, notes, ...) as blank tofu boxes — dompdf's built-in DejaVu Sans has
- * no Khmer glyphs. See resources/fonts/khmer and pdf/invoice.blade.php's
- *
- * @font-face rules. Rendering the Blade view directly (not the full PDF
- * binary) keeps this fast while still proving the label translations and
- * @font-face wiring are correct; the download endpoint test below is the one
- * that exercises the real dompdf/font-embedding pipeline end to end.
+ * The invoice PDF renders through Browsershot (a system-installed headless
+ * Chromium — see docker/php/Dockerfile), not dompdf: dompdf has no real
+ * text-shaping engine, so Khmer content (school name, student name, notes,
+ * ...) came out corrupted — dropped/misplaced characters, not just missing
+ * glyphs — since it draws each codepoint's glyph without vowel reordering
+ * or coeng (subscript consonant) formation. See resources/fonts/khmer and
+ * pdf/invoice.blade.php's @font-face rules for the embedded font itself.
  */
 class InvoicePdfTest extends TestCase
 {
     use HasAcademicAdmin, RefreshDatabase;
 
+    /**
+     * Renders the Blade view directly (not through InvoicePdfService's real
+     * Browsershot/Chromium call) — proves the label translations and
+     * @font-face wiring are correct without paying for a browser launch on
+     * every test. The download endpoint test below is the one that
+     * exercises the real Browsershot pipeline end to end.
+     */
     private function invoiceView(): string
     {
         $student = Student::factory()->forTenant($this->tenant)->create();
         $invoice = Invoice::factory()->forTenant($this->tenant)->forStudent($student)->create();
         $invoice->load(['items.product', 'items.variant', 'student', 'tenant', 'payments']);
 
-        return View::make('pdf.invoice', ['invoice' => $invoice, 'tenant' => $invoice->tenant])->render();
+        return View::make('pdf.invoice', [
+            'invoice' => $invoice,
+            'tenant' => $invoice->tenant,
+            'logoDataUri' => null,
+            'khmerFontRegular' => $this->khmerFontDataUri('Regular'),
+            'khmerFontBold' => $this->khmerFontDataUri('Bold'),
+        ])->render();
+    }
+
+    private function khmerFontDataUri(string $weight): string
+    {
+        return 'data:font/ttf;base64,'.base64_encode(
+            file_get_contents(resource_path("fonts/khmer/NotoSansKhmer-{$weight}.ttf"))
+        );
     }
 
     public function test_invoice_labels_render_in_english_by_default(): void
@@ -55,7 +74,7 @@ class InvoicePdfTest extends TestCase
         $html = $this->invoiceView();
 
         $this->assertStringContainsString('វិក្កយបត្រ', $html);
-        $this->assertStringContainsString('ដល់', $html);
+        $this->assertStringContainsString('ត្រូវទូទាត់ដោយ', $html);
         $this->assertStringContainsString('សរុបរង', $html);
     }
 

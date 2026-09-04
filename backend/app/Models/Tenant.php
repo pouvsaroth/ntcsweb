@@ -124,6 +124,25 @@ class Tenant extends Model
     }
 
     /**
+     * Absolute filesystem path to the logo, for dompdf (invoice.blade.php)
+     * specifically — dompdf's `enable_remote` is off by default, so handing
+     * it the HTTP `logoUrl()` silently produces no image at all. Reading the
+     * file straight off disk sidesteps that without opting into remote
+     * fetches (and the SSRF surface that comes with them) for the rest of
+     * the app.
+     */
+    public function logoPath(): ?string
+    {
+        if (! $this->logo) {
+            return null;
+        }
+
+        $path = Storage::disk('public')->path($this->logo);
+
+        return is_file($path) ? $path : null;
+    }
+
+    /**
      * The hostname the SPA and outgoing mail should use for this school.
      */
     public function hostname(): string

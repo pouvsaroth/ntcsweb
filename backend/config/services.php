@@ -43,4 +43,16 @@ return [
         'bot_token' => env('TELEGRAM_BOT_TOKEN'),
     ],
 
+    // See App\Services\Billing\InvoicePdfService. Browsershot drives a
+    // system-installed Chromium (docker/php/Dockerfile) rather than
+    // downloading its own — chrome_path points at it directly, and
+    // node_modules_path tells the node_modules-resolution Browsershot's
+    // bundled script does where to find the globally-installed
+    // puppeteer-core (installed outside /var/www/html because that
+    // directory is shadowed at runtime by the ./backend bind mount).
+    'browsershot' => [
+        'chrome_path' => env('BROWSERSHOT_CHROME_PATH', '/usr/bin/chromium'),
+        'node_modules_path' => env('BROWSERSHOT_NODE_MODULES_PATH'),
+    ],
+
 ];

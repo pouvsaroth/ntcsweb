@@ -3,21 +3,24 @@
 <head>
 <meta charset="utf-8">
 <style>
-    {{-- Static instances of Noto Sans Khmer (Regular/Bold) bundled under resources/fonts —
-         dompdf's built-in DejaVu Sans has no Khmer glyphs, so any Khmer text (school name,
-         student name, notes, ...) rendered blank/tofu without this. Latin/numerals are
-         covered by the same font, so it's the only family the body needs. --}}
+    {{-- Static instances of Noto Sans Khmer (Regular/Bold) bundled under resources/fonts,
+         handed in as base64 data URIs by InvoicePdfService — see its docblock for why
+         (Browsershot blocks `file://` in HTML outright, and `http://localhost:8080` isn't
+         reachable from inside this container). Chromium's default fonts have no Khmer
+         glyphs, so any Khmer text (school name, student name, notes, ...) would render
+         blank/tofu without this. Latin/numerals are covered by the same font, so it's the
+         only family the body needs. --}}
     @font-face {
         font-family: 'Noto Sans Khmer';
         font-style: normal;
         font-weight: normal;
-        src: url('{{ resource_path('fonts/khmer/NotoSansKhmer-Regular.ttf') }}');
+        src: url('{{ $khmerFontRegular }}');
     }
     @font-face {
         font-family: 'Noto Sans Khmer';
         font-style: normal;
         font-weight: bold;
-        src: url('{{ resource_path('fonts/khmer/NotoSansKhmer-Bold.ttf') }}');
+        src: url('{{ $khmerFontBold }}');
     }
     body { font-family: 'Noto Sans Khmer', DejaVu Sans, sans-serif; font-size: 12px; color: #1f2937; }
     .header { display: table; width: 100%; margin-bottom: 24px; }
@@ -50,8 +53,8 @@
 <body>
     <div class="header">
         <div class="school">
-            @if($tenant?->logoUrl())
-                <img src="{{ $tenant->logoUrl() }}" alt="">
+            @if($logoDataUri)
+                <img src="{{ $logoDataUri }}" alt="">
             @endif
             <h1>{{ $tenant?->name ?? config('app.name') }}</h1>
             @if($tenant?->address)<p>{{ $tenant->address }}</p>@endif

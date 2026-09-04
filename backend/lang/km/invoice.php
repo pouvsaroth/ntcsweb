@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 return [
     'invoice' => 'វិក្កយបត្រ',
-    'bill_to' => 'ដល់',
+    'bill_to' => 'ត្រូវទូទាត់ដោយ',
     'invoice_date' => 'កាលបរិច្ឆេទវិក្កយបត្រ',
     'due_date' => 'កាលបរិច្ឆេទត្រូវទូទាត់',
     'description' => 'បរិយាយ',
