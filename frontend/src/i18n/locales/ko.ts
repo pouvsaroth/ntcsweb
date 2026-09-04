@@ -183,6 +183,14 @@ const ko: MessageSchema = {
     feeVideo: 'Video',
     feeMonthlyOnline: 'Monthly (online)',
     feeTermOnline: 'Per term (online)',
+    detailAndFee: 'Detail & Fee',
+    noDescription: 'Description',
+    noFeeInfo: 'Fee details coming soon',
+    detailIntro: 'Students may choose how to pay for this course:',
+    notesTitle: 'Notes:',
+    noteMonthly: 'Monthly fee & Monthly (online) fee: the school allows up to 5 hours of study per week — students pay every month until the course ends.',
+    noteTerm: 'Per-term fee & Per-term (online) fee: students study without a fixed number of hours or days per course, until finished — a student may take 1 month or 2, faster or slower, depending on how quickly they learn.',
+    noteVideo: 'Video fee: the school provides videos for students to watch on their own; for questions, students may come to the school or ask a teacher on social media (up to 3 months of support per course).',
   },
 
   program: {
@@ -198,6 +206,8 @@ const ko: MessageSchema = {
     emptyTitle: '아직 게시된 시간표가 없습니다',
     emptyMessage: '학교에서 게시하면 수업 요일과 시간이 여기에 표시됩니다.',
     teacher: '담당 교사: {name}',
+    dayRange: '{from} to {to}',
+    daySingle: '{day}',
     monday: '월요일',
     tuesday: '화요일',
     wednesday: '수요일',

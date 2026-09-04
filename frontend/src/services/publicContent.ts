@@ -151,6 +151,11 @@ async function fetchPublicOne<T>(url: string): Promise<T | null> {
   }
 }
 
+// Memoized within a page load: several CourseCards can each expand their
+// "Detail & Fee" panel and ask for this course's videos — they share one
+// request against the full catalog instead of each re-fetching it.
+let videoLessonsCache: Promise<PublicVideoCourse[]> | null = null
+
 export const publicContentService = {
   // Unlike the other endpoints in this file, this one is real — the
   // fetchPublicList wrapper is used anyway for consistency and because it
@@ -186,6 +191,13 @@ export const publicContentService = {
 
   /** Real — see Public\VideoLessonController. Courses grouped with their video lessons, each flagged whether the current viewer can actually play it. */
   getVideoLessons: () => apiGet<PublicVideoCourse[]>('/public/video-lessons'),
+
+  /** This course's video menu (title + lock state) for the "Detail & Fee" panel — `null` when the course has no videos published (`show_videos` off, or none active). */
+  async getVideosForCourse(coursePackageId: number): Promise<PublicVideoCourse | null> {
+    if (!videoLessonsCache) videoLessonsCache = apiGet<PublicVideoCourse[]>('/public/video-lessons')
+    const courses = await videoLessonsCache
+    return courses.find((course) => course.id === coursePackageId) ?? null
+  },
 
   getTeachers: (page = 1, perPage = 12) => fetchPublicList<Teacher>('/public/teachers', { page, per_page: perPage }),
 

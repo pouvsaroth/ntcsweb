@@ -186,6 +186,14 @@ const en = {
     feeVideo: 'Video',
     feeMonthlyOnline: 'Monthly (online)',
     feeTermOnline: 'Per term (online)',
+    detailAndFee: 'Detail & Fee',
+    noDescription: 'Description',
+    noFeeInfo: 'Fee details coming soon',
+    detailIntro: 'Students may choose how to pay for this course:',
+    notesTitle: 'Notes:',
+    noteMonthly: 'Monthly fee & Monthly (online) fee: the school allows up to 5 hours of study per week — students pay every month until the course ends.',
+    noteTerm: 'Per-term fee & Per-term (online) fee: students study without a fixed number of hours or days per course, until finished — a student may take 1 month or 2, faster or slower, depending on how quickly they learn.',
+    noteVideo: 'Video fee: the school provides videos for students to watch on their own; for questions, students may come to the school or ask a teacher on social media (up to 3 months of support per course).',
   },
 
   program: {
@@ -201,6 +209,8 @@ const en = {
     emptyTitle: 'No schedules published yet',
     emptyMessage: 'Class days and times will appear here once the school publishes them.',
     teacher: 'Taught by {name}',
+    dayRange: '{from} to {to}',
+    daySingle: '{day}',
     monday: 'Monday',
     tuesday: 'Tuesday',
     wednesday: 'Wednesday',

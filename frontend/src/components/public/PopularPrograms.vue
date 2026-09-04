@@ -3,29 +3,13 @@ import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
 
-import BaseBadge from '@/components/ui/BaseBadge.vue'
-import BaseButton from '@/components/ui/BaseButton.vue'
+import CourseCard from '@/components/public/CourseCard.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import { publicContentService, type PublicCourse } from '@/services/publicContent'
 
 const { t } = useI18n()
 const courses = ref<PublicCourse[]>([])
 const loading = ref(true)
-
-const currencySymbol: Record<PublicCourse['currency'], string> = {
-  USD: '$',
-  KHR: '៛',
-}
-
-/** The homepage teaser shows one headline fee, not the full breakdown — that's what the full /programs page is for. */
-function headlineFee(course: PublicCourse): { labelKey: string; amount: number } | null {
-  if (course.fee_monthly !== null) return { labelKey: 'programs.feeMonthly', amount: course.fee_monthly }
-  if (course.fee_term !== null) return { labelKey: 'programs.feeTerm', amount: course.fee_term }
-  if (course.fee_video !== null) return { labelKey: 'programs.feeVideo', amount: course.fee_video }
-  if (course.fee_monthly_online !== null) return { labelKey: 'programs.feeMonthlyOnline', amount: course.fee_monthly_online }
-  if (course.fee_term_online !== null) return { labelKey: 'programs.feeTermOnline', amount: course.fee_term_online }
-  return null
-}
 
 onMounted(async () => {
   const result = await publicContentService.getCourses({ featured: true })
@@ -46,48 +30,12 @@ onMounted(async () => {
       </RouterLink>
     </div>
 
-    <div v-if="loading" class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-      <div v-for="i in 4" :key="i" class="h-56 animate-pulse rounded-[--radius-card] bg-neutral-100" />
+    <div v-if="loading" class="grid gap-6 sm:grid-cols-1 lg:grid-cols-2">
+      <div v-for="i in 4" :key="i" class="h-40 animate-pulse rounded-[2rem] bg-neutral-100" />
     </div>
     <EmptyState v-else-if="courses.length === 0" :title="t('home.noProgramsTitle')" :message="t('home.noProgramsMessage')" />
-    <div v-else class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-      <div
-        v-for="course in courses"
-        :key="course.id"
-        class="flex flex-col overflow-hidden rounded-[--radius-card] border border-neutral-200 bg-white shadow-[--shadow-card] transition-shadow hover:shadow-[--shadow-card-hover]"
-      >
-        <div v-if="course.thumbnail_url" class="aspect-video w-full overflow-hidden bg-neutral-100">
-          <img :src="course.thumbnail_url" alt="" class="h-full w-full object-cover" />
-        </div>
-
-        <div class="flex flex-1 flex-col p-5">
-          <BaseBadge v-if="course.academic_program" variant="primary" class="self-start">{{ course.academic_program.name }}</BaseBadge>
-          <h3 class="mt-3 font-semibold text-neutral-900">{{ course.name }}</h3>
-          <p v-if="course.description" class="mt-1 line-clamp-2 text-sm text-neutral-500">{{ course.description }}</p>
-
-          <div class="mt-3 flex items-center gap-2">
-            <span v-if="headlineFee(course)" class="text-sm font-semibold text-primary-700">
-              {{ currencySymbol[course.currency] }}{{ headlineFee(course)!.amount.toFixed(2) }}
-              <span class="font-normal text-neutral-400">/ {{ t(headlineFee(course)!.labelKey).toLowerCase() }}</span>
-            </span>
-            <span v-if="course.duration" class="ml-auto inline-flex items-center gap-1 text-xs text-neutral-500">
-              <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              {{ course.duration }}
-            </span>
-          </div>
-
-          <BaseButton
-            to="/programs"
-            variant="outline"
-            block
-            class="mt-4 !border-secondary-600 !text-secondary-600 hover:!bg-secondary-50"
-          >
-            {{ t('program.viewDetails') }}
-          </BaseButton>
-        </div>
-      </div>
+    <div v-else class="grid gap-6 sm:grid-cols-1 lg:grid-cols-2">
+      <CourseCard v-for="course in courses" :key="course.id" :course="course" />
     </div>
   </section>
 </template>

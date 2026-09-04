@@ -182,6 +182,14 @@ const zh: MessageSchema = {
     feeVideo: 'Video',
     feeMonthlyOnline: 'Monthly (online)',
     feeTermOnline: 'Per term (online)',
+    detailAndFee: 'Detail & Fee',
+    noDescription: 'Description',
+    noFeeInfo: 'Fee details coming soon',
+    detailIntro: 'Students may choose how to pay for this course:',
+    notesTitle: 'Notes:',
+    noteMonthly: 'Monthly fee & Monthly (online) fee: the school allows up to 5 hours of study per week — students pay every month until the course ends.',
+    noteTerm: 'Per-term fee & Per-term (online) fee: students study without a fixed number of hours or days per course, until finished — a student may take 1 month or 2, faster or slower, depending on how quickly they learn.',
+    noteVideo: 'Video fee: the school provides videos for students to watch on their own; for questions, students may come to the school or ask a teacher on social media (up to 3 months of support per course).',
   },
 
   program: {
@@ -197,6 +205,8 @@ const zh: MessageSchema = {
     emptyTitle: '暂无课程表',
     emptyMessage: '学校发布后，上课日期和时间将在此显示。',
     teacher: '授课教师：{name}',
+    dayRange: '{from} to {to}',
+    daySingle: '{day}',
     monday: '星期一',
     tuesday: '星期二',
     wednesday: '星期三',
