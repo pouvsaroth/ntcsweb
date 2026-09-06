@@ -60,6 +60,8 @@ export const accountsService = {
 }
 
 export interface AccountingSummary {
+  /** Every amount below is already converted to this currency — see AccountingDashboardController. */
+  currency: 'USD' | 'KHR'
   total_revenue: number
   total_expenses: number
   net_profit: number

@@ -7,8 +7,10 @@ namespace App\Services\Accounting;
 use App\Models\Account;
 use App\Models\FinancialTransaction;
 use App\Models\Payment;
+use App\Services\Billing\CurrencyConversionService;
 use App\Support\Accounting\AccountType;
 use App\Support\Accounting\TransactionType;
+use App\Support\Tenancy\TenantContext;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -19,9 +21,22 @@ use Illuminate\Support\Facades\DB;
  * summing (debits, credits) directly off `financial_transactions`; nothing
  * is cached or denormalized, so a reversal is reflected the instant it's
  * posted, with no separate "recompute the balance" step ever needed.
+ *
+ * `financial_transactions` can hold both USD and KHR rows (see
+ * CoursePackage/Invoice's own currency column) — every SUM here additionally
+ * groups by `currency` and transaction date first, then folds that small,
+ * bounded result set (distinct dates in range × 2 currencies, never
+ * transaction volume) into one total via CurrencyConversionService, using
+ * the rate in effect on each date. This is what makes a mixed-currency
+ * total meaningful instead of adding a $10 row to a 40,000 KHR row.
  */
 final class AccountingReportService
 {
+    public function __construct(
+        private readonly CurrencyConversionService $currency,
+        private readonly TenantContext $tenantContext,
+    ) {}
+
     /** Net movement into (debit) minus out of (credit) a set of accounts — the "natural" reading is applied by the caller via Account::normalBalanceSign(). */
     public function netDebit(array $accountIds, ?string $dateFrom = null, ?string $dateTo = null, array $types = []): float
     {
@@ -101,39 +116,21 @@ final class AccountingReportService
 
         $opening = $this->netDebit($bankIds, null, $this->dayBefore($dateFrom));
 
-        $studentPayments = (float) FinancialTransaction::query()
-            ->whereIn('debit_account_id', $bankIds)
-            ->where('type', TransactionType::INCOME)
-            ->where('reference_type', Payment::class)
-            ->whereBetween('transaction_date', [$dateFrom, $dateTo])
-            ->sum('amount');
+        $studentPayments = $this->sum('debit_account_id', $bankIds, $dateFrom, $dateTo, [TransactionType::INCOME], referenceType: Payment::class);
 
-        $otherIncome = (float) FinancialTransaction::query()
-            ->whereIn('debit_account_id', $bankIds)
-            ->where('type', TransactionType::INCOME)
-            ->whereNull('reference_type')
-            ->whereBetween('transaction_date', [$dateFrom, $dateTo])
-            ->sum('amount');
+        $otherIncome = $this->sum('debit_account_id', $bankIds, $dateFrom, $dateTo, [TransactionType::INCOME], referenceTypeNull: true);
 
         // A cancelled/refunded payment credits cash back out — netted against
         // Student Payments (what it reverses); any leftover beyond that (an
         // edge case: reversing a manual "other income" entry) comes out of
         // Other Income instead. Neither bucket goes below zero.
-        $reversedIncome = (float) FinancialTransaction::query()
-            ->whereIn('credit_account_id', $bankIds)
-            ->whereIn('type', [TransactionType::REFUND, TransactionType::ADJUSTMENT])
-            ->whereBetween('transaction_date', [$dateFrom, $dateTo])
-            ->sum('amount');
+        $reversedIncome = $this->sum('credit_account_id', $bankIds, $dateFrom, $dateTo, [TransactionType::REFUND, TransactionType::ADJUSTMENT]);
 
         $netStudentPayments = round($studentPayments - min($reversedIncome, $studentPayments), 2);
         $leftoverReversal = max(0.0, $reversedIncome - $studentPayments);
         $netOtherIncome = round(max(0.0, $otherIncome - $leftoverReversal), 2);
 
-        $expenses = round((float) FinancialTransaction::query()
-            ->whereIn('credit_account_id', $bankIds)
-            ->where('type', TransactionType::EXPENSE)
-            ->whereBetween('transaction_date', [$dateFrom, $dateTo])
-            ->sum('amount'), 2);
+        $expenses = round($this->sum('credit_account_id', $bankIds, $dateFrom, $dateTo, [TransactionType::EXPENSE]), 2);
 
         return [
             'opening' => $opening,
@@ -157,9 +154,22 @@ final class AccountingReportService
         return $sign * $this->netDebit($ids, $dateFrom, $dateTo);
     }
 
-    private function sum(string $column, array $accountIds, ?string $dateFrom, ?string $dateTo, array $types): float
-    {
-        $query = FinancialTransaction::query()->whereIn($column, $accountIds);
+    /**
+     * @param  list<string>  $types
+     */
+    private function sum(
+        string $column,
+        array $accountIds,
+        ?string $dateFrom,
+        ?string $dateTo,
+        array $types,
+        ?string $referenceType = null,
+        bool $referenceTypeNull = false,
+    ): float {
+        $query = FinancialTransaction::query()
+            ->select('currency', DB::raw('DATE(transaction_date) as tx_date'), DB::raw('SUM(amount) as total'))
+            ->whereIn($column, $accountIds)
+            ->groupBy('currency', DB::raw('DATE(transaction_date)'));
 
         if ($dateFrom !== null) {
             $query->whereDate('transaction_date', '>=', $dateFrom);
@@ -173,18 +183,26 @@ final class AccountingReportService
             $query->whereIn('type', $types);
         }
 
-        return (float) $query->sum('amount');
+        if ($referenceType !== null) {
+            $query->where('reference_type', $referenceType);
+        }
+
+        if ($referenceTypeNull) {
+            $query->whereNull('reference_type');
+        }
+
+        return $this->currency->sumConverted($query->get(), $this->tenantContext->getOrFail());
     }
 
     /**
-     * @return array<int, float> account_id => summed amount
+     * @return array<int, float> account_id => summed amount, converted to the tenant's default currency
      */
     private function groupedSum(string $column, array $accountIds, ?string $dateFrom, ?string $dateTo): array
     {
         $query = FinancialTransaction::query()
-            ->select($column, DB::raw('SUM(amount) as total'))
+            ->select($column, 'currency', DB::raw('DATE(transaction_date) as tx_date'), DB::raw('SUM(amount) as total'))
             ->whereIn($column, $accountIds)
-            ->groupBy($column);
+            ->groupBy($column, 'currency', DB::raw('DATE(transaction_date)'));
 
         if ($dateFrom !== null) {
             $query->whereDate('transaction_date', '>=', $dateFrom);
@@ -194,7 +212,16 @@ final class AccountingReportService
             $query->whereDate('transaction_date', '<=', $dateTo);
         }
 
-        return $query->pluck('total', $column)->map(fn ($v) => (float) $v)->all();
+        $tenant = $this->tenantContext->getOrFail();
+        $result = [];
+
+        foreach ($query->get() as $row) {
+            $rate = $this->currency->rateForDate($tenant, $row->tx_date);
+            $converted = $this->currency->convert((float) $row->total, $row->currency, $tenant->default_currency, $rate);
+            $result[$row->{$column}] = ($result[$row->{$column}] ?? 0.0) + $converted;
+        }
+
+        return $result;
     }
 
     private function dayBefore(string $date): string

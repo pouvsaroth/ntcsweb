@@ -1,6 +1,8 @@
 import { apiGetWithMeta } from '@/services/http'
 
 export interface BillingSummary {
+  /** Every amount below is already converted to this currency — see BillingDashboardController. */
+  currency: 'USD' | 'KHR'
   todays_sales: number
   todays_payments: number
   outstanding: number

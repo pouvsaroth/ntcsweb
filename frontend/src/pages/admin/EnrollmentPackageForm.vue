@@ -12,6 +12,7 @@ import { academicProgramsService, type AcademicProgram } from '@/services/academ
 import { classesService, type SchoolClass } from '@/services/classes'
 import { coursePackagesService, type CoursePackage } from '@/services/coursePackages'
 import { enrollmentsService, type FeeType } from '@/services/enrollments'
+import { invoicesService } from '@/services/invoices'
 import { paymentMethods, type PaymentMethodValue } from '@/services/payments'
 import { studentsService, type Student } from '@/services/students'
 import { ApiRequestError } from '@/types/api'
@@ -52,6 +53,7 @@ const form = reactive({
 const errors = ref<Record<string, string[]>>({})
 const generalError = ref<string | null>(null)
 const submitting = ref(false)
+const submittingAndPrinting = ref(false)
 
 const programOptions = computed(() => programs.value.map((p) => ({ value: String(p.id), label: `${p.code} — ${p.name}` })))
 
@@ -198,16 +200,15 @@ function selectStudent(student: Student) {
   studentSearch.value = ''
 }
 
-async function submit() {
-  if (!selectedStudent.value || !form.class_id || !form.course_package_id || !form.fee_type) return
-  if (tableRequired.value && form.table_id === null) return
+async function createEnrollment() {
+  if (!selectedStudent.value || !form.class_id || !form.course_package_id || !form.fee_type) return null
+  if (tableRequired.value && form.table_id === null) return null
 
-  submitting.value = true
   errors.value = {}
   generalError.value = null
 
   try {
-    await enrollmentsService.enrollInPackage({
+    return await enrollmentsService.enrollInPackage({
       student_id: selectedStudent.value.id,
       class_id: form.class_id,
       table_id: form.table_id,
@@ -219,16 +220,45 @@ async function submit() {
       received_amount: form.received_amount,
       payment_method: form.received_amount > 0 ? form.payment_method : null,
     })
-
-    await router.push('/admin/enrollments')
   } catch (error) {
     if (error instanceof ApiRequestError && error.errors) {
       errors.value = error.errors
     } else {
       generalError.value = error instanceof ApiRequestError ? error.message : t('admin.enrollments.saveFailed')
     }
+    return null
+  }
+}
+
+async function submit() {
+  submitting.value = true
+  try {
+    const enrollment = await createEnrollment()
+    if (enrollment) await router.push('/admin/enrollments')
   } finally {
     submitting.value = false
+  }
+}
+
+/** Same invoice download as the Invoice detail page's "Download PDF" button — just jumped straight to from here instead of navigating to the invoice first. */
+async function submitAndPrint() {
+  submittingAndPrinting.value = true
+  try {
+    const enrollment = await createEnrollment()
+    if (!enrollment) return
+
+    if (enrollment.invoice_id) {
+      try {
+        const invoice = await invoicesService.get(enrollment.invoice_id)
+        await invoicesService.downloadPdf(invoice.id, invoice.invoice_number)
+      } catch (error) {
+        generalError.value = error instanceof ApiRequestError ? error.message : t('admin.invoices.downloadFailed')
+      }
+    }
+
+    await router.push('/admin/enrollments')
+  } finally {
+    submittingAndPrinting.value = false
   }
 }
 
@@ -429,9 +459,18 @@ onMounted(async () => {
         <BaseButton
           type="submit"
           :loading="submitting"
-          :disabled="!selectedStudent || !form.class_id || !form.course_package_id || !form.fee_type || (tableRequired && !form.table_id)"
+          :disabled="submittingAndPrinting || !selectedStudent || !form.class_id || !form.course_package_id || !form.fee_type || (tableRequired && !form.table_id)"
         >
           {{ t('common.save') }}
+        </BaseButton>
+        <BaseButton
+          type="button"
+          variant="outline"
+          :loading="submittingAndPrinting"
+          :disabled="submitting || !selectedStudent || !form.class_id || !form.course_package_id || !form.fee_type || (tableRequired && !form.table_id)"
+          @click="submitAndPrint"
+        >
+          {{ t('admin.enrollments.saveAndPrint') }}
         </BaseButton>
         <BaseButton type="button" variant="outline" @click="router.push('/admin/enrollments')">{{ t('common.cancel') }}</BaseButton>
       </div>

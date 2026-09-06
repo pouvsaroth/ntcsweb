@@ -7,6 +7,7 @@ import BaseCard from '@/components/ui/BaseCard.vue'
 import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import { billingService, type BillingSummary, type PaymentsByMethodRow } from '@/services/billing'
 import { ApiRequestError } from '@/types/api'
+import { formatMoney } from '@/utils/currency'
 
 const { t } = useI18n()
 
@@ -25,11 +26,12 @@ function toPascalCase(value: string): string {
 
 const stats = computed(() => {
   if (!summary.value) return []
+  const currency = summary.value.currency
   return [
-    { label: t('admin.billing.statTodaysSales'), value: `$${summary.value.todays_sales.toFixed(2)}` },
-    { label: t('admin.billing.statTodaysPayments'), value: `$${summary.value.todays_payments.toFixed(2)}` },
-    { label: t('admin.billing.statOutstanding'), value: `$${summary.value.outstanding.toFixed(2)}` },
-    { label: t('admin.billing.statOverdue'), value: `$${summary.value.overdue.toFixed(2)}` },
+    { label: t('admin.billing.statTodaysSales'), value: formatMoney(summary.value.todays_sales, currency) },
+    { label: t('admin.billing.statTodaysPayments'), value: formatMoney(summary.value.todays_payments, currency) },
+    { label: t('admin.billing.statOutstanding'), value: formatMoney(summary.value.outstanding, currency) },
+    { label: t('admin.billing.statOverdue'), value: formatMoney(summary.value.overdue, currency) },
   ]
 })
 
@@ -106,14 +108,14 @@ onMounted(async () => {
               <tr v-for="row in paymentsByMethod" :key="row.payment_method">
                 <td class="py-2 text-neutral-700">{{ t(`admin.payments.method${toPascalCase(row.payment_method)}`) }}</td>
                 <td class="py-2 text-right text-neutral-700">{{ row.count }}</td>
-                <td class="py-2 text-right text-neutral-700">${{ row.total.toFixed(2) }}</td>
+                <td class="py-2 text-right text-neutral-700">{{ formatMoney(row.total, summary?.currency ?? 'USD') }}</td>
               </tr>
             </tbody>
             <tfoot>
               <tr class="border-t border-neutral-200 font-semibold text-neutral-900">
                 <td class="pt-2">{{ t('admin.billing.total') }}</td>
                 <td class="pt-2 text-right">{{ paymentsByMethod.reduce((sum, r) => sum + r.count, 0) }}</td>
-                <td class="pt-2 text-right">${{ paymentsByMethodTotal.toFixed(2) }}</td>
+                <td class="pt-2 text-right">{{ formatMoney(paymentsByMethodTotal, summary?.currency ?? 'USD') }}</td>
               </tr>
             </tfoot>
           </table>

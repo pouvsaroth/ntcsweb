@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Billing;
 
+use App\Models\CurrencyRate;
+use App\Models\Invoice;
 use App\Models\Product;
 use App\Models\Student;
 use App\Support\Authorization\Permissions;
+use App\Support\Billing\InvoiceStatus;
 use App\Support\Billing\PaymentMethod;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\HasAcademicAdmin;
@@ -67,5 +70,49 @@ class BillingDashboardTest extends TestCase
 
         $this->assertSame(2, $rows['CASH']['count']);
         $this->assertEqualsWithDelta(50.0, $rows['CASH']['total'], 0.001);
+    }
+
+    /**
+     * The actual point of the currency-conversion feature: each USD invoice
+     * converts using the rate in effect on *its own* invoice_date, not
+     * today's rate. A naive "always use the latest rate" implementation
+     * would produce 615,000 (both invoices at 4100) instead of the correct
+     * 605,000 — this test fails under that bug, not just under "no
+     * conversion at all".
+     */
+    public function test_outstanding_converts_each_invoice_using_the_rate_in_effect_on_its_own_date(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::BILLING_REPORTS_VIEW]);
+        $this->tenant->update(['default_currency' => 'KHR']);
+        // Every request re-resolves the tenant via AuthenticatedUserTenantResolver,
+        // which reads $user->tenant — a relation Eloquent caches for the
+        // lifetime of $this->admin (the instance actingAs() keeps reusing
+        // across every request in this test). The update above doesn't
+        // touch that cached relation, so it has to be refreshed explicitly.
+        $this->admin->load('tenant');
+
+        CurrencyRate::factory()->forTenant($this->tenant)->create(['effective_date' => now()->subDays(30), 'khr_per_usd' => 4000]);
+        CurrencyRate::factory()->forTenant($this->tenant)->create(['effective_date' => now(), 'khr_per_usd' => 4100]);
+
+        // 30 days ago, at the 4000 rate: 100 USD -> 400,000 KHR.
+        Invoice::factory()->forTenant($this->tenant)->status(InvoiceStatus::ISSUED)->create([
+            'invoice_date' => now()->subDays(30),
+            'currency' => 'USD',
+            'total' => 100,
+            'balance' => 100,
+        ]);
+
+        // Today, at the 4100 rate: 50 USD -> 205,000 KHR.
+        Invoice::factory()->forTenant($this->tenant)->status(InvoiceStatus::ISSUED)->create([
+            'invoice_date' => now(),
+            'currency' => 'USD',
+            'total' => 50,
+            'balance' => 50,
+        ]);
+
+        $response = $this->getJson('/api/v1/billing/dashboard')->assertOk();
+
+        $response->assertJsonPath('data.currency', 'KHR');
+        $this->assertEqualsWithDelta(605000.0, $response->json('data.outstanding'), 0.001);
     }
 }

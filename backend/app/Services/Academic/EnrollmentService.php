@@ -102,6 +102,11 @@ final class EnrollmentService
 
             $enrollment->load(['student', 'schoolClass', 'table', 'coursePackage', 'academicProgram', 'studyMode']);
 
+            // Transient — never persisted, just carried through to
+            // EnrollmentResource so the admin UI can offer "Save and Print"
+            // (jump straight to this invoice) without a second round trip.
+            $enrollment->setAttribute('invoice_id', $invoice->getKey());
+
             $this->audit->log(
                 AuditAction::ENROLLMENT_INVOICED,
                 'Enrollments',

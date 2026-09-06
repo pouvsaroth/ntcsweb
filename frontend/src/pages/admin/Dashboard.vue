@@ -7,6 +7,7 @@ import BaseCard from '@/components/ui/BaseCard.vue'
 import { accountingReportsService } from '@/services/accounting'
 import { studentsService } from '@/services/students'
 import { useAuthStore } from '@/stores/auth'
+import { formatMoney } from '@/utils/currency'
 
 const auth = useAuthStore()
 const { t } = useI18n()
@@ -64,8 +65,10 @@ const dailyIncome = ref<string>('—')
 const monthlyExpense = ref<string>('—')
 const dailyExpense = ref<string>('—')
 
+let currency: 'USD' | 'KHR' = 'USD'
+
 function money(amount: number): string {
-  return `$${amount.toFixed(2)}`
+  return formatMoney(amount, currency)
 }
 
 function firstOfMonth(): string {
@@ -88,6 +91,7 @@ async function loadStats(): Promise<void> {
 
   try {
     const summary = await accountingReportsService.dashboard({ date_from: firstOfMonth(), date_to: today() })
+    currency = summary.currency
     monthlyIncome.value = money(summary.total_revenue)
     dailyIncome.value = money(summary.todays_income)
     monthlyExpense.value = money(summary.total_expenses)

@@ -18,7 +18,20 @@ const localeOptions: { value: InvoiceLocale; label: string }[] = [
   { value: 'km', label: 'ភាសាខ្មែរ (Khmer)' },
 ]
 
-const form = reactive({ name: '', email: '', phone: '', address: '', locale: 'en' as InvoiceLocale, khqr_template: '' })
+const currencyOptions: { value: 'USD' | 'KHR'; label: string }[] = [
+  { value: 'USD', label: 'USD ($)' },
+  { value: 'KHR', label: 'KHR (៛)' },
+]
+
+const form = reactive({
+  name: '',
+  email: '',
+  phone: '',
+  address: '',
+  locale: 'en' as InvoiceLocale,
+  default_currency: 'USD' as 'USD' | 'KHR',
+  khqr_template: '',
+})
 const logoFile = ref<File | null>(null)
 const logoPreview = ref<string | null>(null)
 const loading = ref(true)
@@ -39,6 +52,7 @@ async function load() {
     form.phone = settings.phone ?? ''
     form.address = settings.address ?? ''
     form.locale = settings.locale
+    form.default_currency = settings.default_currency
     form.khqr_template = settings.khqr_template ?? ''
     logoPreview.value = settings.logo_url
   } catch (error) {
@@ -69,6 +83,7 @@ async function save() {
     form.phone = result.phone ?? ''
     form.address = result.address ?? ''
     form.locale = result.locale
+    form.default_currency = result.default_currency
     form.khqr_template = result.khqr_template ?? ''
     logoPreview.value = result.logo_url
     logoFile.value = null
@@ -135,6 +150,13 @@ onMounted(load)
           :label="t('admin.school.invoiceLanguageLabel')"
           :hint="t('admin.school.invoiceLanguageHint')"
           :error="errors.locale?.[0]"
+        />
+        <BaseSelect
+          v-model="form.default_currency"
+          :options="currencyOptions"
+          :label="t('admin.school.defaultCurrencyLabel')"
+          :hint="t('admin.school.defaultCurrencyHint')"
+          :error="errors.default_currency?.[0]"
         />
       </section>
 

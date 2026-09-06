@@ -69,6 +69,8 @@ export interface Enrollment {
   study_mode_id: number | null
   study_mode: StudyMode | null
   created_at: string
+  /** Only present right after enrollInPackage() creates the invoice alongside it — absent everywhere else this type is used. */
+  invoice_id?: number
 }
 
 export interface EnrollmentInput {

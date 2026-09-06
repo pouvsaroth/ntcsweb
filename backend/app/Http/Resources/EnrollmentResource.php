@@ -36,6 +36,10 @@ class EnrollmentResource extends JsonResource
             'study_mode_id' => $this->study_mode_id,
             'study_mode' => new StudyModeResource($this->whenLoaded('studyMode')),
             'created_at' => $this->created_at?->toIso8601String(),
+            // Only set right after EnrollmentService::enrollInPackage() creates
+            // the invoice alongside it — absent everywhere else this resource
+            // is used (index/show/transfer/etc.).
+            'invoice_id' => $this->when(array_key_exists('invoice_id', $this->getAttributes()), fn () => $this->getAttribute('invoice_id')),
         ];
     }
 }

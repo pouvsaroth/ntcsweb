@@ -10,6 +10,7 @@ use App\Models\Account;
 use App\Models\Invoice;
 use App\Services\Accounting\AccountingReportService;
 use App\Support\Authorization\Permissions;
+use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -21,7 +22,10 @@ use Illuminate\Http\Request;
  */
 final class AccountingDashboardController extends Controller
 {
-    public function __construct(private readonly AccountingReportService $reports) {}
+    public function __construct(
+        private readonly AccountingReportService $reports,
+        private readonly TenantContext $tenantContext,
+    ) {}
 
     public function summary(Request $request): JsonResponse
     {
@@ -35,6 +39,9 @@ final class AccountingDashboardController extends Controller
         $expenses = $this->reports->totalExpenses($dateFrom, $dateTo);
 
         return ApiResponse::success([
+            // Every figure below is already converted to this currency — see
+            // AccountingReportService's own docblock.
+            'currency' => $this->tenantContext->getOrFail()->default_currency,
             'total_revenue' => $revenue,
             'total_expenses' => $expenses,
             'net_profit' => round($revenue - $expenses, 2),

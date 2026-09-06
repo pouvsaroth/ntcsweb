@@ -21,6 +21,7 @@ use App\Models\Building;
 use App\Models\Classroom;
 use App\Models\ClassroomTable;
 use App\Models\CoursePackage;
+use App\Models\CurrencyRate;
 use App\Models\Department;
 use App\Models\Enrollment;
 use App\Models\Expense;
@@ -63,6 +64,7 @@ use App\Policies\BuildingPolicy;
 use App\Policies\ClassroomPolicy;
 use App\Policies\ClassroomTablePolicy;
 use App\Policies\CoursePackagePolicy;
+use App\Policies\CurrencyRatePolicy;
 use App\Policies\DepartmentPolicy;
 use App\Policies\EnrollmentPolicy;
 use App\Policies\ExpensePolicy;
@@ -124,6 +126,7 @@ class AuthServiceProvider extends ServiceProvider
         GalleryImage::class => GalleryImagePolicy::class,
         Program::class => ProgramPolicy::class,
         Position::class => PositionPolicy::class,
+        CurrencyRate::class => CurrencyRatePolicy::class,
         Staff::class => StaffPolicy::class,
         AuditLog::class => AuditLogPolicy::class,
         Product::class => ProductPolicy::class,

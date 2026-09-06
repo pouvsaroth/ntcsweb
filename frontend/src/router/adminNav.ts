@@ -74,6 +74,7 @@ export const adminNav: AdminNavGroup[] = [
       { labelKey: 'adminNav.items.products', to: '/admin/products', permission: 'products.view' },
       { labelKey: 'adminNav.items.invoices', to: '/admin/invoices', permission: 'invoices.view' },
       { labelKey: 'adminNav.items.payments', to: '/admin/payments', permission: 'payments.view' },
+      { labelKey: 'adminNav.items.currencyRates', to: '/admin/currency-rates', permission: 'currency-rates.view' },
     ],
   },
   {

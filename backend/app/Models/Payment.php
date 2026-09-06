@@ -81,7 +81,11 @@ class Payment extends Model
      */
     public function scopeCompleted(Builder $query): void
     {
-        $query->where('status', PaymentStatus::COMPLETED);
+        // Table-qualified: BillingDashboardController joins this to invoices
+        // (which also has its own `status` column) for currency-aware sums —
+        // a bare `status` there is an ambiguous-column SQL error, not just a
+        // style preference.
+        $query->where('payments.status', PaymentStatus::COMPLETED);
     }
 
     public function auditDisplayName(): string

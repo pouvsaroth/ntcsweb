@@ -29,6 +29,7 @@ use App\Http\Controllers\Api\V1\Admin\BuildingController;
 use App\Http\Controllers\Api\V1\Admin\ClassroomController;
 use App\Http\Controllers\Api\V1\Admin\ClassroomTableController;
 use App\Http\Controllers\Api\V1\Admin\CoursePackageController;
+use App\Http\Controllers\Api\V1\Admin\CurrencyRateController;
 use App\Http\Controllers\Api\V1\Admin\DepartmentController;
 use App\Http\Controllers\Api\V1\Admin\EnrollmentController;
 use App\Http\Controllers\Api\V1\Admin\EnrollmentPackageController;
@@ -308,6 +309,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
 
         Route::get('billing/dashboard', [BillingDashboardController::class, 'summary'])->name('billing.dashboard');
         Route::get('billing/reports/payments-by-method', [BillingDashboardController::class, 'paymentsByMethod'])->name('billing.reports.payments-by-method');
+
+        Route::apiResource('currency-rates', CurrencyRateController::class);
 
         /*
         |------------------------------------------------------------------

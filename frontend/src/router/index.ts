@@ -299,6 +299,12 @@ const adminRoutes: RouteRecordRaw[] = [
     meta: { titleKey: 'adminNav.items.billingDashboard' },
   },
   {
+    path: 'currency-rates',
+    name: 'admin.currency-rates',
+    component: () => import('@/pages/admin/CurrencyRates.vue'),
+    meta: { titleKey: 'adminNav.items.currencyRates' },
+  },
+  {
     path: 'products',
     name: 'admin.products',
     component: () => import('@/pages/admin/Products.vue'),

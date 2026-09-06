@@ -71,6 +71,7 @@ final class SchoolSettingsController extends Controller
             'phone' => $tenant->phone,
             'address' => $tenant->address,
             'locale' => $tenant->locale,
+            'default_currency' => $tenant->default_currency,
             'logo_url' => $tenant->logoUrl(),
             'khqr_template' => $tenant->khqrTemplate(),
         ];

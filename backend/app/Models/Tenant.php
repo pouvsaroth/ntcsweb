@@ -29,10 +29,11 @@ use Illuminate\Support\Facades\Storage;
  * @property string|null $code
  * @property string $timezone
  * @property string $locale
+ * @property string $default_currency
  * @property string $status
  * @property array|null $settings
  */
-#[Fillable(['name', 'slug', 'code', 'logo', 'email', 'phone', 'address', 'timezone', 'locale', 'status', 'settings'])]
+#[Fillable(['name', 'slug', 'code', 'logo', 'email', 'phone', 'address', 'timezone', 'locale', 'default_currency', 'status', 'settings'])]
 class Tenant extends Model
 {
     /** @use HasFactory<TenantFactory> */
@@ -43,6 +44,12 @@ class Tenant extends Model
     public const STATUS_SUSPENDED = 'suspended';
 
     public const STATUS_ARCHIVED = 'archived';
+
+    // The only two currencies anything in this app is ever recorded in —
+    // Invoice/CoursePackage/FinancialTransaction all share this same pair.
+    public const CURRENCY_USD = 'USD';
+
+    public const CURRENCY_KHR = 'KHR';
 
     protected function casts(): array
     {

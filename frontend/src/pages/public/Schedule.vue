@@ -89,15 +89,15 @@ function dayGroupLabel(days: number[]): string {
           :key="schoolClass.id"
           class="rounded-[2rem] border border-primary-400 bg-white p-6 shadow-[--shadow-card] transition-shadow hover:shadow-[--shadow-card-hover]"
         >
-          <h3 class="font-semibold text-neutral-900">{{ schoolClass.name }}</h3>
+          <h3 class="text-center font-semibold text-primary-700">{{ schoolClass.name }}</h3>
           <p v-if="schoolClass.teacher_name" class="mb-3 text-sm text-neutral-500">
             {{ t('schedule.teacher', { name: schoolClass.teacher_name }) }}
           </p>
 
           <div class="space-y-4">
             <div v-for="(group, index) in dayGroups(schoolClass.schedules)" :key="index">
-              <p class="text-center text-sm font-bold text-primary-700">{{ group.dayLabel }}</p>
-              <p v-for="(time, i) in group.times" :key="i" class="mt-1 text-sm font-medium text-primary-600">{{ time }}</p>
+              <p class="text-left text-sm font-bold text-neutral-900">{{ group.dayLabel }}</p>
+              <p v-for="(time, i) in group.times" :key="i" class="mt-1 text-left text-sm font-medium text-neutral-900">{{ time }}</p>
             </div>
           </div>
         </div>

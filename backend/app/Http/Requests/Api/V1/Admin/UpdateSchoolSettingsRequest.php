@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Api\V1\Admin;
 
+use App\Models\Tenant;
 use App\Support\Authorization\Permissions;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -34,6 +35,9 @@ class UpdateSchoolSettingsRequest extends FormRequest
             // has translations for today; a locale outside this list would silently fall back
             // to English labels rather than error, but there's no reason to offer it yet.
             'locale' => ['sometimes', 'required', Rule::in(['en', 'km'])],
+            // Which currency the admin Dashboard and Billing Dashboard convert
+            // mixed USD/KHR totals into — see CurrencyConversionService.
+            'default_currency' => ['sometimes', 'required', Rule::in([Tenant::CURRENCY_USD, Tenant::CURRENCY_KHR])],
             // 10M matches upload_max_filesize in docker/php/uploads.ini.
             'logo' => ['nullable', 'image', 'mimes:jpeg,png,webp,gif', 'max:10240'],
             // The raw KHQR string decoded from the school's own bank app —

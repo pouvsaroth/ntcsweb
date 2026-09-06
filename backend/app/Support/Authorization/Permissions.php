@@ -288,6 +288,16 @@ final class Permissions
 
     public const BILLING_REPORTS_VIEW = 'billing-reports.view';
 
+    // The KHR-per-USD rate by date that dashboards convert mixed-currency
+    // totals through — see CurrencyConversionService.
+    public const CURRENCY_RATES_VIEW = 'currency-rates.view';
+
+    public const CURRENCY_RATES_CREATE = 'currency-rates.create';
+
+    public const CURRENCY_RATES_UPDATE = 'currency-rates.update';
+
+    public const CURRENCY_RATES_DELETE = 'currency-rates.delete';
+
     public const NOTIFICATIONS_SEND = 'notifications.send';
 
     // Accounting — the Chart of Accounts and general ledger sitting on top
@@ -577,6 +587,10 @@ final class Permissions
                 self::PAYMENTS_CANCEL => 'Cancel or refund payments',
                 self::RECEIPTS_VIEW => 'View receipts',
                 self::BILLING_REPORTS_VIEW => 'View billing reports and dashboard',
+                self::CURRENCY_RATES_VIEW => 'View currency exchange rates',
+                self::CURRENCY_RATES_CREATE => 'Add currency exchange rates',
+                self::CURRENCY_RATES_UPDATE => 'Update currency exchange rates',
+                self::CURRENCY_RATES_DELETE => 'Delete currency exchange rates',
                 self::NOTIFICATIONS_SEND => 'Send invoice notifications',
             ],
             'Accounting' => [
@@ -695,6 +709,7 @@ final class Permissions
             self::INVOICES_VIEW, self::INVOICES_CREATE, self::INVOICES_UPDATE, self::INVOICES_CANCEL,
             self::PAYMENTS_VIEW, self::PAYMENTS_CREATE, self::PAYMENTS_UPDATE, self::PAYMENTS_CANCEL,
             self::RECEIPTS_VIEW, self::BILLING_REPORTS_VIEW, self::NOTIFICATIONS_SEND,
+            self::CURRENCY_RATES_VIEW, self::CURRENCY_RATES_CREATE, self::CURRENCY_RATES_UPDATE, self::CURRENCY_RATES_DELETE,
         ];
 
         // Same reasoning as $billing above — its own tight group,
