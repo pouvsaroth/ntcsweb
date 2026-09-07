@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Api\V1\Public;
 use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponse;
 use App\Models\CoursePackage;
+use App\Models\Role;
 use App\Models\Video;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -21,14 +22,14 @@ use Illuminate\Http\Request;
  * api request and turns a first-party SPA's session cookie into an
  * authenticated one before this ever runs — see bootstrap/app.php.
  *
- * Access rule: a signed-in student sees every video in a course they're
- * actively enrolled in; everyone else (a guest, or a student browsing a
- * course they're not enrolled in) only gets the tenant-wide first 3 videos
- * (by course name, then video sort order) as free previews. A "locked"
- * video's `embed_url` is deliberately omitted from the response — the lock
- * is enforced here, not just hidden in the UI, since the raw URL would
- * otherwise be sitting in the network tab regardless of what the frontend
- * does with it.
+ * Access rule: a signed-in School Admin sees every video, full stop. A
+ * signed-in student sees every video in a course they're actively enrolled
+ * in. Everyone else (a guest, or a student browsing a course they're not
+ * enrolled in) only gets the tenant-wide first 3 videos (by course name,
+ * then video sort order) as free previews. A "locked" video's `embed_url`
+ * is deliberately omitted from the response — the lock is enforced here,
+ * not just hidden in the UI, since the raw URL would otherwise be sitting
+ * in the network tab regardless of what the frontend does with it.
  */
 final class VideoLessonController extends Controller
 {
@@ -37,6 +38,8 @@ final class VideoLessonController extends Controller
     public function index(Request $request): JsonResponse
     {
         $user = $request->user() ?? $request->user('sanctum');
+
+        $isSchoolAdmin = $user?->hasRole(Role::SCHOOL_ADMIN) ?? false;
 
         $enrolledPackageIds = $user?->student !== null
             ? $user->student->enrollments()->active()->pluck('course_package_id')->all()
@@ -58,8 +61,8 @@ final class VideoLessonController extends Controller
             ->orderBy('name')
             ->get();
 
-        return ApiResponse::success($packages->map(function (CoursePackage $package) use ($enrolledPackageIds, $freeVideoIds) {
-            $courseUnlocked = in_array($package->id, $enrolledPackageIds, true);
+        return ApiResponse::success($packages->map(function (CoursePackage $package) use ($isSchoolAdmin, $enrolledPackageIds, $freeVideoIds) {
+            $courseUnlocked = $isSchoolAdmin || in_array($package->id, $enrolledPackageIds, true);
 
             return [
                 'id' => $package->id,

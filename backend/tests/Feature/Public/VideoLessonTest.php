@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Public;
 
 use App\Models\Enrollment;
+use App\Models\Role;
 use App\Models\Student;
 use App\Models\User;
 use App\Models\Video;
@@ -120,6 +121,34 @@ class VideoLessonTest extends TestCase
         $videos = collect($response->json('data.0.videos'));
 
         $this->assertSame([false, false, false, true, true], $videos->pluck('is_locked')->all());
+    }
+
+    public function test_a_school_admin_sees_every_video_unlocked_even_without_enrollment(): void
+    {
+        $this->actingAsAdminWithPermissions([]);
+        $this->setUpAcademicCatalog();
+        $this->msWordPackage->update(['show_videos' => true]);
+        $this->createVideos(5);
+
+        $adminRole = Role::factory()->forTenant($this->tenant)->system()->create([
+            'slug' => Role::SCHOOL_ADMIN,
+            'name' => 'School Admin',
+            'level' => Role::LEVELS[Role::SCHOOL_ADMIN],
+        ]);
+        $user = User::factory()->forTenant($this->tenant)->create();
+        $user->attachRoles($adminRole);
+        // Deliberately no Student/Enrollment for this user — the unlock
+        // comes purely from holding the School Admin role.
+
+        $response = $this->actingAs($user)
+            ->withHeader('X-Tenant', $this->tenant->slug)
+            ->getJson('/api/v1/public/video-lessons');
+
+        $response->assertOk();
+        $videos = collect($response->json('data.0.videos'));
+
+        $this->assertTrue($videos->every(fn ($v) => $v['is_locked'] === false));
+        $this->assertTrue($videos->every(fn ($v) => $v['embed_url'] !== null));
     }
 
     public function test_an_inactive_video_never_appears_even_to_an_enrolled_student(): void
