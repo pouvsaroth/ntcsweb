@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\V1\Admin\AccountingDashboardController;
 use App\Http\Controllers\Api\V1\Admin\AccountingPeriodController;
 use App\Http\Controllers\Api\V1\Admin\AccountingReportController;
 use App\Http\Controllers\Api\V1\Admin\AccountingSettingsController;
+use App\Http\Controllers\Api\V1\Admin\ApprovalRequestController;
 use App\Http\Controllers\Api\V1\Admin\AssetCategoryController;
 use App\Http\Controllers\Api\V1\Admin\AssetController;
 use App\Http\Controllers\Api\V1\Admin\AssetDashboardController;
@@ -35,6 +36,8 @@ use App\Http\Controllers\Api\V1\Admin\EnrollmentController;
 use App\Http\Controllers\Api\V1\Admin\EnrollmentPackageController;
 use App\Http\Controllers\Api\V1\Admin\ExpenseController;
 use App\Http\Controllers\Api\V1\Admin\FinancialTransactionController;
+use App\Http\Controllers\Api\V1\Admin\FormCategoryController;
+use App\Http\Controllers\Api\V1\Admin\FormTemplateController;
 use App\Http\Controllers\Api\V1\Admin\GalleryController as AdminGalleryController;
 use App\Http\Controllers\Api\V1\Admin\GeneralSettingsController;
 use App\Http\Controllers\Api\V1\Admin\HomeSlideController as AdminHomeSlideController;
@@ -49,6 +52,10 @@ use App\Http\Controllers\Api\V1\Admin\PositionController;
 use App\Http\Controllers\Api\V1\Admin\ProductController;
 use App\Http\Controllers\Api\V1\Admin\ProductVariantController;
 use App\Http\Controllers\Api\V1\Admin\ProgramController as AdminProgramController;
+use App\Http\Controllers\Api\V1\Admin\ProjectColumnController;
+use App\Http\Controllers\Api\V1\Admin\ProjectController;
+use App\Http\Controllers\Api\V1\Admin\ProjectTaskCommentController;
+use App\Http\Controllers\Api\V1\Admin\ProjectTaskController;
 use App\Http\Controllers\Api\V1\Admin\RepairShopController;
 use App\Http\Controllers\Api\V1\Admin\RoleController;
 use App\Http\Controllers\Api\V1\Admin\SchoolClassController;
@@ -66,6 +73,7 @@ use App\Http\Controllers\Api\V1\Auth\EmailVerificationController;
 use App\Http\Controllers\Api\V1\Auth\PasswordController;
 use App\Http\Controllers\Api\V1\GeographyController;
 use App\Http\Controllers\Api\V1\LookupController;
+use App\Http\Controllers\Api\V1\MyApprovalRequestController;
 use App\Http\Controllers\Api\V1\MyAssetController;
 use App\Http\Controllers\Api\V1\MyAttendanceController;
 use App\Http\Controllers\Api\V1\MyInvoiceController;
@@ -253,6 +261,35 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::post('leave-requests/{leave_request}/approve', [LeaveRequestController::class, 'approve'])->name('leave-requests.approve');
         Route::post('leave-requests/{leave_request}/reject', [LeaveRequestController::class, 'reject'])->name('leave-requests.reject');
 
+        // eApprovals — generic form-template catalog + approval queue. See
+        // ApprovalRequestPolicy's docblock: index on categories/templates is
+        // unguarded (any authenticated user browses the catalog), only
+        // managing it or the approve/reject queue is permission-gated.
+        Route::apiResource('form-categories', FormCategoryController::class);
+        Route::apiResource('form-templates', FormTemplateController::class);
+        Route::apiResource('approval-requests', ApprovalRequestController::class)->only(['index', 'show']);
+        Route::post('approval-requests/{approval_request}/approve', [ApprovalRequestController::class, 'approve'])->name('approval-requests.approve');
+        Route::post('approval-requests/{approval_request}/reject', [ApprovalRequestController::class, 'reject'])->name('approval-requests.reject');
+
+        // Project management — a Kanban board per project. Columns and tasks
+        // ride on their parent project's own permission (see ProjectPolicy's
+        // docblock), so they have no viewAny/index route of their own —
+        // they're only ever reached nested under a project (see
+        // ProjectController::show(), which eager-loads the whole board).
+        Route::apiResource('projects', ProjectController::class);
+        Route::post('projects/{project}/columns', [ProjectColumnController::class, 'store'])->name('projects.columns.store');
+        Route::post('projects/{project}/columns/reorder', [ProjectColumnController::class, 'reorder'])->name('projects.columns.reorder');
+        Route::put('project-columns/{project_column}', [ProjectColumnController::class, 'update'])->name('project-columns.update');
+        Route::delete('project-columns/{project_column}', [ProjectColumnController::class, 'destroy'])->name('project-columns.destroy');
+        Route::post('project-columns/{project_column}/tasks', [ProjectTaskController::class, 'store'])->name('project-columns.tasks.store');
+        Route::put('project-tasks/{project_task}', [ProjectTaskController::class, 'update'])->name('project-tasks.update');
+        Route::delete('project-tasks/{project_task}', [ProjectTaskController::class, 'destroy'])->name('project-tasks.destroy');
+        Route::post('project-tasks/{project_task}/move', [ProjectTaskController::class, 'move'])->name('project-tasks.move');
+        Route::get('project-tasks/{project_task}/history', [ProjectTaskController::class, 'history'])->name('project-tasks.history');
+        Route::get('project-tasks/{project_task}/comments', [ProjectTaskCommentController::class, 'index'])->name('project-tasks.comments.index');
+        Route::post('project-tasks/{project_task}/comments', [ProjectTaskCommentController::class, 'store'])->name('project-tasks.comments.store');
+        Route::delete('project-task-comments/{project_task_comment}', [ProjectTaskCommentController::class, 'destroy'])->name('project-task-comments.destroy');
+
         Route::apiResource('home-slides', AdminHomeSlideController::class);
         Route::apiResource('gallery', AdminGalleryController::class);
         Route::apiResource('programs', AdminProgramController::class);
@@ -433,6 +470,10 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         // Student self-service — identity-gated, same pattern as my-attendance.
         Route::get('my-leave-requests', [MyLeaveRequestController::class, 'index'])->name('my-leave-requests.index');
         Route::post('my-leave-requests', [MyLeaveRequestController::class, 'store'])->name('my-leave-requests.store');
+
+        // Self-service — identity-gated, same pattern as my-leave-requests.
+        Route::get('my-approval-requests', [MyApprovalRequestController::class, 'index'])->name('my-approval-requests.index');
+        Route::post('my-approval-requests', [MyApprovalRequestController::class, 'store'])->name('my-approval-requests.store');
 
         // Self-service — identity-gated (Staff/Student/User's own assignments), same pattern as my-invoices.
         Route::get('my-assets', [MyAssetController::class, 'index'])->name('my-assets.index');

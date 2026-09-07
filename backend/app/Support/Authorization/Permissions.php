@@ -413,6 +413,33 @@ final class Permissions
 
     public const ASSET_REPORTS_EXPORT = 'assets.reports.export';
 
+    // eApprovals — the generic form-template/request/approval module. Any
+    // authenticated user can browse the catalog and submit/view their own
+    // requests with no permission required (see FormCategoryController,
+    // FormTemplateController, MyApprovalRequestController); these gate the
+    // catalog-management screens and the approval queue only.
+    public const FORM_CATEGORIES_MANAGE = 'form-categories.manage';
+
+    public const FORM_TEMPLATES_MANAGE = 'form-templates.manage';
+
+    public const APPROVAL_REQUESTS_VIEW = 'approval-requests.view';
+
+    public const APPROVAL_REQUESTS_APPROVE = 'approval-requests.approve';
+
+    public const APPROVAL_REQUESTS_REJECT = 'approval-requests.reject';
+
+    // Projects — a Kanban-style project management module. Any staff/admin
+    // can use it (see ProjectPolicy's docblock); columns and tasks ride on
+    // the parent project's own permission (a column/task is only ever
+    // reached through its project).
+    public const PROJECTS_VIEW = 'projects.view';
+
+    public const PROJECTS_CREATE = 'projects.create';
+
+    public const PROJECTS_UPDATE = 'projects.update';
+
+    public const PROJECTS_DELETE = 'projects.delete';
+
     // System.
     public const AUDIT_LOGS_VIEW = 'audit-logs.view';
 
@@ -649,6 +676,19 @@ final class Permissions
                 self::ASSET_REPORTS_VIEW => 'View asset reports and dashboard',
                 self::ASSET_REPORTS_EXPORT => 'Export asset reports',
             ],
+            'Projects' => [
+                self::PROJECTS_VIEW => 'View projects',
+                self::PROJECTS_CREATE => 'Create projects',
+                self::PROJECTS_UPDATE => 'Update projects, and manage their columns/tasks',
+                self::PROJECTS_DELETE => 'Delete projects',
+            ],
+            'eApprovals' => [
+                self::FORM_CATEGORIES_MANAGE => 'Manage form categories',
+                self::FORM_TEMPLATES_MANAGE => 'Manage form templates',
+                self::APPROVAL_REQUESTS_VIEW => 'View the approval queue',
+                self::APPROVAL_REQUESTS_APPROVE => 'Approve requests',
+                self::APPROVAL_REQUESTS_REJECT => 'Reject requests',
+            ],
             'System' => [
                 self::AUDIT_LOGS_VIEW => 'View audit logs',
             ],
@@ -739,6 +779,24 @@ final class Permissions
             self::ASSET_REPORTS_VIEW, self::ASSET_REPORTS_EXPORT,
         ];
 
+        // Same reasoning as $billing/$accounting/$assets above — school-admin
+        // only by default. A school that wants an "Approver" role grants a
+        // subset (e.g. just APPROVAL_REQUESTS_VIEW/APPROVE/REJECT, without
+        // the two MANAGE slugs) through the existing Position/Role editor.
+        // Every role can still submit/view its own requests regardless —
+        // that's identity-gated in MyApprovalRequestController, not RBAC.
+        $eApprovals = [
+            self::FORM_CATEGORIES_MANAGE, self::FORM_TEMPLATES_MANAGE,
+            self::APPROVAL_REQUESTS_VIEW, self::APPROVAL_REQUESTS_APPROVE, self::APPROVAL_REQUESTS_REJECT,
+        ];
+
+        // Unlike billing/accounting/assets above, Projects is meant to be a
+        // general-purpose tool every staff member reaches for — so, unlike
+        // those tight groups, view/create/update go to Teacher and Staff by
+        // default too. Deletion stays school-admin only, same reasoning as
+        // Staff not being able to delete Students.
+        $projectsForEveryone = [self::PROJECTS_VIEW, self::PROJECTS_CREATE, self::PROJECTS_UPDATE];
+
         return [
             Role::SCHOOL_ADMIN => [
                 self::TENANT_SETTINGS_VIEW,
@@ -769,6 +827,9 @@ final class Permissions
                 ...$billing,
                 ...$accounting,
                 ...$assets,
+                ...$eApprovals,
+                self::PROJECTS_DELETE,
+                ...$projectsForEveryone,
             ],
             // Read-only across the board, with one write exception: teaching
             // records (who teaches what, in which room) stay a school-admin
@@ -795,6 +856,7 @@ final class Permissions
                 self::ATTENDANCE_CREATE,
                 self::ATTENDANCE_UPDATE,
                 self::LEAVE_REQUESTS_VIEW,
+                ...$projectsForEveryone,
             ],
             // Staff commonly handle front-desk registration, so they can
             // create/update students and enrollments (including the new
@@ -827,6 +889,7 @@ final class Permissions
                 self::VIDEOS_VIEW,
                 self::ACADEMIC_YEARS_VIEW,
                 self::LEAVE_REQUESTS_VIEW,
+                ...$projectsForEveryone,
             ],
             Role::STUDENT => [],
         ];

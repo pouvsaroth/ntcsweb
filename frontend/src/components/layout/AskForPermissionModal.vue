@@ -11,10 +11,12 @@ import { ApiRequestError } from '@/types/api'
 
 /**
  * A student's self-submitted leave/permission request — launched from
- * PublicUserMenu's "Ask for Permission" entry. Starts pending; an admin
- * approves or rejects it from the "Leave Requests" page under Settings (see
- * LeaveRequests.vue), and approving syncs matching class days into the
- * student's attendance as Excused (LeaveRequestService::approve()).
+ * PublicUserMenu's "Ask for Permission" entry, and from the eApprovals
+ * "Forms" page's Quick Actions tile (see admin/approvals/Forms.vue). Starts
+ * pending; an admin approves or rejects it from the eApprovals "Approvals"
+ * queue (see admin/approvals/Approvals.vue), and approving syncs matching
+ * class days into the student's attendance as Excused
+ * (LeaveRequestService::approve()).
  */
 const props = defineProps<{ modelValue: boolean }>()
 const emit = defineEmits<{ 'update:modelValue': [value: boolean] }>()

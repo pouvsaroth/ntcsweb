@@ -65,6 +65,18 @@ const adminRoutes: RouteRecordRaw[] = [
     meta: { titleKey: 'adminNav.items.dashboard' },
   },
   {
+    path: 'projects',
+    name: 'admin.projects',
+    component: () => import('@/pages/admin/Projects.vue'),
+    meta: { titleKey: 'adminNav.items.projects' },
+  },
+  {
+    path: 'projects/:id',
+    name: 'admin.projects.board',
+    component: () => import('@/pages/admin/ProjectBoard.vue'),
+    meta: { titleKey: 'adminNav.items.projects' },
+  },
+  {
     path: 'users',
     name: 'admin.users',
     component: () => import('@/pages/admin/Users.vue'),
@@ -275,10 +287,34 @@ const adminRoutes: RouteRecordRaw[] = [
     meta: { titleKey: 'adminNav.items.lookupCategories' },
   },
   {
-    path: 'leave-requests',
-    name: 'admin.leave-requests',
-    component: () => import('@/pages/admin/LeaveRequests.vue'),
-    meta: { titleKey: 'adminNav.items.leaveRequests' },
+    path: 'form-categories',
+    name: 'admin.form-categories',
+    component: () => import('@/pages/admin/FormCategories.vue'),
+    meta: { titleKey: 'adminNav.items.formCategories' },
+  },
+  {
+    path: 'form-templates',
+    name: 'admin.form-templates',
+    component: () => import('@/pages/admin/FormTemplates.vue'),
+    meta: { titleKey: 'adminNav.items.formTemplates' },
+  },
+  {
+    path: 'approvals/forms',
+    name: 'admin.approvals.forms',
+    component: () => import('@/pages/admin/approvals/Forms.vue'),
+    meta: { titleKey: 'adminNav.items.forms' },
+  },
+  {
+    path: 'approvals/my-requests',
+    name: 'admin.approvals.my-requests',
+    component: () => import('@/pages/admin/approvals/MyRequests.vue'),
+    meta: { titleKey: 'adminNav.items.myRequests' },
+  },
+  {
+    path: 'approvals/queue',
+    name: 'admin.approvals.queue',
+    component: () => import('@/pages/admin/approvals/Approvals.vue'),
+    meta: { titleKey: 'adminNav.items.approvals' },
   },
   {
     path: 'lookup-categories/:id/values',

@@ -115,9 +115,6 @@ onMounted(load)
     <BaseAlert v-if="loadError" variant="danger" class="mb-4">{{ loadError }}</BaseAlert>
 
     <form v-else-if="!loading" class="space-y-6" @submit.prevent="save">
-      <BaseAlert v-if="saveError" variant="danger">{{ saveError }}</BaseAlert>
-      <BaseAlert v-if="saved" variant="success">{{ t('admin.school.saveSuccess') }}</BaseAlert>
-
       <section class="rounded-lg border border-neutral-200 p-4">
         <h2 class="mb-1 text-sm font-semibold text-neutral-800">{{ t('admin.school.logoSection') }}</h2>
         <p class="mb-4 text-sm text-neutral-500">{{ t('admin.school.logoHint') }}</p>
@@ -172,7 +169,11 @@ onMounted(load)
         <p v-if="errors.khqr_template?.[0]" class="text-sm text-danger-600">{{ errors.khqr_template[0] }}</p>
       </section>
 
-      <BaseButton type="submit" :loading="saving">{{ t('common.save') }}</BaseButton>
+      <div class="flex flex-wrap items-center gap-3">
+        <BaseButton type="submit" :loading="saving">{{ t('common.save') }}</BaseButton>
+        <BaseAlert v-if="saveError" variant="danger">{{ saveError }}</BaseAlert>
+        <BaseAlert v-if="saved" variant="success">{{ t('admin.school.saveSuccess') }}</BaseAlert>
+      </div>
     </form>
   </div>
 </template>

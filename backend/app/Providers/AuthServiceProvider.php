@@ -12,6 +12,7 @@ use App\Models\AssetCategory;
 use App\Models\AssetIssue;
 use App\Models\AssetLocation;
 use App\Models\AssetMaintenance;
+use App\Models\ApprovalRequest;
 use App\Models\AssetRepair;
 use App\Models\AttendanceRecord;
 use App\Models\AuditLog;
@@ -26,6 +27,8 @@ use App\Models\Department;
 use App\Models\Enrollment;
 use App\Models\Expense;
 use App\Models\FinancialTransaction;
+use App\Models\FormCategory;
+use App\Models\FormTemplate;
 use App\Models\GalleryImage;
 use App\Models\HomeSlide;
 use App\Models\Invoice;
@@ -37,6 +40,8 @@ use App\Models\Payment;
 use App\Models\Position;
 use App\Models\Product;
 use App\Models\Program;
+use App\Models\Project;
+use App\Models\ProjectTaskComment;
 use App\Models\RepairShop;
 use App\Models\Role;
 use App\Models\SchoolClass;
@@ -55,6 +60,7 @@ use App\Policies\AssetIssuePolicy;
 use App\Policies\AssetLocationPolicy;
 use App\Policies\AssetMaintenancePolicy;
 use App\Policies\AssetPolicy;
+use App\Policies\ApprovalRequestPolicy;
 use App\Policies\AssetRepairPolicy;
 use App\Policies\AttendancePolicy;
 use App\Policies\AuditLogPolicy;
@@ -69,6 +75,8 @@ use App\Policies\DepartmentPolicy;
 use App\Policies\EnrollmentPolicy;
 use App\Policies\ExpensePolicy;
 use App\Policies\FinancialTransactionPolicy;
+use App\Policies\FormCategoryPolicy;
+use App\Policies\FormTemplatePolicy;
 use App\Policies\GalleryImagePolicy;
 use App\Policies\HomeSlidePolicy;
 use App\Policies\InvoicePolicy;
@@ -80,6 +88,8 @@ use App\Policies\PaymentPolicy;
 use App\Policies\PositionPolicy;
 use App\Policies\ProductPolicy;
 use App\Policies\ProgramPolicy;
+use App\Policies\ProjectPolicy;
+use App\Policies\ProjectTaskCommentPolicy;
 use App\Policies\RepairShopPolicy;
 use App\Policies\RolePolicy;
 use App\Policies\SchoolClassPolicy;
@@ -145,6 +155,11 @@ class AuthServiceProvider extends ServiceProvider
         AssetIssue::class => AssetIssuePolicy::class,
         AssetRepair::class => AssetRepairPolicy::class,
         AssetMaintenance::class => AssetMaintenancePolicy::class,
+        FormCategory::class => FormCategoryPolicy::class,
+        FormTemplate::class => FormTemplatePolicy::class,
+        ApprovalRequest::class => ApprovalRequestPolicy::class,
+        Project::class => ProjectPolicy::class,
+        ProjectTaskComment::class => ProjectTaskCommentPolicy::class,
     ];
 
     public function register(): void

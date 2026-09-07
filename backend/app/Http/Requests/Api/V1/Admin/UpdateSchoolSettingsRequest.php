@@ -27,7 +27,10 @@ class UpdateSchoolSettingsRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['nullable', 'email', 'max:255'],
-            'phone' => ['nullable', 'string', 'max:32'],
+            // Longer than the person-level phone fields elsewhere (max:32) —
+            // this is the school's public contact line, which often needs
+            // room for more than one number (office/hotline) or an extension.
+            'phone' => ['nullable', 'string', 'max:255'],
             'address' => ['nullable', 'string', 'max:500'],
             // Drives every invoice's own language (see resources/views/pdf/invoice.blade.php
             // and lang/{locale}/invoice.php) — ResolveTenant already applies this tenant-wide

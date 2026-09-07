@@ -37,7 +37,10 @@ const visibleGroups = computed(() =>
       ...group,
       items: group.items.filter((item) => {
         if (item.superAdminOnly && !auth.isSuperAdmin) return false
-        if (item.permission && !auth.can(item.permission)) return false
+        if (item.permission) {
+          const required = Array.isArray(item.permission) ? item.permission : [item.permission]
+          if (!required.some((permission) => auth.can(permission))) return false
+        }
         return true
       }),
     }))

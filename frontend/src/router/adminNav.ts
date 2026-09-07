@@ -3,8 +3,13 @@ export interface AdminNavItem {
   to: string
   /** Only shown to a platform Super Admin (tenant_id IS NULL). */
   superAdminOnly?: boolean
-  /** A permission slug required to see this item; omitted means "any authenticated admin". */
-  permission?: string
+  /**
+   * A permission slug required to see this item; omitted means "any
+   * authenticated admin". An array means "any one of these" — e.g.
+   * Approvals is visible to someone who can only view the leave-request
+   * queue, not just someone with the generic approval-queue permission.
+   */
+  permission?: string | string[]
 }
 
 export interface AdminNavGroup {
@@ -26,6 +31,10 @@ export const adminNav: AdminNavGroup[] = [
   {
     labelKey: 'adminNav.groups.overview',
     items: [{ labelKey: 'adminNav.items.dashboard', to: '/admin' }],
+  },
+  {
+    labelKey: 'adminNav.groups.projectManagement',
+    items: [{ labelKey: 'adminNav.items.projects', to: '/admin/projects', permission: 'projects.view' }],
   },
   {
     labelKey: 'adminNav.groups.platform',
@@ -135,7 +144,21 @@ export const adminNav: AdminNavGroup[] = [
       { labelKey: 'adminNav.items.auditLogs', to: '/admin/audit-logs', permission: 'audit-logs.view' },
       { labelKey: 'adminNav.items.languages', to: '/admin/languages', permission: 'base-data.manage-languages' },
       { labelKey: 'adminNav.items.lookupCategories', to: '/admin/lookup-categories', permission: 'base-data.view' },
-      { labelKey: 'adminNav.items.leaveRequests', to: '/admin/leave-requests', permission: 'leave-requests.view' },
+    ],
+  },
+  {
+    // Every item here is reachable by any authenticated user — Forms and My
+    // Request are identity-gated (submit/view your own), same as
+    // LeaveRequest submission. Approvals and the two catalog-management
+    // items carry a `permission`, so AdminSidebar hides them from anyone
+    // without it, same as every other permission-gated item above.
+    labelKey: 'adminNav.groups.eApprovals',
+    items: [
+      { labelKey: 'adminNav.items.forms', to: '/admin/approvals/forms' },
+      { labelKey: 'adminNav.items.myRequests', to: '/admin/approvals/my-requests' },
+      { labelKey: 'adminNav.items.approvals', to: '/admin/approvals/queue', permission: ['approval-requests.view', 'leave-requests.view'] },
+      { labelKey: 'adminNav.items.formCategories', to: '/admin/form-categories', permission: 'form-categories.manage' },
+      { labelKey: 'adminNav.items.formTemplates', to: '/admin/form-templates', permission: 'form-templates.manage' },
     ],
   },
 ]
