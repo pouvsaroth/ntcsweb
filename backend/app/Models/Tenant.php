@@ -30,10 +30,11 @@ use Illuminate\Support\Facades\Storage;
  * @property string $timezone
  * @property string $locale
  * @property string $default_currency
+ * @property string|null $exam_fee_amount
  * @property string $status
  * @property array|null $settings
  */
-#[Fillable(['name', 'slug', 'code', 'logo', 'email', 'phone', 'address', 'timezone', 'locale', 'default_currency', 'status', 'settings'])]
+#[Fillable(['name', 'slug', 'code', 'logo', 'email', 'phone', 'address', 'timezone', 'locale', 'default_currency', 'exam_fee_amount', 'status', 'settings'])]
 class Tenant extends Model
 {
     /** @use HasFactory<TenantFactory> */
@@ -56,6 +57,7 @@ class Tenant extends Model
         return [
             'settings' => 'array',
             'trial_ends_at' => 'datetime',
+            'exam_fee_amount' => 'decimal:2',
         ];
     }
 

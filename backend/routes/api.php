@@ -33,6 +33,7 @@ use App\Http\Controllers\Api\V1\Admin\CoursePackageController;
 use App\Http\Controllers\Api\V1\Admin\CurrencyRateController;
 use App\Http\Controllers\Api\V1\Admin\DepartmentController;
 use App\Http\Controllers\Api\V1\Admin\EnrollmentController;
+use App\Http\Controllers\Api\V1\Admin\ExamApplicationController;
 use App\Http\Controllers\Api\V1\Admin\EnrollmentPackageController;
 use App\Http\Controllers\Api\V1\Admin\ExpenseController;
 use App\Http\Controllers\Api\V1\Admin\FinancialTransactionController;
@@ -62,6 +63,7 @@ use App\Http\Controllers\Api\V1\Admin\SchoolClassController;
 use App\Http\Controllers\Api\V1\Admin\SchoolSettingsController;
 use App\Http\Controllers\Api\V1\Admin\StaffController;
 use App\Http\Controllers\Api\V1\Admin\StudentController;
+use App\Http\Controllers\Api\V1\Admin\StudentFeedbackController;
 use App\Http\Controllers\Api\V1\Admin\StudentImportController;
 use App\Http\Controllers\Api\V1\Admin\StudentRegistrationController;
 use App\Http\Controllers\Api\V1\Admin\StudyModeController;
@@ -76,8 +78,10 @@ use App\Http\Controllers\Api\V1\LookupController;
 use App\Http\Controllers\Api\V1\MyApprovalRequestController;
 use App\Http\Controllers\Api\V1\MyAssetController;
 use App\Http\Controllers\Api\V1\MyAttendanceController;
+use App\Http\Controllers\Api\V1\MyExamApplicationController;
 use App\Http\Controllers\Api\V1\MyInvoiceController;
 use App\Http\Controllers\Api\V1\MyLeaveRequestController;
+use App\Http\Controllers\Api\V1\MyStudentFeedbackController;
 use App\Http\Controllers\Api\V1\Public\CoursePackageController as PublicCoursePackageController;
 use App\Http\Controllers\Api\V1\Public\EnrollmentInquiryController;
 use App\Http\Controllers\Api\V1\Public\GalleryController as PublicGalleryController;
@@ -260,6 +264,17 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::apiResource('leave-requests', LeaveRequestController::class)->only(['index', 'show']);
         Route::post('leave-requests/{leave_request}/approve', [LeaveRequestController::class, 'approve'])->name('leave-requests.approve');
         Route::post('leave-requests/{leave_request}/reject', [LeaveRequestController::class, 'reject'])->name('leave-requests.reject');
+
+        // Student-submitted requests/comments about the school or a
+        // teacher, with a reply thread. See StudentFeedbackPolicy.
+        Route::apiResource('student-feedback', StudentFeedbackController::class)->only(['index', 'show']);
+        Route::post('student-feedback/{student_feedback}/reply', [StudentFeedbackController::class, 'storeReply'])->name('student-feedback.reply');
+
+        // Student-submitted applications to sit an exam for one of their
+        // own enrollments. See ExamApplicationPolicy.
+        Route::apiResource('exam-applications', ExamApplicationController::class)->only(['index', 'show']);
+        Route::post('exam-applications/{exam_application}/approve', [ExamApplicationController::class, 'approve'])->name('exam-applications.approve');
+        Route::post('exam-applications/{exam_application}/reject', [ExamApplicationController::class, 'reject'])->name('exam-applications.reject');
 
         // eApprovals — generic form-template catalog + approval queue. See
         // ApprovalRequestPolicy's docblock: index on categories/templates is
@@ -474,6 +489,18 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         // Self-service — identity-gated, same pattern as my-leave-requests.
         Route::get('my-approval-requests', [MyApprovalRequestController::class, 'index'])->name('my-approval-requests.index');
         Route::post('my-approval-requests', [MyApprovalRequestController::class, 'store'])->name('my-approval-requests.store');
+
+        // Self-service — identity-gated, same pattern as my-leave-requests.
+        Route::get('my-feedback/teachers', [MyStudentFeedbackController::class, 'teachers'])->name('my-feedback.teachers');
+        Route::get('my-feedback', [MyStudentFeedbackController::class, 'index'])->name('my-feedback.index');
+        Route::post('my-feedback', [MyStudentFeedbackController::class, 'store'])->name('my-feedback.store');
+        Route::post('my-feedback/{student_feedback}/reply', [MyStudentFeedbackController::class, 'storeReply'])->name('my-feedback.reply');
+
+        // Self-service — identity-gated, same pattern as my-leave-requests.
+        Route::get('my-exam-applications/enrollments', [MyExamApplicationController::class, 'enrollments'])->name('my-exam-applications.enrollments');
+        Route::get('my-exam-applications/fee', [MyExamApplicationController::class, 'fee'])->name('my-exam-applications.fee');
+        Route::get('my-exam-applications', [MyExamApplicationController::class, 'index'])->name('my-exam-applications.index');
+        Route::post('my-exam-applications', [MyExamApplicationController::class, 'store'])->name('my-exam-applications.store');
 
         // Self-service — identity-gated (Staff/Student/User's own assignments), same pattern as my-invoices.
         Route::get('my-assets', [MyAssetController::class, 'index'])->name('my-assets.index');

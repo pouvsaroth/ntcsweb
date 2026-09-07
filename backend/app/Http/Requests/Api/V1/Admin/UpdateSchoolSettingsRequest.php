@@ -41,6 +41,10 @@ class UpdateSchoolSettingsRequest extends FormRequest
             // Which currency the admin Dashboard and Billing Dashboard convert
             // mixed USD/KHR totals into — see CurrencyConversionService.
             'default_currency' => ['sometimes', 'required', Rule::in([Tenant::CURRENCY_USD, Tenant::CURRENCY_KHR])],
+            // The fixed fee an ExamApplication snapshots at submission time —
+            // see that migration's docblock. Null/omitted leaves the exam
+            // application form blocked until a school sets one.
+            'exam_fee_amount' => ['nullable', 'numeric', 'min:0'],
             // 10M matches upload_max_filesize in docker/php/uploads.ini.
             'logo' => ['nullable', 'image', 'mimes:jpeg,png,webp,gif', 'max:10240'],
             // The raw KHQR string decoded from the school's own bank app —

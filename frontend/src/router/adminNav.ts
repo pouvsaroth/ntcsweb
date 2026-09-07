@@ -131,6 +131,7 @@ export const adminNav: AdminNavGroup[] = [
     items: [
       { labelKey: 'adminNav.items.contactMessages', to: '/admin/contact-messages' },
       { labelKey: 'adminNav.items.notifications', to: '/admin/notifications' },
+      { labelKey: 'adminNav.items.studentFeedback', to: '/admin/student-feedback', permission: 'student-feedback.view' },
     ],
   },
   {

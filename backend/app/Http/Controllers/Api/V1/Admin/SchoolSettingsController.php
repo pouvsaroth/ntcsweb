@@ -72,6 +72,7 @@ final class SchoolSettingsController extends Controller
             'address' => $tenant->address,
             'locale' => $tenant->locale,
             'default_currency' => $tenant->default_currency,
+            'exam_fee_amount' => $tenant->exam_fee_amount,
             'logo_url' => $tenant->logoUrl(),
             'khqr_template' => $tenant->khqrTemplate(),
         ];

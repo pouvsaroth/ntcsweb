@@ -239,6 +239,18 @@ const adminRoutes: RouteRecordRaw[] = [
     meta: { titleKey: 'studentNav.attendant' },
   },
   {
+    path: 'my-feedback',
+    name: 'admin.my-feedback',
+    component: () => import('@/pages/admin/MyFeedback.vue'),
+    meta: { titleKey: 'studentNav.myRequest' },
+  },
+  {
+    path: 'student-feedback',
+    name: 'admin.student-feedback',
+    component: () => import('@/pages/admin/StudentFeedback.vue'),
+    meta: { titleKey: 'adminNav.items.studentFeedback' },
+  },
+  {
     path: 'staff',
     name: 'admin.staff',
     component: () => import('@/pages/admin/Staff.vue'),

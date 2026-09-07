@@ -440,6 +440,26 @@ final class Permissions
 
     public const PROJECTS_DELETE = 'projects.delete';
 
+    // Exam Applications — a student's own self-submitted application to sit
+    // an exam for one of their own enrollments (see ExamApplication's
+    // docblock). Submitting/viewing your own is identity-gated (no
+    // permission needed, MyExamApplicationController); these three gate the
+    // admin queue only.
+    public const EXAM_APPLICATIONS_VIEW = 'exam-applications.view';
+
+    public const EXAM_APPLICATIONS_APPROVE = 'exam-applications.approve';
+
+    public const EXAM_APPLICATIONS_REJECT = 'exam-applications.reject';
+
+    // Student Feedback — a student's own self-submitted request or comment
+    // about the school or about a specific teacher (see StudentFeedback's
+    // docblock). Submitting/viewing/replying to your own thread needs no
+    // permission (identity-gated in MyStudentFeedbackController); these two
+    // gate the admin queue only.
+    public const STUDENT_FEEDBACK_VIEW = 'student-feedback.view';
+
+    public const STUDENT_FEEDBACK_REPLY = 'student-feedback.reply';
+
     // System.
     public const AUDIT_LOGS_VIEW = 'audit-logs.view';
 
@@ -689,6 +709,15 @@ final class Permissions
                 self::APPROVAL_REQUESTS_APPROVE => 'Approve requests',
                 self::APPROVAL_REQUESTS_REJECT => 'Reject requests',
             ],
+            'Student Feedback' => [
+                self::STUDENT_FEEDBACK_VIEW => "View students' requests and comments",
+                self::STUDENT_FEEDBACK_REPLY => 'Reply to requests and comments',
+            ],
+            'Exam Applications' => [
+                self::EXAM_APPLICATIONS_VIEW => "View students' exam applications",
+                self::EXAM_APPLICATIONS_APPROVE => 'Approve exam applications',
+                self::EXAM_APPLICATIONS_REJECT => 'Reject exam applications',
+            ],
             'System' => [
                 self::AUDIT_LOGS_VIEW => 'View audit logs',
             ],
@@ -823,6 +852,11 @@ final class Permissions
                 self::LEAVE_REQUESTS_VIEW,
                 self::LEAVE_REQUESTS_APPROVE,
                 self::LEAVE_REQUESTS_REJECT,
+                self::STUDENT_FEEDBACK_VIEW,
+                self::STUDENT_FEEDBACK_REPLY,
+                self::EXAM_APPLICATIONS_VIEW,
+                self::EXAM_APPLICATIONS_APPROVE,
+                self::EXAM_APPLICATIONS_REJECT,
                 ...$academicManagement,
                 ...$billing,
                 ...$accounting,

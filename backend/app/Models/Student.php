@@ -98,6 +98,26 @@ class Student extends Model
         return $this->hasMany(Enrollment::class);
     }
 
+    /**
+     * The (deduplicated) teacher ids across this student's own active
+     * enrollments' classes — used to scope the "which teacher is this
+     * about" picker on StudentFeedback to teachers who actually teach this
+     * student, rather than the whole tenant's staff directory.
+     *
+     * @return list<int>
+     */
+    public function teacherIds(): array
+    {
+        $classIds = $this->enrollments()->active()->pluck('class_id');
+
+        return SchoolClass::query()
+            ->whereIn('id', $classIds)
+            ->whereNotNull('teacher_id')
+            ->distinct()
+            ->pluck('teacher_id')
+            ->all();
+    }
+
     public function invoices(): HasMany
     {
         return $this->hasMany(Invoice::class);

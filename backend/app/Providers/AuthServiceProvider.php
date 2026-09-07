@@ -25,6 +25,7 @@ use App\Models\CoursePackage;
 use App\Models\CurrencyRate;
 use App\Models\Department;
 use App\Models\Enrollment;
+use App\Models\ExamApplication;
 use App\Models\Expense;
 use App\Models\FinancialTransaction;
 use App\Models\FormCategory;
@@ -47,6 +48,7 @@ use App\Models\Role;
 use App\Models\SchoolClass;
 use App\Models\Staff;
 use App\Models\Student;
+use App\Models\StudentFeedback;
 use App\Models\StudyMode;
 use App\Models\Supplier;
 use App\Models\Tenant;
@@ -73,6 +75,7 @@ use App\Policies\CoursePackagePolicy;
 use App\Policies\CurrencyRatePolicy;
 use App\Policies\DepartmentPolicy;
 use App\Policies\EnrollmentPolicy;
+use App\Policies\ExamApplicationPolicy;
 use App\Policies\ExpensePolicy;
 use App\Policies\FinancialTransactionPolicy;
 use App\Policies\FormCategoryPolicy;
@@ -94,6 +97,7 @@ use App\Policies\RepairShopPolicy;
 use App\Policies\RolePolicy;
 use App\Policies\SchoolClassPolicy;
 use App\Policies\StaffPolicy;
+use App\Policies\StudentFeedbackPolicy;
 use App\Policies\StudentPolicy;
 use App\Policies\StudyModePolicy;
 use App\Policies\SupplierPolicy;
@@ -160,6 +164,8 @@ class AuthServiceProvider extends ServiceProvider
         ApprovalRequest::class => ApprovalRequestPolicy::class,
         Project::class => ProjectPolicy::class,
         ProjectTaskComment::class => ProjectTaskCommentPolicy::class,
+        StudentFeedback::class => StudentFeedbackPolicy::class,
+        ExamApplication::class => ExamApplicationPolicy::class,
     ];
 
     public function register(): void
