@@ -656,6 +656,8 @@ const zh: MessageSchema = {
       columnName: '姓名',
       columnCode: '学号',
       columnPhone: '电话',
+      columnGender: '性别',
+      columnAddress: '地址',
       columnGuardians: '监护人',
       columnStatus: '状态',
       columnActions: '操作',

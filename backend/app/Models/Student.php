@@ -128,6 +128,17 @@ class Student extends Model
         return $this->hasMany(StudentGuardian::class);
     }
 
+    /**
+     * `village_code` is stored as free text, not a real FK (see the
+     * migration that added it), but a custom-keyed belongsTo still lets the
+     * admin list eager-load the full province/district/commune/village
+     * chain in one round trip instead of resolving it per row.
+     */
+    public function village(): BelongsTo
+    {
+        return $this->belongsTo(Village::class, 'village_code', 'code');
+    }
+
     public function educations(): HasMany
     {
         return $this->hasMany(StudentEducation::class);

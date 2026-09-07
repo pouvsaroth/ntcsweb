@@ -657,6 +657,8 @@ const ko: MessageSchema = {
       columnName: '이름',
       columnCode: '학번',
       columnPhone: '전화번호',
+      columnGender: '성별',
+      columnAddress: '주소',
       columnGuardians: '보호자',
       columnStatus: '상태',
       columnActions: '작업',

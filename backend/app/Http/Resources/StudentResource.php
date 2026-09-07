@@ -33,6 +33,12 @@ class StudentResource extends JsonResource
             'street_no' => $this->street_no,
             'village_code' => $this->village_code,
             'other_address' => $this->other_address,
+            // Village -> Commune -> District -> Province, coarsest last —
+            // only meaningful once `village_code` actually resolves against
+            // the `villages` reference table (see Student::village()); a
+            // code with no match, or none at all, yields null rather than a
+            // fragment.
+            'address' => $this->whenLoaded('village', fn () => $this->formatAddress()),
 
             'facebook' => $this->facebook,
             'telegram' => $this->telegram,
@@ -48,5 +54,25 @@ class StudentResource extends JsonResource
             'educations' => StudentEducationResource::collection($this->whenLoaded('educations')),
             'created_at' => $this->created_at?->toIso8601String(),
         ];
+    }
+
+    private function formatAddress(): ?string
+    {
+        $village = $this->village;
+
+        if ($village === null) {
+            return null;
+        }
+
+        $parts = [
+            $village->name_km,
+            $village->commune?->name_km,
+            $village->commune?->district?->name_km,
+            $village->commune?->district?->province?->name_km,
+        ];
+
+        $parts = array_filter($parts, fn (?string $part) => $part !== null && $part !== '');
+
+        return $parts === [] ? null : implode(', ', $parts);
     }
 }

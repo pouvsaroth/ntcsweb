@@ -39,6 +39,8 @@ export interface Student {
   street_no: string | null
   village_code: string | null
   other_address: string | null
+  /** Village, Commune, District, Province — resolved server-side from village_code; absent on create/update responses (present on list/show). */
+  address?: string | null
   facebook: string | null
   telegram: string | null
   photo_url: string | null

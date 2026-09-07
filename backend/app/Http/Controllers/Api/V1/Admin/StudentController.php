@@ -44,7 +44,7 @@ final class StudentController extends Controller
         // millions), where offset pagination's COUNT(*)/OFFSET cost is
         // negligible. Revisit if a tenant's real row count ever approaches
         // the point where that trade stops being negligible.
-        $students = ApiQuery::for(Student::query()->withCount(['guardians', 'educations']), $request)
+        $students = ApiQuery::for(Student::query()->withCount(['guardians', 'educations'])->with('village.commune.district.province'), $request)
             ->searchable('first_name', 'last_name', 'english_name', 'student_code', 'email')
             ->filterable(['status'])
             ->sortable(['first_name', 'last_name', 'student_code', 'created_at'], default: '-created_at')
@@ -116,7 +116,7 @@ final class StudentController extends Controller
         $this->authorize('view', $student);
 
         return ApiResponse::success(new StudentResource(
-            $student->loadCount('enrollments')->load(['guardians', 'educations'])
+            $student->loadCount('enrollments')->load(['guardians', 'educations', 'village.commune.district.province'])
         ));
     }
 

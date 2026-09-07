@@ -661,6 +661,8 @@ const en = {
       columnName: 'Name',
       columnCode: 'Student ID',
       columnPhone: 'Phone',
+      columnGender: 'Gender',
+      columnAddress: 'Address',
       columnGuardians: 'Guardians',
       columnStatus: 'Status',
       columnActions: 'Actions',

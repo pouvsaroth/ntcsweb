@@ -657,6 +657,8 @@ const ja: MessageSchema = {
       columnName: '氏名',
       columnCode: '学籍番号',
       columnPhone: '電話番号',
+      columnGender: '性別',
+      columnAddress: '住所',
       columnGuardians: '保護者',
       columnStatus: 'ステータス',
       columnActions: '操作',

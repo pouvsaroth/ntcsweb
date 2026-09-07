@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import BaseAlert from '@/components/ui/BaseAlert.vue'
@@ -11,11 +11,27 @@ import BasePagination from '@/components/ui/BasePagination.vue'
 import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import DataTable from '@/components/ui/DataTable.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
+import { lookupsService } from '@/services/lookups'
 import { studentsService, type Student, type StudentStatus } from '@/services/students'
 import { useAdminUiStore } from '@/stores/adminUi'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const adminUi = useAdminUiStore()
+
+/** code -> translated label, e.g. "male" -> "Male" / "ប្រុស" — same GENDER category LookupSelect uses on the form. */
+const genderLabels = ref<Record<string, string>>({})
+
+async function loadGenderLabels() {
+  const options = await lookupsService.values('GENDER', locale.value)
+  genderLabels.value = Object.fromEntries(options.map((option) => [option.code, option.name]))
+}
+
+function genderLabel(gender: string | null): string {
+  if (!gender) return '—'
+  return genderLabels.value[gender] ?? gender
+}
+
+watch(locale, loadGenderLabels)
 
 const previewStudent = ref<Student | null>(null)
 
@@ -35,6 +51,8 @@ const columns = [
   { key: 'full_name', label: t('admin.students.columnName') },
   { key: 'student_code', label: t('admin.students.columnCode') },
   { key: 'phone', label: t('admin.students.columnPhone') },
+  { key: 'gender', label: t('admin.students.columnGender') },
+  { key: 'address', label: t('admin.students.columnAddress') },
   { key: 'guardians', label: t('admin.students.columnGuardians') },
   { key: 'status', label: t('admin.students.columnStatus') },
   { key: 'actions', label: t('admin.students.columnActions'), align: 'text-right' },
@@ -51,7 +69,10 @@ function statusLabel(status: StudentStatus): string {
   return t(`admin.students.status${status.charAt(0).toUpperCase()}${status.slice(1)}`)
 }
 
-onMounted(() => fetch())
+onMounted(() => {
+  fetch()
+  loadGenderLabels()
+})
 </script>
 
 <template>
@@ -121,6 +142,12 @@ onMounted(() => fetch())
         <template #cell-full_name="{ row }">
           <p class="font-medium text-neutral-800">{{ row.full_name }}</p>
           <p v-if="row.english_name" class="text-xs text-neutral-500">{{ row.english_name }}</p>
+        </template>
+        <template #cell-gender="{ row }">
+          {{ genderLabel(row.gender) }}
+        </template>
+        <template #cell-address="{ row }">
+          <span class="text-neutral-600">{{ row.address ?? '—' }}</span>
         </template>
         <template #cell-guardians="{ row }">
           {{ row.guardians_count ?? 0 }}

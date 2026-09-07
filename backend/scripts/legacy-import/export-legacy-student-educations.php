@@ -1,0 +1,105 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * Export step for the legacy student-education migration:
+ * t_school_student_education -> student_educations.
+ *
+ * Same StudentID-instead-of-Student_PKID join as
+ * export-legacy-student-guardians.php — see that file's doc comment for why.
+ *
+ *   php backend/scripts/legacy-import/export-legacy-student-educations.php \
+ *     --host=127.0.0.1 --port=3306 --database=Schooldb --user=root --password= \
+ *     --out=backend/storage/app/legacy-imports/t_school_student_education_export.csv
+ *
+ * All options shown are also the defaults.
+ */
+
+/** @return array<string, string> */
+function parseOptions(array $argv): array
+{
+    $defaults = [
+        'host' => '127.0.0.1',
+        'port' => '3306',
+        'database' => 'Schooldb',
+        'user' => 'root',
+        'password' => '',
+        'table' => 't_school_student_education',
+        'out' => __DIR__.'/../../storage/app/legacy-imports/t_school_student_education_export.csv',
+    ];
+
+    foreach (array_slice($argv, 1) as $arg) {
+        if (! str_starts_with($arg, '--') || ! str_contains($arg, '=')) {
+            fwrite(STDERR, "Ignoring unrecognized argument: {$arg}\n");
+
+            continue;
+        }
+
+        [$key, $value] = explode('=', substr($arg, 2), 2);
+
+        if (! array_key_exists($key, $defaults)) {
+            fwrite(STDERR, "Ignoring unknown option: --{$key}\n");
+
+            continue;
+        }
+
+        $defaults[$key] = $value;
+    }
+
+    return $defaults;
+}
+
+/** StudentID replaces Student_PKID — see the file doc comment. */
+const COLUMNS = ['StudentID', 'SchoolName', 'Address', 'StartDate', 'EndDate', 'Skill', 'Detail'];
+
+function main(array $argv): int
+{
+    $opts = parseOptions($argv);
+
+    $dsn = sprintf('mysql:host=%s;port=%s;dbname=%s;charset=utf8mb4', $opts['host'], $opts['port'], $opts['database']);
+
+    try {
+        $pdo = new PDO($dsn, $opts['user'], $opts['password'] !== '' ? $opts['password'] : null, [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        ]);
+    } catch (PDOException $e) {
+        fwrite(STDERR, "Could not connect to MySQL: {$e->getMessage()}\n");
+
+        return 1;
+    }
+
+    $table = $opts['table'];
+    $sql = "SELECT s.StudentID, e.SchoolName, e.Address, e.StartDate, e.EndDate, e.Skill, e.Detail
+            FROM `{$table}` e
+            INNER JOIN `t_student` s ON s.PKID = e.Student_PKID
+            ORDER BY e.PKID";
+    $statement = $pdo->query($sql);
+
+    $outPath = $opts['out'];
+    @mkdir(dirname($outPath), 0755, true);
+
+    $handle = fopen($outPath, 'w');
+    if ($handle === false) {
+        fwrite(STDERR, "Could not open {$outPath} for writing.\n");
+
+        return 1;
+    }
+
+    fputcsv($handle, COLUMNS);
+
+    $rowCount = 0;
+    while (($row = $statement->fetch()) !== false) {
+        fputcsv($handle, $row);
+        $rowCount++;
+    }
+
+    fclose($handle);
+
+    fwrite(STDOUT, "Wrote {$rowCount} rows from `{$opts['database']}`.`{$table}` (joined to t_student) to {$outPath}\n");
+
+    return 0;
+}
+
+exit(main($argv));

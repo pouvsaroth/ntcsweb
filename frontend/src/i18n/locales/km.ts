@@ -657,6 +657,8 @@ const km: MessageSchema = {
       columnName: 'ឈ្មោះ',
       columnCode: 'លេខសម្គាល់សិស្ស',
       columnPhone: 'ទូរស័ព្ទ',
+      columnGender: 'ភេទ',
+      columnAddress: 'អាសយដ្ឋាន',
       columnGuardians: 'អាណាព្យាបាល',
       columnStatus: 'ស្ថានភាព',
       columnActions: 'សកម្មភាព',
