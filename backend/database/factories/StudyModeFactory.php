@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Database\Factories;
 
 use App\Models\StudyMode;
-use App\Models\Tenant;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -21,14 +20,5 @@ class StudyModeFactory extends Factory
             'code' => strtoupper(fake()->unique()->lexify('MODE???')),
             'name' => fake()->words(2, true),
         ];
-    }
-
-    public function forTenant(Tenant|int $tenant): static
-    {
-        return $this->afterMaking(function (StudyMode $mode) use ($tenant) {
-            $mode->forceFill([
-                'tenant_id' => $tenant instanceof Tenant ? $tenant->getKey() : $tenant,
-            ]);
-        });
     }
 }

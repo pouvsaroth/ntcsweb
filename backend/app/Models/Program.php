@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Models\Concerns\Auditable;
-use App\Models\Concerns\BelongsToTenant;
 use Database\Factories\ProgramFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -20,7 +19,6 @@ use Illuminate\Support\Facades\Storage;
  * `/programs` page. Not to be confused with `SchoolClass`, which is an
  * actual scheduled teaching group.
  *
- * @property int $tenant_id
  * @property string $title
  * @property string $level
  * @property string $status
@@ -32,7 +30,9 @@ use Illuminate\Support\Facades\Storage;
 class Program extends Model
 {
     /** @use HasFactory<ProgramFactory> */
-    use Auditable, BelongsToTenant, HasFactory, SoftDeletes;
+    use Auditable, HasFactory, SoftDeletes;
+
+    protected $connection = 'tenant';
 
     public const LEVEL_BEGINNER = 'beginner';
 

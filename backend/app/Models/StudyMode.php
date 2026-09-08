@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Models\Concerns\Auditable;
-use App\Models\Concerns\BelongsToTenant;
 use Database\Factories\StudyModeFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -22,7 +21,9 @@ use Illuminate\Database\Eloquent\Model;
 class StudyMode extends Model
 {
     /** @use HasFactory<StudyModeFactory> */
-    use Auditable, BelongsToTenant, HasFactory;
+    use Auditable, HasFactory;
+
+    protected $connection = 'tenant';
 
     public const FULL_TIME = 'FULL_TIME';
 

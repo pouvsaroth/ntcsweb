@@ -19,14 +19,13 @@ return new class extends Migration
     {
         Schema::create('study_modes', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
             $table->string('code', 20);
             $table->string('name');
             $table->boolean('is_active')->default(true);
             $table->unsignedInteger('sort_order')->default(0);
             $table->timestamps();
 
-            $table->unique(['tenant_id', 'code']);
+            $table->unique('code');
         });
     }
 

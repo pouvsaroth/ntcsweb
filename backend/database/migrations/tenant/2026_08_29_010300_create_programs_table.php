@@ -18,8 +18,6 @@ return new class extends Migration
         Schema::create('programs', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
-
             $table->string('title');
             // Secondary line under the title (e.g. an English name alongside
             // a Khmer title) — free text, not a locale-specific translation
@@ -48,8 +46,8 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            $table->index(['tenant_id', 'status', 'is_featured', 'sort_order']);
-            $table->index(['tenant_id', 'created_at']);
+            $table->index(['status', 'is_featured', 'sort_order']);
+            $table->index('created_at');
         });
     }
 

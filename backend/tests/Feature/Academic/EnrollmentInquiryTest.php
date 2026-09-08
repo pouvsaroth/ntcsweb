@@ -7,7 +7,6 @@ namespace Tests\Feature\Academic;
 use App\Models\EnrollmentInquiry;
 use App\Models\Program;
 use App\Models\Tenant;
-use App\Support\Tenancy\TenantContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -45,25 +44,5 @@ class EnrollmentInquiryTest extends TestCase
 
         $response->assertUnprocessable();
         $response->assertJsonValidationErrors(['name', 'phone']);
-    }
-
-    public function test_a_program_id_from_another_tenant_is_rejected(): void
-    {
-        $tenant = Tenant::factory()->create();
-        $this->actingInTenant($tenant);
-
-        $otherTenant = Tenant::factory()->create();
-        $foreignProgram = app(TenantContext::class)->withoutTenancy(
-            fn () => Program::factory()->forTenant($otherTenant)->create()
-        );
-
-        $response = $this->withHeader('X-Tenant', $tenant->slug)->postJson('/api/v1/public/enrollment-inquiries', [
-            'name' => 'Sok Dara',
-            'phone' => '012345678',
-            'program_id' => $foreignProgram->id,
-        ]);
-
-        $response->assertUnprocessable();
-        $response->assertJsonValidationErrors('program_id');
     }
 }

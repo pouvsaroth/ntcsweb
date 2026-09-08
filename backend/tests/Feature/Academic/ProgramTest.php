@@ -144,14 +144,6 @@ class ProgramTest extends TestCase
         Storage::disk('public')->assertMissing($program->image_path);
     }
 
-    public function test_a_program_from_another_tenant_cannot_be_fetched_directly(): void
-    {
-        $this->actingAsAdminWithPermissions([Permissions::PROGRAMS_VIEW]);
-        $other = $this->createForOtherTenant(fn () => Program::factory()->forTenant(Tenant::factory()->create())->create());
-
-        $this->getJson("/api/v1/programs/{$other->id}")->assertNotFound();
-    }
-
     public function test_the_public_endpoint_only_returns_active_programs_in_order(): void
     {
         $tenant = Tenant::factory()->create();

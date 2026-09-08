@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Api\V1\Public;
 
-use App\Support\Tenancy\TenantContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -21,15 +20,15 @@ class StoreEnrollmentInquiryRequest extends FormRequest
 
     public function rules(): array
     {
-        $tenantId = app(TenantContext::class)->idOrFail();
-
         return [
             'name' => ['required', 'string', 'max:255'],
             'phone' => ['required', 'string', 'max:32'],
             'email' => ['nullable', 'email', 'max:255'],
             // Must be one of this school's own programs — a visitor on
-            // School A's site must never be able to reference School B's.
-            'program_id' => ['nullable', Rule::exists('programs', 'id')->where('tenant_id', $tenantId)],
+            // School A's site must never be able to reference School B's,
+            // and since `programs` lives in the tenant database now, the
+            // connection itself already guarantees that.
+            'program_id' => ['nullable', Rule::exists('tenant.programs', 'id')],
             'message' => ['nullable', 'string', 'max:2000'],
         ];
     }
