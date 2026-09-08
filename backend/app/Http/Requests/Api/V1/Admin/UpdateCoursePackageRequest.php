@@ -29,7 +29,7 @@ class UpdateCoursePackageRequest extends FormRequest
         return [
             'code' => ['sometimes', 'required', 'string', 'max:32', Rule::unique('course_packages')->where('tenant_id', $tenantId)->ignore($coursePackage)],
             'name' => ['sometimes', 'required', 'string', 'max:255'],
-            'academic_program_id' => ['sometimes', 'required', Rule::exists('academic_programs', 'id')->where('tenant_id', $tenantId)],
+            'academic_program_id' => ['sometimes', 'required', Rule::exists('tenant.academic_programs', 'id')],
             'description' => ['nullable', 'string', 'max:2000'],
             'thumbnail' => ['sometimes', 'nullable', 'image', 'mimes:jpeg,png,webp,gif', 'max:10240'],
             'currency' => ['sometimes', 'required', Rule::in([CoursePackage::CURRENCY_USD, CoursePackage::CURRENCY_KHR])],

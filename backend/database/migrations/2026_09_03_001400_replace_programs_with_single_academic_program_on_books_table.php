@@ -22,7 +22,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('books', function (Blueprint $table) {
-            $table->foreignId('academic_program_id')->nullable()->after('cover_image')->constrained('academic_programs')->restrictOnDelete();
+            // No DB-level foreign key: `academic_programs` lives in each
+            // school's own per-tenant database (see
+            // database/migrations/tenant), and a cross-database foreign key
+            // isn't possible in Postgres regardless.
+            $table->unsignedBigInteger('academic_program_id')->nullable()->after('cover_image');
         });
 
         DB::statement('
@@ -50,7 +54,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::create('program_book', function (Blueprint $table) {
-            $table->foreignId('program_id')->constrained('academic_programs')->cascadeOnDelete();
+            $table->unsignedBigInteger('program_id');
             $table->foreignId('book_id')->constrained('books')->cascadeOnDelete();
 
             $table->primary(['program_id', 'book_id']);
@@ -64,7 +68,7 @@ return new class extends Migration
 
         Schema::table('books', function (Blueprint $table) {
             $table->dropColumn('book_category_id');
-            $table->dropConstrainedForeignId('academic_program_id');
+            $table->dropColumn('academic_program_id');
             $table->string('category', 50)->nullable()->after('cover_image');
         });
     }

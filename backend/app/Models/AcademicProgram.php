@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Models\Concerns\Auditable;
-use App\Models\Concerns\BelongsToTenant;
 use Database\Factories\AcademicProgramFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -25,7 +24,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class AcademicProgram extends Model
 {
     /** @use HasFactory<AcademicProgramFactory> */
-    use Auditable, BelongsToTenant, HasFactory, SoftDeletes;
+    use Auditable, HasFactory, SoftDeletes;
+
+    protected $connection = 'tenant';
 
     protected $attributes = [
         'is_active' => true,

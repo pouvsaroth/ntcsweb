@@ -18,9 +18,9 @@ use Illuminate\Support\Facades\DB;
  * `invoice_items.reference_type/reference_id` (already a first-class,
  * existing column pair — see InvoiceItem's own docblock) back to the
  * Enrollment that produced the charge, rather than introducing any new
- * billing concept. `enrollments` lives in the tenant database while
- * `invoice_items`/`invoices`/`academic_programs`/`course_packages` are
- * still central, so these can no longer be single SQL joins — each method
+ * billing concept. `enrollments`/`academic_programs` live in the tenant
+ * database while `invoice_items`/`invoices`/`course_packages` are still
+ * central, so these can no longer be single SQL joins — each method
  * resolves the enrollment-side grouping key first, then aggregates the
  * central-side amounts by that key, and merges the two in PHP.
  */
@@ -70,9 +70,10 @@ final class AcademicReportService
     /**
      * Revenue attributed to each academic program, via the InvoiceItem's
      * own reference back to the Enrollment that produced the charge.
-     * `enrollments`/`invoice_items`/`invoices` all live in the tenant
-     * database now, so that leg is one ordinary join; only the hop out to
-     * `academic_programs` (still central) needs its own query, merged in PHP.
+     * `enrollments`/`invoice_items`/`invoices`/`academic_programs` all live
+     * in the tenant database now, so that leg is one ordinary join; only the
+     * hop out to `academic_programs` still needs its own query (it's not
+     * part of the joined query above), merged in PHP.
      *
      * @return list<array{academic_program_id: int, program_name: string, revenue: float, enrollment_count: int}>
      */

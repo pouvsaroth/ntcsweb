@@ -29,7 +29,11 @@ return new class extends Migration
             $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
             $table->string('code', 32);
             $table->string('name');
-            $table->foreignId('academic_program_id')->constrained('academic_programs')->restrictOnDelete();
+            // No DB-level foreign key: `academic_programs` lives in each
+            // school's own per-tenant database (see
+            // database/migrations/tenant), and a cross-database foreign key
+            // isn't possible in Postgres regardless.
+            $table->unsignedBigInteger('academic_program_id');
             $table->text('description')->nullable();
             $table->decimal('price', 10, 2)->default(0);
             $table->string('duration', 50)->nullable();

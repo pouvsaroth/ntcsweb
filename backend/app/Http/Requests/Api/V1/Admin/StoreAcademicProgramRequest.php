@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Requests\Api\V1\Admin;
 
 use App\Models\AcademicProgram;
-use App\Support\Tenancy\TenantContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -18,10 +17,8 @@ class StoreAcademicProgramRequest extends FormRequest
 
     public function rules(): array
     {
-        $tenantId = app(TenantContext::class)->idOrFail();
-
         return [
-            'code' => ['required', 'string', 'max:20', Rule::unique('academic_programs')->where('tenant_id', $tenantId)],
+            'code' => ['required', 'string', 'max:20', Rule::unique('tenant.academic_programs', 'code')],
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
             'is_active' => ['sometimes', 'boolean'],

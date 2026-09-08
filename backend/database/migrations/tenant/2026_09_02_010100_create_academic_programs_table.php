@@ -23,7 +23,6 @@ return new class extends Migration
     {
         Schema::create('academic_programs', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
             $table->string('code', 20);
             $table->string('name');
             $table->text('description')->nullable();
@@ -32,7 +31,7 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            $table->unique(['tenant_id', 'code']);
+            $table->unique('code');
         });
     }
 

@@ -30,7 +30,7 @@ class StoreCoursePackageRequest extends FormRequest
         return [
             'code' => ['required', 'string', 'max:32', Rule::unique('course_packages')->where('tenant_id', $tenantId)],
             'name' => ['required', 'string', 'max:255'],
-            'academic_program_id' => ['required', Rule::exists('academic_programs', 'id')->where('tenant_id', $tenantId)],
+            'academic_program_id' => ['required', Rule::exists('tenant.academic_programs', 'id')],
             'description' => ['nullable', 'string', 'max:2000'],
             // 10M matches upload_max_filesize in docker/php/uploads.ini —
             // see StoreHomeSlideRequest for why both must move together.
