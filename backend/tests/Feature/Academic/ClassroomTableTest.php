@@ -51,7 +51,7 @@ class ClassroomTableTest extends TestCase
             ->assertJsonPath('data.name', 'Table 1A');
 
         $this->deleteJson("/api/v1/classroom-tables/{$table->id}")->assertNoContent();
-        $this->assertSoftDeleted('classroom_tables', ['id' => $table->id]);
+        $this->assertSoftDeleted('classroom_tables', ['id' => $table->id], connection: 'tenant');
     }
 
     public function test_a_table_with_a_seated_student_cannot_be_deleted(): void
@@ -63,6 +63,6 @@ class ClassroomTableTest extends TestCase
         $response = $this->deleteJson("/api/v1/classroom-tables/{$table->id}");
 
         $response->assertStatus(422);
-        $this->assertDatabaseHas('classroom_tables', ['id' => $table->id, 'deleted_at' => null]);
+        $this->assertDatabaseHas('classroom_tables', ['id' => $table->id, 'deleted_at' => null], 'tenant');
     }
 }

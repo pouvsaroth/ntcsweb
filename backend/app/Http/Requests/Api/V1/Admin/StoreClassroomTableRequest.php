@@ -24,7 +24,7 @@ class StoreClassroomTableRequest extends FormRequest
             'classroom_id' => ['required', Rule::exists('classrooms', 'id')->where('tenant_id', $tenantId)],
             'name' => [
                 'required', 'string', 'max:255',
-                Rule::unique('classroom_tables')->where('tenant_id', $tenantId)->where('classroom_id', $this->input('classroom_id')),
+                Rule::unique('tenant.classroom_tables', 'name')->where('classroom_id', $this->input('classroom_id')),
             ],
         ];
     }

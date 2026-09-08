@@ -29,7 +29,7 @@ class UpdateClassroomTableRequest extends FormRequest
             'classroom_id' => ['sometimes', 'required', Rule::exists('classrooms', 'id')->where('tenant_id', $tenantId)],
             'name' => [
                 'sometimes', 'required', 'string', 'max:255',
-                Rule::unique('classroom_tables')->where('tenant_id', $tenantId)->where('classroom_id', $classroomId)->ignore($classroomTable),
+                Rule::unique('tenant.classroom_tables', 'name')->where('classroom_id', $classroomId)->ignore($classroomTable),
             ],
         ];
     }

@@ -48,7 +48,7 @@ class StoreEnrollmentRequest extends FormRequest
             // book_id closure above — is checked in withValidator() below,
             // alongside the "is this table even in this class's room" check,
             // since both need the class's classroom_id resolved first.
-            'table_id' => ['nullable', Rule::exists('classroom_tables', 'id')->where('tenant_id', $tenantId)],
+            'table_id' => ['nullable', Rule::exists('tenant.classroom_tables', 'id')],
 
             'enrolled_at' => ['required', 'date'],
 
@@ -97,7 +97,7 @@ class StoreEnrollmentRequest extends FormRequest
             // Only rooms an admin has actually added tables to require a
             // seat pick — a class in an unconfigured room enrolls exactly as
             // it always could.
-            $hasTables = DB::table('classroom_tables')->where('classroom_id', $class->classroom_id)->exists();
+            $hasTables = DB::connection('tenant')->table('classroom_tables')->where('classroom_id', $class->classroom_id)->exists();
             if (! $hasTables) {
                 return;
             }
@@ -110,7 +110,7 @@ class StoreEnrollmentRequest extends FormRequest
                 return;
             }
 
-            $belongsToRoom = DB::table('classroom_tables')->where('id', $tableId)->where('classroom_id', $class->classroom_id)->exists();
+            $belongsToRoom = DB::connection('tenant')->table('classroom_tables')->where('id', $tableId)->where('classroom_id', $class->classroom_id)->exists();
             if (! $belongsToRoom) {
                 $validator->errors()->add('table_id', __("This table does not belong to the selected class's room."));
 

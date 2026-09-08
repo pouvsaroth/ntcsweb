@@ -30,7 +30,7 @@ class TransferEnrollmentRequest extends FormRequest
             // Scoped to the TARGET class's room — the old table belonged to
             // a different class/room and is never carried forward, see
             // EnrollmentService::transferClass().
-            'table_id' => ['nullable', Rule::exists('classroom_tables', 'id')->where('tenant_id', $tenantId)],
+            'table_id' => ['nullable', Rule::exists('tenant.classroom_tables', 'id')],
             // Omitted (or equal to the enrollment's current package) means
             // "just move the room/schedule" — always allowed. Set to a
             // *different* package means "change the course too," which
@@ -53,7 +53,7 @@ class TransferEnrollmentRequest extends FormRequest
                 return;
             }
 
-            $hasTables = DB::table('classroom_tables')->where('classroom_id', $class->classroom_id)->exists();
+            $hasTables = DB::connection('tenant')->table('classroom_tables')->where('classroom_id', $class->classroom_id)->exists();
             if (! $hasTables) {
                 return;
             }
@@ -66,7 +66,7 @@ class TransferEnrollmentRequest extends FormRequest
                 return;
             }
 
-            $belongsToRoom = DB::table('classroom_tables')->where('id', $tableId)->where('classroom_id', $class->classroom_id)->exists();
+            $belongsToRoom = DB::connection('tenant')->table('classroom_tables')->where('id', $tableId)->where('classroom_id', $class->classroom_id)->exists();
             if (! $belongsToRoom) {
                 $validator->errors()->add('table_id', __("This table does not belong to the selected class's room."));
 

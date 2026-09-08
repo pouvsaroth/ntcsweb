@@ -59,7 +59,7 @@ class StoreEnrollmentPackageRequest extends FormRequest
             ],
             // Uniqueness/room-membership is checked in withValidator() below
             // — mirrors StoreEnrollmentRequest's own table_id handling.
-            'table_id' => ['nullable', Rule::exists('classroom_tables', 'id')->where('tenant_id', $tenantId)],
+            'table_id' => ['nullable', Rule::exists('tenant.classroom_tables', 'id')],
 
             'enrolled_at' => ['nullable', 'date'],
 
@@ -119,7 +119,7 @@ class StoreEnrollmentPackageRequest extends FormRequest
                 return;
             }
 
-            $hasTables = DB::table('classroom_tables')->where('classroom_id', $class->classroom_id)->exists();
+            $hasTables = DB::connection('tenant')->table('classroom_tables')->where('classroom_id', $class->classroom_id)->exists();
             if (! $hasTables) {
                 return;
             }
@@ -132,7 +132,7 @@ class StoreEnrollmentPackageRequest extends FormRequest
                 return;
             }
 
-            $belongsToRoom = DB::table('classroom_tables')->where('id', $tableId)->where('classroom_id', $class->classroom_id)->exists();
+            $belongsToRoom = DB::connection('tenant')->table('classroom_tables')->where('id', $tableId)->where('classroom_id', $class->classroom_id)->exists();
             if (! $belongsToRoom) {
                 $validator->errors()->add('table_id', __("This table does not belong to the selected class's room."));
 

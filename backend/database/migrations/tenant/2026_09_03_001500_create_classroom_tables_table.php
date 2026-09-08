@@ -18,15 +18,17 @@ return new class extends Migration
         Schema::create('classroom_tables', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
-            $table->foreignId('classroom_id')->constrained('classrooms')->cascadeOnDelete();
+            // No DB-level foreign key: `classrooms` hasn't moved to a
+            // per-tenant database yet, and a cross-database foreign key
+            // isn't possible in Postgres regardless.
+            $table->unsignedBigInteger('classroom_id');
             $table->string('name');
 
             $table->timestamps();
             $table->softDeletes();
 
-            $table->unique(['tenant_id', 'classroom_id', 'name']);
-            $table->index(['tenant_id', 'classroom_id']);
+            $table->unique(['classroom_id', 'name']);
+            $table->index('classroom_id');
         });
     }
 
