@@ -77,7 +77,7 @@ class LeaveRequestTest extends TestCase
         $firstMonday = Carbon::now()->next(Carbon::MONDAY);
         $secondMonday = $firstMonday->copy()->addWeek();
 
-        $leaveRequest = LeaveRequest::factory()->forTenant($this->tenant)->forStudent($student)->create([
+        $leaveRequest = LeaveRequest::factory()->forStudent($student)->create([
             'from_date' => $firstMonday->toDateString(),
             'to_date' => $secondMonday->toDateString(),
         ]);
@@ -102,7 +102,7 @@ class LeaveRequestTest extends TestCase
     {
         $this->actingAsAdminWithPermissions([]);
         [$student] = $this->studentWithUser();
-        $leaveRequest = LeaveRequest::factory()->forTenant($this->tenant)->forStudent($student)->create();
+        $leaveRequest = LeaveRequest::factory()->forStudent($student)->create();
 
         $this->postJson("/api/v1/leave-requests/{$leaveRequest->id}/approve")->assertForbidden();
     }
@@ -111,7 +111,7 @@ class LeaveRequestTest extends TestCase
     {
         $this->actingAsAdminWithPermissions([Permissions::LEAVE_REQUESTS_APPROVE]);
         [$student] = $this->studentWithUser();
-        $leaveRequest = LeaveRequest::factory()->forTenant($this->tenant)->forStudent($student)->create([
+        $leaveRequest = LeaveRequest::factory()->forStudent($student)->create([
             'status' => LeaveRequest::STATUS_APPROVED,
         ]);
 
@@ -126,7 +126,7 @@ class LeaveRequestTest extends TestCase
         ClassSchedule::factory()->forTenant($this->tenant)->forClass($class)->onDay(ClassSchedule::MONDAY)->create();
         Enrollment::factory()->forTenant($this->tenant)->forClass($class)->forStudent($student)->create();
 
-        $leaveRequest = LeaveRequest::factory()->forTenant($this->tenant)->forStudent($student)->create([
+        $leaveRequest = LeaveRequest::factory()->forStudent($student)->create([
             'from_date' => Carbon::now()->next(Carbon::MONDAY)->toDateString(),
             'to_date' => Carbon::now()->next(Carbon::MONDAY)->toDateString(),
         ]);
@@ -146,8 +146,8 @@ class LeaveRequestTest extends TestCase
         [$student, $user] = $this->studentWithUser();
         [$otherStudent] = $this->studentWithUser();
 
-        LeaveRequest::factory()->forTenant($this->tenant)->forStudent($student)->create(['reason' => 'Mine']);
-        LeaveRequest::factory()->forTenant($this->tenant)->forStudent($otherStudent)->create(['reason' => 'Not mine']);
+        LeaveRequest::factory()->forStudent($student)->create(['reason' => 'Mine']);
+        LeaveRequest::factory()->forStudent($otherStudent)->create(['reason' => 'Not mine']);
 
         $this->actingAsTenantUser($user);
         $response = $this->getJson('/api/v1/my-leave-requests')->assertOk();

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Models\Concerns\Auditable;
-use App\Models\Concerns\BelongsToTenant;
 use App\Support\Audit\AuditAction;
 use Database\Factories\StaffFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -39,7 +38,6 @@ use Illuminate\Support\Facades\Storage;
  * Fillable for the same reason `user_id` is: they are system-set only, via
  * forceFill in StaffController, never accepted from a request body.
  *
- * @property int $tenant_id
  * @property int|null $user_id
  * @property int $position_id
  * @property string $employee_code
@@ -56,12 +54,14 @@ use Illuminate\Support\Facades\Storage;
 ])]
 class Staff extends Model
 {
-    use Auditable, BelongsToTenant, HasFactory, SoftDeletes;
+    use Auditable, HasFactory, SoftDeletes;
 
     /** @use HasFactory<StaffFactory> */
     public const STATUS_ACTIVE = 'active';
 
     public const STATUS_INACTIVE = 'inactive';
+
+    protected $connection = 'tenant';
 
     protected $table = 'staff';
 

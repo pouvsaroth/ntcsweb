@@ -136,7 +136,7 @@ class AttendanceTest extends TestCase
     {
         $teacherUser = $this->actingAsAdminWithPermissions([Permissions::ATTENDANCE_CREATE, Permissions::ATTENDANCE_VIEW]);
         $teacherPosition = Position::factory()->forTenant($this->tenant)->create(['name' => 'Teacher']);
-        $teacher = Staff::factory()->forTenant($this->tenant)->withUser($teacherUser)->create(['position_id' => $teacherPosition->id]);
+        $teacher = Staff::factory()->withUser($teacherUser)->create(['position_id' => $teacherPosition->id]);
 
         $ownClass = SchoolClass::factory()->forTenant($this->tenant)->withTeacher($teacher)->create();
         $ownEnrollment = Enrollment::factory()->forTenant($this->tenant)->forClass($ownClass)->create();

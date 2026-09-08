@@ -15,7 +15,6 @@ return new class extends Migration
     {
         Schema::create('leave_request_attachments', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('tenant_id')->constrained()->cascadeOnDelete();
             $table->foreignId('leave_request_id')->constrained()->cascadeOnDelete();
             $table->string('file_path');
             $table->string('file_name');

@@ -29,7 +29,7 @@ class StudentFeedbackTest extends TestCase
 
     private function enrollWithTeacher(Student $student): Staff
     {
-        $teacher = Staff::factory()->forTenant($this->tenant)->create();
+        $teacher = Staff::factory()->create();
         $class = SchoolClass::factory()->forTenant($this->tenant)->withTeacher($teacher)->create();
         Enrollment::factory()->forTenant($this->tenant)->forClass($class)->forStudent($student)->create();
 
@@ -77,7 +77,7 @@ class StudentFeedbackTest extends TestCase
     {
         $this->actingAsAdminWithPermissions([]);
         [$student, $user] = $this->studentWithUser();
-        $unrelatedTeacher = Staff::factory()->forTenant($this->tenant)->create();
+        $unrelatedTeacher = Staff::factory()->create();
         $this->actingAsTenantUser($user);
 
         $this->postJson('/api/v1/my-feedback', [
@@ -94,7 +94,7 @@ class StudentFeedbackTest extends TestCase
         $this->actingAsAdminWithPermissions([]);
         [$student, $user] = $this->studentWithUser();
         $teacher = $this->enrollWithTeacher($student);
-        Staff::factory()->forTenant($this->tenant)->create(); // an unrelated teacher
+        Staff::factory()->create(); // an unrelated teacher
         $this->actingAsTenantUser($user);
 
         $response = $this->getJson('/api/v1/my-feedback/teachers')->assertOk();

@@ -29,7 +29,7 @@ class StoreStaffRequest extends FormRequest
         $tenantId = app(TenantContext::class)->idOrFail();
 
         return [
-            'employee_code' => ['required', 'string', 'max:32', Rule::unique('staff')->where('tenant_id', $tenantId)],
+            'employee_code' => ['required', 'string', 'max:32', Rule::unique('tenant.staff', 'employee_code')],
 
             // Must belong to this school — route-model binding also enforces
             // this via Position's own tenant scope, but a request-level 404

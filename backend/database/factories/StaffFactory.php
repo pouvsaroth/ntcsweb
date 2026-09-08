@@ -6,7 +6,6 @@ namespace Database\Factories;
 
 use App\Models\Position;
 use App\Models\Staff;
-use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -40,19 +39,6 @@ class StaffFactory extends Factory
     {
         return $this->afterMaking(function (Staff $staff) use ($user) {
             $staff->forceFill(['user_id' => $user->id]);
-        });
-    }
-
-    /**
-     * See TeacherFactory::forTenant()'s docblock for why this exists and when
-     * it's actually needed.
-     */
-    public function forTenant(Tenant|int $tenant): static
-    {
-        return $this->afterMaking(function (Staff $staff) use ($tenant) {
-            $staff->forceFill([
-                'tenant_id' => $tenant instanceof Tenant ? $tenant->getKey() : $tenant,
-            ]);
         });
     }
 

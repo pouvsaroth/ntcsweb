@@ -21,12 +21,11 @@ return new class extends Migration
         Schema::create('staff', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
-            $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
-
-            // Restrict: a Position with existing staff must be reassigned away
-            // from, not deleted out from under them.
-            $table->foreignId('position_id')->constrained('positions')->restrictOnDelete();
+            // No DB-level foreign key: `users`/`positions` haven't moved to a
+            // per-tenant database yet, and a cross-database foreign key isn't
+            // possible in Postgres regardless.
+            $table->unsignedBigInteger('user_id')->nullable();
+            $table->unsignedBigInteger('position_id');
 
             $table->string('employee_code', 32);
             $table->string('name');
@@ -38,10 +37,10 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            $table->unique(['tenant_id', 'employee_code']);
-            $table->unique(['tenant_id', 'user_id']);
-            $table->index(['tenant_id', 'status']);
-            $table->index(['tenant_id', 'position_id']);
+            $table->unique('employee_code');
+            $table->unique('user_id');
+            $table->index('status');
+            $table->index('position_id');
         });
     }
 

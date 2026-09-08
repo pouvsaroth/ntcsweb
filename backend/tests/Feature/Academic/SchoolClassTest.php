@@ -69,25 +69,6 @@ class SchoolClassTest extends TestCase
         $response->assertUnprocessable();
     }
 
-    public function test_a_class_cannot_reference_a_teacher_from_another_tenant(): void
-    {
-        $this->actingAsAdminWithPermissions([Permissions::CLASSES_CREATE]);
-        $foreignTeacher = $this->createForOtherTenant(function () {
-            $tenant = Tenant::factory()->create();
-            $position = Position::factory()->forTenant($tenant)->create(['name' => 'Teacher']);
-
-            return Staff::factory()->forTenant($tenant)->create(['position_id' => $position->id]);
-        });
-
-        $response = $this->postJson('/api/v1/classes', [
-            'name' => 'Suspicious Class',
-            'teacher_id' => $foreignTeacher->id,
-        ]);
-
-        $response->assertUnprocessable();
-        $response->assertJsonValidationErrors('teacher_id');
-    }
-
     public function test_a_staff_member_without_the_teacher_position_cannot_be_assigned_to_a_class(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::CLASSES_CREATE]);

@@ -120,7 +120,7 @@ class StaffControllerTest extends TestCase
             // what matters here is what got persisted, not the HTTP response.
         }
 
-        $this->assertDatabaseMissing('staff', ['employee_code' => 'S-0004']);
+        $this->assertDatabaseMissing('staff', ['employee_code' => 'S-0004'], 'tenant');
         $this->assertDatabaseMissing('users', ['name' => 'Should Not Exist']);
     }
 
@@ -171,7 +171,7 @@ class StaffControllerTest extends TestCase
 
         $this->deleteJson("/api/v1/staff/{$staff->id}")->assertNoContent();
 
-        $this->assertSoftDeleted('staff', ['id' => $staff->id]);
+        $this->assertSoftDeleted('staff', ['id' => $staff->id], connection: 'tenant');
         $this->assertDatabaseHas('users', ['id' => $userId, 'deleted_at' => null]);
     }
 }

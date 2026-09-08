@@ -6,7 +6,6 @@ namespace Database\Factories;
 
 use App\Models\LeaveRequest;
 use App\Models\LeaveRequestAttachment;
-use App\Models\Tenant;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -24,14 +23,5 @@ class LeaveRequestAttachmentFactory extends Factory
             'file_name' => fake()->word().'.jpg',
             'mime_type' => 'image/jpeg',
         ];
-    }
-
-    public function forTenant(Tenant|int $tenant): static
-    {
-        return $this->afterMaking(function (LeaveRequestAttachment $attachment) use ($tenant) {
-            $attachment->forceFill([
-                'tenant_id' => $tenant instanceof Tenant ? $tenant->getKey() : $tenant,
-            ]);
-        });
     }
 }

@@ -20,8 +20,10 @@ return new class extends Migration
     {
         Schema::create('leave_requests', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('tenant_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('student_id')->constrained()->cascadeOnDelete();
+            // No DB-level foreign key: `students`/`users` haven't moved to a
+            // per-tenant database yet, and a cross-database foreign key
+            // isn't possible in Postgres regardless.
+            $table->unsignedBigInteger('student_id');
             $table->date('from_date');
             $table->date('to_date');
             $table->time('from_time')->nullable();
@@ -29,15 +31,15 @@ return new class extends Migration
             $table->text('reason');
             $table->string('status', 20)->default('pending'); // pending | approved | rejected
             $table->text('decision_reason')->nullable();
-            $table->foreignId('decided_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->unsignedBigInteger('decided_by')->nullable();
             $table->timestamp('decided_at')->nullable();
             $table->timestamps();
             $table->softDeletes();
 
             // The student's own "my requests" list and the admin queue's
             // "pending ones" filter are the two query shapes this exists for.
-            $table->index(['tenant_id', 'student_id']);
-            $table->index(['tenant_id', 'status']);
+            $table->index('student_id');
+            $table->index('status');
         });
     }
 

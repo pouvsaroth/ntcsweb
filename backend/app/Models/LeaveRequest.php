@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Models\Concerns\Auditable;
-use App\Models\Concerns\BelongsToTenant;
 use App\Support\Audit\AuditAction;
 use Database\Factories\LeaveRequestFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -25,14 +24,13 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * enrollments' classes actually meets, via the existing AttendanceService —
  * never touched directly here.
  *
- * @property int $tenant_id
  * @property int $student_id
  * @property string $status
  */
 #[Fillable(['student_id', 'from_date', 'to_date', 'from_time', 'to_time', 'reason', 'status', 'decision_reason', 'decided_by', 'decided_at'])]
 class LeaveRequest extends Model
 {
-    use Auditable, BelongsToTenant, HasFactory, SoftDeletes;
+    use Auditable, HasFactory, SoftDeletes;
 
     /** @use HasFactory<LeaveRequestFactory> */
     public const STATUS_PENDING = 'pending';
@@ -40,6 +38,8 @@ class LeaveRequest extends Model
     public const STATUS_APPROVED = 'approved';
 
     public const STATUS_REJECTED = 'rejected';
+
+    protected $connection = 'tenant';
 
     protected $attributes = [
         'status' => self::STATUS_PENDING,

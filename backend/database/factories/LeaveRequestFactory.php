@@ -6,7 +6,6 @@ namespace Database\Factories;
 
 use App\Models\LeaveRequest;
 use App\Models\Student;
-use App\Models\Tenant;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -29,15 +28,6 @@ class LeaveRequestFactory extends Factory
             'reason' => fake()->sentence(10),
             'status' => LeaveRequest::STATUS_PENDING,
         ];
-    }
-
-    public function forTenant(Tenant|int $tenant): static
-    {
-        return $this->afterMaking(function (LeaveRequest $request) use ($tenant) {
-            $request->forceFill([
-                'tenant_id' => $tenant instanceof Tenant ? $tenant->getKey() : $tenant,
-            ]);
-        });
     }
 
     public function forStudent(Student $student): static

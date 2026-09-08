@@ -33,7 +33,7 @@ class UpdateStaffRequest extends FormRequest
         return [
             'employee_code' => [
                 'sometimes', 'required', 'string', 'max:32',
-                Rule::unique('staff')->where('tenant_id', $tenantId)->ignore($staff),
+                Rule::unique('tenant.staff', 'employee_code')->ignore($staff),
             ],
             'position_id' => ['sometimes', 'required', Rule::exists('positions', 'id')->where('tenant_id', $tenantId)],
 
