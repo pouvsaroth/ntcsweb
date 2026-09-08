@@ -134,7 +134,7 @@ class AttendanceTest extends TestCase
     public function test_a_teacher_can_only_take_attendance_for_their_own_class(): void
     {
         $teacherUser = $this->actingAsAdminWithPermissions([Permissions::ATTENDANCE_CREATE, Permissions::ATTENDANCE_VIEW]);
-        $teacherPosition = Position::factory()->forTenant($this->tenant)->create(['name' => 'Teacher']);
+        $teacherPosition = Position::factory()->create(['name' => 'Teacher']);
         $teacher = Staff::factory()->withUser($teacherUser)->create(['position_id' => $teacherPosition->id]);
 
         $ownClass = SchoolClass::factory()->forTenant($this->tenant)->withTeacher($teacher)->create();

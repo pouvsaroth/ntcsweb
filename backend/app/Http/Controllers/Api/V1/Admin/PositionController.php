@@ -67,11 +67,12 @@ final class PositionController extends Controller
     }
 
     /**
-     * `staff` lives in the tenant database while `positions` is still
-     * central, so `staff_count` can no longer come from
-     * withCount()/loadCount() (a single cross-database subquery) — it's
-     * resolved as a separate tenant-connection query and attached manually,
-     * the shape PositionResource expects via whenCounted().
+     * `staff` and `positions` both live in the tenant database now, but this
+     * predates that move (`positions` was still central when `staff_count`
+     * first had to stop coming from withCount()/loadCount() — a single
+     * cross-database subquery at the time) and remains correct as a
+     * same-connection query — resolved separately and attached manually, the
+     * shape PositionResource expects via whenCounted().
      *
      * @param  iterable<Position>  $positions
      */

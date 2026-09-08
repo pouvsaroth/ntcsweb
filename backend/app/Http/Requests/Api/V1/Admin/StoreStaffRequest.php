@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Requests\Api\V1\Admin;
 
 use App\Models\Staff;
-use App\Support\Tenancy\TenantContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -26,15 +25,13 @@ class StoreStaffRequest extends FormRequest
 
     public function rules(): array
     {
-        $tenantId = app(TenantContext::class)->idOrFail();
-
         return [
             'employee_code' => ['required', 'string', 'max:32', Rule::unique('tenant.staff', 'employee_code')],
 
             // Must belong to this school — route-model binding also enforces
             // this via Position's own tenant scope, but a request-level 404
             // reads better than a policy-layer one for a bad foreign key.
-            'position_id' => ['required', Rule::exists('positions', 'id')->where('tenant_id', $tenantId)],
+            'position_id' => ['required', Rule::exists('tenant.positions', 'id')],
 
             'first_name' => ['required', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],

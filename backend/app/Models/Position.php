@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Models\Concerns\Auditable;
-use App\Models\Concerns\BelongsToTenant;
 use Database\Factories\PositionFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -21,7 +20,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * StaffController::store() — so the role is never re-decided per Staff
  * member, only per Position.
  *
- * @property int $tenant_id
  * @property int $role_id
  * @property string $name
  * @property string $status
@@ -29,7 +27,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 #[Fillable(['name', 'role_id', 'description', 'status'])]
 class Position extends Model
 {
-    use Auditable, BelongsToTenant, HasFactory, SoftDeletes;
+    use Auditable, HasFactory, SoftDeletes;
+
+    protected $connection = 'tenant';
 
     /** @use HasFactory<PositionFactory> */
     public const STATUS_ACTIVE = 'active';

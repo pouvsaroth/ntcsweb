@@ -17,12 +17,10 @@ return new class extends Migration
         Schema::create('positions', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
-
-            // Restrict, not cascade/null: a Role backing a live Position must be
-            // retired (reassign the Position first) rather than silently
-            // vanishing out from under it.
-            $table->foreignId('role_id')->constrained('roles')->restrictOnDelete();
+            // No DB-level foreign key: `roles` hasn't moved to a per-tenant
+            // database yet, and a cross-database foreign key isn't possible
+            // in Postgres regardless.
+            $table->unsignedBigInteger('role_id');
 
             $table->string('name');
             $table->text('description')->nullable();
@@ -31,8 +29,8 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            $table->unique(['tenant_id', 'name']);
-            $table->index(['tenant_id', 'status']);
+            $table->unique('name');
+            $table->index('status');
         });
     }
 

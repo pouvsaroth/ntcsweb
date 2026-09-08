@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Api\V1\Admin;
 
-use App\Models\Position;
 use App\Models\SchoolClass;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Foundation\Http\FormRequest;
@@ -31,12 +30,11 @@ class StoreSchoolClassRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'code' => ['nullable', 'string', 'max:32', Rule::unique('classes')->where('tenant_id', $tenantId)],
             // Must be a Staff member holding the "Teacher" position — see
-            // TeacherPositionSeeder. `staff` lives in the tenant database and
-            // `positions` in the central one, so the "Teacher" position id(s)
-            // are resolved from the central connection first rather than via
-            // a subquery that can't cross databases.
+            // TeacherPositionSeeder. `staff` and `positions` both live in the
+            // tenant database, so this is an ordinary same-connection
+            // subquery.
             'teacher_id' => ['nullable', Rule::exists('tenant.staff', 'id')->where(
-                fn ($query) => $query->whereIn('position_id', Position::query()->where('tenant_id', $tenantId)->where('name', 'Teacher')->pluck('id'))
+                fn ($query) => $query->whereIn('position_id', fn ($sub) => $sub->select('id')->from('positions')->where('name', 'Teacher'))
             )],
             'classroom_id' => ['nullable', Rule::exists('classrooms', 'id')->where('tenant_id', $tenantId)],
             'academic_program_id' => ['nullable', Rule::exists('academic_programs', 'id')->where('tenant_id', $tenantId)],

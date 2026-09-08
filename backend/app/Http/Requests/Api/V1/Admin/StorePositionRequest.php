@@ -21,7 +21,7 @@ class StorePositionRequest extends FormRequest
         $tenantId = app(TenantContext::class)->idOrFail();
 
         return [
-            'name' => ['required', 'string', 'max:255', Rule::unique('positions')->where('tenant_id', $tenantId)],
+            'name' => ['required', 'string', 'max:255', Rule::unique('tenant.positions', 'name')],
 
             // Must be one of this school's own roles — a Position can never
             // grant a platform role (super-admin) or another school's role.

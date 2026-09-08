@@ -16,12 +16,11 @@ class PositionControllerTest extends TestCase
 {
     use HasAcademicAdmin, RefreshDatabase;
 
-    public function test_it_lists_positions_for_the_current_tenant_only(): void
+    public function test_it_lists_positions(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::POSITIONS_VIEW]);
 
         Position::factory()->count(2)->create();
-        $this->createForOtherTenant(fn () => Position::factory()->forTenant(Tenant::factory()->create())->create());
 
         $response = $this->getJson('/api/v1/positions');
 
@@ -43,7 +42,7 @@ class PositionControllerTest extends TestCase
         $response->assertCreated();
         $response->assertJsonPath('data.name', 'Accountant');
         $response->assertJsonPath('data.role.id', $role->id);
-        $this->assertDatabaseHas('positions', ['name' => 'Accountant', 'role_id' => $role->id, 'tenant_id' => $this->tenant->id]);
+        $this->assertDatabaseHas('positions', ['name' => 'Accountant', 'role_id' => $role->id], 'tenant');
     }
 
     public function test_position_name_must_be_unique_within_the_tenant(): void
@@ -67,13 +66,5 @@ class PositionControllerTest extends TestCase
 
         $response->assertUnprocessable();
         $response->assertJsonValidationErrors('role_id');
-    }
-
-    public function test_a_position_from_another_tenant_cannot_be_fetched_directly(): void
-    {
-        $this->actingAsAdminWithPermissions([Permissions::POSITIONS_VIEW]);
-        $other = $this->createForOtherTenant(fn () => Position::factory()->forTenant(Tenant::factory()->create())->create());
-
-        $this->getJson("/api/v1/positions/{$other->id}")->assertNotFound();
     }
 }

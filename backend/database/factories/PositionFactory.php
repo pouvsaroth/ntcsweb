@@ -6,7 +6,6 @@ namespace Database\Factories;
 
 use App\Models\Position;
 use App\Models\Role;
-use App\Models\Tenant;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -24,20 +23,6 @@ class PositionFactory extends Factory
             'description' => fake()->sentence(),
             'status' => Position::STATUS_ACTIVE,
         ];
-    }
-
-    /**
-     * See TeacherFactory::forTenant()'s docblock for why this exists and when
-     * it's actually needed (BelongsToTenant already auto-stamps tenant_id
-     * from the ambient TenantContext on a plain create()).
-     */
-    public function forTenant(Tenant|int $tenant): static
-    {
-        return $this->afterMaking(function (Position $position) use ($tenant) {
-            $position->forceFill([
-                'tenant_id' => $tenant instanceof Tenant ? $tenant->getKey() : $tenant,
-            ]);
-        });
     }
 
     public function inactive(): static

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Requests\Api\V1\Admin;
 
 use App\Models\Staff;
-use App\Support\Tenancy\TenantContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -27,7 +26,6 @@ class UpdateStaffRequest extends FormRequest
 
     public function rules(): array
     {
-        $tenantId = app(TenantContext::class)->idOrFail();
         $staff = $this->route('staff');
 
         return [
@@ -35,7 +33,7 @@ class UpdateStaffRequest extends FormRequest
                 'sometimes', 'required', 'string', 'max:32',
                 Rule::unique('tenant.staff', 'employee_code')->ignore($staff),
             ],
-            'position_id' => ['sometimes', 'required', Rule::exists('positions', 'id')->where('tenant_id', $tenantId)],
+            'position_id' => ['sometimes', 'required', Rule::exists('tenant.positions', 'id')],
 
             'first_name' => ['sometimes', 'required', 'string', 'max:255'],
             'last_name' => ['sometimes', 'required', 'string', 'max:255'],

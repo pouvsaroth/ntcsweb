@@ -27,7 +27,7 @@ class UpdatePositionRequest extends FormRequest
         return [
             'name' => [
                 'sometimes', 'required', 'string', 'max:255',
-                Rule::unique('positions')->where('tenant_id', $tenantId)->ignore($position),
+                Rule::unique('tenant.positions', 'name')->ignore($position),
             ],
             'role_id' => ['sometimes', 'required', Rule::exists('roles', 'id')->where('tenant_id', $tenantId)],
             'description' => ['nullable', 'string', 'max:1000'],

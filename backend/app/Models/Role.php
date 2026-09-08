@@ -51,6 +51,20 @@ class Role extends Model
     public const STUDENT = 'student';
 
     /**
+     * Pins Role to the central connection explicitly — see
+     * BelongsToTenant::getConnectionName()'s docblock for why this can't be
+     * left implicit: a model reached through a relationship from an
+     * already-converted, database-per-tenant model (e.g. Position::role(),
+     * now that Position is one) would otherwise silently follow it onto the
+     * `tenant` connection. Role isn't using that trait (see the class
+     * docblock above), so it needs this declared directly, same as User.
+     */
+    public function getConnectionName(): ?string
+    {
+        return config('tenancy.database.central_connection');
+    }
+
+    /**
      * Hierarchy. A user may only manage roles strictly below their own highest
      * level, which stops a School Admin from minting another School Admin's
      * privileges upward or a Teacher from promoting themselves.
