@@ -6,14 +6,15 @@ namespace App\Jobs;
 
 use App\Models\Student;
 use App\Models\StudentImport;
+use App\Models\Tenant;
 use App\Support\Tenancy\TenantContext;
 use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Storage;
+use Stancl\Tenancy\Database\DatabaseManager;
 use Throwable;
 
 /**
@@ -34,7 +35,7 @@ use Throwable;
  */
 class ProcessStudentImport implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable, InteractsWithQueue, Queueable;
 
     /** Written to `students`, and to the "already seen" duplicate check, this many rows at a time. */
     private const CHUNK_SIZE = 500;
@@ -62,13 +63,42 @@ class ProcessStudentImport implements ShouldQueue
 
     public int $tries = 1; // A partially-imported file must not be silently re-run from row 1.
 
-    public function __construct(private readonly StudentImport $import) {}
+    private StudentImport $import;
 
-    public function handle(TenantContext $context): void
+    public function __construct(
+        private readonly int $studentImportId,
+        private readonly int $tenantId,
+    ) {}
+
+    /**
+     * `student_imports` lives in the tenant database, and a queue worker is
+     * a long-lived process handling jobs for many different schools in
+     * turn — unlike an HTTP request, nothing has already pointed the
+     * `tenant` connection at the right physical database by the time this
+     * runs, so that has to happen explicitly here (the same call
+     * ResolveTenant makes for a request) before the StudentImport row (or
+     * anything else on that connection) can be read. Skipped under the test
+     * runner for the same reason ResolveTenant skips it — see that
+     * middleware's docblock.
+     */
+    public function handle(TenantContext $context, DatabaseManager $tenantDatabases): void
     {
-        $context->runFor($this->import->tenant, function () {
-            $this->process();
-        });
+        $tenant = Tenant::query()->findOrFail($this->tenantId);
+
+        if (! app()->environment('testing')) {
+            $tenantDatabases->createTenantConnection($tenant);
+        }
+
+        try {
+            $context->runFor($tenant, function () {
+                $this->import = StudentImport::query()->findOrFail($this->studentImportId);
+                $this->process();
+            });
+        } finally {
+            if (! app()->environment('testing')) {
+                $tenantDatabases->purgeTenantConnection();
+            }
+        }
     }
 
     private function process(): void

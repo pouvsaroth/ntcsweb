@@ -16,8 +16,10 @@ return new class extends Migration
         Schema::create('student_imports', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
-            $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
+            // No DB-level foreign key: `users` hasn't moved to a per-tenant
+            // database yet, and a cross-database foreign key isn't possible
+            // in Postgres regardless.
+            $table->unsignedBigInteger('user_id')->nullable();
 
             $table->string('original_filename');
             // Storage-relative path, same convention as HomeSlide/Student
@@ -39,8 +41,8 @@ return new class extends Migration
 
             $table->timestamps();
 
-            $table->index(['tenant_id', 'status']);
-            $table->index(['tenant_id', 'created_at']);
+            $table->index('status');
+            $table->index('created_at');
         });
     }
 

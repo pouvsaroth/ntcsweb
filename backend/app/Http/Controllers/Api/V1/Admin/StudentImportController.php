@@ -50,7 +50,7 @@ final class StudentImportController extends Controller
             'status' => StudentImport::STATUS_PENDING,
         ]);
 
-        ProcessStudentImport::dispatch($import);
+        ProcessStudentImport::dispatch($import->id, $tenant->id);
 
         return ApiResponse::created(new StudentImportResource($import));
     }

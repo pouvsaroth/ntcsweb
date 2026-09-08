@@ -54,7 +54,7 @@ class StudentImportTest extends TestCase
 
         $import = $this->makeImport($csv);
 
-        (new ProcessStudentImport($import))->handle(app(TenantContext::class));
+        (new ProcessStudentImport($import->id, $this->tenant->id))->handle(app(TenantContext::class), app(\Stancl\Tenancy\Database\DatabaseManager::class));
 
         $import->refresh();
         $this->assertSame(StudentImport::STATUS_COMPLETED, $import->status);
@@ -86,7 +86,7 @@ class StudentImportTest extends TestCase
         ]);
 
         $import = $this->makeImport($csv);
-        (new ProcessStudentImport($import))->handle(app(TenantContext::class));
+        (new ProcessStudentImport($import->id, $this->tenant->id))->handle(app(TenantContext::class), app(\Stancl\Tenancy\Database\DatabaseManager::class));
 
         $import->refresh();
         $this->assertSame(2, $import->total_rows);
@@ -111,7 +111,7 @@ class StudentImportTest extends TestCase
         ]);
 
         $import = $this->makeImport($csv);
-        (new ProcessStudentImport($import))->handle(app(TenantContext::class));
+        (new ProcessStudentImport($import->id, $this->tenant->id))->handle(app(TenantContext::class), app(\Stancl\Tenancy\Database\DatabaseManager::class));
 
         $import->refresh();
         $this->assertSame(3, $import->total_rows);
