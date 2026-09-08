@@ -35,7 +35,7 @@ class StoreBookRequest extends FormRequest
             // Must belong to the chosen program itself, not just the tenant.
             'book_category_id' => [
                 'nullable',
-                Rule::exists('book_categories', 'id')->where('tenant_id', $tenantId)->where('academic_program_id', $this->input('academic_program_id')),
+                Rule::exists('tenant.book_categories', 'id')->where('academic_program_id', $this->input('academic_program_id')),
             ],
         ];
     }

@@ -37,7 +37,11 @@ return new class extends Migration
 
         Schema::table('books', function (Blueprint $table) {
             $table->dropColumn('category');
-            $table->foreignId('book_category_id')->nullable()->after('academic_program_id')->constrained('book_categories')->nullOnDelete();
+            // No DB-level foreign key: `book_categories` lives in each
+            // school's own per-tenant database (see
+            // database/migrations/tenant), and a cross-database foreign key
+            // isn't possible in Postgres regardless.
+            $table->unsignedBigInteger('book_category_id')->nullable()->after('academic_program_id');
         });
 
         Schema::dropIfExists('program_book');
@@ -59,7 +63,7 @@ return new class extends Migration
         ');
 
         Schema::table('books', function (Blueprint $table) {
-            $table->dropConstrainedForeignId('book_category_id');
+            $table->dropColumn('book_category_id');
             $table->dropConstrainedForeignId('academic_program_id');
             $table->string('category', 50)->nullable()->after('cover_image');
         });

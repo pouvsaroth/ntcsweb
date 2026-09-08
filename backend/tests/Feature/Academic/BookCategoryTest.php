@@ -63,7 +63,7 @@ class BookCategoryTest extends TestCase
             ->assertJsonPath('data.name', 'Business Office');
 
         $this->deleteJson("/api/v1/book-categories/{$category->id}")->assertNoContent();
-        $this->assertSoftDeleted('book_categories', ['id' => $category->id]);
+        $this->assertSoftDeleted('book_categories', ['id' => $category->id], connection: 'tenant');
     }
 
     public function test_a_book_can_be_tagged_to_a_category_belonging_to_its_own_program(): void

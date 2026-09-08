@@ -19,16 +19,18 @@ return new class extends Migration
         Schema::create('book_categories', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
             $table->string('name');
-            $table->foreignId('academic_program_id')->constrained('academic_programs')->restrictOnDelete();
+            // No DB-level foreign key: `academic_programs` hasn't moved to a
+            // per-tenant database yet, and a cross-database foreign key
+            // isn't possible in Postgres regardless.
+            $table->unsignedBigInteger('academic_program_id');
             $table->boolean('is_active')->default(true);
 
             $table->timestamps();
             $table->softDeletes();
 
-            $table->unique(['tenant_id', 'academic_program_id', 'name']);
-            $table->index(['tenant_id', 'academic_program_id']);
+            $table->unique(['academic_program_id', 'name']);
+            $table->index('academic_program_id');
         });
     }
 

@@ -24,7 +24,7 @@ class StoreBookCategoryRequest extends FormRequest
             'academic_program_id' => ['required', Rule::exists('academic_programs', 'id')->where('tenant_id', $tenantId)],
             'name' => [
                 'required', 'string', 'max:255',
-                Rule::unique('book_categories')->where('tenant_id', $tenantId)->where('academic_program_id', $this->input('academic_program_id')),
+                Rule::unique('tenant.book_categories', 'name')->where('academic_program_id', $this->input('academic_program_id')),
             ],
             'is_active' => ['sometimes', 'boolean'],
         ];

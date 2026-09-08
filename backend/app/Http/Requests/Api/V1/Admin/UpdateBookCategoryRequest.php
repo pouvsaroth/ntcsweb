@@ -29,7 +29,7 @@ class UpdateBookCategoryRequest extends FormRequest
             'academic_program_id' => ['sometimes', 'required', Rule::exists('academic_programs', 'id')->where('tenant_id', $tenantId)],
             'name' => [
                 'sometimes', 'required', 'string', 'max:255',
-                Rule::unique('book_categories')->where('tenant_id', $tenantId)->where('academic_program_id', $academicProgramId)->ignore($bookCategory),
+                Rule::unique('tenant.book_categories', 'name')->where('academic_program_id', $academicProgramId)->ignore($bookCategory),
             ],
             'is_active' => ['sometimes', 'boolean'],
         ];
