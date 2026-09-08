@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Models\Concerns\Auditable;
-use App\Models\Concerns\BelongsToTenant;
 use App\Support\Audit\AuditAction;
 use Database\Factories\ProjectTaskFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -19,7 +18,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * One card on a project's Kanban board — see the migration's docblock and
  * ProjectTaskService::move() for how drag-and-drop repositioning works.
  *
- * @property int $tenant_id
  * @property int $project_id
  * @property int $project_column_id
  * @property string $title
@@ -29,7 +27,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 #[Fillable(['project_id', 'project_column_id', 'title', 'description', 'priority', 'due_date', 'assignee_id', 'order', 'created_by'])]
 class ProjectTask extends Model
 {
-    use Auditable, BelongsToTenant, HasFactory, SoftDeletes;
+    use Auditable, HasFactory, SoftDeletes;
+
+    protected $connection = 'tenant';
 
     /** @use HasFactory<ProjectTaskFactory> */
     public const PRIORITY_LOW = 'low';

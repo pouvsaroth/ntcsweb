@@ -6,7 +6,6 @@ namespace Database\Factories;
 
 use App\Models\Asset;
 use App\Models\AssetRepair;
-use App\Models\Tenant;
 use App\Support\Assets\RepairStatus;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -26,15 +25,6 @@ class AssetRepairFactory extends Factory
             'problem_description' => fake()->sentence(),
             'status' => RepairStatus::PENDING,
         ];
-    }
-
-    public function forTenant(Tenant|int $tenant): static
-    {
-        return $this->afterMaking(function (AssetRepair $repair) use ($tenant) {
-            $repair->forceFill([
-                'tenant_id' => $tenant instanceof Tenant ? $tenant->getKey() : $tenant,
-            ]);
-        });
     }
 
     public function forAsset(Asset $asset): static

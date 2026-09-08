@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Models\Concerns\BelongsToTenant;
 use Database\Factories\AssetHistoryFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -24,7 +23,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class AssetHistory extends Model
 {
     /** @use HasFactory<AssetHistoryFactory> */
-    use BelongsToTenant, HasFactory;
+    use HasFactory;
+
+    protected $connection = 'tenant';
 
     /** "history" pluralizes to "histories" by Eloquent's default guess, but the migration deliberately names the table `asset_history` (singular — one narrative per asset, not a collection of "asset historys/histories" in the usual sense). */
     protected $table = 'asset_history';

@@ -6,7 +6,6 @@ namespace Database\Factories;
 
 use App\Models\Asset;
 use App\Models\AssetDocument;
-use App\Models\Tenant;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -25,15 +24,6 @@ class AssetDocumentFactory extends Factory
             'file_name' => fake()->word().'.pdf',
             'mime_type' => 'application/pdf',
         ];
-    }
-
-    public function forTenant(Tenant|int $tenant): static
-    {
-        return $this->afterMaking(function (AssetDocument $document) use ($tenant) {
-            $document->forceFill([
-                'tenant_id' => $tenant instanceof Tenant ? $tenant->getKey() : $tenant,
-            ]);
-        });
     }
 
     public function forAsset(Asset $asset): static

@@ -18,18 +18,20 @@ return new class extends Migration
         Schema::create('asset_locations', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
             $table->string('code', 20);
             $table->string('name');
             $table->string('type', 20)->default('ROOM'); // CAMPUS | BUILDING | FLOOR | ROOM | OTHER
             $table->foreignId('parent_id')->nullable()->constrained('asset_locations')->nullOnDelete();
-            $table->foreignId('classroom_id')->nullable()->constrained('classrooms')->nullOnDelete();
+            // No DB-level foreign key: `classrooms` hasn't moved to a
+            // per-tenant database yet, and a cross-database foreign key
+            // isn't possible in Postgres regardless.
+            $table->unsignedBigInteger('classroom_id')->nullable();
             $table->boolean('is_active')->default(true);
 
             $table->timestamps();
 
-            $table->unique(['tenant_id', 'code']);
-            $table->index(['tenant_id', 'is_active']);
+            $table->unique('code');
+            $table->index('is_active');
         });
     }
 

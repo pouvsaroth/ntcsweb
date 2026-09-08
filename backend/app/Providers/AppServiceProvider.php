@@ -30,6 +30,7 @@ class AppServiceProvider extends ServiceProvider
         $this->configureEmailVerification();
         $this->configureDatabaseGuards();
         $this->configureRateLimiting();
+        $this->configureTenantMigrationsForTesting();
     }
 
     private function configureModels(): void
@@ -91,6 +92,22 @@ class AppServiceProvider extends ServiceProvider
                 'time_ms' => $event->time,
             ]);
         });
+    }
+
+    /**
+     * In real environments, database/migrations/tenant only ever runs
+     * against a school's own database (see TenantProvisioningService), via
+     * stancl/tenancy's migration path config. Feature tests instead run it
+     * straight against the shared test database, alongside every other
+     * migration — see Tests\TestCase's $connectionsToTransact for how a
+     * converted model's `tenant` connection still gets its writes rolled
+     * back between tests despite sharing that one physical database.
+     */
+    private function configureTenantMigrationsForTesting(): void
+    {
+        if (app()->environment('testing')) {
+            $this->loadMigrationsFrom(database_path('migrations/tenant'));
+        }
     }
 
     private function configureRateLimiting(): void

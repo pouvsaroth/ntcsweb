@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Requests\Api\V1\Admin;
 
 use App\Models\Asset;
-use App\Support\Tenancy\TenantContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -27,22 +26,21 @@ class UpdateAssetRequest extends FormRequest
 
     public function rules(): array
     {
-        $tenantId = app(TenantContext::class)->idOrFail();
         /** @var Asset $asset */
         $asset = $this->route('asset');
 
         return [
-            'category_id' => ['sometimes', 'required', Rule::exists('asset_categories', 'id')->where('tenant_id', $tenantId)],
+            'category_id' => ['sometimes', 'required', Rule::exists('tenant.asset_categories', 'id')],
             'name' => ['sometimes', 'required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
             'brand' => ['nullable', 'string', 'max:255'],
             'model' => ['nullable', 'string', 'max:255'],
-            'serial_number' => ['nullable', 'string', 'max:255', Rule::unique('assets')->where('tenant_id', $tenantId)->ignore($asset)],
-            'asset_tag' => ['nullable', 'string', 'max:64', Rule::unique('assets')->where('tenant_id', $tenantId)->ignore($asset)],
+            'serial_number' => ['nullable', 'string', 'max:255', Rule::unique('tenant.assets', 'serial_number')->ignore($asset)],
+            'asset_tag' => ['nullable', 'string', 'max:64', Rule::unique('tenant.assets', 'asset_tag')->ignore($asset)],
             'purchase_date' => ['nullable', 'date'],
             'purchase_price' => ['nullable', 'numeric', 'min:0', 'max:99999999999999.99'],
             'current_value' => ['nullable', 'numeric', 'min:0', 'max:99999999999999.99'],
-            'supplier_id' => ['nullable', Rule::exists('suppliers', 'id')->where('tenant_id', $tenantId)],
+            'supplier_id' => ['nullable', Rule::exists('tenant.suppliers', 'id')],
             'warranty_start_date' => ['nullable', 'date'],
             'warranty_end_date' => ['nullable', 'date', 'after_or_equal:warranty_start_date'],
             'warranty_provider' => ['nullable', 'string', 'max:255'],

@@ -10,6 +10,19 @@ use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 abstract class TestCase extends BaseTestCase
 {
     /**
+     * RefreshDatabase only transacts (and rolls back) the default `pgsql`
+     * connection unless told otherwise. A model converted to the
+     * database-per-tenant `tenant` connection (see BelongsToTenant's
+     * docblock) writes through a separate connection that — in tests —
+     * happens to point at this same physical database (see
+     * config/database.php); without this, those writes would never be
+     * rolled back between tests and would leak across them.
+     *
+     * @var list<string>
+     */
+    protected $connectionsToTransact = ['pgsql', 'tenant'];
+
+    /**
      * Enter a school's context directly, bypassing hostname/header resolution.
      * Most unit and policy tests care about tenant scoping, not how the tenant
      * was resolved — that is covered separately by tenancy resolver tests.

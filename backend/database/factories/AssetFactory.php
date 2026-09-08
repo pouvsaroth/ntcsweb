@@ -6,7 +6,6 @@ namespace Database\Factories;
 
 use App\Models\Asset;
 use App\Models\AssetCategory;
-use App\Models\Tenant;
 use App\Support\Assets\AssetCondition;
 use App\Support\Assets\AssetStatus;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -31,15 +30,6 @@ class AssetFactory extends Factory
             'status' => AssetStatus::IN_STOCK,
             'condition' => AssetCondition::NEW,
         ];
-    }
-
-    public function forTenant(Tenant|int $tenant): static
-    {
-        return $this->afterMaking(function (Asset $asset) use ($tenant) {
-            $asset->forceFill([
-                'tenant_id' => $tenant instanceof Tenant ? $tenant->getKey() : $tenant,
-            ]);
-        });
     }
 
     public function forCategory(AssetCategory $category): static

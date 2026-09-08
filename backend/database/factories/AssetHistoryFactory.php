@@ -6,7 +6,6 @@ namespace Database\Factories;
 
 use App\Models\Asset;
 use App\Models\AssetHistory;
-use App\Models\Tenant;
 use App\Support\Assets\AssetHistoryEvent;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -25,15 +24,6 @@ class AssetHistoryFactory extends Factory
             'description' => fake()->sentence(),
             'occurred_at' => now(),
         ];
-    }
-
-    public function forTenant(Tenant|int $tenant): static
-    {
-        return $this->afterMaking(function (AssetHistory $history) use ($tenant) {
-            $history->forceFill([
-                'tenant_id' => $tenant instanceof Tenant ? $tenant->getKey() : $tenant,
-            ]);
-        });
     }
 
     public function forAsset(Asset $asset): static

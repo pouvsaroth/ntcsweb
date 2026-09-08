@@ -105,4 +105,59 @@ return [
         'prefix' => 'tenancy',
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | stancl/tenancy: database-per-tenant
+    |--------------------------------------------------------------------------
+    |
+    | This app's own resolver chain above still decides *which* tenant a
+    | request is for — these keys only configure the physical per-tenant
+    | database that a table opts into once it's been converted (see
+    | TenantProvisioningService and BelongsToTenant's docblock). We
+    | deliberately don't use stancl's own domain-identification middleware,
+    | tenant model, or the bootstrappers that touch cache/filesystem/queue —
+    | just the database plumbing, kept as small as the package allows.
+    |
+    */
+
+    'tenant_model' => App\Models\Tenant::class,
+
+    'bootstrappers' => [
+        Stancl\Tenancy\Bootstrappers\DatabaseTenancyBootstrapper::class,
+    ],
+
+    'database' => [
+        // The school's existing shared database — every model not yet
+        // converted to a per-tenant one (the vast majority, for now) keeps
+        // reading and writing here, completely unaffected by any of this.
+        'central_connection' => env('DB_CONNECTION', 'pgsql'),
+
+        'template_tenant_connection' => null,
+
+        // A converted tenant's own database is named tenant<id>, e.g. tenant5.
+        'prefix' => 'tenant',
+        'suffix' => '',
+
+        'managers' => [
+            'pgsql' => Stancl\Tenancy\TenantDatabaseManagers\PostgreSQLDatabaseManager::class,
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Tenant migrations
+    |--------------------------------------------------------------------------
+    |
+    | Only tables that have actually been converted live here — everything
+    | else stays under the normal database/migrations, run once against the
+    | shared database exactly as before.
+    |
+    */
+
+    'migration_parameters' => [
+        '--force' => true,
+        '--path' => [database_path('migrations/tenant')],
+        '--realpath' => true,
+    ],
+
 ];

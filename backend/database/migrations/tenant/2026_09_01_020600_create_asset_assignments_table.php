@@ -19,11 +19,16 @@ return new class extends Migration
         Schema::create('asset_assignments', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
             $table->foreignId('asset_id')->constrained('assets')->cascadeOnDelete();
+            // Already has no DB-level foreign key by nature (Staff/Student/
+            // User/Department/Classroom all in one polymorphic column) —
+            // Department is the only one of those that's moved here so far.
             $table->nullableMorphs('assignable');
 
-            $table->foreignId('assigned_by')->nullable()->constrained('users')->nullOnDelete();
+            // No DB-level foreign key: `users` hasn't moved to a per-tenant
+            // database yet, and a cross-database foreign key isn't possible
+            // in Postgres regardless.
+            $table->unsignedBigInteger('assigned_by')->nullable();
             $table->date('assigned_date');
             $table->date('expected_return_date')->nullable();
             $table->date('returned_date')->nullable();
@@ -34,7 +39,7 @@ return new class extends Migration
 
             $table->timestamps();
 
-            $table->index(['tenant_id', 'asset_id', 'status']);
+            $table->index(['asset_id', 'status']);
         });
     }
 

@@ -6,7 +6,6 @@ namespace Database\Factories;
 
 use App\Models\Asset;
 use App\Models\AssetMaintenance;
-use App\Models\Tenant;
 use App\Support\Assets\MaintenanceStatus;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -26,15 +25,6 @@ class AssetMaintenanceFactory extends Factory
             'scheduled_date' => now()->addMonth()->toDateString(),
             'status' => MaintenanceStatus::SCHEDULED,
         ];
-    }
-
-    public function forTenant(Tenant|int $tenant): static
-    {
-        return $this->afterMaking(function (AssetMaintenance $maintenance) use ($tenant) {
-            $maintenance->forceFill([
-                'tenant_id' => $tenant instanceof Tenant ? $tenant->getKey() : $tenant,
-            ]);
-        });
     }
 
     public function forAsset(Asset $asset): static

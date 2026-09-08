@@ -13,6 +13,13 @@ use Illuminate\Support\Facades\Schema;
  * derived from the id at read time (see ApprovalRequestResource), not
  * stored. Named ApprovalRequest, not FormRequest, to avoid colliding with
  * Laravel's own Illuminate\Foundation\Http\FormRequest.
+ *
+ * Lives in the school's own database, same as FormTemplate — no
+ * `tenant_id` column. `requested_by`/`decided_by` stay plain bigints with
+ * no DB-level foreign key: `users` hasn't moved to a per-tenant database
+ * yet, and a cross-database foreign key isn't possible in Postgres
+ * regardless — see ApprovalRequest's own relations, which still resolve
+ * correctly as ordinary separate queries.
  */
 return new class extends Migration
 {
@@ -21,23 +28,22 @@ return new class extends Migration
         Schema::create('approval_requests', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
             $table->foreignId('form_template_id')->constrained('form_templates')->cascadeOnDelete();
-            $table->foreignId('requested_by')->constrained('users')->cascadeOnDelete();
+            $table->unsignedBigInteger('requested_by');
 
             $table->string('subject');
             $table->text('details')->nullable();
             $table->string('status', 20)->default('pending'); // pending | approved | rejected
 
             $table->text('decision_reason')->nullable();
-            $table->foreignId('decided_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->unsignedBigInteger('decided_by')->nullable();
             $table->timestamp('decided_at')->nullable();
 
             $table->timestamps();
             $table->softDeletes();
 
-            $table->index(['tenant_id', 'requested_by']);
-            $table->index(['tenant_id', 'status']);
+            $table->index('requested_by');
+            $table->index('status');
         });
     }
 

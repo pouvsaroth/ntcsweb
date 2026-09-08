@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Models\Concerns\Auditable;
-use App\Models\Concerns\BelongsToTenant;
 use Database\Factories\FormCategoryFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -19,13 +18,14 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * request submission path; only managing the catalog itself needs a
  * permission (see FormCategoryPolicy).
  *
- * @property int $tenant_id
  * @property string $name
  */
 #[Fillable(['name', 'order', 'is_active'])]
 class FormCategory extends Model
 {
-    use Auditable, BelongsToTenant, HasFactory, SoftDeletes;
+    use Auditable, HasFactory, SoftDeletes;
+
+    protected $connection = 'tenant';
 
     /** @use HasFactory<FormCategoryFactory> */
     protected function casts(): array

@@ -26,7 +26,6 @@ return new class extends Migration
         Schema::create('assets', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
             $table->string('asset_number', 32);
             $table->foreignId('category_id')->constrained('asset_categories')->restrictOnDelete();
             $table->string('name');
@@ -64,11 +63,15 @@ return new class extends Migration
             $table->text('disposal_reason')->nullable();
             $table->string('disposal_method', 30)->nullable();
             $table->decimal('disposal_value', 15, 2)->nullable();
-            $table->foreignId('disposal_approved_by')->nullable()->constrained('users')->nullOnDelete();
-            $table->foreignId('disposed_by')->nullable()->constrained('users')->nullOnDelete();
+            // disposal_approved_by/disposed_by/created_by below: no DB-level
+            // foreign key — `users` hasn't moved to a per-tenant database
+            // yet, and a cross-database foreign key isn't possible in
+            // Postgres regardless.
+            $table->unsignedBigInteger('disposal_approved_by')->nullable();
+            $table->unsignedBigInteger('disposed_by')->nullable();
 
             $table->text('notes')->nullable();
-            $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->unsignedBigInteger('created_by')->nullable();
 
             $table->timestamps();
             // A safety net for a genuine mis-entry, not the normal lifecycle
@@ -76,15 +79,15 @@ return new class extends Migration
             // every history/repair/assignment record pointing at it) intact.
             $table->softDeletes();
 
-            $table->unique(['tenant_id', 'asset_number']);
-            $table->unique(['tenant_id', 'serial_number']);
-            $table->unique(['tenant_id', 'asset_tag']);
-            $table->index(['tenant_id', 'status']);
-            $table->index(['tenant_id', 'category_id']);
-            $table->index(['tenant_id', 'location_id']);
-            $table->index(['tenant_id', 'department_id']);
-            $table->index(['tenant_id', 'hostname']);
-            $table->index(['tenant_id', 'mac_address']);
+            $table->unique('asset_number');
+            $table->unique('serial_number');
+            $table->unique('asset_tag');
+            $table->index('status');
+            $table->index('category_id');
+            $table->index('location_id');
+            $table->index('department_id');
+            $table->index('hostname');
+            $table->index('mac_address');
         });
     }
 

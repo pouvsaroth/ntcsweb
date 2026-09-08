@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Database\Factories;
 
 use App\Models\AcademicYear;
-use App\Models\Tenant;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -25,14 +24,5 @@ class AcademicYearFactory extends Factory
             'end_date' => "{$year}-12-31",
             'is_current' => false,
         ];
-    }
-
-    public function forTenant(Tenant|int $tenant): static
-    {
-        return $this->afterMaking(function (AcademicYear $year) use ($tenant) {
-            $year->forceFill([
-                'tenant_id' => $tenant instanceof Tenant ? $tenant->getKey() : $tenant,
-            ]);
-        });
     }
 }

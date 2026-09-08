@@ -123,8 +123,8 @@ class StudentFeedbackTest extends TestCase
         [$student, $user] = $this->studentWithUser();
         [$otherStudent] = $this->studentWithUser();
 
-        StudentFeedback::factory()->forTenant($this->tenant)->forStudent($student)->create(['subject' => 'Mine']);
-        StudentFeedback::factory()->forTenant($this->tenant)->forStudent($otherStudent)->create(['subject' => 'Not mine']);
+        StudentFeedback::factory()->forStudent($student)->create(['subject' => 'Mine']);
+        StudentFeedback::factory()->forStudent($otherStudent)->create(['subject' => 'Not mine']);
 
         $this->actingAsTenantUser($user);
         $response = $this->getJson('/api/v1/my-feedback')->assertOk();
@@ -144,7 +144,7 @@ class StudentFeedbackTest extends TestCase
     {
         $admin = $this->actingAsAdminWithPermissions([Permissions::STUDENT_FEEDBACK_VIEW, Permissions::STUDENT_FEEDBACK_REPLY]);
         [$student] = $this->studentWithUser();
-        $feedback = StudentFeedback::factory()->forTenant($this->tenant)->forStudent($student)->create();
+        $feedback = StudentFeedback::factory()->forStudent($student)->create();
 
         $response = $this->postJson("/api/v1/student-feedback/{$feedback->id}/reply", ['body' => 'Thanks, we will look into it.']);
 
@@ -159,7 +159,7 @@ class StudentFeedbackTest extends TestCase
     {
         $this->actingAsAdminWithPermissions([Permissions::STUDENT_FEEDBACK_VIEW]);
         [$student] = $this->studentWithUser();
-        $feedback = StudentFeedback::factory()->forTenant($this->tenant)->forStudent($student)->create();
+        $feedback = StudentFeedback::factory()->forStudent($student)->create();
 
         $this->postJson("/api/v1/student-feedback/{$feedback->id}/reply", ['body' => 'Not allowed'])->assertForbidden();
     }
@@ -168,7 +168,7 @@ class StudentFeedbackTest extends TestCase
     {
         $this->actingAsAdminWithPermissions([]);
         [$student, $user] = $this->studentWithUser();
-        $feedback = StudentFeedback::factory()->forTenant($this->tenant)->forStudent($student)->create();
+        $feedback = StudentFeedback::factory()->forStudent($student)->create();
 
         $this->actingAsTenantUser($user);
         $response = $this->postJson("/api/v1/my-feedback/{$feedback->id}/reply", ['body' => 'Any update?']);
@@ -185,7 +185,7 @@ class StudentFeedbackTest extends TestCase
         $this->actingAsAdminWithPermissions([]);
         [, $user] = $this->studentWithUser();
         [$otherStudent] = $this->studentWithUser();
-        $feedback = StudentFeedback::factory()->forTenant($this->tenant)->forStudent($otherStudent)->create();
+        $feedback = StudentFeedback::factory()->forStudent($otherStudent)->create();
 
         $this->actingAsTenantUser($user);
         $this->postJson("/api/v1/my-feedback/{$feedback->id}/reply", ['body' => 'Not mine'])->assertForbidden();

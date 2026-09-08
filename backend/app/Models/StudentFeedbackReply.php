@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Models\Concerns\BelongsToTenant;
 use Database\Factories\StudentFeedbackReplyFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -19,7 +18,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * StudentFeedback::addReply(), never directly, so the parent's `status`
  * stays in sync.
  *
- * @property int $tenant_id
  * @property int $student_feedback_id
  * @property int $user_id
  * @property string $body
@@ -27,9 +25,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 #[Fillable(['student_feedback_id', 'user_id', 'body'])]
 class StudentFeedbackReply extends Model
 {
-    use BelongsToTenant, HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes;
 
     /** @use HasFactory<StudentFeedbackReplyFactory> */
+    protected $connection = 'tenant';
     public function studentFeedback(): BelongsTo
     {
         return $this->belongsTo(StudentFeedback::class);

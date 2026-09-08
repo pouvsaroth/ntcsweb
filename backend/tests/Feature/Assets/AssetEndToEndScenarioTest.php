@@ -38,8 +38,8 @@ class AssetEndToEndScenarioTest extends TestCase
         $this->setUpAssetCatalog();
         $this->setUpChartOfAccounts();
 
-        $staffA = Staff::factory()->forTenant($this->tenant)->create();
-        $staffB = Staff::factory()->forTenant($this->tenant)->create();
+        $staffA = Staff::factory()->create();
+        $staffB = Staff::factory()->create();
 
         // 1. Purchase.
         $assetId = $this->postJson('/api/v1/assets', [

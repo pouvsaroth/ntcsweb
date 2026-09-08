@@ -6,7 +6,6 @@ namespace Database\Factories;
 
 use App\Models\Asset;
 use App\Models\AssetAssignment;
-use App\Models\Tenant;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -24,15 +23,6 @@ class AssetAssignmentFactory extends Factory
             'assigned_date' => now()->toDateString(),
             'status' => AssetAssignment::ACTIVE,
         ];
-    }
-
-    public function forTenant(Tenant|int $tenant): static
-    {
-        return $this->afterMaking(function (AssetAssignment $assignment) use ($tenant) {
-            $assignment->forceFill([
-                'tenant_id' => $tenant instanceof Tenant ? $tenant->getKey() : $tenant,
-            ]);
-        });
     }
 
     public function forAsset(Asset $asset): static

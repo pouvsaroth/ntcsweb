@@ -30,7 +30,7 @@ class ProjectTaskCommentAndHistoryTest extends TestCase
         $response->assertCreated();
         $response->assertJsonPath('data.body', 'Looks good to me.');
         $response->assertJsonPath('data.user_name', $this->admin->name);
-        $this->assertDatabaseHas('project_task_comments', ['project_task_id' => $task->id, 'body' => 'Looks good to me.']);
+        $this->assertDatabaseHas('project_task_comments', ['project_task_id' => $task->id, 'body' => 'Looks good to me.'], 'tenant');
     }
 
     public function test_commenting_requires_the_projects_update_permission(): void
@@ -68,7 +68,7 @@ class ProjectTaskCommentAndHistoryTest extends TestCase
         $comment = ProjectTaskComment::factory()->create(['project_task_id' => $task->id, 'user_id' => $this->admin->id]);
 
         $this->deleteJson("/api/v1/project-task-comments/{$comment->id}")->assertNoContent();
-        $this->assertSoftDeleted('project_task_comments', ['id' => $comment->id]);
+        $this->assertSoftDeleted('project_task_comments', ['id' => $comment->id], 'tenant');
     }
 
     public function test_a_different_user_cannot_delete_someone_elses_comment_without_the_update_permission(): void

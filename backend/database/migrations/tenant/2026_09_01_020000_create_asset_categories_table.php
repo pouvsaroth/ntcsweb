@@ -16,7 +16,6 @@ return new class extends Migration
         Schema::create('asset_categories', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
             $table->string('code', 20);
             $table->string('name');
             $table->text('description')->nullable();
@@ -25,8 +24,8 @@ return new class extends Migration
 
             $table->timestamps();
 
-            $table->unique(['tenant_id', 'code']);
-            $table->index(['tenant_id', 'is_active']);
+            $table->unique('code');
+            $table->index('is_active');
         });
     }
 

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Models\Concerns\Auditable;
-use App\Models\Concerns\BelongsToTenant;
 use App\Support\Audit\AuditAction;
 use Database\Factories\StudentFeedbackFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -23,7 +22,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * other than the student has replied yet, flipped by {@see addReply()},
  * the only place a StudentFeedbackReply is ever created for this row.
  *
- * @property int $tenant_id
  * @property int $student_id
  * @property int|null $teacher_id
  * @property string $type
@@ -33,13 +31,15 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 #[Fillable(['student_id', 'type', 'topic', 'teacher_id', 'subject', 'message', 'status'])]
 class StudentFeedback extends Model
 {
-    use Auditable, BelongsToTenant, HasFactory, SoftDeletes;
+    use Auditable, HasFactory, SoftDeletes;
 
     /** @use HasFactory<StudentFeedbackFactory> */
     // "feedback" is uncountable, so Eloquent's auto-pluralized guess
     // ("student_feedback") would collide with the singular reading —
     // spelled out explicitly to match the migration's `student_feedbacks`.
     protected $table = 'student_feedbacks';
+
+    protected $connection = 'tenant';
 
     public const TYPE_REQUEST = 'request';
 

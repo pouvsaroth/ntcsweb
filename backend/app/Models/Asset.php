@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Models\Concerns\BelongsToTenant;
 use App\Support\Assets\AssetCondition;
 use App\Support\Assets\AssetStatus;
 use Database\Factories\AssetFactory;
@@ -31,7 +30,6 @@ use Illuminate\Support\Arr;
  * column-diff can't produce. See AssetHistory for the separate, non-audit
  * "what happened to this asset" business record.
  *
- * @property int $tenant_id
  * @property string $asset_number
  * @property string $status
  * @property string $condition
@@ -48,7 +46,9 @@ use Illuminate\Support\Arr;
 class Asset extends Model
 {
     /** @use HasFactory<AssetFactory> */
-    use BelongsToTenant, HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes;
+
+    protected $connection = 'tenant';
 
     protected $attributes = [
         'status' => AssetStatus::IN_STOCK,

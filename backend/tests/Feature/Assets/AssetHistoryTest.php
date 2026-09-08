@@ -45,7 +45,7 @@ class AssetHistoryTest extends TestCase
             'category_id' => $this->computerCategory->id,
             'name' => 'Test asset',
         ])->assertCreated()->json('data.id');
-        $staff = Staff::factory()->forTenant($this->tenant)->create();
+        $staff = Staff::factory()->create();
 
         $this->postJson("/api/v1/assets/{$assetId}/assign", ['assignable_type' => 'staff', 'assignable_id' => $staff->id])->assertCreated();
         $this->postJson("/api/v1/assets/{$assetId}/return", [])->assertOk();

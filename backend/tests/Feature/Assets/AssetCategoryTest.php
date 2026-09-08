@@ -18,7 +18,7 @@ class AssetCategoryTest extends TestCase
     {
         $this->actingAsAdminWithPermissions([Permissions::ASSETS_CREATE, Permissions::ASSETS_VIEW]);
 
-        $parent = AssetCategory::factory()->forTenant($this->tenant)->create(['code' => 'IT', 'name' => 'IT Equipment']);
+        $parent = AssetCategory::factory()->create(['code' => 'IT', 'name' => 'IT Equipment']);
 
         $response = $this->postJson('/api/v1/asset-categories', [
             'code' => 'CMP',
@@ -33,7 +33,7 @@ class AssetCategoryTest extends TestCase
     public function test_a_category_code_must_be_unique_within_the_tenant(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::ASSETS_CREATE]);
-        AssetCategory::factory()->forTenant($this->tenant)->create(['code' => 'CMP']);
+        AssetCategory::factory()->create(['code' => 'CMP']);
 
         $this->postJson('/api/v1/asset-categories', ['code' => 'CMP', 'name' => 'Duplicate'])->assertUnprocessable();
     }
@@ -41,8 +41,8 @@ class AssetCategoryTest extends TestCase
     public function test_a_category_with_assets_cannot_be_deleted(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::ASSETS_CREATE, Permissions::ASSETS_DELETE]);
-        $category = AssetCategory::factory()->forTenant($this->tenant)->create();
-        \App\Models\Asset::factory()->forTenant($this->tenant)->forCategory($category)->create();
+        $category = AssetCategory::factory()->create();
+        \App\Models\Asset::factory()->forCategory($category)->create();
 
         $this->deleteJson("/api/v1/asset-categories/{$category->id}")->assertUnprocessable();
     }

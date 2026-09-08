@@ -18,7 +18,7 @@ class AssetLocationTest extends TestCase
     {
         $this->actingAsAdminWithPermissions([Permissions::ASSETS_CREATE]);
 
-        $campus = AssetLocation::factory()->forTenant($this->tenant)->create(['code' => 'MAIN', 'type' => AssetLocation::CAMPUS]);
+        $campus = AssetLocation::factory()->create(['code' => 'MAIN', 'type' => AssetLocation::CAMPUS]);
 
         $response = $this->postJson('/api/v1/asset-locations', [
             'code' => 'LAB1',
@@ -34,7 +34,7 @@ class AssetLocationTest extends TestCase
     public function test_a_location_code_must_be_unique_within_the_tenant(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::ASSETS_CREATE]);
-        AssetLocation::factory()->forTenant($this->tenant)->create(['code' => 'LAB1']);
+        AssetLocation::factory()->create(['code' => 'LAB1']);
 
         $this->postJson('/api/v1/asset-locations', ['code' => 'LAB1', 'name' => 'Duplicate'])->assertUnprocessable();
     }

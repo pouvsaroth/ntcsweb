@@ -91,6 +91,22 @@ trait BelongsToTenant
         });
     }
 
+    /**
+     * Explicitly pinned to the shared/central connection, not left to
+     * inherit whatever the ambient default happens to be. Without this, a
+     * model reached *through a relationship* from an already-converted,
+     * database-per-tenant model (see e.g. StudentFeedback::teacher()) would
+     * silently follow that model onto the `tenant` connection instead —
+     * Eloquent's newRelatedInstance() does this automatically for any
+     * related model that reports no connection of its own. Declaring one
+     * here closes that gap for every model still using this trait, with no
+     * per-model change needed as they're converted one at a time.
+     */
+    public function getConnectionName(): ?string
+    {
+        return config('tenancy.database.central_connection');
+    }
+
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class, $this->getTenantIdColumn());

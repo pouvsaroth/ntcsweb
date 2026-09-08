@@ -26,10 +26,10 @@ class UpdateAssetLocationRequest extends FormRequest
         $location = $this->route('asset_location');
 
         return [
-            'code' => ['sometimes', 'required', 'string', 'max:20', Rule::unique('asset_locations')->where('tenant_id', $tenantId)->ignore($location)],
+            'code' => ['sometimes', 'required', 'string', 'max:20', Rule::unique('tenant.asset_locations', 'code')->ignore($location)],
             'name' => ['sometimes', 'required', 'string', 'max:255'],
             'type' => ['sometimes', Rule::in(AssetLocation::types())],
-            'parent_id' => ['nullable', Rule::exists('asset_locations', 'id')->where('tenant_id', $tenantId), 'not_in:'.$location->getKey()],
+            'parent_id' => ['nullable', Rule::exists('tenant.asset_locations', 'id'), 'not_in:'.$location->getKey()],
             'classroom_id' => ['nullable', Rule::exists('classrooms', 'id')->where('tenant_id', $tenantId)],
             'is_active' => ['sometimes', 'boolean'],
         ];

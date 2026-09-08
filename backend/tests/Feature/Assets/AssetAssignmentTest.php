@@ -22,7 +22,7 @@ class AssetAssignmentTest extends TestCase
         $this->actingAsAdminWithPermissions([Permissions::ASSETS_CREATE, Permissions::ASSETS_ASSIGN, Permissions::ASSETS_VIEW]);
         $this->setUpAssetCatalog();
         $asset = $this->createAsset();
-        $staff = Staff::factory()->forTenant($this->tenant)->create();
+        $staff = Staff::factory()->create();
 
         $response = $this->postJson("/api/v1/assets/{$asset->id}/assign", [
             'assignable_type' => 'staff',
@@ -41,8 +41,8 @@ class AssetAssignmentTest extends TestCase
         $this->actingAsAdminWithPermissions([Permissions::ASSETS_CREATE, Permissions::ASSETS_ASSIGN]);
         $this->setUpAssetCatalog();
         $asset = $this->createAsset();
-        $staffOne = Staff::factory()->forTenant($this->tenant)->create();
-        $staffTwo = Staff::factory()->forTenant($this->tenant)->create();
+        $staffOne = Staff::factory()->create();
+        $staffTwo = Staff::factory()->create();
 
         $this->postJson("/api/v1/assets/{$asset->id}/assign", ['assignable_type' => 'staff', 'assignable_id' => $staffOne->id])->assertCreated();
         $firstAssignmentId = AssetAssignment::where('asset_id', $asset->id)->firstOrFail()->id;
@@ -63,7 +63,7 @@ class AssetAssignmentTest extends TestCase
         $this->actingAsAdminWithPermissions([Permissions::ASSETS_CREATE, Permissions::ASSETS_ASSIGN, Permissions::ASSETS_RETURN]);
         $this->setUpAssetCatalog();
         $asset = $this->createAsset();
-        $staff = Staff::factory()->forTenant($this->tenant)->create();
+        $staff = Staff::factory()->create();
 
         $this->postJson("/api/v1/assets/{$asset->id}/assign", ['assignable_type' => 'staff', 'assignable_id' => $staff->id])->assertCreated();
 
@@ -80,7 +80,7 @@ class AssetAssignmentTest extends TestCase
         $this->actingAsAdminWithPermissions([Permissions::ASSETS_CREATE, Permissions::ASSETS_ASSIGN, Permissions::ASSETS_RETIRE]);
         $this->setUpAssetCatalog();
         $asset = $this->createAsset();
-        $staff = Staff::factory()->forTenant($this->tenant)->create();
+        $staff = Staff::factory()->create();
 
         $this->postJson("/api/v1/assets/{$asset->id}/retire", ['reason' => 'End of life'])->assertOk();
 

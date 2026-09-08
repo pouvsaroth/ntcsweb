@@ -11,6 +11,7 @@ use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Stancl\Tenancy\Database\DatabaseManager;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -26,6 +27,7 @@ final readonly class ResolveTenant
     public function __construct(
         private TenantResolverChain $resolvers,
         private TenantContext $context,
+        private DatabaseManager $tenantDatabases,
     ) {}
 
     public function handle(Request $request, Closure $next): Response
@@ -35,11 +37,43 @@ final readonly class ResolveTenant
         if ($tenant !== null) {
             $this->context->set($tenant);
 
+            // Registers a `tenant` connection pointing at this school's own
+            // database, if it has one — cheap (just config, no query), and
+            // purely additive: nothing reads from it until a model actually
+            // opts in via `protected $connection = 'tenant'`, so resolving a
+            // school with no dedicated database yet is still perfectly fine
+            // for everything else. See BelongsToTenant's docblock for why
+            // most tables don't opt in yet.
+            //
+            // Skipped under the test runner: feature tests exercise a
+            // converted module against the ordinary shared test database
+            // (see config/database.php's `tenant` connection and
+            // Tests\TestCase::$connectionsToTransact) rather than
+            // provisioning a real, physical per-tenant database for every
+            // one of hundreds of fake tenants a test suite creates.
+            if (! app()->environment('testing')) {
+                $this->tenantDatabases->createTenantConnection($tenant);
+            }
+
             // Each school runs on its own clock and language.
             config(['app.timezone' => $tenant->timezone]);
             date_default_timezone_set($tenant->timezone);
             app()->setLocale($tenant->locale);
         } else {
+            // A stale `tenant` connection from a previous request has no
+            // business surviving into this one — harmless for typical
+            // one-request-per-process PHP, but queue workers and any other
+            // long-lived process must not let School A's connection leak
+            // into a request that resolved no tenant at all. Skipped under
+            // the test runner for the same reason the registration above
+            // is: it would delete config/database.php's static `tenant`
+            // fallback outright (purgeTenantConnection() unsets the config
+            // key, not just the open connection), and every test's
+            // teardown expects that connection to still exist.
+            if (! app()->environment('testing')) {
+                $this->tenantDatabases->purgeTenantConnection();
+            }
+
             $user = Auth::guard(config('tenancy.auth_guard'))->user();
 
             // A super admin with no school in context operates platform-wide.

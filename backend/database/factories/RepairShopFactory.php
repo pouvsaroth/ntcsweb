@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Database\Factories;
 
 use App\Models\RepairShop;
-use App\Models\Tenant;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -26,14 +25,5 @@ class RepairShopFactory extends Factory
             'specialization' => fake()->randomElement(['Computer / Laptop', 'Printer', 'Network Equipment', 'General Electronics']),
             'is_active' => true,
         ];
-    }
-
-    public function forTenant(Tenant|int $tenant): static
-    {
-        return $this->afterMaking(function (RepairShop $shop) use ($tenant) {
-            $shop->forceFill([
-                'tenant_id' => $tenant instanceof Tenant ? $tenant->getKey() : $tenant,
-            ]);
-        });
     }
 }

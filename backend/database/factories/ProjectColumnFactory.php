@@ -6,7 +6,6 @@ namespace Database\Factories;
 
 use App\Models\Project;
 use App\Models\ProjectColumn;
-use App\Models\Tenant;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -24,20 +23,5 @@ class ProjectColumnFactory extends Factory
             'color' => null,
             'order' => 0,
         ];
-    }
-
-    /**
-     * See CurrencyRateFactory::forTenant()'s docblock for why this exists.
-     * Pass an explicit `project_id` alongside this when the default nested
-     * Project::factory() would otherwise be created without a tenant to
-     * attach to (e.g. inside TenantContext::withoutTenancy()).
-     */
-    public function forTenant(Tenant|int $tenant): static
-    {
-        return $this->afterMaking(function (ProjectColumn $column) use ($tenant) {
-            $column->forceFill([
-                'tenant_id' => $tenant instanceof Tenant ? $tenant->getKey() : $tenant,
-            ]);
-        });
     }
 }

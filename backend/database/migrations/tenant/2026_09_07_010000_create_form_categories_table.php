@@ -2,14 +2,17 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
  * A department/category grouping in the eApprovals "Forms" catalog (e.g.
  * "General", "Finance", "IT") — see FormTemplate, which each belongs to one
- * of these. Seeded with a single "General" category per existing tenant by
- * the migration right after this one; a school adds more through the admin
- * Form Categories screen.
+ * of these. Lives in the school's own database (see BelongsToTenant's
+ * docblock) — no `tenant_id` column; every row here already belongs to
+ * whichever school's database it's in. Seeded with a single starter
+ * "General" category so the Forms catalog isn't empty on day one — a school
+ * renames or adds more of its own afterward through the admin screen.
  */
 return new class extends Migration
 {
@@ -18,8 +21,6 @@ return new class extends Migration
         Schema::create('form_categories', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
-
             $table->string('name');
             $table->unsignedInteger('order')->default(0);
             $table->boolean('is_active')->default(true);
@@ -27,8 +28,16 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            $table->index(['tenant_id', 'order']);
+            $table->index('order');
         });
+
+        DB::connection($this->getConnection())->table('form_categories')->insert([
+            'name' => 'General',
+            'order' => 0,
+            'is_active' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
     }
 
     public function down(): void

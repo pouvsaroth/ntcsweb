@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Models\Concerns\BelongsToTenant;
 use App\Support\Assets\RepairStatus;
 use Database\Factories\AssetRepairFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -31,7 +30,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class AssetRepair extends Model
 {
     /** @use HasFactory<AssetRepairFactory> */
-    use BelongsToTenant, HasFactory;
+    use HasFactory;
+
+    protected $connection = 'tenant';
 
     protected $attributes = [
         'status' => RepairStatus::PENDING,

@@ -6,7 +6,6 @@ namespace Database\Factories;
 
 use App\Models\ApprovalRequest;
 use App\Models\FormTemplate;
-use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -26,20 +25,5 @@ class ApprovalRequestFactory extends Factory
             'details' => fake()->optional()->paragraph(),
             'status' => ApprovalRequest::STATUS_PENDING,
         ];
-    }
-
-    /**
-     * See CurrencyRateFactory::forTenant()'s docblock for why this exists.
-     * Pass explicit `form_template_id`/`requested_by` alongside this when
-     * the default nested factories would otherwise be created without a
-     * tenant to attach to (e.g. inside TenantContext::withoutTenancy()).
-     */
-    public function forTenant(Tenant|int $tenant): static
-    {
-        return $this->afterMaking(function (ApprovalRequest $request) use ($tenant) {
-            $request->forceFill([
-                'tenant_id' => $tenant instanceof Tenant ? $tenant->getKey() : $tenant,
-            ]);
-        });
     }
 }

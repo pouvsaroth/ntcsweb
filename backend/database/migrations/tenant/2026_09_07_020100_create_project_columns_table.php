@@ -8,6 +8,9 @@ use Illuminate\Support\Facades\Schema;
  * One lane on a project's Kanban board — fully admin-defined per project
  * (not a fixed To-Do/In-Progress/Done set), ordered by `order` and
  * reorderable by dragging (see ProjectColumnController::reorder()).
+ *
+ * Lives in the school's own database, same as its parent Project — no
+ * `tenant_id` column.
  */
 return new class extends Migration
 {
@@ -16,7 +19,6 @@ return new class extends Migration
         Schema::create('project_columns', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
             $table->foreignId('project_id')->constrained('projects')->cascadeOnDelete();
 
             $table->string('name');
@@ -26,7 +28,7 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            $table->index(['tenant_id', 'project_id', 'order']);
+            $table->index(['project_id', 'order']);
         });
     }
 

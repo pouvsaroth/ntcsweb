@@ -10,6 +10,9 @@ use Illuminate\Support\Facades\Schema;
  * these (see FormTemplateController::index, deliberately unguarded like
  * LeaveRequest submission) to submit a FormRequest against one; only
  * form-templates.manage can create/update/delete the catalog itself.
+ *
+ * Lives in the school's own database, same as FormCategory — no
+ * `tenant_id` column.
  */
 return new class extends Migration
 {
@@ -18,7 +21,6 @@ return new class extends Migration
         Schema::create('form_templates', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
             $table->foreignId('form_category_id')->constrained('form_categories')->cascadeOnDelete();
 
             $table->string('code');
@@ -30,8 +32,8 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            $table->unique(['tenant_id', 'code']);
-            $table->index(['tenant_id', 'form_category_id', 'order']);
+            $table->unique('code');
+            $table->index(['form_category_id', 'order']);
         });
     }
 

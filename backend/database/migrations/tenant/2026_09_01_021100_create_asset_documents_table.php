@@ -19,7 +19,6 @@ return new class extends Migration
         Schema::create('asset_documents', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
             $table->foreignId('asset_id')->constrained('assets')->cascadeOnDelete();
 
             $table->string('type', 30)->default('OTHER');
@@ -27,11 +26,14 @@ return new class extends Migration
             $table->string('file_name');
             $table->string('mime_type', 100)->nullable();
             $table->string('caption')->nullable();
-            $table->foreignId('uploaded_by')->nullable()->constrained('users')->nullOnDelete();
+            // No DB-level foreign key: `users` hasn't moved to a per-tenant
+            // database yet, and a cross-database foreign key isn't possible
+            // in Postgres regardless.
+            $table->unsignedBigInteger('uploaded_by')->nullable();
 
             $table->timestamps();
 
-            $table->index(['tenant_id', 'asset_id', 'type']);
+            $table->index(['asset_id', 'type']);
         });
     }
 

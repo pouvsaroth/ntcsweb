@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Models\Concerns\BelongsToTenant;
 use App\Support\Assets\IssuePriority;
 use App\Support\Assets\IssueStatus;
 use Database\Factories\AssetIssueFactory;
@@ -23,7 +22,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class AssetIssue extends Model
 {
     /** @use HasFactory<AssetIssueFactory> */
-    use BelongsToTenant, HasFactory;
+    use HasFactory;
+
+    protected $connection = 'tenant';
 
     protected $attributes = [
         'priority' => IssuePriority::MEDIUM,

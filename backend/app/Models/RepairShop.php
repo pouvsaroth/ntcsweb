@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Models\Concerns\Auditable;
-use App\Models\Concerns\BelongsToTenant;
 use Database\Factories\RepairShopFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -18,7 +17,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class RepairShop extends Model
 {
     /** @use HasFactory<RepairShopFactory> */
-    use Auditable, BelongsToTenant, HasFactory;
+    use Auditable, HasFactory;
+
+    protected $connection = 'tenant';
 
     protected $attributes = [
         'is_active' => true,

@@ -33,7 +33,7 @@ class AssetLifecycleTest extends TestCase
         $this->actingAsAdminWithPermissions([Permissions::ASSETS_CREATE, Permissions::ASSETS_RETIRE, Permissions::ASSETS_DISPOSE, Permissions::ASSETS_ASSIGN]);
         $this->setUpAssetCatalog();
         $asset = $this->createAsset();
-        $staff = \App\Models\Staff::factory()->forTenant($this->tenant)->create();
+        $staff = \App\Models\Staff::factory()->create();
 
         $this->postJson("/api/v1/assets/{$asset->id}/retire", ['reason' => 'End of life'])->assertOk();
 

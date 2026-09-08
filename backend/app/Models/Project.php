@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Models\Concerns\Auditable;
-use App\Models\Concerns\BelongsToTenant;
 use Database\Factories\ProjectFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -19,14 +18,15 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * create and use one (see ProjectPolicy's docblock); there is no
  * per-project membership gate.
  *
- * @property int $tenant_id
  * @property string $name
  * @property string $status
  */
 #[Fillable(['name', 'description', 'status', 'created_by'])]
 class Project extends Model
 {
-    use Auditable, BelongsToTenant, HasFactory, SoftDeletes;
+    use Auditable, HasFactory, SoftDeletes;
+
+    protected $connection = 'tenant';
 
     /** @use HasFactory<ProjectFactory> */
     public const STATUS_ACTIVE = 'active';

@@ -15,6 +15,13 @@ use Illuminate\Support\Facades\Schema;
  * recorded by staff in Billing exactly as every other payment is today —
  * see the ExamApplicationService docblock for why this app doesn't yet
  * automate that confirmation.
+ *
+ * Lives in the school's own database (see BelongsToTenant's docblock) — no
+ * `tenant_id` column. `student_id`/`enrollment_id`/`decided_by` stay plain
+ * bigints with no DB-level foreign key: Student/Enrollment/User haven't
+ * moved to a per-tenant database yet, and a cross-database foreign key
+ * isn't possible in Postgres regardless — see ExamApplication's own
+ * relations, which still resolve correctly as ordinary separate queries.
  */
 return new class extends Migration
 {
@@ -22,9 +29,8 @@ return new class extends Migration
     {
         Schema::create('exam_applications', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('tenant_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('student_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('enrollment_id')->constrained()->cascadeOnDelete();
+            $table->unsignedBigInteger('student_id');
+            $table->unsignedBigInteger('enrollment_id');
             $table->date('exam_date');
             $table->time('exam_time');
             $table->string('table_no', 20);
@@ -33,7 +39,7 @@ return new class extends Migration
             $table->timestamp('student_marked_paid_at');
             $table->string('status', 20)->default('pending'); // pending | approved | rejected
             $table->text('decision_reason')->nullable();
-            $table->foreignId('decided_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->unsignedBigInteger('decided_by')->nullable();
             $table->timestamp('decided_at')->nullable();
             $table->timestamps();
             $table->softDeletes();
@@ -41,8 +47,8 @@ return new class extends Migration
             // The student's own "my exam applications" list and the admin
             // queue's "pending ones" filter are the two query shapes this
             // exists for.
-            $table->index(['tenant_id', 'student_id']);
-            $table->index(['tenant_id', 'status']);
+            $table->index('student_id');
+            $table->index('status');
         });
     }
 

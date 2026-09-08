@@ -138,8 +138,8 @@ class ExamApplicationTest extends TestCase
         [$student, $user] = $this->studentWithUser();
         [$otherStudent] = $this->studentWithUser();
 
-        ExamApplication::factory()->forTenant($this->tenant)->forStudent($student)->forEnrollment($this->activeEnrollment($student))->create();
-        ExamApplication::factory()->forTenant($this->tenant)->forStudent($otherStudent)->forEnrollment($this->activeEnrollment($otherStudent))->create();
+        ExamApplication::factory()->forStudent($student)->forEnrollment($this->activeEnrollment($student))->create();
+        ExamApplication::factory()->forStudent($otherStudent)->forEnrollment($this->activeEnrollment($otherStudent))->create();
 
         $this->actingAsTenantUser($user);
         $response = $this->getJson('/api/v1/my-exam-applications')->assertOk();
@@ -158,7 +158,7 @@ class ExamApplicationTest extends TestCase
     {
         $admin = $this->actingAsAdminWithPermissions([Permissions::EXAM_APPLICATIONS_VIEW, Permissions::EXAM_APPLICATIONS_APPROVE]);
         [$student] = $this->studentWithUser();
-        $application = ExamApplication::factory()->forTenant($this->tenant)->forStudent($student)->forEnrollment($this->activeEnrollment($student))->create();
+        $application = ExamApplication::factory()->forStudent($student)->forEnrollment($this->activeEnrollment($student))->create();
 
         $response = $this->postJson("/api/v1/exam-applications/{$application->id}/approve");
 
@@ -171,7 +171,7 @@ class ExamApplicationTest extends TestCase
     {
         $this->actingAsAdminWithPermissions([Permissions::EXAM_APPLICATIONS_APPROVE]);
         [$student] = $this->studentWithUser();
-        $application = ExamApplication::factory()->forTenant($this->tenant)->forStudent($student)->forEnrollment($this->activeEnrollment($student))->create([
+        $application = ExamApplication::factory()->forStudent($student)->forEnrollment($this->activeEnrollment($student))->create([
             'status' => ExamApplication::STATUS_APPROVED,
         ]);
 
@@ -182,7 +182,7 @@ class ExamApplicationTest extends TestCase
     {
         $admin = $this->actingAsAdminWithPermissions([Permissions::EXAM_APPLICATIONS_REJECT]);
         [$student] = $this->studentWithUser();
-        $application = ExamApplication::factory()->forTenant($this->tenant)->forStudent($student)->forEnrollment($this->activeEnrollment($student))->create();
+        $application = ExamApplication::factory()->forStudent($student)->forEnrollment($this->activeEnrollment($student))->create();
 
         $response = $this->postJson("/api/v1/exam-applications/{$application->id}/reject", ['reason' => 'Fee not verified']);
 
@@ -196,7 +196,7 @@ class ExamApplicationTest extends TestCase
     {
         $this->actingAsAdminWithPermissions([]);
         [$student] = $this->studentWithUser();
-        $application = ExamApplication::factory()->forTenant($this->tenant)->forStudent($student)->forEnrollment($this->activeEnrollment($student))->create();
+        $application = ExamApplication::factory()->forStudent($student)->forEnrollment($this->activeEnrollment($student))->create();
 
         $this->postJson("/api/v1/exam-applications/{$application->id}/reject", ['reason' => 'Not allowed'])->assertForbidden();
     }

@@ -32,15 +32,6 @@ class ExamApplicationFactory extends Factory
         ];
     }
 
-    public function forTenant(Tenant|int $tenant): static
-    {
-        return $this->afterMaking(function (ExamApplication $application) use ($tenant) {
-            $application->forceFill([
-                'tenant_id' => $tenant instanceof Tenant ? $tenant->getKey() : $tenant,
-            ]);
-        });
-    }
-
     public function forStudent(Student $student): static
     {
         return $this->state(['student_id' => $student->getKey()]);

@@ -9,6 +9,10 @@ use Illuminate\Support\Facades\Schema;
  * column (see ProjectColumn); moving a card between/within columns
  * (ProjectTaskService::move()) reindexes `order` for every affected column
  * so drag-and-drop never leaves gaps or duplicate positions.
+ *
+ * Lives in the school's own database, same as Project/ProjectColumn — no
+ * `tenant_id` column. `assignee_id`/`created_by` stay plain bigints with no
+ * DB-level foreign key, same reasoning as Project::created_by.
  */
 return new class extends Migration
 {
@@ -17,7 +21,6 @@ return new class extends Migration
         Schema::create('project_tasks', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
             $table->foreignId('project_id')->constrained('projects')->cascadeOnDelete();
             $table->foreignId('project_column_id')->constrained('project_columns')->cascadeOnDelete();
 
@@ -27,14 +30,14 @@ return new class extends Migration
             $table->date('due_date')->nullable();
             $table->unsignedInteger('order')->default(0);
 
-            $table->foreignId('assignee_id')->nullable()->constrained('users')->nullOnDelete();
-            $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->unsignedBigInteger('assignee_id')->nullable();
+            $table->unsignedBigInteger('created_by')->nullable();
 
             $table->timestamps();
             $table->softDeletes();
 
-            $table->index(['tenant_id', 'project_column_id', 'order']);
-            $table->index(['tenant_id', 'assignee_id']);
+            $table->index(['project_column_id', 'order']);
+            $table->index('assignee_id');
         });
     }
 

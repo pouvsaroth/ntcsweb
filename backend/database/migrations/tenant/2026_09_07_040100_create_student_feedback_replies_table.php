@@ -10,6 +10,11 @@ use Illuminate\Support\Facades\Schema;
  * their own feedback) or an authorized staff/admin can post here. The first
  * reply from someone other than the feedback's own student flips the
  * parent's `status` to "replied" (see StudentFeedback::addReply()).
+ *
+ * Lives in the school's own database, same as its parent — see that
+ * migration's docblock. `user_id` has no DB-level foreign key for the same
+ * reason `student_id` doesn't there: `users` hasn't moved to a per-tenant
+ * database yet.
  */
 return new class extends Migration
 {
@@ -17,14 +22,13 @@ return new class extends Migration
     {
         Schema::create('student_feedback_replies', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('tenant_id')->constrained()->cascadeOnDelete();
             $table->foreignId('student_feedback_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
+            $table->unsignedBigInteger('user_id');
             $table->text('body');
             $table->timestamps();
             $table->softDeletes();
 
-            $table->index(['tenant_id', 'student_feedback_id', 'created_at']);
+            $table->index(['student_feedback_id', 'created_at']);
         });
     }
 

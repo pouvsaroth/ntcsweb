@@ -16,12 +16,26 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
+use Stancl\Tenancy\Contracts\TenantWithDatabase;
+use Stancl\Tenancy\Database\Concerns\HasDatabase;
+use Stancl\Tenancy\Database\Concerns\TenantRun;
 
 /**
  * A school. Platform-wide table — this is the root of tenancy, so it is the one
  * model that is never itself tenant-scoped.
  *
  * Only platform super admins may read or write tenants; see TenantPolicy.
+ *
+ * Implements stancl/tenancy's TenantWithDatabase so a school can additionally
+ * own a dedicated physical database (see TenantProvisioningService) — this is
+ * opt-in per table: a model only lands there once it explicitly stops using
+ * BelongsToTenant and points at the `tenant` connection instead (see that
+ * trait's own docblock for why nothing is forced to move at once). We
+ * deliberately don't use the package's own base Tenant model/HasDataColumn/
+ * GeneratesIds traits — this table already has a plain autoincrementing `id`
+ * and no `data` JSON column, so getInternal()/setInternal() below are boring
+ * no-ops rather than reads against a column that doesn't exist (which would
+ * throw under this app's Model::shouldBeStrict() outside production).
  *
  * @property int $id
  * @property string $name
@@ -35,10 +49,10 @@ use Illuminate\Support\Facades\Storage;
  * @property array|null $settings
  */
 #[Fillable(['name', 'slug', 'code', 'logo', 'email', 'phone', 'address', 'timezone', 'locale', 'default_currency', 'exam_fee_amount', 'status', 'settings'])]
-class Tenant extends Model
+class Tenant extends Model implements TenantWithDatabase
 {
     /** @use HasFactory<TenantFactory> */
-    use HasFactory, SoftDeletes;
+    use HasDatabase, HasFactory, SoftDeletes, TenantRun;
 
     public const STATUS_ACTIVE = 'active';
 
@@ -184,6 +198,36 @@ class Tenant extends Model
     public function cacheKey(string ...$segments): string
     {
         return implode(':', ['tenant', $this->getKey(), ...$segments]);
+    }
+
+    public function getTenantKeyName(): string
+    {
+        return $this->getKeyName();
+    }
+
+    public function getTenantKey(): int
+    {
+        return $this->getKey();
+    }
+
+    public static function internalPrefix(): string
+    {
+        return 'tenancy_';
+    }
+
+    /**
+     * No `data` JSON column on this table (see the class docblock) — nothing
+     * here has ever needed a per-tenant DB username/password/connection
+     * override, so this stays a no-op rather than a real store.
+     */
+    public function getInternal(string $key): mixed
+    {
+        return null;
+    }
+
+    public function setInternal(string $key, mixed $value): static
+    {
+        return $this;
     }
 
     private function flushHostnameCache(): void

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Models\Concerns\BelongsToTenant;
 use Database\Factories\AssetTransferFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -19,7 +18,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class AssetTransfer extends Model
 {
     /** @use HasFactory<AssetTransferFactory> */
-    use BelongsToTenant, HasFactory;
+    use HasFactory;
+
+    protected $connection = 'tenant';
 
     protected function casts(): array
     {

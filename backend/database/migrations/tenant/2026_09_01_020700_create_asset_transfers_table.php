@@ -12,7 +12,6 @@ return new class extends Migration
         Schema::create('asset_transfers', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
             $table->foreignId('asset_id')->constrained('assets')->cascadeOnDelete();
 
             $table->foreignId('from_location_id')->nullable()->constrained('asset_locations')->nullOnDelete();
@@ -20,14 +19,17 @@ return new class extends Migration
             $table->foreignId('from_department_id')->nullable()->constrained('departments')->nullOnDelete();
             $table->foreignId('to_department_id')->nullable()->constrained('departments')->nullOnDelete();
 
-            $table->foreignId('transferred_by')->nullable()->constrained('users')->nullOnDelete();
+            // No DB-level foreign key: `users` hasn't moved to a per-tenant
+            // database yet, and a cross-database foreign key isn't possible
+            // in Postgres regardless.
+            $table->unsignedBigInteger('transferred_by')->nullable();
             $table->date('transfer_date');
             $table->text('reason')->nullable();
             $table->text('notes')->nullable();
 
             $table->timestamps();
 
-            $table->index(['tenant_id', 'asset_id']);
+            $table->index('asset_id');
         });
     }
 

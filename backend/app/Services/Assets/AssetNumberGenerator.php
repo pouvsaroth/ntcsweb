@@ -92,8 +92,7 @@ final class AssetNumberGenerator
                 ->exists();
 
             if (! $exists) {
-                $startingNumber = DB::table($seedTable)
-                    ->where('tenant_id', $tenant->getKey())
+                $startingNumber = DB::connection('tenant')->table($seedTable)
                     ->where($seedColumn, 'like', "{$prefix}-{$year}-%")
                     ->pluck($seedColumn)
                     ->map(function (string $number) use ($prefix, $year) {
@@ -143,7 +142,7 @@ final class AssetNumberGenerator
             return;
         }
 
-        $startingNumber = $this->highestExistingNumber($tenant->getKey(), $prefix) + 1;
+        $startingNumber = $this->highestExistingNumber($prefix) + 1;
 
         DB::table('billing_number_sequences')->insertOrIgnore([
             'tenant_id' => $tenant->getKey(),
@@ -156,12 +155,11 @@ final class AssetNumberGenerator
         ]);
     }
 
-    private function highestExistingNumber(int $tenantId, string $prefix): int
+    private function highestExistingNumber(string $prefix): int
     {
         $like = "{$prefix}-%";
 
-        return DB::table('assets')
-            ->where('tenant_id', $tenantId)
+        return DB::connection('tenant')->table('assets')
             ->where('asset_number', 'like', $like)
             ->pluck('asset_number')
             ->map(function (string $number) use ($prefix) {

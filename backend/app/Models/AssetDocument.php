@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Models\Concerns\BelongsToTenant;
 use Database\Factories\AssetDocumentFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -17,7 +16,9 @@ use Illuminate\Support\Facades\Storage;
 class AssetDocument extends Model
 {
     /** @use HasFactory<AssetDocumentFactory> */
-    use BelongsToTenant, HasFactory;
+    use HasFactory;
+
+    protected $connection = 'tenant';
 
     public const PHOTO = 'PHOTO';
 

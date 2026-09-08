@@ -7,7 +7,6 @@ namespace Tests\Feature\Projects;
 use App\Models\Project;
 use App\Models\ProjectColumn;
 use App\Models\ProjectTask;
-use App\Models\Tenant;
 use App\Models\User;
 use App\Support\Authorization\Permissions;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -28,15 +27,14 @@ class ProjectBoardTest extends TestCase
         $response = $this->postJson('/api/v1/projects', ['name' => 'Website Redesign']);
 
         $response->assertCreated();
-        $this->assertDatabaseHas('projects', ['name' => 'Website Redesign', 'tenant_id' => $this->tenant->id]);
+        $this->assertDatabaseHas('projects', ['name' => 'Website Redesign'], 'tenant');
     }
 
-    public function test_it_lists_projects_for_the_current_tenant_only(): void
+    public function test_it_lists_projects(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::PROJECTS_VIEW]);
 
         Project::factory()->count(2)->create();
-        $this->createForOtherTenant(fn () => Project::factory()->forTenant(Tenant::factory()->create())->create());
 
         $response = $this->getJson('/api/v1/projects');
 
@@ -58,7 +56,7 @@ class ProjectBoardTest extends TestCase
 
         $response->assertCreated();
         $response->assertJsonPath('data.order', 0);
-        $this->assertDatabaseHas('project_columns', ['project_id' => $project->id, 'name' => 'To Do']);
+        $this->assertDatabaseHas('project_columns', ['project_id' => $project->id, 'name' => 'To Do'], 'tenant');
     }
 
     public function test_new_columns_append_to_the_end_of_the_board(): void
@@ -180,14 +178,6 @@ class ProjectBoardTest extends TestCase
         $response->assertUnprocessable();
     }
 
-    public function test_a_project_from_another_tenant_cannot_be_fetched_directly(): void
-    {
-        $this->actingAsAdminWithPermissions([Permissions::PROJECTS_VIEW]);
-        $other = $this->createForOtherTenant(fn () => Project::factory()->forTenant(Tenant::factory()->create())->create());
-
-        $this->getJson("/api/v1/projects/{$other->id}")->assertNotFound();
-    }
-
     public function test_deleting_a_project_requires_the_delete_permission(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::PROJECTS_UPDATE]);
@@ -199,7 +189,7 @@ class ProjectBoardTest extends TestCase
         $project = Project::factory()->create();
 
         $this->deleteJson("/api/v1/projects/{$project->id}")->assertNoContent();
-        $this->assertSoftDeleted('projects', ['id' => $project->id]);
+        $this->assertSoftDeleted('projects', ['id' => $project->id], 'tenant');
     }
 
     public function test_deleting_a_project_cascades_to_its_columns_and_tasks(): void
@@ -211,8 +201,8 @@ class ProjectBoardTest extends TestCase
 
         $this->deleteJson("/api/v1/projects/{$project->id}")->assertNoContent();
 
-        $this->assertSoftDeleted('project_columns', ['id' => $column->id]);
-        $this->assertSoftDeleted('project_tasks', ['id' => $task->id]);
+        $this->assertSoftDeleted('project_columns', ['id' => $column->id], 'tenant');
+        $this->assertSoftDeleted('project_tasks', ['id' => $task->id], 'tenant');
     }
 
     public function test_a_task_can_be_assigned_to_a_tenant_user(): void

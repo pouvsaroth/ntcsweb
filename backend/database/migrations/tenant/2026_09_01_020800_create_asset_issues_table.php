@@ -12,11 +12,14 @@ return new class extends Migration
         Schema::create('asset_issues', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
             $table->string('issue_number', 32);
             $table->foreignId('asset_id')->constrained('assets')->cascadeOnDelete();
 
-            $table->foreignId('reported_by')->nullable()->constrained('users')->nullOnDelete();
+            // reported_by/resolved_by: no DB-level foreign key — `users`
+            // hasn't moved to a per-tenant database yet, and a
+            // cross-database foreign key isn't possible in Postgres
+            // regardless.
+            $table->unsignedBigInteger('reported_by')->nullable();
             $table->date('reported_date');
             $table->string('priority', 20)->default('MEDIUM');
             $table->string('status', 20)->default('OPEN');
@@ -24,13 +27,13 @@ return new class extends Migration
             $table->text('description')->nullable();
 
             $table->timestamp('resolved_at')->nullable();
-            $table->foreignId('resolved_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->unsignedBigInteger('resolved_by')->nullable();
 
             $table->timestamps();
 
-            $table->unique(['tenant_id', 'issue_number']);
-            $table->index(['tenant_id', 'asset_id']);
-            $table->index(['tenant_id', 'status', 'priority']);
+            $table->unique('issue_number');
+            $table->index('asset_id');
+            $table->index(['status', 'priority']);
         });
     }
 

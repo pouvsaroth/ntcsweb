@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Api\V1;
 
-use App\Support\Tenancy\TenantContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -22,12 +21,12 @@ class StoreMyApprovalRequestRequest extends FormRequest
 
     public function rules(): array
     {
-        $tenantId = app(TenantContext::class)->idOrFail();
-
         return [
             'form_template_id' => [
                 'required', 'integer',
-                Rule::exists('form_templates', 'id')->where('tenant_id', $tenantId)->where('is_active', true),
+                // Scoped to the `tenant` connection, not a tenant_id
+                // column — this table lives in the school's own database.
+                Rule::exists('tenant.form_templates', 'id')->where('is_active', true),
             ],
             'subject' => ['required', 'string', 'max:255'],
             'details' => ['nullable', 'string', 'max:5000'],

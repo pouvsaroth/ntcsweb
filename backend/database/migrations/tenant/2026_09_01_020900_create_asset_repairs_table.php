@@ -18,7 +18,6 @@ return new class extends Migration
         Schema::create('asset_repairs', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
             $table->string('repair_number', 32);
             $table->foreignId('asset_id')->constrained('assets')->cascadeOnDelete();
             $table->foreignId('issue_id')->nullable()->constrained('asset_issues')->nullOnDelete();
@@ -44,20 +43,24 @@ return new class extends Migration
             $table->string('condition_after_repair', 20)->nullable();
 
             $table->string('decision', 20)->nullable(); // REPAIR | REPLACE | RETIRE | DISPOSE
-            $table->foreignId('decision_by')->nullable()->constrained('users')->nullOnDelete();
+            // decision_by/created_by/expense_id: no DB-level foreign key —
+            // `users`/`expenses` haven't moved to a per-tenant database
+            // yet, and a cross-database foreign key isn't possible in
+            // Postgres regardless.
+            $table->unsignedBigInteger('decision_by')->nullable();
             $table->date('decision_date')->nullable();
             $table->text('decision_reason')->nullable();
 
-            $table->foreignId('expense_id')->nullable()->constrained('expenses')->nullOnDelete();
+            $table->unsignedBigInteger('expense_id')->nullable();
 
             $table->text('notes')->nullable();
-            $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->unsignedBigInteger('created_by')->nullable();
 
             $table->timestamps();
 
-            $table->unique(['tenant_id', 'repair_number']);
-            $table->index(['tenant_id', 'asset_id']);
-            $table->index(['tenant_id', 'status']);
+            $table->unique('repair_number');
+            $table->index('asset_id');
+            $table->index('status');
         });
     }
 

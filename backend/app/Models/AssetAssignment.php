@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Models\Concerns\BelongsToTenant;
 use Database\Factories\AssetAssignmentFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -19,7 +18,6 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * and a fresh row is inserted, so the complete assignment history survives;
  * see the migration's docblock and AssetService::assign()/return().
  *
- * @property int $tenant_id
  * @property int $asset_id
  * @property string $status
  */
@@ -31,7 +29,9 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 class AssetAssignment extends Model
 {
     /** @use HasFactory<AssetAssignmentFactory> */
-    use BelongsToTenant, HasFactory;
+    use HasFactory;
+
+    protected $connection = 'tenant';
 
     public const ACTIVE = 'ACTIVE';
 

@@ -6,7 +6,6 @@ namespace Database\Factories;
 
 use App\Models\Asset;
 use App\Models\AssetIssue;
-use App\Models\Tenant;
 use App\Support\Assets\IssuePriority;
 use App\Support\Assets\IssueStatus;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -29,15 +28,6 @@ class AssetIssueFactory extends Factory
             'title' => fake()->sentence(4),
             'description' => fake()->sentence(),
         ];
-    }
-
-    public function forTenant(Tenant|int $tenant): static
-    {
-        return $this->afterMaking(function (AssetIssue $issue) use ($tenant) {
-            $issue->forceFill([
-                'tenant_id' => $tenant instanceof Tenant ? $tenant->getKey() : $tenant,
-            ]);
-        });
     }
 
     public function forAsset(Asset $asset): static

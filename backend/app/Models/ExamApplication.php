@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Models\Concerns\Auditable;
-use App\Models\Concerns\BelongsToTenant;
 use App\Support\Audit\AuditAction;
 use Database\Factories\ExamApplicationFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -23,7 +22,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * logistics (which room, proctor, etc.) stay a manual, offline school
  * process in v1.
  *
- * @property int $tenant_id
  * @property int $student_id
  * @property int $enrollment_id
  * @property string $status
@@ -31,7 +29,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 #[Fillable(['student_id', 'enrollment_id', 'exam_date', 'exam_time', 'table_no', 'fee_amount', 'fee_currency', 'student_marked_paid_at', 'status', 'decision_reason', 'decided_by', 'decided_at'])]
 class ExamApplication extends Model
 {
-    use Auditable, BelongsToTenant, HasFactory, SoftDeletes;
+    use Auditable, HasFactory, SoftDeletes;
+
+    protected $connection = 'tenant';
 
     /** @use HasFactory<ExamApplicationFactory> */
     public const STATUS_PENDING = 'pending';

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Models\Concerns\Auditable;
-use App\Models\Concerns\BelongsToTenant;
 use App\Support\Audit\AuditAction;
 use Database\Factories\ApprovalRequestFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -22,7 +21,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * Illuminate\Foundation\Http\FormRequest). Approving/rejecting one has no
  * side effect beyond the row itself, unlike LeaveRequest.
  *
- * @property int $tenant_id
  * @property int $form_template_id
  * @property int $requested_by
  * @property string $status
@@ -30,7 +28,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 #[Fillable(['form_template_id', 'requested_by', 'subject', 'details', 'status', 'decision_reason', 'decided_by', 'decided_at'])]
 class ApprovalRequest extends Model
 {
-    use Auditable, BelongsToTenant, HasFactory, SoftDeletes;
+    use Auditable, HasFactory, SoftDeletes;
+
+    protected $connection = 'tenant';
 
     /** @use HasFactory<ApprovalRequestFactory> */
     public const STATUS_PENDING = 'pending';

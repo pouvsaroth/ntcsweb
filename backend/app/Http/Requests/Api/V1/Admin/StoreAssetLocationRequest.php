@@ -21,10 +21,10 @@ class StoreAssetLocationRequest extends FormRequest
         $tenantId = app(TenantContext::class)->idOrFail();
 
         return [
-            'code' => ['required', 'string', 'max:20', Rule::unique('asset_locations')->where('tenant_id', $tenantId)],
+            'code' => ['required', 'string', 'max:20', Rule::unique('tenant.asset_locations', 'code')],
             'name' => ['required', 'string', 'max:255'],
             'type' => ['sometimes', Rule::in(AssetLocation::types())],
-            'parent_id' => ['nullable', Rule::exists('asset_locations', 'id')->where('tenant_id', $tenantId)],
+            'parent_id' => ['nullable', Rule::exists('tenant.asset_locations', 'id')],
             'classroom_id' => ['nullable', Rule::exists('classrooms', 'id')->where('tenant_id', $tenantId)],
             'is_active' => ['sometimes', 'boolean'],
         ];

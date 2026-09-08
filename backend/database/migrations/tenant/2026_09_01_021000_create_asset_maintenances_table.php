@@ -17,7 +17,6 @@ return new class extends Migration
         Schema::create('asset_maintenances', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
             $table->string('maintenance_number', 32);
             $table->foreignId('asset_id')->constrained('assets')->cascadeOnDelete();
 
@@ -33,13 +32,16 @@ return new class extends Migration
             $table->date('next_maintenance_date')->nullable();
 
             $table->text('notes')->nullable();
-            $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
+            // No DB-level foreign key: `users` hasn't moved to a per-tenant
+            // database yet, and a cross-database foreign key isn't possible
+            // in Postgres regardless.
+            $table->unsignedBigInteger('created_by')->nullable();
 
             $table->timestamps();
 
-            $table->unique(['tenant_id', 'maintenance_number']);
-            $table->index(['tenant_id', 'asset_id']);
-            $table->index(['tenant_id', 'status', 'scheduled_date']);
+            $table->unique('maintenance_number');
+            $table->index('asset_id');
+            $table->index(['status', 'scheduled_date']);
         });
     }
 

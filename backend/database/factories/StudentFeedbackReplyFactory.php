@@ -6,7 +6,6 @@ namespace Database\Factories;
 
 use App\Models\StudentFeedback;
 use App\Models\StudentFeedbackReply;
-use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -24,14 +23,5 @@ class StudentFeedbackReplyFactory extends Factory
             'user_id' => User::factory(),
             'body' => fake()->sentence(),
         ];
-    }
-
-    public function forTenant(Tenant|int $tenant): static
-    {
-        return $this->afterMaking(function (StudentFeedbackReply $reply) use ($tenant) {
-            $reply->forceFill([
-                'tenant_id' => $tenant instanceof Tenant ? $tenant->getKey() : $tenant,
-            ]);
-        });
     }
 }

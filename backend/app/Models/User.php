@@ -73,6 +73,20 @@ class User extends Authenticatable implements MustVerifyEmailContract
         ];
     }
 
+    /**
+     * Explicitly pinned to the shared/central connection — see
+     * BelongsToTenant::getConnectionName()'s docblock for why this can't be
+     * left implicit: a model reached through a relationship from an
+     * already-converted, database-per-tenant model (e.g.
+     * ProjectTask::assignee()) would otherwise silently follow it onto the
+     * `tenant` connection. User isn't using that trait (see the class
+     * docblock above), so it needs this declared directly.
+     */
+    public function getConnectionName(): ?string
+    {
+        return config('tenancy.database.central_connection');
+    }
+
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class);

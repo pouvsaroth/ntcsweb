@@ -18,7 +18,6 @@ return new class extends Migration
         Schema::create('asset_history', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
             $table->foreignId('asset_id')->constrained('assets')->cascadeOnDelete();
 
             $table->string('event_type', 30);
@@ -26,11 +25,14 @@ return new class extends Migration
             $table->jsonb('old_value')->nullable();
             $table->jsonb('new_value')->nullable();
             $table->timestamp('occurred_at');
-            $table->foreignId('actor_id')->nullable()->constrained('users')->nullOnDelete();
+            // No DB-level foreign key: `users` hasn't moved to a per-tenant
+            // database yet, and a cross-database foreign key isn't possible
+            // in Postgres regardless.
+            $table->unsignedBigInteger('actor_id')->nullable();
 
             $table->timestamps();
 
-            $table->index(['tenant_id', 'asset_id', 'occurred_at']);
+            $table->index(['asset_id', 'occurred_at']);
         });
     }
 

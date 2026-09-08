@@ -33,19 +33,18 @@ trait HasAssetCatalog
 
     protected function setUpAssetCatalog(): void
     {
-        $this->computerCategory = AssetCategory::factory()->forTenant($this->tenant)->create(['code' => 'CMP', 'name' => 'Computers']);
-        $this->mainLocation = AssetLocation::factory()->forTenant($this->tenant)->create(['code' => 'MAIN', 'name' => 'Main Campus']);
-        $this->labLocation = AssetLocation::factory()->forTenant($this->tenant)->create(['code' => 'LAB1', 'name' => 'Computer Lab 1']);
-        $this->itDepartment = Department::factory()->forTenant($this->tenant)->create(['code' => 'IT', 'name' => 'IT Department']);
-        $this->supplier = Supplier::factory()->forTenant($this->tenant)->create(['name' => 'Dell Cambodia']);
-        $this->repairShop = RepairShop::factory()->forTenant($this->tenant)->create(['name' => 'TechFix']);
+        $this->computerCategory = AssetCategory::factory()->create(['code' => 'CMP', 'name' => 'Computers']);
+        $this->mainLocation = AssetLocation::factory()->create(['code' => 'MAIN', 'name' => 'Main Campus']);
+        $this->labLocation = AssetLocation::factory()->create(['code' => 'LAB1', 'name' => 'Computer Lab 1']);
+        $this->itDepartment = Department::factory()->create(['code' => 'IT', 'name' => 'IT Department']);
+        $this->supplier = Supplier::factory()->create(['name' => 'Dell Cambodia']);
+        $this->repairShop = RepairShop::factory()->create(['name' => 'TechFix']);
     }
 
     /** @param array<string, mixed> $overrides */
     protected function createAsset(array $overrides = []): Asset
     {
         return Asset::factory()
-            ->forTenant($this->tenant)
             ->forCategory($this->computerCategory)
             ->create([
                 'location_id' => $this->mainLocation->id,
