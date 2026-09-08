@@ -6,7 +6,6 @@ namespace Database\Factories;
 
 use App\Models\Enrollment;
 use App\Models\EnrollmentStatusHistory;
-use App\Models\Tenant;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -25,15 +24,6 @@ class EnrollmentStatusHistoryFactory extends Factory
             'reason' => null,
             'effective_date' => null,
         ];
-    }
-
-    public function forTenant(Tenant|int $tenant): static
-    {
-        return $this->afterMaking(function (EnrollmentStatusHistory $history) use ($tenant) {
-            $history->forceFill([
-                'tenant_id' => $tenant instanceof Tenant ? $tenant->getKey() : $tenant,
-            ]);
-        });
     }
 
     public function forEnrollment(Enrollment $enrollment): static

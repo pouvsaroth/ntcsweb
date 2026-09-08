@@ -38,7 +38,7 @@ class RecordAttendanceRequest extends FormRequest
             'entries.*.enrollment_id' => [
                 'required',
                 'distinct',
-                Rule::exists('enrollments', 'id')->where('tenant_id', $tenantId)->where('class_id', $class->getKey()),
+                Rule::exists('tenant.enrollments', 'id')->where('class_id', $class->getKey()),
             ],
             'entries.*.status' => ['required', Rule::in(AttendanceStatus::all())],
             'entries.*.remarks' => ['nullable', 'string', 'max:500'],

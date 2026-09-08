@@ -34,7 +34,10 @@ return new class extends Migration
         Schema::table('enrollments', function (Blueprint $table) {
             $table->dropUnique(['student_id', 'class_id']);
 
-            $table->foreignId('book_id')->after('class_id')->constrained('books')->restrictOnDelete();
+            // No DB-level foreign key: `books` hasn't moved to a per-tenant
+            // database yet, and a cross-database foreign key isn't possible
+            // in Postgres regardless.
+            $table->unsignedBigInteger('book_id')->after('class_id');
             $table->decimal('fee', 10, 2)->after('enrolled_at');
 
             // A student can take more than one book within the same class
@@ -47,8 +50,7 @@ return new class extends Migration
     {
         Schema::table('enrollments', function (Blueprint $table) {
             $table->dropUnique(['student_id', 'class_id', 'book_id']);
-            $table->dropConstrainedForeignId('book_id');
-            $table->dropColumn('fee');
+            $table->dropColumn(['book_id', 'fee']);
 
             $table->unique(['student_id', 'class_id']);
         });

@@ -19,8 +19,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('enrollments', function (Blueprint $table) {
-            $table->foreignId('table_id')->nullable()->after('class_id')
-                ->constrained('classroom_tables')->restrictOnDelete();
+            // No DB-level foreign key: `classroom_tables` hasn't moved to a
+            // per-tenant database yet, and a cross-database foreign key
+            // isn't possible in Postgres regardless.
+            $table->unsignedBigInteger('table_id')->nullable()->after('class_id');
         });
 
         DB::statement("CREATE UNIQUE INDEX enrollments_class_table_active_unique ON enrollments (class_id, table_id) WHERE status <> 'dropped' AND table_id IS NOT NULL");
@@ -31,7 +33,7 @@ return new class extends Migration
         DB::statement('DROP INDEX IF EXISTS enrollments_class_table_active_unique');
 
         Schema::table('enrollments', function (Blueprint $table) {
-            $table->dropConstrainedForeignId('table_id');
+            $table->dropColumn('table_id');
         });
     }
 };

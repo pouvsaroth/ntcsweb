@@ -31,7 +31,7 @@ class StudentFeedbackTest extends TestCase
     {
         $teacher = Staff::factory()->create();
         $class = SchoolClass::factory()->forTenant($this->tenant)->withTeacher($teacher)->create();
-        Enrollment::factory()->forTenant($this->tenant)->forClass($class)->forStudent($student)->create();
+        Enrollment::factory()->forClass($class)->forStudent($student)->create();
 
         return $teacher;
     }

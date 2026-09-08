@@ -10,9 +10,11 @@ use App\Http\Requests\Api\V1\Admin\UpdatePositionRequest;
 use App\Http\Resources\PositionResource;
 use App\Http\Responses\ApiResponse;
 use App\Models\Position;
+use App\Models\Staff;
 use App\Support\Query\ApiQuery;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 final class PositionController extends Controller
 {
@@ -20,11 +22,13 @@ final class PositionController extends Controller
     {
         $this->authorize('viewAny', Position::class);
 
-        $positions = ApiQuery::for(Position::query()->with('role')->withCount('staff'), $request)
+        $positions = ApiQuery::for(Position::query()->with('role'), $request)
             ->searchable('name')
             ->filterable(['status'])
             ->sortable(['name', 'created_at'], default: 'name')
             ->paginate();
+
+        $this->attachStaffCounts($positions);
 
         return ApiResponse::success(PositionResource::collection($positions));
     }
@@ -40,7 +44,10 @@ final class PositionController extends Controller
     {
         $this->authorize('view', $position);
 
-        return ApiResponse::success(new PositionResource($position->loadCount('staff')->load('role')));
+        $position->load('role');
+        $this->attachStaffCounts([$position]);
+
+        return ApiResponse::success(new PositionResource($position));
     }
 
     public function update(UpdatePositionRequest $request, Position $position): JsonResponse
@@ -57,5 +64,36 @@ final class PositionController extends Controller
         $position->delete();
 
         return ApiResponse::noContent();
+    }
+
+    /**
+     * `staff` lives in the tenant database while `positions` is still
+     * central, so `staff_count` can no longer come from
+     * withCount()/loadCount() (a single cross-database subquery) — it's
+     * resolved as a separate tenant-connection query and attached manually,
+     * the shape PositionResource expects via whenCounted().
+     *
+     * @param  iterable<Position>  $positions
+     */
+    private function attachStaffCounts(iterable $positions): void
+    {
+        // Not collect($positions)->all(): a LengthAwarePaginator implements
+        // Arrayable, so collect() would call its toArray() — the pagination
+        // metadata shape, not the underlying models.
+        $models = $positions instanceof \Illuminate\Contracts\Pagination\Paginator ? $positions->items() : (is_array($positions) ? $positions : iterator_to_array($positions));
+
+        if ($models === []) {
+            return;
+        }
+
+        $counts = Staff::query()
+            ->whereIn('position_id', collect($models)->pluck('id'))
+            ->select('position_id', DB::raw('COUNT(*) as total'))
+            ->groupBy('position_id')
+            ->pluck('total', 'position_id');
+
+        foreach ($models as $position) {
+            $position->setAttribute('staff_count', (int) ($counts[$position->id] ?? 0));
+        }
     }
 }

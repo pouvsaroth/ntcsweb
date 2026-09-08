@@ -22,13 +22,12 @@ return new class extends Migration
         Schema::create('student_id_sequences', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
             $table->string('prefix', 20);
             $table->unsignedInteger('next_number')->default(1);
 
             $table->timestamps();
 
-            $table->unique(['tenant_id', 'prefix']);
+            $table->unique('prefix');
         });
     }
 

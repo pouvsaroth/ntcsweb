@@ -9,6 +9,7 @@ use App\Http\Requests\Api\V1\Admin\StoreStudentRequest;
 use App\Http\Requests\Api\V1\Admin\UpdateStudentRequest;
 use App\Http\Resources\StudentResource;
 use App\Http\Responses\ApiResponse;
+use App\Models\Enrollment;
 use App\Models\Role;
 use App\Models\Student;
 use App\Services\Academic\StudentIdGenerator;
@@ -115,9 +116,19 @@ final class StudentController extends Controller
     {
         $this->authorize('view', $student);
 
-        return ApiResponse::success(new StudentResource(
-            $student->loadCount('enrollments')->load(['guardians', 'educations', 'village.commune.district.province'])
-        ));
+        $student->load(['guardians', 'educations', 'village.commune.district.province']);
+
+        // `enrollments` lives in the tenant database while `students` is
+        // still central, so this can no longer be loadCount('enrollments')
+        // (a single cross-database subquery) — resolved as a separate
+        // tenant-connection query and attached manually, the shape
+        // StudentResource expects via whenCounted().
+        $student->setAttribute(
+            'enrollments_count',
+            Enrollment::query()->where('student_id', $student->id)->count(),
+        );
+
+        return ApiResponse::success(new StudentResource($student));
     }
 
     public function update(UpdateStudentRequest $request, Student $student): JsonResponse

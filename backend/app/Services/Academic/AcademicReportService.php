@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services\Academic;
 
+use App\Models\AcademicProgram;
+use App\Models\CoursePackage;
 use App\Models\Enrollment;
 use App\Models\Student;
 use App\Support\Billing\InvoiceStatus;
@@ -12,11 +14,15 @@ use Illuminate\Support\Facades\DB;
 /**
  * Every figure here is a SQL SUM/COUNT/GROUP BY, never a PHP loop over
  * loaded models — mirrors AccountingReportService/AssetReportService.
- * Program revenue and package sales both join through
+ * Program revenue and package sales both trace through
  * `invoice_items.reference_type/reference_id` (already a first-class,
  * existing column pair — see InvoiceItem's own docblock) back to the
  * Enrollment that produced the charge, rather than introducing any new
- * billing concept.
+ * billing concept. `enrollments` lives in the tenant database while
+ * `invoice_items`/`invoices`/`academic_programs`/`course_packages` are
+ * still central, so these can no longer be single SQL joins — each method
+ * resolves the enrollment-side grouping key first, then aggregates the
+ * central-side amounts by that key, and merges the two in PHP.
  */
 final class AcademicReportService
 {
@@ -38,13 +44,26 @@ final class AcademicReportService
      */
     public function enrollmentCountsByProgram(): array
     {
-        return Enrollment::query()
-            ->join('academic_programs', 'academic_programs.id', '=', 'enrollments.academic_program_id')
-            ->select('academic_programs.id as academic_program_id', 'academic_programs.name as program_name', DB::raw('COUNT(enrollments.id) as total'))
-            ->groupBy('academic_programs.id', 'academic_programs.name')
-            ->orderByDesc('total')
-            ->get()
-            ->map(fn ($row) => ['academic_program_id' => (int) $row->academic_program_id, 'program_name' => $row->program_name, 'total' => (int) $row->total])
+        $counts = Enrollment::query()
+            ->whereNotNull('academic_program_id')
+            ->select('academic_program_id', DB::raw('COUNT(*) as total'))
+            ->groupBy('academic_program_id')
+            ->pluck('total', 'academic_program_id');
+
+        if ($counts->isEmpty()) {
+            return [];
+        }
+
+        return AcademicProgram::query()
+            ->whereIn('id', $counts->keys())
+            ->get(['id', 'name'])
+            ->map(fn (AcademicProgram $program) => [
+                'academic_program_id' => (int) $program->id,
+                'program_name' => $program->name,
+                'total' => (int) $counts[$program->id],
+            ])
+            ->sortByDesc('total')
+            ->values()
             ->all();
     }
 
@@ -56,13 +75,16 @@ final class AcademicReportService
      */
     public function programRevenue(?string $dateFrom = null, ?string $dateTo = null): array
     {
+        $enrollmentPrograms = Enrollment::query()->whereNotNull('academic_program_id')->pluck('academic_program_id', 'id');
+
+        if ($enrollmentPrograms->isEmpty()) {
+            return [];
+        }
+
         $query = DB::table('invoice_items')
-            ->join('enrollments', function ($join) {
-                $join->on('enrollments.id', '=', 'invoice_items.reference_id')
-                    ->where('invoice_items.reference_type', '=', Enrollment::class);
-            })
             ->join('invoices', 'invoices.id', '=', 'invoice_items.invoice_id')
-            ->join('academic_programs', 'academic_programs.id', '=', 'enrollments.academic_program_id')
+            ->where('invoice_items.reference_type', '=', Enrollment::class)
+            ->whereIn('invoice_items.reference_id', $enrollmentPrograms->keys())
             ->whereNotIn('invoices.status', [InvoiceStatus::CANCELLED, InvoiceStatus::VOID]);
 
         if ($dateFrom !== null) {
@@ -72,22 +94,37 @@ final class AcademicReportService
             $query->whereDate('invoices.invoice_date', '<=', $dateTo);
         }
 
-        return $query
-            ->select(
-                'academic_programs.id as academic_program_id',
-                'academic_programs.name as program_name',
-                DB::raw('SUM(invoice_items.total) as revenue'),
-                DB::raw('COUNT(DISTINCT enrollments.id) as enrollment_count'),
-            )
-            ->groupBy('academic_programs.id', 'academic_programs.name')
-            ->orderByDesc('revenue')
-            ->get()
-            ->map(fn ($row) => [
-                'academic_program_id' => (int) $row->academic_program_id,
-                'program_name' => $row->program_name,
-                'revenue' => (float) $row->revenue,
-                'enrollment_count' => (int) $row->enrollment_count,
+        $rows = $query
+            ->select('invoice_items.reference_id as enrollment_id', DB::raw('SUM(invoice_items.total) as revenue'))
+            ->groupBy('invoice_items.reference_id')
+            ->get();
+
+        $byProgram = [];
+        foreach ($rows as $row) {
+            $programId = $enrollmentPrograms[$row->enrollment_id] ?? null;
+            if ($programId === null) {
+                continue;
+            }
+
+            $byProgram[$programId]['revenue'] = ($byProgram[$programId]['revenue'] ?? 0) + (float) $row->revenue;
+            $byProgram[$programId]['enrollment_ids'][$row->enrollment_id] = true;
+        }
+
+        if ($byProgram === []) {
+            return [];
+        }
+
+        return AcademicProgram::query()
+            ->whereIn('id', array_keys($byProgram))
+            ->get(['id', 'name'])
+            ->map(fn (AcademicProgram $program) => [
+                'academic_program_id' => (int) $program->id,
+                'program_name' => $program->name,
+                'revenue' => (float) $byProgram[$program->id]['revenue'],
+                'enrollment_count' => count($byProgram[$program->id]['enrollment_ids']),
             ])
+            ->sortByDesc('revenue')
+            ->values()
             ->all();
     }
 
@@ -96,13 +133,16 @@ final class AcademicReportService
      */
     public function packageSales(?string $dateFrom = null, ?string $dateTo = null): array
     {
+        $enrollments = Enrollment::query()->whereNotNull('course_package_id')->get(['id', 'course_package_id', 'student_id'])->keyBy('id');
+
+        if ($enrollments->isEmpty()) {
+            return [];
+        }
+
         $query = DB::table('invoice_items')
-            ->join('enrollments', function ($join) {
-                $join->on('enrollments.id', '=', 'invoice_items.reference_id')
-                    ->where('invoice_items.reference_type', '=', Enrollment::class);
-            })
             ->join('invoices', 'invoices.id', '=', 'invoice_items.invoice_id')
-            ->join('course_packages', 'course_packages.id', '=', 'enrollments.course_package_id')
+            ->where('invoice_items.reference_type', '=', Enrollment::class)
+            ->whereIn('invoice_items.reference_id', $enrollments->keys())
             ->whereNotIn('invoices.status', [InvoiceStatus::CANCELLED, InvoiceStatus::VOID]);
 
         if ($dateFrom !== null) {
@@ -112,22 +152,38 @@ final class AcademicReportService
             $query->whereDate('invoices.invoice_date', '<=', $dateTo);
         }
 
-        return $query
-            ->select(
-                'course_packages.id as course_package_id',
-                'course_packages.name as package_name',
-                DB::raw('COUNT(DISTINCT enrollments.student_id) as students'),
-                DB::raw('SUM(invoice_items.total) as revenue'),
-            )
-            ->groupBy('course_packages.id', 'course_packages.name')
-            ->orderByDesc('revenue')
-            ->get()
-            ->map(fn ($row) => [
-                'course_package_id' => (int) $row->course_package_id,
-                'package_name' => $row->package_name,
-                'students' => (int) $row->students,
-                'revenue' => (float) $row->revenue,
+        $rows = $query
+            ->select('invoice_items.reference_id as enrollment_id', DB::raw('SUM(invoice_items.total) as revenue'))
+            ->groupBy('invoice_items.reference_id')
+            ->get();
+
+        $byPackage = [];
+        foreach ($rows as $row) {
+            $enrollment = $enrollments[$row->enrollment_id] ?? null;
+            if ($enrollment === null) {
+                continue;
+            }
+
+            $packageId = $enrollment->course_package_id;
+            $byPackage[$packageId]['revenue'] = ($byPackage[$packageId]['revenue'] ?? 0) + (float) $row->revenue;
+            $byPackage[$packageId]['student_ids'][$enrollment->student_id] = true;
+        }
+
+        if ($byPackage === []) {
+            return [];
+        }
+
+        return CoursePackage::query()
+            ->whereIn('id', array_keys($byPackage))
+            ->get(['id', 'name'])
+            ->map(fn (CoursePackage $package) => [
+                'course_package_id' => (int) $package->id,
+                'package_name' => $package->name,
+                'students' => count($byPackage[$package->id]['student_ids']),
+                'revenue' => (float) $byPackage[$package->id]['revenue'],
             ])
+            ->sortByDesc('revenue')
+            ->values()
             ->all();
     }
 
@@ -136,22 +192,40 @@ final class AcademicReportService
      */
     public function classReport(): array
     {
-        $enrollmentCounts = DB::table('enrollments')
+        $enrollmentCounts = DB::connection('tenant')->table('enrollments')
             ->where('status', '!=', Enrollment::STATUS_DROPPED)
             ->select('class_id', DB::raw('COUNT(*) as students'))
             ->groupBy('class_id')
             ->pluck('students', 'class_id');
 
-        $revenue = DB::table('invoice_items')
-            ->join('enrollments', function ($join) {
-                $join->on('enrollments.id', '=', 'invoice_items.reference_id')
-                    ->where('invoice_items.reference_type', '=', Enrollment::class);
-            })
-            ->join('invoices', 'invoices.id', '=', 'invoice_items.invoice_id')
-            ->whereNotIn('invoices.status', [InvoiceStatus::CANCELLED, InvoiceStatus::VOID])
-            ->select('enrollments.class_id', DB::raw('SUM(invoice_items.total) as revenue'))
-            ->groupBy('enrollments.class_id')
-            ->pluck('revenue', 'class_id');
+        // `enrollments` lives in the tenant database while `invoice_items`/
+        // `invoices` are still central, so the enrollment -> class mapping
+        // is resolved first and the revenue sums are merged onto it in PHP
+        // rather than a single join — same technique as programRevenue()/
+        // packageSales() above.
+        $enrollmentClasses = Enrollment::query()->pluck('class_id', 'id');
+
+        $revenue = [];
+
+        if ($enrollmentClasses->isNotEmpty()) {
+            $revenueRows = DB::table('invoice_items')
+                ->join('invoices', 'invoices.id', '=', 'invoice_items.invoice_id')
+                ->where('invoice_items.reference_type', '=', Enrollment::class)
+                ->whereIn('invoice_items.reference_id', $enrollmentClasses->keys())
+                ->whereNotIn('invoices.status', [InvoiceStatus::CANCELLED, InvoiceStatus::VOID])
+                ->select('invoice_items.reference_id as enrollment_id', DB::raw('SUM(invoice_items.total) as revenue'))
+                ->groupBy('invoice_items.reference_id')
+                ->get();
+
+            foreach ($revenueRows as $row) {
+                $classId = $enrollmentClasses[$row->enrollment_id] ?? null;
+                if ($classId === null) {
+                    continue;
+                }
+
+                $revenue[$classId] = ($revenue[$classId] ?? 0) + (float) $row->revenue;
+            }
+        }
 
         $classes = DB::table('classes')
             ->select('classes.id as class_id', 'classes.name as class_name', 'classes.teacher_id', 'classes.capacity as capacity')

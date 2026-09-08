@@ -23,16 +23,25 @@ return new class extends Migration
         Schema::create('attendance_records', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
+            // `enrollments` moves to this same per-tenant database, so this
+            // one stays a real foreign key.
             $table->foreignId('enrollment_id')->constrained('enrollments')->cascadeOnDelete();
-            $table->foreignId('class_id')->constrained('classes')->cascadeOnDelete();
-            $table->foreignId('student_id')->constrained('students')->cascadeOnDelete();
+
+            // No DB-level foreign key on these two: `classes`/`students`
+            // haven't moved to a per-tenant database yet, and a
+            // cross-database foreign key isn't possible in Postgres
+            // regardless.
+            $table->unsignedBigInteger('class_id');
+            $table->unsignedBigInteger('student_id');
 
             $table->date('date');
             $table->string('status', 20)->default('PRESENT');
             $table->text('remarks')->nullable();
 
-            $table->foreignId('recorded_by')->nullable()->constrained('users')->nullOnDelete();
+            // No DB-level foreign key: `users` hasn't moved to a per-tenant
+            // database yet, and a cross-database foreign key isn't possible
+            // in Postgres regardless.
+            $table->unsignedBigInteger('recorded_by')->nullable();
             $table->timestamp('recorded_at')->nullable();
 
             $table->timestamps();
@@ -44,8 +53,8 @@ return new class extends Migration
             // "roster of this class on this date" and "this student's
             // history" — the two directions every query goes, same pairing
             // Enrollment's own indexes use.
-            $table->index(['tenant_id', 'class_id', 'date']);
-            $table->index(['tenant_id', 'student_id', 'date']);
+            $table->index(['class_id', 'date']);
+            $table->index(['student_id', 'date']);
         });
     }
 

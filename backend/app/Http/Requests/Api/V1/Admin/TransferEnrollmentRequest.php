@@ -73,7 +73,7 @@ class TransferEnrollmentRequest extends FormRequest
                 return;
             }
 
-            $taken = DB::table('enrollments')
+            $taken = DB::connection('tenant')->table('enrollments')
                 ->where('class_id', $this->input('class_id'))
                 ->where('table_id', $tableId)
                 ->where('status', '!=', Enrollment::STATUS_DROPPED)

@@ -31,7 +31,7 @@ class ExamApplicationTest extends TestCase
     {
         $class = SchoolClass::factory()->forTenant($this->tenant)->create();
 
-        return Enrollment::factory()->forTenant($this->tenant)->forClass($class)->forStudent($student)->create();
+        return Enrollment::factory()->forClass($class)->forStudent($student)->create();
     }
 
     private function setExamFee(float $amount = 25.00): void
@@ -85,7 +85,7 @@ class ExamApplicationTest extends TestCase
         $this->setExamFee();
         [$student, $user] = $this->studentWithUser();
         $class = SchoolClass::factory()->forTenant($this->tenant)->create();
-        $enrollment = Enrollment::factory()->forTenant($this->tenant)->forClass($class)->forStudent($student)->dropped()->create();
+        $enrollment = Enrollment::factory()->forClass($class)->forStudent($student)->dropped()->create();
         $this->actingAsTenantUser($user);
 
         $this->postJson('/api/v1/my-exam-applications', $this->validPayload($enrollment))->assertUnprocessable();

@@ -26,13 +26,15 @@ final class SchoolClassController extends Controller
         $this->authorize('viewAny', SchoolClass::class);
 
         $classes = ApiQuery::for(
-            SchoolClass::query()->with(self::WITH)->withCount('enrollments'),
+            SchoolClass::query()->with(self::WITH),
             $request,
         )
             ->searchable('name', 'code')
             ->filterable(['status', 'teacher_id', 'classroom_id', 'academic_program_id'])
             ->sortable(['name', 'start_date', 'created_at'], default: '-created_at')
             ->paginate();
+
+        $this->attachEnrollmentCounts($classes);
 
         return ApiResponse::success(SchoolClassResource::collection($classes));
     }
@@ -56,9 +58,10 @@ final class SchoolClassController extends Controller
     {
         $this->authorize('view', $class);
 
-        return ApiResponse::success(
-            new SchoolClassResource($class->load(self::WITH)->loadCount('enrollments'))
-        );
+        $class->load(self::WITH);
+        $this->attachEnrollmentCounts([$class]);
+
+        return ApiResponse::success(new SchoolClassResource($class));
     }
 
     public function update(UpdateSchoolClassRequest $request, SchoolClass $class): JsonResponse
@@ -107,13 +110,55 @@ final class SchoolClassController extends Controller
 
         $totalTables = ClassroomTable::query()->where('classroom_id', $class->classroom_id)->count();
 
+        // `enrollments` lives in the tenant database, `classroom_tables` in
+        // the central one, so "which tables are taken" is resolved as a
+        // separate query rather than a whereDoesntHave() subquery — the same
+        // reasoning as attachEnrollmentCounts() below.
+        $takenTableIds = Enrollment::query()
+            ->where('class_id', $class->id)
+            ->where('status', '!=', Enrollment::STATUS_DROPPED)
+            ->whereNotNull('table_id')
+            ->pluck('table_id');
+
         $available = ClassroomTable::query()
             ->where('classroom_id', $class->classroom_id)
-            ->whereDoesntHave('enrollments', fn ($query) => $query->where('class_id', $class->id)->where('status', '!=', Enrollment::STATUS_DROPPED))
+            ->whereNotIn('id', $takenTableIds)
             ->orderBy('name')
             ->get(['id', 'name']);
 
         return ApiResponse::success(['total_tables' => $totalTables, 'available' => $available]);
+    }
+
+    /**
+     * `enrollments` lives in the tenant database while `classes` is still
+     * central, so `enrollments_count` can no longer come from
+     * withCount()/loadCount() (a single cross-database subquery) — it's
+     * resolved as a separate tenant-connection query and attached manually,
+     * the same shape SchoolClassResource/StudentResource already expect via
+     * whenCounted().
+     *
+     * @param  iterable<SchoolClass>  $classes
+     */
+    private function attachEnrollmentCounts(iterable $classes): void
+    {
+        // Not collect($classes)->all(): a LengthAwarePaginator implements
+        // Arrayable, so collect() would call its toArray() — the pagination
+        // metadata shape, not the underlying models.
+        $models = $classes instanceof \Illuminate\Contracts\Pagination\Paginator ? $classes->items() : (is_array($classes) ? $classes : iterator_to_array($classes));
+
+        if ($models === []) {
+            return;
+        }
+
+        $counts = Enrollment::query()
+            ->whereIn('class_id', collect($models)->pluck('id'))
+            ->select('class_id', DB::raw('COUNT(*) as total'))
+            ->groupBy('class_id')
+            ->pluck('total', 'class_id');
+
+        foreach ($models as $class) {
+            $class->setAttribute('enrollments_count', (int) ($counts[$class->id] ?? 0));
+        }
     }
 
     /**

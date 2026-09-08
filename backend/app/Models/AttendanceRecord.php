@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Models\Concerns\BelongsToTenant;
 use App\Support\Academic\AttendanceStatus;
 use Database\Factories\AttendanceRecordFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -20,7 +19,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * batch ("Recorded attendance for X on Y: n present, n absent...") instead of
  * one generic row per student — the same reasoning as Invoice/Payment.
  *
- * @property int $tenant_id
  * @property int $enrollment_id
  * @property int $class_id
  * @property int $student_id
@@ -30,7 +28,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class AttendanceRecord extends Model
 {
     /** @use HasFactory<AttendanceRecordFactory> */
-    use BelongsToTenant, HasFactory;
+    use HasFactory;
+
+    protected $connection = 'tenant';
 
     protected $attributes = [
         'status' => AttendanceStatus::PRESENT,

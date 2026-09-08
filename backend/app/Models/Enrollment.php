@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Models\Concerns\Auditable;
-use App\Models\Concerns\BelongsToTenant;
 use App\Support\Audit\AuditAction;
 use Database\Factories\EnrollmentFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -32,7 +31,6 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
  * catalog price change must never retroactively alter what an
  * already-enrolled student owes.
  *
- * @property int $tenant_id
  * @property int $student_id
  * @property int $class_id
  * @property int|null $table_id Which physical table in the class's classroom this student sits at -- see ClassroomTable.
@@ -50,7 +48,9 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 ])]
 class Enrollment extends Model
 {
-    use Auditable, BelongsToTenant, HasFactory;
+    use Auditable, HasFactory;
+
+    protected $connection = 'tenant';
 
     /** @use HasFactory<EnrollmentFactory> */
     public const STATUS_NOT_STARTED = 'not_started';

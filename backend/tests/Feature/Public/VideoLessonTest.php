@@ -85,7 +85,6 @@ class VideoLessonTest extends TestCase
         $user = User::factory()->forTenant($this->tenant)->create();
         $student = Student::factory()->forTenant($this->tenant)->create(['user_id' => $user->id]);
         Enrollment::factory()
-            ->forTenant($this->tenant)
             ->forStudent($student)
             ->forClass($this->computerEveningClass)
             ->state(['book_id' => null, 'course_package_id' => $this->msWordPackage->id])

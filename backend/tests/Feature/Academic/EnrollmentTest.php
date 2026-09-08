@@ -134,33 +134,6 @@ class EnrollmentTest extends TestCase
         $response->assertJsonValidationErrors('book_id');
     }
 
-    public function test_the_same_student_may_enroll_in_the_class_again_at_a_different_school(): void
-    {
-        $otherTenant = Tenant::factory()->create();
-        $this->createForOtherTenant(function () use ($otherTenant) {
-            $student = Student::factory()->forTenant($otherTenant)->create();
-            $book = Book::factory()->forTenant($otherTenant)->create();
-            $class = SchoolClass::factory()->forTenant($otherTenant)->create();
-            $class->books()->attach($book->id);
-            Enrollment::factory()->forTenant($otherTenant)->forStudent($student)->forClass($class)->forBook($book)->create();
-        });
-
-        // Different school entirely — its own student_id/class_id/book_id
-        // numbering could coincidentally collide with the other tenant's,
-        // and must not.
-        $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE]);
-        $myStudent = Student::factory()->create();
-        $myBook = Book::factory()->create();
-        $myClass = $this->classOffering($myBook);
-
-        $response = $this->postJson('/api/v1/enrollments', [
-            'student_id' => $myStudent->id, 'class_id' => $myClass->id, 'book_id' => $myBook->id,
-            'enrolled_at' => '2026-01-15', 'fee' => 25,
-        ]);
-
-        $response->assertCreated();
-    }
-
     public function test_an_enrollment_cannot_reference_a_student_from_another_tenant(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE]);

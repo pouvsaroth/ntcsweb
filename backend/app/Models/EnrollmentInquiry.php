@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Models\Concerns\BelongsToTenant;
 use Database\Factories\EnrollmentInquiryFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -16,7 +15,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * `create_enrollment_inquiries_table` migration for why this is a lead, not
  * a Student record.
  *
- * @property int $tenant_id
  * @property string $name
  * @property string $phone
  */
@@ -24,7 +22,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class EnrollmentInquiry extends Model
 {
     /** @use HasFactory<EnrollmentInquiryFactory> */
-    use BelongsToTenant, HasFactory;
+    use HasFactory;
+
+    protected $connection = 'tenant';
 
     public function program(): BelongsTo
     {

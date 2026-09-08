@@ -43,16 +43,15 @@ return new class extends Migration
 
             $table->unsignedBigInteger('book_id')->nullable()->change();
 
-            $table->foreignId('course_package_id')->nullable()->after('book_id')
-                ->constrained('course_packages')->restrictOnDelete();
+            // No DB-level foreign key on any of these three: `course_packages`
+            // /`academic_programs`/`study_modes` haven't moved to a per-tenant
+            // database yet, and a cross-database foreign key isn't possible
+            // in Postgres regardless.
+            $table->unsignedBigInteger('course_package_id')->nullable()->after('book_id');
+            $table->unsignedBigInteger('academic_program_id')->nullable()->after('course_package_id');
+            $table->unsignedBigInteger('study_mode_id')->nullable()->after('academic_program_id');
 
-            $table->foreignId('academic_program_id')->nullable()->after('course_package_id')
-                ->constrained('academic_programs')->nullOnDelete();
-
-            $table->foreignId('study_mode_id')->nullable()->after('academic_program_id')
-                ->constrained('study_modes')->nullOnDelete();
-
-            $table->index(['tenant_id', 'course_package_id']);
+            $table->index('course_package_id');
         });
 
         DB::statement("CREATE UNIQUE INDEX enrollments_student_class_book_active_unique ON enrollments (student_id, class_id, book_id) WHERE status <> 'dropped'");
@@ -67,9 +66,7 @@ return new class extends Migration
         DB::statement('DROP INDEX IF EXISTS enrollments_student_class_book_active_unique');
 
         Schema::table('enrollments', function (Blueprint $table) {
-            $table->dropConstrainedForeignId('study_mode_id');
-            $table->dropConstrainedForeignId('academic_program_id');
-            $table->dropConstrainedForeignId('course_package_id');
+            $table->dropColumn(['study_mode_id', 'academic_program_id', 'course_package_id']);
 
             $table->unsignedBigInteger('book_id')->nullable(false)->change();
 

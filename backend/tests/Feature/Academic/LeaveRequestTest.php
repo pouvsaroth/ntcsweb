@@ -72,7 +72,7 @@ class LeaveRequestTest extends TestCase
 
         $class = SchoolClass::factory()->forTenant($this->tenant)->create();
         ClassSchedule::factory()->forTenant($this->tenant)->forClass($class)->onDay(ClassSchedule::MONDAY)->create();
-        $enrollment = Enrollment::factory()->forTenant($this->tenant)->forClass($class)->forStudent($student)->create();
+        $enrollment = Enrollment::factory()->forClass($class)->forStudent($student)->create();
 
         $firstMonday = Carbon::now()->next(Carbon::MONDAY);
         $secondMonday = $firstMonday->copy()->addWeek();
@@ -124,7 +124,7 @@ class LeaveRequestTest extends TestCase
         [$student] = $this->studentWithUser();
         $class = SchoolClass::factory()->forTenant($this->tenant)->create();
         ClassSchedule::factory()->forTenant($this->tenant)->forClass($class)->onDay(ClassSchedule::MONDAY)->create();
-        Enrollment::factory()->forTenant($this->tenant)->forClass($class)->forStudent($student)->create();
+        Enrollment::factory()->forClass($class)->forStudent($student)->create();
 
         $leaveRequest = LeaveRequest::factory()->forStudent($student)->create([
             'from_date' => Carbon::now()->next(Carbon::MONDAY)->toDateString(),

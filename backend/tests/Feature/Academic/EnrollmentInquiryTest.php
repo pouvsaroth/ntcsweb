@@ -34,7 +34,6 @@ class EnrollmentInquiryTest extends TestCase
         $inquiry = EnrollmentInquiry::first();
         $this->assertSame('Sok Dara', $inquiry->name);
         $this->assertSame($program->id, $inquiry->program_id);
-        $this->assertSame($tenant->id, $inquiry->tenant_id);
     }
 
     public function test_name_and_phone_are_required(): void

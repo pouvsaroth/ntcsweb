@@ -15,9 +15,11 @@ return new class extends Migration
         Schema::create('enrollments', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
-            $table->foreignId('student_id')->constrained('students')->cascadeOnDelete();
-            $table->foreignId('class_id')->constrained('classes')->cascadeOnDelete();
+            // No DB-level foreign key: `students`/`classes` haven't moved to
+            // a per-tenant database yet, and a cross-database foreign key
+            // isn't possible in Postgres regardless.
+            $table->unsignedBigInteger('student_id');
+            $table->unsignedBigInteger('class_id');
 
             $table->date('enrolled_at');
             $table->string('status', 20)->default('active'); // active | completed | dropped
@@ -29,8 +31,8 @@ return new class extends Migration
 
             // "roster of this class" and "this student's classes" — the two
             // directions every enrollment query goes.
-            $table->index(['tenant_id', 'class_id', 'status']);
-            $table->index(['tenant_id', 'student_id', 'status']);
+            $table->index(['class_id', 'status']);
+            $table->index(['student_id', 'status']);
         });
     }
 

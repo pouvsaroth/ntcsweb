@@ -6,7 +6,6 @@ namespace Database\Factories;
 
 use App\Models\AttendanceRecord;
 use App\Models\Enrollment;
-use App\Models\Tenant;
 use App\Support\Academic\AttendanceStatus;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -24,15 +23,6 @@ class AttendanceRecordFactory extends Factory
             'date' => now()->toDateString(),
             'status' => AttendanceStatus::PRESENT,
         ];
-    }
-
-    public function forTenant(Tenant|int $tenant): static
-    {
-        return $this->afterMaking(function (AttendanceRecord $record) use ($tenant) {
-            $record->forceFill([
-                'tenant_id' => $tenant instanceof Tenant ? $tenant->getKey() : $tenant,
-            ]);
-        });
     }
 
     /** Denormalizes class_id/student_id off the enrollment — see the model's docblock. */

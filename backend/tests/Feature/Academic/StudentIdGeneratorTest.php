@@ -44,8 +44,7 @@ class StudentIdGeneratorTest extends TestCase
         // Seed the counter directly rather than looping 999 real HTTP
         // requests — this test is about the sprintf('%06d', ...) formatting,
         // not about re-proving sequencing itself (covered above).
-        DB::table('student_id_sequences')->insert([
-            'tenant_id' => $this->tenant->id,
+        DB::connection('tenant')->table('student_id_sequences')->insert([
             'prefix' => 'NTS',
             'next_number' => $createCount,
             'created_at' => now(),

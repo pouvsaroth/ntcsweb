@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Models\Concerns\BelongsToTenant;
 use Database\Factories\EnrollmentStatusHistoryFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -16,7 +15,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * docblock. Written exclusively by EnrollmentService::changeStatus(), never
  * updated or deleted afterward.
  *
- * @property int $tenant_id
  * @property int $enrollment_id
  * @property string $from_status
  * @property string $to_status
@@ -24,7 +22,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable(['enrollment_id', 'from_status', 'to_status', 'reason', 'effective_date', 'changed_by'])]
 class EnrollmentStatusHistory extends Model
 {
-    use BelongsToTenant, HasFactory;
+    use HasFactory;
+
+    protected $connection = 'tenant';
 
     /** @use HasFactory<EnrollmentStatusHistoryFactory> */
     protected function casts(): array

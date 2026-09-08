@@ -26,7 +26,6 @@ class AttendanceTest extends TestCase
     {
         $class = SchoolClass::factory()->forTenant($this->tenant)->create();
         $enrollments = Enrollment::factory()
-            ->forTenant($this->tenant)
             ->forClass($class)
             ->count($count)
             ->create();
@@ -98,7 +97,7 @@ class AttendanceTest extends TestCase
     {
         $this->actingAsAdminWithPermissions([Permissions::ATTENDANCE_CREATE]);
         [$class, $enrollments] = $this->classWithStudents(1);
-        $otherEnrollment = Enrollment::factory()->forTenant($this->tenant)->create();
+        $otherEnrollment = Enrollment::factory()->create();
 
         $this->postJson("/api/v1/classes/{$class->id}/attendance", [
             'date' => now()->toDateString(),
@@ -139,10 +138,10 @@ class AttendanceTest extends TestCase
         $teacher = Staff::factory()->withUser($teacherUser)->create(['position_id' => $teacherPosition->id]);
 
         $ownClass = SchoolClass::factory()->forTenant($this->tenant)->withTeacher($teacher)->create();
-        $ownEnrollment = Enrollment::factory()->forTenant($this->tenant)->forClass($ownClass)->create();
+        $ownEnrollment = Enrollment::factory()->forClass($ownClass)->create();
 
         $otherClass = SchoolClass::factory()->forTenant($this->tenant)->create();
-        $otherEnrollment = Enrollment::factory()->forTenant($this->tenant)->forClass($otherClass)->create();
+        $otherEnrollment = Enrollment::factory()->forClass($otherClass)->create();
 
         $this->postJson("/api/v1/classes/{$ownClass->id}/attendance", [
             'date' => now()->toDateString(),

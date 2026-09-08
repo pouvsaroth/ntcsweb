@@ -15,16 +15,18 @@ return new class extends Migration
     {
         Schema::create('enrollment_status_histories', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('tenant_id')->constrained()->cascadeOnDelete();
             $table->foreignId('enrollment_id')->constrained()->cascadeOnDelete();
             $table->string('from_status', 20);
             $table->string('to_status', 20);
             $table->text('reason')->nullable();
             $table->date('effective_date')->nullable();
-            $table->foreignId('changed_by')->nullable()->constrained('users')->nullOnDelete();
+            // No DB-level foreign key: `users` hasn't moved to a per-tenant
+            // database yet, and a cross-database foreign key isn't possible
+            // in Postgres regardless.
+            $table->unsignedBigInteger('changed_by')->nullable();
             $table->timestamps();
 
-            $table->index(['tenant_id', 'enrollment_id']);
+            $table->index('enrollment_id');
         });
     }
 

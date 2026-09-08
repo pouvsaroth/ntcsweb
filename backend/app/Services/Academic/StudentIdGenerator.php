@@ -39,22 +39,26 @@ class StudentIdGenerator
     {
         $prefix = $this->prefixFor($tenant);
 
-        return DB::transaction(function () use ($tenant, $prefix) {
+        // `student_id_sequences` lives in the tenant database while
+        // `students` (read in highestExistingNumber() below) is still
+        // central, so this transaction and StudentController::store()'s own
+        // outer transaction target two different physical databases — they
+        // no longer nest as a single savepoint the way they did before the
+        // sequence table moved. A rollback of the outer (central) transaction
+        // after this one has already committed leaves a skipped number, not
+        // a correctness bug, just a (rare, harmless) gap in the sequence.
+        return DB::connection('tenant')->transaction(function () use ($tenant, $prefix) {
             $this->ensureSequenceRow($tenant, $prefix);
 
             // FOR UPDATE: holds the row lock until this transaction commits,
             // so a second concurrent call blocks here instead of reading the
-            // same next_number — the actual concurrency guarantee. Laravel
-            // nests this transaction as a savepoint when called from inside
-            // StudentController::store()'s own transaction, so the lock is
-            // held for that whole outer unit of work either way.
-            $sequence = DB::table('student_id_sequences')
-                ->where('tenant_id', $tenant->getKey())
+            // same next_number — the actual concurrency guarantee.
+            $sequence = DB::connection('tenant')->table('student_id_sequences')
                 ->where('prefix', $prefix)
                 ->lockForUpdate()
                 ->first();
 
-            DB::table('student_id_sequences')
+            DB::connection('tenant')->table('student_id_sequences')
                 ->where('id', $sequence->id)
                 ->update(['next_number' => $sequence->next_number + 1, 'updated_at' => now()]);
 
@@ -77,8 +81,7 @@ class StudentIdGenerator
      */
     private function ensureSequenceRow(Tenant $tenant, string $prefix): void
     {
-        $exists = DB::table('student_id_sequences')
-            ->where('tenant_id', $tenant->getKey())
+        $exists = DB::connection('tenant')->table('student_id_sequences')
             ->where('prefix', $prefix)
             ->exists();
 
@@ -88,8 +91,7 @@ class StudentIdGenerator
 
         $startingNumber = $this->highestExistingNumber($tenant->getKey(), $prefix) + 1;
 
-        DB::table('student_id_sequences')->insertOrIgnore([
-            'tenant_id' => $tenant->getKey(),
+        DB::connection('tenant')->table('student_id_sequences')->insertOrIgnore([
             'prefix' => $prefix,
             'next_number' => $startingNumber,
             'created_at' => now(),

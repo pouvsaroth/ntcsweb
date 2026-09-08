@@ -8,7 +8,6 @@ use App\Models\Book;
 use App\Models\Enrollment;
 use App\Models\SchoolClass;
 use App\Models\Student;
-use App\Models\Tenant;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -28,15 +27,6 @@ class EnrollmentFactory extends Factory
             'fee' => fake()->randomFloat(2, 10, 100),
             'status' => Enrollment::STATUS_ACTIVE,
         ];
-    }
-
-    public function forTenant(Tenant|int $tenant): static
-    {
-        return $this->afterMaking(function (Enrollment $enrollment) use ($tenant) {
-            $enrollment->forceFill([
-                'tenant_id' => $tenant instanceof Tenant ? $tenant->getKey() : $tenant,
-            ]);
-        });
     }
 
     public function forStudent(Student $student): static

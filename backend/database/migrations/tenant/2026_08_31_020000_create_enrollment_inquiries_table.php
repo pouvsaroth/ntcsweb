@@ -17,15 +17,17 @@ return new class extends Migration
     {
         Schema::create('enrollment_inquiries', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
             $table->string('name');
             $table->string('phone', 32);
             $table->string('email')->nullable();
-            $table->foreignId('program_id')->nullable()->constrained('programs')->nullOnDelete();
+            // No DB-level foreign key: `programs` hasn't moved to a
+            // per-tenant database yet, and a cross-database foreign key
+            // isn't possible in Postgres regardless.
+            $table->unsignedBigInteger('program_id')->nullable();
             $table->text('message')->nullable();
             $table->timestamps();
 
-            $table->index(['tenant_id', 'created_at']);
+            $table->index('created_at');
         });
     }
 
