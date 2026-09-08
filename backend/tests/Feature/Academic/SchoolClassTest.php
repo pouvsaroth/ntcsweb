@@ -48,7 +48,7 @@ class SchoolClassTest extends TestCase
         $response->assertJsonPath('data.teacher.id', $teacher->id);
         $response->assertJsonCount(1, 'data.books');
 
-        $this->assertDatabaseCount('class_schedules', 3);
+        $this->assertDatabaseCount('class_schedules', 3, 'tenant');
     }
 
     /**

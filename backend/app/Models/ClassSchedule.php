@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Models\Concerns\BelongsToTenant;
 use Database\Factories\ClassScheduleFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -16,11 +15,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * weekly meeting slot. A class that meets Monday, Wednesday, and Friday has
  * three of these, not one row trying to hold multiple days.
  *
- * `tenant_id` is stored directly (not resolved by joining through `classes`)
- * so BelongsToTenant's scope can filter this table with no join — the same
- * pattern audit_logs and tenant_domains already use.
- *
- * @property int $tenant_id
  * @property int $class_id
  * @property int $day_of_week ISO-8601: 1 = Monday ... 7 = Sunday
  * @property string $start_time
@@ -29,7 +23,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable(['class_id', 'day_of_week', 'start_time', 'end_time'])]
 class ClassSchedule extends Model
 {
-    use BelongsToTenant, HasFactory;
+    use HasFactory;
+
+    protected $connection = 'tenant';
 
     /** @use HasFactory<ClassScheduleFactory> */
     public const MONDAY = 1;

@@ -181,7 +181,6 @@ final class SchoolClassController extends Controller
 
         $class->schedules()->insert(array_map(
             fn (array $schedule) => [
-                'tenant_id' => $class->tenant_id,
                 'class_id' => $class->id,
                 'day_of_week' => $schedule['day_of_week'],
                 'start_time' => $schedule['start_time'],

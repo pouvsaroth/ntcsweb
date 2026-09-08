@@ -6,7 +6,6 @@ namespace Database\Factories;
 
 use App\Models\ClassSchedule;
 use App\Models\SchoolClass;
-use App\Models\Tenant;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -24,15 +23,6 @@ class ClassScheduleFactory extends Factory
             'start_time' => '18:00:00',
             'end_time' => '20:00:00',
         ];
-    }
-
-    public function forTenant(Tenant|int $tenant): static
-    {
-        return $this->afterMaking(function (ClassSchedule $schedule) use ($tenant) {
-            $schedule->forceFill([
-                'tenant_id' => $tenant instanceof Tenant ? $tenant->getKey() : $tenant,
-            ]);
-        });
     }
 
     public function forClass(SchoolClass $class): static

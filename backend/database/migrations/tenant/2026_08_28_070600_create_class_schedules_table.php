@@ -10,10 +10,10 @@ use Illuminate\Support\Facades\Schema;
  * weekly meeting slot, so a class that meets Mon/Wed/Fri has three rows here
  * rather than a single class row trying to hold multiple days.
  *
- * `tenant_id` is duplicated onto this table (rather than resolved by joining
- * through `classes`) on purpose: it is what lets `BelongsToTenant`'s global
- * scope filter this table directly with no join, the same pattern already
- * used by `audit_logs` and `tenant_domains`.
+ * No DB-level foreign key on `class_id`: `classes` still lives in the
+ * central database while this table lives in each school's own per-tenant
+ * database (see database/migrations/tenant), and a cross-database foreign
+ * key isn't possible in Postgres regardless.
  */
 return new class extends Migration
 {
@@ -22,8 +22,7 @@ return new class extends Migration
         Schema::create('class_schedules', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
-            $table->foreignId('class_id')->constrained('classes')->cascadeOnDelete();
+            $table->unsignedBigInteger('class_id');
 
             // ISO-8601: 1 = Monday ... 7 = Sunday.
             $table->unsignedTinyInteger('day_of_week');
@@ -36,7 +35,7 @@ return new class extends Migration
             $table->unique(['class_id', 'day_of_week', 'start_time']);
 
             // "this class's weekly schedule" — the only real read pattern.
-            $table->index(['tenant_id', 'class_id']);
+            $table->index('class_id');
         });
 
         DB::statement(
