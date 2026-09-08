@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Models\Concerns\BelongsToTenant;
 use Database\Factories\BuildingFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -16,14 +15,15 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 /**
  * Tenant-owned. A physical building on campus that classrooms belong to.
  *
- * @property int $tenant_id
  * @property string $name
  * @property string $status
  */
 #[Fillable(['name', 'code', 'address', 'status'])]
 class Building extends Model
 {
-    use BelongsToTenant, HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes;
+
+    protected $connection = 'tenant';
 
     /** @use HasFactory<BuildingFactory> */
     public const STATUS_ACTIVE = 'active';

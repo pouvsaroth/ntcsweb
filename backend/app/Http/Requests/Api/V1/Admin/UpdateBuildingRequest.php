@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Requests\Api\V1\Admin;
 
 use App\Models\Building;
-use App\Support\Tenancy\TenantContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -21,13 +20,12 @@ class UpdateBuildingRequest extends FormRequest
 
     public function rules(): array
     {
-        $tenantId = app(TenantContext::class)->idOrFail();
         $building = $this->route('building');
 
         return [
             'name' => [
                 'sometimes', 'required', 'string', 'max:255',
-                Rule::unique('buildings')->where('tenant_id', $tenantId)->ignore($building),
+                Rule::unique('tenant.buildings', 'name')->ignore($building),
             ],
             'code' => ['nullable', 'string', 'max:32'],
             'address' => ['nullable', 'string', 'max:255'],

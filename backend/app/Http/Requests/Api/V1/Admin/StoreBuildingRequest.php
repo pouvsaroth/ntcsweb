@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Requests\Api\V1\Admin;
 
 use App\Models\Building;
-use App\Support\Tenancy\TenantContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -18,10 +17,8 @@ class StoreBuildingRequest extends FormRequest
 
     public function rules(): array
     {
-        $tenantId = app(TenantContext::class)->idOrFail();
-
         return [
-            'name' => ['required', 'string', 'max:255', Rule::unique('buildings')->where('tenant_id', $tenantId)],
+            'name' => ['required', 'string', 'max:255', Rule::unique('tenant.buildings', 'name')],
             'code' => ['nullable', 'string', 'max:32'],
             'address' => ['nullable', 'string', 'max:255'],
             'status' => ['sometimes', Rule::in([Building::STATUS_ACTIVE, Building::STATUS_INACTIVE])],

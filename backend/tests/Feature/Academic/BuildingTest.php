@@ -45,7 +45,7 @@ class BuildingTest extends TestCase
             ->assertJsonPath('data.address', '123 School Road');
 
         $this->deleteJson("/api/v1/buildings/{$building->id}")->assertNoContent();
-        $this->assertSoftDeleted('buildings', ['id' => $building->id]);
+        $this->assertSoftDeleted('buildings', ['id' => $building->id], connection: 'tenant');
     }
 
     public function test_a_classroom_can_be_linked_to_a_building(): void
