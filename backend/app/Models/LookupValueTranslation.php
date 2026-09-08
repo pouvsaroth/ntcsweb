@@ -23,6 +23,8 @@ class LookupValueTranslation extends Model
     /** @use HasFactory<LookupValueTranslationFactory> */
     use HasFactory;
 
+    protected $connection = 'tenant';
+
     public function lookupValue(): BelongsTo
     {
         return $this->belongsTo(LookupValue::class);

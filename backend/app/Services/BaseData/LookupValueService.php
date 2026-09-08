@@ -10,6 +10,7 @@ use App\Models\LookupValueTranslation;
 use App\Models\User;
 use App\Support\Audit\AuditAction;
 use App\Support\Audit\AuditLogger;
+use App\Support\Tenancy\TenantContext;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -28,6 +29,7 @@ final class LookupValueService
     public function __construct(
         private readonly LookupCache $cache,
         private readonly AuditLogger $audit,
+        private readonly TenantContext $context,
     ) {}
 
     /**
@@ -41,7 +43,7 @@ final class LookupValueService
 
             $value = LookupValue::query()->create($data);
             $this->syncTranslations($value, $translations, $actor);
-            $this->cache->invalidateTenant($value->tenant_id);
+            $this->cache->invalidateTenant($this->context->idOrFail());
 
             return $value->load(['category', 'translations.language']);
         });
@@ -62,7 +64,7 @@ final class LookupValueService
                 $this->syncTranslations($value, $translations, $actor);
             }
 
-            $this->cache->invalidateTenant($value->tenant_id);
+            $this->cache->invalidateTenant($this->context->idOrFail());
 
             return $value->load(['category', 'translations.language']);
         });
@@ -71,7 +73,7 @@ final class LookupValueService
     public function delete(LookupValue $value): void
     {
         $value->delete();
-        $this->cache->invalidateTenant($value->tenant_id);
+        $this->cache->invalidateTenant($this->context->idOrFail());
     }
 
     /**

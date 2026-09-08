@@ -37,14 +37,6 @@ class LookupCategoryTest extends TestCase
             ->assertJsonValidationErrors('code');
     }
 
-    public function test_the_same_category_code_is_allowed_in_a_different_tenant(): void
-    {
-        $this->actingAsAdminWithPermissions([Permissions::BASE_DATA_CREATE]);
-        $this->createForOtherTenant(fn () => LookupCategory::factory()->forTenant(\App\Models\Tenant::factory()->create())->create(['code' => 'GENDER']));
-
-        $this->postJson('/api/v1/lookup-categories', ['code' => 'GENDER', 'name' => 'Gender'])->assertCreated();
-    }
-
     public function test_it_updates_a_category(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::BASE_DATA_UPDATE]);

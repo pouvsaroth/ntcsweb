@@ -16,7 +16,6 @@ return new class extends Migration
     {
         Schema::create('lookup_values', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
             $table->foreignId('lookup_category_id')->constrained('lookup_categories')->cascadeOnDelete();
             $table->string('code', 50);
             $table->boolean('is_active')->default(true);
@@ -24,8 +23,8 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            $table->unique(['tenant_id', 'lookup_category_id', 'code']);
-            $table->index(['tenant_id', 'lookup_category_id', 'is_active']);
+            $table->unique(['lookup_category_id', 'code']);
+            $table->index(['lookup_category_id', 'is_active']);
         });
     }
 

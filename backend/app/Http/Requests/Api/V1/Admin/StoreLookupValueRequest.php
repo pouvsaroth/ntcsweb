@@ -6,7 +6,6 @@ namespace App\Http\Requests\Api\V1\Admin;
 
 use App\Models\Language;
 use App\Models\LookupValue;
-use App\Support\Tenancy\TenantContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -28,10 +27,8 @@ class StoreLookupValueRequest extends FormRequest
 
     public function rules(): array
     {
-        $tenantId = app(TenantContext::class)->idOrFail();
-
         return [
-            'lookup_category_id' => ['required', Rule::exists('lookup_categories', 'id')->where('tenant_id', $tenantId)],
+            'lookup_category_id' => ['required', Rule::exists('tenant.lookup_categories', 'id')],
             // Case is deliberately not restricted to upper-case — e.g. GENDER
             // seeds lower-case codes ('male'/'female') to match the existing
             // Student.gender column's own values exactly (see BaseDataSeeder).
@@ -47,12 +44,11 @@ class StoreLookupValueRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator) {
-            $tenantId = app(TenantContext::class)->idOrFail();
             $categoryId = $this->input('lookup_category_id');
             $code = $this->input('code');
 
             if ($categoryId && $code
-                && LookupValue::query()->where('tenant_id', $tenantId)->where('lookup_category_id', $categoryId)->where('code', $code)->exists()
+                && LookupValue::query()->where('lookup_category_id', $categoryId)->where('code', $code)->exists()
             ) {
                 $validator->errors()->add('code', 'This code is already used in the selected category.');
             }

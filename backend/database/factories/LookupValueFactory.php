@@ -6,7 +6,6 @@ namespace Database\Factories;
 
 use App\Models\LookupCategory;
 use App\Models\LookupValue;
-use App\Models\Tenant;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -24,15 +23,6 @@ class LookupValueFactory extends Factory
             'is_active' => true,
             'sort_order' => 0,
         ];
-    }
-
-    public function forTenant(Tenant|int $tenant): static
-    {
-        return $this->afterMaking(function (LookupValue $value) use ($tenant) {
-            $value->forceFill([
-                'tenant_id' => $tenant instanceof Tenant ? $tenant->getKey() : $tenant,
-            ]);
-        });
     }
 
     public function forCategory(LookupCategory $category): static

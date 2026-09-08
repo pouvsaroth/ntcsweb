@@ -6,7 +6,6 @@ namespace App\Http\Requests\Api\V1\Admin;
 
 use App\Models\Language;
 use App\Models\LookupValue;
-use App\Support\Tenancy\TenantContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -23,10 +22,8 @@ class UpdateLookupValueRequest extends FormRequest
 
     public function rules(): array
     {
-        $tenantId = app(TenantContext::class)->idOrFail();
-
         return [
-            'lookup_category_id' => ['sometimes', 'required', Rule::exists('lookup_categories', 'id')->where('tenant_id', $tenantId)],
+            'lookup_category_id' => ['sometimes', 'required', Rule::exists('tenant.lookup_categories', 'id')],
             'code' => ['sometimes', 'required', 'string', 'max:50', 'regex:/^[A-Za-z0-9_]+$/'],
             'is_active' => ['sometimes', 'boolean'],
             'sort_order' => ['sometimes', 'integer', 'min:0'],
@@ -41,11 +38,10 @@ class UpdateLookupValueRequest extends FormRequest
         $validator->after(function (Validator $validator) {
             /** @var LookupValue $lookupValue */
             $lookupValue = $this->route('lookup_value');
-            $tenantId = app(TenantContext::class)->idOrFail();
             $categoryId = $this->input('lookup_category_id', $lookupValue->lookup_category_id);
             $code = $this->input('code', $lookupValue->code);
 
-            if (LookupValue::query()->where('tenant_id', $tenantId)->where('lookup_category_id', $categoryId)
+            if (LookupValue::query()->where('lookup_category_id', $categoryId)
                 ->where('code', $code)->whereKeyNot($lookupValue->getKey())->exists()
             ) {
                 $validator->errors()->add('code', 'This code is already used in the selected category.');

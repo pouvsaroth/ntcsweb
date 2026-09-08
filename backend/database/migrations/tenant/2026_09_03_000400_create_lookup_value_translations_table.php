@@ -9,9 +9,14 @@ use Illuminate\Support\Facades\Schema;
  * ever a stable `code`; every one of its human-readable names/descriptions
  * across every language lives here instead, so adding a new language later
  * (th, vi, fr...) is one more `languages` row plus these translation rows --
- * never a schema change to lookup_values itself. No tenant_id here,
+ * never a schema change to lookup_values itself. No tenant_id column here,
  * deliberately -- it's already tenant-scoped transitively via
  * lookup_value_id (mirrors class_book/program_book's own shape).
+ *
+ * No DB-level foreign key on `language_id`: `languages` is platform-global
+ * and stays in the central database while this table lives in each school's
+ * own per-tenant database (see database/migrations/tenant), and a
+ * cross-database foreign key isn't possible in Postgres regardless.
  */
 return new class extends Migration
 {
@@ -20,7 +25,7 @@ return new class extends Migration
         Schema::create('lookup_value_translations', function (Blueprint $table) {
             $table->id();
             $table->foreignId('lookup_value_id')->constrained('lookup_values')->cascadeOnDelete();
-            $table->foreignId('language_id')->constrained('languages')->cascadeOnDelete();
+            $table->unsignedBigInteger('language_id');
             $table->string('name');
             $table->text('description')->nullable();
             $table->timestamps();

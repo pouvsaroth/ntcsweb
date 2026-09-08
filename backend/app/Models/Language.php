@@ -69,4 +69,20 @@ class Language extends Model
     {
         return "{$this->code} - {$this->name}";
     }
+
+    /**
+     * Pins Language to the central connection explicitly — see
+     * BelongsToTenant::getConnectionName()'s docblock for why this can't be
+     * left implicit: a model reached through a relationship from an
+     * already-converted, database-per-tenant model (e.g.
+     * LookupValueTranslation::language(), now that LookupValueTranslation is
+     * one) would otherwise silently follow it onto the `tenant` connection.
+     * Language isn't using BelongsToTenant (it's platform-global, see the
+     * class docblock above), so it needs this declared directly, same as
+     * Role/User.
+     */
+    public function getConnectionName(): ?string
+    {
+        return config('tenancy.database.central_connection');
+    }
 }
