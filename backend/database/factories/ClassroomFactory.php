@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Database\Factories;
 
 use App\Models\Classroom;
-use App\Models\Tenant;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -24,14 +23,5 @@ class ClassroomFactory extends Factory
             'location' => fake()->randomElement(['Main Building', 'Annex', 'Building B']),
             'status' => Classroom::STATUS_ACTIVE,
         ];
-    }
-
-    public function forTenant(Tenant|int $tenant): static
-    {
-        return $this->afterMaking(function (Classroom $classroom) use ($tenant) {
-            $classroom->forceFill([
-                'tenant_id' => $tenant instanceof Tenant ? $tenant->getKey() : $tenant,
-            ]);
-        });
     }
 }

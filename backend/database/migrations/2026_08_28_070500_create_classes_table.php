@@ -28,7 +28,11 @@ return new class extends Migration
             // Nulled, not cascaded: losing a teacher or room assignment must
             // not delete the class and its enrollment/attendance history.
             $table->foreignId('teacher_id')->nullable()->constrained('teachers')->nullOnDelete();
-            $table->foreignId('classroom_id')->nullable()->constrained('classrooms')->nullOnDelete();
+            // No DB-level foreign key: `classrooms` lives in each school's
+            // own per-tenant database (see database/migrations/tenant), and a
+            // cross-database foreign key isn't possible in Postgres
+            // regardless.
+            $table->unsignedBigInteger('classroom_id')->nullable();
 
             $table->string('name');
             $table->string('code', 32)->nullable();

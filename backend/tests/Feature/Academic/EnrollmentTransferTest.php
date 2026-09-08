@@ -117,7 +117,7 @@ class EnrollmentTransferTest extends TestCase
             'fee_type' => 'term',
         ])->assertCreated()->json('data.id');
 
-        $room = Classroom::factory()->forTenant($this->tenant)->create();
+        $room = Classroom::factory()->create();
         $table = ClassroomTable::factory()->create(['classroom_id' => $room->id]);
         $newClass = SchoolClass::factory()->forTenant($this->tenant)->forProgram($this->computerProgram)->inRoom($room)->create();
         $newClass->coursePackages()->sync([$this->msWordPackage->id]);

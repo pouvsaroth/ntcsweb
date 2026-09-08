@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Requests\Api\V1\Admin;
 
 use App\Models\AssetLocation;
-use App\Support\Tenancy\TenantContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -18,14 +17,12 @@ class StoreAssetLocationRequest extends FormRequest
 
     public function rules(): array
     {
-        $tenantId = app(TenantContext::class)->idOrFail();
-
         return [
             'code' => ['required', 'string', 'max:20', Rule::unique('tenant.asset_locations', 'code')],
             'name' => ['required', 'string', 'max:255'],
             'type' => ['sometimes', Rule::in(AssetLocation::types())],
             'parent_id' => ['nullable', Rule::exists('tenant.asset_locations', 'id')],
-            'classroom_id' => ['nullable', Rule::exists('classrooms', 'id')->where('tenant_id', $tenantId)],
+            'classroom_id' => ['nullable', Rule::exists('tenant.classrooms', 'id')],
             'is_active' => ['sometimes', 'boolean'],
         ];
     }

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Requests\Api\V1\Admin;
 
 use App\Models\AssetLocation;
-use App\Support\Tenancy\TenantContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -21,7 +20,6 @@ class UpdateAssetLocationRequest extends FormRequest
 
     public function rules(): array
     {
-        $tenantId = app(TenantContext::class)->idOrFail();
         /** @var AssetLocation $location */
         $location = $this->route('asset_location');
 
@@ -30,7 +28,7 @@ class UpdateAssetLocationRequest extends FormRequest
             'name' => ['sometimes', 'required', 'string', 'max:255'],
             'type' => ['sometimes', Rule::in(AssetLocation::types())],
             'parent_id' => ['nullable', Rule::exists('tenant.asset_locations', 'id'), 'not_in:'.$location->getKey()],
-            'classroom_id' => ['nullable', Rule::exists('classrooms', 'id')->where('tenant_id', $tenantId)],
+            'classroom_id' => ['nullable', Rule::exists('tenant.classrooms', 'id')],
             'is_active' => ['sometimes', 'boolean'],
         ];
     }

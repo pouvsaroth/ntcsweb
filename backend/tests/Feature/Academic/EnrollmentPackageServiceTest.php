@@ -117,7 +117,7 @@ class EnrollmentPackageServiceTest extends TestCase
         $this->setUpAcademicCatalog();
         $student = Student::factory()->forTenant($this->tenant)->create();
 
-        $room = Classroom::factory()->forTenant($this->tenant)->create();
+        $room = Classroom::factory()->create();
         $table = ClassroomTable::factory()->create(['classroom_id' => $room->id]);
         $class = SchoolClass::factory()->forTenant($this->tenant)->forProgram($this->computerProgram)->inRoom($room)->create();
         $class->coursePackages()->sync([$this->msWordPackage->id]);

@@ -34,7 +34,7 @@ class UpdateSchoolClassRequest extends FormRequest
             'teacher_id' => ['nullable', Rule::exists('tenant.staff', 'id')->where(
                 fn ($query) => $query->whereIn('position_id', fn ($sub) => $sub->select('id')->from('positions')->where('name', 'Teacher'))
             )],
-            'classroom_id' => ['nullable', Rule::exists('classrooms', 'id')->where('tenant_id', $tenantId)],
+            'classroom_id' => ['nullable', Rule::exists('tenant.classrooms', 'id')],
             'academic_program_id' => ['nullable', Rule::exists('tenant.academic_programs', 'id')],
             'capacity' => ['nullable', 'integer', 'min:1', 'max:100000'],
             'start_date' => ['nullable', 'date'],

@@ -45,6 +45,6 @@ class ClassroomTest extends TestCase
             ->assertJsonPath('data.capacity', 50);
 
         $this->deleteJson("/api/v1/classrooms/{$classroom->id}")->assertNoContent();
-        $this->assertSoftDeleted('classrooms', ['id' => $classroom->id]);
+        $this->assertSoftDeleted('classrooms', ['id' => $classroom->id], connection: 'tenant');
     }
 }

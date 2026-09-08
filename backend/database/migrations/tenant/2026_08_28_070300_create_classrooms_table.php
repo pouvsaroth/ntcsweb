@@ -14,8 +14,6 @@ return new class extends Migration
         Schema::create('classrooms', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
-
             $table->string('name');
             $table->string('code', 32)->nullable();
             $table->unsignedInteger('capacity')->nullable();
@@ -25,8 +23,8 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            $table->unique(['tenant_id', 'name']);
-            $table->index(['tenant_id', 'status']);
+            $table->unique('name');
+            $table->index('status');
         });
     }
 
