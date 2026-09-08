@@ -36,7 +36,7 @@ class StoreInvoiceRequest extends FormRequest
 
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', Rule::exists('products', 'id')->where('tenant_id', $tenantId)->where('is_active', true)],
-            'items.*.product_variant_id' => ['nullable', Rule::exists('product_variants', 'id')->where('tenant_id', $tenantId)],
+            'items.*.product_variant_id' => ['nullable', Rule::exists('tenant.product_variants', 'id')],
             'items.*.quantity' => ['required', 'integer', 'min:1', 'max:9999'],
             'items.*.unit_price' => ['nullable', 'numeric', 'min:0', 'max:999999.99'],
             'items.*.discount' => ['nullable', 'numeric', 'min:0', 'max:999999.99'],

@@ -91,11 +91,11 @@ class BillingDashboardTest extends TestCase
         // touch that cached relation, so it has to be refreshed explicitly.
         $this->admin->load('tenant');
 
-        CurrencyRate::factory()->forTenant($this->tenant)->create(['effective_date' => now()->subDays(30), 'khr_per_usd' => 4000]);
-        CurrencyRate::factory()->forTenant($this->tenant)->create(['effective_date' => now(), 'khr_per_usd' => 4100]);
+        CurrencyRate::factory()->create(['effective_date' => now()->subDays(30), 'khr_per_usd' => 4000]);
+        CurrencyRate::factory()->create(['effective_date' => now(), 'khr_per_usd' => 4100]);
 
         // 30 days ago, at the 4000 rate: 100 USD -> 400,000 KHR.
-        Invoice::factory()->forTenant($this->tenant)->status(InvoiceStatus::ISSUED)->create([
+        Invoice::factory()->status(InvoiceStatus::ISSUED)->create([
             'invoice_date' => now()->subDays(30),
             'currency' => 'USD',
             'total' => 100,
@@ -103,7 +103,7 @@ class BillingDashboardTest extends TestCase
         ]);
 
         // Today, at the 4100 rate: 50 USD -> 205,000 KHR.
-        Invoice::factory()->forTenant($this->tenant)->status(InvoiceStatus::ISSUED)->create([
+        Invoice::factory()->status(InvoiceStatus::ISSUED)->create([
             'invoice_date' => now(),
             'currency' => 'USD',
             'total' => 50,

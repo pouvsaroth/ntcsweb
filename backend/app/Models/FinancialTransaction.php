@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Models\Concerns\BelongsToTenant;
 use App\Support\Accounting\TransactionStatus;
 use Database\Factories\FinancialTransactionFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -32,7 +31,6 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * (TRANSACTION_POSTED, TRANSACTION_REVERSED, ...), the same reasoning as
  * Invoice/Payment.
  *
- * @property int $tenant_id
  * @property string $transaction_number
  * @property string $type
  * @property int $debit_account_id
@@ -48,7 +46,9 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 class FinancialTransaction extends Model
 {
     /** @use HasFactory<FinancialTransactionFactory> */
-    use BelongsToTenant, HasFactory;
+    use HasFactory;
+
+    protected $connection = 'tenant';
 
     protected $attributes = [
         'currency' => 'USD',

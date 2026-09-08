@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Models\Concerns\BelongsToTenant;
 use App\Support\Billing\PaymentStatus;
 use Database\Factories\PaymentFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -21,7 +20,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * `payment_number` doubles as the receipt number — see the migration's
  * docblock for why there is no separate `receipts` table.
  *
- * @property int $tenant_id
  * @property string $payment_number
  * @property int $invoice_id
  * @property int $student_id
@@ -36,7 +34,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Payment extends Model
 {
     /** @use HasFactory<PaymentFactory> */
-    use BelongsToTenant, HasFactory;
+    use HasFactory;
+
+    protected $connection = 'tenant';
 
     protected $attributes = [
         'status' => PaymentStatus::COMPLETED,

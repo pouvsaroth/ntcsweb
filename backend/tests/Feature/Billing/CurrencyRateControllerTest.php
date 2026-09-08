@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Tests\Feature\Billing;
 
 use App\Models\CurrencyRate;
-use App\Models\Tenant;
 use App\Support\Authorization\Permissions;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\HasAcademicAdmin;
@@ -15,12 +14,11 @@ class CurrencyRateControllerTest extends TestCase
 {
     use HasAcademicAdmin, RefreshDatabase;
 
-    public function test_it_lists_currency_rates_for_the_current_tenant_only(): void
+    public function test_it_lists_currency_rates(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::CURRENCY_RATES_VIEW]);
 
         CurrencyRate::factory()->count(2)->create();
-        $this->createForOtherTenant(fn () => CurrencyRate::factory()->forTenant(Tenant::factory()->create())->create());
 
         $response = $this->getJson('/api/v1/currency-rates');
 
@@ -40,7 +38,7 @@ class CurrencyRateControllerTest extends TestCase
         $response->assertCreated();
         $response->assertJsonPath('data.effective_date', '2026-01-01');
         $response->assertJsonPath('data.khr_per_usd', 4100.5);
-        $this->assertDatabaseHas('currency_rates', ['effective_date' => '2026-01-01', 'tenant_id' => $this->tenant->id]);
+        $this->assertDatabaseHas('currency_rates', ['effective_date' => '2026-01-01'], 'tenant');
     }
 
     public function test_effective_date_must_be_unique_within_the_tenant(): void
@@ -71,14 +69,6 @@ class CurrencyRateControllerTest extends TestCase
         $rate = CurrencyRate::factory()->create();
 
         $this->deleteJson("/api/v1/currency-rates/{$rate->id}")->assertNoContent();
-        $this->assertSoftDeleted('currency_rates', ['id' => $rate->id]);
-    }
-
-    public function test_a_currency_rate_from_another_tenant_cannot_be_fetched_directly(): void
-    {
-        $this->actingAsAdminWithPermissions([Permissions::CURRENCY_RATES_VIEW]);
-        $other = $this->createForOtherTenant(fn () => CurrencyRate::factory()->forTenant(Tenant::factory()->create())->create());
-
-        $this->getJson("/api/v1/currency-rates/{$other->id}")->assertNotFound();
+        $this->assertSoftDeleted('currency_rates', ['id' => $rate->id], connection: 'tenant');
     }
 }

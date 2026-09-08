@@ -7,7 +7,6 @@ namespace Database\Factories;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Product;
-use App\Models\Tenant;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -32,15 +31,6 @@ class InvoiceItemFactory extends Factory
             'subtotal' => $quantity * $unitPrice,
             'total' => $quantity * $unitPrice,
         ];
-    }
-
-    public function forTenant(Tenant|int $tenant): static
-    {
-        return $this->afterMaking(function (InvoiceItem $item) use ($tenant) {
-            $item->forceFill([
-                'tenant_id' => $tenant instanceof Tenant ? $tenant->getKey() : $tenant,
-            ]);
-        });
     }
 
     public function forInvoice(Invoice $invoice): static

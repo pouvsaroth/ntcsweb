@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Models\Concerns\BelongsToTenant;
 use App\Support\Billing\InvoiceStatus;
 use Database\Factories\InvoiceFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -25,7 +24,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * InvoiceService/PaymentService, computed from this invoice's own items and
  * payments — never accepted as request input.
  *
- * @property int $tenant_id
  * @property string $invoice_number
  * @property int $student_id
  * @property string $status
@@ -41,7 +39,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Invoice extends Model
 {
     /** @use HasFactory<InvoiceFactory> */
-    use BelongsToTenant, HasFactory;
+    use HasFactory;
+
+    protected $connection = 'tenant';
 
     protected $attributes = [
         'status' => InvoiceStatus::DRAFT,

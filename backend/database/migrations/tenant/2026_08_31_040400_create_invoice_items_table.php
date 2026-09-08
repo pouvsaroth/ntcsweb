@@ -28,9 +28,13 @@ return new class extends Migration
     {
         Schema::create('invoice_items', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
             $table->foreignId('invoice_id')->constrained('invoices')->cascadeOnDelete();
-            $table->foreignId('product_id')->constrained('products')->restrictOnDelete();
+            // No DB-level foreign key: `products` hasn't moved to a
+            // per-tenant database yet, and a cross-database foreign key
+            // isn't possible in Postgres regardless.
+            $table->unsignedBigInteger('product_id');
+            // `product_variants` moves to this same per-tenant database, so
+            // this one stays a real foreign key.
             $table->foreignId('product_variant_id')->nullable()->constrained('product_variants')->restrictOnDelete();
 
             $table->string('description');
@@ -45,8 +49,8 @@ return new class extends Migration
 
             $table->timestamps();
 
-            $table->index(['tenant_id', 'invoice_id']);
-            $table->index(['tenant_id', 'product_id']);
+            $table->index('invoice_id');
+            $table->index('product_id');
             $table->index(['reference_type', 'reference_id']);
         });
     }

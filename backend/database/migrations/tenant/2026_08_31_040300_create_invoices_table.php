@@ -20,9 +20,11 @@ return new class extends Migration
     {
         Schema::create('invoices', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
             $table->string('invoice_number', 32);
-            $table->foreignId('student_id')->constrained('students')->restrictOnDelete();
+            // No DB-level foreign key: `students` hasn't moved to a
+            // per-tenant database yet, and a cross-database foreign key
+            // isn't possible in Postgres regardless.
+            $table->unsignedBigInteger('student_id');
 
             $table->date('invoice_date');
             $table->date('due_date')->nullable();
@@ -41,17 +43,20 @@ return new class extends Migration
             // Terminal-state bookkeeping, shared by CANCELLED and VOID alike
             // — which one applies is already recorded in `status`.
             $table->text('cancellation_reason')->nullable();
-            $table->foreignId('cancelled_by')->nullable()->constrained('users')->nullOnDelete();
+            // No DB-level foreign key on either of these: `users` hasn't
+            // moved to a per-tenant database yet, and a cross-database
+            // foreign key isn't possible in Postgres regardless.
+            $table->unsignedBigInteger('cancelled_by')->nullable();
             $table->timestamp('cancelled_at')->nullable();
 
-            $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->unsignedBigInteger('created_by')->nullable();
             $table->timestamps();
 
-            $table->unique(['tenant_id', 'invoice_number']);
-            $table->index(['tenant_id', 'student_id']);
-            $table->index(['tenant_id', 'status']);
-            $table->index(['tenant_id', 'invoice_date']);
-            $table->index(['tenant_id', 'due_date']);
+            $table->unique('invoice_number');
+            $table->index('student_id');
+            $table->index('status');
+            $table->index('invoice_date');
+            $table->index('due_date');
         });
     }
 

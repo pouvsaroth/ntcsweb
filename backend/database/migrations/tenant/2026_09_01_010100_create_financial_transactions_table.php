@@ -26,29 +26,36 @@ return new class extends Migration
         Schema::create('financial_transactions', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
             $table->string('transaction_number', 32);
             $table->date('transaction_date');
             $table->string('type', 20);
 
-            $table->foreignId('debit_account_id')->constrained('accounts')->restrictOnDelete();
-            $table->foreignId('credit_account_id')->constrained('accounts')->restrictOnDelete();
+            // No DB-level foreign key on either of these: `accounts` hasn't
+            // moved to a per-tenant database yet, and a cross-database
+            // foreign key isn't possible in Postgres regardless.
+            $table->unsignedBigInteger('debit_account_id');
+            $table->unsignedBigInteger('credit_account_id');
             $table->decimal('amount', 15, 2);
             $table->string('currency', 3)->default('USD');
 
             $table->text('description')->nullable();
             $table->nullableMorphs('reference');
+            // `financial_transactions` moves to this same per-tenant
+            // database, so this self-reference stays a real foreign key.
             $table->foreignId('reverses_transaction_id')->nullable()->constrained('financial_transactions')->nullOnDelete();
             $table->string('status', 20)->default('POSTED');
 
-            $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
+            // No DB-level foreign key: `users` hasn't moved to a per-tenant
+            // database yet, and a cross-database foreign key isn't possible
+            // in Postgres regardless.
+            $table->unsignedBigInteger('created_by')->nullable();
 
             $table->timestamps();
 
-            $table->unique(['tenant_id', 'transaction_number']);
-            $table->index(['tenant_id', 'type', 'transaction_date']);
-            $table->index(['tenant_id', 'debit_account_id']);
-            $table->index(['tenant_id', 'credit_account_id']);
+            $table->unique('transaction_number');
+            $table->index(['type', 'transaction_date']);
+            $table->index('debit_account_id');
+            $table->index('credit_account_id');
         });
     }
 

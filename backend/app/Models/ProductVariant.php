@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Models\Concerns\BelongsToTenant;
 use Database\Factories\ProductVariantFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -16,7 +15,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * A product's variant — a T-Shirt's "Large", a Book's "Hardcover" — never
  * required (see Product's docblock; most products have none at all).
  *
- * @property int $tenant_id
  * @property int $product_id
  * @property string $name
  */
@@ -24,7 +22,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class ProductVariant extends Model
 {
     /** @use HasFactory<ProductVariantFactory> */
-    use BelongsToTenant, HasFactory;
+    use HasFactory;
+
+    protected $connection = 'tenant';
 
     protected $attributes = [
         'is_active' => true,

@@ -35,12 +35,12 @@ class InvoicePdfTest extends TestCase
     private function invoiceView(): string
     {
         $student = Student::factory()->forTenant($this->tenant)->create();
-        $invoice = Invoice::factory()->forTenant($this->tenant)->forStudent($student)->create();
-        $invoice->load(['items.product', 'items.variant', 'student', 'tenant', 'payments']);
+        $invoice = Invoice::factory()->forStudent($student)->create();
+        $invoice->load(['items.product', 'items.variant', 'student', 'payments']);
 
         return View::make('pdf.invoice', [
             'invoice' => $invoice,
-            'tenant' => $invoice->tenant,
+            'tenant' => $this->tenant,
             'logoDataUri' => null,
             'khmerFontRegular' => $this->khmerFontDataUri('Regular'),
             'khmerFontBold' => $this->khmerFontDataUri('Bold'),
@@ -107,7 +107,7 @@ class InvoicePdfTest extends TestCase
         app()->setLocale('km');
 
         $student = Student::factory()->forTenant($this->tenant)->create(['first_name' => 'សុខា', 'last_name' => 'ចាន់']);
-        $invoice = Invoice::factory()->forTenant($this->tenant)->forStudent($student)->create();
+        $invoice = Invoice::factory()->forStudent($student)->create();
 
         $response = $this->get("/api/v1/invoices/{$invoice->id}/pdf");
 

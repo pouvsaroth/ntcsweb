@@ -13,7 +13,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Queue\SerializesModels;
+use Stancl\Tenancy\Database\DatabaseManager;
 
 /**
  * Runs InvoiceNotificationService on the existing queue worker (the same
@@ -22,11 +22,16 @@ use Illuminate\Queue\SerializesModels;
  * queue exists for, so the controller's response never waits on it.
  *
  * Re-establishes TenantContext explicitly: a queued job runs in its own
- * process, with no ambient tenant resolved from a request.
+ * process, with no ambient tenant resolved from a request. `invoices`/
+ * `notification_logs` live in the tenant database, and a queue worker is a
+ * long-lived process handling jobs for many different schools in turn, so
+ * the `tenant` connection also has to be pointed at the right physical
+ * database explicitly — see ProcessStudentImport for the identical
+ * reasoning and pattern.
  */
 final class SendInvoiceNotificationJob implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable, InteractsWithQueue, Queueable;
 
     public int $tries = 3;
 
@@ -39,15 +44,25 @@ final class SendInvoiceNotificationJob implements ShouldQueue
         private readonly string $type = 'invoice_issued',
     ) {}
 
-    public function handle(InvoiceNotificationService $notifications, TenantContext $context): void
+    public function handle(InvoiceNotificationService $notifications, TenantContext $context, DatabaseManager $tenantDatabases): void
     {
         $tenant = Tenant::query()->findOrFail($this->tenantId);
 
-        $context->runFor($tenant, function () use ($notifications) {
-            $invoice = Invoice::query()->findOrFail($this->invoiceId);
-            $actor = $this->actorId !== null ? User::query()->find($this->actorId) : null;
+        if (! app()->environment('testing')) {
+            $tenantDatabases->createTenantConnection($tenant);
+        }
 
-            $notifications->send($invoice, $this->recipient, $this->channel, $actor, $this->type);
-        });
+        try {
+            $context->runFor($tenant, function () use ($notifications) {
+                $invoice = Invoice::query()->findOrFail($this->invoiceId);
+                $actor = $this->actorId !== null ? User::query()->find($this->actorId) : null;
+
+                $notifications->send($invoice, $this->recipient, $this->channel, $actor, $this->type);
+            });
+        } finally {
+            if (! app()->environment('testing')) {
+                $tenantDatabases->purgeTenantConnection();
+            }
+        }
     }
 }

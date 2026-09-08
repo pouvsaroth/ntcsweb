@@ -25,18 +25,16 @@ final class CurrencyConversionService
      * that as "can't convert" and leave the amount as-is, same as before
      * this feature existed.
      */
-    public function rateForDate(Tenant $tenant, Carbon|string $date): ?float
+    public function rateForDate(Carbon|string $date): ?float
     {
         $date = $date instanceof Carbon ? $date : Carbon::parse($date);
 
         $rate = CurrencyRate::query()
-            ->where('tenant_id', $tenant->getKey())
             ->whereDate('effective_date', '<=', $date)
             ->orderByDesc('effective_date')
             ->first();
 
         $rate ??= CurrencyRate::query()
-            ->where('tenant_id', $tenant->getKey())
             ->orderBy('effective_date')
             ->first();
 
@@ -77,7 +75,7 @@ final class CurrencyConversionService
         $total = 0.0;
 
         foreach ($rows as $row) {
-            $rate = $this->rateForDate($tenant, $row->tx_date);
+            $rate = $this->rateForDate($row->tx_date);
             $total += $this->convert((float) $row->total, $row->currency, $tenant->default_currency, $rate);
         }
 

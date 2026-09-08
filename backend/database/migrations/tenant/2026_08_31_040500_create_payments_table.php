@@ -27,30 +27,35 @@ return new class extends Migration
     {
         Schema::create('payments', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
             $table->string('payment_number', 32);
             $table->foreignId('invoice_id')->constrained('invoices')->restrictOnDelete();
-            $table->foreignId('student_id')->constrained('students')->restrictOnDelete();
+            // No DB-level foreign key: `students` hasn't moved to a
+            // per-tenant database yet, and a cross-database foreign key
+            // isn't possible in Postgres regardless.
+            $table->unsignedBigInteger('student_id');
 
             $table->decimal('amount', 10, 2);
             $table->string('payment_method', 32);
             $table->string('status', 20)->default('COMPLETED');
             $table->date('payment_date');
             $table->string('reference_number', 100)->nullable();
-            $table->foreignId('received_by')->nullable()->constrained('users')->nullOnDelete();
+            // No DB-level foreign key on either of these: `users` hasn't
+            // moved to a per-tenant database yet, and a cross-database
+            // foreign key isn't possible in Postgres regardless.
+            $table->unsignedBigInteger('received_by')->nullable();
             $table->text('notes')->nullable();
 
             $table->text('cancellation_reason')->nullable();
-            $table->foreignId('cancelled_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->unsignedBigInteger('cancelled_by')->nullable();
             $table->timestamp('cancelled_at')->nullable();
 
             $table->timestamps();
 
-            $table->unique(['tenant_id', 'payment_number']);
-            $table->index(['tenant_id', 'invoice_id']);
-            $table->index(['tenant_id', 'student_id']);
-            $table->index(['tenant_id', 'payment_date']);
-            $table->index(['tenant_id', 'payment_method']);
+            $table->unique('payment_number');
+            $table->index('invoice_id');
+            $table->index('student_id');
+            $table->index('payment_date');
+            $table->index('payment_method');
         });
     }
 

@@ -18,8 +18,10 @@ return new class extends Migration
     {
         Schema::create('product_variants', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
-            $table->foreignId('product_id')->constrained('products')->cascadeOnDelete();
+            // No DB-level foreign key: `products` hasn't moved to a
+            // per-tenant database yet, and a cross-database foreign key
+            // isn't possible in Postgres regardless.
+            $table->unsignedBigInteger('product_id');
             $table->string('name', 64);
             $table->decimal('price_override', 10, 2)->nullable();
             $table->boolean('is_active')->default(true);

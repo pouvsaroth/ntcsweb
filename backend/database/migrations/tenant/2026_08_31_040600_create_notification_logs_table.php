@@ -18,9 +18,11 @@ return new class extends Migration
     {
         Schema::create('notification_logs', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
             $table->foreignId('invoice_id')->nullable()->constrained('invoices')->cascadeOnDelete();
-            $table->foreignId('student_id')->nullable()->constrained('students')->nullOnDelete();
+            // No DB-level foreign key: `students` hasn't moved to a
+            // per-tenant database yet, and a cross-database foreign key
+            // isn't possible in Postgres regardless.
+            $table->unsignedBigInteger('student_id')->nullable();
 
             $table->string('channel', 20);
             $table->string('recipient', 191);
@@ -31,12 +33,15 @@ return new class extends Migration
             $table->text('error_message')->nullable();
             $table->timestamp('sent_at')->nullable();
 
-            $table->foreignId('sent_by')->nullable()->constrained('users')->nullOnDelete();
+            // No DB-level foreign key: `users` hasn't moved to a per-tenant
+            // database yet, and a cross-database foreign key isn't possible
+            // in Postgres regardless.
+            $table->unsignedBigInteger('sent_by')->nullable();
             $table->timestamps();
 
-            $table->index(['tenant_id', 'invoice_id']);
-            $table->index(['tenant_id', 'status']);
-            $table->index(['tenant_id', 'created_at']);
+            $table->index('invoice_id');
+            $table->index('status');
+            $table->index('created_at');
         });
     }
 

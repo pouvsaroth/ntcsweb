@@ -18,18 +18,19 @@ return new class extends Migration
         Schema::create('currency_rates', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
-
             $table->date('effective_date');
             $table->decimal('khr_per_usd', 12, 4);
 
-            $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
+            // No DB-level foreign key: `users` hasn't moved to a per-tenant
+            // database yet, and a cross-database foreign key isn't possible
+            // in Postgres regardless.
+            $table->unsignedBigInteger('created_by')->nullable();
 
             $table->timestamps();
             $table->softDeletes();
 
-            $table->unique(['tenant_id', 'effective_date']);
-            $table->index(['tenant_id', 'effective_date']);
+            $table->unique('effective_date');
+            $table->index('effective_date');
         });
     }
 

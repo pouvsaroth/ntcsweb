@@ -91,7 +91,7 @@ final class AccountingNumberGenerator
             return;
         }
 
-        $startingNumber = $this->highestExistingNumber($tenant->getKey(), $prefix, $year, $seedTable, $seedColumn) + 1;
+        $startingNumber = $this->highestExistingNumber($prefix, $year, $seedTable, $seedColumn) + 1;
 
         DB::table('billing_number_sequences')->insertOrIgnore([
             'tenant_id' => $tenant->getKey(),
@@ -104,12 +104,11 @@ final class AccountingNumberGenerator
         ]);
     }
 
-    private function highestExistingNumber(int $tenantId, string $prefix, int $year, string $table, string $column): int
+    private function highestExistingNumber(string $prefix, int $year, string $table, string $column): int
     {
         $like = "{$prefix}-{$year}-%";
 
-        return DB::table($table)
-            ->where('tenant_id', $tenantId)
+        return DB::connection('tenant')->table($table)
             ->where($column, 'like', $like)
             ->pluck($column)
             ->map(function (string $number) use ($prefix, $year) {

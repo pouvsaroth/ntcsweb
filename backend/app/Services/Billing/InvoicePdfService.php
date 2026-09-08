@@ -6,6 +6,7 @@ namespace App\Services\Billing;
 
 use App\Models\Invoice;
 use App\Models\Tenant;
+use App\Support\Tenancy\TenantContext;
 use Spatie\Browsershot\Browsershot;
 
 /**
@@ -33,14 +34,22 @@ final class InvoicePdfService
     /** @var array<string, string> */
     private static array $khmerFontCache = [];
 
+    public function __construct(private readonly TenantContext $context) {}
+
     public function render(Invoice $invoice): string
     {
-        $invoice->loadMissing(['items.product', 'items.variant', 'student', 'tenant', 'payments' => fn ($q) => $q->completed()->orderBy('payment_date')]);
+        $invoice->loadMissing(['items.product', 'items.variant', 'student', 'payments' => fn ($q) => $q->completed()->orderBy('payment_date')]);
+
+        // `invoices` lives in the tenant database now, so it no longer
+        // carries its own tenant() relation — the tenant is simply whichever
+        // one is already in context for this request/job, exactly the one
+        // whose database this Invoice was just read from.
+        $tenant = $this->context->getOrFail();
 
         $html = view('pdf.invoice', [
             'invoice' => $invoice,
-            'tenant' => $invoice->tenant,
-            'logoDataUri' => $this->logoDataUri($invoice->tenant),
+            'tenant' => $tenant,
+            'logoDataUri' => $this->logoDataUri($tenant),
             'khmerFontRegular' => $this->khmerFontDataUri('Regular'),
             'khmerFontBold' => $this->khmerFontDataUri('Bold'),
         ])->render();

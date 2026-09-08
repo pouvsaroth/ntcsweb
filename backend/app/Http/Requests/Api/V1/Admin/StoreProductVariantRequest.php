@@ -24,7 +24,7 @@ class StoreProductVariantRequest extends FormRequest
         $product = $this->route('product');
 
         return [
-            'name' => ['required', 'string', 'max:64', Rule::unique('product_variants')->where('product_id', $product->id)],
+            'name' => ['required', 'string', 'max:64', Rule::unique('tenant.product_variants', 'name')->where('product_id', $product->id)],
             'price_override' => ['nullable', 'numeric', 'min:0', 'max:999999.99'],
             'is_active' => ['sometimes', 'boolean'],
         ];

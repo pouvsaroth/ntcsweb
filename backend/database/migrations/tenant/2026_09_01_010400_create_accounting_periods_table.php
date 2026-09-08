@@ -17,14 +17,16 @@ return new class extends Migration
         Schema::create('accounting_periods', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
             $table->char('period', 7); // 'YYYY-MM'
             $table->timestamp('closed_at');
-            $table->foreignId('closed_by')->nullable()->constrained('users')->nullOnDelete();
+            // No DB-level foreign key: `users` hasn't moved to a per-tenant
+            // database yet, and a cross-database foreign key isn't possible
+            // in Postgres regardless.
+            $table->unsignedBigInteger('closed_by')->nullable();
 
             $table->timestamps();
 
-            $table->unique(['tenant_id', 'period']);
+            $table->unique('period');
         });
     }
 

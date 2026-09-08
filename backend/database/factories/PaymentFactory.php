@@ -7,7 +7,6 @@ namespace Database\Factories;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\Student;
-use App\Models\Tenant;
 use App\Support\Billing\PaymentMethod;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -28,15 +27,6 @@ class PaymentFactory extends Factory
             'payment_method' => PaymentMethod::CASH,
             'payment_date' => now()->toDateString(),
         ];
-    }
-
-    public function forTenant(Tenant|int $tenant): static
-    {
-        return $this->afterMaking(function (Payment $payment) use ($tenant) {
-            $payment->forceFill([
-                'tenant_id' => $tenant instanceof Tenant ? $tenant->getKey() : $tenant,
-            ]);
-        });
     }
 
     public function forInvoice(Invoice $invoice): static

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Models\Concerns\BelongsToTenant;
 use Database\Factories\InvoiceItemFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -16,7 +15,6 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * One billed line on an Invoice — see that migration's docblock for why
  * `unit_price`/`discount` are a snapshot, not a live read of Product::$price.
  *
- * @property int $tenant_id
  * @property int $invoice_id
  * @property int $product_id
  * @property string $unit_price
@@ -29,7 +27,9 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 class InvoiceItem extends Model
 {
     /** @use HasFactory<InvoiceItemFactory> */
-    use BelongsToTenant, HasFactory;
+    use HasFactory;
+
+    protected $connection = 'tenant';
 
     protected $attributes = [
         'quantity' => 1,

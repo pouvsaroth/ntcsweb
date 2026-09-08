@@ -6,7 +6,6 @@ namespace Database\Factories;
 
 use App\Models\Expense;
 use App\Models\ExpenseAttachment;
-use App\Models\Tenant;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -24,14 +23,5 @@ class ExpenseAttachmentFactory extends Factory
             'file_name' => fake()->word().'.pdf',
             'mime_type' => 'application/pdf',
         ];
-    }
-
-    public function forTenant(Tenant|int $tenant): static
-    {
-        return $this->afterMaking(function (ExpenseAttachment $attachment) use ($tenant) {
-            $attachment->forceFill([
-                'tenant_id' => $tenant instanceof Tenant ? $tenant->getKey() : $tenant,
-            ]);
-        });
     }
 }

@@ -80,11 +80,11 @@ class ProductTest extends TestCase
             'items' => [['product_id' => $product->id, 'quantity' => 1]],
         ])->assertCreated();
 
-        // A product referenced by an invoice item is protected by
-        // restrictOnDelete at the DB level — soft-deleting it (the app-level
-        // behavior) must still succeed without touching the invoice item.
+        // A product referenced by an invoice item is soft-deleted, not
+        // force-deleted, by the controller's own app-level behavior — this
+        // must succeed without touching the invoice item.
         $this->deleteJson("/api/v1/products/{$product->id}")->assertNoContent();
         $this->assertNotNull($product->fresh()->deleted_at);
-        $this->assertDatabaseHas('invoice_items', ['product_id' => $product->id]);
+        $this->assertDatabaseHas('invoice_items', ['product_id' => $product->id], 'tenant');
     }
 }

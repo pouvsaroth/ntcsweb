@@ -6,7 +6,6 @@ namespace Database\Factories;
 
 use App\Models\Account;
 use App\Models\Expense;
-use App\Models\Tenant;
 use App\Support\Accounting\ExpenseStatus;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -28,15 +27,6 @@ class ExpenseFactory extends Factory
             'description' => fake()->sentence(),
             'status' => ExpenseStatus::PENDING_APPROVAL,
         ];
-    }
-
-    public function forTenant(Tenant|int $tenant): static
-    {
-        return $this->afterMaking(function (Expense $expense) use ($tenant) {
-            $expense->forceFill([
-                'tenant_id' => $tenant instanceof Tenant ? $tenant->getKey() : $tenant,
-            ]);
-        });
     }
 
     public function forAccount(Account $account): static

@@ -20,12 +20,14 @@ return new class extends Migration
         Schema::create('expenses', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
             $table->string('expense_number', 32);
             $table->date('expense_date');
 
-            $table->foreignId('account_id')->constrained('accounts')->restrictOnDelete();
-            $table->foreignId('cash_account_id')->nullable()->constrained('accounts')->restrictOnDelete();
+            // No DB-level foreign key on either of these: `accounts` hasn't
+            // moved to a per-tenant database yet, and a cross-database
+            // foreign key isn't possible in Postgres regardless.
+            $table->unsignedBigInteger('account_id');
+            $table->unsignedBigInteger('cash_account_id')->nullable();
             $table->decimal('amount', 15, 2);
             $table->string('payment_method', 32)->nullable();
 
@@ -34,20 +36,23 @@ return new class extends Migration
             $table->string('reference_number', 100)->nullable();
             $table->string('status', 20)->default('PENDING_APPROVAL');
 
-            $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
-            $table->foreignId('approved_by')->nullable()->constrained('users')->nullOnDelete();
+            // No DB-level foreign key on any of these three: `users` hasn't
+            // moved to a per-tenant database yet, and a cross-database
+            // foreign key isn't possible in Postgres regardless.
+            $table->unsignedBigInteger('created_by')->nullable();
+            $table->unsignedBigInteger('approved_by')->nullable();
             $table->timestamp('approved_at')->nullable();
             $table->text('rejected_reason')->nullable();
             $table->timestamp('paid_at')->nullable();
             $table->text('cancellation_reason')->nullable();
-            $table->foreignId('cancelled_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->unsignedBigInteger('cancelled_by')->nullable();
             $table->timestamp('cancelled_at')->nullable();
 
             $table->timestamps();
 
-            $table->unique(['tenant_id', 'expense_number']);
-            $table->index(['tenant_id', 'status', 'expense_date']);
-            $table->index(['tenant_id', 'account_id']);
+            $table->unique('expense_number');
+            $table->index(['status', 'expense_date']);
+            $table->index('account_id');
         });
     }
 

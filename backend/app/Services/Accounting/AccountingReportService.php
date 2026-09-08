@@ -216,7 +216,7 @@ final class AccountingReportService
         $result = [];
 
         foreach ($query->get() as $row) {
-            $rate = $this->currency->rateForDate($tenant, $row->tx_date);
+            $rate = $this->currency->rateForDate($row->tx_date);
             $converted = $this->currency->convert((float) $row->total, $row->currency, $tenant->default_currency, $rate);
             $result[$row->{$column}] = ($result[$row->{$column}] ?? 0.0) + $converted;
         }

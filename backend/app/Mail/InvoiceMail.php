@@ -6,6 +6,7 @@ namespace App\Mail;
 
 use App\Models\Invoice;
 use App\Services\Billing\InvoicePdfService;
+use App\Support\Tenancy\TenantContext;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
@@ -32,7 +33,11 @@ class InvoiceMail extends Mailable
 
     public function envelope(): Envelope
     {
-        $tenant = $this->invoice->tenant;
+        // `invoices` lives in the tenant database now, so it no longer
+        // carries its own tenant() relation — the tenant is simply whichever
+        // one is already in context for this send, exactly the one whose
+        // database this Invoice was just read from.
+        $tenant = app(TenantContext::class)->get();
 
         return new Envelope(
             subject: __('Invoice :number from :school', [
@@ -46,7 +51,7 @@ class InvoiceMail extends Mailable
     {
         return new Content(
             markdown: 'mail.invoice',
-            with: ['invoice' => $this->invoice, 'tenant' => $this->invoice->tenant],
+            with: ['invoice' => $this->invoice, 'tenant' => app(TenantContext::class)->get()],
         );
     }
 

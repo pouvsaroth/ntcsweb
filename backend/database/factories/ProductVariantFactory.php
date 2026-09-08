@@ -6,7 +6,6 @@ namespace Database\Factories;
 
 use App\Models\Product;
 use App\Models\ProductVariant;
-use App\Models\Tenant;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -24,14 +23,5 @@ class ProductVariantFactory extends Factory
             'price_override' => null,
             'is_active' => true,
         ];
-    }
-
-    public function forTenant(Tenant|int $tenant): static
-    {
-        return $this->afterMaking(function (ProductVariant $variant) use ($tenant) {
-            $variant->forceFill([
-                'tenant_id' => $tenant instanceof Tenant ? $tenant->getKey() : $tenant,
-            ]);
-        });
     }
 }

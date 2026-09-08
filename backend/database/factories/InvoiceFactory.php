@@ -6,7 +6,6 @@ namespace Database\Factories;
 
 use App\Models\Invoice;
 use App\Models\Student;
-use App\Models\Tenant;
 use App\Support\Billing\InvoiceStatus;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -33,15 +32,6 @@ class InvoiceFactory extends Factory
             'balance' => 0,
             'currency' => 'USD',
         ];
-    }
-
-    public function forTenant(Tenant|int $tenant): static
-    {
-        return $this->afterMaking(function (Invoice $invoice) use ($tenant) {
-            $invoice->forceFill([
-                'tenant_id' => $tenant instanceof Tenant ? $tenant->getKey() : $tenant,
-            ]);
-        });
     }
 
     public function forStudent(Student $student): static

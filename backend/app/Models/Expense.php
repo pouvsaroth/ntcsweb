@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Models\Concerns\BelongsToTenant;
 use App\Support\Accounting\ExpenseStatus;
 use Database\Factories\ExpenseFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -24,7 +23,6 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * createAdjustment(). Does NOT use the Auditable trait — same reasoning as
  * Invoice/Payment/FinancialTransaction.
  *
- * @property int $tenant_id
  * @property string $expense_number
  * @property int $account_id
  * @property string $amount
@@ -40,7 +38,9 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 class Expense extends Model
 {
     /** @use HasFactory<ExpenseFactory> */
-    use BelongsToTenant, HasFactory;
+    use HasFactory;
+
+    protected $connection = 'tenant';
 
     protected $attributes = [
         'status' => ExpenseStatus::PENDING_APPROVAL,

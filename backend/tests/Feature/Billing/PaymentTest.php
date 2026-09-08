@@ -183,9 +183,9 @@ class PaymentTest extends TestCase
         $this->actingAsAdminWithPermissions([]);
         $student = Student::factory()->forTenant($this->tenant)->create();
 
-        \App\Models\Invoice::factory()->forTenant($this->tenant)->forStudent($student)->create(['invoice_number' => 'INV-2026-000001']);
+        \App\Models\Invoice::factory()->forStudent($student)->create(['invoice_number' => 'INV-2026-000001']);
 
         $this->expectException(\Illuminate\Database\QueryException::class);
-        \App\Models\Invoice::factory()->forTenant($this->tenant)->forStudent($student)->create(['invoice_number' => 'INV-2026-000001']);
+        \App\Models\Invoice::factory()->forStudent($student)->create(['invoice_number' => 'INV-2026-000001']);
     }
 }

@@ -6,7 +6,6 @@ namespace Database\Factories;
 
 use App\Models\Account;
 use App\Models\FinancialTransaction;
-use App\Models\Tenant;
 use App\Support\Accounting\TransactionType;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -27,15 +26,6 @@ class FinancialTransactionFactory extends Factory
             'credit_account_id' => Account::factory(),
             'amount' => fake()->randomFloat(2, 10, 500),
         ];
-    }
-
-    public function forTenant(Tenant|int $tenant): static
-    {
-        return $this->afterMaking(function (FinancialTransaction $transaction) use ($tenant) {
-            $transaction->forceFill([
-                'tenant_id' => $tenant instanceof Tenant ? $tenant->getKey() : $tenant,
-            ]);
-        });
     }
 
     public function type(string $type): static

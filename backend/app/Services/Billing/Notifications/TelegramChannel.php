@@ -6,6 +6,7 @@ namespace App\Services\Billing\Notifications;
 
 use App\Models\Invoice;
 use App\Services\Billing\InvoicePdfService;
+use App\Support\Tenancy\TenantContext;
 use Illuminate\Support\Facades\Http;
 
 /**
@@ -20,6 +21,8 @@ use Illuminate\Support\Facades\Http;
  */
 final class TelegramChannel implements NotificationChannelContract
 {
+    public function __construct(private readonly TenantContext $context) {}
+
     public function send(Invoice $invoice, string $recipient): NotificationSendResult
     {
         $token = config('services.telegram.bot_token');
@@ -56,7 +59,10 @@ final class TelegramChannel implements NotificationChannelContract
 
     private function caption(Invoice $invoice): string
     {
-        $tenant = $invoice->tenant;
+        // `invoices` lives in the tenant database now, so it no longer
+        // carries its own tenant() relation — see InvoicePdfService for the
+        // identical reasoning.
+        $tenant = $this->context->get();
 
         return trim(
             ($tenant?->name ?? config('app.name'))."\n\n".

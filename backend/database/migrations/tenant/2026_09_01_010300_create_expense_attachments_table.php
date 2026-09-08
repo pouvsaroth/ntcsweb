@@ -12,17 +12,19 @@ return new class extends Migration
         Schema::create('expense_attachments', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
             $table->foreignId('expense_id')->constrained('expenses')->cascadeOnDelete();
 
             $table->string('file_path');
             $table->string('file_name');
             $table->string('mime_type', 100)->nullable();
-            $table->foreignId('uploaded_by')->nullable()->constrained('users')->nullOnDelete();
+            // No DB-level foreign key: `users` hasn't moved to a per-tenant
+            // database yet, and a cross-database foreign key isn't possible
+            // in Postgres regardless.
+            $table->unsignedBigInteger('uploaded_by')->nullable();
 
             $table->timestamps();
 
-            $table->index(['tenant_id', 'expense_id']);
+            $table->index('expense_id');
         });
     }
 

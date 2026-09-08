@@ -22,7 +22,6 @@ final class AccountingPeriodGuard
         $period = $date->format('Y-m');
 
         $closed = AccountingPeriod::query()
-            ->where('tenant_id', $tenant->getKey())
             ->where('period', $period)
             ->exists();
 
