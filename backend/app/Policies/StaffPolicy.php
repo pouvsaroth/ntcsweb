@@ -39,4 +39,9 @@ class StaffPolicy
     {
         return $user->hasPermission(Permissions::STAFF_DELETE);
     }
+
+    public function changeStatus(User $user, Staff $staff): bool
+    {
+        return $user->hasPermission(Permissions::STAFF_CHANGE_STATUS);
+    }
 }

@@ -11,6 +11,7 @@ import { ApiRequestError } from '@/types/api'
 const { t } = useI18n()
 
 const studentIdPrefix = ref('')
+const staffIdPrefix = ref('')
 const loading = ref(true)
 const loadError = ref<string | null>(null)
 const saveError = ref<string | null>(null)
@@ -26,6 +27,9 @@ const saving = ref(false)
  */
 const preview = computed(() => `${studentIdPrefix.value || '—'}-000001`)
 
+/** Same idea as `preview`, for the staff prefix (see StaffIdGenerator) — 4-digit padding, not 6. */
+const staffPreview = computed(() => `${staffIdPrefix.value || '—'}-0001`)
+
 async function load() {
   loading.value = true
   loadError.value = null
@@ -33,6 +37,7 @@ async function load() {
   try {
     const settings = await generalSettingsService.get()
     studentIdPrefix.value = settings.student_id_prefix
+    staffIdPrefix.value = settings.staff_id_prefix
   } catch (error) {
     loadError.value = error instanceof ApiRequestError ? error.message : t('admin.settings.loadFailed')
   } finally {
@@ -47,8 +52,9 @@ async function save() {
   saved.value = false
 
   try {
-    const result = await generalSettingsService.update(studentIdPrefix.value)
+    const result = await generalSettingsService.update({ studentIdPrefix: studentIdPrefix.value, staffIdPrefix: staffIdPrefix.value })
     studentIdPrefix.value = result.student_id_prefix
+    staffIdPrefix.value = result.staff_id_prefix
     saved.value = true
   } catch (error) {
     if (error instanceof ApiRequestError && error.errors) {
@@ -92,6 +98,25 @@ onMounted(load)
         <p class="mt-4 text-sm text-neutral-500">
           {{ t('admin.settings.previewLabel') }}
           <code class="ml-1 rounded bg-neutral-100 px-2 py-1 font-mono text-neutral-800">{{ preview }}</code>
+        </p>
+      </section>
+
+      <section class="rounded-lg border border-neutral-200 p-4">
+        <h2 class="mb-1 text-sm font-semibold text-neutral-800">{{ t('admin.settings.staffIdSection') }}</h2>
+        <p class="mb-4 text-sm text-neutral-500">{{ t('admin.settings.staffIdHint') }}</p>
+
+        <BaseInput
+          v-model="staffIdPrefix"
+          required
+          :label="t('admin.settings.staffIdPrefix')"
+          :hint="t('admin.settings.staffIdPrefixHint')"
+          :error="errors.staff_id_prefix?.[0]"
+          class="max-w-xs"
+        />
+
+        <p class="mt-4 text-sm text-neutral-500">
+          {{ t('admin.settings.previewLabel') }}
+          <code class="ml-1 rounded bg-neutral-100 px-2 py-1 font-mono text-neutral-800">{{ staffPreview }}</code>
         </p>
       </section>
 

@@ -15,6 +15,9 @@ use Illuminate\Validation\Rule;
  *
  * Also has no `profile_color` field — it is always server-generated (see
  * StaffController::profileColorFor()), never accepted from a request.
+ *
+ * No `employee_code` field either — always server-generated (see
+ * StaffIdGenerator), same treatment as Student's `student_code`.
  */
 class StoreStaffRequest extends FormRequest
 {
@@ -26,8 +29,6 @@ class StoreStaffRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'employee_code' => ['required', 'string', 'max:32', Rule::unique('tenant.staff', 'employee_code')],
-
             // Must belong to this school — route-model binding also enforces
             // this via Position's own tenant scope, but a request-level 404
             // reads better than a policy-layer one for a bad foreign key.
@@ -67,7 +68,7 @@ class StoreStaffRequest extends FormRequest
             'photo' => ['nullable', 'image', 'mimes:jpeg,png,webp,gif', 'max:10240'],
 
             'hire_date' => ['nullable', 'date'],
-            'status' => ['sometimes', Rule::in([Staff::STATUS_ACTIVE, Staff::STATUS_INACTIVE])],
+            'status' => ['sometimes', Rule::in(Staff::STATUSES_MANAGEABLE)],
         ];
     }
 }

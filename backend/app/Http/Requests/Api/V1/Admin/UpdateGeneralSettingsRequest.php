@@ -24,7 +24,7 @@ class UpdateGeneralSettingsRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
-        foreach (['student_id_prefix', 'invoice_prefix', 'receipt_prefix'] as $field) {
+        foreach (['student_id_prefix', 'staff_id_prefix', 'invoice_prefix', 'receipt_prefix'] as $field) {
             if ($this->has($field)) {
                 $this->merge([
                     $field => Str::upper(trim((string) $this->input($field))),
@@ -43,6 +43,7 @@ class UpdateGeneralSettingsRequest extends FormRequest
 
         return [
             'student_id_prefix' => ['sometimes', 'required', ...$prefixRule],
+            'staff_id_prefix' => ['sometimes', 'required', ...$prefixRule],
             'invoice_prefix' => ['sometimes', 'required', ...$prefixRule],
             'receipt_prefix' => ['sometimes', 'required', ...$prefixRule],
         ];

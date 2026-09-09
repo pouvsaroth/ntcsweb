@@ -12,7 +12,8 @@ use Illuminate\Validation\Rule;
  * Same "no role field" rule as StoreStaffRequest — changing `position_id` is
  * how a Staff member's role changes; see StaffController::update(). Also has
  * no `profile_color` field — it is set once at creation and never
- * regenerated (see StaffController::store()).
+ * regenerated (see StaffController::store()). Same for `employee_code` — see
+ * StaffIdGenerator; not editable once assigned.
  */
 class UpdateStaffRequest extends FormRequest
 {
@@ -26,13 +27,7 @@ class UpdateStaffRequest extends FormRequest
 
     public function rules(): array
     {
-        $staff = $this->route('staff');
-
         return [
-            'employee_code' => [
-                'sometimes', 'required', 'string', 'max:32',
-                Rule::unique('tenant.staff', 'employee_code')->ignore($staff),
-            ],
             'position_id' => ['sometimes', 'required', Rule::exists('tenant.positions', 'id')],
 
             'first_name' => ['sometimes', 'required', 'string', 'max:255'],
@@ -61,7 +56,7 @@ class UpdateStaffRequest extends FormRequest
             'photo' => ['sometimes', 'image', 'mimes:jpeg,png,webp,gif', 'max:10240'],
 
             'hire_date' => ['nullable', 'date'],
-            'status' => ['sometimes', Rule::in([Staff::STATUS_ACTIVE, Staff::STATUS_INACTIVE])],
+            'status' => ['sometimes', Rule::in(Staff::STATUSES_MANAGEABLE)],
         ];
     }
 }

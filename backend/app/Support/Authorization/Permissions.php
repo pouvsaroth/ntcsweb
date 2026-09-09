@@ -255,6 +255,8 @@ final class Permissions
 
     public const STAFF_DELETE = 'staff.delete';
 
+    public const STAFF_CHANGE_STATUS = 'staff.change-status';
+
     // Products — the sellable catalog every invoice item bills against.
     public const PRODUCTS_VIEW = 'products.view';
 
@@ -616,6 +618,7 @@ final class Permissions
                 self::STAFF_CREATE => 'Create staff',
                 self::STAFF_UPDATE => 'Update staff',
                 self::STAFF_DELETE => 'Delete staff',
+                self::STAFF_CHANGE_STATUS => 'Change a staff member\'s status (probation, on leave, suspended, ...)',
             ],
             'Products' => [
                 self::PRODUCTS_VIEW => 'View products',
@@ -763,7 +766,7 @@ final class Permissions
             self::GALLERY_VIEW, self::GALLERY_CREATE, self::GALLERY_UPDATE, self::GALLERY_DELETE,
             self::PROGRAMS_VIEW, self::PROGRAMS_CREATE, self::PROGRAMS_UPDATE, self::PROGRAMS_DELETE,
             self::POSITIONS_VIEW, self::POSITIONS_CREATE, self::POSITIONS_UPDATE, self::POSITIONS_DELETE,
-            self::STAFF_VIEW, self::STAFF_CREATE, self::STAFF_UPDATE, self::STAFF_DELETE,
+            self::STAFF_VIEW, self::STAFF_CREATE, self::STAFF_UPDATE, self::STAFF_DELETE, self::STAFF_CHANGE_STATUS,
         ];
 
         // Not folded into $academicManagement: financial access is

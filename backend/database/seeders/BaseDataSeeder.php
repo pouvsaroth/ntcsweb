@@ -236,6 +236,20 @@ class BaseDataSeeder extends Seeder
                     'OTHER' => ['en' => ['name' => 'Other'], 'km' => ['name' => 'ផ្សេងទៀត'], 'zh' => ['name' => '其他'], 'ko' => ['name' => '기타'], 'ja' => ['name' => 'その他']],
                 ],
             ],
+            'STAFF_STATUS' => [
+                'name' => 'Staff Status',
+                'description' => 'Reference list mirroring App\\Models\\Staff::STATUS_* — the Staff model itself still owns the real column/constants.',
+                'sort_order' => 10,
+                'values' => [
+                    'active' => ['en' => ['name' => 'Active'], 'km' => ['name' => 'កំពុងបម្រើការងារ'], 'zh' => ['name' => '在职'], 'ko' => ['name' => '재직중'], 'ja' => ['name' => '在職中']],
+                    'probation' => ['en' => ['name' => 'Probation'], 'km' => ['name' => 'កំពុងសាកល្បងការងារ'], 'zh' => ['name' => '试用期'], 'ko' => ['name' => '수습'], 'ja' => ['name' => '試用期間']],
+                    'on_leave' => ['en' => ['name' => 'On Leave'], 'km' => ['name' => 'កំពុងឈប់សម្រាក'], 'zh' => ['name' => '休假'], 'ko' => ['name' => '휴직'], 'ja' => ['name' => '休暇中']],
+                    'suspended' => ['en' => ['name' => 'Suspended'], 'km' => ['name' => 'ត្រូវបានផ្អាកការងារ'], 'zh' => ['name' => '停职'], 'ko' => ['name' => '정직'], 'ja' => ['name' => '停職']],
+                    'resigned' => ['en' => ['name' => 'Resigned'], 'km' => ['name' => 'បានលាលែងពីការងារ'], 'zh' => ['name' => '离职'], 'ko' => ['name' => '퇴사'], 'ja' => ['name' => '退職']],
+                    'terminated' => ['en' => ['name' => 'Terminated'], 'km' => ['name' => 'ត្រូវបានបញ្ចប់ការងារ'], 'zh' => ['name' => '解雇'], 'ko' => ['name' => '해고'], 'ja' => ['name' => '解雇']],
+                    'retired' => ['en' => ['name' => 'Retired'], 'km' => ['name' => 'ចូលនិវត្តន៍'], 'zh' => ['name' => '退休'], 'ko' => ['name' => '은퇴'], 'ja' => ['name' => '定年退職']],
+                ],
+            ],
         ];
     }
 }

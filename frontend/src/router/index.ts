@@ -275,6 +275,12 @@ const adminRoutes: RouteRecordRaw[] = [
     meta: { titleKey: 'adminNav.items.positions' },
   },
   {
+    path: 'staff-status-history',
+    name: 'admin.staff-status-history',
+    component: () => import('@/pages/admin/StaffStatusHistory.vue'),
+    meta: { titleKey: 'adminNav.items.staffStatusHistory' },
+  },
+  {
     path: 'roles',
     name: 'admin.roles',
     component: () => import('@/pages/admin/Roles.vue'),

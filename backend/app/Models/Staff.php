@@ -59,11 +59,35 @@ class Staff extends Model
     /** @use HasFactory<StaffFactory> */
     public const STATUS_ACTIVE = 'active';
 
-    public const STATUS_INACTIVE = 'inactive';
+    public const STATUS_PROBATION = 'probation';
+
+    public const STATUS_ON_LEAVE = 'on_leave';
+
+    public const STATUS_SUSPENDED = 'suspended';
+
+    public const STATUS_RESIGNED = 'resigned';
+
+    public const STATUS_TERMINATED = 'terminated';
+
+    public const STATUS_RETIRED = 'retired';
+
+    /** The full selectable set — see StaffController::changeStatus() and StaffStatusHistory. */
+    public const STATUSES_MANAGEABLE = [
+        self::STATUS_ACTIVE, self::STATUS_PROBATION, self::STATUS_ON_LEAVE, self::STATUS_SUSPENDED,
+        self::STATUS_RESIGNED, self::STATUS_TERMINATED, self::STATUS_RETIRED,
+    ];
 
     protected $connection = 'tenant';
 
     protected $table = 'staff';
+
+    /**
+     * Set by StaffController::changeStatus() immediately before calling
+     * update(), purely so auditDescriptionForChange() below can include the
+     * reason — never persisted, never touches the `staff` table. Mirrors
+     * Enrollment::$auditReason.
+     */
+    public ?string $auditReason = null;
 
     /**
      * `user_id` is excluded from $fillable (see the class docblock), so a
@@ -132,6 +156,11 @@ class Staff extends Model
         return $this->belongsTo(Position::class);
     }
 
+    public function statusHistories(): HasMany
+    {
+        return $this->hasMany(StaffStatusHistory::class);
+    }
+
     /**
      * Classes this staff member teaches — meaningful only when their
      * Position is "Teacher" (see TeacherPositionSeeder), same as
@@ -190,7 +219,8 @@ class Staff extends Model
     {
         return match ($action) {
             AuditAction::POSITION_CHANGE => "Changed staff position from {$old['position_label']} to {$new['position_label']}",
-            AuditAction::STATUS_CHANGE => "Changed staff {$this->auditDisplayName()} status from {$old['status']} to {$new['status']}",
+            AuditAction::STATUS_CHANGE => "Changed staff {$this->auditDisplayName()} status from {$old['status']} to {$new['status']}"
+                .($this->auditReason ? ": {$this->auditReason}" : ''),
             default => null,
         };
     }

@@ -66,7 +66,11 @@ export const adminNav: AdminNavGroup[] = [
   },
   {
     labelKey: 'adminNav.groups.staff',
-    items: [{ labelKey: 'adminNav.items.staffList', to: '/admin/staff', permission: 'staff.view' }],
+    items: [
+      { labelKey: 'adminNav.items.staffList', to: '/admin/staff', permission: 'staff.view' },
+      { labelKey: 'adminNav.items.positions', to: '/admin/positions', permission: 'positions.view' },
+      { labelKey: 'adminNav.items.staffStatusHistory', to: '/admin/staff-status-history', permission: 'staff.view' },
+    ],
   },
   {
     labelKey: 'adminNav.groups.academicRecords',
@@ -141,7 +145,6 @@ export const adminNav: AdminNavGroup[] = [
       { labelKey: 'adminNav.items.settings', to: '/admin/settings', permission: 'tenant-settings.view' },
       { labelKey: 'adminNav.items.users', to: '/admin/users', permission: 'users.view' },
       { labelKey: 'adminNav.items.roles', to: '/admin/roles', permission: 'roles.view' },
-      { labelKey: 'adminNav.items.positions', to: '/admin/positions', permission: 'positions.view' },
       { labelKey: 'adminNav.items.auditLogs', to: '/admin/audit-logs', permission: 'audit-logs.view' },
       { labelKey: 'adminNav.items.languages', to: '/admin/languages', permission: 'base-data.manage-languages' },
       { labelKey: 'adminNav.items.lookupCategories', to: '/admin/lookup-categories', permission: 'base-data.view' },

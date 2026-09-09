@@ -3,7 +3,8 @@ import type { PaginatedQuery } from '@/composables/usePaginatedResource'
 import type { Position } from '@/services/positions'
 import type { LengthAwarePaginationMeta, PaginatedResult } from '@/types/api'
 
-export type StaffStatus = 'active' | 'inactive'
+/** Mirrors Staff::STATUSES_MANAGEABLE on the backend — sourced from the STAFF_STATUS base-data lookup category, see LookupSelect. */
+export type StaffStatus = 'active' | 'probation' | 'on_leave' | 'suspended' | 'resigned' | 'terminated' | 'retired'
 
 export interface Staff {
   id: number
@@ -39,7 +40,6 @@ export interface StaffInput {
   /** Omitted on update when the admin isn't replacing the photo. */
   photo?: File
   national_id_photo?: File
-  employee_code: string
   first_name: string
   last_name: string
   other_name: string
@@ -77,7 +77,6 @@ function toFormData(input: StaffInput, methodOverride?: 'PUT'): FormData {
   if (input.photo) form.append('photo', input.photo)
   if (input.national_id_photo) form.append('national_id_photo', input.national_id_photo)
 
-  form.append('employee_code', input.employee_code)
   form.append('first_name', input.first_name)
   form.append('last_name', input.last_name)
   if (input.other_name) form.append('other_name', input.other_name)
@@ -129,4 +128,8 @@ export const staffService = {
   update: (id: number, input: StaffInput) => apiPost<Staff>(`/staff/${id}`, toFormData(input, 'PUT')),
 
   remove: (id: number) => apiDelete(`/staff/${id}`),
+
+  /** The tracked HR path — records who/why/when alongside the status change, see StaffStatusHistoryEntry. */
+  changeStatus: (id: number, input: { status: StaffStatus; reason: string; requested_date: string; effective_date: string }) =>
+    apiPost<Staff>(`/staff/${id}/status`, input),
 }

@@ -5,12 +5,15 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\V1\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\V1\Admin\ChangeStaffStatusRequest;
 use App\Http\Requests\Api\V1\Admin\StoreStaffRequest;
 use App\Http\Requests\Api\V1\Admin\UpdateStaffRequest;
 use App\Http\Resources\StaffResource;
 use App\Http\Responses\ApiResponse;
 use App\Models\Position;
 use App\Models\Staff;
+use App\Models\StaffStatusHistory;
+use App\Services\Academic\StaffIdGenerator;
 use App\Services\Auth\UserProvisioningService;
 use App\Support\Audit\AuditAction;
 use App\Support\Audit\AuditLogger;
@@ -38,6 +41,7 @@ final class StaffController extends Controller
     public function __construct(
         private readonly TenantContext $context,
         private readonly UserProvisioningService $provisioning,
+        private readonly StaffIdGenerator $staffIdGenerator,
         private readonly AuditLogger $audit,
     ) {}
 
@@ -73,7 +77,10 @@ final class StaffController extends Controller
                 'phone' => $request->validated('phone'),
             ], $position->role);
 
-            $staff = Staff::query()->create($request->safe()->except(['photo', 'national_id_photo']));
+            $staff = Staff::query()->create([
+                ...$request->safe()->except(['photo', 'national_id_photo']),
+                'employee_code' => $this->staffIdGenerator->next($this->context->getOrFail()),
+            ]);
 
             // Excluded from Fillable (see the Staff class docblock) — set
             // via forceFill exactly like `user_id`, never through mass
@@ -172,6 +179,39 @@ final class StaffController extends Controller
         }
 
         return ApiResponse::success(new StaffResource($staff->fresh(['position.role', 'user'])));
+    }
+
+    /**
+     * The tracked HR path for a status change — every transition writes a
+     * StaffStatusHistory row (who, why, requested date, effective date)
+     * alongside the plain `status` column update. Coexists with the ordinary
+     * `status` field on update() (unrestricted quick edits still work), the
+     * same way Enrollment's own changeStatus() coexists with its plain
+     * status field — see EnrollmentService::changeStatus().
+     */
+    public function changeStatus(ChangeStaffStatusRequest $request, Staff $staff): JsonResponse
+    {
+        $staff = DB::connection('tenant')->transaction(function () use ($request, $staff) {
+            /** @var Staff $staff */
+            $staff = Staff::query()->whereKey($staff->getKey())->lockForUpdate()->firstOrFail();
+
+            StaffStatusHistory::query()->create([
+                'staff_id' => $staff->getKey(),
+                'from_status' => $staff->status,
+                'to_status' => $request->validated('status'),
+                'reason' => $request->validated('reason'),
+                'requested_date' => $request->validated('requested_date'),
+                'effective_date' => $request->validated('effective_date'),
+                'changed_by' => $request->user()->getKey(),
+            ]);
+
+            $staff->auditReason = $request->validated('reason');
+            $staff->update(['status' => $request->validated('status')]);
+
+            return $staff;
+        });
+
+        return ApiResponse::success(new StaffResource($staff->load(['position.role', 'user'])));
     }
 
     /**

@@ -26,7 +26,6 @@ class StaffControllerTest extends TestCase
         $position = Position::factory()->create(['name' => 'Accountant', 'role_id' => $accountantRole->id]);
 
         $response = $this->postJson('/api/v1/staff', [
-            'employee_code' => 'S-0001',
             'first_name' => 'John',
             'last_name' => 'Smith',
             'phone' => '012345678',
@@ -35,13 +34,14 @@ class StaffControllerTest extends TestCase
 
         $response->assertCreated();
         $response->assertJsonPath('data.full_name', 'John Smith');
+        $response->assertJsonPath('data.employee_code', 'NTSS-0001');
         $response->assertJsonPath('data.position.name', 'Accountant');
         // Default password is the phone number itself — see
         // UserProvisioningService — since there's no email/SMS channel to
         // deliver a random generated one through.
         $response->assertJsonPath('meta.temporary_password', '012345678');
 
-        $staff = Staff::where('employee_code', 'S-0001')->firstOrFail();
+        $staff = Staff::where('employee_code', 'NTSS-0001')->firstOrFail();
         $this->assertNotNull($staff->user_id);
         $this->assertTrue($staff->user->hasRole($accountantRole->slug));
         $this->assertTrue(Hash::check('012345678', $staff->user->password));
@@ -54,7 +54,6 @@ class StaffControllerTest extends TestCase
         $position = Position::factory()->create(['name' => 'Teaching Assistant', 'role_id' => $teacherRole->id]);
 
         $response = $this->postJson('/api/v1/staff', [
-            'employee_code' => 'S-0002',
             'first_name' => 'Jane',
             'last_name' => 'Doe',
             'phone' => '098765432',
@@ -63,7 +62,7 @@ class StaffControllerTest extends TestCase
 
         $response->assertCreated();
 
-        $staff = Staff::where('employee_code', 'S-0002')->firstOrFail();
+        $staff = Staff::where('employee_code', 'NTSS-0001')->firstOrFail();
         $this->assertTrue($staff->user->hasRole('teacher'));
     }
 
@@ -81,7 +80,6 @@ class StaffControllerTest extends TestCase
         $position = Position::factory()->create(['name' => 'Front Desk', 'role_id' => $staffRole->id]);
 
         $response = $this->postJson('/api/v1/staff', [
-            'employee_code' => 'S-0003',
             'first_name' => 'Attacker',
             'last_name' => 'Test',
             'phone' => '011112222',
@@ -92,7 +90,7 @@ class StaffControllerTest extends TestCase
 
         $response->assertCreated();
 
-        $staff = Staff::where('employee_code', 'S-0003')->firstOrFail();
+        $staff = Staff::where('employee_code', 'NTSS-0001')->firstOrFail();
         $this->assertTrue($staff->user->hasRole('staff'));
         $this->assertFalse($staff->user->hasRole($adminRole->slug));
     }
@@ -109,7 +107,6 @@ class StaffControllerTest extends TestCase
 
         try {
             $this->postJson('/api/v1/staff', [
-                'employee_code' => 'S-0004',
                 'first_name' => 'Should',
                 'last_name' => 'Not Exist',
                 'phone' => '010101010',
@@ -120,7 +117,7 @@ class StaffControllerTest extends TestCase
             // what matters here is what got persisted, not the HTTP response.
         }
 
-        $this->assertDatabaseMissing('staff', ['employee_code' => 'S-0004'], 'tenant');
+        $this->assertSame(0, Staff::query()->count());
         $this->assertDatabaseMissing('users', ['name' => 'Should Not Exist']);
     }
 
@@ -133,14 +130,13 @@ class StaffControllerTest extends TestCase
         $hrPosition = Position::factory()->create(['role_id' => $hrRole->id]);
 
         $created = $this->postJson('/api/v1/staff', [
-            'employee_code' => 'S-0005',
             'first_name' => 'Mo',
             'last_name' => 'Ver',
             'phone' => '019999999',
             'position_id' => $accountantPosition->id,
         ])->assertCreated();
 
-        $staff = Staff::where('employee_code', 'S-0005')->firstOrFail();
+        $staff = Staff::query()->findOrFail($created->json('data.id'));
         $extraRole = Role::factory()->forTenant($this->tenant)->create(['name' => 'Extra']);
         $staff->user->attachRoles($extraRole);
 
@@ -158,15 +154,14 @@ class StaffControllerTest extends TestCase
         $role = Role::factory()->forTenant($this->tenant)->create();
         $position = Position::factory()->create(['role_id' => $role->id]);
 
-        $this->postJson('/api/v1/staff', [
-            'employee_code' => 'S-0006',
+        $created = $this->postJson('/api/v1/staff', [
             'first_name' => 'Kept',
             'last_name' => 'User',
             'phone' => '017777777',
             'position_id' => $position->id,
         ])->assertCreated();
 
-        $staff = Staff::where('employee_code', 'S-0006')->firstOrFail();
+        $staff = Staff::query()->findOrFail($created->json('data.id'));
         $userId = $staff->user_id;
 
         $this->deleteJson("/api/v1/staff/{$staff->id}")->assertNoContent();

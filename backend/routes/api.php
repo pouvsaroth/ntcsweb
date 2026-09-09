@@ -62,6 +62,7 @@ use App\Http\Controllers\Api\V1\Admin\RoleController;
 use App\Http\Controllers\Api\V1\Admin\SchoolClassController;
 use App\Http\Controllers\Api\V1\Admin\SchoolSettingsController;
 use App\Http\Controllers\Api\V1\Admin\StaffController;
+use App\Http\Controllers\Api\V1\Admin\StaffStatusHistoryController;
 use App\Http\Controllers\Api\V1\Admin\StudentController;
 use App\Http\Controllers\Api\V1\Admin\StudentFeedbackController;
 use App\Http\Controllers\Api\V1\Admin\StudentImportController;
@@ -314,6 +315,13 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         // StaffController::store()/update() for how the three tie together.
         Route::apiResource('positions', PositionController::class);
         Route::apiResource('staff', StaffController::class);
+        Route::post('staff/{staff}/status', [StaffController::class, 'changeStatus'])->name('staff.status.update');
+
+        // Read-only, cross-staff — see StaffStatusHistoryController's
+        // docblock for why there is deliberately no store/update/destroy
+        // route here.
+        Route::get('staff-status-histories', [StaffStatusHistoryController::class, 'index'])->name('staff-status-histories.index');
+
         Route::apiResource('roles', RoleController::class)->except(['show']);
 
         // index/store only for now: editing/removing an existing account is a

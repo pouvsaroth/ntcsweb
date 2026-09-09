@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Admin\UpdateGeneralSettingsRequest;
 use App\Http\Responses\ApiResponse;
 use App\Models\Tenant;
+use App\Services\Academic\StaffIdGenerator;
 use App\Services\Academic\StudentIdGenerator;
 use App\Services\Billing\BillingNumberGenerator;
 use App\Support\Tenancy\TenantContext;
@@ -17,14 +18,15 @@ use Illuminate\Http\JsonResponse;
  * A singleton, not a REST resource — same shape as AboutPageController, for
  * the same reason: there is exactly one settings blob per school, stored in
  * `tenants.settings` (see Tenant::setting()). Owns `student_id_prefix`,
- * `invoice_prefix`, and `receipt_prefix` — every scalar a school can tune
- * lands here rather than each growing its own endpoint.
+ * `staff_id_prefix`, `invoice_prefix`, and `receipt_prefix` — every scalar a
+ * school can tune lands here rather than each growing its own endpoint.
  */
 final class GeneralSettingsController extends Controller
 {
     public function __construct(
         private readonly TenantContext $context,
         private readonly StudentIdGenerator $studentIdGenerator,
+        private readonly StaffIdGenerator $staffIdGenerator,
         private readonly BillingNumberGenerator $billingNumbers,
     ) {}
 
@@ -52,6 +54,7 @@ final class GeneralSettingsController extends Controller
             'settings' => array_filter([
                 ...($tenant->settings ?? []),
                 'student_id_prefix' => $request->validated('student_id_prefix') ?? $tenant->setting('student_id_prefix'),
+                'staff_id_prefix' => $request->validated('staff_id_prefix') ?? $tenant->setting('staff_id_prefix'),
                 'invoice_prefix' => $request->validated('invoice_prefix') ?? $tenant->setting('invoice_prefix'),
                 'receipt_prefix' => $request->validated('receipt_prefix') ?? $tenant->setting('receipt_prefix'),
             ], static fn ($value) => $value !== null),
@@ -64,6 +67,7 @@ final class GeneralSettingsController extends Controller
     {
         return [
             'student_id_prefix' => $this->studentIdGenerator->prefixFor($tenant),
+            'staff_id_prefix' => $this->staffIdGenerator->prefixFor($tenant),
             'invoice_prefix' => $this->billingNumbers->invoicePrefixFor($tenant),
             'receipt_prefix' => $this->billingNumbers->receiptPrefixFor($tenant),
         ];

@@ -21,6 +21,7 @@ class GeneralSettingsControllerTest extends TestCase
 
         $response->assertOk();
         $response->assertJsonPath('data.student_id_prefix', 'NTS');
+        $response->assertJsonPath('data.staff_id_prefix', 'NTSS');
     }
 
     public function test_it_updates_the_prefix(): void
