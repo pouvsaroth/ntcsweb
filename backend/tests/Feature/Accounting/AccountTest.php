@@ -33,7 +33,7 @@ class AccountTest extends TestCase
     public function test_an_account_can_have_a_parent(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::ACCOUNTS_CREATE]);
-        $parent = Account::factory()->forTenant($this->tenant)->type(AccountType::EXPENSE)->create(['code' => '5000']);
+        $parent = Account::factory()->type(AccountType::EXPENSE)->create(['code' => '5000']);
 
         $response = $this->postJson('/api/v1/accounts', [
             'code' => '5100',
@@ -49,7 +49,7 @@ class AccountTest extends TestCase
     public function test_an_account_code_must_be_unique_within_the_tenant(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::ACCOUNTS_CREATE]);
-        Account::factory()->forTenant($this->tenant)->create(['code' => '5300']);
+        Account::factory()->create(['code' => '5300']);
 
         $this->postJson('/api/v1/accounts', ['code' => '5300', 'name' => 'Dup', 'type' => AccountType::EXPENSE])
             ->assertUnprocessable();
@@ -58,13 +58,13 @@ class AccountTest extends TestCase
     public function test_deactivating_an_account_does_not_delete_it(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::ACCOUNTS_CREATE, Permissions::ACCOUNTS_DEACTIVATE]);
-        $account = Account::factory()->forTenant($this->tenant)->create();
+        $account = Account::factory()->create();
 
         $response = $this->postJson("/api/v1/accounts/{$account->id}/deactivate");
         $response->assertOk();
         $response->assertJsonPath('data.is_active', false);
 
-        $this->assertDatabaseHas('accounts', ['id' => $account->id, 'is_active' => false]);
+        $this->assertDatabaseHas('accounts', ['id' => $account->id, 'is_active' => false], connection: 'tenant');
     }
 
     public function test_creating_an_account_requires_the_accounts_create_permission(): void

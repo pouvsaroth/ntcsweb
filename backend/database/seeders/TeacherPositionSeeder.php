@@ -9,6 +9,7 @@ use App\Models\Role;
 use App\Models\Tenant;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Database\Seeder;
+use Stancl\Tenancy\Database\DatabaseManager;
 
 /**
  * Idempotent, like RolePermissionSeeder — safe to run on every deploy. A
@@ -31,21 +32,39 @@ class TeacherPositionSeeder extends Seeder
 
     private function ensureTeacherPosition(Tenant $tenant): void
     {
-        app(TenantContext::class)->runFor($tenant, function () use ($tenant) {
-            $teacherRole = Role::query()
-                ->withoutGlobalScopes()
-                ->where('tenant_id', $tenant->getKey())
-                ->where('slug', Role::TEACHER)
-                ->first();
+        // `positions` lives in the tenant database — runFor() only sets the
+        // logical TenantContext, it never points the `tenant` connection at
+        // this tenant's actual database. A seeder looping over every tenant
+        // is exactly the long-lived, multi-tenant process ResolveTenant's
+        // own docblock warns about, so that has to happen explicitly here —
+        // the same call ResolveTenant/ProcessStudentImport make. Skipped
+        // under the test runner for the same reason those skip it.
+        $tenantDatabases = app(DatabaseManager::class);
+        if (! app()->environment('testing')) {
+            $tenantDatabases->createTenantConnection($tenant);
+        }
 
-            if ($teacherRole === null) {
-                return;
+        try {
+            app(TenantContext::class)->runFor($tenant, function () use ($tenant) {
+                $teacherRole = Role::query()
+                    ->withoutGlobalScopes()
+                    ->where('tenant_id', $tenant->getKey())
+                    ->where('slug', Role::TEACHER)
+                    ->first();
+
+                if ($teacherRole === null) {
+                    return;
+                }
+
+                Position::query()->firstOrCreate(
+                    ['name' => 'Teacher'],
+                    ['role_id' => $teacherRole->getKey(), 'description' => 'Classroom teaching staff.'],
+                );
+            });
+        } finally {
+            if (! app()->environment('testing')) {
+                $tenantDatabases->purgeTenantConnection();
             }
-
-            Position::query()->firstOrCreate(
-                ['name' => 'Teacher'],
-                ['role_id' => $teacherRole->getKey(), 'description' => 'Classroom teaching staff.'],
-            );
-        });
+        }
     }
 }

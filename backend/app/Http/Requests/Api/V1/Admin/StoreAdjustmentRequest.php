@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Requests\Api\V1\Admin;
 
 use App\Support\Authorization\Permissions;
-use App\Support\Tenancy\TenantContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -24,8 +23,7 @@ class StoreAdjustmentRequest extends FormRequest
 
     public function rules(): array
     {
-        $tenantId = app(TenantContext::class)->idOrFail();
-        $inTenant = Rule::exists('accounts', 'id')->where('tenant_id', $tenantId)->where('is_active', true);
+        $inTenant = Rule::exists('tenant.accounts', 'id')->where('is_active', true);
 
         return [
             'debit_account_id' => ['required', 'different:credit_account_id', $inTenant],

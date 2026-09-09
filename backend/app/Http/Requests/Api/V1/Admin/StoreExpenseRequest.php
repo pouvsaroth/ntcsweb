@@ -8,7 +8,6 @@ use App\Models\Expense;
 use App\Support\Accounting\AccountType;
 use App\Support\Accounting\ExpenseStatus;
 use App\Support\Billing\PaymentMethod;
-use App\Support\Tenancy\TenantContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -22,13 +21,11 @@ class StoreExpenseRequest extends FormRequest
 
     public function rules(): array
     {
-        $tenantId = app(TenantContext::class)->idOrFail();
-
         return [
             'expense_date' => ['nullable', 'date'],
             'account_id' => [
                 'required',
-                Rule::exists('accounts', 'id')->where('tenant_id', $tenantId)->where('type', AccountType::EXPENSE)->where('is_active', true),
+                Rule::exists('tenant.accounts', 'id')->where('type', AccountType::EXPENSE)->where('is_active', true),
             ],
             'amount' => ['required', 'numeric', 'min:0.01', 'max:999999999.99'],
             'payment_method' => ['nullable', Rule::in(PaymentMethod::all())],

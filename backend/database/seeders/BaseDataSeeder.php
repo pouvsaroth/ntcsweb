@@ -11,6 +11,7 @@ use App\Models\LookupValueTranslation;
 use App\Models\Tenant;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Database\Seeder;
+use Stancl\Tenancy\Database\DatabaseManager;
 
 /**
  * Idempotent — safe to run on every deploy, the same way RolePermissionSeeder
@@ -35,50 +36,64 @@ class BaseDataSeeder extends Seeder
     }
 
     /**
-     * BelongsToTenant auto-stamps tenant_id from ambient context on create
-     * and scopes every read to it — runFor() is the documented way a
-     * console command enters a specific tenant safely, so `tenant_id` never
-     * needs to appear in a mass-assignment array here (mirrors
-     * ChartOfAccountsSeeder's own exact pattern).
+     * `lookup_categories`/`lookup_values`/`lookup_value_translations` live
+     * in the tenant database — runFor() only sets the logical TenantContext,
+     * it never points the `tenant` connection at this tenant's actual
+     * database. A seeder looping over every tenant is exactly the
+     * long-lived, multi-tenant process ResolveTenant's own docblock warns
+     * about, so that has to happen explicitly here — the same call
+     * ResolveTenant/ProcessStudentImport make. Skipped under the test
+     * runner for the same reason those skip it.
      *
      * @param  \Illuminate\Support\Collection<string, Language>  $languagesByCode
      */
     private function seedForTenant(Tenant $tenant, $languagesByCode): void
     {
-        app(TenantContext::class)->runFor($tenant, function () use ($languagesByCode) {
-            foreach ($this->categories() as $categoryCode => $categoryData) {
-                $category = LookupCategory::query()->firstOrCreate(
-                    ['code' => $categoryCode],
-                    [
-                        'name' => $categoryData['name'],
-                        'description' => $categoryData['description'] ?? null,
-                        'sort_order' => $categoryData['sort_order'] ?? 0,
-                    ],
-                );
+        $tenantDatabases = app(DatabaseManager::class);
+        if (! app()->environment('testing')) {
+            $tenantDatabases->createTenantConnection($tenant);
+        }
 
-                $sortOrder = 0;
-                foreach ($categoryData['values'] as $valueCode => $translations) {
-                    $value = LookupValue::query()->firstOrCreate(
-                        ['lookup_category_id' => $category->getKey(), 'code' => $valueCode],
-                        ['sort_order' => $sortOrder],
+        try {
+            app(TenantContext::class)->runFor($tenant, function () use ($languagesByCode) {
+                foreach ($this->categories() as $categoryCode => $categoryData) {
+                    $category = LookupCategory::query()->firstOrCreate(
+                        ['code' => $categoryCode],
+                        [
+                            'name' => $categoryData['name'],
+                            'description' => $categoryData['description'] ?? null,
+                            'sort_order' => $categoryData['sort_order'] ?? 0,
+                        ],
                     );
 
-                    foreach ($translations as $languageCode => $fields) {
-                        $language = $languagesByCode->get($languageCode);
-                        if ($language === null) {
-                            continue;
+                    $sortOrder = 0;
+                    foreach ($categoryData['values'] as $valueCode => $translations) {
+                        $value = LookupValue::query()->firstOrCreate(
+                            ['lookup_category_id' => $category->getKey(), 'code' => $valueCode],
+                            ['sort_order' => $sortOrder],
+                        );
+
+                        foreach ($translations as $languageCode => $fields) {
+                            $language = $languagesByCode->get($languageCode);
+                            if ($language === null) {
+                                continue;
+                            }
+
+                            LookupValueTranslation::query()->firstOrCreate(
+                                ['lookup_value_id' => $value->getKey(), 'language_id' => $language->getKey()],
+                                ['name' => $fields['name'], 'description' => $fields['description'] ?? null],
+                            );
                         }
 
-                        LookupValueTranslation::query()->firstOrCreate(
-                            ['lookup_value_id' => $value->getKey(), 'language_id' => $language->getKey()],
-                            ['name' => $fields['name'], 'description' => $fields['description'] ?? null],
-                        );
+                        $sortOrder++;
                     }
-
-                    $sortOrder++;
                 }
+            });
+        } finally {
+            if (! app()->environment('testing')) {
+                $tenantDatabases->purgeTenantConnection();
             }
-        });
+        }
     }
 
     /**

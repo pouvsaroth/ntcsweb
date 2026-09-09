@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Models\Concerns\Auditable;
-use App\Models\Concerns\BelongsToTenant;
 use App\Support\Accounting\AccountType;
 use App\Support\Audit\AuditAction;
 use Database\Factories\AccountFactory;
@@ -23,7 +22,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * field change a column-diff describes perfectly well, unlike a financial
  * event that needs a hand-written narrative.
  *
- * @property int $tenant_id
  * @property string $code
  * @property string $name
  * @property string $type
@@ -34,7 +32,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable(['code', 'name', 'type', 'parent_id', 'description', 'is_bank_or_cash', 'is_active'])]
 class Account extends Model
 {
-    use Auditable, BelongsToTenant, HasFactory;
+    use Auditable, HasFactory;
+
+    protected $connection = 'tenant';
 
     /** @use HasFactory<AccountFactory> */
     protected $attributes = [

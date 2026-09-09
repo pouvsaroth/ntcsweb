@@ -9,6 +9,7 @@ use App\Models\Tenant;
 use App\Support\Accounting\AccountType;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Database\Seeder;
+use Stancl\Tenancy\Database\DatabaseManager;
 
 /**
  * Idempotent — safe to run on every deploy, same convention as
@@ -62,42 +63,57 @@ class ChartOfAccountsSeeder extends Seeder
 
     private function seedForTenant(Tenant $tenant): void
     {
-        // BelongsToTenant auto-stamps tenant_id from ambient context on
-        // create and scopes every read to it — runFor() is the documented
-        // way a console command enters a specific tenant safely, so
-        // `tenant_id` never needs to appear in a mass-assignment array here.
-        app(TenantContext::class)->runFor($tenant, function () use ($tenant) {
-            $ids = [];
+        // `accounts` lives in the tenant database — runFor() only sets the
+        // logical TenantContext (for BelongsToTenant-style scoping), it
+        // never points the `tenant` connection at this tenant's actual
+        // database. A seeder looping over every tenant is exactly the
+        // long-lived, multi-tenant process ResolveTenant's own docblock
+        // warns about, so that has to happen explicitly here — the same
+        // call ResolveTenant/ProcessStudentImport make. Skipped under the
+        // test runner for the same reason those skip it.
+        $tenantDatabases = app(DatabaseManager::class);
+        if (! app()->environment('testing')) {
+            $tenantDatabases->createTenantConnection($tenant);
+        }
 
-            foreach (self::TREE as $row) {
-                $account = Account::query()->firstOrCreate(
-                    ['code' => $row['code']],
-                    [
-                        'name' => $row['name'],
-                        'type' => $row['type'],
-                        'parent_id' => $row['parent'] !== null ? ($ids[$row['parent']] ?? null) : null,
-                        'is_bank_or_cash' => $row['bank'] ?? false,
+        try {
+            app(TenantContext::class)->runFor($tenant, function () use ($tenant) {
+                $ids = [];
+
+                foreach (self::TREE as $row) {
+                    $account = Account::query()->firstOrCreate(
+                        ['code' => $row['code']],
+                        [
+                            'name' => $row['name'],
+                            'type' => $row['type'],
+                            'parent_id' => $row['parent'] !== null ? ($ids[$row['parent']] ?? null) : null,
+                            'is_bank_or_cash' => $row['bank'] ?? false,
+                        ],
+                    );
+
+                    $ids[$row['code']] = $account->getKey();
+                }
+
+                if ($tenant->setting('accounting.default_cash_account_id') !== null) {
+                    return;
+                }
+
+                $tenant->update([
+                    'settings' => [
+                        ...($tenant->settings ?? []),
+                        'accounting' => [
+                            'default_cash_account_id' => $ids['1100'],
+                            'default_revenue_account_id' => $ids['4900'],
+                            'default_expense_payment_account_id' => $ids['1100'],
+                            'payment_method_accounts' => [],
+                        ],
                     ],
-                );
-
-                $ids[$row['code']] = $account->getKey();
+                ]);
+            });
+        } finally {
+            if (! app()->environment('testing')) {
+                $tenantDatabases->purgeTenantConnection();
             }
-
-            if ($tenant->setting('accounting.default_cash_account_id') !== null) {
-                return;
-            }
-
-            $tenant->update([
-                'settings' => [
-                    ...($tenant->settings ?? []),
-                    'accounting' => [
-                        'default_cash_account_id' => $ids['1100'],
-                        'default_revenue_account_id' => $ids['4900'],
-                        'default_expense_payment_account_id' => $ids['1100'],
-                        'payment_method_accounts' => [],
-                    ],
-                ],
-            ]);
-        });
+        }
     }
 }

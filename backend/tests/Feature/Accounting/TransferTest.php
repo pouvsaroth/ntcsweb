@@ -21,7 +21,7 @@ class TransferTest extends TestCase
     {
         $this->actingAsAdminWithPermissions([Permissions::TRANSACTIONS_CREATE]);
         $this->setUpChartOfAccounts();
-        $bank = Account::factory()->forTenant($this->tenant)->bankOrCash()->create(['code' => '1200', 'name' => 'Bank']);
+        $bank = Account::factory()->bankOrCash()->create(['code' => '1200', 'name' => 'Bank']);
 
         // Seed the cash account with $500 via a manual adjustment isn't
         // needed — netDebit() works on any starting balance, including
@@ -43,7 +43,7 @@ class TransferTest extends TestCase
     {
         $this->actingAsAdminWithPermissions([Permissions::TRANSACTIONS_CREATE]);
         $this->setUpChartOfAccounts();
-        $bank = Account::factory()->forTenant($this->tenant)->bankOrCash()->create(['code' => '1200', 'name' => 'Bank']);
+        $bank = Account::factory()->bankOrCash()->create(['code' => '1200', 'name' => 'Bank']);
 
         $this->postJson('/api/v1/financial-transactions/transfer', [
             'from_account_id' => $this->cashAccount->id,
@@ -77,7 +77,7 @@ class TransferTest extends TestCase
     {
         $this->actingAsAdminWithPermissions([]);
         $this->setUpChartOfAccounts();
-        $bank = Account::factory()->forTenant($this->tenant)->bankOrCash()->create(['code' => '1200']);
+        $bank = Account::factory()->bankOrCash()->create(['code' => '1200']);
 
         $this->postJson('/api/v1/financial-transactions/transfer', [
             'from_account_id' => $this->cashAccount->id,

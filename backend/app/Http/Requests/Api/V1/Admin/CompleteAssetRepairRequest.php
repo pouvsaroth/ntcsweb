@@ -6,7 +6,6 @@ namespace App\Http\Requests\Api\V1\Admin;
 
 use App\Models\AssetRepair;
 use App\Support\Assets\AssetCondition;
-use App\Support\Tenancy\TenantContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -23,10 +22,8 @@ class CompleteAssetRepairRequest extends FormRequest
 
     public function rules(): array
     {
-        $tenantId = app(TenantContext::class)->idOrFail();
-
         return [
-            'expense_account_id' => ['required', Rule::exists('accounts', 'id')->where('tenant_id', $tenantId)],
+            'expense_account_id' => ['required', Rule::exists('tenant.accounts', 'id')],
             'repair_description' => ['nullable', 'string', 'max:2000'],
             'condition_after_repair' => ['nullable', Rule::in(AssetCondition::all())],
             'warranty_days' => ['nullable', 'integer', 'min:0'],

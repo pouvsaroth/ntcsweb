@@ -19,8 +19,7 @@ class UpdateAccountingSettingsRequest extends FormRequest
 
     public function rules(): array
     {
-        $tenantId = app(TenantContext::class)->idOrFail();
-        $inTenant = Rule::exists('accounts', 'id')->where('tenant_id', $tenantId);
+        $inTenant = Rule::exists('tenant.accounts', 'id');
 
         return [
             'default_cash_account_id' => ['sometimes', 'required', $inTenant],

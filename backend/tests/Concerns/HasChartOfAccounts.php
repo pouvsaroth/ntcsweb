@@ -32,12 +32,12 @@ trait HasChartOfAccounts
     /** @param array<string,mixed> $accountingSettings */
     protected function setUpChartOfAccounts(array $accountingSettings = []): void
     {
-        $this->cashAccount = Account::factory()->forTenant($this->tenant)->bankOrCash()->create(['code' => '1100', 'name' => 'Cash']);
-        $this->courseFeesAccount = Account::factory()->forTenant($this->tenant)->type(AccountType::REVENUE)->create(['code' => '4100', 'name' => 'Course Fees']);
-        $this->bookSalesAccount = Account::factory()->forTenant($this->tenant)->type(AccountType::REVENUE)->create(['code' => '4200', 'name' => 'Book Sales']);
-        $this->tshirtSalesAccount = Account::factory()->forTenant($this->tenant)->type(AccountType::REVENUE)->create(['code' => '4300', 'name' => 'T-Shirt Sales']);
-        $this->otherIncomeAccount = Account::factory()->forTenant($this->tenant)->type(AccountType::REVENUE)->create(['code' => '4900', 'name' => 'Other Income']);
-        $this->electricityAccount = Account::factory()->forTenant($this->tenant)->type(AccountType::EXPENSE)->create(['code' => '5300', 'name' => 'Electricity']);
+        $this->cashAccount = Account::factory()->bankOrCash()->create(['code' => '1100', 'name' => 'Cash']);
+        $this->courseFeesAccount = Account::factory()->type(AccountType::REVENUE)->create(['code' => '4100', 'name' => 'Course Fees']);
+        $this->bookSalesAccount = Account::factory()->type(AccountType::REVENUE)->create(['code' => '4200', 'name' => 'Book Sales']);
+        $this->tshirtSalesAccount = Account::factory()->type(AccountType::REVENUE)->create(['code' => '4300', 'name' => 'T-Shirt Sales']);
+        $this->otherIncomeAccount = Account::factory()->type(AccountType::REVENUE)->create(['code' => '4900', 'name' => 'Other Income']);
+        $this->electricityAccount = Account::factory()->type(AccountType::EXPENSE)->create(['code' => '5300', 'name' => 'Electricity']);
 
         $this->tenant->update([
             'settings' => [

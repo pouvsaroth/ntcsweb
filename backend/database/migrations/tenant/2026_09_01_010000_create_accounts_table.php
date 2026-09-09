@@ -25,7 +25,6 @@ return new class extends Migration
         Schema::create('accounts', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
             $table->string('code', 20);
             $table->string('name');
             $table->string('type', 20);
@@ -36,8 +35,8 @@ return new class extends Migration
 
             $table->timestamps();
 
-            $table->unique(['tenant_id', 'code']);
-            $table->index(['tenant_id', 'type', 'is_active']);
+            $table->unique('code');
+            $table->index(['type', 'is_active']);
         });
     }
 

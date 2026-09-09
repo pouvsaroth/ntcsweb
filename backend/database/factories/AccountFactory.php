@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Database\Factories;
 
 use App\Models\Account;
-use App\Models\Tenant;
 use App\Support\Accounting\AccountType;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -26,15 +25,6 @@ class AccountFactory extends Factory
             'is_bank_or_cash' => false,
             'is_active' => true,
         ];
-    }
-
-    public function forTenant(Tenant|int $tenant): static
-    {
-        return $this->afterMaking(function (Account $account) use ($tenant) {
-            $account->forceFill([
-                'tenant_id' => $tenant instanceof Tenant ? $tenant->getKey() : $tenant,
-            ]);
-        });
     }
 
     public function type(string $type): static
