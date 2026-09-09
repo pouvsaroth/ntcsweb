@@ -49,7 +49,7 @@ class StoreEnrollmentPackageRequest extends FormRequest
             // a re-enrollment would 422 even though the DB would accept it.
             'course_package_id' => [
                 'required',
-                Rule::exists('course_packages', 'id')->where('tenant_id', $tenantId),
+                Rule::exists('tenant.course_packages', 'id'),
                 Rule::unique('tenant.enrollments')->where(
                     fn ($query) => $query
                         ->where('student_id', $this->input('student_id'))

@@ -25,7 +25,7 @@ class BillingDashboardTest extends TestCase
             Permissions::INVOICES_CREATE, Permissions::PAYMENTS_CREATE, Permissions::BILLING_REPORTS_VIEW,
         ]);
         $student = Student::factory()->forTenant($this->tenant)->create();
-        $product = Product::factory()->forTenant($this->tenant)->create(['price' => 40]);
+        $product = Product::factory()->create(['price' => 40]);
 
         $invoiceId = $this->postJson('/api/v1/invoices', [
             'student_id' => $student->id,
@@ -55,7 +55,7 @@ class BillingDashboardTest extends TestCase
     {
         $this->actingAsAdminWithPermissions([Permissions::INVOICES_CREATE, Permissions::PAYMENTS_CREATE, Permissions::BILLING_REPORTS_VIEW]);
         $student = Student::factory()->forTenant($this->tenant)->create();
-        $product = Product::factory()->forTenant($this->tenant)->create(['price' => 100]);
+        $product = Product::factory()->create(['price' => 100]);
 
         $invoiceId = $this->postJson('/api/v1/invoices', [
             'student_id' => $student->id,

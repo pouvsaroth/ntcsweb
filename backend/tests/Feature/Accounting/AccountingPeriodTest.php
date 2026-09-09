@@ -28,7 +28,7 @@ class AccountingPeriodTest extends TestCase
         $lastMonth = now()->subMonthNoOverflow();
         $this->postJson('/api/v1/accounting/periods/close', ['period' => $lastMonth->format('Y-m')])->assertCreated();
 
-        $course = Product::factory()->forTenant($this->tenant)->create(['type' => ProductType::COURSE_FEE, 'price' => 100]);
+        $course = Product::factory()->create(['type' => ProductType::COURSE_FEE, 'price' => 100]);
         $student = Student::factory()->forTenant($this->tenant)->create();
         $invoiceId = $this->postJson('/api/v1/invoices', [
             'student_id' => $student->id,

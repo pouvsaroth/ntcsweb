@@ -29,9 +29,9 @@ class ReportsTest extends TestCase
         ]);
         $this->setUpChartOfAccounts();
 
-        $course = Product::factory()->forTenant($this->tenant)->create(['type' => ProductType::COURSE_FEE, 'price' => 100]);
-        $book = Product::factory()->forTenant($this->tenant)->create(['type' => ProductType::BOOK, 'price' => 15]);
-        $tshirt = Product::factory()->forTenant($this->tenant)->create(['type' => ProductType::T_SHIRT, 'price' => 10]);
+        $course = Product::factory()->create(['type' => ProductType::COURSE_FEE, 'price' => 100]);
+        $book = Product::factory()->create(['type' => ProductType::BOOK, 'price' => 15]);
+        $tshirt = Product::factory()->create(['type' => ProductType::T_SHIRT, 'price' => 10]);
         $student = Student::factory()->forTenant($this->tenant)->create();
 
         $invoiceId = $this->postJson('/api/v1/invoices', [
@@ -96,7 +96,7 @@ class ReportsTest extends TestCase
         ]);
         $this->setUpChartOfAccounts();
 
-        $course = Product::factory()->forTenant($this->tenant)->create(['type' => ProductType::COURSE_FEE, 'price' => 100]);
+        $course = Product::factory()->create(['type' => ProductType::COURSE_FEE, 'price' => 100]);
         $student = Student::factory()->forTenant($this->tenant)->create();
         $invoiceId = $this->postJson('/api/v1/invoices', [
             'student_id' => $student->id,

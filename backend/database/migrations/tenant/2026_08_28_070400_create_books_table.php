@@ -14,8 +14,6 @@ return new class extends Migration
         Schema::create('books', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
-
             $table->string('title');
             $table->string('author')->nullable();
             $table->string('isbn', 32)->nullable();
@@ -29,8 +27,8 @@ return new class extends Migration
             $table->softDeletes();
 
             // Search is the only real access pattern for a catalog table.
-            $table->index(['tenant_id', 'title']);
-            $table->index(['tenant_id', 'status']);
+            $table->index('title');
+            $table->index('status');
         });
     }
 

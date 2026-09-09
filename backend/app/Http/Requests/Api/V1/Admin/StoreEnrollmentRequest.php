@@ -36,7 +36,7 @@ class StoreEnrollmentRequest extends FormRequest
             // pinned via the closure — together that's the full triple.
             'book_id' => [
                 'required',
-                Rule::exists('books', 'id')->where('tenant_id', $tenantId),
+                Rule::exists('tenant.books', 'id'),
                 Rule::unique('tenant.enrollments')->where(
                     fn ($query) => $query
                         ->where('student_id', $this->input('student_id'))
@@ -74,7 +74,8 @@ class StoreEnrollmentRequest extends FormRequest
             // The book has to actually be on this class session's menu
             // (class_book) — enrolling a student in a book that isn't even
             // offered in that session would be silently meaningless data.
-            $onMenu = DB::table('class_book')
+            // `class_book` lives in the tenant database (see its migration).
+            $onMenu = DB::connection('tenant')->table('class_book')
                 ->where('class_id', $this->input('class_id'))
                 ->where('book_id', $this->input('book_id'))
                 ->exists();

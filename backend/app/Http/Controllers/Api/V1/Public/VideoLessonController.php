@@ -45,29 +45,41 @@ final class VideoLessonController extends Controller
             ? $user->student->enrollments()->active()->pluck('course_package_id')->all()
             : [];
 
-        $freeVideoIds = Video::query()->active()
-            ->whereHas('coursePackage', fn ($query) => $query->where('show_videos', true)->where('is_active', true))
-            ->with('coursePackage:id,name')
+        // `course_packages` lives in the tenant database while `videos` is
+        // still central, so a whereHas() across that boundary is one
+        // correlated subquery Postgres can't run — both directions below
+        // are resolved as separate queries and merged in PHP instead.
+        $eligiblePackages = CoursePackage::query()
+            ->where('show_videos', true)
+            ->active()
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
+        $videosByPackage = Video::query()->active()
+            ->whereIn('course_package_id', $eligiblePackages->pluck('id'))
+            ->orderBy('sort_order')->orderBy('id')
             ->get()
-            ->sortBy(fn (Video $video) => sprintf('%s|%05d|%05d', $video->coursePackage->name, $video->sort_order, $video->id))
+            ->groupBy('course_package_id');
+
+        $packages = $eligiblePackages->filter(
+            fn (CoursePackage $package) => ($videosByPackage[$package->id] ?? collect())->isNotEmpty()
+        );
+
+        $freeVideoIds = $packages
+            ->flatMap(fn (CoursePackage $package) => $videosByPackage[$package->id]->map(
+                fn (Video $video) => ['sort_key' => sprintf('%s|%05d|%05d', $package->name, $video->sort_order, $video->id), 'id' => $video->id]
+            ))
+            ->sortBy('sort_key')
             ->take(self::FREE_PREVIEW_COUNT)
             ->pluck('id');
 
-        $packages = CoursePackage::query()
-            ->where('show_videos', true)
-            ->active()
-            ->whereHas('videos', fn ($query) => $query->active())
-            ->with(['videos' => fn ($query) => $query->active()->orderBy('sort_order')->orderBy('id')])
-            ->orderBy('name')
-            ->get();
-
-        return ApiResponse::success($packages->map(function (CoursePackage $package) use ($isSchoolAdmin, $enrolledPackageIds, $freeVideoIds) {
+        return ApiResponse::success($packages->values()->map(function (CoursePackage $package) use ($isSchoolAdmin, $enrolledPackageIds, $freeVideoIds, $videosByPackage) {
             $courseUnlocked = $isSchoolAdmin || in_array($package->id, $enrolledPackageIds, true);
 
             return [
                 'id' => $package->id,
                 'name' => $package->name,
-                'videos' => $package->videos->map(function (Video $video) use ($courseUnlocked, $freeVideoIds) {
+                'videos' => $videosByPackage[$package->id]->map(function (Video $video) use ($courseUnlocked, $freeVideoIds) {
                     $unlocked = $courseUnlocked || $freeVideoIds->contains($video->id);
 
                     return [
@@ -78,8 +90,8 @@ final class VideoLessonController extends Controller
                         'is_locked' => ! $unlocked,
                         'embed_url' => $unlocked ? $video->embedUrl() : null,
                     ];
-                }),
+                })->values(),
             ];
-        }));
+        })->values());
     }
 }

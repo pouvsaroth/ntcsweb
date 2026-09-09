@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Models\Concerns\BelongsToTenant;
 use Database\Factories\BookFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -18,7 +17,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 /**
  * Tenant-owned. Each school manages its own textbook/material catalog.
  *
- * @property int $tenant_id
  * @property string $title
  * @property int|null $academic_program_id The one program this book belongs to -- drives which BookCategory rows make sense for it.
  * @property int|null $book_category_id What the book teaches within its program, e.g. "Office", "Design" -- see BookCategory.
@@ -27,7 +25,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 #[Fillable(['title', 'author', 'isbn', 'publisher', 'description', 'cover_image', 'academic_program_id', 'book_category_id', 'status'])]
 class Book extends Model
 {
-    use BelongsToTenant, HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes;
+
+    protected $connection = 'tenant';
 
     /** @use HasFactory<BookFactory> */
     public const STATUS_ACTIVE = 'active';
@@ -38,11 +38,6 @@ class Book extends Model
     protected $attributes = [
         'status' => self::STATUS_ACTIVE,
     ];
-
-    public function classes(): BelongsToMany
-    {
-        return $this->belongsToMany(SchoolClass::class, 'class_book', 'book_id', 'class_id');
-    }
 
     public function enrollments(): HasMany
     {

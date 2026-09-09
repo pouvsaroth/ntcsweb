@@ -49,7 +49,7 @@ class StoreStudentRegistrationRequest extends FormRequest
             'photo' => ['nullable', 'image', 'mimes:jpeg,png,webp,gif', 'max:10240'],
 
             'class_id' => ['required', Rule::exists('classes', 'id')->where('tenant_id', $tenantId)],
-            'course_package_id' => ['required', Rule::exists('course_packages', 'id')->where('tenant_id', $tenantId)],
+            'course_package_id' => ['required', Rule::exists('tenant.course_packages', 'id')],
             'fee_type' => ['required', Rule::in(['monthly', 'term', 'video', 'monthly_online', 'term_online'])],
 
             'payment_method' => ['required', Rule::in([PaymentMethod::CASH, PaymentMethod::QR])],

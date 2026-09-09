@@ -34,7 +34,7 @@ class ProductTest extends TestCase
     public function test_a_product_code_must_be_unique_within_the_tenant(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::PRODUCTS_CREATE]);
-        Product::factory()->forTenant($this->tenant)->create(['code' => 'DUP']);
+        Product::factory()->create(['code' => 'DUP']);
 
         $this->postJson('/api/v1/products', [
             'code' => 'DUP',
@@ -57,7 +57,7 @@ class ProductTest extends TestCase
     public function test_a_product_variant_can_override_its_products_price(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::PRODUCTS_CREATE, Permissions::PRODUCTS_UPDATE]);
-        $product = Product::factory()->forTenant($this->tenant)->create(['price' => 10]);
+        $product = Product::factory()->create(['price' => 10]);
 
         $response = $this->postJson("/api/v1/products/{$product->id}/variants", [
             'name' => 'Large',
@@ -73,7 +73,7 @@ class ProductTest extends TestCase
     {
         $this->actingAsAdminWithPermissions([Permissions::PRODUCTS_CREATE, Permissions::PRODUCTS_DELETE, Permissions::INVOICES_CREATE]);
         $student = \App\Models\Student::factory()->forTenant($this->tenant)->create();
-        $product = Product::factory()->forTenant($this->tenant)->create(['price' => 10]);
+        $product = Product::factory()->create(['price' => 10]);
 
         $this->postJson('/api/v1/invoices', [
             'student_id' => $student->id,

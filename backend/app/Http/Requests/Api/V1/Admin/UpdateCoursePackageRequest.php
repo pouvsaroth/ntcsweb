@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Requests\Api\V1\Admin;
 
 use App\Models\CoursePackage;
-use App\Support\Tenancy\TenantContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -22,12 +21,11 @@ class UpdateCoursePackageRequest extends FormRequest
 
     public function rules(): array
     {
-        $tenantId = app(TenantContext::class)->idOrFail();
         /** @var CoursePackage $coursePackage */
         $coursePackage = $this->route('course_package');
 
         return [
-            'code' => ['sometimes', 'required', 'string', 'max:32', Rule::unique('course_packages')->where('tenant_id', $tenantId)->ignore($coursePackage)],
+            'code' => ['sometimes', 'required', 'string', 'max:32', Rule::unique('tenant.course_packages', 'code')->ignore($coursePackage)],
             'name' => ['sometimes', 'required', 'string', 'max:255'],
             'academic_program_id' => ['sometimes', 'required', Rule::exists('tenant.academic_programs', 'id')],
             'description' => ['nullable', 'string', 'max:2000'],
@@ -44,7 +42,7 @@ class UpdateCoursePackageRequest extends FormRequest
             'show_in_popular' => ['sometimes', 'boolean'],
             'show_videos' => ['sometimes', 'boolean'],
             'book_ids' => ['sometimes', 'array', 'min:1'],
-            'book_ids.*' => [Rule::exists('books', 'id')->where('tenant_id', $tenantId)],
+            'book_ids.*' => [Rule::exists('tenant.books', 'id')],
         ];
     }
 

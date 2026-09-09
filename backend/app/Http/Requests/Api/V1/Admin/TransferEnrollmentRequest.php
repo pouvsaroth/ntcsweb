@@ -36,7 +36,7 @@ class TransferEnrollmentRequest extends FormRequest
             // *different* package means "change the course too," which
             // EnrollmentService::transferClass() refuses once anything has
             // been paid (see Enrollment::isPaid()).
-            'course_package_id' => ['nullable', Rule::exists('course_packages', 'id')->where('tenant_id', $tenantId)],
+            'course_package_id' => ['nullable', Rule::exists('tenant.course_packages', 'id')],
             'fee_type' => ['nullable', Rule::in(['monthly', 'term', 'video', 'monthly_online', 'term_online'])],
         ];
     }

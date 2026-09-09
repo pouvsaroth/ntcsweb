@@ -26,7 +26,6 @@ return new class extends Migration
     {
         Schema::create('course_packages', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
             $table->string('code', 32);
             $table->string('name');
             // No DB-level foreign key: `academic_programs` lives in each
@@ -42,9 +41,9 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            $table->unique(['tenant_id', 'code']);
-            $table->index(['tenant_id', 'academic_program_id']);
-            $table->index(['tenant_id', 'product_id']);
+            $table->unique('code');
+            $table->index('academic_program_id');
+            $table->index('product_id');
         });
     }
 

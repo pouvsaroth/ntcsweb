@@ -52,10 +52,10 @@ class UpdateSchoolClassRequest extends FormRequest
             'schedules.*.end_time' => ['required', 'date_format:H:i', 'after:schedules.*.start_time'],
 
             'book_ids' => ['sometimes', 'array'],
-            'book_ids.*' => [Rule::exists('books', 'id')->where('tenant_id', $tenantId)],
+            'book_ids.*' => [Rule::exists('tenant.books', 'id')],
 
             'course_package_ids' => ['sometimes', 'array'],
-            'course_package_ids.*' => [Rule::exists('course_packages', 'id')->where('tenant_id', $tenantId)],
+            'course_package_ids.*' => [Rule::exists('tenant.course_packages', 'id')],
         ];
     }
 }

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Requests\Api\V1\Admin;
 
 use App\Models\Video;
-use App\Support\Tenancy\TenantContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -21,10 +20,8 @@ class UpdateVideoRequest extends FormRequest
 
     public function rules(): array
     {
-        $tenantId = app(TenantContext::class)->idOrFail();
-
         return [
-            'course_package_id' => ['sometimes', 'required', Rule::exists('course_packages', 'id')->where('tenant_id', $tenantId)],
+            'course_package_id' => ['sometimes', 'required', Rule::exists('tenant.course_packages', 'id')],
             'title' => ['sometimes', 'required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
             'video_url' => ['sometimes', 'required', 'url', 'max:500', 'regex:/(?:youtube\.com|youtu\.be)/i'],

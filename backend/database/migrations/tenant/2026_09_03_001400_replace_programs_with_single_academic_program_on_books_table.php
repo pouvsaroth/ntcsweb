@@ -16,6 +16,13 @@ use Illuminate\Support\Facades\DB;
  * new write requires it (see StoreBookRequest) — a handful of existing books
  * predate this column and have no program to backfill from; the app layer,
  * not the schema, is what enforces "required" going forward.
+ *
+ * The `program_book` backfill below is guarded by hasTable(): this
+ * migration now runs against every fresh per-tenant database too (see
+ * database/migrations/tenant), and `program_book` was a central-only pivot
+ * that never existed there — a brand new tenant's `books` table is empty
+ * at this point in its migration history anyway, so there is nothing to
+ * backfill.
  */
 return new class extends Migration
 {
@@ -29,15 +36,17 @@ return new class extends Migration
             $table->unsignedBigInteger('academic_program_id')->nullable()->after('cover_image');
         });
 
-        DB::statement('
-            UPDATE books
-            SET academic_program_id = (
-                SELECT program_id FROM program_book
-                WHERE program_book.book_id = books.id
-                ORDER BY program_id
-                LIMIT 1
-            )
-        ');
+        if (Schema::hasTable('program_book')) {
+            DB::statement('
+                UPDATE books
+                SET academic_program_id = (
+                    SELECT program_id FROM program_book
+                    WHERE program_book.book_id = books.id
+                    ORDER BY program_id
+                    LIMIT 1
+                )
+            ');
+        }
 
         Schema::table('books', function (Blueprint $table) {
             $table->dropColumn('category');

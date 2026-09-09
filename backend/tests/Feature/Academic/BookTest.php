@@ -52,7 +52,7 @@ class BookTest extends TestCase
             ->assertJsonPath('data.book_category.id', $office->id);
 
         $this->deleteJson("/api/v1/books/{$book->id}")->assertNoContent();
-        $this->assertSoftDeleted('books', ['id' => $book->id]);
+        $this->assertSoftDeleted('books', ['id' => $book->id], connection: 'tenant');
     }
 
     /**

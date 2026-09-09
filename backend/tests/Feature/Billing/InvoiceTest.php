@@ -24,8 +24,8 @@ class InvoiceTest extends TestCase
     {
         $this->actingAsAdminWithPermissions([Permissions::INVOICES_CREATE, Permissions::INVOICES_VIEW]);
         $student = Student::factory()->forTenant($this->tenant)->create();
-        $book = Product::factory()->forTenant($this->tenant)->create(['price' => 10]);
-        $tshirt = Product::factory()->forTenant($this->tenant)->create(['price' => 8]);
+        $book = Product::factory()->create(['price' => 10]);
+        $tshirt = Product::factory()->create(['price' => 8]);
 
         $response = $this->postJson('/api/v1/invoices', [
             'student_id' => $student->id,
@@ -52,7 +52,7 @@ class InvoiceTest extends TestCase
     {
         $this->actingAsAdminWithPermissions([Permissions::INVOICES_CREATE]);
         $student = Student::factory()->forTenant($this->tenant)->create();
-        $product = Product::factory()->forTenant($this->tenant)->create(['price' => 10]);
+        $product = Product::factory()->create(['price' => 10]);
 
         $response = $this->postJson('/api/v1/invoices', [
             'student_id' => $student->id,
@@ -75,7 +75,7 @@ class InvoiceTest extends TestCase
     {
         $this->actingAsAdminWithPermissions([Permissions::INVOICES_CREATE, Permissions::INVOICES_VIEW]);
         $student = Student::factory()->forTenant($this->tenant)->create();
-        $product = Product::factory()->forTenant($this->tenant)->create(['price' => 50]);
+        $product = Product::factory()->create(['price' => 50]);
 
         $response = $this->postJson('/api/v1/invoices', [
             'student_id' => $student->id,
@@ -96,7 +96,7 @@ class InvoiceTest extends TestCase
     {
         $this->actingAsAdminWithPermissions([Permissions::INVOICES_CREATE]);
         $student = Student::factory()->forTenant($this->tenant)->create();
-        $product = Product::factory()->forTenant($this->tenant)->create(['price' => 10]);
+        $product = Product::factory()->create(['price' => 10]);
         $variant = $product->variants()->create(['name' => 'Large', 'price_override' => 15]);
 
         $response = $this->postJson('/api/v1/invoices', [
@@ -112,7 +112,7 @@ class InvoiceTest extends TestCase
     {
         $this->actingAsAdminWithPermissions([]);
         $student = Student::factory()->forTenant($this->tenant)->create();
-        $product = Product::factory()->forTenant($this->tenant)->create();
+        $product = Product::factory()->create();
 
         $this->postJson('/api/v1/invoices', [
             'student_id' => $student->id,
@@ -125,7 +125,7 @@ class InvoiceTest extends TestCase
         $this->actingAsAdminWithPermissions([Permissions::INVOICES_CREATE]);
         $owner = Student::factory()->forTenant($this->tenant)->create();
         $other = Student::factory()->forTenant($this->tenant)->create();
-        $product = Product::factory()->forTenant($this->tenant)->create(['price' => 10]);
+        $product = Product::factory()->create(['price' => 10]);
 
         $invoiceResponse = $this->postJson('/api/v1/invoices', [
             'student_id' => $owner->id,
@@ -154,7 +154,7 @@ class InvoiceTest extends TestCase
         $this->actingAsAdminWithPermissions([Permissions::INVOICES_CREATE]);
         $owner = Student::factory()->forTenant($this->tenant)->create();
         $other = Student::factory()->forTenant($this->tenant)->create();
-        $product = Product::factory()->forTenant($this->tenant)->create(['price' => 10]);
+        $product = Product::factory()->create(['price' => 10]);
 
         $this->postJson('/api/v1/invoices', ['student_id' => $owner->id, 'items' => [['product_id' => $product->id, 'quantity' => 1]]])->assertCreated();
         $this->postJson('/api/v1/invoices', ['student_id' => $other->id, 'items' => [['product_id' => $product->id, 'quantity' => 1]]])->assertCreated();
@@ -171,7 +171,7 @@ class InvoiceTest extends TestCase
     {
         $admin = $this->actingAsAdminWithPermissions([Permissions::INVOICES_CREATE, Permissions::INVOICES_CANCEL]);
         $student = Student::factory()->forTenant($this->tenant)->create();
-        $product = Product::factory()->forTenant($this->tenant)->create();
+        $product = Product::factory()->create();
 
         $invoiceId = $this->postJson('/api/v1/invoices', [
             'student_id' => $student->id,
@@ -202,7 +202,7 @@ class InvoiceTest extends TestCase
     {
         $this->actingAsAdminWithPermissions([Permissions::INVOICES_CREATE, Permissions::INVOICES_CANCEL, Permissions::PAYMENTS_CREATE]);
         $student = Student::factory()->forTenant($this->tenant)->create();
-        $product = Product::factory()->forTenant($this->tenant)->create(['price' => 10]);
+        $product = Product::factory()->create(['price' => 10]);
 
         $invoiceId = $this->postJson('/api/v1/invoices', [
             'student_id' => $student->id,

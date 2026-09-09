@@ -24,7 +24,7 @@ class PaymentTest extends TestCase
     private function invoiceOf(float $price): int
     {
         $student = Student::factory()->forTenant($this->tenant)->create();
-        $product = Product::factory()->forTenant($this->tenant)->create(['price' => $price]);
+        $product = Product::factory()->create(['price' => $price]);
 
         return $this->postJson('/api/v1/invoices', [
             'student_id' => $student->id,

@@ -23,7 +23,6 @@ return new class extends Migration
     {
         Schema::create('products', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
             $table->string('code', 32);
             $table->string('name');
             $table->text('description')->nullable();
@@ -33,9 +32,9 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            $table->unique(['tenant_id', 'code']);
-            $table->index(['tenant_id', 'is_active']);
-            $table->index(['tenant_id', 'type']);
+            $table->unique('code');
+            $table->index('is_active');
+            $table->index('type');
         });
     }
 

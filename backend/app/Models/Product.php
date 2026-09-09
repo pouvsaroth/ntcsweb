@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Models\Concerns\Auditable;
-use App\Models\Concerns\BelongsToTenant;
 use App\Support\Billing\ProductType;
 use Database\Factories\ProductFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -22,7 +21,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * sell. This is the one catalog every InvoiceItem points at; there is no
  * per-product-type table (see the invoice_items migration's docblock).
  *
- * @property int $tenant_id
  * @property string $code
  * @property string $name
  * @property string $type
@@ -33,7 +31,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Product extends Model
 {
     /** @use HasFactory<ProductFactory> */
-    use Auditable, BelongsToTenant, HasFactory, SoftDeletes;
+    use Auditable, HasFactory, SoftDeletes;
+
+    protected $connection = 'tenant';
 
     protected $attributes = [
         'type' => ProductType::OTHER,

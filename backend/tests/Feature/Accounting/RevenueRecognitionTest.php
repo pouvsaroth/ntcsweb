@@ -42,7 +42,7 @@ class RevenueRecognitionTest extends TestCase
         $this->actingAsAdminWithPermissions([Permissions::INVOICES_CREATE, Permissions::PAYMENTS_CREATE]);
         $this->setUpChartOfAccounts();
 
-        $course = Product::factory()->forTenant($this->tenant)->create(['type' => ProductType::COURSE_FEE, 'price' => 100]);
+        $course = Product::factory()->create(['type' => ProductType::COURSE_FEE, 'price' => 100]);
         $this->createInvoiceAndPay([['product_id' => $course->id, 'quantity' => 1]], 100);
 
         $this->assertSame(1, FinancialTransaction::where('type', TransactionType::INCOME)->count());
@@ -59,9 +59,9 @@ class RevenueRecognitionTest extends TestCase
         $this->actingAsAdminWithPermissions([Permissions::INVOICES_CREATE, Permissions::PAYMENTS_CREATE]);
         $this->setUpChartOfAccounts();
 
-        $course = Product::factory()->forTenant($this->tenant)->create(['type' => ProductType::COURSE_FEE, 'price' => 100]);
-        $book = Product::factory()->forTenant($this->tenant)->create(['type' => ProductType::BOOK, 'price' => 15]);
-        $tshirt = Product::factory()->forTenant($this->tenant)->create(['type' => ProductType::T_SHIRT, 'price' => 10]);
+        $course = Product::factory()->create(['type' => ProductType::COURSE_FEE, 'price' => 100]);
+        $book = Product::factory()->create(['type' => ProductType::BOOK, 'price' => 15]);
+        $tshirt = Product::factory()->create(['type' => ProductType::T_SHIRT, 'price' => 10]);
 
         $this->createInvoiceAndPay([
             ['product_id' => $course->id, 'quantity' => 1],
@@ -86,8 +86,8 @@ class RevenueRecognitionTest extends TestCase
         $this->actingAsAdminWithPermissions([Permissions::INVOICES_CREATE, Permissions::PAYMENTS_CREATE]);
         $this->setUpChartOfAccounts();
 
-        $course = Product::factory()->forTenant($this->tenant)->create(['type' => ProductType::COURSE_FEE, 'price' => 80]);
-        $book = Product::factory()->forTenant($this->tenant)->create(['type' => ProductType::BOOK, 'price' => 20]);
+        $course = Product::factory()->create(['type' => ProductType::COURSE_FEE, 'price' => 80]);
+        $book = Product::factory()->create(['type' => ProductType::BOOK, 'price' => 20]);
 
         $student = Student::factory()->forTenant($this->tenant)->create();
         $invoiceId = $this->postJson('/api/v1/invoices', [
@@ -111,7 +111,7 @@ class RevenueRecognitionTest extends TestCase
         $this->actingAsAdminWithPermissions([Permissions::INVOICES_CREATE, Permissions::PAYMENTS_CREATE]);
         $this->setUpChartOfAccounts();
 
-        $misc = Product::factory()->forTenant($this->tenant)->create(['type' => ProductType::OTHER, 'price' => 5]);
+        $misc = Product::factory()->create(['type' => ProductType::OTHER, 'price' => 5]);
         $this->createInvoiceAndPay([['product_id' => $misc->id, 'quantity' => 1]], 5);
 
         $transaction = FinancialTransaction::where('type', TransactionType::INCOME)->firstOrFail();
@@ -123,7 +123,7 @@ class RevenueRecognitionTest extends TestCase
         $this->actingAsAdminWithPermissions([Permissions::INVOICES_CREATE, Permissions::PAYMENTS_CREATE]);
         $this->setUpChartOfAccounts();
 
-        $course = Product::factory()->forTenant($this->tenant)->create([
+        $course = Product::factory()->create([
             'type' => ProductType::COURSE_FEE,
             'price' => 100,
             'revenue_account_id' => $this->bookSalesAccount->id,
@@ -139,7 +139,7 @@ class RevenueRecognitionTest extends TestCase
         $this->actingAsAdminWithPermissions([Permissions::INVOICES_CREATE, Permissions::PAYMENTS_CREATE]);
         $this->setUpChartOfAccounts();
 
-        $course = Product::factory()->forTenant($this->tenant)->create(['type' => ProductType::COURSE_FEE, 'price' => 100]);
+        $course = Product::factory()->create(['type' => ProductType::COURSE_FEE, 'price' => 100]);
         $student = Student::factory()->forTenant($this->tenant)->create();
 
         $invoiceId = $this->postJson('/api/v1/invoices', [
@@ -169,7 +169,7 @@ class RevenueRecognitionTest extends TestCase
         $this->actingAsAdminWithPermissions([Permissions::INVOICES_CREATE, Permissions::PAYMENTS_CREATE, Permissions::PAYMENTS_CANCEL]);
         $this->setUpChartOfAccounts();
 
-        $course = Product::factory()->forTenant($this->tenant)->create(['type' => ProductType::COURSE_FEE, 'price' => 100]);
+        $course = Product::factory()->create(['type' => ProductType::COURSE_FEE, 'price' => 100]);
         $invoiceId = $this->createInvoiceAndPay([['product_id' => $course->id, 'quantity' => 1]], 100);
 
         $paymentId = \App\Models\Payment::where('invoice_id', $invoiceId)->firstOrFail()->id;
@@ -189,7 +189,7 @@ class RevenueRecognitionTest extends TestCase
         $this->actingAsAdminWithPermissions([Permissions::INVOICES_CREATE, Permissions::PAYMENTS_CREATE]);
         $this->setUpChartOfAccounts();
 
-        $course = Product::factory()->forTenant($this->tenant)->create(['type' => ProductType::COURSE_FEE, 'price' => 100]);
+        $course = Product::factory()->create(['type' => ProductType::COURSE_FEE, 'price' => 100]);
         $student = Student::factory()->forTenant($this->tenant)->create();
         $this->postJson('/api/v1/invoices', [
             'student_id' => $student->id,
@@ -205,7 +205,7 @@ class RevenueRecognitionTest extends TestCase
         $this->actingAsAdminWithPermissions([Permissions::INVOICES_CREATE, Permissions::PAYMENTS_CREATE]);
         // Deliberately skip setUpChartOfAccounts() — no accounts, no settings.
 
-        $course = Product::factory()->forTenant($this->tenant)->create(['type' => ProductType::COURSE_FEE, 'price' => 100]);
+        $course = Product::factory()->create(['type' => ProductType::COURSE_FEE, 'price' => 100]);
         $this->createInvoiceAndPay([['product_id' => $course->id, 'quantity' => 1]], 100);
 
         $this->assertSame(0, FinancialTransaction::count());

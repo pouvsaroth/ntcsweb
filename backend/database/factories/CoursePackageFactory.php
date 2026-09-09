@@ -6,7 +6,6 @@ namespace Database\Factories;
 
 use App\Models\AcademicProgram;
 use App\Models\CoursePackage;
-use App\Models\Tenant;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -24,15 +23,6 @@ class CoursePackageFactory extends Factory
             'academic_program_id' => AcademicProgram::factory(),
             'price' => fake()->randomFloat(2, 10, 200),
         ];
-    }
-
-    public function forTenant(Tenant|int $tenant): static
-    {
-        return $this->afterMaking(function (CoursePackage $package) use ($tenant) {
-            $package->forceFill([
-                'tenant_id' => $tenant instanceof Tenant ? $tenant->getKey() : $tenant,
-            ]);
-        });
     }
 
     public function forProgram(AcademicProgram $program): static

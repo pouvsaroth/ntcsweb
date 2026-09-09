@@ -6,7 +6,6 @@ namespace App\Http\Requests\Api\V1\Admin;
 
 use App\Models\Product;
 use App\Support\Billing\ProductType;
-use App\Support\Tenancy\TenantContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -19,10 +18,8 @@ class StoreProductRequest extends FormRequest
 
     public function rules(): array
     {
-        $tenantId = app(TenantContext::class)->idOrFail();
-
         return [
-            'code' => ['required', 'string', 'max:32', Rule::unique('products')->where('tenant_id', $tenantId)],
+            'code' => ['required', 'string', 'max:32', Rule::unique('tenant.products', 'code')],
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
             'type' => ['sometimes', Rule::in(ProductType::all())],

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Models\Concerns\Auditable;
-use App\Models\Concerns\BelongsToTenant;
 use App\Support\Audit\AuditAction;
 use Database\Factories\CoursePackageFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -38,7 +37,9 @@ use Illuminate\Support\Facades\Storage;
 class CoursePackage extends Model
 {
     /** @use HasFactory<CoursePackageFactory> */
-    use Auditable, BelongsToTenant, HasFactory, SoftDeletes;
+    use Auditable, HasFactory, SoftDeletes;
+
+    protected $connection = 'tenant';
 
     public const CURRENCY_USD = 'USD';
 
@@ -98,11 +99,6 @@ class CoursePackage extends Model
         return $this->belongsToMany(Book::class, 'course_package_book', 'course_package_id', 'book_id')
             ->withPivot(['sort_order', 'is_required'])
             ->orderByPivot('sort_order');
-    }
-
-    public function classes(): BelongsToMany
-    {
-        return $this->belongsToMany(SchoolClass::class, 'class_course_package', 'course_package_id', 'class_id');
     }
 
     public function enrollments(): HasMany
