@@ -17,8 +17,6 @@ return new class extends Migration
         Schema::create('gallery_images', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
-
             // Storage-relative path (see Tenant::storagePath()), not a full
             // URL — GalleryImage::imageUrl() resolves it against the active
             // disk, so switching from local storage to S3/R2 later needs no
@@ -32,7 +30,7 @@ return new class extends Migration
             $table->softDeletes();
 
             // The public gallery query: this school's active photos, in order.
-            $table->index(['tenant_id', 'status', 'sort_order']);
+            $table->index(['status', 'sort_order']);
         });
     }
 

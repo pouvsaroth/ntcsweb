@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Models\Concerns\BelongsToTenant;
 use Database\Factories\GalleryImageFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -16,14 +15,15 @@ use Illuminate\Support\Facades\Storage;
 /**
  * Tenant-owned. One photo in the public site's Gallery page.
  *
- * @property int $tenant_id
  * @property string $image_path
  * @property string $status
  */
 #[Fillable(['image_path', 'caption', 'sort_order', 'status'])]
 class GalleryImage extends Model
 {
-    use BelongsToTenant, HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes;
+
+    protected $connection = 'tenant';
 
     /** @use HasFactory<GalleryImageFactory> */
     public const STATUS_ACTIVE = 'active';
