@@ -20,7 +20,6 @@ const { t } = useI18n()
 
 const form = reactive({
   enrolled_at: '',
-  fee: 0,
 })
 
 const errors = ref<Record<string, string[]>>({})
@@ -33,7 +32,6 @@ watch(
     if (!open || !enrollment) return
 
     form.enrolled_at = enrollment.enrolled_at
-    form.fee = enrollment.fee
     errors.value = {}
     generalError.value = null
   },
@@ -73,19 +71,10 @@ async function submit() {
       <BaseAlert v-if="generalError" variant="danger">{{ generalError }}</BaseAlert>
 
       <div class="rounded-lg bg-neutral-50 px-3 py-2 text-sm text-neutral-600">
-        {{ enrollment.student.full_name }} — {{ enrollment.class.name }} — {{ enrollment.book?.title ?? enrollment.course_package?.name ?? '—' }}
+        {{ enrollment.student.full_name }} — {{ enrollment.class.name }} — {{ enrollment.course_package?.name ?? '—' }}
       </div>
 
       <BaseInput v-model="form.enrolled_at" type="date" required :label="t('admin.enrollments.enrolledAt')" :error="errors.enrolled_at?.[0]" />
-      <BaseInput
-        :model-value="String(form.fee)"
-        type="number"
-        required
-        :label="t('admin.enrollments.fee')"
-        :hint="t('admin.enrollments.feeHint')"
-        :error="errors.fee?.[0]"
-        @update:model-value="form.fee = Number($event) || 0"
-      />
     </form>
 
     <template #footer>

@@ -30,8 +30,6 @@ export interface StudentRegistration {
     class: { id: number; name: string } | null
     course_package: { id: number; name: string } | null
     academic_program: { id: number; name: string } | null
-    fee: number
-    fee_type: string
   } | null
   invoice: {
     id: number

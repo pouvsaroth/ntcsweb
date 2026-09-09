@@ -37,7 +37,6 @@ class EnrollmentStatusTest extends TestCase
 
         $response->assertOk();
         $response->assertJsonPath('data.status', Enrollment::STATUS_EXAM_READY);
-        $response->assertJsonPath('data.status_reason', null);
     }
 
     public function test_abandoned_requires_a_reason_and_an_effective_date(): void
@@ -58,8 +57,10 @@ class EnrollmentStatusTest extends TestCase
 
         $response->assertOk();
         $response->assertJsonPath('data.status', Enrollment::STATUS_ABANDONED);
-        $response->assertJsonPath('data.status_reason', 'Moved abroad');
-        $response->assertJsonPath('data.status_effective_date', '2026-02-01');
+
+        $history = EnrollmentStatusHistory::where('enrollment_id', $enrollmentId)->firstOrFail();
+        $this->assertSame('Moved abroad', $history->reason);
+        $this->assertSame('2026-02-01', $history->effective_date->toDateString());
     }
 
     public function test_a_status_change_is_recorded_in_history(): void

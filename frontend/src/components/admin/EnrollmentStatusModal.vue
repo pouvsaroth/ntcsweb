@@ -52,8 +52,10 @@ watch(
     if (!open || !enrollment) return
 
     form.status = enrollment.status === 'dropped' ? 'active' : enrollment.status
-    form.reason = enrollment.status_reason ?? ''
-    form.effective_date = enrollment.status_effective_date ?? ''
+    // Blank on every open — a new status change is a fresh reason, not an
+    // edit of the last one (the full history is in the status-history modal).
+    form.reason = ''
+    form.effective_date = ''
     errors.value = {}
     generalError.value = null
   },
@@ -93,7 +95,7 @@ async function submit() {
       <BaseAlert v-if="generalError" variant="danger">{{ generalError }}</BaseAlert>
 
       <div class="rounded-lg bg-neutral-50 px-3 py-2 text-sm text-neutral-600">
-        {{ enrollment.student.full_name }} — {{ enrollment.class.name }} — {{ enrollment.course_package?.name ?? enrollment.book?.title ?? '—' }}
+        {{ enrollment.student.full_name }} — {{ enrollment.class.name }} — {{ enrollment.course_package?.name ?? '—' }}
       </div>
 
       <BaseSelect v-model="form.status" :options="statusOptions" :label="t('admin.enrollments.status')" :error="errors.status?.[0]" />

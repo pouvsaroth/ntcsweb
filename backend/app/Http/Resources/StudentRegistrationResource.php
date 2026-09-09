@@ -43,8 +43,6 @@ class StudentRegistrationResource extends JsonResource
                 'class' => $enrollment->schoolClass === null ? null : ['id' => $enrollment->schoolClass->id, 'name' => $enrollment->schoolClass->name],
                 'course_package' => $enrollment->coursePackage === null ? null : ['id' => $enrollment->coursePackage->id, 'name' => $enrollment->coursePackage->name],
                 'academic_program' => $enrollment->academicProgram === null ? null : ['id' => $enrollment->academicProgram->id, 'name' => $enrollment->academicProgram->name],
-                'fee' => (float) $enrollment->fee,
-                'fee_type' => $enrollment->fee_type,
             ],
             'invoice' => $invoice === null ? null : [
                 'id' => $invoice->id,

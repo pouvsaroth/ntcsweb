@@ -102,7 +102,9 @@ watch(
     form.class_id = enrollment.class.id
     form.course_package_id = enrollment.course_package_id
     form.table_id = enrollment.table_id
-    form.fee_type = enrollment.fee_type
+    // Blank — this only applies when the admin picks a *different* course
+    // below, at which point they must choose a fee type for it explicitly.
+    form.fee_type = null
     tables.value = null
     errors.value = {}
     generalError.value = null
@@ -154,7 +156,7 @@ async function submit() {
       <BaseAlert v-if="enrollment.is_paid" variant="warning">{{ t('admin.enrollments.coursePaidHint') }}</BaseAlert>
 
       <div class="rounded-lg bg-neutral-50 px-3 py-2 text-sm text-neutral-600">
-        {{ enrollment.student.full_name }} — {{ enrollment.class.name }} — {{ enrollment.course_package?.name ?? enrollment.book?.title ?? '—' }}
+        {{ enrollment.student.full_name }} — {{ enrollment.class.name }} — {{ enrollment.course_package?.name ?? '—' }}
       </div>
 
       <BaseSelect

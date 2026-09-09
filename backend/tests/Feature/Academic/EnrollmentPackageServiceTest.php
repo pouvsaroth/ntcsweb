@@ -47,8 +47,6 @@ class EnrollmentPackageServiceTest extends TestCase
         $response->assertJsonPath('data.class.id', $this->computerEveningClass->id);
         $response->assertJsonPath('data.course_package_id', $this->msWordPackage->id);
         $response->assertJsonPath('data.academic_program_id', $this->computerProgram->id);
-        $response->assertJsonPath('data.fee', 24);
-        $response->assertJsonPath('data.fee_type', 'term');
 
         $this->assertSame(1, Enrollment::count());
         $this->assertSame(1, Invoice::count());
@@ -152,8 +150,6 @@ class EnrollmentPackageServiceTest extends TestCase
         ]);
 
         $response->assertCreated();
-        $response->assertJsonPath('data.fee', 20);
-        $response->assertJsonPath('data.fee_type', 'monthly');
         $this->assertSame('20.00', (string) Invoice::firstOrFail()->total);
     }
 

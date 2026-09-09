@@ -8,6 +8,7 @@ use App\Models\CoursePackage;
 use App\Models\Enrollment;
 use App\Models\EnrollmentStatusHistory;
 use App\Models\SchoolClass;
+use App\Models\Student;
 use App\Models\User;
 use App\Services\Billing\InvoiceService;
 use App\Services\Billing\PaymentService;
@@ -25,10 +26,6 @@ use Illuminate\Validation\ValidationException;
  * (already a first-class column on that model) point back at the
  * Enrollment, which is all AcademicReportService needs to answer "why was
  * this student charged $X?".
- *
- * The legacy book-based path (EnrollmentController::store()) is completely
- * untouched and keeps working exactly as before — both paths coexist on the
- * same `enrollments` table.
  *
  * The fee is server-computed from the package's `fee_type` tier
  * (monthly/term/video/monthly_online/term_online) at the moment of
@@ -53,7 +50,7 @@ final class EnrollmentService
      */
     public function enrollInPackage(array $data, User $actor): Enrollment
     {
-        return DB::transaction(function () use ($data, $actor) {
+        return DB::connection('tenant')->transaction(function () use ($data, $actor) {
             /** @var SchoolClass $class */
             $class = SchoolClass::query()->with('academicProgram')->findOrFail($data['class_id']);
             /** @var CoursePackage $package */
@@ -72,8 +69,7 @@ final class EnrollmentService
                 'course_package_id' => $package->getKey(),
                 'academic_program_id' => $class->academic_program_id,
                 'enrolled_at' => $data['enrolled_at'] ?? now()->toDateString(),
-                'fee' => $fee,
-                'fee_type' => $feeType,
+                'enrollments_code' => $this->generateEnrollmentCode($data['student_id']),
                 'status' => Enrollment::STATUS_ACTIVE,
             ]);
 
@@ -100,7 +96,7 @@ final class EnrollmentService
                 $invoice->refresh();
             }
 
-            $enrollment->load(['student', 'schoolClass', 'table', 'coursePackage', 'academicProgram', 'studyMode']);
+            $enrollment->load(['student', 'schoolClass', 'table', 'coursePackage', 'academicProgram']);
 
             // Transient — never persisted, just carried through to
             // EnrollmentResource so the admin UI can offer "Save and Print"
@@ -111,8 +107,8 @@ final class EnrollmentService
                 AuditAction::ENROLLMENT_INVOICED,
                 'Enrollments',
                 $enrollment,
-                new: ['invoice_id' => $invoice->getKey(), 'invoice_number' => $invoice->invoice_number, 'fee' => (float) $enrollment->fee],
-                description: "Enrolled {$enrollment->student->auditDisplayName()} in {$class->name} — {$package->name} (\${$enrollment->fee}), invoice {$invoice->invoice_number}",
+                new: ['invoice_id' => $invoice->getKey(), 'invoice_number' => $invoice->invoice_number, 'fee' => $fee],
+                description: "Enrolled {$enrollment->student->auditDisplayName()} in {$class->name} — {$package->name} (\${$fee}), invoice {$invoice->invoice_number}",
                 actor: $actor,
             );
 
@@ -130,7 +126,7 @@ final class EnrollmentService
      */
     public function changeStatus(Enrollment $enrollment, string $status, ?string $reason, ?string $effectiveDate, User $actor): Enrollment
     {
-        return DB::transaction(function () use ($enrollment, $status, $reason, $effectiveDate, $actor) {
+        return DB::connection('tenant')->transaction(function () use ($enrollment, $status, $reason, $effectiveDate, $actor) {
             /** @var Enrollment $enrollment */
             $enrollment = Enrollment::query()->whereKey($enrollment->getKey())->lockForUpdate()->firstOrFail();
 
@@ -148,11 +144,7 @@ final class EnrollmentService
             ]);
 
             $enrollment->auditReason = $reason;
-            $enrollment->update([
-                'status' => $status,
-                'status_reason' => $reason,
-                'status_effective_date' => $effectiveDate,
-            ]);
+            $enrollment->update(['status' => $status]);
 
             return $enrollment;
         });
@@ -160,7 +152,7 @@ final class EnrollmentService
 
     public function cancel(Enrollment $enrollment, string $reason, User $actor): Enrollment
     {
-        return DB::transaction(function () use ($enrollment, $reason) {
+        return DB::connection('tenant')->transaction(function () use ($enrollment, $reason) {
             /** @var Enrollment $enrollment */
             $enrollment = Enrollment::query()->whereKey($enrollment->getKey())->lockForUpdate()->firstOrFail();
 
@@ -199,7 +191,7 @@ final class EnrollmentService
         ?CoursePackage $newPackage = null,
         ?string $feeType = null,
     ): Enrollment {
-        return DB::transaction(function () use ($enrollment, $newClass, $tableId, $newPackage, $feeType) {
+        return DB::connection('tenant')->transaction(function () use ($enrollment, $newClass, $tableId, $newPackage, $feeType) {
             /** @var Enrollment $enrollment */
             $enrollment = Enrollment::query()->whereKey($enrollment->getKey())->lockForUpdate()->firstOrFail();
 
@@ -218,11 +210,10 @@ final class EnrollmentService
                     throw ValidationException::withMessages(['class_id' => "The target class does not belong to the selected course's program."]);
                 }
 
-                $resolvedFeeType = $feeType ?? $enrollment->fee_type ?? 'monthly';
+                $resolvedFeeType = $feeType ?? 'monthly';
                 $feeColumn = 'fee_'.$resolvedFeeType;
-                $fee = $newPackage->{$feeColumn};
 
-                if ($fee === null) {
+                if ($newPackage->{$feeColumn} === null) {
                     throw ValidationException::withMessages(['fee_type' => 'This course does not offer the selected fee type.']);
                 }
 
@@ -235,8 +226,6 @@ final class EnrollmentService
                     }
                 }
 
-                $resolvedFeeType = $enrollment->fee_type;
-                $fee = $enrollment->fee;
                 $packageId = $enrollment->course_package_id;
                 $programId = $enrollment->academic_program_id;
             }
@@ -248,18 +237,31 @@ final class EnrollmentService
                 'student_id' => $enrollment->student_id,
                 'class_id' => $newClass->getKey(),
                 'table_id' => $tableId,
-                'book_id' => $changingCourse ? null : $enrollment->book_id,
                 'course_package_id' => $packageId,
                 'academic_program_id' => $programId,
-                'study_mode_id' => $enrollment->study_mode_id,
                 'enrolled_at' => now()->toDateString(),
-                'fee' => $fee,
-                'fee_type' => $resolvedFeeType,
+                'enrollments_code' => $this->generateEnrollmentCode($enrollment->student_id),
                 'status' => Enrollment::STATUS_ACTIVE,
             ]);
 
-            return $new->load(['student', 'schoolClass', 'table', 'coursePackage', 'book']);
+            return $new->load(['student', 'schoolClass', 'table', 'coursePackage']);
         });
+    }
+
+    /**
+     * `{student_code}-{NN}`, e.g. a student `NTS-000008`'s first enrollment
+     * is `NTS-000008-01`, second is `NTS-000008-02` — every new Enrollment
+     * row (including one created by transferClass()) advances the count.
+     * Locking the student row (not just relying on the caller's own
+     * transaction) is what makes two concurrent enrollments for the same
+     * student serialize instead of racing to the same sequence number.
+     */
+    private function generateEnrollmentCode(int $studentId): string
+    {
+        $student = Student::query()->whereKey($studentId)->lockForUpdate()->firstOrFail();
+        $sequence = Enrollment::query()->where('student_id', $studentId)->count() + 1;
+
+        return sprintf('%s-%02d', $student->student_code, $sequence);
     }
 
     private function assertEnrollable(SchoolClass $class, CoursePackage $package): void

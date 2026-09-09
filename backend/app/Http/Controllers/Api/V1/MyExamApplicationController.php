@@ -35,7 +35,7 @@ final class MyExamApplicationController extends Controller
     {
         $student = $this->studentOrFail($request);
 
-        $query = ExamApplication::query()->where('student_id', $student->id)->with('enrollment.coursePackage', 'enrollment.schoolClass', 'enrollment.book');
+        $query = ExamApplication::query()->where('student_id', $student->id)->with('enrollment.coursePackage', 'enrollment.schoolClass');
 
         $applications = ApiQuery::for($query, $request)
             ->filterable(['status'])
@@ -52,14 +52,14 @@ final class MyExamApplicationController extends Controller
         $application = $this->examApplications->submit($student, $request->validated());
 
         return ApiResponse::created(new ExamApplicationResource(
-            $application->load('enrollment.coursePackage', 'enrollment.schoolClass', 'enrollment.book')
+            $application->load('enrollment.coursePackage', 'enrollment.schoolClass')
         ));
     }
 
     /**
-     * The student's own active enrollments, each carrying the
-     * course/class/book that an ExamApplication's `enrollment_id` picker
-     * needs — one selection instead of three independent dropdowns.
+     * The student's own active enrollments, each carrying the course/class
+     * that an ExamApplication's `enrollment_id` picker needs — one selection
+     * instead of two independent dropdowns.
      */
     public function enrollments(Request $request): JsonResponse
     {
@@ -67,7 +67,7 @@ final class MyExamApplicationController extends Controller
 
         $enrollments = $student->enrollments()
             ->active()
-            ->with('coursePackage', 'schoolClass', 'book')
+            ->with('coursePackage', 'schoolClass')
             ->get()
             ->map(fn ($enrollment) => [
                 'id' => $enrollment->id,
@@ -76,9 +76,6 @@ final class MyExamApplicationController extends Controller
                     : null,
                 'school_class' => $enrollment->schoolClass !== null
                     ? ['id' => $enrollment->schoolClass->id, 'name' => $enrollment->schoolClass->name]
-                    : null,
-                'book' => $enrollment->book !== null
-                    ? ['id' => $enrollment->book->id, 'name' => $enrollment->book->title]
                     : null,
             ])
             ->values();

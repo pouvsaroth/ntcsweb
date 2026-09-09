@@ -180,7 +180,7 @@ onMounted(() => fetch())
         <div v-if="detail.enrollment" class="mt-4 rounded-lg border border-neutral-200 p-3 text-sm">
           <p class="font-medium text-neutral-900">{{ detail.enrollment.course_package?.name }}</p>
           <p class="text-neutral-500">{{ detail.enrollment.academic_program?.name }} — {{ detail.enrollment.class?.name }}</p>
-          <p class="mt-1 text-neutral-700">{{ t('admin.studentRegistrations.feeType') }}: {{ detail.enrollment.fee_type }} — {{ detail.invoice?.currency }} {{ detail.enrollment.fee.toFixed(2) }}</p>
+          <p v-if="detail.invoice" class="mt-1 text-neutral-700">{{ detail.invoice.currency }} {{ detail.invoice.total.toFixed(2) }}</p>
         </div>
 
         <div v-if="detail.invoice" class="mt-3 flex items-center justify-between rounded-lg bg-warning-50 px-3 py-2 text-sm">

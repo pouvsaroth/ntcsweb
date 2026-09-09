@@ -35,9 +35,6 @@ class ExamApplicationResource extends JsonResource
                 'school_class' => $this->enrollment->relationLoaded('schoolClass') && $this->enrollment->schoolClass !== null
                     ? ['id' => $this->enrollment->schoolClass->id, 'name' => $this->enrollment->schoolClass->name]
                     : null,
-                'book' => $this->enrollment->relationLoaded('book') && $this->enrollment->book !== null
-                    ? ['id' => $this->enrollment->book->id, 'name' => $this->enrollment->book->title]
-                    : null,
             ]),
             'exam_date' => $this->exam_date?->toDateString(),
             'exam_time' => $this->exam_time,

@@ -63,8 +63,7 @@ class StudentRegistrationTest extends TestCase
         $this->assertTrue(Hash::check('password123', $student->user->password));
         $this->assertTrue($student->user->hasRole(Role::STUDENT));
 
-        $enrollment = $student->enrollments()->firstOrFail();
-        $this->assertSame('24.00', (string) $enrollment->fee);
+        $student->enrollments()->firstOrFail();
 
         $invoice = $student->invoices()->firstOrFail();
         $this->assertSame('24.00', (string) $invoice->balance);

@@ -31,15 +31,15 @@ final class AcademicReportController extends Controller
     {
         $this->authorizeView($request);
 
-        $query = ApiQuery::for(Enrollment::query()->with(['student', 'schoolClass', 'academicProgram', 'studyMode', 'coursePackage']), $request)
-            ->filterable(['status', 'academic_program_id', 'study_mode_id', 'class_id', 'course_package_id']);
+        $query = ApiQuery::for(Enrollment::query()->with(['student', 'schoolClass', 'academicProgram', 'coursePackage']), $request)
+            ->filterable(['status', 'academic_program_id', 'class_id', 'course_package_id']);
 
         if ($request->string('format')->toString() === 'csv') {
             $rows = $query->build()->get();
 
-            return $this->csv('enrollment-report', ['Student', 'Program', 'Study Mode', 'Class', 'Package', 'Enrolled', 'Status', 'Fee'], $rows->map(fn (Enrollment $e) => [
-                $e->student?->auditDisplayName(), $e->academicProgram?->name, $e->studyMode?->name, $e->schoolClass?->name,
-                $e->coursePackage?->name, (string) $e->enrolled_at, $e->status, number_format((float) $e->fee, 2, '.', ''),
+            return $this->csv('enrollment-report', ['Student', 'Program', 'Class', 'Package', 'Enrolled', 'Status'], $rows->map(fn (Enrollment $e) => [
+                $e->student?->auditDisplayName(), $e->academicProgram?->name, $e->schoolClass?->name,
+                $e->coursePackage?->name, (string) $e->enrolled_at, $e->status,
             ]));
         }
 

@@ -24,7 +24,7 @@ final class ExamApplicationController extends Controller
     {
         $this->authorize('viewAny', ExamApplication::class);
 
-        $query = ExamApplication::query()->with('student', 'enrollment.coursePackage', 'enrollment.schoolClass', 'enrollment.book', 'decidedBy');
+        $query = ExamApplication::query()->with('student', 'enrollment.coursePackage', 'enrollment.schoolClass', 'decidedBy');
 
         $applications = ApiQuery::for($query, $request)
             ->filterable(['status', 'student_id'])
@@ -39,7 +39,7 @@ final class ExamApplicationController extends Controller
         $this->authorize('view', $examApplication);
 
         return ApiResponse::success(new ExamApplicationResource(
-            $examApplication->load('student', 'enrollment.coursePackage', 'enrollment.schoolClass', 'enrollment.book', 'decidedBy')
+            $examApplication->load('student', 'enrollment.coursePackage', 'enrollment.schoolClass', 'decidedBy')
         ));
     }
 
@@ -50,7 +50,7 @@ final class ExamApplicationController extends Controller
         $examApplication = $this->examApplications->approve($examApplication, $request->user());
 
         return ApiResponse::success(new ExamApplicationResource(
-            $examApplication->load('student', 'enrollment.coursePackage', 'enrollment.schoolClass', 'enrollment.book', 'decidedBy')
+            $examApplication->load('student', 'enrollment.coursePackage', 'enrollment.schoolClass', 'decidedBy')
         ));
     }
 
@@ -59,7 +59,7 @@ final class ExamApplicationController extends Controller
         $examApplication = $this->examApplications->reject($examApplication, $request->validated('reason'), $request->user());
 
         return ApiResponse::success(new ExamApplicationResource(
-            $examApplication->load('student', 'enrollment.coursePackage', 'enrollment.schoolClass', 'enrollment.book', 'decidedBy')
+            $examApplication->load('student', 'enrollment.coursePackage', 'enrollment.schoolClass', 'decidedBy')
         ));
     }
 }

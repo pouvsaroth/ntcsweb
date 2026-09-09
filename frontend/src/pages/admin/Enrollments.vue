@@ -22,11 +22,11 @@ const { items, meta, loading, error, setPage, fetch } = usePaginatedResource<Enr
 )
 
 const columns = [
+  { key: 'code', label: t('admin.enrollments.columnCode') },
   { key: 'student', label: t('admin.enrollments.columnStudent') },
   { key: 'class', label: t('admin.enrollments.columnClass') },
   { key: 'book', label: t('admin.enrollments.columnBook') },
   { key: 'table', label: t('admin.enrollments.columnTable') },
-  { key: 'fee', label: t('admin.enrollments.columnFee') },
   { key: 'status', label: t('admin.enrollments.columnStatus') },
   { key: 'actions', label: t('admin.enrollments.columnActions'), align: 'text-right' },
 ]
@@ -96,14 +96,14 @@ onMounted(() => fetch())
     <BaseAlert v-if="error" variant="danger" class="mb-4">{{ error }}</BaseAlert>
 
     <DataTable :columns="columns" :rows="items" row-key="id" :loading="loading" :empty-message="t('admin.enrollments.emptyMessage')">
+      <template #cell-code="{ row }">{{ row.enrollments_code ?? '—' }}</template>
       <template #cell-student="{ row }">
         <p class="font-medium text-neutral-800">{{ row.student.full_name }}</p>
         <p class="text-xs text-neutral-500">{{ row.student.student_code }}</p>
       </template>
       <template #cell-class="{ row }">{{ row.class.name }}</template>
-      <template #cell-book="{ row }">{{ row.book?.title ?? row.course_package?.name ?? '—' }}</template>
+      <template #cell-book="{ row }">{{ row.course_package?.name ?? '—' }}</template>
       <template #cell-table="{ row }">{{ row.table?.name ?? '—' }}</template>
-      <template #cell-fee="{ row }">{{ row.fee.toFixed(2) }}</template>
       <template #cell-status="{ row }">
         <BaseBadge :variant="statusBadgeVariant[row.status]">
           {{ t(`admin.enrollments.status${statusKey(row.status)}`) }}

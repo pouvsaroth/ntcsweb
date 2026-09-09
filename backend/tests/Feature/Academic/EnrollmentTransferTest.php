@@ -44,7 +44,6 @@ class EnrollmentTransferTest extends TestCase
 
         $response->assertOk();
         $response->assertJsonPath('data.class.id', $newClass->id);
-        $response->assertJsonPath('data.fee', 24);
         $response->assertJsonPath('data.status', 'active');
 
         $this->assertSame('dropped', Enrollment::findOrFail($originalId)->status);
@@ -173,7 +172,6 @@ class EnrollmentTransferTest extends TestCase
         $response->assertOk();
         $response->assertJsonPath('data.course_package.id', $excel->id);
         $response->assertJsonPath('data.class.id', $newClass->id);
-        $response->assertJsonPath('data.fee', 30);
         $this->assertSame('dropped', Enrollment::findOrFail($originalId)->status);
     }
 

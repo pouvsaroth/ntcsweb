@@ -1,9 +1,7 @@
 import { apiDelete, apiGetWithMeta, apiPost, apiPut } from '@/services/http'
 import type { AcademicProgram } from '@/services/academicPrograms'
-import type { Book } from '@/services/books'
 import type { SchoolClass } from '@/services/classes'
 import type { CoursePackage } from '@/services/coursePackages'
-import type { StudyMode } from '@/services/studyModes'
 import type { PaginatedQuery } from '@/composables/usePaginatedResource'
 import type { LengthAwarePaginationMeta, PaginatedResult } from '@/types/api'
 
@@ -44,15 +42,10 @@ export type FeeType = 'monthly' | 'term' | 'video' | 'monthly_online' | 'term_on
 
 export interface Enrollment {
   id: number
+  /** Human-readable per-student sequence code, e.g. `NTS-000008-01`. */
+  enrollments_code: string | null
   enrolled_at: string
-  /** Snapshotted at enrollment time — editing it never touches the book's/package's own catalog price, see docs/database.md. */
-  fee: number
-  /** Which of the package's 5 fee tiers this was billed under — null for the legacy book-billed path. */
-  fee_type: FeeType | null
   status: EnrollmentStatus
-  /** Set only for a status in enrollmentStatusesRequiringReason. */
-  status_reason: string | null
-  status_effective_date: string | null
   /** Whether any money has been received against this enrollment — gates changing the course (not the class) via transfer(). */
   is_paid: boolean
   student: EnrollmentStudent
@@ -60,27 +53,13 @@ export interface Enrollment {
   /** Which physical table in the class's classroom this student sits at — null when the room has no tables configured. */
   table_id: number | null
   table: { id: number; name: string } | null
-  /** Set for the legacy book-billed path; null (or omitted from the package-enrollment response) for a package-billed enrollment. */
-  book?: Book | null
   course_package_id: number | null
   course_package: CoursePackage | null
   academic_program_id: number | null
   academic_program: AcademicProgram | null
-  study_mode_id: number | null
-  study_mode: StudyMode | null
   created_at: string
   /** Only present right after enrollInPackage() creates the invoice alongside it — absent everywhere else this type is used. */
   invoice_id?: number
-}
-
-export interface EnrollmentInput {
-  student_id: number
-  class_id: number
-  table_id: number | null
-  book_id: number
-  enrolled_at: string
-  fee: number
-  status: EnrollmentStatus
 }
 
 /**
@@ -111,9 +90,8 @@ export const enrollmentsService = {
     return { data: result.data, pagination: result.meta?.pagination as LengthAwarePaginationMeta }
   },
 
-  create: (input: EnrollmentInput) => apiPost<Enrollment>('/enrollments', input),
   /** Status isn't editable here — see changeStatus() below, the one path that also logs history. */
-  update: (id: number, input: Pick<EnrollmentInput, 'enrolled_at' | 'fee'>) => apiPut<Enrollment>(`/enrollments/${id}`, input),
+  update: (id: number, input: { enrolled_at: string }) => apiPut<Enrollment>(`/enrollments/${id}`, input),
   remove: (id: number) => apiDelete(`/enrollments/${id}`),
 
   enrollInPackage: (input: EnrollmentPackageInput) => apiPost<Enrollment>('/enrollments/package', input),

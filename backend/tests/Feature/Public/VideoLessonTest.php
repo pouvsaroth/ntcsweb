@@ -86,7 +86,7 @@ class VideoLessonTest extends TestCase
         Enrollment::factory()
             ->forStudent($student)
             ->forClass($this->computerEveningClass)
-            ->state(['book_id' => null, 'course_package_id' => $this->msWordPackage->id])
+            ->state(['course_package_id' => $this->msWordPackage->id])
             ->create();
 
         $response = $this->actingAs($user)

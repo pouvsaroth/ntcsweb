@@ -218,7 +218,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::apiResource('classes', SchoolClassController::class)->parameters(['classes' => 'class']);
         Route::get('classes/{class}/available-tables', [SchoolClassController::class, 'availableTables'])->name('classes.available-tables');
 
-        Route::apiResource('enrollments', EnrollmentController::class);
+        Route::apiResource('enrollments', EnrollmentController::class)->except(['store']);
         Route::post('enrollments/package', [EnrollmentPackageController::class, 'store'])->name('enrollments.package.store');
         Route::post('enrollments/{enrollment}/cancel', [EnrollmentController::class, 'cancel'])->name('enrollments.cancel');
         Route::post('enrollments/{enrollment}/transfer', [EnrollmentController::class, 'transfer'])->name('enrollments.transfer');

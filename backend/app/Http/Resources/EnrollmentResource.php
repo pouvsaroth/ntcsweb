@@ -17,24 +17,18 @@ class EnrollmentResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'enrollments_code' => $this->enrollments_code,
             'enrolled_at' => $this->enrolled_at?->toDateString(),
-            'fee' => (float) $this->fee,
-            'fee_type' => $this->fee_type,
             'status' => $this->status,
-            'status_reason' => $this->status_reason,
-            'status_effective_date' => $this->status_effective_date?->toDateString(),
             'is_paid' => $this->isPaid(),
             'student' => new StudentResource($this->whenLoaded('student')),
             'class' => new SchoolClassResource($this->whenLoaded('schoolClass')),
             'table_id' => $this->table_id,
             'table' => new ClassroomTableResource($this->whenLoaded('table')),
-            'book' => new BookResource($this->whenLoaded('book')),
             'course_package_id' => $this->course_package_id,
             'course_package' => new CoursePackageResource($this->whenLoaded('coursePackage')),
             'academic_program_id' => $this->academic_program_id,
             'academic_program' => new AcademicProgramResource($this->whenLoaded('academicProgram')),
-            'study_mode_id' => $this->study_mode_id,
-            'study_mode' => new StudyModeResource($this->whenLoaded('studyMode')),
             'created_at' => $this->created_at?->toIso8601String(),
             // Only set right after EnrollmentService::enrollInPackage() creates
             // the invoice alongside it — absent everywhere else this resource

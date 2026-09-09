@@ -7,7 +7,6 @@ namespace App\Http\Controllers\Api\V1\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Admin\CancelEnrollmentRequest;
 use App\Http\Requests\Api\V1\Admin\ChangeEnrollmentStatusRequest;
-use App\Http\Requests\Api\V1\Admin\StoreEnrollmentRequest;
 use App\Http\Requests\Api\V1\Admin\TransferEnrollmentRequest;
 use App\Http\Requests\Api\V1\Admin\UpdateEnrollmentRequest;
 use App\Http\Resources\EnrollmentResource;
@@ -25,7 +24,7 @@ final class EnrollmentController extends Controller
 {
     public function __construct(private readonly EnrollmentService $enrollments) {}
 
-    private const WITH = ['student', 'schoolClass', 'table', 'book', 'coursePackage', 'academicProgram', 'studyMode', 'invoiceItems.invoice'];
+    private const WITH = ['student', 'schoolClass', 'table', 'coursePackage', 'academicProgram', 'invoiceItems.invoice'];
 
     public function index(Request $request): JsonResponse
     {
@@ -40,13 +39,6 @@ final class EnrollmentController extends Controller
             ->paginate();
 
         return ApiResponse::success(EnrollmentResource::collection($enrollments));
-    }
-
-    public function store(StoreEnrollmentRequest $request): JsonResponse
-    {
-        $enrollment = Enrollment::query()->create($request->validated());
-
-        return ApiResponse::created(new EnrollmentResource($enrollment->load(self::WITH)));
     }
 
     public function show(Enrollment $enrollment): JsonResponse

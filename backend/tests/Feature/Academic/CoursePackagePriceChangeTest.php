@@ -41,7 +41,6 @@ class CoursePackagePriceChangeTest extends TestCase
         ])->assertCreated();
 
         $enrollment = Enrollment::findOrFail($response->json('data.id'));
-        $this->assertSame('24.00', (string) $enrollment->fee);
 
         $item = InvoiceItem::where('reference_type', Enrollment::class)->where('reference_id', $enrollment->id)->firstOrFail();
         $this->assertSame('24.00', (string) $item->unit_price);
@@ -60,7 +59,6 @@ class CoursePackagePriceChangeTest extends TestCase
 
         // The old invoice item must be untouched.
         $this->assertSame('24.00', (string) $item->fresh()->unit_price);
-        $this->assertSame('24.00', (string) $enrollment->fresh()->fee);
     }
 
     public function test_a_new_enrollment_after_a_price_change_is_billed_at_the_new_price(): void
@@ -84,6 +82,8 @@ class CoursePackagePriceChangeTest extends TestCase
             'enrolled_at' => '2026-02-01',
         ])->assertCreated();
 
-        $this->assertSame(30, (int) $response->json('data.fee'));
+        $enrollment = Enrollment::findOrFail($response->json('data.id'));
+        $item = InvoiceItem::where('reference_type', Enrollment::class)->where('reference_id', $enrollment->id)->firstOrFail();
+        $this->assertSame('30.00', (string) $item->unit_price);
     }
 }
