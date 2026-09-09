@@ -66,20 +66,4 @@ class ScheduleTest extends TestCase
         $response->assertOk();
         $response->assertJsonPath('data.0.teacher_name', null);
     }
-
-    public function test_another_tenants_classes_are_not_visible(): void
-    {
-        $tenant = Tenant::factory()->create();
-        $this->actingInTenant($tenant);
-        SchoolClass::factory()->create(['name' => 'Mine']);
-
-        $otherTenant = Tenant::factory()->create();
-        $this->createForOtherTenant(fn () => SchoolClass::factory()->forTenant($otherTenant)->create(['name' => 'Theirs']));
-
-        $response = $this->withHeader('X-Tenant', $tenant->slug)->getJson('/api/v1/public/schedules');
-
-        $response->assertOk();
-        $response->assertJsonCount(1, 'data');
-        $response->assertJsonPath('data.0.name', 'Mine');
-    }
 }

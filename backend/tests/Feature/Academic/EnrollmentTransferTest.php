@@ -119,7 +119,7 @@ class EnrollmentTransferTest extends TestCase
 
         $room = Classroom::factory()->create();
         $table = ClassroomTable::factory()->create(['classroom_id' => $room->id]);
-        $newClass = SchoolClass::factory()->forTenant($this->tenant)->forProgram($this->computerProgram)->inRoom($room)->create();
+        $newClass = SchoolClass::factory()->forProgram($this->computerProgram)->inRoom($room)->create();
         $newClass->coursePackages()->sync([$this->msWordPackage->id]);
 
         $this->postJson("/api/v1/enrollments/{$originalId}/transfer", ['class_id' => $newClass->id])

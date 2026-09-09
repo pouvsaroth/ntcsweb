@@ -23,15 +23,14 @@ return new class extends Migration
         Schema::create('classes', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
-
             // Nulled, not cascaded: losing a teacher or room assignment must
             // not delete the class and its enrollment/attendance history.
-            $table->foreignId('teacher_id')->nullable()->constrained('teachers')->nullOnDelete();
-            // No DB-level foreign key: `classrooms` lives in each school's
-            // own per-tenant database (see database/migrations/tenant), and a
-            // cross-database foreign key isn't possible in Postgres
-            // regardless.
+            // No DB-level foreign key on either: by the time this table
+            // moved to the tenant database, `teachers` had already been
+            // retargeted to plain Staff ids (see the retarget migration)
+            // and `classrooms` lives in this same per-tenant database but
+            // via its own migration, not this one's original history.
+            $table->unsignedBigInteger('teacher_id')->nullable();
             $table->unsignedBigInteger('classroom_id')->nullable();
 
             $table->string('name');
@@ -44,10 +43,10 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            $table->unique(['tenant_id', 'code']);
-            $table->index(['tenant_id', 'status']);
-            $table->index(['tenant_id', 'teacher_id']);
-            $table->index(['tenant_id', 'classroom_id']);
+            $table->unique('code');
+            $table->index('status');
+            $table->index('teacher_id');
+            $table->index('classroom_id');
         });
     }
 

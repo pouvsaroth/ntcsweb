@@ -12,7 +12,6 @@ use App\Models\CoursePackage;
 use App\Models\SchoolClass;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 /**
  * The public course catalog. Unauthenticated — gated only by
@@ -43,17 +42,8 @@ final class CoursePackageController extends Controller
      */
     public function classes(CoursePackage $coursePackage): JsonResponse
     {
-        // `class_course_package` lives in the tenant database alongside
-        // `course_packages` (see that migration's docblock), while `classes`
-        // is still central — a whereHas() across that boundary is one
-        // correlated subquery Postgres can't run, so the class ids are
-        // resolved as a separate query first.
-        $classIds = DB::connection('tenant')->table('class_course_package')
-            ->where('course_package_id', $coursePackage->id)
-            ->pluck('class_id');
-
         $classes = SchoolClass::query()->active()
-            ->whereIn('id', $classIds)
+            ->whereHas('coursePackages', fn ($query) => $query->where('course_packages.id', $coursePackage->id))
             ->with(['teacher', 'schedules' => fn ($query) => $query->orderBy('day_of_week')])
             ->orderBy('name')
             ->get();

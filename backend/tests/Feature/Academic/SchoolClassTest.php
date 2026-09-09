@@ -12,7 +12,6 @@ use App\Models\Position;
 use App\Models\SchoolClass;
 use App\Models\Staff;
 use App\Models\Student;
-use App\Models\Tenant;
 use App\Support\Authorization\Permissions;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\HasAcademicAdmin;
@@ -99,14 +98,6 @@ class SchoolClassTest extends TestCase
         $response->assertOk();
         $response->assertJsonCount(1, 'data.schedules');
         $response->assertJsonPath('data.schedules.0.day_of_week', 6);
-    }
-
-    public function test_a_class_from_another_tenant_cannot_be_fetched_directly(): void
-    {
-        $this->actingAsAdminWithPermissions([Permissions::CLASSES_VIEW]);
-        $foreignClass = $this->createForOtherTenant(fn () => SchoolClass::factory()->forTenant(Tenant::factory()->create())->create());
-
-        $this->getJson("/api/v1/classes/{$foreignClass->id}")->assertNotFound();
     }
 
     public function test_available_tables_reports_zero_total_for_a_class_with_no_classroom(): void

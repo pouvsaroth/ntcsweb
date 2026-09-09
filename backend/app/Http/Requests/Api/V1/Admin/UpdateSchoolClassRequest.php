@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Requests\Api\V1\Admin;
 
 use App\Models\SchoolClass;
-use App\Support\Tenancy\TenantContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -21,12 +20,11 @@ class UpdateSchoolClassRequest extends FormRequest
 
     public function rules(): array
     {
-        $tenantId = app(TenantContext::class)->idOrFail();
         $class = $this->route('class');
 
         return [
             'name' => ['sometimes', 'required', 'string', 'max:255'],
-            'code' => ['nullable', 'string', 'max:32', Rule::unique('classes')->where('tenant_id', $tenantId)->ignore($class)],
+            'code' => ['nullable', 'string', 'max:32', Rule::unique('tenant.classes', 'code')->ignore($class)],
             // Must be a Staff member holding the "Teacher" position — see
             // TeacherPositionSeeder. `staff` and `positions` both live in the
             // tenant database, so this is an ordinary same-connection

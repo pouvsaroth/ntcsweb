@@ -20,13 +20,13 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('classes', function (Blueprint $table) {
-            $table->dropConstrainedForeignId('program_offering_id');
+            $table->dropColumn('program_offering_id');
         });
 
         Schema::table('classes', function (Blueprint $table) {
             $table->unsignedBigInteger('academic_program_id')->nullable()->after('classroom_id');
 
-            $table->index(['tenant_id', 'academic_program_id']);
+            $table->index('academic_program_id');
         });
     }
 
@@ -37,10 +37,9 @@ return new class extends Migration
         });
 
         Schema::table('classes', function (Blueprint $table) {
-            $table->foreignId('program_offering_id')->nullable()->after('classroom_id')
-                ->constrained('program_offerings')->nullOnDelete();
+            $table->unsignedBigInteger('program_offering_id')->nullable()->after('classroom_id');
 
-            $table->index(['tenant_id', 'program_offering_id']);
+            $table->index('program_offering_id');
         });
     }
 };

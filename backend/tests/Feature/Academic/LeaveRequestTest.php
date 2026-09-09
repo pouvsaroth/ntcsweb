@@ -70,7 +70,7 @@ class LeaveRequestTest extends TestCase
         $admin = $this->actingAsAdminWithPermissions([Permissions::LEAVE_REQUESTS_APPROVE]);
         [$student] = $this->studentWithUser();
 
-        $class = SchoolClass::factory()->forTenant($this->tenant)->create();
+        $class = SchoolClass::factory()->create();
         ClassSchedule::factory()->forClass($class)->onDay(ClassSchedule::MONDAY)->create();
         $enrollment = Enrollment::factory()->forClass($class)->forStudent($student)->create();
 
@@ -122,7 +122,7 @@ class LeaveRequestTest extends TestCase
     {
         $admin = $this->actingAsAdminWithPermissions([Permissions::LEAVE_REQUESTS_REJECT]);
         [$student] = $this->studentWithUser();
-        $class = SchoolClass::factory()->forTenant($this->tenant)->create();
+        $class = SchoolClass::factory()->create();
         ClassSchedule::factory()->forClass($class)->onDay(ClassSchedule::MONDAY)->create();
         Enrollment::factory()->forClass($class)->forStudent($student)->create();
 

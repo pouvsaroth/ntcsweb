@@ -200,27 +200,23 @@ final class AcademicReportService
             ->groupBy('enrollments.class_id')
             ->pluck('revenue', 'class_id');
 
-        $classes = DB::table('classes')
-            ->select('classes.id as class_id', 'classes.name as class_name', 'classes.teacher_id', 'classes.capacity as capacity')
+        // `classes` and `staff` both live in the tenant database now, so the
+        // teacher's name is one ordinary left join.
+        $classes = DB::connection('tenant')->table('classes')
+            ->leftJoin('staff', 'staff.id', '=', 'classes.teacher_id')
+            ->select(
+                'classes.id as class_id', 'classes.name as class_name', 'classes.capacity as capacity',
+                'staff.first_name as teacher_first_name', 'staff.last_name as teacher_last_name',
+            )
             ->whereNull('classes.deleted_at')
             ->orderBy('classes.name')
             ->get();
-
-        // `staff` lives in the tenant database, `classes` in the central
-        // one, so the teacher's name is resolved as a second query rather
-        // than a join — a cross-database join isn't possible in Postgres.
-        $teacherIds = $classes->pluck('teacher_id')->filter()->unique()->values();
-
-        $teacherNames = DB::connection('tenant')->table('staff')
-            ->whereIn('id', $teacherIds)
-            ->get(['id', 'first_name', 'last_name'])
-            ->mapWithKeys(fn ($row) => [$row->id => trim("{$row->first_name} {$row->last_name}")]);
 
         return $classes
             ->map(fn ($row) => [
                 'class_id' => (int) $row->class_id,
                 'class_name' => $row->class_name,
-                'teacher' => $row->teacher_id !== null ? ($teacherNames[$row->teacher_id] ?? null) : null,
+                'teacher' => $row->teacher_first_name !== null ? trim("{$row->teacher_first_name} {$row->teacher_last_name}") : null,
                 'capacity' => $row->capacity !== null ? (int) $row->capacity : null,
                 'students' => (int) ($enrollmentCounts[$row->class_id] ?? 0),
                 'revenue' => (float) ($revenue[$row->class_id] ?? 0),

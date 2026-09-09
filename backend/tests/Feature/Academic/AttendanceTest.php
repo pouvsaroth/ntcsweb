@@ -24,7 +24,7 @@ class AttendanceTest extends TestCase
 
     private function classWithStudents(int $count = 3): array
     {
-        $class = SchoolClass::factory()->forTenant($this->tenant)->create();
+        $class = SchoolClass::factory()->create();
         $enrollments = Enrollment::factory()
             ->forClass($class)
             ->count($count)
@@ -137,10 +137,10 @@ class AttendanceTest extends TestCase
         $teacherPosition = Position::factory()->create(['name' => 'Teacher']);
         $teacher = Staff::factory()->withUser($teacherUser)->create(['position_id' => $teacherPosition->id]);
 
-        $ownClass = SchoolClass::factory()->forTenant($this->tenant)->withTeacher($teacher)->create();
+        $ownClass = SchoolClass::factory()->withTeacher($teacher)->create();
         $ownEnrollment = Enrollment::factory()->forClass($ownClass)->create();
 
-        $otherClass = SchoolClass::factory()->forTenant($this->tenant)->create();
+        $otherClass = SchoolClass::factory()->create();
         $otherEnrollment = Enrollment::factory()->forClass($otherClass)->create();
 
         $this->postJson("/api/v1/classes/{$ownClass->id}/attendance", [

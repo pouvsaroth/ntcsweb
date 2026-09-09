@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Models\Concerns\BelongsToTenant;
 use Database\Factories\SchoolClassFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -26,14 +25,15 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * schedule/room/teacher grouping, so the link is nullable and never gates
  * which course packages can be enrolled into it (see EnrollmentService).
  *
- * @property int $tenant_id
  * @property string $name
  * @property string $status
  */
 #[Fillable(['teacher_id', 'classroom_id', 'academic_program_id', 'name', 'code', 'capacity', 'start_date', 'end_date', 'status'])]
 class SchoolClass extends Model
 {
-    use BelongsToTenant, HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes;
+
+    protected $connection = 'tenant';
 
     /** @use HasFactory<SchoolClassFactory> */
     protected $table = 'classes';

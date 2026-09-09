@@ -30,7 +30,7 @@ class StudentFeedbackTest extends TestCase
     private function enrollWithTeacher(Student $student): Staff
     {
         $teacher = Staff::factory()->create();
-        $class = SchoolClass::factory()->forTenant($this->tenant)->withTeacher($teacher)->create();
+        $class = SchoolClass::factory()->withTeacher($teacher)->create();
         Enrollment::factory()->forClass($class)->forStudent($student)->create();
 
         return $teacher;

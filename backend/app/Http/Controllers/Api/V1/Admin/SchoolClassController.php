@@ -26,7 +26,7 @@ final class SchoolClassController extends Controller
         $this->authorize('viewAny', SchoolClass::class);
 
         $classes = ApiQuery::for(
-            SchoolClass::query()->with(self::WITH),
+            SchoolClass::query()->with(self::WITH)->withCount('enrollments'),
             $request,
         )
             ->searchable('name', 'code')
@@ -34,14 +34,12 @@ final class SchoolClassController extends Controller
             ->sortable(['name', 'start_date', 'created_at'], default: '-created_at')
             ->paginate();
 
-        $this->attachEnrollmentCounts($classes);
-
         return ApiResponse::success(SchoolClassResource::collection($classes));
     }
 
     public function store(StoreSchoolClassRequest $request): JsonResponse
     {
-        $class = DB::transaction(function () use ($request) {
+        $class = DB::connection('tenant')->transaction(function () use ($request) {
             $class = SchoolClass::query()->create($request->safe()->except(['schedules', 'book_ids', 'course_package_ids']));
 
             $this->syncSchedules($class, $request->validated('schedules', []));
@@ -58,15 +56,12 @@ final class SchoolClassController extends Controller
     {
         $this->authorize('view', $class);
 
-        $class->load(self::WITH);
-        $this->attachEnrollmentCounts([$class]);
-
-        return ApiResponse::success(new SchoolClassResource($class));
+        return ApiResponse::success(new SchoolClassResource($class->load(self::WITH)->loadCount('enrollments')));
     }
 
     public function update(UpdateSchoolClassRequest $request, SchoolClass $class): JsonResponse
     {
-        DB::transaction(function () use ($request, $class) {
+        DB::connection('tenant')->transaction(function () use ($request, $class) {
             $class->update($request->safe()->except(['schedules', 'book_ids', 'course_package_ids']));
 
             if ($request->has('schedules')) {
@@ -110,10 +105,10 @@ final class SchoolClassController extends Controller
 
         $totalTables = ClassroomTable::query()->where('classroom_id', $class->classroom_id)->count();
 
-        // `enrollments` lives in the tenant database, `classroom_tables` in
-        // the central one, so "which tables are taken" is resolved as a
-        // separate query rather than a whereDoesntHave() subquery — the same
-        // reasoning as attachEnrollmentCounts() below.
+        // A plain separate query rather than a whereDoesntHave() subquery —
+        // simpler to read for a one-off computation like this, not forced by
+        // any connection boundary (classroom_tables/enrollments/classes all
+        // live in the same tenant database).
         $takenTableIds = Enrollment::query()
             ->where('class_id', $class->id)
             ->where('status', '!=', Enrollment::STATUS_DROPPED)
@@ -127,38 +122,6 @@ final class SchoolClassController extends Controller
             ->get(['id', 'name']);
 
         return ApiResponse::success(['total_tables' => $totalTables, 'available' => $available]);
-    }
-
-    /**
-     * `enrollments` lives in the tenant database while `classes` is still
-     * central, so `enrollments_count` can no longer come from
-     * withCount()/loadCount() (a single cross-database subquery) — it's
-     * resolved as a separate tenant-connection query and attached manually,
-     * the same shape SchoolClassResource/StudentResource already expect via
-     * whenCounted().
-     *
-     * @param  iterable<SchoolClass>  $classes
-     */
-    private function attachEnrollmentCounts(iterable $classes): void
-    {
-        // Not collect($classes)->all(): a LengthAwarePaginator implements
-        // Arrayable, so collect() would call its toArray() — the pagination
-        // metadata shape, not the underlying models.
-        $models = $classes instanceof \Illuminate\Contracts\Pagination\Paginator ? $classes->items() : (is_array($classes) ? $classes : iterator_to_array($classes));
-
-        if ($models === []) {
-            return;
-        }
-
-        $counts = Enrollment::query()
-            ->whereIn('class_id', collect($models)->pluck('id'))
-            ->select('class_id', DB::raw('COUNT(*) as total'))
-            ->groupBy('class_id')
-            ->pluck('total', 'class_id');
-
-        foreach ($models as $class) {
-            $class->setAttribute('enrollments_count', (int) ($counts[$class->id] ?? 0));
-        }
     }
 
     /**

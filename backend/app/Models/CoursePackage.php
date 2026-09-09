@@ -101,6 +101,11 @@ class CoursePackage extends Model
             ->orderByPivot('sort_order');
     }
 
+    public function classes(): BelongsToMany
+    {
+        return $this->belongsToMany(SchoolClass::class, 'class_course_package', 'course_package_id', 'class_id');
+    }
+
     public function enrollments(): HasMany
     {
         return $this->hasMany(Enrollment::class, 'course_package_id');

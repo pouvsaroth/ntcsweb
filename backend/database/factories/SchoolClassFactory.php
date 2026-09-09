@@ -8,7 +8,6 @@ use App\Models\AcademicProgram;
 use App\Models\Classroom;
 use App\Models\SchoolClass;
 use App\Models\Staff;
-use App\Models\Tenant;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -30,15 +29,6 @@ class SchoolClassFactory extends Factory
             'end_date' => null,
             'status' => SchoolClass::STATUS_ACTIVE,
         ];
-    }
-
-    public function forTenant(Tenant|int $tenant): static
-    {
-        return $this->afterMaking(function (SchoolClass $class) use ($tenant) {
-            $class->forceFill([
-                'tenant_id' => $tenant instanceof Tenant ? $tenant->getKey() : $tenant,
-            ]);
-        });
     }
 
     public function withTeacher(Staff $teacher): static

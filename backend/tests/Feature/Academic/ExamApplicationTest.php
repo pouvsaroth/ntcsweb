@@ -29,7 +29,7 @@ class ExamApplicationTest extends TestCase
 
     private function activeEnrollment(Student $student): Enrollment
     {
-        $class = SchoolClass::factory()->forTenant($this->tenant)->create();
+        $class = SchoolClass::factory()->create();
 
         return Enrollment::factory()->forClass($class)->forStudent($student)->create();
     }
@@ -84,7 +84,7 @@ class ExamApplicationTest extends TestCase
         $this->actingAsAdminWithPermissions([]);
         $this->setExamFee();
         [$student, $user] = $this->studentWithUser();
-        $class = SchoolClass::factory()->forTenant($this->tenant)->create();
+        $class = SchoolClass::factory()->create();
         $enrollment = Enrollment::factory()->forClass($class)->forStudent($student)->dropped()->create();
         $this->actingAsTenantUser($user);
 

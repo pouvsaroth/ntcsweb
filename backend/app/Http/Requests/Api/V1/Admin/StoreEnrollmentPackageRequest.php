@@ -7,7 +7,6 @@ namespace App\Http\Requests\Api\V1\Admin;
 use App\Models\CoursePackage;
 use App\Models\Enrollment;
 use App\Support\Billing\PaymentMethod;
-use App\Support\Tenancy\TenantContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -36,11 +35,9 @@ class StoreEnrollmentPackageRequest extends FormRequest
 
     public function rules(): array
     {
-        $tenantId = app(TenantContext::class)->idOrFail();
-
         return [
             'student_id' => ['required', Rule::exists('tenant.students', 'id')],
-            'class_id' => ['required', Rule::exists('classes', 'id')->where('tenant_id', $tenantId)],
+            'class_id' => ['required', Rule::exists('tenant.classes', 'id')],
 
             // Mirrors StoreEnrollmentRequest's own book_id uniqueness check —
             // scoped to non-dropped rows so a student may re-enroll in the
@@ -114,7 +111,7 @@ class StoreEnrollmentPackageRequest extends FormRequest
                 return;
             }
 
-            $class = DB::table('classes')->where('id', $this->input('class_id'))->first();
+            $class = DB::connection('tenant')->table('classes')->where('id', $this->input('class_id'))->first();
             if ($class === null || $class->classroom_id === null) {
                 return;
             }

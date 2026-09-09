@@ -119,7 +119,7 @@ class EnrollmentPackageServiceTest extends TestCase
 
         $room = Classroom::factory()->create();
         $table = ClassroomTable::factory()->create(['classroom_id' => $room->id]);
-        $class = SchoolClass::factory()->forTenant($this->tenant)->forProgram($this->computerProgram)->inRoom($room)->create();
+        $class = SchoolClass::factory()->forProgram($this->computerProgram)->inRoom($room)->create();
         $class->coursePackages()->sync([$this->msWordPackage->id]);
 
         $this->postJson('/api/v1/enrollments/package', [

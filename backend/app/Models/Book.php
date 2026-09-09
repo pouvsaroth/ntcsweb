@@ -39,6 +39,11 @@ class Book extends Model
         'status' => self::STATUS_ACTIVE,
     ];
 
+    public function classes(): BelongsToMany
+    {
+        return $this->belongsToMany(SchoolClass::class, 'class_book', 'book_id', 'class_id');
+    }
+
     public function enrollments(): HasMany
     {
         return $this->hasMany(Enrollment::class);

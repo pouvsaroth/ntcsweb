@@ -6,7 +6,6 @@ namespace App\Http\Requests\Api\V1\Public;
 
 use App\Models\CoursePackage;
 use App\Support\Billing\PaymentMethod;
-use App\Support\Tenancy\TenantContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -31,8 +30,6 @@ class StoreStudentRegistrationRequest extends FormRequest
 
     public function rules(): array
     {
-        $tenantId = app(TenantContext::class)->idOrFail();
-
         return [
             'first_name' => ['required', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],
@@ -48,7 +45,7 @@ class StoreStudentRegistrationRequest extends FormRequest
 
             'photo' => ['nullable', 'image', 'mimes:jpeg,png,webp,gif', 'max:10240'],
 
-            'class_id' => ['required', Rule::exists('classes', 'id')->where('tenant_id', $tenantId)],
+            'class_id' => ['required', Rule::exists('tenant.classes', 'id')],
             'course_package_id' => ['required', Rule::exists('tenant.course_packages', 'id')],
             'fee_type' => ['required', Rule::in(['monthly', 'term', 'video', 'monthly_online', 'term_online'])],
 

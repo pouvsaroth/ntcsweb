@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Requests\Api\V1\Admin;
 
 use App\Models\Enrollment;
-use App\Support\Tenancy\TenantContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -23,10 +22,8 @@ class TransferEnrollmentRequest extends FormRequest
 
     public function rules(): array
     {
-        $tenantId = app(TenantContext::class)->idOrFail();
-
         return [
-            'class_id' => ['required', Rule::exists('classes', 'id')->where('tenant_id', $tenantId)],
+            'class_id' => ['required', Rule::exists('tenant.classes', 'id')],
             // Scoped to the TARGET class's room — the old table belonged to
             // a different class/room and is never carried forward, see
             // EnrollmentService::transferClass().
@@ -48,7 +45,7 @@ class TransferEnrollmentRequest extends FormRequest
                 return;
             }
 
-            $class = DB::table('classes')->where('id', $this->input('class_id'))->first();
+            $class = DB::connection('tenant')->table('classes')->where('id', $this->input('class_id'))->first();
             if ($class === null || $class->classroom_id === null) {
                 return;
             }
