@@ -42,18 +42,17 @@ final class AssetNumberGenerator
     {
         $prefix = $this->prefixFor($tenant);
 
-        return DB::transaction(function () use ($tenant, $prefix) {
-            $this->ensureSequenceRow($tenant, $prefix);
+        return DB::connection('tenant')->transaction(function () use ($prefix) {
+            $this->ensureSequenceRow($prefix);
 
-            $sequence = DB::table('billing_number_sequences')
-                ->where('tenant_id', $tenant->getKey())
+            $sequence = DB::connection('tenant')->table('billing_number_sequences')
                 ->where('series', 'asset')
                 ->where('prefix', $prefix)
                 ->where('year', self::NO_YEAR)
                 ->lockForUpdate()
                 ->first();
 
-            DB::table('billing_number_sequences')
+            DB::connection('tenant')->table('billing_number_sequences')
                 ->where('id', $sequence->id)
                 ->update(['next_number' => $sequence->next_number + 1, 'updated_at' => now()]);
 
@@ -64,28 +63,27 @@ final class AssetNumberGenerator
     /** `ISS-{year}-######` — issues, unlike the asset itself, are naturally year-scoped events. */
     public function nextIssueNumber(Tenant $tenant): string
     {
-        return $this->nextYearKeyed($tenant, 'asset_issue', $tenant->setting('asset_issue_prefix', self::DEFAULT_ISSUE_PREFIX), 'asset_issues', 'issue_number');
+        return $this->nextYearKeyed('asset_issue', $tenant->setting('asset_issue_prefix', self::DEFAULT_ISSUE_PREFIX), 'asset_issues', 'issue_number');
     }
 
     /** `REP-{year}-######`. */
     public function nextRepairNumber(Tenant $tenant): string
     {
-        return $this->nextYearKeyed($tenant, 'asset_repair', $tenant->setting('asset_repair_prefix', self::DEFAULT_REPAIR_PREFIX), 'asset_repairs', 'repair_number');
+        return $this->nextYearKeyed('asset_repair', $tenant->setting('asset_repair_prefix', self::DEFAULT_REPAIR_PREFIX), 'asset_repairs', 'repair_number');
     }
 
     /** `MNT-{year}-######`. */
     public function nextMaintenanceNumber(Tenant $tenant): string
     {
-        return $this->nextYearKeyed($tenant, 'asset_maintenance', $tenant->setting('asset_maintenance_prefix', self::DEFAULT_MAINTENANCE_PREFIX), 'asset_maintenances', 'maintenance_number');
+        return $this->nextYearKeyed('asset_maintenance', $tenant->setting('asset_maintenance_prefix', self::DEFAULT_MAINTENANCE_PREFIX), 'asset_maintenances', 'maintenance_number');
     }
 
-    private function nextYearKeyed(Tenant $tenant, string $series, string $prefix, string $seedTable, string $seedColumn): string
+    private function nextYearKeyed(string $series, string $prefix, string $seedTable, string $seedColumn): string
     {
         $year = (int) now()->year;
 
-        return DB::transaction(function () use ($tenant, $series, $prefix, $year, $seedTable, $seedColumn) {
-            $exists = DB::table('billing_number_sequences')
-                ->where('tenant_id', $tenant->getKey())
+        return DB::connection('tenant')->transaction(function () use ($series, $prefix, $year, $seedTable, $seedColumn) {
+            $exists = DB::connection('tenant')->table('billing_number_sequences')
                 ->where('series', $series)
                 ->where('prefix', $prefix)
                 ->where('year', $year)
@@ -102,8 +100,7 @@ final class AssetNumberGenerator
                     })
                     ->max() ?? 0;
 
-                DB::table('billing_number_sequences')->insertOrIgnore([
-                    'tenant_id' => $tenant->getKey(),
+                DB::connection('tenant')->table('billing_number_sequences')->insertOrIgnore([
                     'series' => $series,
                     'prefix' => $prefix,
                     'year' => $year,
@@ -113,15 +110,14 @@ final class AssetNumberGenerator
                 ]);
             }
 
-            $sequence = DB::table('billing_number_sequences')
-                ->where('tenant_id', $tenant->getKey())
+            $sequence = DB::connection('tenant')->table('billing_number_sequences')
                 ->where('series', $series)
                 ->where('prefix', $prefix)
                 ->where('year', $year)
                 ->lockForUpdate()
                 ->first();
 
-            DB::table('billing_number_sequences')
+            DB::connection('tenant')->table('billing_number_sequences')
                 ->where('id', $sequence->id)
                 ->update(['next_number' => $sequence->next_number + 1, 'updated_at' => now()]);
 
@@ -129,10 +125,9 @@ final class AssetNumberGenerator
         });
     }
 
-    private function ensureSequenceRow(Tenant $tenant, string $prefix): void
+    private function ensureSequenceRow(string $prefix): void
     {
-        $exists = DB::table('billing_number_sequences')
-            ->where('tenant_id', $tenant->getKey())
+        $exists = DB::connection('tenant')->table('billing_number_sequences')
             ->where('series', 'asset')
             ->where('prefix', $prefix)
             ->where('year', self::NO_YEAR)
@@ -144,8 +139,7 @@ final class AssetNumberGenerator
 
         $startingNumber = $this->highestExistingNumber($prefix) + 1;
 
-        DB::table('billing_number_sequences')->insertOrIgnore([
-            'tenant_id' => $tenant->getKey(),
+        DB::connection('tenant')->table('billing_number_sequences')->insertOrIgnore([
             'series' => 'asset',
             'prefix' => $prefix,
             'year' => self::NO_YEAR,

@@ -40,35 +40,34 @@ final class BillingNumberGenerator
 
     public function nextInvoiceNumber(Tenant $tenant): string
     {
-        return $this->next($tenant, 'invoice', $this->invoicePrefixFor($tenant), 'invoices', 'invoice_number');
+        return $this->next('invoice', $this->invoicePrefixFor($tenant), 'invoices', 'invoice_number');
     }
 
     /** Also the receipt number — see Payment's own docblock for why there is no separate receipts table. */
     public function nextPaymentNumber(Tenant $tenant): string
     {
-        return $this->next($tenant, 'payment', $this->receiptPrefixFor($tenant), 'payments', 'payment_number');
+        return $this->next('payment', $this->receiptPrefixFor($tenant), 'payments', 'payment_number');
     }
 
-    private function next(Tenant $tenant, string $series, string $prefix, string $seedTable, string $seedColumn): string
+    private function next(string $series, string $prefix, string $seedTable, string $seedColumn): string
     {
         $year = (int) now()->year;
 
-        return DB::transaction(function () use ($tenant, $series, $prefix, $year, $seedTable, $seedColumn) {
-            $this->ensureSequenceRow($tenant, $series, $prefix, $year, $seedTable, $seedColumn);
+        return DB::connection('tenant')->transaction(function () use ($series, $prefix, $year, $seedTable, $seedColumn) {
+            $this->ensureSequenceRow($series, $prefix, $year, $seedTable, $seedColumn);
 
             // FOR UPDATE: holds the row lock until this transaction commits,
             // so a second concurrent call blocks here instead of reading the
             // same next_number — see StudentIdGenerator::next() for the full
             // reasoning, identical here.
-            $sequence = DB::table('billing_number_sequences')
-                ->where('tenant_id', $tenant->getKey())
+            $sequence = DB::connection('tenant')->table('billing_number_sequences')
                 ->where('series', $series)
                 ->where('prefix', $prefix)
                 ->where('year', $year)
                 ->lockForUpdate()
                 ->first();
 
-            DB::table('billing_number_sequences')
+            DB::connection('tenant')->table('billing_number_sequences')
                 ->where('id', $sequence->id)
                 ->update(['next_number' => $sequence->next_number + 1, 'updated_at' => now()]);
 
@@ -80,10 +79,9 @@ final class BillingNumberGenerator
      * Same insertOrIgnore-then-fall-through race protection as
      * StudentIdGenerator::ensureSequenceRow() — see there for why.
      */
-    private function ensureSequenceRow(Tenant $tenant, string $series, string $prefix, int $year, string $seedTable, string $seedColumn): void
+    private function ensureSequenceRow(string $series, string $prefix, int $year, string $seedTable, string $seedColumn): void
     {
-        $exists = DB::table('billing_number_sequences')
-            ->where('tenant_id', $tenant->getKey())
+        $exists = DB::connection('tenant')->table('billing_number_sequences')
             ->where('series', $series)
             ->where('prefix', $prefix)
             ->where('year', $year)
@@ -95,8 +93,7 @@ final class BillingNumberGenerator
 
         $startingNumber = $this->highestExistingNumber($prefix, $year, $seedTable, $seedColumn) + 1;
 
-        DB::table('billing_number_sequences')->insertOrIgnore([
-            'tenant_id' => $tenant->getKey(),
+        DB::connection('tenant')->table('billing_number_sequences')->insertOrIgnore([
             'series' => $series,
             'prefix' => $prefix,
             'year' => $year,

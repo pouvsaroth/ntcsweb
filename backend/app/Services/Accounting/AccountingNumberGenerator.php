@@ -41,36 +41,35 @@ final class AccountingNumberGenerator
 
     public function nextExpenseNumber(Tenant $tenant): string
     {
-        return $this->next($tenant, 'expense', $this->expensePrefixFor($tenant), 'expenses', 'expense_number');
+        return $this->next('expense', $this->expensePrefixFor($tenant), 'expenses', 'expense_number');
     }
 
     public function nextTransactionNumber(Tenant $tenant): string
     {
-        return $this->next($tenant, 'transaction', $this->transactionPrefixFor($tenant), 'financial_transactions', 'transaction_number');
+        return $this->next('transaction', $this->transactionPrefixFor($tenant), 'financial_transactions', 'transaction_number');
     }
 
     /** Transfers are just financial_transactions with type=TRANSFER, but get their own visible number series (TRF-...) for readability. */
     public function nextTransferNumber(Tenant $tenant): string
     {
-        return $this->next($tenant, 'transfer', $this->transferPrefixFor($tenant), 'financial_transactions', 'transaction_number');
+        return $this->next('transfer', $this->transferPrefixFor($tenant), 'financial_transactions', 'transaction_number');
     }
 
-    private function next(Tenant $tenant, string $series, string $prefix, string $seedTable, string $seedColumn): string
+    private function next(string $series, string $prefix, string $seedTable, string $seedColumn): string
     {
         $year = (int) now()->year;
 
-        return DB::transaction(function () use ($tenant, $series, $prefix, $year, $seedTable, $seedColumn) {
-            $this->ensureSequenceRow($tenant, $series, $prefix, $year, $seedTable, $seedColumn);
+        return DB::connection('tenant')->transaction(function () use ($series, $prefix, $year, $seedTable, $seedColumn) {
+            $this->ensureSequenceRow($series, $prefix, $year, $seedTable, $seedColumn);
 
-            $sequence = DB::table('billing_number_sequences')
-                ->where('tenant_id', $tenant->getKey())
+            $sequence = DB::connection('tenant')->table('billing_number_sequences')
                 ->where('series', $series)
                 ->where('prefix', $prefix)
                 ->where('year', $year)
                 ->lockForUpdate()
                 ->first();
 
-            DB::table('billing_number_sequences')
+            DB::connection('tenant')->table('billing_number_sequences')
                 ->where('id', $sequence->id)
                 ->update(['next_number' => $sequence->next_number + 1, 'updated_at' => now()]);
 
@@ -78,10 +77,9 @@ final class AccountingNumberGenerator
         });
     }
 
-    private function ensureSequenceRow(Tenant $tenant, string $series, string $prefix, int $year, string $seedTable, string $seedColumn): void
+    private function ensureSequenceRow(string $series, string $prefix, int $year, string $seedTable, string $seedColumn): void
     {
-        $exists = DB::table('billing_number_sequences')
-            ->where('tenant_id', $tenant->getKey())
+        $exists = DB::connection('tenant')->table('billing_number_sequences')
             ->where('series', $series)
             ->where('prefix', $prefix)
             ->where('year', $year)
@@ -93,8 +91,7 @@ final class AccountingNumberGenerator
 
         $startingNumber = $this->highestExistingNumber($prefix, $year, $seedTable, $seedColumn) + 1;
 
-        DB::table('billing_number_sequences')->insertOrIgnore([
-            'tenant_id' => $tenant->getKey(),
+        DB::connection('tenant')->table('billing_number_sequences')->insertOrIgnore([
             'series' => $series,
             'prefix' => $prefix,
             'year' => $year,

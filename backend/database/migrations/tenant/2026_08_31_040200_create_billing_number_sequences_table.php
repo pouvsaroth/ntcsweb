@@ -21,14 +21,13 @@ return new class extends Migration
     {
         Schema::create('billing_number_sequences', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
             $table->string('series', 20);
             $table->string('prefix', 20);
             $table->unsignedSmallInteger('year');
             $table->unsignedInteger('next_number')->default(1);
             $table->timestamps();
 
-            $table->unique(['tenant_id', 'series', 'prefix', 'year']);
+            $table->unique(['series', 'prefix', 'year']);
         });
     }
 
