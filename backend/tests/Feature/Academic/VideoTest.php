@@ -96,10 +96,10 @@ class VideoTest extends TestCase
         $this->actingAsAdminWithPermissions([Permissions::VIDEOS_CREATE, Permissions::VIDEOS_DELETE]);
         $this->setUpAcademicCatalog();
 
-        $video = Video::factory()->forTenant($this->tenant)->forPackage($this->msWordPackage)->create();
+        $video = Video::factory()->forPackage($this->msWordPackage)->create();
 
         $this->deleteJson("/api/v1/videos/{$video->id}")->assertNoContent();
 
-        $this->assertSoftDeleted('videos', ['id' => $video->id]);
+        $this->assertSoftDeleted('videos', ['id' => $video->id], connection: 'tenant');
     }
 }

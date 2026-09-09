@@ -12,11 +12,6 @@ use Illuminate\Support\Facades\Schema;
  * youtubeId()/thumbnailUrl()/embedUrl() — rather than stored redundantly.
  * `thumbnail_path` is an optional admin-uploaded override for when YouTube's
  * own thumbnail isn't good enough.
- *
- * No DB-level foreign key on `course_package_id`: `course_packages` lives in
- * each school's own per-tenant database (see database/migrations/tenant)
- * while `videos` is still central, and a cross-database foreign key isn't
- * possible in Postgres regardless.
  */
 return new class extends Migration
 {
@@ -24,8 +19,7 @@ return new class extends Migration
     {
         Schema::create('videos', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('tenant_id')->constrained()->cascadeOnDelete();
-            $table->unsignedBigInteger('course_package_id');
+            $table->foreignId('course_package_id')->constrained()->cascadeOnDelete();
             $table->string('title');
             $table->text('description')->nullable();
             $table->string('video_url');
@@ -39,8 +33,8 @@ return new class extends Migration
             // order" and "the tenant-wide free-preview ordering" (see
             // Public\VideoLessonController) are the two query shapes this
             // table exists to serve.
-            $table->index(['tenant_id', 'course_package_id', 'status', 'sort_order']);
-            $table->index(['tenant_id', 'status', 'sort_order']);
+            $table->index(['course_package_id', 'status', 'sort_order']);
+            $table->index(['status', 'sort_order']);
         });
     }
 

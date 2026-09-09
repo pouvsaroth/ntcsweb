@@ -34,7 +34,6 @@ class VideoLessonTest extends TestCase
         $videos = [];
         for ($i = 1; $i <= $count; $i++) {
             $videos[] = Video::factory()
-                ->forTenant($this->tenant)
                 ->forPackage($this->msWordPackage)
                 ->create(['title' => "Lesson {$i}", 'sort_order' => $i]);
         }
@@ -156,8 +155,8 @@ class VideoLessonTest extends TestCase
         $this->setUpAcademicCatalog();
         $this->msWordPackage->update(['show_videos' => true]);
 
-        Video::factory()->forTenant($this->tenant)->forPackage($this->msWordPackage)->inactive()->create(['title' => 'Draft lesson']);
-        Video::factory()->forTenant($this->tenant)->forPackage($this->msWordPackage)->create(['title' => 'Published lesson']);
+        Video::factory()->forPackage($this->msWordPackage)->inactive()->create(['title' => 'Draft lesson']);
+        Video::factory()->forPackage($this->msWordPackage)->create(['title' => 'Published lesson']);
 
         $response = $this->withHeader('X-Tenant', $this->tenant->slug)->getJson('/api/v1/public/video-lessons');
 

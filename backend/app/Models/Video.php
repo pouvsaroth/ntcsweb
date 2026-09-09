@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Models\Concerns\Auditable;
-use App\Models\Concerns\BelongsToTenant;
 use Database\Factories\VideoFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -21,7 +20,6 @@ use Illuminate\Support\Facades\Storage;
  * docblock for why the YouTube id/thumbnail/embed URL are derived from
  * `video_url` rather than stored.
  *
- * @property int $tenant_id
  * @property int $course_package_id
  * @property string $title
  * @property string $video_url
@@ -32,7 +30,9 @@ use Illuminate\Support\Facades\Storage;
 #[Fillable(['course_package_id', 'title', 'description', 'video_url', 'thumbnail_path', 'sort_order', 'status'])]
 class Video extends Model
 {
-    use Auditable, BelongsToTenant, HasFactory, SoftDeletes;
+    use Auditable, HasFactory, SoftDeletes;
+
+    protected $connection = 'tenant';
 
     /** @use HasFactory<VideoFactory> */
     public const STATUS_ACTIVE = 'active';
