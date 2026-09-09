@@ -32,7 +32,7 @@ class EnrollmentAccountingTest extends TestCase
         ]);
         $this->setUpAcademicCatalog();
         $this->setUpChartOfAccounts();
-        $student = Student::factory()->forTenant($this->tenant)->create();
+        $student = Student::factory()->create();
 
         $enrollment = $this->postJson('/api/v1/enrollments/package', [
             'student_id' => $student->id,

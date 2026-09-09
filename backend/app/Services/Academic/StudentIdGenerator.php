@@ -39,14 +39,6 @@ class StudentIdGenerator
     {
         $prefix = $this->prefixFor($tenant);
 
-        // `student_id_sequences` lives in the tenant database while
-        // `students` (read in highestExistingNumber() below) is still
-        // central, so this transaction and StudentController::store()'s own
-        // outer transaction target two different physical databases — they
-        // no longer nest as a single savepoint the way they did before the
-        // sequence table moved. A rollback of the outer (central) transaction
-        // after this one has already committed leaves a skipped number, not
-        // a correctness bug, just a (rare, harmless) gap in the sequence.
         return DB::connection('tenant')->transaction(function () use ($tenant, $prefix) {
             $this->ensureSequenceRow($tenant, $prefix);
 
@@ -89,7 +81,7 @@ class StudentIdGenerator
             return;
         }
 
-        $startingNumber = $this->highestExistingNumber($tenant->getKey(), $prefix) + 1;
+        $startingNumber = $this->highestExistingNumber($prefix) + 1;
 
         DB::connection('tenant')->table('student_id_sequences')->insertOrIgnore([
             'prefix' => $prefix,
@@ -99,10 +91,9 @@ class StudentIdGenerator
         ]);
     }
 
-    private function highestExistingNumber(int $tenantId, string $prefix): int
+    private function highestExistingNumber(string $prefix): int
     {
-        return DB::table('students')
-            ->where('tenant_id', $tenantId)
+        return DB::connection('tenant')->table('students')
             ->where('student_code', 'like', $prefix.'-%')
             ->pluck('student_code')
             ->map(function (string $code) use ($prefix) {

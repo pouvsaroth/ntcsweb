@@ -23,7 +23,7 @@ class InvoiceTest extends TestCase
     public function test_creating_an_invoice_computes_totals_from_items_on_the_backend(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::INVOICES_CREATE, Permissions::INVOICES_VIEW]);
-        $student = Student::factory()->forTenant($this->tenant)->create();
+        $student = Student::factory()->create();
         $book = Product::factory()->create(['price' => 10]);
         $tshirt = Product::factory()->create(['price' => 8]);
 
@@ -51,7 +51,7 @@ class InvoiceTest extends TestCase
     public function test_the_frontend_cannot_inject_arbitrary_totals(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::INVOICES_CREATE]);
-        $student = Student::factory()->forTenant($this->tenant)->create();
+        $student = Student::factory()->create();
         $product = Product::factory()->create(['price' => 10]);
 
         $response = $this->postJson('/api/v1/invoices', [
@@ -74,7 +74,7 @@ class InvoiceTest extends TestCase
     public function test_invoice_items_snapshot_the_unit_price_and_ignore_later_product_price_changes(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::INVOICES_CREATE, Permissions::INVOICES_VIEW]);
-        $student = Student::factory()->forTenant($this->tenant)->create();
+        $student = Student::factory()->create();
         $product = Product::factory()->create(['price' => 50]);
 
         $response = $this->postJson('/api/v1/invoices', [
@@ -95,7 +95,7 @@ class InvoiceTest extends TestCase
     public function test_a_variant_price_override_is_used_over_the_product_price(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::INVOICES_CREATE]);
-        $student = Student::factory()->forTenant($this->tenant)->create();
+        $student = Student::factory()->create();
         $product = Product::factory()->create(['price' => 10]);
         $variant = $product->variants()->create(['name' => 'Large', 'price_override' => 15]);
 
@@ -111,7 +111,7 @@ class InvoiceTest extends TestCase
     public function test_creating_an_invoice_requires_the_invoices_create_permission(): void
     {
         $this->actingAsAdminWithPermissions([]);
-        $student = Student::factory()->forTenant($this->tenant)->create();
+        $student = Student::factory()->create();
         $product = Product::factory()->create();
 
         $this->postJson('/api/v1/invoices', [
@@ -123,8 +123,8 @@ class InvoiceTest extends TestCase
     public function test_a_student_can_view_only_their_own_invoice(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::INVOICES_CREATE]);
-        $owner = Student::factory()->forTenant($this->tenant)->create();
-        $other = Student::factory()->forTenant($this->tenant)->create();
+        $owner = Student::factory()->create();
+        $other = Student::factory()->create();
         $product = Product::factory()->create(['price' => 10]);
 
         $invoiceResponse = $this->postJson('/api/v1/invoices', [
@@ -152,8 +152,8 @@ class InvoiceTest extends TestCase
     public function test_a_student_only_sees_their_own_invoices_in_the_my_invoices_list(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::INVOICES_CREATE]);
-        $owner = Student::factory()->forTenant($this->tenant)->create();
-        $other = Student::factory()->forTenant($this->tenant)->create();
+        $owner = Student::factory()->create();
+        $other = Student::factory()->create();
         $product = Product::factory()->create(['price' => 10]);
 
         $this->postJson('/api/v1/invoices', ['student_id' => $owner->id, 'items' => [['product_id' => $product->id, 'quantity' => 1]]])->assertCreated();
@@ -170,7 +170,7 @@ class InvoiceTest extends TestCase
     public function test_cancelling_an_invoice_requires_a_reason_and_writes_an_audit_log(): void
     {
         $admin = $this->actingAsAdminWithPermissions([Permissions::INVOICES_CREATE, Permissions::INVOICES_CANCEL]);
-        $student = Student::factory()->forTenant($this->tenant)->create();
+        $student = Student::factory()->create();
         $product = Product::factory()->create();
 
         $invoiceId = $this->postJson('/api/v1/invoices', [
@@ -201,7 +201,7 @@ class InvoiceTest extends TestCase
     public function test_a_paid_invoice_cannot_be_cancelled_without_cancelling_the_payment_first(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::INVOICES_CREATE, Permissions::INVOICES_CANCEL, Permissions::PAYMENTS_CREATE]);
-        $student = Student::factory()->forTenant($this->tenant)->create();
+        $student = Student::factory()->create();
         $product = Product::factory()->create(['price' => 10]);
 
         $invoiceId = $this->postJson('/api/v1/invoices', [

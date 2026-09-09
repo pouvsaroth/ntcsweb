@@ -30,7 +30,7 @@ class CoursePackagePriceChangeTest extends TestCase
         ]);
         $this->setUpAcademicCatalog();
 
-        $student = Student::factory()->forTenant($this->tenant)->create();
+        $student = Student::factory()->create();
 
         $response = $this->postJson('/api/v1/enrollments/package', [
             'student_id' => $student->id,
@@ -75,7 +75,7 @@ class CoursePackagePriceChangeTest extends TestCase
         // enrollment must reflect.
         CoursePackage::query()->whereKey($this->msWordPackage->id)->update(['fee_term' => 30]);
 
-        $student = Student::factory()->forTenant($this->tenant)->create();
+        $student = Student::factory()->create();
         $response = $this->postJson('/api/v1/enrollments/package', [
             'student_id' => $student->id,
             'class_id' => $this->computerEveningClass->id,

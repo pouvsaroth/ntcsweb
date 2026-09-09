@@ -39,7 +39,7 @@ class StoreEnrollmentPackageRequest extends FormRequest
         $tenantId = app(TenantContext::class)->idOrFail();
 
         return [
-            'student_id' => ['required', Rule::exists('students', 'id')->where('tenant_id', $tenantId)],
+            'student_id' => ['required', Rule::exists('tenant.students', 'id')],
             'class_id' => ['required', Rule::exists('classes', 'id')->where('tenant_id', $tenantId)],
 
             // Mirrors StoreEnrollmentRequest's own book_id uniqueness check —

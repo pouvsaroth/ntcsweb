@@ -25,7 +25,7 @@ class EnrollmentReEnrollmentTest extends TestCase
     {
         $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE, Permissions::ENROLLMENTS_CANCEL]);
         $this->setUpAcademicCatalog();
-        $student = Student::factory()->forTenant($this->tenant)->create();
+        $student = Student::factory()->create();
 
         $first = $this->postJson('/api/v1/enrollments/package', [
             'student_id' => $student->id,

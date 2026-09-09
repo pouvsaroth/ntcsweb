@@ -83,7 +83,7 @@ class VideoLessonTest extends TestCase
         $this->createVideos(5);
 
         $user = User::factory()->forTenant($this->tenant)->create();
-        $student = Student::factory()->forTenant($this->tenant)->create(['user_id' => $user->id]);
+        $student = Student::factory()->create(['user_id' => $user->id]);
         Enrollment::factory()
             ->forStudent($student)
             ->forClass($this->computerEveningClass)
@@ -109,7 +109,7 @@ class VideoLessonTest extends TestCase
         $this->createVideos(5);
 
         $user = User::factory()->forTenant($this->tenant)->create();
-        Student::factory()->forTenant($this->tenant)->create(['user_id' => $user->id]);
+        Student::factory()->create(['user_id' => $user->id]);
         // Deliberately no Enrollment created for this student.
 
         $response = $this->actingAs($user)

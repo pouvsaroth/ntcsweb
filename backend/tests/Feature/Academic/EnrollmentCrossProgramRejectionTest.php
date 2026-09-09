@@ -36,7 +36,7 @@ class EnrollmentCrossProgramRejectionTest extends TestCase
         $englishProgram = AcademicProgram::factory()->create(['code' => 'ENG', 'name' => 'English']);
         $englishPackage = CoursePackage::factory()->forProgram($englishProgram)->create(['code' => 'ENG101', 'price' => 40]);
 
-        $student = Student::factory()->forTenant($this->tenant)->create();
+        $student = Student::factory()->create();
 
         $response = $this->postJson('/api/v1/enrollments/package', [
             'student_id' => $student->id,
@@ -60,7 +60,7 @@ class EnrollmentCrossProgramRejectionTest extends TestCase
         $product = Product::factory()->create(['code' => 'EXCEL2024', 'name' => 'Excel 2024', 'type' => ProductType::COURSE_FEE, 'price' => 20]);
         $excelOnlyPackage = CoursePackage::factory()->forProgram($this->computerProgram)
             ->create(['code' => 'EXCEL2024', 'price' => 20, 'fee_term' => 20, 'product_id' => $product->getKey()]);
-        $student = Student::factory()->forTenant($this->tenant)->create();
+        $student = Student::factory()->create();
 
         $response = $this->postJson('/api/v1/enrollments/package', [
             'student_id' => $student->id,
@@ -79,7 +79,7 @@ class EnrollmentCrossProgramRejectionTest extends TestCase
         $this->setUpAcademicCatalog();
 
         $bareClass = SchoolClass::factory()->create(['name' => 'Unlinked class']);
-        $student = Student::factory()->forTenant($this->tenant)->create();
+        $student = Student::factory()->create();
 
         $response = $this->postJson('/api/v1/enrollments/package', [
             'student_id' => $student->id,

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Tests\Feature\Academic;
 
 use App\Models\Student;
-use App\Models\Tenant;
 use App\Support\Authorization\Permissions;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -18,12 +17,11 @@ class StudentTest extends TestCase
 {
     use HasAcademicAdmin, RefreshDatabase;
 
-    public function test_it_lists_students_for_the_current_tenant_only_with_numbered_pagination(): void
+    public function test_it_lists_students_with_numbered_pagination(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::STUDENTS_VIEW]);
 
         Student::factory()->count(3)->create();
-        $this->createForOtherTenant(fn () => Student::factory()->forTenant(Tenant::factory()->create())->create());
 
         $response = $this->getJson('/api/v1/students');
 
@@ -49,7 +47,7 @@ class StudentTest extends TestCase
         $response->assertCreated();
         $response->assertJsonPath('data.full_name', 'Sopheak Chan');
         $response->assertJsonPath('data.student_code', 'NTS-000001');
-        $this->assertDatabaseHas('students', ['student_code' => 'NTS-000001', 'tenant_id' => $this->tenant->id]);
+        $this->assertDatabaseHas('students', ['student_code' => 'NTS-000001'], connection: 'tenant');
     }
 
     /**
@@ -70,7 +68,7 @@ class StudentTest extends TestCase
 
         $response->assertCreated();
         $response->assertJsonPath('data.student_code', 'NTS-000001');
-        $this->assertDatabaseMissing('students', ['student_code' => 'NTS-999999']);
+        $this->assertDatabaseMissing('students', ['student_code' => 'NTS-999999'], connection: 'tenant');
     }
 
     /**
@@ -173,14 +171,6 @@ class StudentTest extends TestCase
         $this->deleteJson("/api/v1/students/{$student->id}")->assertForbidden();
     }
 
-    public function test_a_student_from_another_tenant_cannot_be_fetched_directly(): void
-    {
-        $this->actingAsAdminWithPermissions([Permissions::STUDENTS_VIEW]);
-        $otherStudent = $this->createForOtherTenant(fn () => Student::factory()->forTenant(Tenant::factory()->create())->create());
-
-        $this->getJson("/api/v1/students/{$otherStudent->id}")->assertNotFound();
-    }
-
     public function test_search_matches_first_and_last_name(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::STUDENTS_VIEW]);
@@ -226,7 +216,6 @@ class StudentTest extends TestCase
 
         $student = Student::where('phone', '012345678')->firstOrFail();
         $this->assertSame(2, $student->guardians()->count());
-        $this->assertSame($this->tenant->id, $student->guardians()->first()->tenant_id);
     }
 
     public function test_a_guardian_missing_its_required_phone_fails_validation(): void

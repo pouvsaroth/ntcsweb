@@ -9,7 +9,6 @@ use App\Http\Requests\Api\V1\Admin\StoreStudentRequest;
 use App\Http\Requests\Api\V1\Admin\UpdateStudentRequest;
 use App\Http\Resources\StudentResource;
 use App\Http\Responses\ApiResponse;
-use App\Models\Enrollment;
 use App\Models\Role;
 use App\Models\Student;
 use App\Services\Academic\StudentIdGenerator;
@@ -62,11 +61,15 @@ final class StudentController extends Controller
      */
     public function store(StoreStudentRequest $request): JsonResponse
     {
-        [$student, $temporaryPassword] = DB::transaction(function () use ($request) {
-            $temporaryPassword = null;
-            $userId = $request->safe()->input('user_id');
+        $temporaryPassword = null;
+        $userId = $request->safe()->input('user_id');
 
-            if ($userId === null) {
+        // A separate, central-connection transaction: provisioning a user
+        // (and its role) is the only central write this request makes, and
+        // `users`/`roles` live in a different physical database than
+        // everything below — the two can no longer share one transaction.
+        if ($userId === null) {
+            [$userId, $temporaryPassword] = DB::transaction(function () use ($request) {
                 $studentRole = Role::query()
                     ->where('tenant_id', $this->context->idOrFail())
                     ->where('slug', Role::STUDENT)
@@ -78,13 +81,15 @@ final class StudentController extends Controller
                     'phone' => $request->safe()->input('phone'),
                 ], $studentRole);
 
-                $userId = $provisioned['user']->id;
-                $temporaryPassword = $provisioned['temporary_password'];
-            }
+                return [$provisioned['user']->id, $provisioned['temporary_password']];
+            });
+        }
 
+        $student = DB::connection('tenant')->transaction(function () use ($request, $userId) {
             // Generated here, inside the same transaction as everything
-            // else this request writes — never from request input (see
-            // StoreStudentRequest, which has no student_code rule at all).
+            // else this request writes to the tenant database — never from
+            // request input (see StoreStudentRequest, which has no
+            // student_code rule at all).
             $studentCode = $this->studentIdGenerator->next($this->context->getOrFail());
 
             $student = Student::query()->create([
@@ -97,7 +102,7 @@ final class StudentController extends Controller
             $student->guardians()->createMany($request->safe()->input('guardians', []));
             $student->educations()->createMany($request->safe()->input('educations', []));
 
-            return [$student, $temporaryPassword];
+            return $student;
         });
 
         // `data` stays exactly the StudentResource shape every other
@@ -116,17 +121,7 @@ final class StudentController extends Controller
     {
         $this->authorize('view', $student);
 
-        $student->load(['guardians', 'educations', 'village.commune.district.province']);
-
-        // `enrollments` lives in the tenant database while `students` is
-        // still central, so this can no longer be loadCount('enrollments')
-        // (a single cross-database subquery) — resolved as a separate
-        // tenant-connection query and attached manually, the shape
-        // StudentResource expects via whenCounted().
-        $student->setAttribute(
-            'enrollments_count',
-            Enrollment::query()->where('student_id', $student->id)->count(),
-        );
+        $student->load(['guardians', 'educations', 'village.commune.district.province'])->loadCount('enrollments');
 
         return ApiResponse::success(new StudentResource($student));
     }
@@ -136,7 +131,7 @@ final class StudentController extends Controller
         $previousPhotoPath = $student->photo_path;
         $newPhotoPath = $request->hasFile('photo') ? $this->storePhoto($request) : null;
 
-        DB::transaction(function () use ($request, $student, $newPhotoPath) {
+        DB::connection('tenant')->transaction(function () use ($request, $student, $newPhotoPath) {
             $student->update([
                 ...$request->safe()->except(['photo', 'guardians', 'educations']),
                 ...($newPhotoPath !== null ? ['photo_path' => $newPhotoPath] : []),

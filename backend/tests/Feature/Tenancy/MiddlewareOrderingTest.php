@@ -44,7 +44,7 @@ class MiddlewareOrderingTest extends TestCase
         $user = User::factory()->forTenant($tenant)->create();
         $user->attachRoles($role);
 
-        $student = $this->withoutTenancy(fn () => Student::factory()->forTenant($tenant)->create());
+        $student = Student::factory()->create();
 
         $token = $user->createToken('regression-test')->plainTextToken;
 
@@ -58,10 +58,5 @@ class MiddlewareOrderingTest extends TestCase
 
         $response->assertOk();
         $response->assertJsonPath('data.id', $student->id);
-    }
-
-    private function withoutTenancy(\Closure $callback): mixed
-    {
-        return app(\App\Support\Tenancy\TenantContext::class)->withoutTenancy($callback);
     }
 }

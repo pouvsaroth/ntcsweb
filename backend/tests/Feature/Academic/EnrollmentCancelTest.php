@@ -32,7 +32,7 @@ class EnrollmentCancelTest extends TestCase
     {
         $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE, Permissions::ENROLLMENTS_CANCEL]);
         $this->setUpAcademicCatalog();
-        $enrollmentId = $this->enroll(Student::factory()->forTenant($this->tenant)->create());
+        $enrollmentId = $this->enroll(Student::factory()->create());
 
         $response = $this->postJson("/api/v1/enrollments/{$enrollmentId}/cancel", ['reason' => 'Moved to another school']);
 
@@ -47,7 +47,7 @@ class EnrollmentCancelTest extends TestCase
     {
         $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE, Permissions::ENROLLMENTS_CANCEL]);
         $this->setUpAcademicCatalog();
-        $enrollmentId = $this->enroll(Student::factory()->forTenant($this->tenant)->create());
+        $enrollmentId = $this->enroll(Student::factory()->create());
         $this->postJson("/api/v1/enrollments/{$enrollmentId}/cancel", ['reason' => 'first'])->assertOk();
 
         $response = $this->postJson("/api/v1/enrollments/{$enrollmentId}/cancel", ['reason' => 'second']);
@@ -60,7 +60,7 @@ class EnrollmentCancelTest extends TestCase
     {
         $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE]);
         $this->setUpAcademicCatalog();
-        $enrollmentId = $this->enroll(Student::factory()->forTenant($this->tenant)->create());
+        $enrollmentId = $this->enroll(Student::factory()->create());
 
         $this->postJson("/api/v1/enrollments/{$enrollmentId}/cancel", ['reason' => 'x'])->assertForbidden();
     }

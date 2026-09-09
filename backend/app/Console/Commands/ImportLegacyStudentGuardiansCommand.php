@@ -4,19 +4,24 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
+use App\Models\Tenant;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Stancl\Tenancy\Database\DatabaseManager;
 
 /**
  * Step 2 of the legacy student-guardian migration: load the CSV that
  * scripts/legacy-import/export-legacy-student-guardians.php produced into
  * `student_guardians` for one tenant.
  *
- * Same DB::table() approach as ImportLegacyStudentsCommand, for the same
- * reason — no ambient TenantContext to resolve outside a request/queue.
- * `student_id` is resolved from the CSV's StudentID against `students`
- * rather than trusted from any surrogate key, since the legacy
- * Student_PKID never made the trip (see the export script's doc comment).
+ * Same DB::connection('tenant')->table() approach as
+ * ImportLegacyStudentsCommand, for the same reason — no ambient
+ * TenantContext to have already pointed the `tenant` connection at the
+ * right physical database outside a request/queue; createTenantConnection()
+ * below does that explicitly. `student_id` is resolved from the CSV's
+ * StudentID against `students` rather than trusted from any surrogate key,
+ * since the legacy Student_PKID never made the trip (see the export
+ * script's doc comment).
  *
  * `guardian_type` is translated from the legacy system's raw int code to a
  * GUARDIAN_TYPE lookup code via a mapping confirmed against the old
@@ -24,8 +29,7 @@ use Illuminate\Support\Facades\DB;
  * that created this table originally assumed no such mapping was
  * verifiable and stored the raw code instead; this supersedes that.
  *
- *   docker compose exec -e DB_DATABASE=ntcsdbtest php \
- *     php artisan students:import-legacy-guardians storage/app/legacy-imports/t_school_student_guardian_export.csv \
+ *   php artisan students:import-legacy-guardians storage/app/legacy-imports/t_school_student_guardian_export.csv \
  *     --tenant=1 --dry-run
  */
 class ImportLegacyStudentGuardiansCommand extends Command
@@ -71,16 +75,18 @@ class ImportLegacyStudentGuardiansCommand extends Command
         }
         $tenantId = (int) $tenantId;
 
-        $tenant = DB::table('tenants')->where('id', $tenantId)->first();
+        $tenant = Tenant::query()->find($tenantId);
         if ($tenant === null) {
-            $this->components->error("No tenant with id {$tenantId} in this database (".DB::connection()->getDatabaseName().').');
+            $this->components->error("No tenant with id {$tenantId}.");
 
             return self::FAILURE;
         }
 
+        app(DatabaseManager::class)->createTenantConnection($tenant);
+
         $dryRun = (bool) $this->option('dry-run');
 
-        $existing = DB::table('student_guardians')->where('tenant_id', $tenantId)->count();
+        $existing = DB::connection('tenant')->table('student_guardians')->count();
         if ($existing > 0 && ! $dryRun && ! $this->option('force')) {
             $this->components->error(
                 "Tenant #{$tenantId} already has {$existing} student_guardians row(s) — this table has no natural key to "
@@ -91,11 +97,10 @@ class ImportLegacyStudentGuardiansCommand extends Command
         }
 
         $this->components->info(sprintf(
-            '%s student guardians into tenant #%d (%s) on database "%s" from %s',
+            '%s student guardians into tenant #%d (%s) from %s',
             $dryRun ? 'Validating' : 'Importing',
             $tenantId,
             $tenant->name,
-            DB::connection()->getDatabaseName(),
             $path,
         ));
 
@@ -107,16 +112,17 @@ class ImportLegacyStudentGuardiansCommand extends Command
         }
 
         try {
-            return $this->importRows($handle, $tenantId, $dryRun);
+            return $this->importRows($handle, $dryRun);
         } finally {
             fclose($handle);
+            app(DatabaseManager::class)->purgeTenantConnection();
         }
     }
 
     /**
      * @param  resource  $handle
      */
-    private function importRows($handle, int $tenantId, bool $dryRun): int
+    private function importRows($handle, bool $dryRun): int
     {
         $columns = $this->readHeader($handle);
         if ($columns === null) {
@@ -133,14 +139,13 @@ class ImportLegacyStudentGuardiansCommand extends Command
         /** @var list<array<string, mixed>> $buffer */
         $buffer = [];
 
-        $flush = function () use (&$buffer, &$importedCount, &$skippedCount, &$errors, $tenantId, $dryRun) {
+        $flush = function () use (&$buffer, &$importedCount, &$skippedCount, &$errors, $dryRun) {
             if ($buffer === []) {
                 return;
             }
 
             $codes = array_unique(array_column($buffer, 'student_code'));
-            $studentIdsByCode = DB::table('students')
-                ->where('tenant_id', $tenantId)
+            $studentIdsByCode = DB::connection('tenant')->table('students')
                 ->whereIn('student_code', $codes)
                 ->pluck('id', 'student_code');
 
@@ -160,7 +165,6 @@ class ImportLegacyStudentGuardiansCommand extends Command
                 unset($row['_row_number'], $row['student_code']);
                 $toInsert[] = [
                     ...$row,
-                    'tenant_id' => $tenantId,
                     'student_id' => $studentId,
                     'created_at' => $now,
                     'updated_at' => $now,
@@ -169,7 +173,7 @@ class ImportLegacyStudentGuardiansCommand extends Command
             }
 
             if ($toInsert !== [] && ! $dryRun) {
-                DB::table('student_guardians')->insert($toInsert);
+                DB::connection('tenant')->table('student_guardians')->insert($toInsert);
             }
 
             $buffer = [];

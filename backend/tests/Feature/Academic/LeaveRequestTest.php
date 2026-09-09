@@ -27,7 +27,7 @@ class LeaveRequestTest extends TestCase
     private function studentWithUser(): array
     {
         $user = User::factory()->forTenant($this->tenant)->create();
-        $student = Student::factory()->forTenant($this->tenant)->create(['user_id' => $user->id]);
+        $student = Student::factory()->create(['user_id' => $user->id]);
 
         return [$student, $user];
     }

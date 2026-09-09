@@ -22,7 +22,7 @@ class RevenueRecognitionTest extends TestCase
 
     private function createInvoiceAndPay(array $items, float $amount): int
     {
-        $student = Student::factory()->forTenant($this->tenant)->create();
+        $student = Student::factory()->create();
 
         $invoiceId = $this->postJson('/api/v1/invoices', [
             'student_id' => $student->id,
@@ -89,7 +89,7 @@ class RevenueRecognitionTest extends TestCase
         $course = Product::factory()->create(['type' => ProductType::COURSE_FEE, 'price' => 80]);
         $book = Product::factory()->create(['type' => ProductType::BOOK, 'price' => 20]);
 
-        $student = Student::factory()->forTenant($this->tenant)->create();
+        $student = Student::factory()->create();
         $invoiceId = $this->postJson('/api/v1/invoices', [
             'student_id' => $student->id,
             'items' => [
@@ -140,7 +140,7 @@ class RevenueRecognitionTest extends TestCase
         $this->setUpChartOfAccounts();
 
         $course = Product::factory()->create(['type' => ProductType::COURSE_FEE, 'price' => 100]);
-        $student = Student::factory()->forTenant($this->tenant)->create();
+        $student = Student::factory()->create();
 
         $invoiceId = $this->postJson('/api/v1/invoices', [
             'student_id' => $student->id,
@@ -190,7 +190,7 @@ class RevenueRecognitionTest extends TestCase
         $this->setUpChartOfAccounts();
 
         $course = Product::factory()->create(['type' => ProductType::COURSE_FEE, 'price' => 100]);
-        $student = Student::factory()->forTenant($this->tenant)->create();
+        $student = Student::factory()->create();
         $this->postJson('/api/v1/invoices', [
             'student_id' => $student->id,
             'items' => [['product_id' => $course->id, 'quantity' => 1]],

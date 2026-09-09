@@ -32,7 +32,7 @@ class EnrollmentPackageServiceTest extends TestCase
     {
         $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE]);
         $this->setUpAcademicCatalog();
-        $student = Student::factory()->forTenant($this->tenant)->create();
+        $student = Student::factory()->create();
 
         $response = $this->postJson('/api/v1/enrollments/package', [
             'student_id' => $student->id,
@@ -73,7 +73,7 @@ class EnrollmentPackageServiceTest extends TestCase
         $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE]);
         $this->setUpAcademicCatalog();
         $this->msWordPackage->update(['is_active' => false]);
-        $student = Student::factory()->forTenant($this->tenant)->create();
+        $student = Student::factory()->create();
 
         $this->postJson('/api/v1/enrollments/package', [
             'student_id' => $student->id,
@@ -90,7 +90,7 @@ class EnrollmentPackageServiceTest extends TestCase
     {
         $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE]);
         $this->setUpAcademicCatalog();
-        $student = Student::factory()->forTenant($this->tenant)->create();
+        $student = Student::factory()->create();
 
         $this->postJson('/api/v1/enrollments/package', [
             'student_id' => $student->id,
@@ -115,7 +115,7 @@ class EnrollmentPackageServiceTest extends TestCase
     {
         $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE]);
         $this->setUpAcademicCatalog();
-        $student = Student::factory()->forTenant($this->tenant)->create();
+        $student = Student::factory()->create();
 
         $room = Classroom::factory()->create();
         $table = ClassroomTable::factory()->create(['classroom_id' => $room->id]);
@@ -142,7 +142,7 @@ class EnrollmentPackageServiceTest extends TestCase
     {
         $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE]);
         $this->setUpAcademicCatalog();
-        $student = Student::factory()->forTenant($this->tenant)->create();
+        $student = Student::factory()->create();
 
         $response = $this->postJson('/api/v1/enrollments/package', [
             'student_id' => $student->id,
@@ -162,7 +162,7 @@ class EnrollmentPackageServiceTest extends TestCase
         $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE]);
         $this->setUpAcademicCatalog();
         $this->msWordPackage->update(['fee_video' => null]);
-        $student = Student::factory()->forTenant($this->tenant)->create();
+        $student = Student::factory()->create();
 
         $response = $this->postJson('/api/v1/enrollments/package', [
             'student_id' => $student->id,
@@ -180,7 +180,7 @@ class EnrollmentPackageServiceTest extends TestCase
     {
         $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE]);
         $this->setUpAcademicCatalog();
-        $student = Student::factory()->forTenant($this->tenant)->create();
+        $student = Student::factory()->create();
 
         $response = $this->postJson('/api/v1/enrollments/package', [
             'student_id' => $student->id,
@@ -198,7 +198,7 @@ class EnrollmentPackageServiceTest extends TestCase
         $this->assertSame('20.00', (string) $invoice->total);
 
         $rejected = $this->postJson('/api/v1/enrollments/package', [
-            'student_id' => Student::factory()->forTenant($this->tenant)->create()->id,
+            'student_id' => Student::factory()->create()->id,
             'class_id' => $this->computerEveningClass->id,
             'course_package_id' => $this->msWordPackage->id,
             'fee_type' => 'term',
@@ -212,7 +212,7 @@ class EnrollmentPackageServiceTest extends TestCase
     {
         $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE]);
         $this->setUpAcademicCatalog();
-        $student = Student::factory()->forTenant($this->tenant)->create();
+        $student = Student::factory()->create();
 
         $this->postJson('/api/v1/enrollments/package', [
             'student_id' => $student->id,
@@ -234,7 +234,7 @@ class EnrollmentPackageServiceTest extends TestCase
     {
         $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE]);
         $this->setUpAcademicCatalog();
-        $student = Student::factory()->forTenant($this->tenant)->create();
+        $student = Student::factory()->create();
 
         $this->postJson('/api/v1/enrollments/package', [
             'student_id' => $student->id,
@@ -256,7 +256,7 @@ class EnrollmentPackageServiceTest extends TestCase
     {
         $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE]);
         $this->setUpAcademicCatalog();
-        $student = Student::factory()->forTenant($this->tenant)->create();
+        $student = Student::factory()->create();
 
         $this->postJson('/api/v1/enrollments/package', [
             'student_id' => $student->id,
@@ -273,7 +273,7 @@ class EnrollmentPackageServiceTest extends TestCase
     {
         $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE]);
         $this->setUpAcademicCatalog();
-        $student = Student::factory()->forTenant($this->tenant)->create();
+        $student = Student::factory()->create();
 
         $response = $this->postJson('/api/v1/enrollments/package', [
             'student_id' => $student->id,

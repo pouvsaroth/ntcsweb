@@ -58,7 +58,7 @@ class UpdateStudentRequest extends FormRequest
             'user_id' => [
                 'nullable',
                 Rule::exists('users', 'id')->where('tenant_id', $tenantId),
-                Rule::unique('students', 'user_id')->where('tenant_id', $tenantId)->ignore($student),
+                Rule::unique('tenant.students', 'user_id')->ignore($student),
             ],
 
             // When provided, replaces this student's entire guardian/education

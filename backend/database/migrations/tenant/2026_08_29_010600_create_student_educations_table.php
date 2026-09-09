@@ -19,7 +19,6 @@ return new class extends Migration
         Schema::create('student_educations', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
             $table->foreignId('student_id')->constrained('students')->cascadeOnDelete();
 
             $table->string('school_name', 200);
@@ -32,7 +31,7 @@ return new class extends Migration
             $table->timestamps();
 
             // "this student's education history" — the only query pattern this table serves.
-            $table->index(['tenant_id', 'student_id']);
+            $table->index('student_id');
         });
     }
 

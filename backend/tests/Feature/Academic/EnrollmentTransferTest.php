@@ -28,7 +28,7 @@ class EnrollmentTransferTest extends TestCase
     {
         $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE, Permissions::ENROLLMENTS_TRANSFER]);
         $this->setUpAcademicCatalog();
-        $student = Student::factory()->forTenant($this->tenant)->create();
+        $student = Student::factory()->create();
 
         $originalId = $this->postJson('/api/v1/enrollments/package', [
             'student_id' => $student->id,
@@ -64,7 +64,7 @@ class EnrollmentTransferTest extends TestCase
     {
         $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE, Permissions::ENROLLMENTS_TRANSFER]);
         $this->setUpAcademicCatalog();
-        $student = Student::factory()->forTenant($this->tenant)->create();
+        $student = Student::factory()->create();
 
         $originalId = $this->postJson('/api/v1/enrollments/package', [
             'student_id' => $student->id,
@@ -86,7 +86,7 @@ class EnrollmentTransferTest extends TestCase
     {
         $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE, Permissions::ENROLLMENTS_TRANSFER]);
         $this->setUpAcademicCatalog();
-        $student = Student::factory()->forTenant($this->tenant)->create();
+        $student = Student::factory()->create();
 
         $originalId = $this->postJson('/api/v1/enrollments/package', [
             'student_id' => $student->id,
@@ -108,7 +108,7 @@ class EnrollmentTransferTest extends TestCase
     {
         $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE, Permissions::ENROLLMENTS_TRANSFER]);
         $this->setUpAcademicCatalog();
-        $student = Student::factory()->forTenant($this->tenant)->create();
+        $student = Student::factory()->create();
 
         $originalId = $this->postJson('/api/v1/enrollments/package', [
             'student_id' => $student->id,
@@ -152,7 +152,7 @@ class EnrollmentTransferTest extends TestCase
     {
         $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE, Permissions::ENROLLMENTS_TRANSFER]);
         $this->setUpAcademicCatalog();
-        $student = Student::factory()->forTenant($this->tenant)->create();
+        $student = Student::factory()->create();
         $excel = $this->excelPackage();
 
         $originalId = $this->postJson('/api/v1/enrollments/package', [
@@ -181,7 +181,7 @@ class EnrollmentTransferTest extends TestCase
     {
         $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE, Permissions::ENROLLMENTS_TRANSFER]);
         $this->setUpAcademicCatalog();
-        $student = Student::factory()->forTenant($this->tenant)->create();
+        $student = Student::factory()->create();
         $excel = $this->excelPackage();
 
         $originalId = $this->postJson('/api/v1/enrollments/package', [
@@ -210,7 +210,7 @@ class EnrollmentTransferTest extends TestCase
     {
         $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE, Permissions::ENROLLMENTS_TRANSFER]);
         $this->setUpAcademicCatalog();
-        $student = Student::factory()->forTenant($this->tenant)->create();
+        $student = Student::factory()->create();
 
         $originalId = $this->postJson('/api/v1/enrollments/package', [
             'student_id' => $student->id,

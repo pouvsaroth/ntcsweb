@@ -26,7 +26,6 @@ return new class extends Migration
         Schema::create('student_guardians', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
             $table->foreignId('student_id')->constrained('students')->cascadeOnDelete();
 
             $table->string('guardian_name', 100);
@@ -39,7 +38,7 @@ return new class extends Migration
             $table->timestamps();
 
             // "this student's guardians" — the only query pattern this table serves.
-            $table->index(['tenant_id', 'student_id']);
+            $table->index('student_id');
         });
     }
 

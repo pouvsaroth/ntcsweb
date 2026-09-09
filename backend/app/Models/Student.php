@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Models\Concerns\Auditable;
-use App\Models\Concerns\BelongsToTenant;
 use App\Support\Audit\AuditAction;
 use Database\Factories\StudentFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -27,7 +26,6 @@ use Illuminate\Support\Facades\Storage;
  * records from it is a column-to-column mapping — see the migration that
  * introduced these columns for the exact correspondence.
  *
- * @property int $tenant_id
  * @property string $student_code
  * @property string $first_name
  * @property string $last_name
@@ -43,7 +41,9 @@ use Illuminate\Support\Facades\Storage;
 ])]
 class Student extends Model
 {
-    use Auditable, BelongsToTenant, HasFactory, SoftDeletes;
+    use Auditable, HasFactory, SoftDeletes;
+
+    protected $connection = 'tenant';
 
     /** @use HasFactory<StudentFactory> */
     public const STATUS_ACTIVE = 'active';

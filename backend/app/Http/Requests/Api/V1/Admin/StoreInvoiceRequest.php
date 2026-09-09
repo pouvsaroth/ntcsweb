@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Requests\Api\V1\Admin;
 
 use App\Models\Invoice;
-use App\Support\Tenancy\TenantContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -24,10 +23,8 @@ class StoreInvoiceRequest extends FormRequest
 
     public function rules(): array
     {
-        $tenantId = app(TenantContext::class)->idOrFail();
-
         return [
-            'student_id' => ['required', Rule::exists('students', 'id')->where('tenant_id', $tenantId)],
+            'student_id' => ['required', Rule::exists('tenant.students', 'id')],
             'invoice_date' => ['nullable', 'date'],
             'due_date' => ['nullable', 'date', 'after_or_equal:invoice_date'],
             'discount' => ['nullable', 'numeric', 'min:0', 'max:999999.99'],

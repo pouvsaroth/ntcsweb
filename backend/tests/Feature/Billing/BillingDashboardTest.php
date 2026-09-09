@@ -24,7 +24,7 @@ class BillingDashboardTest extends TestCase
         $this->actingAsAdminWithPermissions([
             Permissions::INVOICES_CREATE, Permissions::PAYMENTS_CREATE, Permissions::BILLING_REPORTS_VIEW,
         ]);
-        $student = Student::factory()->forTenant($this->tenant)->create();
+        $student = Student::factory()->create();
         $product = Product::factory()->create(['price' => 40]);
 
         $invoiceId = $this->postJson('/api/v1/invoices', [
@@ -54,7 +54,7 @@ class BillingDashboardTest extends TestCase
     public function test_payments_by_method_aggregates_correctly(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::INVOICES_CREATE, Permissions::PAYMENTS_CREATE, Permissions::BILLING_REPORTS_VIEW]);
-        $student = Student::factory()->forTenant($this->tenant)->create();
+        $student = Student::factory()->create();
         $product = Product::factory()->create(['price' => 100]);
 
         $invoiceId = $this->postJson('/api/v1/invoices', [

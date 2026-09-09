@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -14,13 +13,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * this is its own table (a student can have more than one) and why
  * `guardian_type` is free text.
  *
- * @property int $tenant_id
  * @property int $student_id
  */
 #[Fillable(['student_id', 'guardian_name', 'guardian_type', 'address', 'phone', 'email', 'remark'])]
 class StudentGuardian extends Model
 {
-    use BelongsToTenant;
+    protected $connection = 'tenant';
 
     public function student(): BelongsTo
     {

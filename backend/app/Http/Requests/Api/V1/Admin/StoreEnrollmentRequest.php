@@ -23,7 +23,7 @@ class StoreEnrollmentRequest extends FormRequest
         $tenantId = app(TenantContext::class)->idOrFail();
 
         return [
-            'student_id' => ['required', Rule::exists('students', 'id')->where('tenant_id', $tenantId)],
+            'student_id' => ['required', Rule::exists('tenant.students', 'id')],
             'class_id' => ['required', Rule::exists('classes', 'id')->where('tenant_id', $tenantId)],
 
             // A student can now take more than one book within the same

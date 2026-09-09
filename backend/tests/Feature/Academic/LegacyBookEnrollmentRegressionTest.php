@@ -30,7 +30,7 @@ class LegacyBookEnrollmentRegressionTest extends TestCase
 
         $book = Book::factory()->create();
         $this->computerEveningClass->books()->attach($book->id);
-        $student = Student::factory()->forTenant($this->tenant)->create();
+        $student = Student::factory()->create();
 
         $response = $this->postJson('/api/v1/enrollments', [
             'student_id' => $student->id,
@@ -53,8 +53,8 @@ class LegacyBookEnrollmentRegressionTest extends TestCase
 
         $book = Book::factory()->create();
         $this->computerEveningClass->books()->attach($book->id);
-        $bookStudent = Student::factory()->forTenant($this->tenant)->create();
-        $packageStudent = Student::factory()->forTenant($this->tenant)->create();
+        $bookStudent = Student::factory()->create();
+        $packageStudent = Student::factory()->create();
 
         $this->postJson('/api/v1/enrollments', [
             'student_id' => $bookStudent->id, 'class_id' => $this->computerEveningClass->id,

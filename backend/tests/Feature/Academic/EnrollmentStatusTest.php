@@ -31,7 +31,7 @@ class EnrollmentStatusTest extends TestCase
     {
         $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE, Permissions::ENROLLMENTS_CHANGE_STATUS]);
         $this->setUpAcademicCatalog();
-        $enrollmentId = $this->enroll(Student::factory()->forTenant($this->tenant)->create());
+        $enrollmentId = $this->enroll(Student::factory()->create());
 
         $response = $this->postJson("/api/v1/enrollments/{$enrollmentId}/status", ['status' => Enrollment::STATUS_EXAM_READY]);
 
@@ -44,7 +44,7 @@ class EnrollmentStatusTest extends TestCase
     {
         $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE, Permissions::ENROLLMENTS_CHANGE_STATUS]);
         $this->setUpAcademicCatalog();
-        $enrollmentId = $this->enroll(Student::factory()->forTenant($this->tenant)->create());
+        $enrollmentId = $this->enroll(Student::factory()->create());
 
         $this->postJson("/api/v1/enrollments/{$enrollmentId}/status", ['status' => Enrollment::STATUS_ABANDONED])
             ->assertUnprocessable()
@@ -66,7 +66,7 @@ class EnrollmentStatusTest extends TestCase
     {
         $admin = $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE, Permissions::ENROLLMENTS_CHANGE_STATUS, Permissions::ENROLLMENTS_VIEW]);
         $this->setUpAcademicCatalog();
-        $enrollmentId = $this->enroll(Student::factory()->forTenant($this->tenant)->create());
+        $enrollmentId = $this->enroll(Student::factory()->create());
 
         $this->postJson("/api/v1/enrollments/{$enrollmentId}/status", [
             'status' => Enrollment::STATUS_SUSPENDED,
@@ -90,7 +90,7 @@ class EnrollmentStatusTest extends TestCase
     {
         $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE]);
         $this->setUpAcademicCatalog();
-        $enrollmentId = $this->enroll(Student::factory()->forTenant($this->tenant)->create());
+        $enrollmentId = $this->enroll(Student::factory()->create());
 
         $this->postJson("/api/v1/enrollments/{$enrollmentId}/status", ['status' => Enrollment::STATUS_COMPLETED])
             ->assertForbidden();
@@ -102,7 +102,7 @@ class EnrollmentStatusTest extends TestCase
             Permissions::ENROLLMENTS_CREATE, Permissions::ENROLLMENTS_CHANGE_STATUS, Permissions::ENROLLMENTS_CANCEL,
         ]);
         $this->setUpAcademicCatalog();
-        $enrollmentId = $this->enroll(Student::factory()->forTenant($this->tenant)->create());
+        $enrollmentId = $this->enroll(Student::factory()->create());
         $this->postJson("/api/v1/enrollments/{$enrollmentId}/cancel", ['reason' => 'x'])->assertOk();
 
         $this->postJson("/api/v1/enrollments/{$enrollmentId}/status", ['status' => Enrollment::STATUS_COMPLETED])

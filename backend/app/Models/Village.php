@@ -27,4 +27,21 @@ class Village extends Model
     {
         return $this->belongsTo(Commune::class);
     }
+
+    /**
+     * Pins Village to the central connection explicitly — see
+     * BelongsToTenant::getConnectionName()'s docblock for why this can't be
+     * left implicit: a model reached through a relationship from an
+     * already-converted, database-per-tenant model (e.g. Student::village(),
+     * now that Student is one) would otherwise silently follow it onto the
+     * `tenant` connection. Village isn't using that trait — it's
+     * platform-global, not tenant-owned — so it needs this declared
+     * directly, same as Role/User/Language. Commune/District/Province don't
+     * need their own copy: each inherits this same explicit central
+     * connection from the model above it in the chain.
+     */
+    public function getConnectionName(): ?string
+    {
+        return config('tenancy.database.central_connection');
+    }
 }

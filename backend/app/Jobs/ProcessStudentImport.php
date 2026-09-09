@@ -184,7 +184,6 @@ class ProcessStudentImport implements ShouldQueue
                 unset($row['_row_number']);
                 $toInsert[] = [
                     ...$row,
-                    'tenant_id' => app(TenantContext::class)->idOrFail(),
                     'status' => Student::STATUS_ACTIVE,
                     'created_at' => $now,
                     'updated_at' => $now,

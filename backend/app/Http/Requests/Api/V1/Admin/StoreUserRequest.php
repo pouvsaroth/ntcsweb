@@ -42,7 +42,7 @@ class StoreUserRequest extends FormRequest
         return [
             'student_id' => [
                 'nullable',
-                Rule::exists('students', 'id')->where('tenant_id', $tenantId)->whereNull('user_id'),
+                Rule::exists('tenant.students', 'id')->whereNull('user_id'),
             ],
             'name' => ['required', 'string', 'max:255'],
             'phone' => ['required', 'string', 'max:32'],

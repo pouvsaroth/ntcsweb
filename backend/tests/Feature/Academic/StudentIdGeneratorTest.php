@@ -79,7 +79,7 @@ class StudentIdGeneratorTest extends TestCase
         $abcResponse->assertJsonPath('data.student_code', 'ABC-000001');
 
         // The earlier NTS student is untouched by the prefix change.
-        $this->assertDatabaseHas('students', ['student_code' => 'NTS-000001']);
+        $this->assertDatabaseHas('students', ['student_code' => 'NTS-000001'], connection: 'tenant');
     }
 
     public function test_switching_back_to_a_previous_prefix_resumes_its_own_count(): void

@@ -10,7 +10,6 @@ use App\Models\ClassroomTable;
 use App\Models\Enrollment;
 use App\Models\SchoolClass;
 use App\Models\Student;
-use App\Models\Tenant;
 use App\Support\Authorization\Permissions;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\HasAcademicAdmin;
@@ -132,22 +131,6 @@ class EnrollmentTest extends TestCase
 
         $response->assertUnprocessable();
         $response->assertJsonValidationErrors('book_id');
-    }
-
-    public function test_an_enrollment_cannot_reference_a_student_from_another_tenant(): void
-    {
-        $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE]);
-        $foreignStudent = $this->createForOtherTenant(fn () => Student::factory()->forTenant(Tenant::factory()->create())->create());
-        $book = Book::factory()->create();
-        $class = $this->classOffering($book);
-
-        $response = $this->postJson('/api/v1/enrollments', [
-            'student_id' => $foreignStudent->id, 'class_id' => $class->id, 'book_id' => $book->id,
-            'enrolled_at' => '2026-01-15', 'fee' => 25,
-        ]);
-
-        $response->assertUnprocessable();
-        $response->assertJsonValidationErrors('student_id');
     }
 
     public function test_it_updates_enrollment_status(): void

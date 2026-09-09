@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
+use App\Models\Tenant;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Stancl\Tenancy\Database\DatabaseManager;
 use Throwable;
 
 /**
@@ -14,22 +16,20 @@ use Throwable;
  * scripts/legacy-import/export-legacy-students.php produced into `students`
  * for one tenant.
  *
- * Deliberately a plain DB::table() writer, not the Student Eloquent model:
- * this runs from the CLI, outside any request/queue context, so there is no
- * ambient TenantContext for BelongsToTenant's global scope or the
- * `creating` tenant-stamping hook to resolve — tenant_id is supplied
- * explicitly instead, exactly like Student::forTenant()/acrossTenants()
- * already do for cross-tenant code. Column mapping, required-field checks,
- * duplicate handling, and date parsing all mirror
- * App\Jobs\ProcessStudentImport so a row that this command accepts or
- * rejects would be accepted or rejected the same way through the admin
- * upload screen.
+ * `students` lives in that tenant's own per-tenant database now, not a
+ * shared one filtered by tenant_id — this runs from the CLI, outside any
+ * request/queue context, so there is no ambient TenantContext to have
+ * already pointed the `tenant` connection at the right physical database;
+ * createTenantConnection() below does that explicitly instead, the same
+ * call ResolveTenant/ProcessStudentImport make. A plain DB::table() writer
+ * on that connection, not the Student Eloquent model, only because this
+ * predates the CSV-column-mapping/validation logic being worth sharing with
+ * the model layer. Column mapping, required-field checks, duplicate
+ * handling, and date parsing all mirror App\Jobs\ProcessStudentImport so a
+ * row that this command accepts or rejects would be accepted or rejected
+ * the same way through the admin upload screen.
  *
- * Run against a specific database without touching .env by overriding the
- * connection env var for just this command, e.g. from the host:
- *
- *   docker compose exec -e DB_DATABASE=ntcsdbtest php \
- *     php artisan students:import-legacy storage/app/legacy-imports/t_student_export.csv \
+ *   php artisan students:import-legacy storage/app/legacy-imports/t_student_export.csv \
  *     --tenant=1 --dry-run
  *
  * Drop --dry-run once the dry-run summary looks right.
@@ -83,20 +83,21 @@ class ImportLegacyStudentsCommand extends Command
         }
         $tenantId = (int) $tenantId;
 
-        $tenant = DB::table('tenants')->where('id', $tenantId)->first();
+        $tenant = Tenant::query()->find($tenantId);
         if ($tenant === null) {
-            $this->components->error("No tenant with id {$tenantId} in this database (".DB::connection()->getDatabaseName().').');
+            $this->components->error("No tenant with id {$tenantId}.");
 
             return self::FAILURE;
         }
 
+        app(DatabaseManager::class)->createTenantConnection($tenant);
+
         $dryRun = (bool) $this->option('dry-run');
         $this->components->info(sprintf(
-            '%s students into tenant #%d (%s) on database "%s" from %s',
+            '%s students into tenant #%d (%s) from %s',
             $dryRun ? 'Validating' : 'Importing',
             $tenantId,
             $tenant->name,
-            DB::connection()->getDatabaseName(),
             $path,
         ));
 
@@ -108,16 +109,17 @@ class ImportLegacyStudentsCommand extends Command
         }
 
         try {
-            return $this->importRows($handle, $tenantId, $dryRun);
+            return $this->importRows($handle, $dryRun);
         } finally {
             fclose($handle);
+            app(DatabaseManager::class)->purgeTenantConnection();
         }
     }
 
     /**
      * @param  resource  $handle
      */
-    private function importRows($handle, int $tenantId, bool $dryRun): int
+    private function importRows($handle, bool $dryRun): int
     {
         $columns = $this->readHeader($handle);
         if ($columns === null) {
@@ -135,14 +137,13 @@ class ImportLegacyStudentsCommand extends Command
         /** @var list<array<string, mixed>> $buffer */
         $buffer = [];
 
-        $flush = function () use (&$buffer, &$importedCount, &$skippedCount, &$errors, $tenantId, $dryRun) {
+        $flush = function () use (&$buffer, &$importedCount, &$skippedCount, &$errors, $dryRun) {
             if ($buffer === []) {
                 return;
             }
 
             $codes = array_column($buffer, 'student_code');
-            $existingCodes = DB::table('students')
-                ->where('tenant_id', $tenantId)
+            $existingCodes = DB::connection('tenant')->table('students')
                 ->whereIn('student_code', $codes)
                 ->pluck('student_code')
                 ->flip();
@@ -161,7 +162,6 @@ class ImportLegacyStudentsCommand extends Command
                 unset($row['_row_number']);
                 $toInsert[] = [
                     ...$row,
-                    'tenant_id' => $tenantId,
                     'status' => 'active',
                     'created_at' => $now,
                     'updated_at' => $now,
@@ -170,7 +170,7 @@ class ImportLegacyStudentsCommand extends Command
             }
 
             if ($toInsert !== [] && ! $dryRun) {
-                DB::table('students')->insert($toInsert);
+                DB::connection('tenant')->table('students')->insert($toInsert);
             }
 
             $buffer = [];

@@ -72,7 +72,7 @@ class ProductTest extends TestCase
     public function test_deleting_a_product_does_not_break_invoices_that_already_reference_it(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::PRODUCTS_CREATE, Permissions::PRODUCTS_DELETE, Permissions::INVOICES_CREATE]);
-        $student = \App\Models\Student::factory()->forTenant($this->tenant)->create();
+        $student = \App\Models\Student::factory()->create();
         $product = Product::factory()->create(['price' => 10]);
 
         $this->postJson('/api/v1/invoices', [

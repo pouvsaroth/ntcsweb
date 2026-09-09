@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
+use App\Models\Tenant;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Stancl\Tenancy\Database\DatabaseManager;
 use Throwable;
 
 /**
@@ -15,11 +17,11 @@ use Throwable;
  * `student_educations` for one tenant.
  *
  * See ImportLegacyStudentGuardiansCommand for why this is a plain
- * DB::table() writer with `student_id` resolved from StudentID rather than
- * the legacy Student_PKID — same reasoning applies here verbatim.
+ * DB::connection('tenant')->table() writer with `student_id` resolved from
+ * StudentID rather than the legacy Student_PKID — same reasoning applies
+ * here verbatim.
  *
- *   docker compose exec -e DB_DATABASE=ntcsdbtest php \
- *     php artisan students:import-legacy-educations storage/app/legacy-imports/t_school_student_education_export.csv \
+ *   php artisan students:import-legacy-educations storage/app/legacy-imports/t_school_student_education_export.csv \
  *     --tenant=1 --dry-run
  */
 class ImportLegacyStudentEducationsCommand extends Command
@@ -65,16 +67,18 @@ class ImportLegacyStudentEducationsCommand extends Command
         }
         $tenantId = (int) $tenantId;
 
-        $tenant = DB::table('tenants')->where('id', $tenantId)->first();
+        $tenant = Tenant::query()->find($tenantId);
         if ($tenant === null) {
-            $this->components->error("No tenant with id {$tenantId} in this database (".DB::connection()->getDatabaseName().').');
+            $this->components->error("No tenant with id {$tenantId}.");
 
             return self::FAILURE;
         }
 
+        app(DatabaseManager::class)->createTenantConnection($tenant);
+
         $dryRun = (bool) $this->option('dry-run');
 
-        $existing = DB::table('student_educations')->where('tenant_id', $tenantId)->count();
+        $existing = DB::connection('tenant')->table('student_educations')->count();
         if ($existing > 0 && ! $dryRun && ! $this->option('force')) {
             $this->components->error(
                 "Tenant #{$tenantId} already has {$existing} student_educations row(s) — this table has no natural key to "
@@ -85,11 +89,10 @@ class ImportLegacyStudentEducationsCommand extends Command
         }
 
         $this->components->info(sprintf(
-            '%s student education history into tenant #%d (%s) on database "%s" from %s',
+            '%s student education history into tenant #%d (%s) from %s',
             $dryRun ? 'Validating' : 'Importing',
             $tenantId,
             $tenant->name,
-            DB::connection()->getDatabaseName(),
             $path,
         ));
 
@@ -101,16 +104,17 @@ class ImportLegacyStudentEducationsCommand extends Command
         }
 
         try {
-            return $this->importRows($handle, $tenantId, $dryRun);
+            return $this->importRows($handle, $dryRun);
         } finally {
             fclose($handle);
+            app(DatabaseManager::class)->purgeTenantConnection();
         }
     }
 
     /**
      * @param  resource  $handle
      */
-    private function importRows($handle, int $tenantId, bool $dryRun): int
+    private function importRows($handle, bool $dryRun): int
     {
         $columns = $this->readHeader($handle);
         if ($columns === null) {
@@ -127,14 +131,13 @@ class ImportLegacyStudentEducationsCommand extends Command
         /** @var list<array<string, mixed>> $buffer */
         $buffer = [];
 
-        $flush = function () use (&$buffer, &$importedCount, &$skippedCount, &$errors, $tenantId, $dryRun) {
+        $flush = function () use (&$buffer, &$importedCount, &$skippedCount, &$errors, $dryRun) {
             if ($buffer === []) {
                 return;
             }
 
             $codes = array_unique(array_column($buffer, 'student_code'));
-            $studentIdsByCode = DB::table('students')
-                ->where('tenant_id', $tenantId)
+            $studentIdsByCode = DB::connection('tenant')->table('students')
                 ->whereIn('student_code', $codes)
                 ->pluck('id', 'student_code');
 
@@ -154,7 +157,6 @@ class ImportLegacyStudentEducationsCommand extends Command
                 unset($row['_row_number'], $row['student_code']);
                 $toInsert[] = [
                     ...$row,
-                    'tenant_id' => $tenantId,
                     'student_id' => $studentId,
                     'created_at' => $now,
                     'updated_at' => $now,
@@ -163,7 +165,7 @@ class ImportLegacyStudentEducationsCommand extends Command
             }
 
             if ($toInsert !== [] && ! $dryRun) {
-                DB::table('student_educations')->insert($toInsert);
+                DB::connection('tenant')->table('student_educations')->insert($toInsert);
             }
 
             $buffer = [];

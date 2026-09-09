@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Database\Factories;
 
 use App\Models\Student;
-use App\Models\Tenant;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -37,19 +36,6 @@ class StudentFactory extends Factory
             'status' => Student::STATUS_ACTIVE,
             'user_id' => null,
         ];
-    }
-
-    /**
-     * See TeacherFactory::forTenant() — tenant_id is excluded from
-     * Student::$fillable, so this needs forceFill, not a plain state().
-     */
-    public function forTenant(Tenant|int $tenant): static
-    {
-        return $this->afterMaking(function (Student $student) use ($tenant) {
-            $student->forceFill([
-                'tenant_id' => $tenant instanceof Tenant ? $tenant->getKey() : $tenant,
-            ]);
-        });
     }
 
     public function withdrawn(): static

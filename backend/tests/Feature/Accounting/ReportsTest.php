@@ -32,7 +32,7 @@ class ReportsTest extends TestCase
         $course = Product::factory()->create(['type' => ProductType::COURSE_FEE, 'price' => 100]);
         $book = Product::factory()->create(['type' => ProductType::BOOK, 'price' => 15]);
         $tshirt = Product::factory()->create(['type' => ProductType::T_SHIRT, 'price' => 10]);
-        $student = Student::factory()->forTenant($this->tenant)->create();
+        $student = Student::factory()->create();
 
         $invoiceId = $this->postJson('/api/v1/invoices', [
             'student_id' => $student->id,
@@ -97,7 +97,7 @@ class ReportsTest extends TestCase
         $this->setUpChartOfAccounts();
 
         $course = Product::factory()->create(['type' => ProductType::COURSE_FEE, 'price' => 100]);
-        $student = Student::factory()->forTenant($this->tenant)->create();
+        $student = Student::factory()->create();
         $invoiceId = $this->postJson('/api/v1/invoices', [
             'student_id' => $student->id,
             'items' => [['product_id' => $course->id, 'quantity' => 1]],

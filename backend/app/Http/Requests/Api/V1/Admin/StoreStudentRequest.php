@@ -62,7 +62,7 @@ class StoreStudentRequest extends FormRequest
             'user_id' => [
                 'nullable',
                 Rule::exists('users', 'id')->where('tenant_id', $tenantId),
-                Rule::unique('students', 'user_id')->where('tenant_id', $tenantId),
+                Rule::unique('tenant.students', 'user_id'),
             ],
 
             // A student can have more than one guardian (father, mother,

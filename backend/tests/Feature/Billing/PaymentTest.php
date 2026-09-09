@@ -23,7 +23,7 @@ class PaymentTest extends TestCase
 
     private function invoiceOf(float $price): int
     {
-        $student = Student::factory()->forTenant($this->tenant)->create();
+        $student = Student::factory()->create();
         $product = Product::factory()->create(['price' => $price]);
 
         return $this->postJson('/api/v1/invoices', [
@@ -144,7 +144,7 @@ class PaymentTest extends TestCase
         $ownerUser = \App\Models\User::factory()->forTenant($this->tenant)->create();
         $owner->forceFill(['user_id' => $ownerUser->id])->save();
 
-        $otherStudent = Student::factory()->forTenant($this->tenant)->create();
+        $otherStudent = Student::factory()->create();
         $otherUser = \App\Models\User::factory()->forTenant($this->tenant)->create();
         $otherStudent->forceFill(['user_id' => $otherUser->id])->save();
 
@@ -181,7 +181,7 @@ class PaymentTest extends TestCase
     public function test_duplicate_invoice_numbers_are_rejected_at_the_database_level(): void
     {
         $this->actingAsAdminWithPermissions([]);
-        $student = Student::factory()->forTenant($this->tenant)->create();
+        $student = Student::factory()->create();
 
         \App\Models\Invoice::factory()->forStudent($student)->create(['invoice_number' => 'INV-2026-000001']);
 

@@ -29,7 +29,7 @@ class InvoiceNotificationTest extends TestCase
 
     private function invoiceOf(float $price): Invoice
     {
-        $student = Student::factory()->forTenant($this->tenant)->create();
+        $student = Student::factory()->create();
         $product = Product::factory()->create(['price' => $price]);
         $id = $this->postJson('/api/v1/invoices', [
             'student_id' => $student->id,
