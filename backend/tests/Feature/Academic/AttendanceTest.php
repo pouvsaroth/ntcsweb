@@ -140,7 +140,11 @@ class AttendanceTest extends TestCase
         $ownClass = SchoolClass::factory()->withTeacher($teacher)->create();
         $ownEnrollment = Enrollment::factory()->forClass($ownClass)->create();
 
-        $otherClass = SchoolClass::factory()->create();
+        // Assigned to a *different* teacher — not just left blank — so this
+        // actually exercises "someone else's class," not the "nobody's
+        // class yet" case covered by the unassigned-class test below.
+        $otherTeacher = Staff::factory()->create(['position_id' => $teacherPosition->id]);
+        $otherClass = SchoolClass::factory()->withTeacher($otherTeacher)->create();
         $otherEnrollment = Enrollment::factory()->forClass($otherClass)->create();
 
         $this->postJson("/api/v1/classes/{$ownClass->id}/attendance", [
@@ -154,6 +158,26 @@ class AttendanceTest extends TestCase
         ])->assertForbidden();
     }
 
+    /**
+     * A class with no teacher assigned yet isn't permanently locked out of
+     * attendance for every teacher-tier account until an admin gets around
+     * to assigning one — see SchoolClassPolicy::recordAttendance().
+     */
+    public function test_a_teacher_can_take_attendance_for_a_class_with_no_teacher_assigned(): void
+    {
+        $teacherUser = $this->actingAsAdminWithPermissions([Permissions::ATTENDANCE_CREATE]);
+        $teacherPosition = Position::factory()->create(['name' => 'Teacher']);
+        Staff::factory()->withUser($teacherUser)->create(['position_id' => $teacherPosition->id]);
+
+        [$class, $enrollments] = $this->classWithStudents(1);
+        $this->assertNull($class->teacher_id);
+
+        $this->postJson("/api/v1/classes/{$class->id}/attendance", [
+            'date' => now()->toDateString(),
+            'entries' => [['enrollment_id' => $enrollments[0]->id, 'status' => AttendanceStatus::PRESENT]],
+        ])->assertOk();
+    }
+
     public function test_a_school_admin_without_a_linked_staff_record_can_take_attendance_for_any_class(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::ATTENDANCE_CREATE]);
@@ -162,6 +186,35 @@ class AttendanceTest extends TestCase
         $this->postJson("/api/v1/classes/{$class->id}/attendance", [
             'date' => now()->toDateString(),
             'entries' => [['enrollment_id' => $enrollments[0]->id, 'status' => AttendanceStatus::PRESENT]],
+        ])->assertOk();
+    }
+
+    /**
+     * A school admin who is *also* listed as staff (e.g. the director) must
+     * not be narrowed down to only the classes they personally teach — that
+     * narrowing is for teacher-tier accounts only, signalled by holding
+     * classes.update (see SchoolClassPolicy::recordAttendance()).
+     */
+    public function test_a_school_admin_with_a_linked_staff_record_can_still_take_attendance_for_any_class(): void
+    {
+        $adminUser = $this->actingAsAdminWithPermissions([Permissions::ATTENDANCE_CREATE, Permissions::CLASSES_UPDATE]);
+        $position = Position::factory()->create(['name' => 'Director']);
+        $admin = Staff::factory()->withUser($adminUser)->create(['position_id' => $position->id]);
+
+        $ownClass = SchoolClass::factory()->withTeacher($admin)->create();
+        $ownEnrollment = Enrollment::factory()->forClass($ownClass)->create();
+
+        $otherClass = SchoolClass::factory()->create();
+        $otherEnrollment = Enrollment::factory()->forClass($otherClass)->create();
+
+        $this->postJson("/api/v1/classes/{$ownClass->id}/attendance", [
+            'date' => now()->toDateString(),
+            'entries' => [['enrollment_id' => $ownEnrollment->id, 'status' => AttendanceStatus::PRESENT]],
+        ])->assertOk();
+
+        $this->postJson("/api/v1/classes/{$otherClass->id}/attendance", [
+            'date' => now()->toDateString(),
+            'entries' => [['enrollment_id' => $otherEnrollment->id, 'status' => AttendanceStatus::PRESENT]],
         ])->assertOk();
     }
 

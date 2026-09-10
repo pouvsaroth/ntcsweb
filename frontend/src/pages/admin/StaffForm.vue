@@ -40,12 +40,24 @@ const tabs: { key: TabKey; labelKey: string }[] = [
 
 const activeTab = ref<TabKey>('current-info')
 
+/** 'YYYY-MM-DD' in the browser's local time — matches what a `<input type="date">` expects/emits. */
+function isoDate(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+}
+
+const today = new Date()
+const eighteenYearsAgo = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate())
+
+// Defaults below are create-only conveniences (most new hires are today,
+// an adult, and — per the user's own request — default to Male) — edit mode
+// overwrites every one of these from the loaded staff record right after,
+// see the onMounted load() below.
 const form = reactive<Omit<StaffInput, 'photo' | 'national_id_photo'>>({
   first_name: '',
   last_name: '',
   other_name: '',
-  gender: '',
-  date_of_birth: '',
+  gender: 'male',
+  date_of_birth: isoDate(eighteenYearsAgo),
   birth_place: '',
   national_id: '',
   phone: '',
@@ -57,7 +69,7 @@ const form = reactive<Omit<StaffInput, 'photo' | 'national_id_photo'>>({
   telegram: '',
   other_contact: '',
   position_id: null,
-  hire_date: '',
+  hire_date: isoDate(today),
   status: 'active',
 })
 
@@ -320,8 +332,6 @@ onMounted(load)
                 :label="t('admin.staff.employeeCode')"
                 :hint="t('admin.staff.employeeCodeHint')"
               />
-              <LookupSelect v-model="form.status" category="STAFF_STATUS" :label="t('admin.staff.status')" />
-
               <BaseInput v-model="form.first_name" required :label="t('admin.staff.firstName')" :error="errors.first_name?.[0]" />
               <BaseInput v-model="form.last_name" required :label="t('admin.staff.lastName')" :error="errors.last_name?.[0]" />
               <BaseInput v-model="form.other_name" :label="t('admin.staff.otherName')" :hint="t('admin.staff.otherNameHint')" :error="errors.other_name?.[0]" />
@@ -336,6 +346,7 @@ onMounted(load)
                 @update:model-value="(value: string) => (form.position_id = value ? Number(value) : null)"
               />
               <BaseInput v-model="form.hire_date" type="date" :label="t('admin.staff.hireDate')" :error="errors.hire_date?.[0]" />
+              <LookupSelect v-model="form.status" category="STAFF_STATUS" :label="t('admin.staff.status')" />
             </div>
           </section>
 

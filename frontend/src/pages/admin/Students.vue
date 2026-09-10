@@ -40,7 +40,7 @@ function openPhotoPreview(row: Student) {
   previewStudent.value = row
 }
 
-const { items, meta, loading, error, perPage, setPage, setSearch, fetch } = usePaginatedResource<Student>((query) =>
+const { items, meta, loading, error, perPage, sort, setPage, setSearch, setSort, fetch } = usePaginatedResource<Student>((query) =>
   studentsService.list(query),
 )
 
@@ -48,8 +48,8 @@ const perPageOptions = [10, 25, 50, 100]
 
 const columns = [
   { key: 'photo_url', label: t('admin.students.columnPhoto') },
-  { key: 'full_name', label: t('admin.students.columnName') },
-  { key: 'student_code', label: t('admin.students.columnCode') },
+  { key: 'full_name', label: t('admin.students.columnName'), sortable: true, sortKey: 'first_name' },
+  { key: 'student_code', label: t('admin.students.columnCode'), sortable: true },
   { key: 'phone', label: t('admin.students.columnPhone') },
   { key: 'gender', label: t('admin.students.columnGender') },
   { key: 'address', label: t('admin.students.columnAddress') },
@@ -78,19 +78,13 @@ onMounted(() => {
 <template>
   <div>
     <div class="mb-6 flex items-center justify-between">
-      <div>
-        <h1 class="text-xl font-semibold text-neutral-900">{{ t('admin.students.title') }}</h1>
-      </div>
-      <BaseButton to="/admin/students/new">{{ t('admin.students.registerTitle') }}</BaseButton>
-    </div>
-
-    <div class="mb-4">
       <input
         type="search"
         :placeholder="t('common.searchPlaceholder')"
         class="block w-full max-w-sm rounded-lg border border-neutral-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
         @input="setSearch(($event.target as HTMLInputElement).value)"
       />
+      <BaseButton to="/admin/students/new">{{ t('admin.students.registerTitle') }}</BaseButton>
     </div>
 
     <BaseAlert v-if="error" variant="danger" class="mb-4">{{ error }}</BaseAlert>
@@ -127,7 +121,9 @@ onMounted(() => {
         :rows="items"
         row-key="id"
         :loading="loading"
+        :sort="sort"
         :empty-message="t('admin.students.emptyMessage')"
+        @sort="(col) => setSort(sort === col ? `-${col}` : col)"
       >
         <template #cell-photo_url="{ row }">
           <button

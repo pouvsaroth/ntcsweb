@@ -77,14 +77,6 @@ onMounted(async () => {
 
 <template>
   <div>
-    <div class="mb-6 flex items-center justify-between">
-      <div>
-        <h1 class="text-xl font-semibold text-neutral-900">{{ t('admin.assets.title') }}</h1>
-        <p class="mt-1 text-sm text-neutral-500">{{ t('admin.assets.pageSubtitle') }}</p>
-      </div>
-      <BaseButton to="/admin/assets/new">{{ t('admin.assets.addAsset') }}</BaseButton>
-    </div>
-
     <BaseAlert v-if="error" variant="danger" class="mb-4">{{ error }}</BaseAlert>
 
     <div class="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -106,6 +98,7 @@ onMounted(async () => {
         :placeholder="t('admin.assets.filterAllCategories')"
         @update:model-value="onCategoryFilterChange"
       />
+      <BaseButton to="/admin/assets/new">{{ t('admin.assets.addAsset') }}</BaseButton>
     </div>
 
     <DataTable

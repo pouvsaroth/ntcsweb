@@ -49,7 +49,6 @@ use App\Models\SchoolClass;
 use App\Models\Staff;
 use App\Models\Student;
 use App\Models\StudentFeedback;
-use App\Models\StudyMode;
 use App\Models\Supplier;
 use App\Models\Tenant;
 use App\Models\User;
@@ -99,7 +98,6 @@ use App\Policies\SchoolClassPolicy;
 use App\Policies\StaffPolicy;
 use App\Policies\StudentFeedbackPolicy;
 use App\Policies\StudentPolicy;
-use App\Policies\StudyModePolicy;
 use App\Policies\SupplierPolicy;
 use App\Policies\TenantPolicy;
 use App\Policies\UserPolicy;
@@ -127,7 +125,6 @@ class AuthServiceProvider extends ServiceProvider
         BookCategory::class => BookCategoryPolicy::class,
         SchoolClass::class => SchoolClassPolicy::class,
         Enrollment::class => EnrollmentPolicy::class,
-        StudyMode::class => StudyModePolicy::class,
         AcademicProgram::class => AcademicProgramPolicy::class,
         CoursePackage::class => CoursePackagePolicy::class,
         Video::class => VideoPolicy::class,

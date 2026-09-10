@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRoute } from 'vue-router'
 
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
@@ -22,6 +23,7 @@ import { classesService, type SchoolClass } from '@/services/classes'
 import { ApiRequestError } from '@/types/api'
 
 const { t } = useI18n()
+const route = useRoute()
 
 /** yyyy-MM-dd in the viewer's local time — matches EnrollmentPackageForm's own helper. */
 function today(): string {
@@ -137,6 +139,15 @@ onMounted(async () => {
   } finally {
     loadingClasses.value = false
   }
+
+  // Arriving from a class's own "Students" screen (see ClassStudents.vue's
+  // Attendance button) preselects that class instead of leaving the picker
+  // blank.
+  const classIdFromQuery = Number(route.query.class_id)
+  if (Number.isInteger(classIdFromQuery) && classes.value.some((c) => c.id === classIdFromQuery)) {
+    classId.value = classIdFromQuery
+  }
+
   await fetchHistory()
 })
 </script>

@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 
+import { firstAccessibleAdminPath } from '@/router/adminNav'
 import { useAuthStore } from '@/stores/auth'
 
 const publicRoutes: RouteRecordRaw[] = [
@@ -43,8 +44,6 @@ const comingSoon = () => import('@/pages/admin/ComingSoon.vue')
 /** path -> adminNav.items translation key, so ComingSoon.vue's title always matches the sidebar label it was clicked from. */
 const comingSoonPages: [string, string][] = [
   ['tenants', 'adminNav.items.tenants'],
-  ['exams', 'adminNav.items.exams'],
-  ['grades', 'adminNav.items.grades'],
   ['news', 'adminNav.items.news'],
   ['events', 'adminNav.items.events'],
   ['announcements', 'adminNav.items.announcements'],
@@ -137,12 +136,6 @@ const adminRoutes: RouteRecordRaw[] = [
     meta: { titleKey: 'adminNav.items.studentRegistrations' },
   },
   {
-    path: 'study-modes',
-    name: 'admin.study-modes',
-    component: () => import('@/pages/admin/StudyModes.vue'),
-    meta: { titleKey: 'adminNav.items.studyModes' },
-  },
-  {
     path: 'academic-programs',
     name: 'admin.academic-programs',
     component: () => import('@/pages/admin/AcademicPrograms.vue'),
@@ -215,6 +208,12 @@ const adminRoutes: RouteRecordRaw[] = [
     meta: { titleKey: 'adminNav.items.classes' },
   },
   {
+    path: 'classes/:id/students',
+    name: 'admin.classes.students',
+    component: () => import('@/pages/admin/ClassStudents.vue'),
+    meta: { titleKey: 'adminNav.items.classes' },
+  },
+  {
     path: 'enrollments',
     name: 'admin.enrollments',
     component: () => import('@/pages/admin/Enrollments.vue'),
@@ -231,6 +230,18 @@ const adminRoutes: RouteRecordRaw[] = [
     name: 'admin.attendance',
     component: () => import('@/pages/admin/Attendance.vue'),
     meta: { titleKey: 'adminNav.items.attendance' },
+  },
+  {
+    path: 'exams',
+    name: 'admin.exams',
+    component: () => import('@/pages/admin/Exams.vue'),
+    meta: { titleKey: 'adminNav.items.exams' },
+  },
+  {
+    path: 'grades',
+    name: 'admin.grades',
+    component: () => import('@/pages/admin/Grades.vue'),
+    meta: { titleKey: 'adminNav.items.grades' },
   },
   {
     path: 'my-attendance',
@@ -584,8 +595,21 @@ router.beforeEach(async (to) => {
     return { path: '/' }
   }
 
+  // Dashboard's own widgets are each gated by their real permission at the
+  // API layer (e.g. the income/expense cards need accounting.dashboard.view)
+  // — but the page shell itself (title, quick-access tiles) still isn't
+  // something to show an account that wasn't granted dashboard.view. Send
+  // them to the first thing their role can actually reach instead of
+  // landing on a page with nothing on it.
+  if (to.name === 'admin.dashboard' && !auth.can('dashboard.view')) {
+    const fallback = firstAccessibleAdminPath(auth)
+    if (fallback && fallback !== to.path) return { path: fallback }
+  }
+
   if (to.meta.guestOnly && auth.isAuthenticated) {
-    return auth.hasRole('student') ? { path: '/' } : { name: 'admin.dashboard' }
+    if (auth.hasRole('student')) return { path: '/' }
+    const landing = auth.can('dashboard.view') ? '/admin' : firstAccessibleAdminPath(auth)
+    return { path: landing ?? '/admin' }
   }
 
   return true

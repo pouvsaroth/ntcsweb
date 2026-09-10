@@ -36,6 +36,7 @@ export interface EnrollmentStudent {
   id: number
   full_name: string
   student_code: string
+  gender: string | null
 }
 
 export type FeeType = 'monthly' | 'term' | 'video' | 'monthly_online' | 'term_online'
@@ -88,6 +89,12 @@ export const enrollmentsService = {
     })
 
     return { data: result.data, pagination: result.meta?.pagination as LengthAwarePaginationMeta }
+  },
+
+  /** Every enrollment matching a filter (e.g. one class's active roster) — mirrors every other module's listAll(). */
+  async listAll(filter: Record<string, string | number>): Promise<Enrollment[]> {
+    const result = await apiGetWithMeta<Enrollment[]>('/enrollments', { params: { per_page: 200, filter } })
+    return result.data
   },
 
   /** Status isn't editable here — see changeStatus() below, the one path that also logs history. */

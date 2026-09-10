@@ -67,7 +67,6 @@ use App\Http\Controllers\Api\V1\Admin\StudentController;
 use App\Http\Controllers\Api\V1\Admin\StudentFeedbackController;
 use App\Http\Controllers\Api\V1\Admin\StudentImportController;
 use App\Http\Controllers\Api\V1\Admin\StudentRegistrationController;
-use App\Http\Controllers\Api\V1\Admin\StudyModeController;
 use App\Http\Controllers\Api\V1\Admin\SupplierController;
 use App\Http\Controllers\Api\V1\Admin\UserController;
 use App\Http\Controllers\Api\V1\Admin\VideoController;
@@ -241,7 +240,6 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         |
         */
 
-        Route::apiResource('study-modes', StudyModeController::class);
         Route::apiResource('academic-programs', AcademicProgramController::class);
         Route::apiResource('course-packages', CoursePackageController::class);
         Route::apiResource('videos', VideoController::class);

@@ -5,7 +5,7 @@ import { useI18n } from 'vue-i18n'
 interface Props {
   modelValue: boolean
   title?: string
-  size?: 'sm' | 'md' | 'lg'
+  size?: 'sm' | 'md' | 'lg' | 'full'
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -17,7 +17,12 @@ const { t } = useI18n()
 
 const emit = defineEmits<{ 'update:modelValue': [value: boolean] }>()
 
-const sizes = { sm: 'max-w-sm', md: 'max-w-lg', lg: 'max-w-2xl' } as const
+const sizes = {
+  sm: 'max-w-sm',
+  md: 'max-w-lg',
+  lg: 'max-w-2xl',
+  full: 'max-w-none w-[calc(100vw-2rem)] h-[calc(100vh-2rem)]',
+} as const
 
 function close() {
   emit('update:modelValue', false)

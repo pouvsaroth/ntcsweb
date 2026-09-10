@@ -77,7 +77,18 @@ const feeTypeOptions = computed(() => {
 
 const tables = ref<{ total_tables: number; available: { id: number; name: string }[] } | null>(null)
 const loadingTables = ref(false)
-const tableOptions = computed(() => (tables.value?.available ?? []).map((t) => ({ value: String(t.id), label: t.name })))
+const tableOptions = computed(() => {
+  const options = (tables.value?.available ?? []).map((t) => ({ value: String(t.id), label: t.name }))
+  // The "available" list only counts tables nobody currently occupies — it
+  // excludes this student's own current seat too, since they're the one
+  // occupying it. Add it back in when we're still looking at their current
+  // class, so "keep the same table" (or switch away from it) both work.
+  const current = props.enrollment?.table
+  if (current && form.class_id === props.enrollment?.class.id && !options.some((o) => o.value === String(current.id))) {
+    options.unshift({ value: String(current.id), label: current.name })
+  }
+  return options
+})
 const tableRequired = computed(() => (tables.value?.total_tables ?? 0) > 0)
 
 async function onClassChange(value: string) {
@@ -105,15 +116,20 @@ watch(
     // Blank — this only applies when the admin picks a *different* course
     // below, at which point they must choose a fee type for it explicitly.
     form.fee_type = null
-    tables.value = null
     errors.value = {}
     generalError.value = null
 
     loadingCatalog.value = true
+    loadingTables.value = true
     try {
-      ;[classes.value, packages.value] = await Promise.all([classesService.listAll(), coursePackagesService.listAll()])
+      ;[classes.value, packages.value, tables.value] = await Promise.all([
+        classesService.listAll(),
+        coursePackagesService.listAll(),
+        classesService.availableTables(enrollment.class.id),
+      ])
     } finally {
       loadingCatalog.value = false
+      loadingTables.value = false
     }
   },
   { immediate: true },

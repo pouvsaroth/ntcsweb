@@ -136,11 +136,13 @@ async function load() {
     programs.value = loadedPrograms
     coursePackages.value = loadedPackages
 
-    // A "teacher" is a Staff member holding the Teacher position — see
-    // TeacherPositionSeeder on the backend. A brand-new tenant may not have
-    // it yet, in which case the dropdown just stays empty.
-    const teacherPosition = positions.find((p) => p.name === 'Teacher')
-    teachers.value = teacherPosition ? await staffService.listAll({ position_id: teacherPosition.id }) : []
+    // A "teacher" is a Staff member holding a position that carries the
+    // Teacher role — not necessarily named "Teacher" (a school's position
+    // titles are free text, often translated, and there can be more than
+    // one — e.g. "Computer Teacher" and "Teaching Assistant" might both
+    // carry it). See Position::teacherPositionIds() on the backend.
+    const teacherPositionIds = positions.filter((p) => p.role?.slug === 'teacher').map((p) => p.id)
+    teachers.value = teacherPositionIds.length > 0 ? await staffService.listAll({ position_id: teacherPositionIds.join(',') }) : []
 
     if (!classId.value) return
 

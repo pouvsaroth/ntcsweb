@@ -9,6 +9,7 @@ use App\Models\Classroom;
 use App\Models\ClassroomTable;
 use App\Models\Enrollment;
 use App\Models\Position;
+use App\Models\Role;
 use App\Models\SchoolClass;
 use App\Models\Staff;
 use App\Models\Student;
@@ -21,10 +22,26 @@ class SchoolClassTest extends TestCase
 {
     use HasAcademicAdmin, RefreshDatabase;
 
+    /**
+     * A position that actually carries this tenant's Teacher role — not just
+     * named "Teacher" — since that's what Position::teacherPositionIds()
+     * (and therefore the teacher_id validation rule) checks for.
+     */
+    private function createTeacherPosition(): Position
+    {
+        $teacherRole = Role::factory()->forTenant($this->tenant)->system()->create([
+            'slug' => Role::TEACHER,
+            'name' => 'Teacher',
+            'level' => Role::LEVELS[Role::TEACHER],
+        ]);
+
+        return Position::factory()->create(['name' => 'Teacher', 'role_id' => $teacherRole->id]);
+    }
+
     public function test_it_creates_a_class_with_its_weekly_schedule_and_books(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::CLASSES_CREATE]);
-        $teacherPosition = Position::factory()->create(['name' => 'Teacher']);
+        $teacherPosition = $this->createTeacherPosition();
         $teacher = Staff::factory()->create(['position_id' => $teacherPosition->id]);
         $classroom = Classroom::factory()->create();
         $book = Book::factory()->create();
@@ -81,6 +98,31 @@ class SchoolClassTest extends TestCase
 
         $response->assertUnprocessable();
         $response->assertJsonValidationErrors('teacher_id');
+    }
+
+    /**
+     * A school's position titles are free text — often translated, or a more
+     * specific title like "Computer Teacher" — so eligibility is decided by
+     * the position's Role, not by matching the literal string "Teacher".
+     */
+    public function test_a_staff_member_holding_a_differently_named_teacher_role_position_can_be_assigned_to_a_class(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::CLASSES_CREATE]);
+        $teacherRole = Role::factory()->forTenant($this->tenant)->system()->create([
+            'slug' => Role::TEACHER,
+            'name' => 'Teacher',
+            'level' => Role::LEVELS[Role::TEACHER],
+        ]);
+        $computerTeacherPosition = Position::factory()->create(['name' => 'Computer Teacher', 'role_id' => $teacherRole->id]);
+        $teacher = Staff::factory()->create(['position_id' => $computerTeacherPosition->id]);
+
+        $response = $this->postJson('/api/v1/classes', [
+            'name' => 'Computer Class',
+            'teacher_id' => $teacher->id,
+        ]);
+
+        $response->assertCreated();
+        $response->assertJsonPath('data.teacher.id', $teacher->id);
     }
 
     public function test_updating_schedules_replaces_the_previous_set_entirely(): void

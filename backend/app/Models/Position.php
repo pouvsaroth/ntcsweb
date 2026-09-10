@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Models\Concerns\Auditable;
+use App\Support\Tenancy\TenantContext;
 use Database\Factories\PositionFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -56,6 +57,32 @@ class Position extends Model
     public function scopeActive(Builder $query): void
     {
         $query->where('status', self::STATUS_ACTIVE);
+    }
+
+    /**
+     * Which of this tenant's positions carry the "Teacher" role — i.e. hold
+     * a class's `teacher_id` and the class-assignment dropdown's real
+     * eligibility test. Not "named exactly 'Teacher'": a school's own
+     * position titles are free text (often translated, e.g. "គ្រូបង្រៀន
+     * កុំព្យូទ័រ") and there can be more than one (a "Computer Teacher" and a
+     * "Teaching Assistant" might both carry the Teacher role). `roles` lives
+     * on the central connection while `positions` is per-tenant, so this is
+     * necessarily two queries rather than one join.
+     *
+     * @return list<int>
+     */
+    public static function teacherPositionIds(): array
+    {
+        $teacherRoleId = Role::query()
+            ->where('tenant_id', app(TenantContext::class)->idOrFail())
+            ->where('slug', Role::TEACHER)
+            ->value('id');
+
+        if ($teacherRoleId === null) {
+            return [];
+        }
+
+        return static::query()->where('role_id', $teacherRoleId)->pluck('id')->all();
     }
 
     public function auditModule(): string

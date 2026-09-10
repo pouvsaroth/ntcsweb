@@ -125,15 +125,6 @@ final class Permissions
 
     public const ENROLLMENTS_CHANGE_STATUS = 'enrollments.change-status';
 
-    // Study Modes — Full Time/Part Time and anything a school adds later.
-    public const STUDY_MODES_VIEW = 'study-modes.view';
-
-    public const STUDY_MODES_CREATE = 'study-modes.create';
-
-    public const STUDY_MODES_UPDATE = 'study-modes.update';
-
-    public const STUDY_MODES_DELETE = 'study-modes.delete';
-
     // Academic Programs — the school's own curriculum areas (English,
     // Chinese, Computer). Deliberately a different slug group from
     // `programs.*` above, which is the unrelated public marketing catalog.
@@ -465,6 +456,42 @@ final class Permissions
     // System.
     public const AUDIT_LOGS_VIEW = 'audit-logs.view';
 
+    // Nav-visibility-only permissions: Dashboard, News, Events,
+    // Announcements, Documents, Contact Messages, admin Notifications, and
+    // Examination (Exams/Grades) have no real API to protect yet — each is
+    // either the universal landing page or a "coming soon" placeholder (see
+    // ComingSoon.vue) — so these slugs exist purely to control whether the
+    // sidebar item shows for a role, same as every other item, ready to gate
+    // the real endpoint too once one of these features actually gets built.
+    public const DASHBOARD_VIEW = 'dashboard.view';
+
+    // My Assets stays identity-based at the API layer on purpose (see
+    // MyAssetController's own docblock — any authenticated account sees
+    // whatever is assigned to them, no assets.view required) — this slug
+    // only controls whether the sidebar link itself shows.
+    public const MY_ASSETS_VIEW = 'my-assets.view';
+
+    public const NEWS_VIEW = 'news.view';
+
+    public const EVENTS_VIEW = 'events.view';
+
+    public const ANNOUNCEMENTS_VIEW = 'announcements.view';
+
+    public const DOCUMENTS_VIEW = 'documents.view';
+
+    public const CONTACT_MESSAGES_VIEW = 'contact-messages.view';
+
+    public const NOTIFICATIONS_VIEW = 'notifications.view';
+
+    public const EXAMINATION_VIEW = 'examination.view';
+
+    // Forms and My Requests stay identity-based at the API layer on purpose
+    // (submit/view your own — see MyApprovalRequestController), same
+    // reasoning as My Assets above — these slugs only control the sidebar.
+    public const FORMS_VIEW = 'forms.view';
+
+    public const MY_REQUESTS_VIEW = 'my-requests.view';
+
     /**
      * Every permission, grouped for the admin UI checkbox list.
      *
@@ -473,6 +500,9 @@ final class Permissions
     public static function catalog(): array
     {
         return [
+            'Overview' => [
+                self::DASHBOARD_VIEW => 'View the dashboard',
+            ],
             'Platform' => [
                 self::TENANTS_VIEW => 'View schools',
                 self::TENANTS_CREATE => 'Create schools',
@@ -541,12 +571,6 @@ final class Permissions
                 self::ENROLLMENTS_CANCEL => 'Cancel enrollments',
                 self::ENROLLMENTS_TRANSFER => 'Transfer a student to another class or course',
                 self::ENROLLMENTS_CHANGE_STATUS => "Change a student's enrollment status (studying, completed, abandoned, ...)",
-            ],
-            'Study Modes' => [
-                self::STUDY_MODES_VIEW => 'View study modes',
-                self::STUDY_MODES_CREATE => 'Create study modes',
-                self::STUDY_MODES_UPDATE => 'Update study modes',
-                self::STUDY_MODES_DELETE => 'Delete study modes',
             ],
             'Academic Programs' => [
                 self::ACADEMIC_PROGRAMS_VIEW => 'View academic programs',
@@ -699,6 +723,26 @@ final class Permissions
                 self::ASSET_REPORTS_VIEW => 'View asset reports and dashboard',
                 self::ASSET_REPORTS_EXPORT => 'Export asset reports',
             ],
+            'My Assets' => [
+                self::MY_ASSETS_VIEW => 'View assets assigned to you',
+            ],
+            'Website Content' => [
+                self::NEWS_VIEW => 'View news',
+                self::EVENTS_VIEW => 'View events',
+                self::ANNOUNCEMENTS_VIEW => 'View announcements',
+                self::DOCUMENTS_VIEW => 'View documents',
+            ],
+            'Communication' => [
+                self::CONTACT_MESSAGES_VIEW => 'View contact messages',
+                self::NOTIFICATIONS_VIEW => 'View notifications',
+            ],
+            'Examination' => [
+                self::EXAMINATION_VIEW => 'View exams and grades',
+            ],
+            'Approvals (self-service)' => [
+                self::FORMS_VIEW => 'View and submit approval forms',
+                self::MY_REQUESTS_VIEW => 'View your own approval requests',
+            ],
             'Projects' => [
                 self::PROJECTS_VIEW => 'View projects',
                 self::PROJECTS_CREATE => 'Create projects',
@@ -756,7 +800,6 @@ final class Permissions
             self::CLASSES_VIEW, self::CLASSES_CREATE, self::CLASSES_UPDATE, self::CLASSES_DELETE,
             self::ENROLLMENTS_VIEW, self::ENROLLMENTS_CREATE, self::ENROLLMENTS_UPDATE, self::ENROLLMENTS_DELETE,
             self::ENROLLMENTS_CANCEL, self::ENROLLMENTS_TRANSFER, self::ENROLLMENTS_CHANGE_STATUS,
-            self::STUDY_MODES_VIEW, self::STUDY_MODES_CREATE, self::STUDY_MODES_UPDATE, self::STUDY_MODES_DELETE,
             self::ACADEMIC_PROGRAMS_VIEW, self::ACADEMIC_PROGRAMS_CREATE, self::ACADEMIC_PROGRAMS_UPDATE, self::ACADEMIC_PROGRAMS_DELETE,
             self::COURSE_PACKAGES_VIEW, self::COURSE_PACKAGES_CREATE, self::COURSE_PACKAGES_UPDATE, self::COURSE_PACKAGES_DELETE,
             self::VIDEOS_VIEW, self::VIDEOS_CREATE, self::VIDEOS_UPDATE, self::VIDEOS_DELETE,
@@ -829,8 +872,27 @@ final class Permissions
         // Staff not being able to delete Students.
         $projectsForEveryone = [self::PROJECTS_VIEW, self::PROJECTS_CREATE, self::PROJECTS_UPDATE];
 
+        // The dashboard landing page, "assets assigned to me," approval
+        // forms, and "my requests" are all self-service, not an admin
+        // capability — every system role gets all four by default, same as
+        // $projectsForEveryone above. A school admin can still uncheck any
+        // of these on a custom role via the Role editor; this is only the
+        // out-of-the-box default.
+        $selfServiceForEveryone = [self::DASHBOARD_VIEW, self::MY_ASSETS_VIEW, self::FORMS_VIEW, self::MY_REQUESTS_VIEW];
+
+        // News/Events/Announcements/Documents/Contact Messages/admin
+        // Notifications/Examination are all still "coming soon" placeholders
+        // (see ComingSoon.vue) — school-admin only by default, same
+        // reasoning as $billing/$accounting/$assets above.
+        $comingSoonPlaceholders = [
+            self::NEWS_VIEW, self::EVENTS_VIEW, self::ANNOUNCEMENTS_VIEW, self::DOCUMENTS_VIEW,
+            self::CONTACT_MESSAGES_VIEW, self::NOTIFICATIONS_VIEW, self::EXAMINATION_VIEW,
+        ];
+
         return [
             Role::SCHOOL_ADMIN => [
+                ...$selfServiceForEveryone,
+                ...$comingSoonPlaceholders,
                 self::TENANT_SETTINGS_VIEW,
                 self::TENANT_SETTINGS_UPDATE,
                 self::USERS_VIEW,
@@ -868,12 +930,17 @@ final class Permissions
                 self::PROJECTS_DELETE,
                 ...$projectsForEveryone,
             ],
-            // Read-only across the board, with one write exception: teaching
-            // records (who teaches what, in which room) stay a school-admin
-            // decision, but attendance is a teacher's own daily task —
-            // AttendancePolicy further restricts create/update to the
-            // classes a teacher account is actually assigned to teach.
+            // Read-only across the board, with a few write exceptions: the
+            // teaching catalog itself (who teaches what, in which room) stays
+            // a school-admin decision, but attendance is a teacher's own
+            // daily task — AttendancePolicy further restricts create/update
+            // to the classes a teacher account is actually assigned to
+            // teach — and, from the Class Students roster, a teacher can
+            // move their own students between classes/tables and update
+            // their enrollment status (no per-class ownership check on
+            // these two, same as Staff below).
             Role::TEACHER => [
+                ...$selfServiceForEveryone,
                 self::USERS_VIEW,
                 self::STUDENTS_VIEW,
                 self::BUILDINGS_VIEW,
@@ -882,7 +949,8 @@ final class Permissions
                 self::BOOKS_VIEW,
                 self::CLASSES_VIEW,
                 self::ENROLLMENTS_VIEW,
-                self::STUDY_MODES_VIEW,
+                self::ENROLLMENTS_TRANSFER,
+                self::ENROLLMENTS_CHANGE_STATUS,
                 self::ACADEMIC_PROGRAMS_VIEW,
                 self::COURSE_PACKAGES_VIEW,
                 self::VIDEOS_VIEW,
@@ -903,6 +971,7 @@ final class Permissions
             // can't touch the teaching catalog (classrooms/books/classes/
             // academic programs/packages) itself.
             Role::STAFF => [
+                ...$selfServiceForEveryone,
                 self::USERS_VIEW,
                 self::POSITIONS_VIEW,
                 self::STAFF_VIEW,
@@ -920,7 +989,6 @@ final class Permissions
                 self::ENROLLMENTS_UPDATE,
                 self::ENROLLMENTS_TRANSFER,
                 self::ENROLLMENTS_CHANGE_STATUS,
-                self::STUDY_MODES_VIEW,
                 self::ACADEMIC_PROGRAMS_VIEW,
                 self::COURSE_PACKAGES_VIEW,
                 self::VIDEOS_VIEW,

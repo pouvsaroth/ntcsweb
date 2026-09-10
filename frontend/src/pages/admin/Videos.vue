@@ -15,13 +15,13 @@ import { ApiRequestError } from '@/types/api'
 
 const { t } = useI18n()
 
-const { items, meta, loading, error, setPage, setSearch, fetch } = usePaginatedResource<Video>((query) => videosService.list(query))
+const { items, meta, loading, error, sort, setPage, setSearch, setSort, fetch } = usePaginatedResource<Video>((query) => videosService.list(query))
 
 const columns = [
   { key: 'thumbnail_url', label: t('admin.videos.columnThumbnail') },
-  { key: 'title', label: t('admin.videos.columnTitle') },
+  { key: 'title', label: t('admin.videos.columnTitle'), sortable: true },
   { key: 'course_package', label: t('admin.videos.columnCourse') },
-  { key: 'sort_order', label: t('admin.videos.columnOrder') },
+  { key: 'sort_order', label: t('admin.videos.columnOrder'), sortable: true },
   { key: 'status', label: t('admin.videos.columnStatus') },
   { key: 'actions', label: t('admin.videos.columnActions'), align: 'text-right' },
 ]
@@ -58,25 +58,26 @@ onMounted(() => fetch())
 <template>
   <div>
     <div class="mb-6 flex items-center justify-between">
-      <div>
-        <h1 class="text-xl font-semibold text-neutral-900">{{ t('admin.videos.title') }}</h1>
-        <p class="mt-1 text-sm text-neutral-500">{{ t('admin.videos.pageSubtitle') }}</p>
-      </div>
-      <BaseButton @click="openCreate">{{ t('admin.videos.addVideo') }}</BaseButton>
-    </div>
-
-    <div class="mb-4">
       <input
         type="search"
         :placeholder="t('common.searchPlaceholder')"
         class="block w-full max-w-sm rounded-lg border border-neutral-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
         @input="setSearch(($event.target as HTMLInputElement).value)"
       />
+      <BaseButton @click="openCreate">{{ t('admin.videos.addVideo') }}</BaseButton>
     </div>
 
     <BaseAlert v-if="error || deleteError" variant="danger" class="mb-4">{{ error || deleteError }}</BaseAlert>
 
-    <DataTable :columns="columns" :rows="items" row-key="id" :loading="loading" :empty-message="t('admin.videos.emptyMessage')">
+    <DataTable
+      :columns="columns"
+      :rows="items"
+      row-key="id"
+      :loading="loading"
+      :sort="sort"
+      :empty-message="t('admin.videos.emptyMessage')"
+      @sort="(col) => setSort(sort === col ? `-${col}` : col)"
+    >
       <template #cell-thumbnail_url="{ row }">
         <div class="h-12 w-20 overflow-hidden rounded-lg bg-neutral-100">
           <img v-if="row.thumbnail_url" :src="row.thumbnail_url" alt="" class="h-full w-full object-cover" />

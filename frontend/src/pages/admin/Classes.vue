@@ -13,12 +13,12 @@ import { classesService, type ClassStatus, type SchoolClass } from '@/services/c
 
 const { t } = useI18n()
 
-const { items, meta, loading, error, setPage, setSearch, fetch } = usePaginatedResource<SchoolClass>((query) =>
+const { items, meta, loading, error, sort, setPage, setSearch, setSort, fetch } = usePaginatedResource<SchoolClass>((query) =>
   classesService.list(query),
 )
 
 const columns = [
-  { key: 'name', label: t('admin.classes.columnName') },
+  { key: 'name', label: t('admin.classes.columnName'), sortable: true },
   { key: 'schedule', label: t('admin.classes.columnSchedule') },
   { key: 'program', label: t('admin.classes.columnProgram') },
   { key: 'books', label: t('admin.classes.columnBooks') },
@@ -51,26 +51,30 @@ onMounted(() => fetch())
 <template>
   <div>
     <div class="mb-6 flex items-center justify-between">
-      <div>
-        <h1 class="text-xl font-semibold text-neutral-900">{{ t('admin.classes.title') }}</h1>
-      </div>
-      <BaseButton to="/admin/classes/new">{{ t('admin.classes.addClass') }}</BaseButton>
-    </div>
-
-    <div class="mb-4">
       <input
         type="search"
         :placeholder="t('common.searchPlaceholder')"
         class="block w-full max-w-sm rounded-lg border border-neutral-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
         @input="setSearch(($event.target as HTMLInputElement).value)"
       />
+      <BaseButton to="/admin/classes/new">{{ t('admin.classes.addClass') }}</BaseButton>
     </div>
 
     <BaseAlert v-if="error" variant="danger" class="mb-4">{{ error }}</BaseAlert>
 
-    <DataTable :columns="columns" :rows="items" row-key="id" :loading="loading" :empty-message="t('admin.classes.emptyMessage')">
+    <DataTable
+      :columns="columns"
+      :rows="items"
+      row-key="id"
+      :loading="loading"
+      :sort="sort"
+      :empty-message="t('admin.classes.emptyMessage')"
+      @sort="(col) => setSort(sort === col ? `-${col}` : col)"
+    >
       <template #cell-name="{ row }">
-        <p class="font-medium text-neutral-800">{{ row.name }}</p>
+        <RouterLink :to="`/admin/classes/${row.id}/students`" class="font-medium text-primary-700 hover:text-primary-800 hover:underline">
+          {{ row.name }}
+        </RouterLink>
         <p v-if="row.teacher || row.classroom" class="text-xs text-neutral-500">
           {{ [row.teacher?.name, row.classroom?.name].filter(Boolean).join(' · ') }}
         </p>

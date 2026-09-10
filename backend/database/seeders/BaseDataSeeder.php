@@ -250,6 +250,15 @@ class BaseDataSeeder extends Seeder
                     'retired' => ['en' => ['name' => 'Retired'], 'km' => ['name' => 'ចូលនិវត្តន៍'], 'zh' => ['name' => '退休'], 'ko' => ['name' => '은퇴'], 'ja' => ['name' => '定年退職']],
                 ],
             ],
+            'STUDY_MODE' => [
+                'name' => 'Study Mode',
+                'description' => 'Replaces the old standalone study_modes table — Full Time / Part Time and anything a school adds later, managed like any other base-data category.',
+                'sort_order' => 11,
+                'values' => [
+                    'FULL_TIME' => ['en' => ['name' => 'Full Time'], 'km' => ['name' => 'ពេញម៉ោង'], 'zh' => ['name' => '全日制'], 'ko' => ['name' => '전일제'], 'ja' => ['name' => '全日制']],
+                    'PART_TIME' => ['en' => ['name' => 'Part Time'], 'km' => ['name' => 'ក្រៅម៉ោង'], 'zh' => ['name' => '兼职'], 'ko' => ['name' => '시간제'], 'ja' => ['name' => '非常勤']],
+                ],
+            ],
         ];
     }
 }

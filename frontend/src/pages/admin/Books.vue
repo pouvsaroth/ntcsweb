@@ -3,6 +3,7 @@ import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import BookFormModal from '@/components/admin/BookFormModal.vue'
+import ProgramsTabs from '@/components/admin/ProgramsTabs.vue'
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
@@ -51,20 +52,16 @@ onMounted(() => fetch())
 
 <template>
   <div>
-    <div class="mb-6 flex items-center justify-between">
-      <div>
-        <h1 class="text-xl font-semibold text-neutral-900">{{ t('admin.books.title') }}</h1>
-      </div>
-      <BaseButton @click="openCreate">{{ t('admin.books.addBook') }}</BaseButton>
-    </div>
+    <ProgramsTabs />
 
-    <div class="mb-4">
+    <div class="mb-6 flex items-center justify-between">
       <input
         type="search"
         :placeholder="t('common.searchPlaceholder')"
         class="block w-full max-w-sm rounded-lg border border-neutral-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
         @input="setSearch(($event.target as HTMLInputElement).value)"
       />
+      <BaseButton @click="openCreate">{{ t('admin.books.addBook') }}</BaseButton>
     </div>
 
     <BaseAlert v-if="error" variant="danger" class="mb-4">{{ error }}</BaseAlert>

@@ -18,11 +18,12 @@ use Illuminate\Support\Facades\Storage;
 
 /**
  * Every non-student personnel record — teaching and non-teaching alike
- * (Teacher, Accountant, HR, Librarian, IT Officer, ...). A "teacher" is just
- * a Staff member whose Position is named "Teacher" (see
- * TeacherPositionSeeder) — SchoolClass::teacher() belongs-to's this model
- * directly, filtered to that position at the request-validation layer
- * (StoreSchoolClassRequest).
+ * (Teacher, Accountant, HR, Librarian, IT Officer, ...). A "teacher" is a
+ * Staff member whose Position carries the Teacher role (see
+ * Position::teacherPositionIds() — not "named 'Teacher'" literally, a
+ * school's position titles are free text) — SchoolClass::teacher()
+ * belongs-to's this model directly, filtered to those positions at the
+ * request-validation layer (StoreSchoolClassRequest).
  *
  * `user_id` is nullable at the schema level, but in practice
  * StaffController::store() always sets it in the
@@ -163,8 +164,8 @@ class Staff extends Model
 
     /**
      * Classes this staff member teaches — meaningful only when their
-     * Position is "Teacher" (see TeacherPositionSeeder), same as
-     * SchoolClass::teacher().
+     * Position carries the Teacher role (see Position::teacherPositionIds()),
+     * same as SchoolClass::teacher().
      */
     public function classes(): HasMany
     {

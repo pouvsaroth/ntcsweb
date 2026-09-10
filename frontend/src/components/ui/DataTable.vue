@@ -9,6 +9,8 @@ interface Column {
   key: string
   label: string
   sortable?: boolean
+  /** The field name the backend actually sorts by, when it differs from `key` (e.g. a displayed "Name" column backed by `first_name`). Defaults to `key`. */
+  sortKey?: string
   /** Tailwind alignment class override, e.g. 'text-right' for numeric columns. */
   align?: string
 }
@@ -27,7 +29,7 @@ const emit = defineEmits<{ sort: [column: string] }>()
 function sortIndicator(column: Column): '↑' | '↓' | null {
   if (!props.sort) return null
   const active = props.sort.replace(/^-/, '')
-  if (active !== column.key) return null
+  if (active !== (column.sortKey ?? column.key)) return null
   return props.sort.startsWith('-') ? '↓' : '↑'
 }
 </script>
@@ -48,7 +50,7 @@ function sortIndicator(column: Column): '↑' | '↓' | null {
               v-if="column.sortable"
               type="button"
               class="inline-flex items-center gap-1 hover:text-neutral-900"
-              @click="emit('sort', column.key)"
+              @click="emit('sort', column.sortKey ?? column.key)"
             >
               {{ column.label }}
               <span class="w-3 text-neutral-400">{{ sortIndicator(column) }}</span>

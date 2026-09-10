@@ -138,7 +138,7 @@ final class AuditAction
 
     public const ASSET_CONDITION_CHANGED = 'ASSET_CONDITION_CHANGED';
 
-    // Academic — AcademicProgram/Course/CoursePackage/StudyMode use the
+    // Academic — AcademicProgram/Course/CoursePackage use the
     // generic Auditable trait (CREATE/UPDATE/DELETE) like
     // AssetCategory/Account, since a plain column-diff already describes
     // editing a catalog record well. These four are the events

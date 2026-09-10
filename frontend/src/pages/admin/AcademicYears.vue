@@ -3,6 +3,7 @@ import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import AcademicYearFormModal from '@/components/admin/AcademicYearFormModal.vue'
+import ProgramsTabs from '@/components/admin/ProgramsTabs.vue'
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
@@ -56,6 +57,8 @@ onMounted(() => fetch())
 
 <template>
   <div>
+    <ProgramsTabs />
+
     <div class="mb-6 flex items-center justify-between">
       <div>
         <h1 class="text-xl font-semibold text-neutral-900">{{ t('admin.academicYears.title') }}</h1>

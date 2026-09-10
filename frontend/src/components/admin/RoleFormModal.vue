@@ -40,6 +40,12 @@ type Action =
   | 'found'
   | 'resolve'
   | 'complete'
+  | 'status'
+  | 'manage'
+  | 'reply'
+  | 'close'
+  | 'translations'
+  | 'languages'
 
 /**
  * Mirrors App\Support\Authorization\Permissions::catalog() on the backend,
@@ -53,6 +59,7 @@ type Action =
  * visual distinction between them at a glance.
  */
 const MODULES: { name: string; actions: Partial<Record<Action, string>> }[] = [
+  { name: 'Dashboard', actions: { view: 'dashboard.view' } },
   { name: 'School settings', actions: { view: 'tenant-settings.view', update: 'tenant-settings.update' } },
   { name: 'Users', actions: { view: 'users.view', create: 'users.create', update: 'users.update', delete: 'users.delete' } },
   {
@@ -65,14 +72,72 @@ const MODULES: { name: string; actions: Partial<Record<Action, string>> }[] = [
       assign: 'roles.assign',
     },
   },
+  { name: 'Projects', actions: { view: 'projects.view', create: 'projects.create', update: 'projects.update', delete: 'projects.delete' } },
   { name: 'Positions', actions: { view: 'positions.view', create: 'positions.create', update: 'positions.update', delete: 'positions.delete' } },
-  { name: 'Staff', actions: { view: 'staff.view', create: 'staff.create', update: 'staff.update', delete: 'staff.delete' } },
-  { name: 'Students', actions: { view: 'students.view', create: 'students.create', update: 'students.update', delete: 'students.delete' } },
+  {
+    name: 'Staff',
+    actions: { view: 'staff.view', create: 'staff.create', update: 'staff.update', delete: 'staff.delete', status: 'staff.change-status' },
+  },
+  { name: 'Leave requests', actions: { view: 'leave-requests.view', approve: 'leave-requests.approve', reject: 'leave-requests.reject' } },
+  {
+    name: 'Students',
+    actions: {
+      view: 'students.view',
+      create: 'students.create',
+      update: 'students.update',
+      delete: 'students.delete',
+      approve: 'students.approve-registration',
+    },
+  },
+  { name: 'Buildings', actions: { view: 'buildings.view', create: 'buildings.create', update: 'buildings.update', delete: 'buildings.delete' } },
   { name: 'Classrooms', actions: { view: 'classrooms.view', create: 'classrooms.create', update: 'classrooms.update', delete: 'classrooms.delete' } },
   { name: 'Books', actions: { view: 'books.view', create: 'books.create', update: 'books.update', delete: 'books.delete' } },
+  {
+    name: 'Book categories',
+    actions: { view: 'book-categories.view', create: 'book-categories.create', update: 'book-categories.update', delete: 'book-categories.delete' },
+  },
+  {
+    name: 'Course packages',
+    actions: { view: 'course-packages.view', create: 'course-packages.create', update: 'course-packages.update', delete: 'course-packages.delete' },
+  },
+  {
+    name: 'Academic years',
+    actions: { view: 'academic-years.view', create: 'academic-years.create', update: 'academic-years.update', delete: 'academic-years.delete' },
+  },
+  { name: 'Academic reports', actions: { view: 'academic-reports.view', export: 'academic-reports.export' } },
   { name: 'Classes', actions: { view: 'classes.view', create: 'classes.create', update: 'classes.update', delete: 'classes.delete' } },
-  { name: 'Enrollments', actions: { view: 'enrollments.view', create: 'enrollments.create', update: 'enrollments.update', delete: 'enrollments.delete' } },
+  {
+    name: 'Enrollments',
+    actions: {
+      view: 'enrollments.view',
+      create: 'enrollments.create',
+      update: 'enrollments.update',
+      delete: 'enrollments.delete',
+      cancel: 'enrollments.cancel',
+      transfer: 'enrollments.transfer',
+      status: 'enrollments.change-status',
+    },
+  },
   { name: 'Attendance', actions: { view: 'attendance.view', create: 'attendance.create', update: 'attendance.update' } },
+  {
+    name: 'Base data',
+    actions: {
+      view: 'base-data.view',
+      create: 'base-data.create',
+      update: 'base-data.update',
+      delete: 'base-data.delete',
+      translations: 'base-data.manage-translations',
+      languages: 'base-data.manage-languages',
+    },
+  },
+  // Not the same as "Programs" below — this is the internal academic-program
+  // catalog (Academic > Programs in the sidebar); "Programs" is the public
+  // website content page. Two distinct permission slugs, easy to conflate.
+  {
+    name: 'Academic programs',
+    actions: { view: 'academic-programs.view', create: 'academic-programs.create', update: 'academic-programs.update', delete: 'academic-programs.delete' },
+  },
+  { name: 'Videos', actions: { view: 'videos.view', create: 'videos.create', update: 'videos.update', delete: 'videos.delete' } },
   { name: 'Home slides', actions: { view: 'home-slides.view', create: 'home-slides.create', update: 'home-slides.update', delete: 'home-slides.delete' } },
   { name: 'Gallery', actions: { view: 'gallery.view', create: 'gallery.create', update: 'gallery.update', delete: 'gallery.delete' } },
   { name: 'Programs', actions: { view: 'programs.view', create: 'programs.create', update: 'programs.update', delete: 'programs.delete' } },
@@ -82,6 +147,13 @@ const MODULES: { name: string; actions: Partial<Record<Action, string>> }[] = [
   { name: 'Receipts', actions: { view: 'receipts.view' } },
   { name: 'Billing reports', actions: { view: 'billing-reports.view' } },
   { name: 'Billing notifications', actions: { send: 'notifications.send' } },
+  {
+    name: 'Currency rates',
+    actions: { view: 'currency-rates.view', create: 'currency-rates.create', update: 'currency-rates.update', delete: 'currency-rates.delete' },
+  },
+  { name: 'Accounting', actions: { view: 'accounting.view' } },
+  { name: 'Accounting dashboard', actions: { view: 'accounting.dashboard.view' } },
+  { name: 'Accounting periods', actions: { close: 'accounting.period.close', create: 'accounting.adjustment.create' } },
   { name: 'Accounts', actions: { view: 'accounts.view', create: 'accounts.create', update: 'accounts.update', deactivate: 'accounts.deactivate' } },
   { name: 'Income', actions: { view: 'income.view', create: 'income.create', update: 'income.update', cancel: 'income.cancel' } },
   {
@@ -123,12 +195,28 @@ const MODULES: { name: string; actions: Partial<Record<Action, string>> }[] = [
   { name: 'Repair shops', actions: { view: 'assets.repair.view', create: 'assets.create', update: 'assets.update', delete: 'assets.delete' } },
   { name: 'Asset maintenance', actions: { view: 'assets.maintenance.view', create: 'assets.maintenance.create', update: 'assets.maintenance.update' } },
   { name: 'Asset reports', actions: { view: 'assets.reports.view', export: 'assets.reports.export' } },
+  { name: 'My assets', actions: { view: 'my-assets.view' } },
+  { name: 'News', actions: { view: 'news.view' } },
+  { name: 'Events', actions: { view: 'events.view' } },
+  { name: 'Announcements', actions: { view: 'announcements.view' } },
+  { name: 'Documents', actions: { view: 'documents.view' } },
+  { name: 'Contact messages', actions: { view: 'contact-messages.view' } },
+  { name: 'Notifications', actions: { view: 'notifications.view' } },
+  { name: 'Examination', actions: { view: 'examination.view' } },
+  { name: 'Forms', actions: { view: 'forms.view' } },
+  { name: 'My requests', actions: { view: 'my-requests.view' } },
+  { name: 'Approvals', actions: { view: 'approval-requests.view', approve: 'approval-requests.approve', reject: 'approval-requests.reject' } },
+  { name: 'Form categories', actions: { manage: 'form-categories.manage' } },
+  { name: 'Form templates', actions: { manage: 'form-templates.manage' } },
+  { name: 'Student feedback', actions: { view: 'student-feedback.view', reply: 'student-feedback.reply' } },
+  { name: 'Exam applications', actions: { view: 'exam-applications.view', approve: 'exam-applications.approve', reject: 'exam-applications.reject' } },
   { name: 'System', actions: { view: 'audit-logs.view' } },
 ]
 
 const COLUMNS: Action[] = [
   'view', 'create', 'update', 'delete', 'approve', 'reject', 'pay', 'cancel', 'deactivate', 'export', 'send', 'assign',
   'return', 'transfer', 'retire', 'dispose', 'lost', 'found', 'resolve', 'complete',
+  'status', 'manage', 'reply', 'close', 'translations', 'languages',
 ]
 
 const isEditing = computed(() => props.role != null)
@@ -163,6 +251,34 @@ function isChecked(slug: string): boolean {
 
 function toggle(slug: string, checked: boolean) {
   form.permissions = checked ? [...form.permissions, slug] : form.permissions.filter((p) => p !== slug)
+}
+
+/** Alphabetical, so a long module list is easy to scan rather than scattered in catalog-declaration order. */
+const sortedModules = computed(() => [...MODULES].sort((a, b) => a.name.localeCompare(b.name)))
+
+/** Every distinct permission slug across every module — several modules deliberately share slugs (e.g. Repair shops reuses assets.*), so this de-dupes. */
+const allSlugs = computed(() => Array.from(new Set(MODULES.flatMap((module) => Object.values(module.actions) as string[]))))
+
+const allChecked = computed(() => allSlugs.value.length > 0 && allSlugs.value.every((slug) => isChecked(slug)))
+
+function toggleAll(checked: boolean) {
+  form.permissions = checked ? [...allSlugs.value] : []
+}
+
+function moduleSlugs(module: (typeof MODULES)[number]): string[] {
+  return Object.values(module.actions) as string[]
+}
+
+function isModuleFullyChecked(module: (typeof MODULES)[number]): boolean {
+  const slugs = moduleSlugs(module)
+  return slugs.length > 0 && slugs.every((slug) => isChecked(slug))
+}
+
+function toggleModule(module: (typeof MODULES)[number], checked: boolean) {
+  const slugs = moduleSlugs(module)
+  form.permissions = checked
+    ? Array.from(new Set([...form.permissions, ...slugs]))
+    : form.permissions.filter((p) => !slugs.includes(p))
 }
 
 function resetForm() {
@@ -212,7 +328,7 @@ async function submit() {
   <BaseModal
     :model-value="modelValue"
     :title="isEditing ? t('admin.roles.editTitle') : t('admin.roles.createTitle')"
-    size="lg"
+    size="full"
     @update:model-value="emit('update:modelValue', $event)"
   >
     <form class="space-y-4" @submit.prevent="submit">
@@ -242,18 +358,38 @@ async function submit() {
       <BaseInput v-model="form.description" :label="t('admin.roles.description')" :error="errors.description?.[0]" />
 
       <div>
-        <label class="mb-2 block text-sm font-medium text-neutral-700">{{ t('admin.roles.permissions') }}</label>
-        <div class="max-h-80 overflow-auto rounded-lg border border-neutral-200">
+        <label class="mb-2 flex items-center gap-2 text-sm font-medium text-neutral-700">
+          <input
+            type="checkbox"
+            :checked="allChecked"
+            class="rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+            @change="toggleAll(($event.target as HTMLInputElement).checked)"
+          />
+          {{ t('admin.roles.permissions') }}
+        </label>
+        <div class="max-h-[60vh] overflow-auto rounded-lg border border-neutral-200">
           <table class="min-w-full text-sm">
-            <thead class="sticky top-0 bg-neutral-50 text-xs font-semibold uppercase tracking-wide text-neutral-500">
+            <thead class="sticky top-0 z-20 bg-neutral-50 text-xs font-semibold uppercase tracking-wide text-neutral-500">
               <tr>
-                <th class="px-3 py-2 text-left">{{ t('admin.roles.module') }}</th>
+                <th class="sticky left-0 z-30 w-px whitespace-nowrap border-r border-neutral-200 bg-neutral-50 px-3 py-2 text-left">
+                  {{ t('admin.roles.module') }}
+                </th>
                 <th v-for="column in COLUMNS" :key="column" class="px-3 py-2 text-center">{{ columnLabel(column) }}</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-neutral-100">
-              <tr v-for="module in MODULES" :key="module.name">
-                <td class="px-3 py-2 text-neutral-700">{{ module.name }}</td>
+              <tr v-for="module in sortedModules" :key="module.name">
+                <td class="sticky left-0 z-10 w-px whitespace-nowrap border-r border-neutral-200 bg-white px-3 py-2 text-neutral-700">
+                  <label class="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      :checked="isModuleFullyChecked(module)"
+                      class="rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+                      @change="toggleModule(module, ($event.target as HTMLInputElement).checked)"
+                    />
+                    {{ module.name }}
+                  </label>
+                </td>
                 <td v-for="column in COLUMNS" :key="column" class="px-3 py-2 text-center">
                   <input
                     v-if="module.actions[column]"

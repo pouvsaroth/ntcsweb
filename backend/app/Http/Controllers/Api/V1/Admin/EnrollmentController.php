@@ -35,7 +35,7 @@ final class EnrollmentController extends Controller
             $request,
         )
             ->filterable(['status', 'student_id', 'class_id', 'course_package_id', 'academic_program_id'])
-            ->sortable(['enrolled_at', 'created_at'], default: '-created_at')
+            ->sortable(['enrolled_at', 'created_at', 'class_id', 'status', 'table_id'], default: '-created_at')
             ->paginate();
 
         return ApiResponse::success(EnrollmentResource::collection($enrollments));

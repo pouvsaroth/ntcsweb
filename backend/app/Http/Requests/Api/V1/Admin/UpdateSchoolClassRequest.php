@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Api\V1\Admin;
 
+use App\Models\Position;
 use App\Models\SchoolClass;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -25,12 +26,10 @@ class UpdateSchoolClassRequest extends FormRequest
         return [
             'name' => ['sometimes', 'required', 'string', 'max:255'],
             'code' => ['nullable', 'string', 'max:32', Rule::unique('tenant.classes', 'code')->ignore($class)],
-            // Must be a Staff member holding the "Teacher" position — see
-            // TeacherPositionSeeder. `staff` and `positions` both live in the
-            // tenant database, so this is an ordinary same-connection
-            // subquery.
+            // Must be a Staff member holding a position that carries the
+            // Teacher role — see Position::teacherPositionIds().
             'teacher_id' => ['nullable', Rule::exists('tenant.staff', 'id')->where(
-                fn ($query) => $query->whereIn('position_id', fn ($sub) => $sub->select('id')->from('positions')->where('name', 'Teacher'))
+                fn ($query) => $query->whereIn('position_id', Position::teacherPositionIds())
             )],
             'classroom_id' => ['nullable', Rule::exists('tenant.classrooms', 'id')],
             'academic_program_id' => ['nullable', Rule::exists('tenant.academic_programs', 'id')],

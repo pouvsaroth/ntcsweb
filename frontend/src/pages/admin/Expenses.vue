@@ -57,14 +57,6 @@ onMounted(() => fetch())
 
 <template>
   <div>
-    <div class="mb-6 flex items-center justify-between">
-      <div>
-        <h1 class="text-xl font-semibold text-neutral-900">{{ t('admin.expenses.title') }}</h1>
-        <p class="mt-1 text-sm text-neutral-500">{{ t('admin.expenses.pageSubtitle') }}</p>
-      </div>
-      <BaseButton to="/admin/expenses/new">{{ t('admin.expenses.addExpense') }}</BaseButton>
-    </div>
-
     <BaseAlert v-if="error" variant="danger" class="mb-4">{{ error }}</BaseAlert>
 
     <div class="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -80,6 +72,7 @@ onMounted(() => fetch())
         :placeholder="t('admin.expenses.filterAllStatuses')"
         @update:model-value="onStatusFilterChange"
       />
+      <BaseButton to="/admin/expenses/new">{{ t('admin.expenses.addExpense') }}</BaseButton>
     </div>
 
     <DataTable

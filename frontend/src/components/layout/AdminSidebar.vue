@@ -5,7 +5,7 @@ import { RouterLink, useRoute, useRouter } from 'vue-router'
 
 import ChangePasswordModal from '@/components/layout/ChangePasswordModal.vue'
 import EditProfileModal from '@/components/layout/EditProfileModal.vue'
-import { adminNav } from '@/router/adminNav'
+import { adminNav, isNavItemVisible } from '@/router/adminNav'
 import { useAdminUiStore } from '@/stores/adminUi'
 import { useAuthStore } from '@/stores/auth'
 
@@ -35,14 +35,7 @@ const visibleGroups = computed(() =>
   adminNav
     .map((group) => ({
       ...group,
-      items: group.items.filter((item) => {
-        if (item.superAdminOnly && !auth.isSuperAdmin) return false
-        if (item.permission) {
-          const required = Array.isArray(item.permission) ? item.permission : [item.permission]
-          if (!required.some((permission) => auth.can(permission))) return false
-        }
-        return true
-      }),
+      items: group.items.filter((item) => isNavItemVisible(item, auth)),
     }))
     .filter((group) => group.items.length > 0),
 )

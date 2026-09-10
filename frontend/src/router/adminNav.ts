@@ -30,7 +30,7 @@ export interface AdminNavGroup {
 export const adminNav: AdminNavGroup[] = [
   {
     labelKey: 'adminNav.groups.overview',
-    items: [{ labelKey: 'adminNav.items.dashboard', to: '/admin' }],
+    items: [{ labelKey: 'adminNav.items.dashboard', to: '/admin', permission: 'dashboard.view' }],
   },
   {
     labelKey: 'adminNav.groups.projectManagement',
@@ -43,25 +43,38 @@ export const adminNav: AdminNavGroup[] = [
   {
     labelKey: 'adminNav.groups.academic',
     items: [
-      { labelKey: 'adminNav.items.academicYears', to: '/admin/academic-years', permission: 'academic-years.view' },
-      { labelKey: 'adminNav.items.studyModes', to: '/admin/study-modes', permission: 'study-modes.view' },
-      { labelKey: 'adminNav.items.academicPrograms', to: '/admin/academic-programs', permission: 'academic-programs.view' },
-      { labelKey: 'adminNav.items.coursePackages', to: '/admin/course-packages', permission: 'course-packages.view' },
+      // Academic Years, Course, Books, Book Categories, and Study Mode used
+      // to each be their own sidebar entry — they're now reached as tabs
+      // from this one "Programs" item (see ProgramsTabs.vue), landing on
+      // the Academic Programs list itself.
+      { labelKey: 'adminNav.items.programs', to: '/admin/academic-programs', permission: 'academic-programs.view' },
       { labelKey: 'adminNav.items.videos', to: '/admin/videos', permission: 'videos.view' },
-      { labelKey: 'adminNav.items.bookCategories', to: '/admin/book-categories', permission: 'book-categories.view' },
-      { labelKey: 'adminNav.items.books', to: '/admin/books' },
-      { labelKey: 'adminNav.items.buildings', to: '/admin/buildings', permission: 'buildings.view' },
-      { labelKey: 'adminNav.items.classrooms', to: '/admin/classrooms', permission: 'classrooms.view' },
-      { labelKey: 'adminNav.items.classes', to: '/admin/classes' },
+      // Buildings and Classrooms used to be separate sidebar entries — now
+      // reached as tabs from this one "Study Building" item (see
+      // StudyBuildingTabs.vue), landing on the Buildings list itself.
+      {
+        labelKey: 'adminNav.items.studyBuilding',
+        to: '/admin/buildings',
+        permission: ['buildings.view', 'classrooms.view'],
+      },
+      { labelKey: 'adminNav.items.classes', to: '/admin/classes', permission: 'classes.view' },
+      { labelKey: 'adminNav.items.attendance', to: '/admin/attendance', permission: 'attendance.view' },
+      // Exams and Grades used to be separate sidebar entries under Academic
+      // Records — now reached as tabs from this one "Examination" item (see
+      // ExaminationTabs.vue), landing on the Exams page itself. Still an
+      // unbuilt "coming soon" placeholder (see ComingSoon.vue) — this
+      // permission exists purely to gate sidebar visibility until a real
+      // feature (and its own permission) lands behind it.
+      { labelKey: 'adminNav.items.examination', to: '/admin/exams', permission: 'examination.view' },
     ],
   },
   {
     labelKey: 'adminNav.groups.students',
     items: [
-      { labelKey: 'adminNav.items.studentsList', to: '/admin/students' },
+      { labelKey: 'adminNav.items.studentsList', to: '/admin/students', permission: 'students.view' },
       { labelKey: 'adminNav.items.studentRegistrations', to: '/admin/student-registrations', permission: 'students.approve-registration' },
       { labelKey: 'adminNav.items.studentImports', to: '/admin/student-imports', permission: 'students.create' },
-      { labelKey: 'adminNav.items.enrollments', to: '/admin/enrollments' },
+      { labelKey: 'adminNav.items.enrollments', to: '/admin/enrollments', permission: 'enrollments.view' },
     ],
   },
   {
@@ -70,14 +83,6 @@ export const adminNav: AdminNavGroup[] = [
       { labelKey: 'adminNav.items.staffList', to: '/admin/staff', permission: 'staff.view' },
       { labelKey: 'adminNav.items.positions', to: '/admin/positions', permission: 'positions.view' },
       { labelKey: 'adminNav.items.staffStatusHistory', to: '/admin/staff-status-history', permission: 'staff.view' },
-    ],
-  },
-  {
-    labelKey: 'adminNav.groups.academicRecords',
-    items: [
-      { labelKey: 'adminNav.items.attendance', to: '/admin/attendance', permission: 'attendance.view' },
-      { labelKey: 'adminNav.items.exams', to: '/admin/exams' },
-      { labelKey: 'adminNav.items.grades', to: '/admin/grades' },
     ],
   },
   {
@@ -106,7 +111,10 @@ export const adminNav: AdminNavGroup[] = [
     items: [
       { labelKey: 'adminNav.items.assetDashboard', to: '/admin/assets/dashboard', permission: 'assets.reports.view' },
       { labelKey: 'adminNav.items.assets', to: '/admin/assets', permission: 'assets.view' },
-      { labelKey: 'adminNav.items.myAssets', to: '/admin/my-assets' },
+      // Self-service ("assets assigned to me") at the API layer — see
+      // MyAssetController — but still permission-gated here for sidebar
+      // visibility, same as every other item.
+      { labelKey: 'adminNav.items.myAssets', to: '/admin/my-assets', permission: 'my-assets.view' },
       { labelKey: 'adminNav.items.assetIssues', to: '/admin/asset-issues', permission: 'assets.issue.view' },
       { labelKey: 'adminNav.items.assetRepairs', to: '/admin/asset-repairs', permission: 'assets.repair.view' },
       { labelKey: 'adminNav.items.repairShops', to: '/admin/repair-shops', permission: 'assets.repair.view' },
@@ -123,18 +131,22 @@ export const adminNav: AdminNavGroup[] = [
     items: [
       { labelKey: 'adminNav.items.homeSlides', to: '/admin/home-slides', permission: 'home-slides.view' },
       { labelKey: 'adminNav.items.aboutPage', to: '/admin/about-page', permission: 'tenant-settings.view' },
-      { labelKey: 'adminNav.items.news', to: '/admin/news' },
-      { labelKey: 'adminNav.items.events', to: '/admin/events' },
-      { labelKey: 'adminNav.items.announcements', to: '/admin/announcements' },
+      // News/Events/Announcements/Documents are still "coming soon"
+      // placeholders (see ComingSoon.vue) — these permissions exist purely
+      // to gate sidebar visibility until real features land behind them.
+      { labelKey: 'adminNav.items.news', to: '/admin/news', permission: 'news.view' },
+      { labelKey: 'adminNav.items.events', to: '/admin/events', permission: 'events.view' },
+      { labelKey: 'adminNav.items.announcements', to: '/admin/announcements', permission: 'announcements.view' },
       { labelKey: 'adminNav.items.gallery', to: '/admin/gallery', permission: 'gallery.view' },
-      { labelKey: 'adminNav.items.documents', to: '/admin/documents' },
+      { labelKey: 'adminNav.items.documents', to: '/admin/documents', permission: 'documents.view' },
     ],
   },
   {
     labelKey: 'adminNav.groups.communication',
     items: [
-      { labelKey: 'adminNav.items.contactMessages', to: '/admin/contact-messages' },
-      { labelKey: 'adminNav.items.notifications', to: '/admin/notifications' },
+      // Also still "coming soon" placeholders — see the Website group above.
+      { labelKey: 'adminNav.items.contactMessages', to: '/admin/contact-messages', permission: 'contact-messages.view' },
+      { labelKey: 'adminNav.items.notifications', to: '/admin/notifications', permission: 'notifications.view' },
       { labelKey: 'adminNav.items.studentFeedback', to: '/admin/student-feedback', permission: 'student-feedback.view' },
     ],
   },
@@ -151,18 +163,41 @@ export const adminNav: AdminNavGroup[] = [
     ],
   },
   {
-    // Every item here is reachable by any authenticated user — Forms and My
-    // Request are identity-gated (submit/view your own), same as
-    // LeaveRequest submission. Approvals and the two catalog-management
-    // items carry a `permission`, so AdminSidebar hides them from anyone
-    // without it, same as every other permission-gated item above.
+    // Forms and My Request are identity-gated at the API layer (submit/view
+    // your own), same as LeaveRequest submission — but still permission-
+    // gated here for sidebar visibility, same as every other item.
     labelKey: 'adminNav.groups.eApprovals',
     items: [
-      { labelKey: 'adminNav.items.forms', to: '/admin/approvals/forms' },
-      { labelKey: 'adminNav.items.myRequests', to: '/admin/approvals/my-requests' },
+      { labelKey: 'adminNav.items.forms', to: '/admin/approvals/forms', permission: 'forms.view' },
+      { labelKey: 'adminNav.items.myRequests', to: '/admin/approvals/my-requests', permission: 'my-requests.view' },
       { labelKey: 'adminNav.items.approvals', to: '/admin/approvals/queue', permission: ['approval-requests.view', 'leave-requests.view'] },
       { labelKey: 'adminNav.items.formCategories', to: '/admin/form-categories', permission: 'form-categories.manage' },
       { labelKey: 'adminNav.items.formTemplates', to: '/admin/form-templates', permission: 'form-templates.manage' },
     ],
   },
 ]
+
+export interface AdminNavAccess {
+  isSuperAdmin: boolean
+  can: (permission: string) => boolean
+}
+
+/** The same visibility rule AdminSidebar.vue applies per item — shared so the router guard's "can this account even reach this page" check can't drift from what the sidebar actually shows. */
+export function isNavItemVisible(item: AdminNavItem, access: AdminNavAccess): boolean {
+  if (item.superAdminOnly && !access.isSuperAdmin) return false
+  if (item.permission) {
+    const required = Array.isArray(item.permission) ? item.permission : [item.permission]
+    if (!required.some((permission) => access.can(permission))) return false
+  }
+  return true
+}
+
+/** The first sidebar destination this account can actually reach, in nav order — used to send someone who lacks the permission for the page they landed on (e.g. Dashboard) somewhere real instead of a page with nothing they're allowed to see. Null if the role can reach nothing in the sidebar at all. */
+export function firstAccessibleAdminPath(access: AdminNavAccess): string | null {
+  for (const group of adminNav) {
+    for (const item of group.items) {
+      if (isNavItemVisible(item, access)) return item.to
+    }
+  }
+  return null
+}
