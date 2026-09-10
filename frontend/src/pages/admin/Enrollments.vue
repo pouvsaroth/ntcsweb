@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import EnrollmentEditModal from '@/components/admin/EnrollmentEditModal.vue'
@@ -10,17 +10,41 @@ import ActionIconButton from '@/components/ui/ActionIconButton.vue'
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
+import BaseSelect from '@/components/ui/BaseSelect.vue'
 import EditIconButton from '@/components/ui/EditIconButton.vue'
 import BasePagination from '@/components/ui/BasePagination.vue'
 import DataTable from '@/components/ui/DataTable.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { enrollmentsService, type Enrollment, type EnrollmentStatus } from '@/services/enrollments'
+import { type LookupOption, lookupsService } from '@/services/lookups'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
-const { items, meta, loading, error, sort, setPage, setSort, fetch } = usePaginatedResource<Enrollment>((query) =>
+const { items, meta, loading, error, sort, setPage, setSort, setFilter, fetch } = usePaginatedResource<Enrollment>((query) =>
   enrollmentsService.list(query),
 )
+
+/**
+ * Options come straight from the ENROLLMENT_STATUS base-data category
+ * (BaseDataSeeder) rather than a hardcoded array — codes match
+ * EnrollmentStatus exactly (see the seeder's own note on why `dropped` is
+ * excluded). Labels are the lookup's own translated `name`, not a second,
+ * separately-maintained i18n string — only the row's status *badge* still
+ * uses the app's own i18n keys, since that's a display concern unrelated to
+ * this filter.
+ */
+const statusLookup = ref<LookupOption[]>([])
+const selectedStatus = ref('')
+
+const statusFilterOptions = computed(() => [
+  { value: '', label: t('admin.enrollments.filterAllStatuses') },
+  ...statusLookup.value.map((option) => ({ value: option.code, label: option.name })),
+])
+
+function onStatusFilterChange(value: string) {
+  selectedStatus.value = value
+  setFilter('status', value || undefined)
+}
 
 const columns = [
   { key: 'code', label: t('admin.enrollments.columnCode') },
@@ -83,16 +107,27 @@ async function remove(enrollment: Enrollment) {
   await fetch()
 }
 
-onMounted(() => fetch())
+onMounted(() => {
+  void fetch()
+  void lookupsService.values('ENROLLMENT_STATUS', locale.value).then((result) => (statusLookup.value = result))
+})
 </script>
 
 <template>
   <div>
-    <div class="mb-6 flex items-center justify-between">
+    <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
       <div>
         <h1 class="text-xl font-semibold text-neutral-900">{{ t('admin.enrollments.title') }}</h1>
       </div>
-      <BaseButton to="/admin/enrollments/new">{{ t('admin.enrollments.createPackageTitle') }}</BaseButton>
+      <div class="flex flex-wrap items-center gap-3">
+        <BaseSelect
+          :model-value="selectedStatus"
+          :options="statusFilterOptions"
+          class="w-48"
+          @update:model-value="onStatusFilterChange"
+        />
+        <BaseButton to="/admin/enrollments/new">{{ t('admin.enrollments.createPackageTitle') }}</BaseButton>
+      </div>
     </div>
 
     <BaseAlert v-if="error" variant="danger" class="mb-4">{{ error }}</BaseAlert>

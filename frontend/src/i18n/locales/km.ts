@@ -1365,6 +1365,7 @@ const km: MessageSchema = {
       columnBook: 'សៀវភៅ',
       columnActions: 'សកម្មភាព',
       emptyMessage: 'មិនទាន់មានសិស្សចុះឈ្មោះក្នុងថ្នាក់នេះទេ។',
+      filterAllStatuses: 'ស្ថានភាពទាំងអស់',
     },
     enrollments: {
       title: 'ការចុះឈ្មោះ',
@@ -1415,6 +1416,7 @@ const km: MessageSchema = {
       statusStopped: 'បញ្ឈប់ការសិក្សា',
       statusSuspended: 'ផ្អាកការសិក្សា',
       statusDropped: 'បានឈប់រៀន',
+      filterAllStatuses: 'ស្ថានភាពទាំងអស់',
       changeStatus: 'ប្តូរស្ថានភាព',
       statusReason: 'មូលហេតុ',
       statusEffectiveDate: 'កាលបរិច្ឆេទ',

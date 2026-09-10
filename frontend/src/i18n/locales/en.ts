@@ -1369,6 +1369,7 @@ const en = {
       columnBook: 'Book',
       columnActions: 'Actions',
       emptyMessage: 'No students enrolled in this class yet.',
+      filterAllStatuses: 'All statuses',
     },
     enrollments: {
       title: 'Enrollments',
@@ -1419,6 +1420,7 @@ const en = {
       statusStopped: 'Stopped',
       statusSuspended: 'Suspended',
       statusDropped: 'Dropped',
+      filterAllStatuses: 'All statuses',
       changeStatus: 'Change Status',
       statusReason: 'Reason',
       statusEffectiveDate: 'Effective Date',

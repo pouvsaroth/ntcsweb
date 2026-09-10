@@ -77,13 +77,6 @@ const errors = ref<Record<string, string[]>>({})
 const generalError = ref<string | null>(null)
 const submitting = ref(false)
 
-const statusOptions = computed(() => [
-  { value: 'active', label: t('admin.students.statusActive') },
-  { value: 'graduated', label: t('admin.students.statusGraduated') },
-  { value: 'withdrawn', label: t('admin.students.statusWithdrawn') },
-  { value: 'inactive', label: t('admin.students.statusInactive') },
-])
-
 // Cambodia's official Province > District > Commune > Village hierarchy —
 // selecting a village is what actually sets form.village_code. Each level's
 // options only exist once its parent is chosen, and choosing a level resets
@@ -344,7 +337,7 @@ onMounted(load)
           <BaseInput v-model="form.facebook" :label="t('admin.students.facebook')" :error="errors.facebook?.[0]" />
           <BaseInput v-model="form.telegram" :label="t('admin.students.telegram')" :error="errors.telegram?.[0]" />
 
-          <BaseSelect v-model="form.status" :options="statusOptions" :label="t('admin.students.status')" />
+          <LookupSelect v-model="form.status" category="STUDENT_STATUS" :label="t('admin.students.status')" />
         </div>
 
         <div class="mt-4">

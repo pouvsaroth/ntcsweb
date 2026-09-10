@@ -1365,6 +1365,7 @@ const ko: MessageSchema = {
       columnBook: '교재',
       columnActions: '작업',
       emptyMessage: '아직 이 학급에 등록된 학생이 없습니다.',
+      filterAllStatuses: '모든 상태',
     },
     enrollments: {
       title: '등록',
@@ -1415,6 +1416,7 @@ const ko: MessageSchema = {
       statusStopped: '중단',
       statusSuspended: '휴학중',
       statusDropped: '중도포기',
+      filterAllStatuses: '모든 상태',
       changeStatus: '상태 변경',
       statusReason: '사유',
       statusEffectiveDate: '적용일',

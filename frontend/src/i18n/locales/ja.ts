@@ -1365,6 +1365,7 @@ const ja: MessageSchema = {
       columnBook: '教材',
       columnActions: '操作',
       emptyMessage: 'このクラスにはまだ登録された生徒がいません。',
+      filterAllStatuses: 'すべてのステータス',
     },
     enrollments: {
       title: '登録',
@@ -1415,6 +1416,7 @@ const ja: MessageSchema = {
       statusStopped: '中止',
       statusSuspended: '休学中',
       statusDropped: '中退',
+      filterAllStatuses: 'すべてのステータス',
       changeStatus: 'ステータスを変更',
       statusReason: '理由',
       statusEffectiveDate: '発効日',

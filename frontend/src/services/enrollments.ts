@@ -85,7 +85,7 @@ export interface EnrollmentPackageInput {
 export const enrollmentsService = {
   async list(query: PaginatedQuery): Promise<PaginatedResult<Enrollment>> {
     const result = await apiGetWithMeta<Enrollment[]>('/enrollments', {
-      params: { page: query.page, per_page: query.per_page, sort: query.sort },
+      params: { page: query.page, per_page: query.per_page, sort: query.sort, filter: query.filter },
     })
 
     return { data: result.data, pagination: result.meta?.pagination as LengthAwarePaginationMeta }

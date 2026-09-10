@@ -163,20 +163,33 @@ class BaseDataSeeder extends Seeder
             ],
             'STUDENT_STATUS' => [
                 'name' => 'Student Status',
-                'description' => 'Reference list mirroring App\\Models\\Student::STATUS_* — the Student model itself still owns the real column/constants.',
+                'description' => 'Reference list mirroring App\\Models\\Student::STATUS_* — the Student model itself still owns the real column/constants. Codes are lowercase to match the column value exactly (see GENDER); `pending` is deliberately excluded — it is a system-only state set by StudentRegistrationService, never manually selectable (see Store/UpdateStudentRequest).',
                 'sort_order' => 4,
                 'values' => [
-                    'ACTIVE' => ['en' => ['name' => 'Active'], 'km' => ['name' => 'សកម្ម'], 'zh' => ['name' => '在读'], 'ko' => ['name' => '재학'], 'ja' => ['name' => '在籍']],
-                    'INACTIVE' => ['en' => ['name' => 'Inactive'], 'km' => ['name' => 'អសកម្ម'], 'zh' => ['name' => '停用'], 'ko' => ['name' => '비활성'], 'ja' => ['name' => '非アクティブ']],
-                    'GRADUATED' => ['en' => ['name' => 'Graduated'], 'km' => ['name' => 'បញ្ចប់ការសិក្សា'], 'zh' => ['name' => '毕业'], 'ko' => ['name' => '졸업'], 'ja' => ['name' => '卒業']],
-                    'SUSPENDED' => ['en' => ['name' => 'Suspended'], 'km' => ['name' => 'ផ្អាក'], 'zh' => ['name' => '暂停'], 'ko' => ['name' => '정학'], 'ja' => ['name' => '停学']],
-                    'WITHDRAWN' => ['en' => ['name' => 'Withdrawn'], 'km' => ['name' => 'ដកខ្លួន'], 'zh' => ['name' => '退学'], 'ko' => ['name' => '자퇴'], 'ja' => ['name' => '退学']],
+                    'active' => ['en' => ['name' => 'Active'], 'km' => ['name' => 'សកម្ម'], 'zh' => ['name' => '在读'], 'ko' => ['name' => '재학'], 'ja' => ['name' => '在籍']],
+                    'inactive' => ['en' => ['name' => 'Inactive'], 'km' => ['name' => 'អសកម្ម'], 'zh' => ['name' => '停用'], 'ko' => ['name' => '비활성'], 'ja' => ['name' => '非アクティブ']],
+                    'graduated' => ['en' => ['name' => 'Graduated'], 'km' => ['name' => 'បញ្ចប់ការសិក្សា'], 'zh' => ['name' => '毕业'], 'ko' => ['name' => '졸업'], 'ja' => ['name' => '卒業']],
+                    'withdrawn' => ['en' => ['name' => 'Withdrawn'], 'km' => ['name' => 'ដកខ្លួន'], 'zh' => ['name' => '退学'], 'ko' => ['name' => '자퇴'], 'ja' => ['name' => '退学']],
+                ],
+            ],
+            'ENROLLMENT_STATUS' => [
+                'name' => 'Enrollment Status',
+                'description' => 'Reference list mirroring App\\Models\\Enrollment::STATUSES_MANAGEABLE — the Enrollment model itself still owns the real column/constants. Codes are lowercase to match the column value exactly (see GENDER); `dropped` is deliberately excluded — it only ever happens as a side effect of EnrollmentService::cancel()/transferClass(), never manually chosen.',
+                'sort_order' => 5,
+                'values' => [
+                    'not_started' => ['en' => ['name' => 'Not Started'], 'km' => ['name' => 'មិនចាប់ផ្តើមចូលរៀន'], 'zh' => ['name' => '尚未开始'], 'ko' => ['name' => '시작 전'], 'ja' => ['name' => '未開始']],
+                    'active' => ['en' => ['name' => 'Studying'], 'km' => ['name' => 'កំពុង់សិក្សា'], 'zh' => ['name' => '学习中'], 'ko' => ['name' => '수강중'], 'ja' => ['name' => '受講中']],
+                    'exam_ready' => ['en' => ['name' => 'Ready for Exam'], 'km' => ['name' => 'ត្រៀមប្រឡង'], 'zh' => ['name' => '备考中'], 'ko' => ['name' => '시험 준비중'], 'ja' => ['name' => '試験準備中']],
+                    'completed' => ['en' => ['name' => 'Completed'], 'km' => ['name' => 'បញ្ចប់ការសិក្សា'], 'zh' => ['name' => '已完成'], 'ko' => ['name' => '완료'], 'ja' => ['name' => '完了']],
+                    'abandoned' => ['en' => ['name' => 'Abandoned'], 'km' => ['name' => 'លះបង់ការសិក្សា'], 'zh' => ['name' => '已放弃'], 'ko' => ['name' => '포기'], 'ja' => ['name' => '放棄']],
+                    'stopped' => ['en' => ['name' => 'Stopped'], 'km' => ['name' => 'បញ្ឈប់ការសិក្សា'], 'zh' => ['name' => '已停止'], 'ko' => ['name' => '중단'], 'ja' => ['name' => '中止']],
+                    'suspended' => ['en' => ['name' => 'Suspended'], 'km' => ['name' => 'ផ្អាកការសិក្សា'], 'zh' => ['name' => '已暂停'], 'ko' => ['name' => '휴학중'], 'ja' => ['name' => '休学中']],
                 ],
             ],
             'STAFF_TYPE' => [
                 'name' => 'Staff Type',
                 'description' => 'General staffing category, for reports/filters.',
-                'sort_order' => 5,
+                'sort_order' => 6,
                 'values' => [
                     'TEACHING' => ['en' => ['name' => 'Teaching'], 'km' => ['name' => 'បង្រៀន'], 'zh' => ['name' => '教学'], 'ko' => ['name' => '교직'], 'ja' => ['name' => '教育']],
                     'ADMINISTRATIVE' => ['en' => ['name' => 'Administrative'], 'km' => ['name' => 'រដ្ឋបាល'], 'zh' => ['name' => '行政'], 'ko' => ['name' => '행정'], 'ja' => ['name' => '事務']],
@@ -187,7 +200,7 @@ class BaseDataSeeder extends Seeder
             'RELATIONSHIP_TYPE' => [
                 'name' => 'Relationship Type',
                 'description' => 'General person-to-person relationship, for emergency contacts and similar fields.',
-                'sort_order' => 6,
+                'sort_order' => 7,
                 'values' => [
                     'SPOUSE' => ['en' => ['name' => 'Spouse'], 'km' => ['name' => 'ប្តី/ប្រពន្ធ'], 'zh' => ['name' => '配偶'], 'ko' => ['name' => '배우자'], 'ja' => ['name' => '配偶者']],
                     'PARENT' => ['en' => ['name' => 'Parent'], 'km' => ['name' => 'ឪពុកម្តាយ'], 'zh' => ['name' => '父母'], 'ko' => ['name' => '부모'], 'ja' => ['name' => '親']],
@@ -201,7 +214,7 @@ class BaseDataSeeder extends Seeder
             'ASSET_STATUS' => [
                 'name' => 'Asset Status',
                 'description' => 'Reference list mirroring the Asset module\'s own status concept — the Asset model itself still owns the real column/logic.',
-                'sort_order' => 7,
+                'sort_order' => 8,
                 'values' => [
                     'ACTIVE' => ['en' => ['name' => 'Active'], 'km' => ['name' => 'សកម្ម'], 'zh' => ['name' => '使用中'], 'ko' => ['name' => '사용중'], 'ja' => ['name' => '使用中']],
                     'IN_REPAIR' => ['en' => ['name' => 'In Repair'], 'km' => ['name' => 'កំពុងជួសជុល'], 'zh' => ['name' => '维修中'], 'ko' => ['name' => '수리중'], 'ja' => ['name' => '修理中']],
@@ -213,7 +226,7 @@ class BaseDataSeeder extends Seeder
             'EDUCATION_LEVEL' => [
                 'name' => 'Education Level',
                 'description' => 'Highest education level, for Staff/Teacher qualification records.',
-                'sort_order' => 8,
+                'sort_order' => 9,
                 'values' => [
                     'PRIMARY' => ['en' => ['name' => 'Primary'], 'km' => ['name' => 'បឋមសិក្សា'], 'zh' => ['name' => '小学'], 'ko' => ['name' => '초등학교'], 'ja' => ['name' => '小学校']],
                     'SECONDARY' => ['en' => ['name' => 'Secondary'], 'km' => ['name' => 'មធ្យមសិក្សា'], 'zh' => ['name' => '中学'], 'ko' => ['name' => '중학교'], 'ja' => ['name' => '中学校']],
@@ -227,7 +240,7 @@ class BaseDataSeeder extends Seeder
             'DISCOUNT_REASON' => [
                 'name' => 'Discount Reason',
                 'description' => 'Why an invoice was discounted — used by the enrollment payment panel and available for any other invoice discount.',
-                'sort_order' => 9,
+                'sort_order' => 10,
                 'values' => [
                     'SIBLING' => ['en' => ['name' => 'Sibling Discount'], 'km' => ['name' => 'បញ្ចុះតម្លៃបងប្អូន'], 'zh' => ['name' => '兄弟姐妹折扣'], 'ko' => ['name' => '형제자매 할인'], 'ja' => ['name' => '兄弟姉妹割引']],
                     'STAFF' => ['en' => ['name' => 'Staff Discount'], 'km' => ['name' => 'បញ្ចុះតម្លៃបុគ្គលិក'], 'zh' => ['name' => '员工折扣'], 'ko' => ['name' => '직원 할인'], 'ja' => ['name' => '職員割引']],
@@ -239,7 +252,7 @@ class BaseDataSeeder extends Seeder
             'STAFF_STATUS' => [
                 'name' => 'Staff Status',
                 'description' => 'Reference list mirroring App\\Models\\Staff::STATUS_* — the Staff model itself still owns the real column/constants.',
-                'sort_order' => 10,
+                'sort_order' => 11,
                 'values' => [
                     'active' => ['en' => ['name' => 'Active'], 'km' => ['name' => 'កំពុងបម្រើការងារ'], 'zh' => ['name' => '在职'], 'ko' => ['name' => '재직중'], 'ja' => ['name' => '在職中']],
                     'probation' => ['en' => ['name' => 'Probation'], 'km' => ['name' => 'កំពុងសាកល្បងការងារ'], 'zh' => ['name' => '试用期'], 'ko' => ['name' => '수습'], 'ja' => ['name' => '試用期間']],
@@ -253,7 +266,7 @@ class BaseDataSeeder extends Seeder
             'STUDY_MODE' => [
                 'name' => 'Study Mode',
                 'description' => 'Replaces the old standalone study_modes table — Full Time / Part Time and anything a school adds later, managed like any other base-data category.',
-                'sort_order' => 11,
+                'sort_order' => 12,
                 'values' => [
                     'FULL_TIME' => ['en' => ['name' => 'Full Time'], 'km' => ['name' => 'ពេញម៉ោង'], 'zh' => ['name' => '全日制'], 'ko' => ['name' => '전일제'], 'ja' => ['name' => '全日制']],
                     'PART_TIME' => ['en' => ['name' => 'Part Time'], 'km' => ['name' => 'ក្រៅម៉ោង'], 'zh' => ['name' => '兼职'], 'ko' => ['name' => '시간제'], 'ja' => ['name' => '非常勤']],

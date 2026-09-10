@@ -1364,6 +1364,7 @@ const zh: MessageSchema = {
       columnBook: '书籍',
       columnActions: '操作',
       emptyMessage: '该班级尚无已注册的学生。',
+      filterAllStatuses: '所有状态',
     },
     enrollments: {
       title: '报名',
@@ -1414,6 +1415,7 @@ const zh: MessageSchema = {
       statusStopped: '已停止',
       statusSuspended: '已暂停',
       statusDropped: '已退课',
+      filterAllStatuses: '所有状态',
       changeStatus: '更改状态',
       statusReason: '原因',
       statusEffectiveDate: '生效日期',

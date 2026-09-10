@@ -8,13 +8,15 @@ import EnrollmentTransferModal from '@/components/admin/EnrollmentTransferModal.
 import ActionIconButton from '@/components/ui/ActionIconButton.vue'
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
+import BaseSelect from '@/components/ui/BaseSelect.vue'
 import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import DataTable from '@/components/ui/DataTable.vue'
 import { classesService, type SchoolClass } from '@/services/classes'
-import { enrollmentsService, type Enrollment } from '@/services/enrollments'
+import { enrollmentsService, type Enrollment, type EnrollmentStatus } from '@/services/enrollments'
+import { type LookupOption, lookupsService } from '@/services/lookups'
 import { ApiRequestError } from '@/types/api'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const route = useRoute()
 
 const classId = computed(() => Number(route.params.id))
@@ -23,6 +25,15 @@ const schoolClass = ref<SchoolClass | null>(null)
 const roster = ref<Enrollment[]>([])
 const loading = ref(true)
 const loadError = ref<string | null>(null)
+
+/** Mirrors Enrollments.vue's own filter — see its comment for why codes/labels come from ENROLLMENT_STATUS base data. Defaults to `active` to match this roster's previous behavior (it only ever showed active enrollments before this filter existed). */
+const statusLookup = ref<LookupOption[]>([])
+const selectedStatus = ref<EnrollmentStatus | ''>('active')
+
+const statusFilterOptions = computed(() => [
+  { value: '', label: t('admin.classStudents.filterAllStatuses') },
+  ...statusLookup.value.map((option) => ({ value: option.code, label: option.name })),
+])
 
 const columns = [
   { key: 'index', label: '#' },
@@ -81,18 +92,21 @@ const academicYear = computed(() => {
   return new Date(schoolClass.value.start_date).getFullYear()
 })
 
+async function loadRoster() {
+  const filter: Record<string, string | number> = { class_id: classId.value }
+  if (selectedStatus.value) filter.status = selectedStatus.value
+
+  const enrollments = await enrollmentsService.listAll(filter)
+  roster.value = [...enrollments].sort((a, b) => a.student.full_name.localeCompare(b.student.full_name))
+}
+
 async function load() {
   loading.value = true
   loadError.value = null
 
   try {
-    const [classResult, enrollments] = await Promise.all([
-      classesService.get(classId.value),
-      enrollmentsService.listAll({ class_id: classId.value, status: 'active' }),
-    ])
-
+    const [classResult] = await Promise.all([classesService.get(classId.value), loadRoster()])
     schoolClass.value = classResult
-    roster.value = [...enrollments].sort((a, b) => a.student.full_name.localeCompare(b.student.full_name))
   } catch (error) {
     loadError.value = error instanceof ApiRequestError ? error.message : t('admin.classStudents.loadFailed')
   } finally {
@@ -100,7 +114,20 @@ async function load() {
   }
 }
 
-onMounted(load)
+async function onStatusFilterChange(value: string) {
+  selectedStatus.value = value as EnrollmentStatus | ''
+
+  try {
+    await loadRoster()
+  } catch (error) {
+    loadError.value = error instanceof ApiRequestError ? error.message : t('admin.classStudents.loadFailed')
+  }
+}
+
+onMounted(() => {
+  void load()
+  void lookupsService.values('ENROLLMENT_STATUS', locale.value).then((result) => (statusLookup.value = result))
+})
 </script>
 
 <template>
@@ -132,8 +159,14 @@ onMounted(load)
         </div>
       </div>
 
-      <div class="mb-4 flex gap-2">
+      <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
         <BaseButton :to="`/admin/attendance?class_id=${classId}`" variant="outline">{{ t('admin.classStudents.attendance') }}</BaseButton>
+        <BaseSelect
+          :model-value="selectedStatus"
+          :options="statusFilterOptions"
+          class="w-48"
+          @update:model-value="onStatusFilterChange"
+        />
       </div>
 
       <DataTable
