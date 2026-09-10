@@ -1,21 +1,37 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
+import BaseSelect from '@/components/ui/BaseSelect.vue'
 import EditIconButton from '@/components/ui/EditIconButton.vue'
 import BasePagination from '@/components/ui/BasePagination.vue'
 import DataTable from '@/components/ui/DataTable.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
-import { classesService, type ClassStatus, type SchoolClass } from '@/services/classes'
+import { classStatuses, classesService, type ClassStatus, type SchoolClass } from '@/services/classes'
 
 const { t } = useI18n()
 
-const { items, meta, loading, error, sort, setPage, setSearch, setSort, fetch } = usePaginatedResource<SchoolClass>((query) =>
+const { items, meta, loading, error, sort, setPage, setSearch, setSort, setFilter, fetch } = usePaginatedResource<SchoolClass>((query) =>
   classesService.list(query),
 )
+
+const selectedStatus = ref<ClassStatus | ''>('active')
+
+const statusFilterOptions = computed(() => [
+  { value: '', label: t('admin.classes.filterAllStatuses') },
+  ...classStatuses.map((status) => ({
+    value: status,
+    label: t(`admin.classes.status${status.charAt(0).toUpperCase()}${status.slice(1)}`),
+  })),
+])
+
+function onStatusFilterChange(value: string) {
+  selectedStatus.value = value as ClassStatus | ''
+  setFilter('status', value || undefined)
+}
 
 const columns = [
   { key: 'name', label: t('admin.classes.columnName'), sortable: true },
@@ -45,18 +61,26 @@ async function remove(row: SchoolClass) {
   await fetch()
 }
 
-onMounted(() => fetch())
+onMounted(() => setFilter('status', selectedStatus.value || undefined))
 </script>
 
 <template>
   <div>
-    <div class="mb-6 flex items-center justify-between">
-      <input
-        type="search"
-        :placeholder="t('common.searchPlaceholder')"
-        class="block w-full max-w-sm rounded-lg border border-neutral-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
-        @input="setSearch(($event.target as HTMLInputElement).value)"
-      />
+    <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex flex-wrap items-center gap-3">
+        <input
+          type="search"
+          :placeholder="t('common.searchPlaceholder')"
+          class="block w-full max-w-sm rounded-lg border border-neutral-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+          @input="setSearch(($event.target as HTMLInputElement).value)"
+        />
+        <BaseSelect
+          :model-value="selectedStatus"
+          :options="statusFilterOptions"
+          class="w-48"
+          @update:model-value="onStatusFilterChange"
+        />
+      </div>
       <BaseButton to="/admin/classes/new">{{ t('admin.classes.addClass') }}</BaseButton>
     </div>
 

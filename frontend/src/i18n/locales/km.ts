@@ -1320,6 +1320,7 @@ const km: MessageSchema = {
       statusActive: 'សកម្ម',
       statusCompleted: 'បានបញ្ចប់',
       statusCancelled: 'បានលុបចោល',
+      filterAllStatuses: 'ស្ថានភាពទាំងអស់',
       startDate: 'ថ្ងៃចាប់ផ្តើម',
       endDate: 'ថ្ងៃបញ្ចប់',
       scheduleSection: 'កាលវិភាគប្រចាំសប្តាហ៍',

@@ -1319,6 +1319,7 @@ const zh: MessageSchema = {
       statusActive: '进行中',
       statusCompleted: '已结束',
       statusCancelled: '已取消',
+      filterAllStatuses: '所有状态',
       startDate: '开始日期',
       endDate: '结束日期',
       scheduleSection: '每周课表',

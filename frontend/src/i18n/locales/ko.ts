@@ -1320,6 +1320,7 @@ const ko: MessageSchema = {
       statusActive: '진행중',
       statusCompleted: '종료',
       statusCancelled: '취소됨',
+      filterAllStatuses: '모든 상태',
       startDate: '시작일',
       endDate: '종료일',
       scheduleSection: '주간 시간표',

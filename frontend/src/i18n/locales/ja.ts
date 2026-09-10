@@ -1320,6 +1320,7 @@ const ja: MessageSchema = {
       statusActive: '進行中',
       statusCompleted: '終了',
       statusCancelled: 'キャンセル済み',
+      filterAllStatuses: 'すべてのステータス',
       startDate: '開始日',
       endDate: '終了日',
       scheduleSection: '週間スケジュール',

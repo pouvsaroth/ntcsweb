@@ -1324,6 +1324,7 @@ const en = {
       statusActive: 'Active',
       statusCompleted: 'Completed',
       statusCancelled: 'Cancelled',
+      filterAllStatuses: 'All statuses',
       startDate: 'Start date',
       endDate: 'End date',
       scheduleSection: 'Weekly schedule',

@@ -8,6 +8,8 @@ import type { LengthAwarePaginationMeta, PaginatedResult } from '@/types/api'
 
 export type ClassStatus = 'upcoming' | 'active' | 'completed' | 'cancelled'
 
+export const classStatuses: ClassStatus[] = ['upcoming', 'active', 'completed', 'cancelled']
+
 export interface ClassSchedule {
   id?: number
   day_of_week: number
@@ -56,7 +58,7 @@ export interface ClassInput {
 export const classesService = {
   async list(query: PaginatedQuery): Promise<PaginatedResult<SchoolClass>> {
     const result = await apiGetWithMeta<SchoolClass[]>('/classes', {
-      params: { page: query.page, per_page: query.per_page, search: query.search, sort: query.sort },
+      params: { page: query.page, per_page: query.per_page, search: query.search, sort: query.sort, filter: query.filter },
     })
 
     return { data: result.data, pagination: result.meta?.pagination as LengthAwarePaginationMeta }
