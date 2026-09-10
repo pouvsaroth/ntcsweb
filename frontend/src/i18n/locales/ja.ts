@@ -2482,7 +2482,6 @@ const ja: MessageSchema = {
       positions: '役職',
       staffStatusHistory: '職員ステータス履歴',
       academicYears: '学年度',
-      programs: 'プログラム',
       academicPrograms: '学習プログラム',
       programs: 'プログラム',
       coursePackages: 'コース',

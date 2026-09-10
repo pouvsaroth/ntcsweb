@@ -2486,7 +2486,6 @@ const en = {
       positions: 'Positions',
       staffStatusHistory: 'Staff Status History',
       academicYears: 'Academic Years',
-      programs: 'Programs',
       academicPrograms: 'Academic Programs',
       programs: 'Programs',
       coursePackages: 'Course',

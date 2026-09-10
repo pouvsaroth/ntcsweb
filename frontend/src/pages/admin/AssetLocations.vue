@@ -72,7 +72,6 @@ onMounted(() => fetch())
       />
       <BaseButton @click="openCreate">{{ t('admin.assetLocations.addLocation') }}</BaseButton>
     </div>
-    </div>
 
     <BaseAlert v-if="error || deleteError" variant="danger" class="mb-4">{{ error || deleteError }}</BaseAlert>
 

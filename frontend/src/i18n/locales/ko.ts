@@ -2482,7 +2482,6 @@ const ko: MessageSchema = {
       positions: '직책',
       staffStatusHistory: '직원 상태 이력',
       academicYears: '학년도',
-      programs: '교육 과정',
       academicPrograms: '학업 프로그램',
       programs: '프로그램',
       coursePackages: '코스',

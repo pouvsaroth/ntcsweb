@@ -2482,7 +2482,6 @@ const km: MessageSchema = {
       positions: 'តួនាទីការងារ',
       staffStatusHistory: 'ប្រវត្តិស្ថានភាពបុគ្គលិក',
       academicYears: 'ឆ្នាំសិក្សា',
-      programs: 'កម្មវិធីសិក្សា',
       academicPrograms: 'កម្មវិធីសិក្សា',
       programs: 'កម្មវិធីសិក្សា',
       coursePackages: 'វគ្គសិក្សា',

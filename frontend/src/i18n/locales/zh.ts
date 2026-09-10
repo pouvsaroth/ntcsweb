@@ -2481,7 +2481,6 @@ const zh: MessageSchema = {
       positions: '职位',
       staffStatusHistory: '员工状态历史',
       academicYears: '学年',
-      programs: '课程项目',
       academicPrograms: '学术项目',
       programs: '课程项目',
       coursePackages: '课程',
