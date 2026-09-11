@@ -36,22 +36,25 @@ final class CoursePackageController extends Controller
     }
 
     /**
-     * Which currently-running classes actually offer this package, with
-     * their weekly schedule — the registration wizard's "Schedule" step.
-     * Same shape as Public\ScheduleController's own listing.
+     * Which currently-running classes this package can be enrolled into,
+     * with their weekly schedule — the registration wizard's "Schedule"
+     * step. Same shape as Public\ScheduleController's own listing. Matched
+     * by program, exactly like EnrollmentService::assertEnrollable() does
+     * for staff-created enrollments — a class is just a schedule/room/
+     * teacher, never gated to a specific package beyond sharing its program.
      */
     public function classes(CoursePackage $coursePackage): JsonResponse
     {
         $classes = SchoolClass::query()->active()
-            ->whereHas('coursePackages', fn ($query) => $query->where('course_packages.id', $coursePackage->id))
-            ->with(['teacher', 'schedules' => fn ($query) => $query->orderBy('day_of_week')])
+            ->where('academic_program_id', $coursePackage->academic_program_id)
+            ->with(['teachers', 'schedules' => fn ($query) => $query->orderBy('day_of_week')])
             ->orderBy('name')
             ->get();
 
         return ApiResponse::success($classes->map(fn (SchoolClass $class) => [
             'id' => $class->id,
             'name' => $class->name,
-            'teacher_name' => $class->teacher?->fullName(),
+            'teacher_name' => $class->teachers->isEmpty() ? null : $class->teachers->map->fullName()->implode(', '),
             'schedules' => $class->schedules->map(fn (ClassSchedule $schedule) => [
                 'day_of_week' => $schedule->day_of_week,
                 'start_time' => $schedule->start_time,

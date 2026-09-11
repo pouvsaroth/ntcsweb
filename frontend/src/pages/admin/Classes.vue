@@ -19,6 +19,7 @@ const { items, meta, loading, error, sort, setPage, setSearch, setSort, setFilte
 )
 
 const selectedStatus = ref<ClassStatus | ''>('active')
+const onlyStudying = ref(true)
 
 const statusFilterOptions = computed(() => [
   { value: '', label: t('admin.classes.filterAllStatuses') },
@@ -33,11 +34,15 @@ function onStatusFilterChange(value: string) {
   setFilter('status', value || undefined)
 }
 
+function onOnlyStudyingChange(checked: boolean) {
+  onlyStudying.value = checked
+  setFilter('has_active_enrollment', checked ? '1' : undefined)
+}
+
 const columns = [
   { key: 'name', label: t('admin.classes.columnName'), sortable: true },
   { key: 'schedule', label: t('admin.classes.columnSchedule') },
   { key: 'program', label: t('admin.classes.columnProgram') },
-  { key: 'books', label: t('admin.classes.columnBooks') },
   { key: 'enrollments_count', label: t('admin.classes.columnEnrollments') },
   { key: 'status', label: t('admin.classes.columnStatus') },
   { key: 'actions', label: t('admin.classes.columnActions'), align: 'text-right' },
@@ -61,7 +66,10 @@ async function remove(row: SchoolClass) {
   await fetch()
 }
 
-onMounted(() => setFilter('status', selectedStatus.value || undefined))
+onMounted(() => {
+  setFilter('status', selectedStatus.value || undefined)
+  setFilter('has_active_enrollment', onlyStudying.value ? '1' : undefined)
+})
 </script>
 
 <template>
@@ -80,6 +88,15 @@ onMounted(() => setFilter('status', selectedStatus.value || undefined))
           class="w-48"
           @update:model-value="onStatusFilterChange"
         />
+        <label class="flex items-center gap-2 text-sm text-neutral-700">
+          <input
+            type="checkbox"
+            :checked="onlyStudying"
+            class="rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+            @change="onOnlyStudyingChange(($event.target as HTMLInputElement).checked)"
+          />
+          {{ t('admin.classes.onlyStudyingFilter') }}
+        </label>
       </div>
       <BaseButton to="/admin/classes/new">{{ t('admin.classes.addClass') }}</BaseButton>
     </div>
@@ -99,13 +116,12 @@ onMounted(() => setFilter('status', selectedStatus.value || undefined))
         <RouterLink :to="`/admin/classes/${row.id}/students`" class="font-medium text-primary-700 hover:text-primary-800 hover:underline">
           {{ row.name }}
         </RouterLink>
-        <p v-if="row.teacher || row.classroom" class="text-xs text-neutral-500">
-          {{ [row.teacher?.name, row.classroom?.name].filter(Boolean).join(' · ') }}
+        <p v-if="row.teachers.length > 0 || row.classroom" class="text-xs text-neutral-500">
+          {{ [row.teachers.map((t) => t.name).join(', ') || null, row.classroom?.name].filter(Boolean).join(' · ') }}
         </p>
       </template>
       <template #cell-schedule="{ row }">{{ scheduleSummary(row) }}</template>
       <template #cell-program="{ row }">{{ row.academic_program?.name ?? '—' }}</template>
-      <template #cell-books="{ row }">{{ row.books.map((b) => b.title).join(', ') || '—' }}</template>
       <template #cell-enrollments_count="{ row }">{{ row.enrollments_count ?? 0 }}</template>
       <template #cell-status="{ row }">
         <BaseBadge :variant="statusBadgeVariant[row.status]">

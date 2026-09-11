@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Academic;
 
-use App\Models\Book;
 use App\Models\Classroom;
 use App\Models\ClassroomTable;
 use App\Models\Enrollment;
@@ -38,33 +37,91 @@ class SchoolClassTest extends TestCase
         return Position::factory()->create(['name' => 'Teacher', 'role_id' => $teacherRole->id]);
     }
 
-    public function test_it_creates_a_class_with_its_weekly_schedule_and_books(): void
+    public function test_it_creates_a_class_with_its_weekly_schedule(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::CLASSES_CREATE]);
         $teacherPosition = $this->createTeacherPosition();
         $teacher = Staff::factory()->create(['position_id' => $teacherPosition->id]);
         $classroom = Classroom::factory()->create();
-        $book = Book::factory()->create();
 
         $response = $this->postJson('/api/v1/classes', [
             'name' => 'Excel Basics — Evening Batch 1',
-            'teacher_id' => $teacher->id,
+            'teacher_ids' => [$teacher->id],
             'classroom_id' => $classroom->id,
             'schedules' => [
                 ['day_of_week' => 1, 'start_time' => '18:00', 'end_time' => '20:00'],
                 ['day_of_week' => 3, 'start_time' => '18:00', 'end_time' => '20:00'],
                 ['day_of_week' => 5, 'start_time' => '18:00', 'end_time' => '20:00'],
             ],
-            'book_ids' => [$book->id],
         ]);
 
         $response->assertCreated();
         $response->assertJsonCount(3, 'data.schedules');
         $response->assertJsonPath('data.schedules.0.day_name', 'Monday');
-        $response->assertJsonPath('data.teacher.id', $teacher->id);
-        $response->assertJsonCount(1, 'data.books');
+        $response->assertJsonPath('data.teachers.0.id', $teacher->id);
 
         $this->assertDatabaseCount('class_schedules', 3, 'tenant');
+    }
+
+    public function test_a_class_can_have_multiple_teachers_and_assistant_teachers(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::CLASSES_CREATE]);
+        $teacherPosition = $this->createTeacherPosition();
+        $mainTeacher = Staff::factory()->create(['position_id' => $teacherPosition->id]);
+        $coTeacher = Staff::factory()->create(['position_id' => $teacherPosition->id]);
+        $assistant = Staff::factory()->create(['position_id' => $teacherPosition->id]);
+
+        $response = $this->postJson('/api/v1/classes', [
+            'name' => 'Co-Taught Class',
+            'teacher_ids' => [$mainTeacher->id, $coTeacher->id],
+            'assistant_teacher_ids' => [$assistant->id],
+        ]);
+
+        $response->assertCreated();
+        $response->assertJsonCount(2, 'data.teachers');
+        $response->assertJsonCount(1, 'data.assistant_teachers');
+        $this->assertEqualsCanonicalizing(
+            [$mainTeacher->id, $coTeacher->id],
+            collect($response->json('data.teachers'))->pluck('id')->all(),
+        );
+        $response->assertJsonPath('data.assistant_teachers.0.id', $assistant->id);
+    }
+
+    public function test_a_staff_member_cannot_be_both_teacher_and_assistant_on_the_same_class(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::CLASSES_CREATE]);
+        $teacherPosition = $this->createTeacherPosition();
+        $staff = Staff::factory()->create(['position_id' => $teacherPosition->id]);
+
+        $response = $this->postJson('/api/v1/classes', [
+            'name' => 'Conflicted Class',
+            'teacher_ids' => [$staff->id],
+            'assistant_teacher_ids' => [$staff->id],
+        ]);
+
+        $response->assertUnprocessable();
+        $response->assertJsonValidationErrors('assistant_teacher_ids');
+    }
+
+    public function test_the_has_active_enrollment_filter_excludes_classes_with_no_studying_student(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::CLASSES_VIEW]);
+
+        $studyingClass = SchoolClass::factory()->create(['name' => 'Studying']);
+        Enrollment::factory()->forClass($studyingClass)->create();
+
+        $droppedOnlyClass = SchoolClass::factory()->create(['name' => 'Dropped Only']);
+        Enrollment::factory()->forClass($droppedOnlyClass)->dropped()->create();
+
+        $emptyClass = SchoolClass::factory()->create(['name' => 'Empty']);
+
+        $response = $this->getJson('/api/v1/classes?filter[has_active_enrollment]=1');
+
+        $response->assertOk();
+        $names = collect($response->json('data'))->pluck('name');
+        $this->assertTrue($names->contains('Studying'));
+        $this->assertFalse($names->contains('Dropped Only'));
+        $this->assertFalse($names->contains('Empty'));
     }
 
     /**
@@ -93,11 +150,11 @@ class SchoolClassTest extends TestCase
 
         $response = $this->postJson('/api/v1/classes', [
             'name' => 'Suspicious Class',
-            'teacher_id' => $accountant->id,
+            'teacher_ids' => [$accountant->id],
         ]);
 
         $response->assertUnprocessable();
-        $response->assertJsonValidationErrors('teacher_id');
+        $response->assertJsonValidationErrors('teacher_ids.0');
     }
 
     /**
@@ -118,11 +175,11 @@ class SchoolClassTest extends TestCase
 
         $response = $this->postJson('/api/v1/classes', [
             'name' => 'Computer Class',
-            'teacher_id' => $teacher->id,
+            'teacher_ids' => [$teacher->id],
         ]);
 
         $response->assertCreated();
-        $response->assertJsonPath('data.teacher.id', $teacher->id);
+        $response->assertJsonPath('data.teachers.0.id', $teacher->id);
     }
 
     public function test_updating_schedules_replaces_the_previous_set_entirely(): void

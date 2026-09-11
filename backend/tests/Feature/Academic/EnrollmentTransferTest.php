@@ -38,7 +38,6 @@ class EnrollmentTransferTest extends TestCase
         ])->assertCreated()->json('data.id');
 
         $newClass = SchoolClass::factory()->forProgram($this->computerProgram)->create(['name' => 'Computer Evening B']);
-        $newClass->coursePackages()->sync([$this->msWordPackage->id]);
 
         $response = $this->postJson("/api/v1/enrollments/{$originalId}/transfer", ['class_id' => $newClass->id]);
 
@@ -54,12 +53,12 @@ class EnrollmentTransferTest extends TestCase
     }
 
     /**
-     * A class is just a schedule/room/teacher — it never needs to "offer"
-     * the package on its own menu, only be in the same program (see
+     * A class is just a schedule/room/teacher — transferring only requires
+     * the destination class to be in the same program (see
      * EnrollmentCrossProgramRejectionTest for the same rule on the initial
      * enrollment path).
      */
-    public function test_transferring_to_a_same_program_class_that_does_not_list_the_package_still_succeeds(): void
+    public function test_transferring_to_a_same_program_class_still_succeeds(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE, Permissions::ENROLLMENTS_TRANSFER]);
         $this->setUpAcademicCatalog();
@@ -119,7 +118,6 @@ class EnrollmentTransferTest extends TestCase
         $room = Classroom::factory()->create();
         $table = ClassroomTable::factory()->create(['classroom_id' => $room->id]);
         $newClass = SchoolClass::factory()->forProgram($this->computerProgram)->inRoom($room)->create();
-        $newClass->coursePackages()->sync([$this->msWordPackage->id]);
 
         $this->postJson("/api/v1/enrollments/{$originalId}/transfer", ['class_id' => $newClass->id])
             ->assertUnprocessable()
@@ -162,7 +160,6 @@ class EnrollmentTransferTest extends TestCase
         ])->assertCreated()->json('data.id');
 
         $newClass = SchoolClass::factory()->forProgram($this->computerProgram)->create(['name' => 'Computer Evening B']);
-        $newClass->coursePackages()->sync([$excel->id]);
 
         $response = $this->postJson("/api/v1/enrollments/{$originalId}/transfer", [
             'class_id' => $newClass->id,
@@ -192,7 +189,6 @@ class EnrollmentTransferTest extends TestCase
         ])->assertCreated()->json('data.id');
 
         $newClass = SchoolClass::factory()->forProgram($this->computerProgram)->create(['name' => 'Computer Evening B']);
-        $newClass->coursePackages()->sync([$excel->id]);
 
         $response = $this->postJson("/api/v1/enrollments/{$originalId}/transfer", [
             'class_id' => $newClass->id,
@@ -220,7 +216,6 @@ class EnrollmentTransferTest extends TestCase
         ])->assertCreated()->json('data.id');
 
         $newClass = SchoolClass::factory()->forProgram($this->computerProgram)->create(['name' => 'Computer Evening B']);
-        $newClass->coursePackages()->sync([$this->msWordPackage->id]);
 
         $response = $this->postJson("/api/v1/enrollments/{$originalId}/transfer", ['class_id' => $newClass->id]);
 

@@ -151,11 +151,15 @@ onMounted(() => {
         </div>
         <div class="flex justify-between border-b border-neutral-100 pb-2 sm:border-b-0 sm:pb-0">
           <span class="text-sm text-neutral-500">{{ t('admin.classStudents.teacher') }}</span>
-          <span class="text-sm font-medium text-neutral-800">{{ schoolClass.teacher?.name ?? '—' }}</span>
+          <span class="text-sm font-medium text-neutral-800">{{ schoolClass.teachers.map((t) => t.name).join(', ') || '—' }}</span>
         </div>
-        <div class="flex justify-between">
+        <div class="flex justify-between border-b border-neutral-100 pb-2 sm:border-b-0 sm:pb-0">
           <span class="text-sm text-neutral-500">{{ t('admin.classStudents.time') }}</span>
           <span class="text-sm font-medium text-neutral-800">{{ scheduleSummary }}</span>
+        </div>
+        <div v-if="schoolClass.assistant_teachers.length > 0" class="flex justify-between">
+          <span class="text-sm text-neutral-500">{{ t('admin.classStudents.assistantTeacher') }}</span>
+          <span class="text-sm font-medium text-neutral-800">{{ schoolClass.assistant_teachers.map((t) => t.name).join(', ') }}</span>
         </div>
       </div>
 

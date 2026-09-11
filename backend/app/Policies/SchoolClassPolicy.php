@@ -45,7 +45,7 @@ class SchoolClassPolicy
      * real-world setup — e.g. the director) must still be able to record
      * attendance for every class, not just the ones they personally teach.
      *
-     * A class with no teacher assigned yet (`teacher_id` null) is open to any
+     * A class with no teacher or assistant assigned yet is open to any
      * teacher-tier account too — otherwise it would be permanently locked out
      * of attendance for everyone but an admin until someone assigns it a
      * teacher via Classes > Edit.
@@ -56,7 +56,7 @@ class SchoolClassPolicy
             return false;
         }
 
-        if ($user->hasPermission(Permissions::CLASSES_UPDATE) || $class->teacher_id === null) {
+        if ($user->hasPermission(Permissions::CLASSES_UPDATE) || $class->teachingStaff()->doesntExist()) {
             return true;
         }
 

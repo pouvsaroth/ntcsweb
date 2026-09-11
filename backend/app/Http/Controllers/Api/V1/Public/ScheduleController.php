@@ -25,14 +25,14 @@ final class ScheduleController extends Controller
     public function index(): JsonResponse
     {
         $classes = SchoolClass::query()->active()
-            ->with(['teacher', 'schedules' => fn ($query) => $query->orderBy('day_of_week')])
+            ->with(['teachers', 'schedules' => fn ($query) => $query->orderBy('day_of_week')])
             ->orderBy('name')
             ->get();
 
         return ApiResponse::success($classes->map(fn (SchoolClass $class) => [
             'id' => $class->id,
             'name' => $class->name,
-            'teacher_name' => $class->teacher?->fullName(),
+            'teacher_name' => $class->teachers->isEmpty() ? null : $class->teachers->map->fullName()->implode(', '),
             'schedules' => $class->schedules->map(fn (ClassSchedule $schedule) => [
                 'day_of_week' => $schedule->day_of_week,
                 'start_time' => $schedule->start_time,

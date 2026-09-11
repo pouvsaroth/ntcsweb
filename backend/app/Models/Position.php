@@ -60,9 +60,10 @@ class Position extends Model
     }
 
     /**
-     * Which of this tenant's positions carry the "Teacher" role — i.e. hold
-     * a class's `teacher_id` and the class-assignment dropdown's real
-     * eligibility test. Not "named exactly 'Teacher'": a school's own
+     * Which of this tenant's positions carry the "Teacher" role — i.e. are
+     * eligible for a class's teachers/assistant teachers and the
+     * class-assignment picker's real eligibility test. Not "named exactly
+     * 'Teacher'": a school's own
      * position titles are free text (often translated, e.g. "គ្រូបង្រៀន
      * កុំព្យូទ័រ") and there can be more than one (a "Computer Teacher" and a
      * "Teaching Assistant" might both carry the Teacher role). `roles` lives

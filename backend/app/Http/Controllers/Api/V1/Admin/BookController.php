@@ -20,7 +20,7 @@ final class BookController extends Controller
     {
         $this->authorize('viewAny', Book::class);
 
-        $books = ApiQuery::for(Book::query()->with(['academicProgram', 'bookCategory'])->withCount('classes'), $request)
+        $books = ApiQuery::for(Book::query()->with(['academicProgram', 'bookCategory']), $request)
             ->searchable('title', 'author', 'isbn')
             ->filterable(['status', 'academic_program_id'])
             ->sortable(['title', 'author', 'created_at'], default: 'title')
@@ -40,7 +40,7 @@ final class BookController extends Controller
     {
         $this->authorize('view', $book);
 
-        return ApiResponse::success(new BookResource($book->load(['academicProgram', 'bookCategory'])->loadCount('classes')));
+        return ApiResponse::success(new BookResource($book->load(['academicProgram', 'bookCategory'])));
     }
 
     public function update(UpdateBookRequest $request, Book $book): JsonResponse

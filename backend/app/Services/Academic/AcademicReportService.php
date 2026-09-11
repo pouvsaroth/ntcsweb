@@ -200,15 +200,18 @@ final class AcademicReportService
             ->groupBy('enrollments.class_id')
             ->pluck('revenue', 'class_id');
 
-        // `classes` and `staff` both live in the tenant database now, so the
-        // teacher's name is one ordinary left join.
+        // `classes`, `class_teachers` and `staff` all live in the tenant
+        // database now, so every assigned teacher/assistant's name is one
+        // ordinary join, aggregated per class.
         $classes = DB::connection('tenant')->table('classes')
-            ->leftJoin('staff', 'staff.id', '=', 'classes.teacher_id')
+            ->leftJoin('class_teachers', 'class_teachers.class_id', '=', 'classes.id')
+            ->leftJoin('staff', 'staff.id', '=', 'class_teachers.staff_id')
             ->select(
                 'classes.id as class_id', 'classes.name as class_name', 'classes.capacity as capacity',
-                'staff.first_name as teacher_first_name', 'staff.last_name as teacher_last_name',
+                DB::raw("string_agg(NULLIF(trim(concat(staff.first_name, ' ', staff.last_name)), ''), ', ' ORDER BY staff.first_name) as teacher_names"),
             )
             ->whereNull('classes.deleted_at')
+            ->groupBy('classes.id', 'classes.name', 'classes.capacity')
             ->orderBy('classes.name')
             ->get();
 
@@ -216,7 +219,7 @@ final class AcademicReportService
             ->map(fn ($row) => [
                 'class_id' => (int) $row->class_id,
                 'class_name' => $row->class_name,
-                'teacher' => $row->teacher_first_name !== null ? trim("{$row->teacher_first_name} {$row->teacher_last_name}") : null,
+                'teacher' => $row->teacher_names,
                 'capacity' => $row->capacity !== null ? (int) $row->capacity : null,
                 'students' => (int) ($enrollmentCounts[$row->class_id] ?? 0),
                 'revenue' => (float) ($revenue[$row->class_id] ?? 0),

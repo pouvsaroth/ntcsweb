@@ -64,6 +64,5 @@ trait HasAcademicCatalog
         $this->computerEveningClass = SchoolClass::factory()
             ->forProgram($this->computerProgram)
             ->create(['name' => 'Computer Evening A']);
-        $this->computerEveningClass->coursePackages()->sync([$this->msWordPackage->getKey()]);
     }
 }

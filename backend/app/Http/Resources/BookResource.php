@@ -35,7 +35,6 @@ class BookResource extends JsonResource
                 'id' => $this->bookCategory->id,
                 'name' => $this->bookCategory->name,
             ] : null),
-            'classes_count' => $this->whenCounted('classes'),
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }

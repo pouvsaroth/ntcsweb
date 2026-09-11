@@ -22,7 +22,6 @@ class SchoolClassFactory extends Factory
         return [
             'name' => fake()->randomElement(['Excel Basics', 'Web Development', 'Graphic Design', 'English Speaking']).' — Batch '.fake()->unique()->numberBetween(1, 999),
             'code' => null,
-            'teacher_id' => null,
             'classroom_id' => null,
             'capacity' => fake()->numberBetween(10, 30),
             'start_date' => fake()->dateTimeBetween('-6 months', 'now')->format('Y-m-d'),
@@ -33,7 +32,12 @@ class SchoolClassFactory extends Factory
 
     public function withTeacher(Staff $teacher): static
     {
-        return $this->state(['teacher_id' => $teacher->getKey()]);
+        return $this->afterCreating(fn (SchoolClass $class) => $class->teachers()->attach($teacher->getKey()));
+    }
+
+    public function withAssistantTeacher(Staff $teacher): static
+    {
+        return $this->afterCreating(fn (SchoolClass $class) => $class->assistantTeachers()->attach($teacher->getKey()));
     }
 
     public function inRoom(Classroom $classroom): static

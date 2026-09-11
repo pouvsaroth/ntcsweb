@@ -1,8 +1,6 @@
 import { apiDelete, apiGetWithMeta, apiPost, apiPut } from '@/services/http'
 import type { AcademicProgram } from '@/services/academicPrograms'
-import type { Book } from '@/services/books'
 import type { Classroom } from '@/services/classrooms'
-import type { CoursePackage } from '@/services/coursePackages'
 import type { PaginatedQuery } from '@/composables/usePaginatedResource'
 import type { LengthAwarePaginationMeta, PaginatedResult } from '@/types/api'
 
@@ -26,17 +24,15 @@ export interface SchoolClass {
   start_date: string | null
   end_date: string | null
   status: ClassStatus
-  /** A Staff member holding the "Teacher" position — see TeacherPositionSeeder on the backend. */
-  teacher: { id: number; name: string } | null
+  /** Staff members holding the "Teacher" position, assigned as this class's main teacher(s). */
+  teachers: { id: number; name: string }[]
+  /** Same eligibility as `teachers`, but tagged as an assistant rather than a main teacher — see class_teachers.role on the backend. */
+  assistant_teachers: { id: number; name: string }[]
   classroom: Classroom | null
   schedules: ClassSchedule[]
-  /** The session's book menu — which books this class offers, not "the curriculum everyone shares" (see docs/database.md). */
-  books: Book[]
   /** Which Academic Program this session belongs to — required before a package-based enrollment can target this class. */
   academic_program_id: number | null
   academic_program: AcademicProgram | null
-  /** The session's course-package menu — mirrors `books` but for the package-based (Computer-class) enrollment path. */
-  course_packages: CoursePackage[]
   enrollments_count?: number
   created_at: string
 }
@@ -44,15 +40,14 @@ export interface SchoolClass {
 export interface ClassInput {
   name: string
   code: string
-  teacher_id: number | null
+  teacher_ids: number[]
+  assistant_teacher_ids: number[]
   classroom_id: number | null
   academic_program_id: number | null
   start_date: string
   end_date: string
   status: ClassStatus
   schedules: { day_of_week: number; start_time: string; end_time: string }[]
-  /** Which course packages this class offers — required for a package-based (Computer-class) enrollment, and for it to appear in the public registration wizard's Schedule step. */
-  course_package_ids: number[]
 }
 
 export const classesService = {

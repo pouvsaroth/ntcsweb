@@ -38,11 +38,6 @@ class Book extends Model
         'status' => self::STATUS_ACTIVE,
     ];
 
-    public function classes(): BelongsToMany
-    {
-        return $this->belongsToMany(SchoolClass::class, 'class_book', 'book_id', 'class_id');
-    }
-
     /**
      * The one academic program this book belongs to -- e.g. "MS Word" under
      * the Computer program. This is what lets a Course Package's book picker

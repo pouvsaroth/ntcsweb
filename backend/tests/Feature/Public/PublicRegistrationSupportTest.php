@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Public;
 
+use App\Models\AcademicProgram;
 use App\Models\SchoolClass;
 use App\Models\Tenant;
 use App\Support\Authorization\Permissions;
@@ -14,20 +15,23 @@ use Tests\TestCase;
 
 /**
  * The read-only public endpoints the self-registration wizard needs beyond
- * what already existed: which classes offer a given course package, a
- * fixed-amount KHQR preview, and Cambodia's geography opened to the public
- * route group. None of these touch the admin Students/Enrollment area.
+ * what already existed: which classes a given course package can be
+ * enrolled into, a fixed-amount KHQR preview, and Cambodia's geography
+ * opened to the public route group. None of these touch the admin
+ * Students/Enrollment area.
  */
 class PublicRegistrationSupportTest extends TestCase
 {
     use HasAcademicAdmin, HasAcademicCatalog, RefreshDatabase;
 
-    public function test_it_lists_only_classes_that_offer_the_given_package(): void
+    public function test_it_lists_only_classes_in_the_packages_program(): void
     {
         $this->actingAsAdminWithPermissions([]);
         $this->setUpAcademicCatalog();
 
-        $otherClass = SchoolClass::factory()->forProgram($this->computerProgram)->create(['name' => 'Not Offering It']);
+        $englishProgram = AcademicProgram::factory()->create(['code' => 'ENG', 'name' => 'English']);
+        $otherProgramClass = SchoolClass::factory()->forProgram($englishProgram)->create(['name' => 'English Evening']);
+        $noProgramClass = SchoolClass::factory()->create(['name' => 'No Program', 'academic_program_id' => null]);
 
         $response = $this->withHeader('X-Tenant', $this->tenant->slug)
             ->getJson("/api/v1/public/course-packages/{$this->msWordPackage->id}/classes");
@@ -35,7 +39,8 @@ class PublicRegistrationSupportTest extends TestCase
         $response->assertOk();
         $names = collect($response->json('data'))->pluck('name');
         $this->assertTrue($names->contains('Computer Evening A'));
-        $this->assertFalse($names->contains($otherClass->name));
+        $this->assertFalse($names->contains($otherProgramClass->name));
+        $this->assertFalse($names->contains($noProgramClass->name));
     }
 
     public function test_khqr_preview_fails_cleanly_when_not_configured(): void

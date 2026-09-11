@@ -19,18 +19,24 @@ use Illuminate\Support\Facades\DB;
 
 final class SchoolClassController extends Controller
 {
-    private const WITH = ['teacher', 'classroom', 'schedules', 'books', 'academicProgram', 'coursePackages'];
+    private const WITH = ['teachers', 'assistantTeachers', 'classroom', 'schedules', 'academicProgram'];
 
     public function index(Request $request): JsonResponse
     {
         $this->authorize('viewAny', SchoolClass::class);
 
-        $classes = ApiQuery::for(
-            SchoolClass::query()->with(self::WITH)->withCount('enrollments'),
-            $request,
-        )
+        $query = SchoolClass::query()->with(self::WITH)->withCount('enrollments');
+
+        // Not a plain column, so it can't go through ApiQuery's generic
+        // filterable() — read straight out of the same filter[] bucket the
+        // frontend already sends everything else through.
+        if ($request->boolean('filter.has_active_enrollment')) {
+            $query->whereHas('enrollments', fn ($q) => $q->active());
+        }
+
+        $classes = ApiQuery::for($query, $request)
             ->searchable('name', 'code')
-            ->filterable(['status', 'teacher_id', 'classroom_id', 'academic_program_id'])
+            ->filterable(['status', 'classroom_id', 'academic_program_id'])
             ->sortable(['name', 'start_date', 'created_at'], default: '-created_at')
             ->paginate();
 
@@ -40,11 +46,11 @@ final class SchoolClassController extends Controller
     public function store(StoreSchoolClassRequest $request): JsonResponse
     {
         $class = DB::connection('tenant')->transaction(function () use ($request) {
-            $class = SchoolClass::query()->create($request->safe()->except(['schedules', 'book_ids', 'course_package_ids']));
+            $class = SchoolClass::query()->create($request->safe()->except(['schedules', 'teacher_ids', 'assistant_teacher_ids']));
 
             $this->syncSchedules($class, $request->validated('schedules', []));
-            $class->books()->sync($request->validated('book_ids', []));
-            $class->coursePackages()->sync($request->validated('course_package_ids', []));
+            $class->teachers()->sync($request->validated('teacher_ids', []));
+            $class->assistantTeachers()->sync($request->validated('assistant_teacher_ids', []));
 
             return $class;
         });
@@ -62,18 +68,18 @@ final class SchoolClassController extends Controller
     public function update(UpdateSchoolClassRequest $request, SchoolClass $class): JsonResponse
     {
         DB::connection('tenant')->transaction(function () use ($request, $class) {
-            $class->update($request->safe()->except(['schedules', 'book_ids', 'course_package_ids']));
+            $class->update($request->safe()->except(['schedules', 'teacher_ids', 'assistant_teacher_ids']));
 
             if ($request->has('schedules')) {
                 $this->syncSchedules($class, $request->validated('schedules'));
             }
 
-            if ($request->has('book_ids')) {
-                $class->books()->sync($request->validated('book_ids'));
+            if ($request->has('teacher_ids')) {
+                $class->teachers()->sync($request->validated('teacher_ids'));
             }
 
-            if ($request->has('course_package_ids')) {
-                $class->coursePackages()->sync($request->validated('course_package_ids'));
+            if ($request->has('assistant_teacher_ids')) {
+                $class->assistantTeachers()->sync($request->validated('assistant_teacher_ids'));
             }
         });
 

@@ -21,8 +21,8 @@ use Tests\TestCase;
  * The spec's own invalid-combination example: a Computer student cannot be
  * enrolled using an English package — the server must reject this even if a
  * broken/malicious frontend sends it. A class is just a schedule/room/
- * teacher, though — it never needs to "offer" a package on its own menu for
- * a same-program enrollment to be valid (see the sibling test below).
+ * teacher, though — any package in the same program is valid for it (see the
+ * sibling test below).
  */
 class EnrollmentCrossProgramRejectionTest extends TestCase
 {
@@ -49,14 +49,13 @@ class EnrollmentCrossProgramRejectionTest extends TestCase
         $this->assertSame(0, Enrollment::count());
     }
 
-    public function test_a_package_not_on_the_classs_menu_is_still_allowed_within_the_same_program(): void
+    public function test_any_package_in_the_same_program_is_allowed(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE]);
         $this->setUpAcademicCatalog();
 
-        // A second package in the same program, deliberately never attached
-        // to computerEveningClass's menu (class_course_package) — a class is
-        // just a schedule/room/teacher, so this must still succeed.
+        // A second package in the same program — a class is just a
+        // schedule/room/teacher, so this must still succeed.
         $product = Product::factory()->create(['code' => 'EXCEL2024', 'name' => 'Excel 2024', 'type' => ProductType::COURSE_FEE, 'price' => 20]);
         $excelOnlyPackage = CoursePackage::factory()->forProgram($this->computerProgram)
             ->create(['code' => 'EXCEL2024', 'price' => 20, 'fee_term' => 20, 'product_id' => $product->getKey()]);

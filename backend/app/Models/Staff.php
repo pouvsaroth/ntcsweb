@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Storage;
@@ -21,9 +22,9 @@ use Illuminate\Support\Facades\Storage;
  * (Teacher, Accountant, HR, Librarian, IT Officer, ...). A "teacher" is a
  * Staff member whose Position carries the Teacher role (see
  * Position::teacherPositionIds() — not "named 'Teacher'" literally, a
- * school's position titles are free text) — SchoolClass::teacher()
- * belongs-to's this model directly, filtered to those positions at the
- * request-validation layer (StoreSchoolClassRequest).
+ * school's position titles are free text) — SchoolClass::teachers()/
+ * assistantTeachers() belong-to-many this model, filtered to those
+ * positions at the request-validation layer (StoreSchoolClassRequest).
  *
  * `user_id` is nullable at the schema level, but in practice
  * StaffController::store() always sets it in the
@@ -163,13 +164,17 @@ class Staff extends Model
     }
 
     /**
-     * Classes this staff member teaches — meaningful only when their
-     * Position carries the Teacher role (see Position::teacherPositionIds()),
-     * same as SchoolClass::teacher().
+     * Classes this staff member is assigned to teach, as either the main
+     * teacher or an assistant — meaningful only when their Position carries
+     * the Teacher role (see Position::teacherPositionIds()), same as
+     * SchoolClass::teachingStaff(). Membership, not role, is what
+     * SchoolClassPolicy/AttendancePolicy check here.
      */
-    public function classes(): HasMany
+    public function classes(): BelongsToMany
     {
-        return $this->hasMany(SchoolClass::class, 'teacher_id');
+        return $this->belongsToMany(SchoolClass::class, 'class_teachers', 'staff_id', 'class_id')
+            ->withPivot('role')
+            ->withTimestamps();
     }
 
     /**

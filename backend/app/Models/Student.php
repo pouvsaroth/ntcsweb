@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -99,10 +100,11 @@ class Student extends Model
     }
 
     /**
-     * The (deduplicated) teacher ids across this student's own active
-     * enrollments' classes — used to scope the "which teacher is this
-     * about" picker on StudentFeedback to teachers who actually teach this
-     * student, rather than the whole tenant's staff directory.
+     * The (deduplicated) staff ids — teachers and assistant teachers alike —
+     * across this student's own active enrollments' classes. Used to scope
+     * the "which teacher is this about" picker on StudentFeedback to staff
+     * who actually teach this student, rather than the whole tenant's staff
+     * directory.
      *
      * @return list<int>
      */
@@ -110,11 +112,10 @@ class Student extends Model
     {
         $classIds = $this->enrollments()->active()->pluck('class_id');
 
-        return SchoolClass::query()
-            ->whereIn('id', $classIds)
-            ->whereNotNull('teacher_id')
+        return DB::connection('tenant')->table('class_teachers')
+            ->whereIn('class_id', $classIds)
             ->distinct()
-            ->pluck('teacher_id')
+            ->pluck('staff_id')
             ->all();
     }
 

@@ -170,7 +170,7 @@ class AttendanceTest extends TestCase
         Staff::factory()->withUser($teacherUser)->create(['position_id' => $teacherPosition->id]);
 
         [$class, $enrollments] = $this->classWithStudents(1);
-        $this->assertNull($class->teacher_id);
+        $this->assertTrue($class->teachingStaff()->doesntExist());
 
         $this->postJson("/api/v1/classes/{$class->id}/attendance", [
             'date' => now()->toDateString(),
