@@ -1343,7 +1343,7 @@ const ko: MessageSchema = {
       columnProgram: 'Program',
       columnName: '이름',
       columnSchedule: '시간표',
-      columnEnrollments: '등록 인원',
+      columnActiveStudents: '학생 수',
       columnStatus: '상태',
       columnActions: '작업',
       edit: '수정',

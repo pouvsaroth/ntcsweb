@@ -1342,7 +1342,7 @@ const zh: MessageSchema = {
       columnProgram: 'Program',
       columnName: '名称',
       columnSchedule: '课表',
-      columnEnrollments: '已报名',
+      columnActiveStudents: '学生人数',
       columnStatus: '状态',
       columnActions: '操作',
       edit: '编辑',

@@ -33,7 +33,7 @@ export interface SchoolClass {
   /** Which Academic Program this session belongs to — required before a package-based enrollment can target this class. */
   academic_program_id: number | null
   academic_program: AcademicProgram | null
-  enrollments_count?: number
+  active_students_count?: number
   created_at: string
 }
 

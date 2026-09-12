@@ -1343,7 +1343,7 @@ const km: MessageSchema = {
       columnProgram: 'Program',
       columnName: 'ឈ្មោះ',
       columnSchedule: 'កាលវិភាគ',
-      columnEnrollments: 'បានចុះឈ្មោះ',
+      columnActiveStudents: 'ចំនួនសិស្ស',
       columnStatus: 'ស្ថានភាព',
       columnActions: 'សកម្មភាព',
       edit: 'កែសម្រួល',

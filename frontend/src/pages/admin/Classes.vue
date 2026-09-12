@@ -43,7 +43,7 @@ const columns = [
   { key: 'name', label: t('admin.classes.columnName'), sortable: true },
   { key: 'schedule', label: t('admin.classes.columnSchedule') },
   { key: 'program', label: t('admin.classes.columnProgram') },
-  { key: 'enrollments_count', label: t('admin.classes.columnEnrollments') },
+  { key: 'active_students_count', label: t('admin.classes.columnActiveStudents') },
   { key: 'status', label: t('admin.classes.columnStatus') },
   { key: 'actions', label: t('admin.classes.columnActions'), align: 'text-right' },
 ]
@@ -122,7 +122,7 @@ onMounted(() => {
       </template>
       <template #cell-schedule="{ row }">{{ scheduleSummary(row) }}</template>
       <template #cell-program="{ row }">{{ row.academic_program?.name ?? '—' }}</template>
-      <template #cell-enrollments_count="{ row }">{{ row.enrollments_count ?? 0 }}</template>
+      <template #cell-active_students_count="{ row }">{{ row.active_students_count ?? 0 }}</template>
       <template #cell-status="{ row }">
         <BaseBadge :variant="statusBadgeVariant[row.status]">
           {{ t(`admin.classes.status${row.status.charAt(0).toUpperCase()}${row.status.slice(1)}`) }}

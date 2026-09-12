@@ -124,6 +124,20 @@ class SchoolClassTest extends TestCase
         $this->assertFalse($names->contains('Empty'));
     }
 
+    public function test_active_students_count_only_counts_studying_students(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::CLASSES_VIEW]);
+
+        $class = SchoolClass::factory()->create();
+        Enrollment::factory()->forClass($class)->count(2)->create();
+        Enrollment::factory()->forClass($class)->dropped()->create();
+
+        $response = $this->getJson("/api/v1/classes/{$class->id}");
+
+        $response->assertOk();
+        $response->assertJsonPath('data.active_students_count', 2);
+    }
+
     /**
      * The database CHECK constraint is the hard guarantee; the validation
      * rule is what turns violating it into a clean 422 instead of a 500.

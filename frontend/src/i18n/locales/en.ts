@@ -1347,7 +1347,7 @@ const en = {
       columnName: 'Name',
       columnSchedule: 'Schedule',
       columnProgram: 'Program',
-      columnEnrollments: 'Enrolled',
+      columnActiveStudents: 'No. Student',
       columnStatus: 'Status',
       columnActions: 'Actions',
       edit: 'Edit',

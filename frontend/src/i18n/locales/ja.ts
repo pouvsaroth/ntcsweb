@@ -1343,7 +1343,7 @@ const ja: MessageSchema = {
       columnProgram: 'Program',
       columnName: '名前',
       columnSchedule: 'スケジュール',
-      columnEnrollments: '登録者数',
+      columnActiveStudents: '生徒数',
       columnStatus: 'ステータス',
       columnActions: '操作',
       edit: '編集',

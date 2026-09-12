@@ -25,7 +25,7 @@ final class SchoolClassController extends Controller
     {
         $this->authorize('viewAny', SchoolClass::class);
 
-        $query = SchoolClass::query()->with(self::WITH)->withCount('enrollments');
+        $query = SchoolClass::query()->with(self::WITH)->withCount(['enrollments as active_students_count' => fn ($q) => $q->active()]);
 
         // Not a plain column, so it can't go through ApiQuery's generic
         // filterable() — read straight out of the same filter[] bucket the
@@ -62,7 +62,7 @@ final class SchoolClassController extends Controller
     {
         $this->authorize('view', $class);
 
-        return ApiResponse::success(new SchoolClassResource($class->load(self::WITH)->loadCount('enrollments')));
+        return ApiResponse::success(new SchoolClassResource($class->load(self::WITH)->loadCount(['enrollments as active_students_count' => fn ($q) => $q->active()])));
     }
 
     public function update(UpdateSchoolClassRequest $request, SchoolClass $class): JsonResponse

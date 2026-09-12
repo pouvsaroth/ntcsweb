@@ -30,7 +30,7 @@ class SchoolClassResource extends JsonResource
             'schedules' => ClassScheduleResource::collection($this->whenLoaded('schedules')),
             'academic_program_id' => $this->academic_program_id,
             'academic_program' => new AcademicProgramResource($this->whenLoaded('academicProgram')),
-            'enrollments_count' => $this->whenCounted('enrollments'),
+            'active_students_count' => $this->whenCounted('active_students'),
 
             'created_at' => $this->created_at?->toIso8601String(),
         ];
