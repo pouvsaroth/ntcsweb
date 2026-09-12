@@ -8,6 +8,7 @@ import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
 import EditIconButton from '@/components/ui/EditIconButton.vue'
 import BasePagination from '@/components/ui/BasePagination.vue'
+import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import DataTable from '@/components/ui/DataTable.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { classStatuses, classesService, type ClassStatus, type SchoolClass } from '@/services/classes'
@@ -103,40 +104,73 @@ onMounted(() => {
 
     <BaseAlert v-if="error" variant="danger" class="mb-4">{{ error }}</BaseAlert>
 
-    <DataTable
-      :columns="columns"
-      :rows="items"
-      row-key="id"
-      :loading="loading"
-      :sort="sort"
-      :empty-message="t('admin.classes.emptyMessage')"
-      @sort="(col) => setSort(sort === col ? `-${col}` : col)"
-    >
-      <template #cell-name="{ row }">
-        <RouterLink :to="`/admin/classes/${row.id}/students`" class="font-medium text-primary-700 hover:text-primary-800 hover:underline">
-          {{ row.name }}
-        </RouterLink>
-        <p v-if="row.teachers.length > 0 || row.classroom" class="text-xs text-neutral-500">
-          {{ [row.teachers.map((t) => t.name).join(', ') || null, row.classroom?.name].filter(Boolean).join(' · ') }}
-        </p>
-      </template>
-      <template #cell-schedule="{ row }">{{ scheduleSummary(row) }}</template>
-      <template #cell-program="{ row }">{{ row.academic_program?.name ?? '—' }}</template>
-      <template #cell-active_students_count="{ row }">{{ row.active_students_count ?? 0 }}</template>
-      <template #cell-status="{ row }">
-        <BaseBadge :variant="statusBadgeVariant[row.status]">
-          {{ t(`admin.classes.status${row.status.charAt(0).toUpperCase()}${row.status.slice(1)}`) }}
-        </BaseBadge>
-      </template>
-      <template #cell-actions="{ row }">
-        <div class="flex justify-end gap-2">
-          <EditIconButton :to="`/admin/classes/${row.id}/edit`" />
-          <button type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row)">
-            {{ t('admin.classes.delete') }}
-          </button>
+    <!-- Cards on small screens — a table's columns don't have room to breathe
+         on a phone; below sm: this replaces the DataTable entirely. -->
+    <div class="sm:hidden">
+      <div v-if="loading" class="flex justify-center py-10"><BaseSpinner /></div>
+      <p v-else-if="items.length === 0" class="rounded-[--radius-card] border border-dashed border-neutral-300 py-10 text-center text-sm text-neutral-500">
+        {{ t('admin.classes.emptyMessage') }}
+      </p>
+      <div v-else class="space-y-2">
+        <div v-for="row in items" :key="row.id" class="rounded-[--radius-card] border border-neutral-200 bg-white p-3 shadow-[--shadow-card]">
+          <div class="flex items-start justify-between gap-2">
+            <RouterLink :to="`/admin/classes/${row.id}/students`" class="min-w-0 flex-1 truncate font-medium text-primary-700 hover:text-primary-800 hover:underline">
+              {{ row.name }}
+            </RouterLink>
+            <BaseBadge :variant="statusBadgeVariant[row.status]">
+              {{ t(`admin.classes.status${row.status.charAt(0).toUpperCase()}${row.status.slice(1)}`) }}
+            </BaseBadge>
+          </div>
+          <p class="mt-1 truncate text-xs text-neutral-500">{{ row.teachers.map((t) => t.name).join(', ') || '—' }}</p>
+          <div class="mt-2 flex items-center justify-between">
+            <p class="text-xs text-neutral-500">{{ t('admin.classes.columnActiveStudents') }}: <span class="font-medium text-neutral-800">{{ row.active_students_count ?? 0 }}</span></p>
+            <div class="flex items-center gap-3">
+              <EditIconButton :to="`/admin/classes/${row.id}/edit`" />
+              <button type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row)">
+                {{ t('admin.classes.delete') }}
+              </button>
+            </div>
+          </div>
         </div>
-      </template>
-    </DataTable>
+      </div>
+    </div>
+
+    <div class="hidden sm:block">
+      <DataTable
+        :columns="columns"
+        :rows="items"
+        row-key="id"
+        :loading="loading"
+        :sort="sort"
+        :empty-message="t('admin.classes.emptyMessage')"
+        @sort="(col) => setSort(sort === col ? `-${col}` : col)"
+      >
+        <template #cell-name="{ row }">
+          <RouterLink :to="`/admin/classes/${row.id}/students`" class="font-medium text-primary-700 hover:text-primary-800 hover:underline">
+            {{ row.name }}
+          </RouterLink>
+          <p v-if="row.teachers.length > 0 || row.classroom" class="text-xs text-neutral-500">
+            {{ [row.teachers.map((t) => t.name).join(', ') || null, row.classroom?.name].filter(Boolean).join(' · ') }}
+          </p>
+        </template>
+        <template #cell-schedule="{ row }">{{ scheduleSummary(row) }}</template>
+        <template #cell-program="{ row }">{{ row.academic_program?.name ?? '—' }}</template>
+        <template #cell-active_students_count="{ row }">{{ row.active_students_count ?? 0 }}</template>
+        <template #cell-status="{ row }">
+          <BaseBadge :variant="statusBadgeVariant[row.status]">
+            {{ t(`admin.classes.status${row.status.charAt(0).toUpperCase()}${row.status.slice(1)}`) }}
+          </BaseBadge>
+        </template>
+        <template #cell-actions="{ row }">
+          <div class="flex justify-end gap-2">
+            <EditIconButton :to="`/admin/classes/${row.id}/edit`" />
+            <button type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row)">
+              {{ t('admin.classes.delete') }}
+            </button>
+          </div>
+        </template>
+      </DataTable>
+    </div>
 
     <BasePagination v-if="meta" :meta="meta" sticky class="mt-4" @update:page="setPage" />
   </div>

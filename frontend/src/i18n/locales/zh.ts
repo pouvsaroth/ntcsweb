@@ -391,6 +391,8 @@ const zh: MessageSchema = {
       quickAccess: '快捷入口',
       registerStudent: '学生注册',
       enrollment: '注册课程',
+      classes: '班级',
+      classesStudyingTooltip: '当前在读学生人数',
       studentPayment: '学生缴费',
       studentAttendance: '学生考勤',
       teacherAttendance: '教师考勤',

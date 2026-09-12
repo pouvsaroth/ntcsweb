@@ -395,6 +395,8 @@ const en = {
       quickAccess: 'Quick Access',
       registerStudent: 'Register Student',
       enrollment: 'Enrollment',
+      classes: 'Classes',
+      classesStudyingTooltip: 'Students currently studying',
       studentPayment: 'Student Payment',
       studentAttendance: 'Student Attendance',
       teacherAttendance: 'Teacher Attendance',

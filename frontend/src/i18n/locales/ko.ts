@@ -392,6 +392,8 @@ const ko: MessageSchema = {
       quickAccess: '빠른 액세스',
       registerStudent: '학생 등록',
       enrollment: '수강 등록',
+      classes: '학급',
+      classesStudyingTooltip: '현재 수강 중인 학생 수',
       studentPayment: '학생 결제',
       studentAttendance: '학생 출석',
       teacherAttendance: '교사 출석',

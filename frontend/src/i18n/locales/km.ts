@@ -392,6 +392,8 @@ const km: MessageSchema = {
       quickAccess: 'ចូលប្រើរហ័ស',
       registerStudent: 'ចុះឈ្មោះសិស្ស',
       enrollment: 'ការចុះឈ្មោះចូលរៀន',
+      classes: 'ថ្នាក់រៀន',
+      classesStudyingTooltip: 'សិស្សដែលកំពុងសិក្សា',
       studentPayment: 'ការទូទាត់របស់សិស្ស',
       studentAttendance: 'វត្តមានសិស្ស',
       teacherAttendance: 'វត្តមានគ្រូបង្រៀន',

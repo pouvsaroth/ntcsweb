@@ -392,6 +392,8 @@ const ja: MessageSchema = {
       quickAccess: 'クイックアクセス',
       registerStudent: '生徒登録',
       enrollment: '履修登録',
+      classes: 'クラス',
+      classesStudyingTooltip: '現在受講中の生徒数',
       studentPayment: '生徒の支払い',
       studentAttendance: '生徒の出席',
       teacherAttendance: '教師の出席',
