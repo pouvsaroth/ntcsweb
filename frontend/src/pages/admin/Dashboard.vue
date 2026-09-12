@@ -5,6 +5,7 @@ import { RouterLink } from 'vue-router'
 
 import BaseCard from '@/components/ui/BaseCard.vue'
 import { accountingReportsService } from '@/services/accounting'
+import { attendanceService } from '@/services/attendance'
 import { enrollmentsService } from '@/services/enrollments'
 import { studentsService } from '@/services/students'
 import { useAuthStore } from '@/stores/auth'
@@ -73,6 +74,8 @@ const monthlyIncome = ref<string>('—')
 const dailyIncome = ref<string>('—')
 const monthlyExpense = ref<string>('—')
 const dailyExpense = ref<string>('—')
+const absentToday = ref<string>('—')
+const absentYesterday = ref<string>('—')
 
 let currency: 'USD' | 'KHR' = 'USD'
 
@@ -85,9 +88,18 @@ function firstOfMonth(): string {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
 }
 
+function toDateString(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+}
+
 function today(): string {
-  const now = new Date()
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+  return toDateString(new Date())
+}
+
+function yesterday(): string {
+  const date = new Date()
+  date.setDate(date.getDate() - 1)
+  return toDateString(date)
 }
 
 async function loadStats(): Promise<void> {
@@ -114,6 +126,13 @@ async function loadStats(): Promise<void> {
     dailyExpense.value = money(summary.todays_expenses)
   } catch {
     // Left as '—' — most likely the signed-in admin just lacks accounting-dashboard.view.
+  }
+
+  try {
+    absentToday.value = String(await attendanceService.countByStatus(today(), 'ABSENT'))
+    absentYesterday.value = String(await attendanceService.countByStatus(yesterday(), 'ABSENT'))
+  } catch {
+    // Left as '—' — most likely the signed-in admin just lacks attendance.view.
   }
 }
 
@@ -155,6 +174,18 @@ onMounted(() => {
           </span>
           <span class="text-xs font-medium text-neutral-700">{{ t(item.labelKey) }}</span>
         </RouterLink>
+      </div>
+
+      <h2 class="mt-8 text-sm font-semibold uppercase tracking-wide text-neutral-500">{{ t('admin.dashboard.attendanceSection') }}</h2>
+      <div class="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <BaseCard>
+          <p class="text-sm font-medium text-neutral-500">{{ t('admin.dashboard.statAbsentToday') }}</p>
+          <p class="mt-1 text-3xl font-bold text-neutral-900">{{ absentToday }}</p>
+        </BaseCard>
+        <BaseCard>
+          <p class="text-sm font-medium text-neutral-500">{{ t('admin.dashboard.statAbsentYesterday') }}</p>
+          <p class="mt-1 text-3xl font-bold text-neutral-900">{{ absentYesterday }}</p>
+        </BaseCard>
       </div>
 
       <h2 class="mt-8 text-sm font-semibold uppercase tracking-wide text-neutral-500">{{ t('admin.dashboard.title') }}</h2>

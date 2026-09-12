@@ -403,6 +403,9 @@ const ja: MessageSchema = {
       statDailyIncome: '本日の収入',
       statMonthlyExpense: '月間支出',
       statDailyExpense: '本日の支出',
+      attendanceSection: '出席状況',
+      statAbsentToday: '本日の欠席',
+      statAbsentYesterday: '昨日の欠席',
     },
     users: {
       title: 'ユーザー管理',

@@ -406,6 +406,9 @@ const en = {
       statDailyIncome: 'Daily Income',
       statMonthlyExpense: 'Monthly Expense',
       statDailyExpense: 'Daily Expense',
+      attendanceSection: 'Attendance',
+      statAbsentToday: 'Absent Today',
+      statAbsentYesterday: 'Absent Yesterday',
     },
     users: {
       title: 'Users',

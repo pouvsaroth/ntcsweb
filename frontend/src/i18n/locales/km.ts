@@ -403,6 +403,9 @@ const km: MessageSchema = {
       statDailyIncome: 'ចំណូលប្រចាំថ្ងៃ',
       statMonthlyExpense: 'ចំណាយប្រចាំខែ',
       statDailyExpense: 'ចំណាយប្រចាំថ្ងៃ',
+      attendanceSection: 'វត្តមាន',
+      statAbsentToday: 'អវត្តមានថ្ងៃនេះ',
+      statAbsentYesterday: 'អវត្តមានម្សិលមិញ',
     },
     users: {
       title: 'អ្នកប្រើប្រាស់',

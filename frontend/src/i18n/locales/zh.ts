@@ -402,6 +402,9 @@ const zh: MessageSchema = {
       statDailyIncome: '今日收入',
       statMonthlyExpense: '本月支出',
       statDailyExpense: '今日支出',
+      attendanceSection: '考勤',
+      statAbsentToday: '今日缺勤',
+      statAbsentYesterday: '昨日缺勤',
     },
     users: {
       title: '用户管理',

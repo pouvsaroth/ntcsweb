@@ -403,6 +403,9 @@ const ko: MessageSchema = {
       statDailyIncome: '일일 수입',
       statMonthlyExpense: '월간 지출',
       statDailyExpense: '일일 지출',
+      attendanceSection: '출석',
+      statAbsentToday: '오늘 결석',
+      statAbsentYesterday: '어제 결석',
     },
     users: {
       title: '사용자 관리',

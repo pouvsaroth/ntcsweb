@@ -40,6 +40,15 @@ export interface AttendanceEntryInput {
 }
 
 export const attendanceService = {
+  /** One-off count for a single day/status — the Dashboard's "Absent Today/Yesterday" tiles, not a real list view. */
+  async countByStatus(date: string, status: AttendanceStatusValue): Promise<number> {
+    const result = await apiGetWithMeta<AttendanceRecord[]>('/attendance', {
+      params: { date_from: date, date_to: date, per_page: 1, filter: { status } },
+    })
+    const pagination = result.meta?.pagination as LengthAwarePaginationMeta | undefined
+    return pagination?.type === 'length_aware' ? pagination.total : 0
+  },
+
   /** The "take attendance" screen's data source — every active enrollment in the class, paired with this date's record if one exists. */
   roster: (classId: number, date: string) =>
     apiGetWithMeta<AttendanceRosterEntry[]>(`/classes/${classId}/attendance`, { params: { date } }).then((r) => r.data),
