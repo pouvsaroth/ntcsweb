@@ -9,12 +9,15 @@ use App\Models\Enrollment;
 use App\Models\EnrollmentStatusHistory;
 use App\Models\SchoolClass;
 use App\Models\Student;
+use App\Models\Tenant;
 use App\Models\User;
+use App\Services\Billing\CurrencyConversionService;
 use App\Services\Billing\InvoiceService;
 use App\Services\Billing\PaymentService;
 use App\Support\Audit\AuditAction;
 use App\Support\Audit\AuditLogger;
 use App\Support\Billing\PaymentMethod;
+use App\Support\Tenancy\TenantContext;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -36,12 +39,21 @@ use Illuminate\Validation\ValidationException;
  * also caller-supplied, but the `Payment` actually recorded is capped at
  * the invoice total; any excess is "change" the cashier hands back and is
  * never persisted as paid.
+ *
+ * The invoice is always billed in the school's own `default_currency`, not
+ * the package's — a package priced in USD still produces a Riel invoice for
+ * a Riel school, converted at the rate in effect on the enrollment date (see
+ * CurrencyConversionService). `discount_price`/`received_amount` are taken
+ * as already being in that same target currency (the enrollment form shows
+ * and collects them that way) — only the package's own fee needs converting.
  */
 final class EnrollmentService
 {
     public function __construct(
         private readonly InvoiceService $invoices,
         private readonly PaymentService $payments,
+        private readonly CurrencyConversionService $currencyConversion,
+        private readonly TenantContext $context,
         private readonly AuditLogger $audit,
     ) {}
 
@@ -61,6 +73,28 @@ final class EnrollmentService
             $feeType = $data['fee_type'];
             $feeColumn = 'fee_'.$feeType;
             $fee = (float) $package->{$feeColumn};
+            $enrolledAt = $data['enrolled_at'] ?? now()->toDateString();
+
+            // Course packages are priced in whatever currency they were set
+            // up in (almost always USD), but the invoice this enrollment
+            // produces is always billed in the SCHOOL's own currency — a
+            // Riel school's staff types the discount/received amount in
+            // Riel (see EnrollmentPackageForm.vue), so the fee they're
+            // comparing against has to already be in Riel too.
+            $invoiceCurrency = $this->context->getOrFail()->default_currency;
+
+            if ($package->currency !== $invoiceCurrency) {
+                $rate = $this->currencyConversion->rateForDate($enrolledAt);
+
+                if ($rate === null) {
+                    throw ValidationException::withMessages([
+                        'course_package_id' => "This school bills in {$invoiceCurrency}, but no exchange rate has been entered yet to convert this course's {$package->currency} price. Add one under Currency Rates first.",
+                    ]);
+                }
+
+                $fee = $this->currencyConversion->convert($fee, $package->currency, $invoiceCurrency, $rate);
+                $fee = $invoiceCurrency === Tenant::CURRENCY_KHR ? round($fee) : round($fee, 2);
+            }
 
             $enrollment = Enrollment::query()->create([
                 'student_id' => $data['student_id'],
@@ -68,13 +102,14 @@ final class EnrollmentService
                 'table_id' => $data['table_id'] ?? null,
                 'course_package_id' => $package->getKey(),
                 'academic_program_id' => $class->academic_program_id,
-                'enrolled_at' => $data['enrolled_at'] ?? now()->toDateString(),
+                'enrolled_at' => $enrolledAt,
                 'enrollments_code' => $this->generateEnrollmentCode($data['student_id']),
                 'status' => Enrollment::STATUS_ACTIVE,
             ]);
 
             $invoice = $this->invoices->create([
                 'student_id' => $enrollment->student_id,
+                'currency' => $invoiceCurrency,
                 'discount' => (float) ($data['discount_price'] ?? 0),
                 'discount_reason' => $data['discount_reason'] ?? null,
                 'items' => [[
@@ -91,7 +126,7 @@ final class EnrollmentService
                 $this->payments->record($invoice, [
                     'amount' => min($receivedAmount, (float) $invoice->total),
                     'payment_method' => $data['payment_method'] ?? PaymentMethod::CASH,
-                    'payment_date' => $data['enrolled_at'] ?? now()->toDateString(),
+                    'payment_date' => $enrolledAt,
                 ], $actor);
                 $invoice->refresh();
             }
@@ -107,8 +142,8 @@ final class EnrollmentService
                 AuditAction::ENROLLMENT_INVOICED,
                 'Enrollments',
                 $enrollment,
-                new: ['invoice_id' => $invoice->getKey(), 'invoice_number' => $invoice->invoice_number, 'fee' => $fee],
-                description: "Enrolled {$enrollment->student->auditDisplayName()} in {$class->name} — {$package->name} (\${$fee}), invoice {$invoice->invoice_number}",
+                new: ['invoice_id' => $invoice->getKey(), 'invoice_number' => $invoice->invoice_number, 'fee' => $fee, 'currency' => $invoiceCurrency],
+                description: "Enrolled {$enrollment->student->auditDisplayName()} in {$class->name} — {$package->name} ({$fee} {$invoiceCurrency}), invoice {$invoice->invoice_number}",
                 actor: $actor,
             );
 

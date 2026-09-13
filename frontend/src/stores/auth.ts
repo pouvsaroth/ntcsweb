@@ -1,7 +1,7 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 
-import { authService, type LoginPayload } from '@/services/auth'
+import { authService, type LoginPayload, type MeResult } from '@/services/auth'
 import { type ActingTenant, getActingTenant, resetDevTenant, setActingTenant, setDevTenant } from '@/services/http'
 import type { User } from '@/types/models'
 import { ApiRequestError } from '@/types/api'
@@ -11,6 +11,10 @@ export const useAuthStore = defineStore('auth', () => {
   const permissions = ref<string[] | ['*']>([])
   const isSuperAdmin = ref(false)
   const tenantName = ref<string | null>(null)
+  /** The signed-in school's billing currency — see EnrollmentPackageForm.vue, which converts a package's (usually USD) fee into this. Not set for a platform Super Admin browsing no particular school. */
+  const tenantDefaultCurrency = ref<'USD' | 'KHR' | null>(null)
+  /** Today's KHR-per-USD rate, or null if the school has never entered one under Currency Rates. */
+  const khrPerUsdRate = ref<number | null>(null)
   /** A Super Admin deliberately browsing one school's admin data — see setActingTenant. Restored from sessionStorage so a page refresh doesn't drop it. */
   const actingTenant = ref<ActingTenant | null>(getActingTenant())
 
@@ -29,11 +33,13 @@ export const useAuthStore = defineStore('auth', () => {
     return user.value?.roles?.some((role) => slugs.includes(role.slug)) ?? false
   }
 
-  function applySession(result: { user: User; permissions: string[] | ['*']; is_super_admin: boolean; tenant: { name: string } | null }) {
+  function applySession(result: MeResult) {
     user.value = result.user
     permissions.value = result.permissions
     isSuperAdmin.value = result.is_super_admin
     tenantName.value = result.tenant?.name ?? null
+    tenantDefaultCurrency.value = result.tenant?.default_currency ?? null
+    khrPerUsdRate.value = result.tenant?.khr_per_usd_rate ?? null
 
     // Dev only (see setDevTenant), and skipped entirely while actingTenant is
     // set — that's a deliberate choice (see enterTenant) this correction must
@@ -53,6 +59,8 @@ export const useAuthStore = defineStore('auth', () => {
     permissions.value = []
     isSuperAdmin.value = false
     tenantName.value = null
+    tenantDefaultCurrency.value = null
+    khrPerUsdRate.value = null
   }
 
   /** Called once, at app start (see main.ts), to restore an existing session. */
@@ -131,6 +139,8 @@ export const useAuthStore = defineStore('auth', () => {
     permissions,
     isSuperAdmin,
     tenantName,
+    tenantDefaultCurrency,
+    khrPerUsdRate,
     actingTenant,
     initialized,
     isAuthenticated,

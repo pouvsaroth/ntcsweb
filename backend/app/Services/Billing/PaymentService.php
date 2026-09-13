@@ -92,9 +92,10 @@ final class PaymentService
                 new: [
                     'invoice_number' => $invoice->invoice_number,
                     'amount' => $amount,
+                    'currency' => $invoice->currency,
                     'payment_method' => $payment->payment_method,
                 ],
-                description: "Recorded payment {$payment->payment_number} of \${$amount} for invoice {$invoice->invoice_number} via {$payment->payment_method}",
+                description: "Recorded payment {$payment->payment_number} of {$amount} {$invoice->currency} for invoice {$invoice->invoice_number} via {$payment->payment_method}",
             );
 
             $this->accounting->recognizeIncomeForPayment($payment, $actor);

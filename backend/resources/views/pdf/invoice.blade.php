@@ -51,6 +51,14 @@
 </style>
 </head>
 <body>
+    {{-- The invoice's own currency, not always USD — see EnrollmentService
+         for a school billed in Riel. KHR is a rounded whole number by
+         convention (no subunit in everyday use); USD keeps two decimals. --}}
+    @php
+        $money = fn (float $amount) => $invoice->currency === 'KHR'
+            ? number_format(round($amount)).' ៛'
+            : '$'.number_format($amount, 2);
+    @endphp
     <div class="header">
         <div class="school">
             @if($logoDataUri)
@@ -99,9 +107,9 @@
                 <tr>
                     <td>{{ $item->description }}</td>
                     <td class="num">{{ $item->quantity }}</td>
-                    <td class="num">${{ number_format((float) $item->unit_price, 2) }}</td>
-                    <td class="num">${{ number_format((float) $item->discount, 2) }}</td>
-                    <td class="num">${{ number_format((float) $item->total, 2) }}</td>
+                    <td class="num">{{ $money((float) $item->unit_price) }}</td>
+                    <td class="num">{{ $money((float) $item->discount) }}</td>
+                    <td class="num">{{ $money((float) $item->total) }}</td>
                 </tr>
             @endforeach
         </tbody>
@@ -109,12 +117,12 @@
 
     <div class="totals">
         <table>
-            <tr><td class="label">{{ __('invoice.subtotal') }}</td><td class="value">${{ number_format((float) $invoice->subtotal, 2) }}</td></tr>
-            <tr><td class="label">{{ __('invoice.discount') }}</td><td class="value">${{ number_format((float) $invoice->discount, 2) }}</td></tr>
-            <tr><td class="label">{{ __('invoice.tax') }}</td><td class="value">${{ number_format((float) $invoice->tax, 2) }}</td></tr>
-            <tr class="total"><td class="label">{{ __('invoice.total') }}</td><td class="value">${{ number_format((float) $invoice->total, 2) }}</td></tr>
-            <tr><td class="label">{{ __('invoice.paid') }}</td><td class="value">${{ number_format((float) $invoice->paid_amount, 2) }}</td></tr>
-            <tr class="balance"><td class="label">{{ __('invoice.balance') }}</td><td class="value">${{ number_format((float) $invoice->balance, 2) }}</td></tr>
+            <tr><td class="label">{{ __('invoice.subtotal') }}</td><td class="value">{{ $money((float) $invoice->subtotal) }}</td></tr>
+            <tr><td class="label">{{ __('invoice.discount') }}</td><td class="value">{{ $money((float) $invoice->discount) }}</td></tr>
+            <tr><td class="label">{{ __('invoice.tax') }}</td><td class="value">{{ $money((float) $invoice->tax) }}</td></tr>
+            <tr class="total"><td class="label">{{ __('invoice.total') }}</td><td class="value">{{ $money((float) $invoice->total) }}</td></tr>
+            <tr><td class="label">{{ __('invoice.paid') }}</td><td class="value">{{ $money((float) $invoice->paid_amount) }}</td></tr>
+            <tr class="balance"><td class="label">{{ __('invoice.balance') }}</td><td class="value">{{ $money((float) $invoice->balance) }}</td></tr>
         </table>
     </div>
 
@@ -129,7 +137,7 @@
                         <td>{{ $payment->payment_number }}</td>
                         <td class="num">{{ __('invoice.methods.'.strtolower($payment->payment_method)) }}</td>
                         <td class="num">{{ $payment->payment_date->format('d M Y') }}</td>
-                        <td class="num">${{ number_format((float) $payment->amount, 2) }}</td>
+                        <td class="num">{{ $money((float) $payment->amount) }}</td>
                     </tr>
                 @endforeach
             </tbody>

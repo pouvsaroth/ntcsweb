@@ -11,6 +11,7 @@ use App\Http\Resources\UserResource;
 use App\Http\Responses\ApiResponse;
 use App\Models\User;
 use App\Services\Auth\AuthService;
+use App\Services\Billing\CurrencyConversionService;
 use App\Support\Audit\AuditAction;
 use App\Support\Audit\AuditLogger;
 use App\Support\Tenancy\TenantContext;
@@ -35,6 +36,7 @@ final class AuthController extends Controller
     public function __construct(
         private readonly AuthService $auth,
         private readonly TenantContext $context,
+        private readonly CurrencyConversionService $currencyConversion,
         private readonly AuditLogger $audit,
     ) {}
 
@@ -103,13 +105,25 @@ final class AuthController extends Controller
 
         $user->loadMissing('roles', 'tenant');
 
+        $tenant = $this->context->get();
+
         return ApiResponse::success(
             new UserResource($user),
             meta: [
                 'permissions' => $user->isSuperAdmin() ? ['*'] : $user->permissionSlugs(),
                 'is_super_admin' => $user->isSuperAdmin(),
-                'tenant' => $this->context->has()
-                    ? ['id' => $this->context->id(), 'name' => $this->context->get()?->name]
+                'tenant' => $tenant !== null
+                    ? [
+                        'id' => $tenant->id,
+                        'name' => $tenant->name,
+                        'default_currency' => $tenant->default_currency,
+                        // Today's rate, not tied to any one transaction date
+                        // — this is "what should the enrollment form show
+                        // right now", see EnrollmentPackageForm.vue. Each
+                        // enrollment still re-resolves its own rate
+                        // server-side for the date it's actually billed on.
+                        'khr_per_usd_rate' => $this->currencyConversion->rateForDate(now()),
+                    ]
                     : null,
             ],
         );

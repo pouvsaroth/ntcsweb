@@ -15,10 +15,13 @@ import { enrollmentsService, type FeeType } from '@/services/enrollments'
 import { invoicesService } from '@/services/invoices'
 import { paymentMethods, type PaymentMethodValue } from '@/services/payments'
 import { studentsService, type Student } from '@/services/students'
+import { useAuthStore } from '@/stores/auth'
 import { ApiRequestError } from '@/types/api'
+import { convertCurrency, formatMoney } from '@/utils/currency'
 
 const { t } = useI18n()
 const router = useRouter()
+const auth = useAuthStore()
 
 /** yyyy-MM-dd in the viewer's local time. */
 function today(): string {
@@ -108,7 +111,27 @@ const feeTypeOptions = computed(() => {
     .map((type) => ({ value: type, label: t(feeTypeLabels[type]) }))
 })
 
-const fee = computed(() => (selectedPackage.value && form.fee_type ? (packageFee(selectedPackage.value, form.fee_type) ?? 0) : 0))
+// A package is priced in whatever currency it was set up in (almost always
+// USD), but the school always bills in its own default_currency — this
+// mirrors EnrollmentService's own server-side conversion (using that day's
+// rate) exactly, so what staff sees here matches what actually gets
+// invoiced. Falls back to the package's own currency only in the brief
+// window before /auth/me has resolved.
+const invoiceCurrency = computed(() => auth.tenantDefaultCurrency ?? selectedPackage.value?.currency ?? 'USD')
+
+// Null exactly when a conversion is actually needed (package currency !=
+// invoiceCurrency) but the school has never entered an exchange rate — the
+// enrollment will fail server-side in that case (see EnrollmentService), so
+// the payment panel is hidden below rather than showing a misleading number.
+const conversionBlocked = computed(
+  () => selectedPackage.value !== null && selectedPackage.value.currency !== invoiceCurrency.value && auth.khrPerUsdRate === null,
+)
+
+const fee = computed(() => {
+  if (!selectedPackage.value || !form.fee_type) return 0
+  const rawFee = packageFee(selectedPackage.value, form.fee_type) ?? 0
+  return convertCurrency(rawFee, selectedPackage.value.currency, invoiceCurrency.value, auth.khrPerUsdRate)
+})
 const feeToPay = computed(() => Math.max(0, fee.value - form.discount_price))
 const paid = computed(() => Math.min(form.received_amount, feeToPay.value))
 const debt = computed(() => Math.max(0, feeToPay.value - paid.value))
@@ -382,75 +405,81 @@ onMounted(async () => {
             {{ t('admin.enrollments.includedCourses') }}: {{ selectedPackage.books.map((b) => b.title).join(', ') }}
           </p>
 
-          <BaseSelect
-            :model-value="form.fee_type ?? ''"
-            :options="feeTypeOptions"
-            :placeholder="t('admin.enrollments.selectFeeType')"
-            :label="t('admin.enrollments.feeType')"
-            required
-            :error="errors.fee_type?.[0]"
-            @update:model-value="onFeeTypeChange"
-          />
+          <BaseAlert v-if="conversionBlocked" variant="warning">
+            {{ t('admin.enrollments.currencyRateMissing', { currency: invoiceCurrency }) }}
+          </BaseAlert>
 
-          <div class="flex items-center justify-between text-sm">
-            <span class="text-neutral-500">{{ t('admin.enrollments.fee') }}</span>
-            <span class="font-semibold text-neutral-800">{{ selectedPackage.currency }} {{ fee.toFixed(2) }}</span>
-          </div>
+          <template v-else>
+            <BaseSelect
+              :model-value="form.fee_type ?? ''"
+              :options="feeTypeOptions"
+              :placeholder="t('admin.enrollments.selectFeeType')"
+              :label="t('admin.enrollments.feeType')"
+              required
+              :error="errors.fee_type?.[0]"
+              @update:model-value="onFeeTypeChange"
+            />
 
-          <LookupSelect
-            v-model="form.discount_reason"
-            category="DISCOUNT_REASON"
-            :label="t('admin.enrollments.discountReason')"
-            :error="errors.discount_reason?.[0]"
-          />
-
-          <BaseInput
-            :model-value="String(form.discount_price)"
-            type="number"
-            step="0.01"
-            :label="t('admin.enrollments.discountPrice')"
-            :error="errors.discount_price?.[0]"
-            @update:model-value="form.discount_price = Number($event) || 0"
-          />
-
-          <div class="flex items-center justify-between border-t border-neutral-200 pt-3 text-sm">
-            <span class="font-medium text-neutral-700">{{ t('admin.enrollments.feeToPay') }}</span>
-            <span class="font-semibold text-neutral-900">{{ selectedPackage.currency }} {{ feeToPay.toFixed(2) }}</span>
-          </div>
-
-          <BaseInput
-            :model-value="String(form.received_amount)"
-            type="number"
-            step="0.01"
-            :label="t('admin.enrollments.receivedMoney')"
-            :error="errors.received_amount?.[0]"
-            @update:model-value="form.received_amount = Number($event) || 0"
-          />
-
-          <BaseSelect
-            v-if="form.received_amount > 0"
-            v-model="form.payment_method"
-            :options="paymentMethodOptions"
-            :label="t('admin.invoices.paymentMethod')"
-            :error="errors.payment_method?.[0]"
-          />
-
-          <dl class="space-y-1.5 border-t border-neutral-200 pt-3 text-sm">
-            <div class="flex items-center justify-between">
-              <dt class="text-neutral-500">{{ t('admin.enrollments.paid') }}</dt>
-              <dd class="font-medium text-neutral-800">{{ selectedPackage.currency }} {{ paid.toFixed(2) }}</dd>
+            <div class="flex items-center justify-between text-sm">
+              <span class="text-neutral-500">{{ t('admin.enrollments.fee') }}</span>
+              <span class="font-semibold text-neutral-800">{{ formatMoney(fee, invoiceCurrency) }}</span>
             </div>
-            <div class="flex items-center justify-between">
-              <dt class="text-neutral-500">{{ t('admin.enrollments.debt') }}</dt>
-              <dd class="font-medium" :class="debt > 0 ? 'text-danger-600' : 'text-neutral-800'">{{ selectedPackage.currency }} {{ debt.toFixed(2) }}</dd>
-            </div>
-            <div class="flex items-center justify-between">
-              <dt class="text-neutral-500">{{ t('admin.enrollments.payback') }}</dt>
-              <dd class="font-medium text-neutral-800">{{ selectedPackage.currency }} {{ payback.toFixed(2) }}</dd>
-            </div>
-          </dl>
 
-          <p class="text-xs text-neutral-500">{{ t('admin.enrollments.feeServerComputedHint') }}</p>
+            <LookupSelect
+              v-model="form.discount_reason"
+              category="DISCOUNT_REASON"
+              :label="t('admin.enrollments.discountReason')"
+              :error="errors.discount_reason?.[0]"
+            />
+
+            <BaseInput
+              :model-value="String(form.discount_price)"
+              type="number"
+              step="0.01"
+              :label="`${t('admin.enrollments.discountPrice')} (${invoiceCurrency})`"
+              :error="errors.discount_price?.[0]"
+              @update:model-value="form.discount_price = Number($event) || 0"
+            />
+
+            <div class="flex items-center justify-between border-t border-neutral-200 pt-3 text-sm">
+              <span class="font-medium text-neutral-700">{{ t('admin.enrollments.feeToPay') }}</span>
+              <span class="font-semibold text-neutral-900">{{ formatMoney(feeToPay, invoiceCurrency) }}</span>
+            </div>
+
+            <BaseInput
+              :model-value="String(form.received_amount)"
+              type="number"
+              step="0.01"
+              :label="`${t('admin.enrollments.receivedMoney')} (${invoiceCurrency})`"
+              :error="errors.received_amount?.[0]"
+              @update:model-value="form.received_amount = Number($event) || 0"
+            />
+
+            <BaseSelect
+              v-if="form.received_amount > 0"
+              v-model="form.payment_method"
+              :options="paymentMethodOptions"
+              :label="t('admin.invoices.paymentMethod')"
+              :error="errors.payment_method?.[0]"
+            />
+
+            <dl class="space-y-1.5 border-t border-neutral-200 pt-3 text-sm">
+              <div class="flex items-center justify-between">
+                <dt class="text-neutral-500">{{ t('admin.enrollments.paid') }}</dt>
+                <dd class="font-medium text-neutral-800">{{ formatMoney(paid, invoiceCurrency) }}</dd>
+              </div>
+              <div class="flex items-center justify-between">
+                <dt class="text-neutral-500">{{ t('admin.enrollments.debt') }}</dt>
+                <dd class="font-medium" :class="debt > 0 ? 'text-danger-600' : 'text-neutral-800'">{{ formatMoney(debt, invoiceCurrency) }}</dd>
+              </div>
+              <div class="flex items-center justify-between">
+                <dt class="text-neutral-500">{{ t('admin.enrollments.payback') }}</dt>
+                <dd class="font-medium text-neutral-800">{{ formatMoney(payback, invoiceCurrency) }}</dd>
+              </div>
+            </dl>
+
+            <p class="text-xs text-neutral-500">{{ t('admin.enrollments.feeServerComputedHint') }}</p>
+          </template>
         </template>
         <p v-else class="text-sm text-neutral-400">{{ t('admin.enrollments.selectPackage') }}</p>
       </div>

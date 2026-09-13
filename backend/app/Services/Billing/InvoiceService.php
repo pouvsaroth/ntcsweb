@@ -34,7 +34,7 @@ final class InvoiceService
     ) {}
 
     /**
-     * @param  array{student_id:int, invoice_date?:string, due_date?:string|null, discount?:float, discount_reason?:string|null, tax?:float, notes?:string|null, items:list<array<string,mixed>>}  $data
+     * @param  array{student_id:int, invoice_date?:string, due_date?:string|null, currency?:string, discount?:float, discount_reason?:string|null, tax?:float, notes?:string|null, items:list<array<string,mixed>>}  $data
      */
     public function create(array $data, User $actor): Invoice
     {
@@ -52,6 +52,11 @@ final class InvoiceService
                 'tax' => (float) ($data['tax'] ?? 0),
                 'notes' => $data['notes'] ?? null,
                 'created_by' => $actor->getKey(),
+                // Omitted entirely when not given, rather than passed as
+                // null, so every existing caller keeps the model's own
+                // default ('USD') — see EnrollmentService, the one caller
+                // that does pass this, for a school billing in Riel.
+                ...(isset($data['currency']) ? ['currency' => $data['currency']] : []),
             ]);
 
             foreach ($data['items'] as $itemData) {

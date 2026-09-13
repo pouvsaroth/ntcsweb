@@ -6,6 +6,7 @@ namespace Tests\Feature\Academic;
 
 use App\Models\Classroom;
 use App\Models\ClassroomTable;
+use App\Models\CurrencyRate;
 use App\Models\Enrollment;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
@@ -281,5 +282,113 @@ class EnrollmentPackageServiceTest extends TestCase
         $response->assertUnprocessable();
         $response->assertJsonValidationErrors('payment_method');
         $this->assertSame(0, Enrollment::count());
+    }
+
+    /**
+     * The package (and every fixture in HasAcademicCatalog) is priced in
+     * USD, but the invoice this produces must always be billed in the
+     * school's own default_currency — see EnrollmentService's docblock.
+     */
+    public function test_the_invoice_is_converted_to_the_schools_default_currency(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE]);
+        $this->setUpAcademicCatalog();
+        $this->tenant->update(['default_currency' => 'KHR']);
+        // ResolveTenant re-resolves the tenant on every request via
+        // AuthenticatedUserTenantResolver's $request->user()->tenant — but
+        // actingAsAdminWithPermissions() already loaded (and cached) that
+        // relation on $this->admin back when it was still USD. Clearing it
+        // forces a fresh query so the request actually sees this update.
+        $this->admin->unsetRelation('tenant');
+        CurrencyRate::query()->create(['effective_date' => '2026-01-01', 'khr_per_usd' => 4100]);
+        $student = Student::factory()->create();
+
+        $response = $this->postJson('/api/v1/enrollments/package', [
+            'student_id' => $student->id,
+            'class_id' => $this->computerEveningClass->id,
+            'course_package_id' => $this->msWordPackage->id,
+            'enrolled_at' => '2026-01-15',
+            'fee_type' => 'term',
+            'discount_price' => 4000,
+            'received_amount' => 100000,
+            'payment_method' => 'CASH',
+        ]);
+
+        $response->assertCreated();
+
+        // term fee is $24 (see the first test above) * 4100 = 98,400 KHR,
+        // minus a 4,000 KHR discount already expressed in the target
+        // currency (see EnrollmentPackageForm.vue) = 94,400. The 100,000
+        // received covers it in full — the 5,600 excess is change, never
+        // persisted as paid (see EnrollmentService's own docblock).
+        $invoice = Invoice::firstOrFail();
+        $this->assertSame('KHR', $invoice->currency);
+        $this->assertSame('98400.00', (string) $invoice->subtotal);
+        $this->assertSame('4000.00', (string) $invoice->discount);
+        $this->assertSame('94400.00', (string) $invoice->total);
+        $this->assertSame('94400.00', (string) $invoice->paid_amount);
+        $this->assertSame('0.00', (string) $invoice->balance);
+        $this->assertSame(InvoiceStatus::PAID, $invoice->status);
+
+        $item = InvoiceItem::where('invoice_id', $invoice->id)->firstOrFail();
+        $this->assertSame('98400.00', (string) $item->unit_price);
+    }
+
+    /**
+     * A rate found on or before the enrollment date is used, matching
+     * CurrencyConversionService::rateForDate() — a later rate entered since
+     * must never leak backward into an already-priced enrollment.
+     */
+    public function test_it_uses_the_rate_in_effect_on_the_enrollment_date_not_the_latest_one(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE]);
+        $this->setUpAcademicCatalog();
+        $this->tenant->update(['default_currency' => 'KHR']);
+        // ResolveTenant re-resolves the tenant on every request via
+        // AuthenticatedUserTenantResolver's $request->user()->tenant — but
+        // actingAsAdminWithPermissions() already loaded (and cached) that
+        // relation on $this->admin back when it was still USD. Clearing it
+        // forces a fresh query so the request actually sees this update.
+        $this->admin->unsetRelation('tenant');
+        CurrencyRate::query()->create(['effective_date' => '2026-01-01', 'khr_per_usd' => 4000]);
+        CurrencyRate::query()->create(['effective_date' => '2026-02-01', 'khr_per_usd' => 4100]);
+        $student = Student::factory()->create();
+
+        $this->postJson('/api/v1/enrollments/package', [
+            'student_id' => $student->id,
+            'class_id' => $this->computerEveningClass->id,
+            'course_package_id' => $this->msWordPackage->id,
+            'enrolled_at' => '2026-01-15',
+            'fee_type' => 'term',
+        ])->assertCreated();
+
+        // $24 * 4000 (the January rate, in effect on 2026-01-15) = 96,000 —
+        // NOT the later 4,100 rate.
+        $this->assertSame('96000.00', (string) Invoice::firstOrFail()->total);
+    }
+
+    public function test_it_refuses_to_enroll_when_the_school_has_no_currency_rate_to_convert_with(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE]);
+        $this->setUpAcademicCatalog();
+        $this->tenant->update(['default_currency' => 'KHR']);
+        // ResolveTenant re-resolves the tenant on every request via
+        // AuthenticatedUserTenantResolver's $request->user()->tenant — but
+        // actingAsAdminWithPermissions() already loaded (and cached) that
+        // relation on $this->admin back when it was still USD. Clearing it
+        // forces a fresh query so the request actually sees this update.
+        $this->admin->unsetRelation('tenant');
+        $student = Student::factory()->create();
+
+        $response = $this->postJson('/api/v1/enrollments/package', [
+            'student_id' => $student->id,
+            'class_id' => $this->computerEveningClass->id,
+            'course_package_id' => $this->msWordPackage->id,
+            'fee_type' => 'term',
+        ]);
+
+        $response->assertUnprocessable();
+        $this->assertSame(0, Enrollment::count());
+        $this->assertSame(0, Invoice::count());
     }
 }

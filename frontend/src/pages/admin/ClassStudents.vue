@@ -37,27 +37,36 @@ const statusFilterOptions = computed(() => [
 
 const columns = [
   { key: 'index', label: '#' },
-  { key: 'student', label: t('admin.classStudents.columnStudent') },
+  { key: 'student', label: t('admin.classStudents.columnStudent'), sortable: true },
   { key: 'gender', label: t('admin.classStudents.columnGender') },
   { key: 'table', label: t('admin.classStudents.columnTable'), sortable: true },
-  { key: 'book', label: t('admin.classStudents.columnBook') },
+  { key: 'book', label: t('admin.classStudents.columnBook'), sortable: true },
   { key: 'actions', label: t('admin.classStudents.columnActions'), align: 'text-right' },
 ]
 
 /**
  * The whole roster is fetched in one shot (it's one class, never paginated),
  * so unlike every other admin list here sorting is done client-side rather
- * than via a server `sort` param. Undefined falls back to the same
- * alphabetical-by-name order `load()` already produces.
+ * than via a server `sort` param. Defaults to Table so a teacher opening the
+ * roster to seat students sees them grouped by table right away.
  */
-const tableSort = ref<string | undefined>(undefined)
+const tableSort = ref<string | undefined>('table')
+
+const sortValueGetters: Record<string, (enrollment: Enrollment) => string> = {
+  table: (enrollment) => enrollment.table?.name ?? '',
+  student: (enrollment) => enrollment.student.full_name,
+  book: (enrollment) => enrollment.course_package?.name ?? '',
+}
 
 const sortedRoster = computed(() => {
   if (tableSort.value === undefined) return roster.value
 
   const descending = tableSort.value.startsWith('-')
+  const getValue = sortValueGetters[tableSort.value.replace(/^-/, '')]
+  if (!getValue) return roster.value
+
   return [...roster.value].sort((a, b) => {
-    const result = (a.table?.name ?? '').localeCompare(b.table?.name ?? '')
+    const result = getValue(a).localeCompare(getValue(b))
     return descending ? -result : result
   })
 })

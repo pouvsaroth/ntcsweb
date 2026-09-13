@@ -16,7 +16,13 @@ export interface MeResult {
   user: User
   permissions: string[] | ['*']
   is_super_admin: boolean
-  tenant: { id: number; name: string } | null
+  tenant: {
+    id: number
+    name: string
+    default_currency: 'USD' | 'KHR'
+    /** Today's KHR-per-USD rate, or null if the school has never entered one — see CurrencyConversionService. */
+    khr_per_usd_rate: number | null
+  } | null
 }
 
 /**

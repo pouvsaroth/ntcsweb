@@ -1,6 +1,7 @@
 import { apiDownload, apiGetWithMeta, apiPost } from '@/services/http'
 import type { PaginatedQuery } from '@/composables/usePaginatedResource'
 import type { Payment } from '@/services/payments'
+import type { Currency } from '@/services/schoolSettings'
 import type { LengthAwarePaginationMeta, PaginatedResult } from '@/types/api'
 
 export type InvoiceStatusValue = 'DRAFT' | 'ISSUED' | 'PARTIALLY_PAID' | 'PAID' | 'OVERDUE' | 'CANCELLED' | 'VOID'
@@ -58,7 +59,7 @@ export interface Invoice {
   total: number
   paid_amount: number
   balance: number
-  currency: string
+  currency: Currency
   notes: string | null
   cancellation_reason: string | null
   /** Only present once the invoice has actually been cancelled/voided (backend omits it via whenLoaded() otherwise). */

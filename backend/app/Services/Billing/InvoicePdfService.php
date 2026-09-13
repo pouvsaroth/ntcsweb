@@ -54,7 +54,27 @@ final class InvoicePdfService
             'khmerFontBold' => $this->khmerFontDataUri('Bold'),
         ])->render();
 
-        return $this->browser($html)->pdf();
+        $home = $this->freshChromiumHome();
+
+        try {
+            return $this->browser($html, $home)->pdf();
+        } finally {
+            // Best-effort — a leftover directory here is harmless clutter,
+            // never worth failing (or even logging) an otherwise-successful
+            // render over.
+            @exec('rm -rf '.escapeshellarg($home));
+        }
+    }
+
+    /**
+     * A brand-new, never-before-used directory to use as Chromium's HOME
+     * for one render — see browser()'s docblock for why a shared one isn't
+     * safe. Chromium creates everything under it itself (.config/chromium/
+     * etc.); nothing needs to pre-exist beyond the parent temp directory.
+     */
+    private function freshChromiumHome(): string
+    {
+        return sys_get_temp_dir().'/browsershot-home-'.bin2hex(random_bytes(8));
     }
 
     public function filename(Invoice $invoice): string
@@ -82,7 +102,7 @@ final class InvoicePdfService
         );
     }
 
-    private function browser(string $html): Browsershot
+    private function browser(string $html, string $home): Browsershot
     {
         $browsershot = Browsershot::html($html)
             ->format('A4')
@@ -92,9 +112,16 @@ final class InvoicePdfService
             // php-fpm's www-data user has HOME=/var/www, which it doesn't own and can't write
             // to — Chromium's crash reporter (crashpad) tries to create its database there on
             // launch and dies immediately ("chrome_crashpad_handler: --database is required").
-            // Pointing HOME at a writable directory fixes it; disabling the reporter outright
-            // means one less thing to depend on working inside a container.
-            ->setNodeEnv(['HOME' => sys_get_temp_dir()])
+            //
+            // A *shared* writable HOME (e.g. plain sys_get_temp_dir()) isn't enough on its
+            // own, though: crashpad's database lives under $HOME/.config/chromium, and
+            // whichever user's Chromium creates that directory FIRST owns it from then on
+            // (mode 0700) — e.g. `docker exec` running a test suite as root, before the real
+            // php-fpm/www-data request ever comes in, permanently breaks every later render
+            // with this exact error until someone notices and deletes it. $home (see
+            // freshChromiumHome()) is generated fresh per render so it can never collide
+            // with anything another user already created.
+            ->setNodeEnv(['HOME' => $home])
             ->addChromiumArguments(['disable-crash-reporter']);
 
         if ($chromePath = config('services.browsershot.chrome_path')) {

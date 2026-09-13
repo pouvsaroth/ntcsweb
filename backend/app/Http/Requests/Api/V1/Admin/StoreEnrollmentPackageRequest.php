@@ -6,7 +6,9 @@ namespace App\Http\Requests\Api\V1\Admin;
 
 use App\Models\CoursePackage;
 use App\Models\Enrollment;
+use App\Services\Billing\CurrencyConversionService;
 use App\Support\Billing\PaymentMethod;
+use App\Support\Tenancy\TenantContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -95,8 +97,24 @@ class StoreEnrollmentPackageRequest extends FormRequest
                 return;
             }
 
+            // discount_price is entered in the school's own currency (see
+            // EnrollmentPackageForm.vue), same as EnrollmentService itself
+            // converts to before comparing — otherwise a Riel discount would
+            // be checked against a raw USD fee and this cap would be
+            // meaningless in either direction.
+            $fee = (float) $fee;
+            $tenant = app(TenantContext::class)->get();
+
+            if ($tenant !== null && $package->currency !== $tenant->default_currency) {
+                $rate = app(CurrencyConversionService::class)->rateForDate($this->input('enrolled_at') ?? now());
+
+                if ($rate !== null) {
+                    $fee = app(CurrencyConversionService::class)->convert($fee, $package->currency, $tenant->default_currency, $rate);
+                }
+            }
+
             $discountPrice = $this->input('discount_price');
-            if ($discountPrice !== null && (float) $discountPrice > (float) $fee) {
+            if ($discountPrice !== null && (float) $discountPrice > $fee) {
                 $validator->errors()->add('discount_price', __('The discount cannot exceed the fee.'));
             }
 

@@ -15,6 +15,12 @@
 </style>
 </head>
 <body>
+    {{-- See invoice.blade.php's own $money helper docblock. --}}
+    @php
+        $money = fn (float $amount) => $invoice->currency === 'KHR'
+            ? number_format(round($amount)).' ៛'
+            : '$'.number_format($amount, 2);
+    @endphp
     <div class="center">
         @if($tenant?->logoUrl())<img src="{{ $tenant->logoUrl() }}" alt="" style="max-height:56px;"><br>@endif
         <h1>{{ $tenant?->name ?? config('app.name') }}</h1>
@@ -32,11 +38,11 @@
         @endif
     </div>
 
-    <div class="amount">${{ number_format((float) $payment->amount, 2) }}</div>
+    <div class="amount">{{ $money((float) $payment->amount) }}</div>
 
     <div class="box">
-        <div class="row"><div class="label">Invoice Total</div><div class="value">${{ number_format((float) $invoice->total, 2) }}</div></div>
-        <div class="row"><div class="label">Remaining Balance</div><div class="value">${{ number_format((float) $invoice->balance, 2) }}</div></div>
+        <div class="row"><div class="label">Invoice Total</div><div class="value">{{ $money((float) $invoice->total) }}</div></div>
+        <div class="row"><div class="label">Remaining Balance</div><div class="value">{{ $money((float) $invoice->balance) }}</div></div>
     </div>
 </body>
 </html>

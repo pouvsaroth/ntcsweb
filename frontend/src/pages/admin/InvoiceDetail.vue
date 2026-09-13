@@ -19,6 +19,7 @@ import {
 } from '@/services/invoices'
 import { paymentsService, type Payment, type PaymentStatusValue } from '@/services/payments'
 import { ApiRequestError } from '@/types/api'
+import { formatMoney } from '@/utils/currency'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -231,9 +232,9 @@ onMounted(load)
                       <p v-if="item.variant_name" class="text-xs text-neutral-500">{{ item.variant_name }}</p>
                     </td>
                     <td class="px-3 py-2 text-right text-neutral-700">{{ item.quantity }}</td>
-                    <td class="px-3 py-2 text-right text-neutral-700">${{ item.unit_price.toFixed(2) }}</td>
-                    <td class="px-3 py-2 text-right text-neutral-700">${{ item.discount.toFixed(2) }}</td>
-                    <td class="px-3 py-2 text-right font-medium text-neutral-900">${{ item.total.toFixed(2) }}</td>
+                    <td class="px-3 py-2 text-right text-neutral-700">{{ formatMoney(item.unit_price, invoice.currency) }}</td>
+                    <td class="px-3 py-2 text-right text-neutral-700">{{ formatMoney(item.discount, invoice.currency) }}</td>
+                    <td class="px-3 py-2 text-right font-medium text-neutral-900">{{ formatMoney(item.total, invoice.currency) }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -268,7 +269,7 @@ onMounted(load)
                 <tbody class="divide-y divide-neutral-100">
                   <tr v-for="payment in invoice.payments" :key="payment.id">
                     <td class="px-3 py-2 text-neutral-800">{{ payment.payment_number }}</td>
-                    <td class="px-3 py-2 text-right text-neutral-700">${{ payment.amount.toFixed(2) }}</td>
+                    <td class="px-3 py-2 text-right text-neutral-700">{{ formatMoney(payment.amount, invoice.currency) }}</td>
                     <td class="px-3 py-2 text-neutral-700">{{ t(`admin.payments.method${toPascalCase(payment.payment_method)}`) }}</td>
                     <td class="px-3 py-2">
                       <BaseBadge :variant="paymentStatusVariant[payment.status]">{{ t(`admin.payments.status${toPascalCase(payment.status)}`) }}</BaseBadge>
@@ -329,13 +330,13 @@ onMounted(load)
           <section class="rounded-[--radius-card] border border-neutral-200 bg-white p-5">
             <h2 class="mb-3 text-sm font-semibold text-neutral-800">{{ t('admin.invoices.summaryTitle') }}</h2>
             <dl class="space-y-2 text-sm">
-              <div class="flex justify-between"><dt class="text-neutral-500">{{ t('admin.invoices.summarySubtotal') }}</dt><dd>${{ invoice.subtotal.toFixed(2) }}</dd></div>
-              <div class="flex justify-between"><dt class="text-neutral-500">{{ t('admin.invoices.summaryDiscount') }}</dt><dd>-${{ invoice.discount.toFixed(2) }}</dd></div>
-              <div class="flex justify-between"><dt class="text-neutral-500">{{ t('admin.invoices.summaryTax') }}</dt><dd>${{ invoice.tax.toFixed(2) }}</dd></div>
-              <div class="flex justify-between border-t border-neutral-100 pt-2 font-semibold text-neutral-900"><dt>{{ t('admin.invoices.summaryTotal') }}</dt><dd>${{ invoice.total.toFixed(2) }}</dd></div>
-              <div class="flex justify-between"><dt class="text-neutral-500">{{ t('admin.invoices.summaryPaid') }}</dt><dd>${{ invoice.paid_amount.toFixed(2) }}</dd></div>
+              <div class="flex justify-between"><dt class="text-neutral-500">{{ t('admin.invoices.summarySubtotal') }}</dt><dd>{{ formatMoney(invoice.subtotal, invoice.currency) }}</dd></div>
+              <div class="flex justify-between"><dt class="text-neutral-500">{{ t('admin.invoices.summaryDiscount') }}</dt><dd>-{{ formatMoney(invoice.discount, invoice.currency) }}</dd></div>
+              <div class="flex justify-between"><dt class="text-neutral-500">{{ t('admin.invoices.summaryTax') }}</dt><dd>{{ formatMoney(invoice.tax, invoice.currency) }}</dd></div>
+              <div class="flex justify-between border-t border-neutral-100 pt-2 font-semibold text-neutral-900"><dt>{{ t('admin.invoices.summaryTotal') }}</dt><dd>{{ formatMoney(invoice.total, invoice.currency) }}</dd></div>
+              <div class="flex justify-between"><dt class="text-neutral-500">{{ t('admin.invoices.summaryPaid') }}</dt><dd>{{ formatMoney(invoice.paid_amount, invoice.currency) }}</dd></div>
               <div class="flex justify-between font-semibold" :class="invoice.balance > 0 ? 'text-danger-600' : 'text-secondary-700'">
-                <dt>{{ t('admin.invoices.summaryBalance') }}</dt><dd>${{ invoice.balance.toFixed(2) }}</dd>
+                <dt>{{ t('admin.invoices.summaryBalance') }}</dt><dd>{{ formatMoney(invoice.balance, invoice.currency) }}</dd>
               </div>
             </dl>
           </section>
