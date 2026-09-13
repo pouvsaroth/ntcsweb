@@ -116,7 +116,7 @@ const ko: MessageSchema = {
 
   auth: {
     school: '학교',
-    schoolHint: '어느 계정을 확인해야 하는지 알 수 있도록 학교를 선택해 주세요.',
+    schoolHint: '어느 계정을 확인해야 하는지 알 수 있도록 학교를 선택해 주세요. 플랫폼 관리자 계정으로 로그인하는 경우 비워 두세요.',
     schoolPlaceholder: '학교를 선택하세요',
     schoolLoadError: '학교 목록을 불러오지 못했습니다.',
     login: {
@@ -973,6 +973,14 @@ const ko: MessageSchema = {
       field: '필드',
       oldValue: '이전 값',
       newValue: '새 값',
+    },
+    databaseBackups: {
+      title: '데이터베이스 백업',
+      pageSubtitle: '중앙 데이터베이스 또는 각 학교 자체 데이터베이스의 전체 백업을 다운로드합니다. 서버 자격 증명이 필요 없습니다 — 이 앱이 이미 관리하는 데이터베이스에만 접근합니다.',
+      loadFailed: '데이터베이스 목록을 불러올 수 없습니다.',
+      downloadFailed: '백업을 다운로드할 수 없습니다.',
+      emptyMessage: '백업할 수 있는 데이터베이스가 없습니다.',
+      download: '다운로드',
     },
     settings: {
       title: '일반 설정',
@@ -2484,6 +2492,7 @@ const ko: MessageSchema = {
       dashboard: '대시보드',
       projects: '프로젝트',
       tenants: '학교(테넌트)',
+      databaseBackups: '데이터베이스 백업',
       settings: '일반',
       users: '사용자',
       roles: '역할',

@@ -304,6 +304,12 @@ const adminRoutes: RouteRecordRaw[] = [
     meta: { titleKey: 'adminNav.items.auditLogs' },
   },
   {
+    path: 'database-backups',
+    name: 'admin.database-backups',
+    component: () => import('@/pages/admin/BackupDatabase.vue'),
+    meta: { titleKey: 'adminNav.items.databaseBackups' },
+  },
+  {
     path: 'languages',
     name: 'admin.languages',
     component: () => import('@/pages/admin/Languages.vue'),

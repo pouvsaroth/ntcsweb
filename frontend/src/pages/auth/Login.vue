@@ -69,7 +69,7 @@ async function submit() {
   generalError.value = null
 
   try {
-    await auth.login({ ...form, tenant: school.value.trim() || undefined })
+    await auth.login({ ...form, tenant: school.value.trim() || undefined }, showSchoolField.value)
 
     if (form.remember) {
       localStorage.setItem(REMEMBERED_LOGIN_KEY, form.login)
@@ -122,8 +122,14 @@ async function submit() {
           :placeholder="tenantsLoading ? t('common.loading') : t('auth.schoolPlaceholder')"
           :hint="t('auth.schoolHint')"
           :disabled="tenantsLoading"
-          required
         />
+        <!--
+          Deliberately not `required`: a platform Super Admin account belongs
+          to no school and must be able to sign in with this left blank — see
+          schoolHint below and AuthService::authenticate()'s inTenant(null).
+          A regular school account that leaves it blank just gets the normal
+          "credentials do not match" error, same as picking the wrong school.
+        -->
       </template>
 
       <BaseInput

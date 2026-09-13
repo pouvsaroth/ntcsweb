@@ -119,7 +119,7 @@ const en = {
 
   auth: {
     school: 'School',
-    schoolHint: 'Choose your school so we know which account to check.',
+    schoolHint: 'Choose your school so we know which account to check. Leave blank if you\'re signing in with a platform admin account.',
     schoolPlaceholder: 'Select your school',
     schoolLoadError: "Couldn't load the list of schools.",
     login: {
@@ -977,6 +977,14 @@ const en = {
       field: 'Field',
       oldValue: 'Old Value',
       newValue: 'New Value',
+    },
+    databaseBackups: {
+      title: 'Backup Database',
+      pageSubtitle: 'Download a full backup of the central database or any school\'s own database. No server credentials needed — this only ever reaches databases this app already manages.',
+      loadFailed: 'Could not load the list of databases.',
+      downloadFailed: 'Could not download the backup.',
+      emptyMessage: 'No databases available to back up.',
+      download: 'Download',
     },
     settings: {
       title: 'General Settings',
@@ -2487,6 +2495,7 @@ const en = {
       dashboard: 'Dashboard',
       projects: 'Projects',
       tenants: 'Tenants',
+      databaseBackups: 'Backup Database',
       school: 'School',
       settings: 'General',
       users: 'Users',

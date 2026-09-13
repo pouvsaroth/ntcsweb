@@ -2,7 +2,9 @@ import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 
 import { authService, type LoginPayload } from '@/services/auth'
+import { resetDevTenant, setDevTenant } from '@/services/http'
 import type { User } from '@/types/models'
+import { ApiRequestError } from '@/types/api'
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
@@ -30,6 +32,14 @@ export const useAuthStore = defineStore('auth', () => {
     permissions.value = result.permissions
     isSuperAdmin.value = result.is_super_admin
     tenantName.value = result.tenant?.name ?? null
+
+    // Dev only (see setDevTenant) — a real session is authoritative over
+    // whatever the pre-login boot logic in http.ts guessed: a super admin
+    // gets no tenant pinned to every subsequent request (else a stale guess
+    // from before login would 403 their own session via
+    // EnsureTenantMatchesUser), and a tenant-bound user gets *their own*
+    // tenant, correcting a guess that may have landed on the wrong school.
+    setDevTenant(result.is_super_admin ? null : (result.user.tenant?.slug ?? null))
   }
 
   function clearSession() {
@@ -50,8 +60,26 @@ export const useAuthStore = defineStore('auth', () => {
     initialized.value = true
   }
 
-  async function login(payload: LoginPayload): Promise<void> {
-    await authService.login(payload)
+  async function login(payload: LoginPayload, schoolFieldShown = false): Promise<void> {
+    try {
+      await authService.login(payload, schoolFieldShown)
+    } catch (error) {
+      // Dev only, and only when the school picker never even appeared (the
+      // ordinary case on a fresh local boot — see http.ts's auto-detected
+      // ambient tenant): that ambient guess is what the failed attempt above
+      // just used, so a platform Super Admin account (no tenant of its own)
+      // always fails it. Retrying once with no tenant at all is what a real
+      // central-domain deployment would do the instant the (production-only)
+      // school picker rendered and was left blank — this just reaches the
+      // same outcome without that picker existing to interact with locally.
+      // A genuinely wrong password still fails both attempts identically.
+      const canRetryAsPlatformAdmin = import.meta.env.DEV && !schoolFieldShown && error instanceof ApiRequestError
+
+      if (!canRetryAsPlatformAdmin) throw error
+
+      await authService.login(payload, true)
+    }
+
     // The login response only returns the user; roles/permissions come from
     // /auth/me's meta, so a fresh fetch is the simplest way to get a fully
     // consistent session state rather than duplicating that shape here.
@@ -64,6 +92,7 @@ export const useAuthStore = defineStore('auth', () => {
       await authService.logout()
     } finally {
       clearSession()
+      resetDevTenant()
     }
   }
 

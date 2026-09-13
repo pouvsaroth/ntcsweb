@@ -41,7 +41,25 @@ RUN apt-get update && apt-get install -y \
 # directory is shadowed at runtime by the ./backend bind mount — same reason
 # vendor/ uses its own named volume instead of living in the image. Browsershot
 # is pointed at this location via setNodeModulePath() in InvoicePdfService.
-RUN npm install -g puppeteer-core
+#
+# vendor/spatie/browsershot's bin/browser.cjs unconditionally does
+# `require('puppeteer')` — it has no puppeteer-core-aware code path in this
+# version — so a bare `puppeteer-core` install alone leaves that require
+# unresolved. The `puppeteer@npm:puppeteer-core@<version>` alias installs
+# puppeteer-core's actual code (no bundled Chromium download) under the
+# import name puppeteer-core doesn't otherwise provide.
+RUN npm install -g puppeteer-core@24.43.1 puppeteer@npm:puppeteer-core@24.43.1
+
+# postgresql-client-18 specifically, matching the postgres:18 service — the
+# distro's own `postgresql-client` package trails the server by a major
+# version, and pg_dump run against a newer server than it understands is
+# the one thing this needs to get right for DatabaseBackupController.
+RUN apt-get update && apt-get install -y curl gnupg lsb-release ca-certificates \
+    && install -d /usr/share/postgresql-common/pgdg \
+    && curl -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc --fail https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+    && sh -c 'echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list' \
+    && apt-get update && apt-get install -y postgresql-client-18 \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 COPY docker/php/uploads.ini /usr/local/etc/php/conf.d/uploads.ini

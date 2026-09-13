@@ -38,7 +38,10 @@ export const adminNav: AdminNavGroup[] = [
   },
   {
     labelKey: 'adminNav.groups.platform',
-    items: [{ labelKey: 'adminNav.items.tenants', to: '/admin/tenants', superAdminOnly: true }],
+    items: [
+      { labelKey: 'adminNav.items.tenants', to: '/admin/tenants', superAdminOnly: true },
+      { labelKey: 'adminNav.items.databaseBackups', to: '/admin/database-backups', superAdminOnly: true },
+    ],
   },
   {
     labelKey: 'adminNav.groups.academic',

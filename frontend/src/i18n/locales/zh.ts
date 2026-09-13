@@ -116,7 +116,7 @@ const zh: MessageSchema = {
 
   auth: {
     school: '学校',
-    schoolHint: '请选择您的学校，以便我们确认要查询的账户。',
+    schoolHint: '请选择您的学校，以便我们确认要查询的账户。如果您使用平台管理员账户登录，请留空。',
     schoolPlaceholder: '请选择您的学校',
     schoolLoadError: '无法加载学校列表。',
     login: {
@@ -972,6 +972,14 @@ const zh: MessageSchema = {
       field: '字段',
       oldValue: '旧值',
       newValue: '新值',
+    },
+    databaseBackups: {
+      title: '备份数据库',
+      pageSubtitle: '下载中央数据库或任一学校自身数据库的完整备份。无需输入服务器凭据 — 此功能只会访问本应用已经管理的数据库。',
+      loadFailed: '无法加载数据库列表。',
+      downloadFailed: '无法下载备份。',
+      emptyMessage: '没有可备份的数据库。',
+      download: '下载',
     },
     settings: {
       title: '常规设置',
@@ -2483,6 +2491,7 @@ const zh: MessageSchema = {
       dashboard: '仪表盘',
       projects: '项目',
       tenants: '学校（租户）',
+      databaseBackups: '备份数据库',
       settings: '常规',
       users: '用户',
       roles: '角色',

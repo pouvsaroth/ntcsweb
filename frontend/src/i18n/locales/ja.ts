@@ -116,7 +116,7 @@ const ja: MessageSchema = {
 
   auth: {
     school: '学校',
-    schoolHint: 'どちらのアカウントを確認すればよいか分かるよう、学校を選択してください。',
+    schoolHint: 'どちらのアカウントを確認すればよいか分かるよう、学校を選択してください。プラットフォーム管理者アカウントでサインインする場合は空欄のままにしてください。',
     schoolPlaceholder: '学校を選択してください',
     schoolLoadError: '学校一覧を読み込めませんでした。',
     login: {
@@ -973,6 +973,14 @@ const ja: MessageSchema = {
       field: 'フィールド',
       oldValue: '以前の値',
       newValue: '新しい値',
+    },
+    databaseBackups: {
+      title: 'データベースのバックアップ',
+      pageSubtitle: '中央データベースまたは各学校の独自データベースの完全なバックアップをダウンロードします。サーバーの認証情報は不要です — このアプリがすでに管理しているデータベースにのみアクセスします。',
+      loadFailed: 'データベースの一覧を読み込めませんでした。',
+      downloadFailed: 'バックアップをダウンロードできませんでした。',
+      emptyMessage: 'バックアップ可能なデータベースがありません。',
+      download: 'ダウンロード',
     },
     settings: {
       title: '一般設定',
@@ -2484,6 +2492,7 @@ const ja: MessageSchema = {
       dashboard: 'ダッシュボード',
       projects: 'プロジェクト',
       tenants: '学校（テナント）',
+      databaseBackups: 'データベースのバックアップ',
       settings: '一般',
       users: 'ユーザー',
       roles: '役割',

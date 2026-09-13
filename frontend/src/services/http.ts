@@ -22,6 +22,52 @@ export const http: AxiosInstance = axios.create({
   },
 })
 
+const DEV_TENANT_STORAGE_KEY = 'ntcsweb.dev_tenant'
+
+/**
+ * Sentinel stored in place of a slug when a signed-in session has explicitly
+ * decided there is no tenant (a platform Super Admin) — distinct from the key
+ * being merely absent, which means "not decided yet, auto-detect below".
+ * Without this, the boot logic below would re-auto-pick a tenant on the very
+ * next page refresh and silently drag a super admin's session back into one
+ * school's scope.
+ */
+const DEV_TENANT_NONE = '__none__'
+
+/**
+ * Dev-only: points every subsequent request at a specific tenant (or
+ * explicitly none), overriding whatever the boot-time auto-detect below
+ * guessed. Called once a real session exists (see stores/auth.ts) — the
+ * login form's own school choice, or lack of one, is authoritative over a
+ * guess made before anyone had signed in. No-ops in production, where the
+ * hostname is always what resolves the tenant.
+ */
+export function setDevTenant(tenant: string | number | null): void {
+  if (!import.meta.env.DEV) return
+
+  if (tenant === null) {
+    sessionStorage.setItem(DEV_TENANT_STORAGE_KEY, DEV_TENANT_NONE)
+    delete http.defaults.headers.common['X-Tenant']
+    return
+  }
+
+  const value = String(tenant)
+  sessionStorage.setItem(DEV_TENANT_STORAGE_KEY, value)
+  http.defaults.headers.common['X-Tenant'] = value
+}
+
+/**
+ * Dev-only: forgets a session's tenant decision entirely (as opposed to
+ * `setDevTenant(null)`, which *records* "deliberately none"). Called on
+ * logout so the next visitor — browsing the public site before signing in,
+ * or landing on a different school's login page via `?tenant=` — gets a
+ * fresh auto-detect rather than inheriting whoever was signed in before.
+ */
+export function resetDevTenant(): void {
+  if (!import.meta.env.DEV) return
+  sessionStorage.removeItem(DEV_TENANT_STORAGE_KEY)
+}
+
 /**
  * Dev-only convenience: on a real deployment, the tenant resolves from the
  * hostname (a school's subdomain or custom domain) — nothing here is needed.
@@ -40,7 +86,8 @@ export const http: AxiosInstance = axios.create({
  * with several (this project's local DB carries a handful of factory-seeded
  * test tenants alongside the real one), tenant id 1 wins if it's among
  * them — that's the real one actually being worked on here — otherwise no
- * guess is made and `?tenant=<slug>` is required.
+ * guess is made and `?tenant=<slug>` is required. A session that already
+ * decided it has no tenant (see DEV_TENANT_NONE above) skips all of this.
  *
  * A top-level `await` here means every other module that (transitively)
  * imports this one waits for it to finish before running — so this is
@@ -48,14 +95,15 @@ export const http: AxiosInstance = axios.create({
  * not racing it.
  */
 if (import.meta.env.DEV) {
-  const STORAGE_KEY = 'ntcsweb.dev_tenant'
   const fromUrl = new URLSearchParams(window.location.search).get('tenant')
 
-  if (fromUrl) sessionStorage.setItem(STORAGE_KEY, fromUrl)
+  if (fromUrl) sessionStorage.setItem(DEV_TENANT_STORAGE_KEY, fromUrl)
 
-  let tenant = fromUrl ?? sessionStorage.getItem(STORAGE_KEY)
+  let tenant: string | null = fromUrl ?? sessionStorage.getItem(DEV_TENANT_STORAGE_KEY)
 
-  if (!tenant) {
+  if (tenant === DEV_TENANT_NONE) {
+    tenant = null
+  } else if (!tenant) {
     try {
       const response = await http.get<ApiSuccess<{ id: number; slug: string }[]>>('/tenants', { params: { per_page: 100 } })
       const tenants = response.data.data
@@ -63,7 +111,7 @@ if (import.meta.env.DEV) {
 
       if (picked) {
         tenant = picked.slug
-        sessionStorage.setItem(STORAGE_KEY, tenant)
+        sessionStorage.setItem(DEV_TENANT_STORAGE_KEY, tenant)
         // eslint-disable-next-line no-console
         console.info(`[dev] Auto-selected tenant "${tenant}". Add ?tenant=<slug> to the URL to pick a different one.`)
       }

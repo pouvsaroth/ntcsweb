@@ -31,8 +31,23 @@ async function withCsrf<T>(fn: () => Promise<T>): Promise<T> {
 }
 
 export const authService = {
-  login(payload: LoginPayload) {
-    return withCsrf(() => apiPost<{ user: User }>('/auth/login', payload))
+  /**
+   * `schoolFieldShown` — pass `true` only when Login.vue actually presented
+   * its school picker to the person signing in (`showSchoolField`). In dev,
+   * the instance-wide X-Tenant default (see http.ts) already resolves the
+   * *common* case correctly — a tenant-scoped admin on a fresh boot, where
+   * the picker never even renders — so this must NOT touch headers then, or
+   * it silently blanks that default and breaks that ordinary login. It's
+   * only needed for the *other* case: the picker was shown and left blank on
+   * purpose, which means a platform Super Admin, and that intent must beat
+   * the ambient default for this one request. RequestTenantResolver already
+   * treats an empty value the same as absent. No-op in production, where
+   * that default header never exists in the first place.
+   */
+  login(payload: LoginPayload, schoolFieldShown = false) {
+    const headers = import.meta.env.DEV && schoolFieldShown ? { 'X-Tenant': payload.tenant ?? '' } : undefined
+
+    return withCsrf(() => apiPost<{ user: User }>('/auth/login', payload, { headers }))
   },
 
   logout() {

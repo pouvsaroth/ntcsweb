@@ -23,6 +23,7 @@ use App\Http\Controllers\Api\V1\Admin\AssetRepairController;
 use App\Http\Controllers\Api\V1\Admin\AssetReportController;
 use App\Http\Controllers\Api\V1\Admin\AttendanceController;
 use App\Http\Controllers\Api\V1\Admin\AuditLogController;
+use App\Http\Controllers\Api\V1\Admin\DatabaseBackupController;
 use App\Http\Controllers\Api\V1\Admin\BillingDashboardController;
 use App\Http\Controllers\Api\V1\Admin\BookCategoryController;
 use App\Http\Controllers\Api\V1\Admin\BookController;
@@ -331,6 +332,12 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         // Read-only — see AuditLogPolicy/AuditLogController's docblocks for
         // why there is deliberately no store/update/destroy route here.
         Route::apiResource('audit-logs', AuditLogController::class)->only(['index', 'show']);
+
+        // Super Admin only (enforced in the controller, not a permission —
+        // see DatabaseBackupController's docblock for why): pg_dump the
+        // central database or any active tenant's, streamed straight back.
+        Route::get('database-backups', [DatabaseBackupController::class, 'index'])->name('database-backups.index');
+        Route::get('database-backups/download', [DatabaseBackupController::class, 'download'])->name('database-backups.download');
 
         /*
         |------------------------------------------------------------------
