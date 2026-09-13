@@ -57,7 +57,13 @@ class BaseDataSeeder extends Seeder
         try {
             app(TenantContext::class)->runFor($tenant, function () use ($languagesByCode) {
                 foreach ($this->categories() as $categoryCode => $categoryData) {
-                    $category = LookupCategory::query()->firstOrCreate(
+                    // withTrashed(): a school deactivating/removing one of
+                    // these (see class docblock) soft-deletes it, but
+                    // (lookup_category_id, code) stays a plain, non-partial
+                    // unique index — without withTrashed() here, the SELECT
+                    // half of firstOrCreate can't see that row and tries to
+                    // INSERT a duplicate, which the constraint then rejects.
+                    $category = LookupCategory::withTrashed()->firstOrCreate(
                         ['code' => $categoryCode],
                         [
                             'name' => $categoryData['name'],
@@ -68,7 +74,7 @@ class BaseDataSeeder extends Seeder
 
                     $sortOrder = 0;
                     foreach ($categoryData['values'] as $valueCode => $translations) {
-                        $value = LookupValue::query()->firstOrCreate(
+                        $value = LookupValue::withTrashed()->firstOrCreate(
                             ['lookup_category_id' => $category->getKey(), 'code' => $valueCode],
                             ['sort_order' => $sortOrder],
                         );
