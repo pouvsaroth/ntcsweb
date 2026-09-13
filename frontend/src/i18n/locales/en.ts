@@ -119,9 +119,8 @@ const en = {
 
   auth: {
     school: 'School',
-    schoolHint: 'Choose your school so we know which account to check. Leave blank if you\'re signing in with a platform admin account.',
-    schoolPlaceholder: 'Select your school',
-    schoolLoadError: "Couldn't load the list of schools.",
+    schoolHint: 'Type your school\'s code so we know which account to check. Leave blank if you\'re signing in with a platform admin account.',
+    schoolPlaceholder: 'e.g. newtech',
     login: {
       title: 'Sign in',
       subtitle: 'Access the admin portal',
@@ -985,6 +984,16 @@ const en = {
       downloadFailed: 'Could not download the backup.',
       emptyMessage: 'No databases available to back up.',
       download: 'Download',
+    },
+    tenants: {
+      title: 'Tenants',
+      pageSubtitle: 'Enter a school to browse and manage its admin data as that school. Exit any time to return here.',
+      loadFailed: 'Could not load the list of schools.',
+      emptyMessage: 'No schools available.',
+      enter: 'Enter',
+      exit: 'Exit',
+      currentlyActing: 'Currently in',
+      actingAsBanner: 'Acting as: {name}',
     },
     settings: {
       title: 'General Settings',

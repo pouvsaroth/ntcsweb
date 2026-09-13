@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import AdminHeader from '@/components/layout/AdminHeader.vue'
 import AdminSidebar from '@/components/layout/AdminSidebar.vue'
@@ -10,6 +11,7 @@ import { useAuthStore } from '@/stores/auth'
 const sidebarOpen = ref(false)
 const adminUi = useAdminUiStore()
 const auth = useAuthStore()
+const { t } = useI18n()
 </script>
 
 <template>
@@ -22,6 +24,19 @@ const auth = useAuthStore()
     <AdminSidebar :open="sidebarOpen" @close="sidebarOpen = false" />
 
     <div class="flex min-h-screen flex-col" :class="adminUi.sidebarCollapsed ? 'lg:pl-16' : 'lg:pl-64'">
+      <!-- A Super Admin browsing one school's admin data (see stores/auth.ts's
+           enterTenant) — this must stay visible on every tenant-scoped page so
+           it's never ambiguous whose data is on screen, with an always-reachable
+           way back out. -->
+      <div
+        v-if="auth.actingTenant"
+        class="flex flex-wrap items-center justify-between gap-2 bg-amber-500 px-4 py-2 text-sm font-medium text-amber-950 sm:px-6"
+      >
+        <span>{{ t('admin.tenants.actingAsBanner', { name: auth.actingTenant.name }) }}</span>
+        <button type="button" class="rounded-lg border border-amber-950/30 px-3 py-1 hover:bg-amber-400" @click="auth.exitTenant()">
+          {{ t('admin.tenants.exit') }}
+        </button>
+      </div>
       <AdminHeader @toggle-sidebar="sidebarOpen = !sidebarOpen" />
       <!-- Extra bottom padding: a page with sticky pagination (BasePagination's
            `sticky` prop, or Students.vue's own bar) is `fixed`, so it no

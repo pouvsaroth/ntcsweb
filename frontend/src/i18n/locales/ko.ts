@@ -116,9 +116,8 @@ const ko: MessageSchema = {
 
   auth: {
     school: '학교',
-    schoolHint: '어느 계정을 확인해야 하는지 알 수 있도록 학교를 선택해 주세요. 플랫폼 관리자 계정으로 로그인하는 경우 비워 두세요.',
-    schoolPlaceholder: '학교를 선택하세요',
-    schoolLoadError: '학교 목록을 불러오지 못했습니다.',
+    schoolHint: '어느 계정을 확인해야 하는지 알 수 있도록 학교 코드를 입력해 주세요. 플랫폼 관리자 계정으로 로그인하는 경우 비워 두세요.',
+    schoolPlaceholder: '예: newtech',
     login: {
       title: '로그인',
       subtitle: '관리자 포털에 접속합니다',
@@ -981,6 +980,16 @@ const ko: MessageSchema = {
       downloadFailed: '백업을 다운로드할 수 없습니다.',
       emptyMessage: '백업할 수 있는 데이터베이스가 없습니다.',
       download: '다운로드',
+    },
+    tenants: {
+      title: '테넌트',
+      pageSubtitle: '학교에 들어가 해당 학교로서 관리 데이터를 보고 관리하세요. 언제든지 종료하여 여기로 돌아올 수 있습니다.',
+      loadFailed: '학교 목록을 불러올 수 없습니다.',
+      emptyMessage: '이용 가능한 학교가 없습니다.',
+      enter: '입장',
+      exit: '종료',
+      currentlyActing: '현재 접속 중',
+      actingAsBanner: '작업 중: {name}',
     },
     settings: {
       title: '일반 설정',

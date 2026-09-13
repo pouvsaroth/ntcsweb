@@ -43,7 +43,6 @@ const comingSoon = () => import('@/pages/admin/ComingSoon.vue')
 
 /** path -> adminNav.items translation key, so ComingSoon.vue's title always matches the sidebar label it was clicked from. */
 const comingSoonPages: [string, string][] = [
-  ['tenants', 'adminNav.items.tenants'],
   ['news', 'adminNav.items.news'],
   ['events', 'adminNav.items.events'],
   ['announcements', 'adminNav.items.announcements'],
@@ -308,6 +307,12 @@ const adminRoutes: RouteRecordRaw[] = [
     name: 'admin.database-backups',
     component: () => import('@/pages/admin/BackupDatabase.vue'),
     meta: { titleKey: 'adminNav.items.databaseBackups' },
+  },
+  {
+    path: 'tenants',
+    name: 'admin.tenants',
+    component: () => import('@/pages/admin/Tenants.vue'),
+    meta: { titleKey: 'adminNav.items.tenants' },
   },
   {
     path: 'languages',

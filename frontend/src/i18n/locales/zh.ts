@@ -116,9 +116,8 @@ const zh: MessageSchema = {
 
   auth: {
     school: '学校',
-    schoolHint: '请选择您的学校，以便我们确认要查询的账户。如果您使用平台管理员账户登录，请留空。',
-    schoolPlaceholder: '请选择您的学校',
-    schoolLoadError: '无法加载学校列表。',
+    schoolHint: '请输入您学校的代码，以便我们确认要查询的账户。如果您使用平台管理员账户登录，请留空。',
+    schoolPlaceholder: '例如：newtech',
     login: {
       title: '登录',
       subtitle: '进入管理后台',
@@ -980,6 +979,16 @@ const zh: MessageSchema = {
       downloadFailed: '无法下载备份。',
       emptyMessage: '没有可备份的数据库。',
       download: '下载',
+    },
+    tenants: {
+      title: '租户',
+      pageSubtitle: '进入某个学校，以该学校身份浏览和管理其管理数据。可随时退出返回此页。',
+      loadFailed: '无法加载学校列表。',
+      emptyMessage: '暂无可用学校。',
+      enter: '进入',
+      exit: '退出',
+      currentlyActing: '当前操作中',
+      actingAsBanner: '正在以该身份操作：{name}',
     },
     settings: {
       title: '常规设置',

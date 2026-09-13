@@ -22,6 +22,50 @@ export const http: AxiosInstance = axios.create({
   },
 })
 
+export interface ActingTenant {
+  id: number
+  slug: string
+  name: string
+}
+
+const ACTING_TENANT_STORAGE_KEY = 'ntcsweb.acting_tenant'
+
+/**
+ * Production-safe, unlike setDevTenant below: lets a signed-in platform
+ * Super Admin browse a specific school's admin data. EnsureTenantMatchesUser
+ * already exempts super admins server-side ("acting inside an arbitrary
+ * school is their job") — this is the client half, pointing every
+ * subsequent request at the chosen school via X-Tenant (the same header
+ * RequestTenantResolver reads on the central domain) and persisting the
+ * choice across page loads within this browser tab.
+ */
+export function setActingTenant(tenant: ActingTenant | null): void {
+  if (tenant === null) {
+    sessionStorage.removeItem(ACTING_TENANT_STORAGE_KEY)
+    delete http.defaults.headers.common['X-Tenant']
+    return
+  }
+
+  sessionStorage.setItem(ACTING_TENANT_STORAGE_KEY, JSON.stringify(tenant))
+  http.defaults.headers.common['X-Tenant'] = tenant.slug
+}
+
+export function getActingTenant(): ActingTenant | null {
+  const raw = sessionStorage.getItem(ACTING_TENANT_STORAGE_KEY)
+  if (!raw) return null
+
+  try {
+    return JSON.parse(raw) as ActingTenant
+  } catch {
+    return null
+  }
+}
+
+// Restored before anything else below (dev's own auto-detect included) so a
+// deliberate choice always wins over a guess, in both dev and production.
+const restoredActingTenant = getActingTenant()
+if (restoredActingTenant) http.defaults.headers.common['X-Tenant'] = restoredActingTenant.slug
+
 const DEV_TENANT_STORAGE_KEY = 'ntcsweb.dev_tenant'
 
 /**
@@ -87,14 +131,16 @@ export function resetDevTenant(): void {
  * test tenants alongside the real one), tenant id 1 wins if it's among
  * them — that's the real one actually being worked on here — otherwise no
  * guess is made and `?tenant=<slug>` is required. A session that already
- * decided it has no tenant (see DEV_TENANT_NONE above) skips all of this.
+ * decided it has no tenant (see DEV_TENANT_NONE above) skips all of this —
+ * and so does one already restored above via setActingTenant, a deliberate
+ * choice a guess here must never overwrite.
  *
  * A top-level `await` here means every other module that (transitively)
  * imports this one waits for it to finish before running — so this is
  * guaranteed to have already set the header before the app's first API call,
  * not racing it.
  */
-if (import.meta.env.DEV) {
+if (import.meta.env.DEV && !restoredActingTenant) {
   const fromUrl = new URLSearchParams(window.location.search).get('tenant')
 
   if (fromUrl) sessionStorage.setItem(DEV_TENANT_STORAGE_KEY, fromUrl)

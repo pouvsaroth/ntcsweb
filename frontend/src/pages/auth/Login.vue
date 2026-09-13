@@ -1,13 +1,11 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
-import BaseSelect from '@/components/ui/BaseSelect.vue'
-import { useTenantOptions } from '@/composables/useTenantOptions'
 import { useAuthStore } from '@/stores/auth'
 import { useSiteStore } from '@/stores/site'
 import { ApiRequestError } from '@/types/api'
@@ -25,19 +23,12 @@ const { t } = useI18n()
 // without asking.
 const showSchoolField = computed(() => site.loaded && !site.resolved)
 
-const { options: tenantOptions, loading: tenantsLoading, error: tenantsError, retry: retryTenants } = useTenantOptions()
-const schoolOptions = computed(() => tenantOptions.value.map((t) => ({ value: t.slug, label: t.name })))
-
-// Pre-selected from ?tenant=slug so a school-specific login link still works
+// Pre-filled from ?tenant=slug so a school-specific login link still works
 // (e.g. shared by an admin) without a real subdomain to infer it from.
+// Typed as free text rather than picked from a fetched list — a slug is
+// short and stable, and typing it is one fewer network round trip and one
+// less thing that can fail before the person even gets to their password.
 const school = ref(typeof route.query.tenant === 'string' ? route.query.tenant : '')
-
-// Once the list loads, if nothing was pre-selected and there's exactly one
-// school, picking it automatically saves a click — today there's only ever
-// one tenant in local development.
-watch(tenantOptions, (opts) => {
-  if (!school.value && opts.length === 1) school.value = opts[0]!.slug
-})
 
 const form = reactive({ login: '', password: '', remember: false })
 const errors = ref<Record<string, string[]>>({})
@@ -109,28 +100,21 @@ async function submit() {
     <BaseAlert v-if="generalError" variant="danger" class="mb-4">{{ generalError }}</BaseAlert>
 
     <form class="space-y-4" @submit.prevent="submit">
-      <template v-if="showSchoolField">
-        <BaseAlert v-if="tenantsError" variant="warning">
-          {{ t('auth.schoolLoadError') }}
-          <button type="button" class="ml-1 font-medium underline" @click="retryTenants">{{ t('common.retry') }}</button>
-        </BaseAlert>
-        <BaseSelect
-          v-else
-          v-model="school"
-          :options="schoolOptions"
-          :label="t('auth.school')"
-          :placeholder="tenantsLoading ? t('common.loading') : t('auth.schoolPlaceholder')"
-          :hint="t('auth.schoolHint')"
-          :disabled="tenantsLoading"
-        />
-        <!--
-          Deliberately not `required`: a platform Super Admin account belongs
-          to no school and must be able to sign in with this left blank — see
-          schoolHint below and AuthService::authenticate()'s inTenant(null).
-          A regular school account that leaves it blank just gets the normal
-          "credentials do not match" error, same as picking the wrong school.
-        -->
-      </template>
+      <!--
+        Deliberately not `required`: a platform Super Admin account belongs
+        to no school and must be able to sign in with this left blank — see
+        schoolHint below and AuthService::authenticate()'s inTenant(null).
+        A regular school account that leaves it blank just gets the normal
+        "credentials do not match" error, same as typing the wrong slug.
+      -->
+      <BaseInput
+        v-if="showSchoolField"
+        v-model="school"
+        type="text"
+        :label="t('auth.school')"
+        :placeholder="t('auth.schoolPlaceholder')"
+        :hint="t('auth.schoolHint')"
+      />
 
       <BaseInput
         v-model="form.login"

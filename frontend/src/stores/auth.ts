@@ -2,7 +2,7 @@ import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 
 import { authService, type LoginPayload } from '@/services/auth'
-import { resetDevTenant, setDevTenant } from '@/services/http'
+import { type ActingTenant, getActingTenant, resetDevTenant, setActingTenant, setDevTenant } from '@/services/http'
 import type { User } from '@/types/models'
 import { ApiRequestError } from '@/types/api'
 
@@ -11,6 +11,8 @@ export const useAuthStore = defineStore('auth', () => {
   const permissions = ref<string[] | ['*']>([])
   const isSuperAdmin = ref(false)
   const tenantName = ref<string | null>(null)
+  /** A Super Admin deliberately browsing one school's admin data — see setActingTenant. Restored from sessionStorage so a page refresh doesn't drop it. */
+  const actingTenant = ref<ActingTenant | null>(getActingTenant())
 
   /** True once the initial /auth/me check has resolved, either way. Lets the
    *  router/App shell distinguish "still checking" from "confirmed logged out". */
@@ -33,13 +35,17 @@ export const useAuthStore = defineStore('auth', () => {
     isSuperAdmin.value = result.is_super_admin
     tenantName.value = result.tenant?.name ?? null
 
-    // Dev only (see setDevTenant) — a real session is authoritative over
+    // Dev only (see setDevTenant), and skipped entirely while actingTenant is
+    // set — that's a deliberate choice (see enterTenant) this correction must
+    // never overwrite. Otherwise a real session is authoritative over
     // whatever the pre-login boot logic in http.ts guessed: a super admin
     // gets no tenant pinned to every subsequent request (else a stale guess
     // from before login would 403 their own session via
     // EnsureTenantMatchesUser), and a tenant-bound user gets *their own*
     // tenant, correcting a guess that may have landed on the wrong school.
-    setDevTenant(result.is_super_admin ? null : (result.user.tenant?.slug ?? null))
+    if (!actingTenant.value) {
+      setDevTenant(result.is_super_admin ? null : (result.user.tenant?.slug ?? null))
+    }
   }
 
   function clearSession() {
@@ -93,7 +99,26 @@ export const useAuthStore = defineStore('auth', () => {
     } finally {
       clearSession()
       resetDevTenant()
+      setActingTenant(null)
+      actingTenant.value = null
     }
+  }
+
+  /**
+   * Steps a Super Admin into one school's admin data (Classes, Students,
+   * everything else that's normally tenant-scoped) — a hard navigation, not
+   * a route push, so every already-mounted page refetches under the new
+   * X-Tenant rather than keeping data loaded for whatever was active before.
+   */
+  function enterTenant(tenant: ActingTenant): void {
+    setActingTenant(tenant)
+    window.location.assign('/admin')
+  }
+
+  /** Back to platform-only view (Tenants, Backup Database) — see enterTenant. */
+  function exitTenant(): void {
+    setActingTenant(null)
+    window.location.assign('/admin/tenants')
   }
 
   /** Roles/permissions/tenant don't change from a profile edit — only the user object itself needs replacing. */
@@ -106,6 +131,7 @@ export const useAuthStore = defineStore('auth', () => {
     permissions,
     isSuperAdmin,
     tenantName,
+    actingTenant,
     initialized,
     isAuthenticated,
     can,
@@ -114,5 +140,7 @@ export const useAuthStore = defineStore('auth', () => {
     login,
     logout,
     updateProfile,
+    enterTenant,
+    exitTenant,
   }
 })

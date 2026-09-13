@@ -116,9 +116,8 @@ const ja: MessageSchema = {
 
   auth: {
     school: '学校',
-    schoolHint: 'どちらのアカウントを確認すればよいか分かるよう、学校を選択してください。プラットフォーム管理者アカウントでサインインする場合は空欄のままにしてください。',
-    schoolPlaceholder: '学校を選択してください',
-    schoolLoadError: '学校一覧を読み込めませんでした。',
+    schoolHint: 'どちらのアカウントを確認すればよいか分かるよう、学校のコードを入力してください。プラットフォーム管理者アカウントでサインインする場合は空欄のままにしてください。',
+    schoolPlaceholder: '例: newtech',
     login: {
       title: 'ログイン',
       subtitle: '管理ポータルにアクセス',
@@ -981,6 +980,16 @@ const ja: MessageSchema = {
       downloadFailed: 'バックアップをダウンロードできませんでした。',
       emptyMessage: 'バックアップ可能なデータベースがありません。',
       download: 'ダウンロード',
+    },
+    tenants: {
+      title: 'テナント',
+      pageSubtitle: '学校に入ってその学校として管理データを閲覧・管理します。いつでも終了してここに戻れます。',
+      loadFailed: '学校の一覧を読み込めませんでした。',
+      emptyMessage: '利用可能な学校がありません。',
+      enter: '入る',
+      exit: '終了',
+      currentlyActing: '現在操作中',
+      actingAsBanner: '操作中: {name}',
     },
     settings: {
       title: '一般設定',
