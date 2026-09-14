@@ -54,6 +54,7 @@ class UpdateStaffRequest extends FormRequest
             'other_contact' => ['nullable', 'string', 'max:255'],
 
             'photo' => ['sometimes', 'image', 'mimes:jpeg,png,webp,gif', 'max:10240'],
+            'signature' => ['sometimes', 'image', 'mimes:jpeg,png,webp,gif', 'max:10240'],
 
             'hire_date' => ['nullable', 'date'],
             'status' => ['sometimes', Rule::in(Staff::STATUSES_MANAGEABLE)],

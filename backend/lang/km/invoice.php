@@ -5,6 +5,12 @@ declare(strict_types=1);
 return [
     'invoice' => 'វិក្កយបត្រ',
     'bill_to' => 'ត្រូវទូទាត់ដោយ',
+    'student_id' => 'អត្តលេខសិស្ស',
+    'name' => 'ឈ្មោះ',
+    'english_name' => 'ឈ្មោះឡាតាំង',
+    'tel' => 'ទូរស័ព្ទ',
+    'class' => 'ថ្នាក់',
+    'time' => 'ម៉ោង',
     'invoice_date' => 'កាលបរិច្ឆេទវិក្កយបត្រ',
     'due_date' => 'កាលបរិច្ឆេទត្រូវទូទាត់',
     'description' => 'បរិយាយ',

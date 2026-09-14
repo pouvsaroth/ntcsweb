@@ -116,6 +116,17 @@ const ja: MessageSchema = {
     },
   },
 
+  notifications: {
+    bell: '通知',
+    markAllRead: 'すべて既読にする',
+    empty: 'まだ通知はありません。',
+    viewAll: 'すべて表示',
+    types: {
+      leave_request_submitted: '{student_name}さんが許可申請を提出しました',
+      leave_request_approved: '{student_name}さんの許可申請が承認されました',
+    },
+  },
+
   auth: {
     school: '学校',
     schoolHint: 'どちらのアカウントを確認すればよいか分かるよう、学校のコードを入力してください。プラットフォーム管理者アカウントでサインインする場合は空欄のままにしてください。',
@@ -936,6 +947,9 @@ const ja: MessageSchema = {
       logoSection: 'ロゴ',
       logoHint: '公開サイトのヘッダーとフッターに表示されます。',
       chooseLogo: 'ロゴを選択',
+      stampSection: '印鑑',
+      stampHint: '学校の公式印鑑 — 発行者の署名の横に、請求書と領収書に印刷されます。',
+      chooseStamp: '印鑑を選択',
       infoSection: '連絡先情報',
       nameLabel: '学校名',
       emailLabel: 'メールアドレス',
@@ -1115,6 +1129,8 @@ const ja: MessageSchema = {
       nationalId: '国民ID番号',
       nationalIdPhoto: '国民ID写真',
       photo: '写真',
+      signature: '署名',
+      signatureHint: 'この職員が発行する請求書や領収書に印刷されます。',
 
       contactSection: '連絡先情報',
       facebook: 'Facebook',

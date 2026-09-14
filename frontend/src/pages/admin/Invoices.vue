@@ -14,11 +14,14 @@ import { invoiceStatuses, invoicesService, type Invoice, type InvoiceStatusValue
 
 const { t } = useI18n()
 
-const { items, meta, loading, error, setPage, setSort, sort, setSearch, setFilter, fetch } = usePaginatedResource<Invoice>((query) =>
+const { items, meta, loading, error, setPage, setSort, sort, setSearch, setFilter } = usePaginatedResource<Invoice>((query) =>
   invoicesService.list(query),
 )
 
-const selectedStatus = ref('')
+// Defaults to Issued (shown to staff as "unpaid" — see the km translation)
+// rather than every invoice, so the list opens on what actually needs
+// action instead of burying it under settled/cancelled ones.
+const selectedStatus = ref('ISSUED')
 
 function statusKey(status: InvoiceStatusValue): string {
   return status
@@ -60,7 +63,7 @@ function formatDate(value: string | null): string {
   return value ? new Date(value).toLocaleDateString() : '—'
 }
 
-onMounted(() => fetch())
+onMounted(() => setFilter('status', selectedStatus.value || undefined))
 </script>
 
 <template>

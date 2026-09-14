@@ -8,11 +8,17 @@ use App\Models\AttendanceRecord;
 use App\Models\ClassSchedule;
 use App\Models\Enrollment;
 use App\Models\LeaveRequest;
+use App\Models\Permission;
+use App\Models\Position;
+use App\Models\Role;
 use App\Models\SchoolClass;
+use App\Models\Staff;
 use App\Models\Student;
 use App\Models\User;
+use App\Models\UserNotification;
 use App\Support\Academic\AttendanceStatus;
 use App\Support\Authorization\Permissions;
+use App\Support\Notifications\NotificationType;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -161,5 +167,64 @@ class LeaveRequestTest extends TestCase
         $this->actingAsAdminWithPermissions([]);
 
         $this->getJson('/api/v1/leave-requests')->assertForbidden();
+    }
+
+    public function test_submitting_a_leave_request_notifies_every_holder_of_the_approve_permission(): void
+    {
+        $this->actingAsAdminWithPermissions([]);
+        [, $studentUser] = $this->studentWithUser();
+
+        $approverRole = Role::factory()->forTenant($this->tenant)->create(['slug' => 'test-approver', 'level' => 50]);
+        $approverRole->permissions()->attach(Permission::query()->where('slug', Permissions::LEAVE_REQUESTS_APPROVE)->firstOrFail());
+        $approver = User::factory()->forTenant($this->tenant)->create();
+        $approver->attachRoles($approverRole);
+
+        // No approve permission — must not be notified.
+        $bystander = User::factory()->forTenant($this->tenant)->create();
+
+        $this->actingAsTenantUser($studentUser);
+        $this->postJson('/api/v1/my-leave-requests', [
+            'from_date' => now()->addDay()->toDateString(),
+            'to_date' => now()->addDay()->toDateString(),
+            'reason' => 'Family event',
+        ], ['Accept' => 'application/json'])->assertCreated();
+
+        $this->assertSame(
+            1,
+            UserNotification::where('recipient_id', $approver->id)->where('type', NotificationType::LEAVE_REQUEST_SUBMITTED)->count(),
+        );
+        $this->assertSame(0, UserNotification::where('recipient_id', $bystander->id)->count());
+    }
+
+    public function test_approving_a_leave_request_notifies_the_student_their_teacher_and_staff(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::LEAVE_REQUESTS_APPROVE]);
+        [$student, $studentUser] = $this->studentWithUser();
+
+        $teacherPosition = Position::factory()->create(['name' => 'Teacher']);
+        $teacherUser = User::factory()->forTenant($this->tenant)->create();
+        $teacher = Staff::factory()->withUser($teacherUser)->create(['position_id' => $teacherPosition->id]);
+        $class = SchoolClass::factory()->withTeacher($teacher)->create();
+        Enrollment::factory()->forClass($class)->forStudent($student)->create();
+
+        $staffRole = Role::factory()->forTenant($this->tenant)->create(['slug' => Role::STAFF, 'name' => 'Staff', 'level' => Role::LEVELS[Role::STAFF]]);
+        $staffUser = User::factory()->forTenant($this->tenant)->create();
+        $staffUser->attachRoles($staffRole);
+
+        // Neither teaching this student nor Staff-role — must not be notified.
+        $bystander = User::factory()->forTenant($this->tenant)->create();
+
+        $leaveRequest = LeaveRequest::factory()->forStudent($student)->create();
+
+        $this->postJson("/api/v1/leave-requests/{$leaveRequest->id}/approve")->assertOk();
+
+        foreach ([$studentUser, $teacherUser, $staffUser] as $recipient) {
+            $this->assertSame(
+                1,
+                UserNotification::where('recipient_id', $recipient->id)->where('type', NotificationType::LEAVE_REQUEST_APPROVED)->count(),
+                "Expected exactly one notification for user #{$recipient->id}",
+            );
+        }
+        $this->assertSame(0, UserNotification::where('recipient_id', $bystander->id)->count());
     }
 }

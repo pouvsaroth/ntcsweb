@@ -36,32 +36,17 @@ class SchoolClassPolicy
     }
 
     /**
-     * Gates the "take attendance" screen for this specific class: a holder
-     * of `attendance.create`/`attendance.update` may act on any class, UNLESS
-     * they're teacher-tier (no `classes.update`) — in which case it must be a
-     * class they're actually assigned to teach. `classes.update` (school-admin
-     * only, via $academicManagement) is the signal, not "has a linked Staff
-     * record": a school admin who is *also* listed as staff (a common
-     * real-world setup — e.g. the director) must still be able to record
-     * attendance for every class, not just the ones they personally teach.
-     *
-     * A class with no teacher or assistant assigned yet is open to any
-     * teacher-tier account too — otherwise it would be permanently locked out
-     * of attendance for everyone but an admin until someone assigns it a
-     * teacher via Classes > Edit.
+     * Gates the "take attendance" screen: any holder of `attendance.create`/
+     * `attendance.update` may record attendance for any class, not just ones
+     * they're personally assigned to teach — a school may want any teacher
+     * or assistant able to cover any class (a substitute, a shared room,
+     * etc.), and the Teacher/assistant role itself is already the gate that
+     * decides who gets those two permissions in the first place. `$class` is
+     * unused but kept so this still resolves as a model policy for
+     * `Gate::authorize('recordAttendance', $class)`.
      */
     public function recordAttendance(User $user, SchoolClass $class): bool
     {
-        if (! $user->hasPermission(Permissions::ATTENDANCE_CREATE) && ! $user->hasPermission(Permissions::ATTENDANCE_UPDATE)) {
-            return false;
-        }
-
-        if ($user->hasPermission(Permissions::CLASSES_UPDATE) || $class->teachingStaff()->doesntExist()) {
-            return true;
-        }
-
-        $staff = $user->staff;
-
-        return $staff === null || $staff->classes()->whereKey($class->getKey())->exists();
+        return $user->hasPermission(Permissions::ATTENDANCE_CREATE) || $user->hasPermission(Permissions::ATTENDANCE_UPDATE);
     }
 }

@@ -22,32 +22,51 @@
         font-weight: bold;
         src: url('{{ $khmerFontBold }}');
     }
-    body { font-family: 'Noto Sans Khmer', DejaVu Sans, sans-serif; font-size: 12px; color: #1f2937; }
-    .header { display: table; width: 100%; margin-bottom: 24px; }
+    {{-- The page's own 1cm margin comes from Browsershot's `margin` PDF
+         option (BrowsershotRenderer/InvoicePdfService), not CSS — this reset
+         just stops the browser's own default body margin from stacking on
+         top of it. --}}
+    body { margin: 0; font-family: 'Noto Sans Khmer', DejaVu Sans, sans-serif; font-size: 11px; color: #1f2937; }
+    .header { display: table; width: 100%; margin-bottom: 16px; }
     .header .school { display: table-cell; width: 60%; vertical-align: top; }
-    .header .school img { max-height: 56px; margin-bottom: 6px; }
-    .header .school h1 { font-size: 16px; margin: 0 0 4px; }
+    .header .school img { max-height: 44px; margin-bottom: 6px; }
+    .header .school h1 { font-size: 14px; margin: 0 0 4px; }
     .header .school p { margin: 0; color: #6b7280; }
     .header .invoice { display: table-cell; width: 40%; text-align: right; vertical-align: top; }
-    .header .invoice h2 { font-size: 22px; margin: 0 0 6px; color: #b45309; }
-    .header .invoice p { margin: 0; }
-    .meta { display: table; width: 100%; margin-bottom: 20px; }
-    .meta .student { display: table-cell; width: 60%; }
-    .meta .dates { display: table-cell; width: 40%; text-align: right; }
-    .meta h3 { font-size: 11px; text-transform: uppercase; color: #6b7280; margin: 0 0 4px; }
-    table.items { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
-    table.items th { text-align: left; border-bottom: 2px solid #1f2937; padding: 6px 4px; font-size: 11px; text-transform: uppercase; }
-    table.items td { padding: 6px 4px; border-bottom: 1px solid #e5e7eb; }
+    .header .invoice h2 { font-size: 18px; margin: 0 0 6px; color: #dc2626; }
+    .header .invoice p { margin: 0 0 2px; }
+    .status { display: inline-block; padding: 2px 8px; border-radius: 4px; background: #fef3c7; color: #92400e; font-size: 10px; }
+    .status-paid { background: transparent; color: #dc2626; font-weight: bold; padding: 0; }
+    .meta { display: table; width: 100%; margin-bottom: 16px; }
+    .meta .student { display: table-cell; width: 60%; vertical-align: top; }
+    .meta .dates { display: table-cell; width: 40%; text-align: right; vertical-align: top; }
+    .meta h3 { font-size: 10px; text-transform: uppercase; color: #6b7280; margin: 0 0 4px; }
+    .meta p { margin: 0 0 3px; }
+    table.items { width: 100%; border-collapse: collapse; margin-bottom: 14px; }
+    table.items, table.items th, table.items td { border: 1px solid #1f2937; }
+    table.items th { text-align: left; padding: 5px 4px; font-size: 10px; text-transform: uppercase; background: #f3f4f6; }
+    table.items td { padding: 5px 4px; }
     table.items th.num, table.items td.num { text-align: right; }
-    .totals { width: 40%; margin-left: 60%; }
+    .totals { width: 45%; margin-left: 55%; margin-bottom: 14px; }
     .totals table { width: 100%; border-collapse: collapse; }
-    .totals td { padding: 4px 0; }
+    .totals td { padding: 3px 0; }
     .totals td.label { color: #6b7280; }
     .totals td.value { text-align: right; }
-    .totals tr.total td { border-top: 2px solid #1f2937; font-weight: bold; font-size: 14px; padding-top: 8px; }
-    .totals tr.balance td { font-weight: bold; color: #b45309; }
-    .notes { margin-top: 24px; color: #6b7280; }
-    .status { display: inline-block; padding: 2px 8px; border-radius: 4px; background: #fef3c7; color: #92400e; font-size: 11px; }
+    .totals tr.total td { border-top: 2px solid #1f2937; font-weight: bold; font-size: 13px; padding-top: 6px; }
+    .totals tr.balance td { font-weight: bold; color: #dc2626; }
+    table.payments { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    table.payments th { text-align: left; border-bottom: 2px solid #1f2937; padding: 5px 4px; font-size: 10px; text-transform: uppercase; }
+    table.payments td { padding: 5px 4px; border-bottom: 1px solid #e5e7eb; }
+    table.payments th.num, table.payments td.num { text-align: right; }
+    .notes { margin: 14px 0; color: #6b7280; }
+    .signoff { display: table; width: 100%; margin-top: 24px; }
+    .signoff .stamp { display: table-cell; width: 50%; vertical-align: bottom; }
+    .signoff .stamp img { max-height: 80px; }
+    .signoff .signature { display: table-cell; width: 50%; text-align: center; vertical-align: bottom; }
+    .signoff .signature img { max-height: 48px; margin-bottom: 2px; }
+    .signoff .signature .line { border-top: 1px solid #9ca3af; width: 70%; margin: 4px auto 4px; }
+    .signoff .signature .title { font-weight: bold; margin: 0; }
+    .signoff .signature .name { margin: 2px 0 0; color: #374151; }
 </style>
 </head>
 <body>
@@ -58,6 +77,17 @@
         $money = fn (float $amount) => $invoice->currency === 'KHR'
             ? number_format(round($amount)).' ៛'
             : '$'.number_format($amount, 2);
+
+        // Only present when this invoice came from an enrollment (see
+        // EnrollmentService) — a manually-created invoice has no class to
+        // show, and that's fine: the block below just doesn't render.
+        $enrollmentItem = $invoice->items->first(
+            fn ($item) => $item->reference_type === \App\Models\Enrollment::class && $item->reference !== null
+        );
+        $enrolledClass = $enrollmentItem?->reference?->schoolClass;
+        $classTime = $enrolledClass?->schedules
+            ?->map(fn ($s) => "{$s->dayName()} {$s->start_time}–{$s->end_time}")
+            ->implode(', ');
     @endphp
     <div class="header">
         <div class="school">
@@ -72,19 +102,35 @@
         <div class="invoice">
             <h2>{{ __('invoice.invoice') }}</h2>
             <p><strong>{{ $invoice->invoice_number }}</strong></p>
-            <p><span class="status">{{ __('invoice.statuses.'.strtolower($invoice->status)) }}</span></p>
+            <p>
+                <span class="status @if($invoice->status === \App\Support\Billing\InvoiceStatus::PAID) status-paid @endif">
+                    {{ __('invoice.statuses.'.strtolower($invoice->status)) }}
+                </span>
+            </p>
         </div>
     </div>
 
     <div class="meta">
         <div class="student">
             <h3>{{ __('invoice.bill_to') }}</h3>
-            <p><strong>{{ $invoice->student->student_code }} — {{ $invoice->student->fullName() }}</strong></p>
-            @if($invoice->student->phone)<p>{{ $invoice->student->phone }}</p>@endif
+            <p>{{ __('invoice.student_id') }}: <strong>{{ $invoice->student->student_code }}</strong></p>
+            <p>{{ __('invoice.name') }}: <strong>{{ $invoice->student->fullName() }}</strong></p>
+            @if($invoice->student->english_name)
+                <p>{{ __('invoice.english_name') }}: {{ $invoice->student->english_name }}</p>
+            @endif
+            @if($invoice->student->phone)
+                <p>{{ __('invoice.tel') }}: {{ $invoice->student->phone }}</p>
+            @endif
         </div>
         <div class="dates">
             <h3>{{ __('invoice.invoice_date') }}</h3>
             <p>{{ $invoice->invoice_date->format('d M Y') }}</p>
+            @if($enrolledClass)
+                <h3 style="margin-top:8px;">{{ __('invoice.class') }}</h3>
+                <p>{{ $enrolledClass->name }}</p>
+                <h3 style="margin-top:8px;">{{ __('invoice.time') }}</h3>
+                <p>{{ $classTime ?: '—' }}</p>
+            @endif
             @if($invoice->due_date)
                 <h3 style="margin-top:8px;">{{ __('invoice.due_date') }}</h3>
                 <p>{{ $invoice->due_date->format('d M Y') }}</p>
@@ -127,7 +173,7 @@
     </div>
 
     @if($invoice->payments->isNotEmpty())
-        <table class="items">
+        <table class="payments">
             <thead>
                 <tr><th>{{ __('invoice.payment_history') }}</th><th class="num">{{ __('invoice.method') }}</th><th class="num">{{ __('invoice.date') }}</th><th class="num">{{ __('invoice.amount') }}</th></tr>
             </thead>
@@ -150,5 +196,28 @@
             <p>{{ $invoice->notes }}</p>
         </div>
     @endif
+
+    {{-- The staff member who actually issued this invoice (Invoice::createdBy)
+         signs it — never a fixed "always the director" signer. Falls back to
+         the plain account name when that user has no linked Staff profile
+         (and so no position/signature of their own) rather than showing
+         nothing at all. --}}
+    <div class="signoff">
+        <div class="stamp">
+            @if($stampDataUri)
+                <img src="{{ $stampDataUri }}" alt="">
+            @endif
+        </div>
+        <div class="signature">
+            @if($signatureDataUri)
+                <img src="{{ $signatureDataUri }}" alt="">
+            @endif
+            <div class="line"></div>
+            @if($issuerStaff?->position?->name)
+                <p class="title">{{ $issuerStaff->position->name }}</p>
+            @endif
+            <p class="name">{{ $issuerStaff?->fullName() ?? $invoice->createdBy?->name }}</p>
+        </div>
+    </div>
 </body>
 </html>

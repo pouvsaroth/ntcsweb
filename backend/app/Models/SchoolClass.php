@@ -81,7 +81,7 @@ class SchoolClass extends Model
             ->withTimestamps();
     }
 
-    /** Every assigned staff member regardless of role — see SchoolClassPolicy::recordAttendance(). */
+    /** Every assigned staff member regardless of role (teacher or assistant). */
     public function teachingStaff(): BelongsToMany
     {
         return $this->belongsToMany(Staff::class, 'class_teachers', 'class_id', 'staff_id')

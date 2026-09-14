@@ -5,6 +5,7 @@ import { useRoute } from 'vue-router'
 
 import BaseButton from '@/components/ui/BaseButton.vue'
 import LanguageSwitcher from '@/components/ui/LanguageSwitcher.vue'
+import NotificationBell from '@/components/layout/NotificationBell.vue'
 import { adminNav } from '@/router/adminNav'
 
 defineEmits<{ 'toggle-sidebar': [] }>()
@@ -65,6 +66,8 @@ const sectionLink = computed(() => {
         </svg>
         {{ t('common.goToWebsite') }}
       </BaseButton>
+
+      <NotificationBell />
 
       <!-- The account menu (picture, name, email/phone, Edit Profile, Change
            Password, Sign out) lives on the sidebar's profile card now — see

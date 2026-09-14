@@ -5,12 +5,18 @@ declare(strict_types=1);
 namespace App\Services\Academic;
 
 use App\Models\LeaveRequest;
+use App\Models\Role;
+use App\Models\Staff;
 use App\Models\Student;
 use App\Models\User;
+use App\Services\Notifications\NotificationService;
 use App\Support\Academic\AttendanceStatus;
+use App\Support\Authorization\Permissions;
+use App\Support\Notifications\NotificationType;
 use App\Support\Tenancy\TenantContext;
 use Carbon\CarbonPeriod;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -28,6 +34,7 @@ final class LeaveRequestService
     public function __construct(
         private readonly TenantContext $context,
         private readonly AttendanceService $attendance,
+        private readonly NotificationService $notifications,
     ) {}
 
     /**
@@ -35,7 +42,7 @@ final class LeaveRequestService
      */
     public function submit(Student $student, array $data): LeaveRequest
     {
-        return DB::transaction(function () use ($student, $data) {
+        $request = DB::transaction(function () use ($student, $data) {
             $request = LeaveRequest::query()->create([
                 'student_id' => $student->id,
                 'from_date' => $data['from_date'],
@@ -64,11 +71,22 @@ final class LeaveRequestService
 
             return $request->load('attachments');
         });
+
+        // Outside the transaction — a notification that fails to write is
+        // never worth rolling back an already-submitted request over.
+        $this->notifications->notifyMany(
+            $this->usersWithPermission(Permissions::LEAVE_REQUESTS_APPROVE),
+            NotificationType::LEAVE_REQUEST_SUBMITTED,
+            ['student_id' => $student->id, 'student_name' => $student->fullName(), 'leave_request_id' => $request->id],
+            link: '/admin/approvals/queue',
+        );
+
+        return $request;
     }
 
     public function approve(LeaveRequest $request, User $admin): LeaveRequest
     {
-        return DB::transaction(function () use ($request, $admin) {
+        $request = DB::transaction(function () use ($request, $admin) {
             /** @var LeaveRequest $request */
             $request = LeaveRequest::query()->whereKey($request->getKey())->lockForUpdate()->firstOrFail();
 
@@ -86,6 +104,61 @@ final class LeaveRequestService
 
             return $request->fresh();
         });
+
+        $this->notifyOnApproval($request);
+
+        return $request;
+    }
+
+    /**
+     * The student themselves, whoever teaches them (see Student::teacherIds()
+     * — teacher and assistant teacher alike), and every Staff-role account
+     * (this school's front-desk/registration staff — see Role::STAFF's own
+     * docblock; there's no separate "Receptionist" concept to target more
+     * narrowly than that).
+     */
+    private function notifyOnApproval(LeaveRequest $request): void
+    {
+        $student = $request->student;
+        $data = ['student_id' => $student->id, 'student_name' => $student->fullName(), 'leave_request_id' => $request->id];
+        $link = '/admin/approvals/my-requests';
+
+        $recipients = collect();
+
+        if ($student->user !== null) {
+            $recipients->push($student->user);
+        }
+
+        $teacherUserIds = Staff::query()->whereIn('id', $student->teacherIds())->pluck('user_id')->filter();
+        $recipients = $recipients->merge(User::query()->whereIn('id', $teacherUserIds)->get());
+
+        $recipients = $recipients->merge($this->usersWithRole(Role::STAFF));
+
+        $this->notifications->notifyMany($recipients, NotificationType::LEAVE_REQUEST_APPROVED, $data, $link);
+    }
+
+    /**
+     * @return Collection<int, User>
+     */
+    private function usersWithPermission(string $permission): Collection
+    {
+        return User::query()
+            ->inTenant($this->context->getOrFail())
+            ->active()
+            ->whereHas('roles.permissions', fn ($query) => $query->where('slug', $permission))
+            ->get();
+    }
+
+    /**
+     * @return Collection<int, User>
+     */
+    private function usersWithRole(string $roleSlug): Collection
+    {
+        return User::query()
+            ->inTenant($this->context->getOrFail())
+            ->active()
+            ->whereHas('roles', fn ($query) => $query->where('slug', $roleSlug))
+            ->get();
     }
 
     public function reject(LeaveRequest $request, string $reason, User $admin): LeaveRequest

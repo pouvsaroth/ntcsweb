@@ -133,9 +133,26 @@ class Staff extends Model
         return $this->national_id_photo_path !== null ? Storage::disk('public')->url($this->national_id_photo_path) : null;
     }
 
+    public function signatureUrl(): ?string
+    {
+        return $this->signature_path !== null ? Storage::disk('public')->url($this->signature_path) : null;
+    }
+
+    /** Absolute filesystem path to the signature, for the PDF renderer (Browsershot) — see Tenant::logoPath()'s own docblock. */
+    public function signaturePath(): ?string
+    {
+        if ($this->signature_path === null) {
+            return null;
+        }
+
+        $path = Storage::disk('public')->path($this->signature_path);
+
+        return is_file($path) ? $path : null;
+    }
+
     protected static function booted(): void
     {
-        // Mirrors Student: a soft-deleted staff member still holds both
+        // Mirrors Student: a soft-deleted staff member still holds all three
         // files (recoverable); only a real, permanent removal takes them too.
         static::forceDeleted(function (self $staff) {
             if ($staff->photo_path !== null) {
@@ -144,6 +161,10 @@ class Staff extends Model
 
             if ($staff->national_id_photo_path !== null) {
                 Storage::disk('public')->delete($staff->national_id_photo_path);
+            }
+
+            if ($staff->signature_path !== null) {
+                Storage::disk('public')->delete($staff->signature_path);
             }
         });
     }
@@ -167,8 +188,12 @@ class Staff extends Model
      * Classes this staff member is assigned to teach, as either the main
      * teacher or an assistant — meaningful only when their Position carries
      * the Teacher role (see Position::teacherPositionIds()), same as
-     * SchoolClass::teachingStaff(). Membership, not role, is what
-     * SchoolClassPolicy/AttendancePolicy check here.
+     * SchoolClass::teachingStaff(). Membership is what AttendancePolicy::
+     * view() checks to let a teacher view one record for a class they teach
+     * without the broad `attendance.view` permission — recording attendance
+     * itself no longer narrows by this (see SchoolClassPolicy::
+     * recordAttendance()): any `attendance.create`/`update` holder may
+     * record for any class.
      */
     public function classes(): BelongsToMany
     {

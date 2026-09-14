@@ -116,6 +116,17 @@ const zh: MessageSchema = {
     },
   },
 
+  notifications: {
+    bell: '通知',
+    markAllRead: '全部标记为已读',
+    empty: '暂无通知。',
+    viewAll: '查看全部',
+    types: {
+      leave_request_submitted: '{student_name} 提交了一项请假申请',
+      leave_request_approved: '{student_name} 的请假申请已获批准',
+    },
+  },
+
   auth: {
     school: '学校',
     schoolHint: '请输入您学校的代码，以便我们确认要查询的账户。如果您使用平台管理员账户登录，请留空。',
@@ -935,6 +946,9 @@ const zh: MessageSchema = {
       logoSection: '校徽',
       logoHint: '显示在公开网站的页头和页脚。',
       chooseLogo: '选择校徽',
+      stampSection: '印章',
+      stampHint: '学校的官方印章 — 打印在发票和收据上，紧邻开具人的签名。',
+      chooseStamp: '选择印章',
       infoSection: '联系信息',
       nameLabel: '学校名称',
       emailLabel: '邮箱',
@@ -1114,6 +1128,8 @@ const zh: MessageSchema = {
       nationalId: '身份证号',
       nationalIdPhoto: '身份证照片',
       photo: '照片',
+      signature: '签名',
+      signatureHint: '打印在该员工开具的发票或收据上。',
 
       contactSection: '联系方式',
       facebook: 'Facebook',

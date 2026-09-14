@@ -36,8 +36,9 @@ final class SchoolSettingsController extends Controller
         $tenant = $this->context->getOrFail();
         $this->authorize('update', $tenant);
 
-        $data = $request->safe()->except(['logo', 'khqr_template']);
+        $data = $request->safe()->except(['logo', 'stamp', 'khqr_template']);
         $logoPath = $tenant->logo;
+        $stampPath = $tenant->stamp;
 
         if ($request->hasFile('logo')) {
             $newPath = $request->file('logo')->store($tenant->storagePath('branding'), 'public');
@@ -54,9 +55,25 @@ final class SchoolSettingsController extends Controller
             $logoPath = $newPath;
         }
 
+        if ($request->hasFile('stamp')) {
+            $newPath = $request->file('stamp')->store($tenant->storagePath('branding'), 'public');
+
+            if ($newPath === false) {
+                abort(500, 'Failed to store the uploaded stamp.');
+            }
+
+            // Only removed once the new stamp is safely persisted.
+            if ($stampPath !== null) {
+                Storage::disk('public')->delete($stampPath);
+            }
+
+            $stampPath = $newPath;
+        }
+
         $tenant->update([
             ...$data,
             'logo' => $logoPath,
+            'stamp' => $stampPath,
             'settings' => [...($tenant->settings ?? []), 'khqr_template' => $request->safe()->input('khqr_template')],
         ]);
 
@@ -74,6 +91,7 @@ final class SchoolSettingsController extends Controller
             'default_currency' => $tenant->default_currency,
             'exam_fee_amount' => $tenant->exam_fee_amount,
             'logo_url' => $tenant->logoUrl(),
+            'stamp_url' => $tenant->stampUrl(),
             'khqr_template' => $tenant->khqrTemplate(),
         ];
     }

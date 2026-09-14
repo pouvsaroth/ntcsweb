@@ -116,6 +116,17 @@ const km: MessageSchema = {
     },
   },
 
+  notifications: {
+    bell: 'ការជូនដំណឹង',
+    markAllRead: 'សម្គាល់ថាបានអានទាំងអស់',
+    empty: 'មិនទាន់មានការជូនដំណឹងទេ។',
+    viewAll: 'មើលទាំងអស់',
+    types: {
+      leave_request_submitted: '{student_name} បានដាក់ស្នើសំណើសុំច្បាប់',
+      leave_request_approved: 'សំណើសុំច្បាប់សម្រាប់ {student_name} ត្រូវបានអនុម័ត',
+    },
+  },
+
   auth: {
     school: 'សាលារៀន',
     schoolHint: 'វាយកូដសាលារបស់អ្នក ដើម្បីឲ្យយើងដឹងថាត្រូវពិនិត្យគណនីមួយណា។ សូមទុកឲ្យនៅទទេ ប្រសិនបើអ្នកកំពុងចូលប្រើដោយគណនីអ្នកគ្រប់គ្រងវេទិកា។',
@@ -936,6 +947,9 @@ const km: MessageSchema = {
       logoSection: 'និមិត្តសញ្ញា',
       logoHint: 'បង្ហាញនៅក្នុងក្បាល និងបាតគេហទំព័រសាធារណៈ។',
       chooseLogo: 'ជ្រើសរើសនិមិត្តសញ្ញា',
+      stampSection: 'ត្រា',
+      stampHint: 'ត្រាផ្លូវការរបស់សាលា — បោះពុម្ពនៅលើវិក្កយបត្រ និងបង្កាន់ដៃទូទាត់ ក្បែរហត្ថលេខានិយោជិកដែលចេញឯកសារ។',
+      chooseStamp: 'ជ្រើសរើសត្រា',
       infoSection: 'ព័ត៌មានទំនាក់ទំនង',
       nameLabel: 'ឈ្មោះសាលា',
       emailLabel: 'អ៊ីមែល',
@@ -1115,6 +1129,8 @@ const km: MessageSchema = {
       nationalId: 'អត្តសញ្ញាណប័ណ្ណ',
       nationalIdPhoto: 'រូបថតអត្តសញ្ញាណប័ណ្ណ',
       photo: 'រូបថត',
+      signature: 'ហត្ថលេខា',
+      signatureHint: 'បោះពុម្ពនៅលើវិក្កយបត្រ ឬបង្កាន់ដៃទូទាត់ដែលនិយោជិកនេះចេញ។',
 
       contactSection: 'ព័ត៌មានទំនាក់ទំនង',
       facebook: 'ហ្វេសប៊ុក',
@@ -1773,7 +1789,7 @@ const km: MessageSchema = {
       loadFailed: 'មិនអាចផ្ទុកវិក្កយបត្រនេះបានទេ។',
       saveFailed: 'មិនអាចបង្កើតវិក្កយបត្រនេះបានទេ។',
       statusDraft: 'សេចក្តីព្រាង',
-      statusIssued: 'បានចេញ',
+      statusIssued: 'មិនទាន់បង់ប្រាក់',
       statusPartiallyPaid: 'បង់ខ្លះ',
       statusPaid: 'បានបង់ពេញ',
       statusOverdue: 'ហួសកំណត់',

@@ -42,6 +42,7 @@ class StaffResource extends JsonResource
             'other_contact' => $this->other_contact,
 
             'photo_url' => $this->photoUrl(),
+            'signature_url' => $this->signatureUrl(),
             'profile_color' => $this->profile_color,
 
             'hire_date' => $this->hire_date?->toDateString(),

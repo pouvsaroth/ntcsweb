@@ -83,6 +83,7 @@ use App\Http\Controllers\Api\V1\MyExamApplicationController;
 use App\Http\Controllers\Api\V1\MyInvoiceController;
 use App\Http\Controllers\Api\V1\MyLeaveRequestController;
 use App\Http\Controllers\Api\V1\MyStudentFeedbackController;
+use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\Public\CoursePackageController as PublicCoursePackageController;
 use App\Http\Controllers\Api\V1\Public\EnrollmentInquiryController;
 use App\Http\Controllers\Api\V1\Public\GalleryController as PublicGalleryController;
@@ -517,6 +518,11 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
 
         // Self-service — identity-gated (Staff/Student/User's own assignments), same pattern as my-invoices.
         Route::get('my-assets', [MyAssetController::class, 'index'])->name('my-assets.index');
+
+        // The admin header's notification bell — identity-gated (a user's own notifications), same pattern as my-leave-requests.
+        Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
+        Route::post('notifications/mark-all-read', [NotificationController::class, 'markAllRead'])->name('notifications.mark-all-read');
+        Route::post('notifications/{notification}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
 
         // Singleton, not a resource — see AboutPageController.
         Route::get('settings/about', [AboutPageController::class, 'show'])->name('settings.about.show');

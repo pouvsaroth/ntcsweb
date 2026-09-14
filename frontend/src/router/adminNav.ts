@@ -149,7 +149,9 @@ export const adminNav: AdminNavGroup[] = [
     items: [
       // Also still "coming soon" placeholders — see the Website group above.
       { labelKey: 'adminNav.items.contactMessages', to: '/admin/contact-messages', permission: 'contact-messages.view' },
-      { labelKey: 'adminNav.items.notifications', to: '/admin/notifications', permission: 'notifications.view' },
+      // Self-service — every signed-in account has its own notifications
+      // (see the bell in AdminHeader.vue), not gated behind a permission.
+      { labelKey: 'adminNav.items.notifications', to: '/admin/notifications' },
       { labelKey: 'adminNav.items.studentFeedback', to: '/admin/student-feedback', permission: 'student-feedback.view' },
     ],
   },

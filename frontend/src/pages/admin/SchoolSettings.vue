@@ -34,6 +34,8 @@ const form = reactive({
 })
 const logoFile = ref<File | null>(null)
 const logoPreview = ref<string | null>(null)
+const stampFile = ref<File | null>(null)
+const stampPreview = ref<string | null>(null)
 const loading = ref(true)
 const loadError = ref<string | null>(null)
 const saveError = ref<string | null>(null)
@@ -55,6 +57,7 @@ async function load() {
     form.default_currency = settings.default_currency
     form.khqr_template = settings.khqr_template ?? ''
     logoPreview.value = settings.logo_url
+    stampPreview.value = settings.stamp_url
   } catch (error) {
     loadError.value = error instanceof ApiRequestError ? error.message : t('admin.school.loadFailed')
   } finally {
@@ -70,6 +73,14 @@ function onFileChange(event: Event) {
   logoPreview.value = URL.createObjectURL(file)
 }
 
+function onStampFileChange(event: Event) {
+  const file = (event.target as HTMLInputElement).files?.[0]
+  if (!file) return
+
+  stampFile.value = file
+  stampPreview.value = URL.createObjectURL(file)
+}
+
 async function save() {
   saving.value = true
   saveError.value = null
@@ -77,7 +88,7 @@ async function save() {
   saved.value = false
 
   try {
-    const result = await schoolSettingsService.save({ ...form, logo: logoFile.value ?? undefined })
+    const result = await schoolSettingsService.save({ ...form, logo: logoFile.value ?? undefined, stamp: stampFile.value ?? undefined })
     form.name = result.name
     form.email = result.email ?? ''
     form.phone = result.phone ?? ''
@@ -87,6 +98,8 @@ async function save() {
     form.khqr_template = result.khqr_template ?? ''
     logoPreview.value = result.logo_url
     logoFile.value = null
+    stampPreview.value = result.stamp_url
+    stampFile.value = null
     saved.value = true
     // The header/footer read from this store — refresh it so the change is
     // visible on the public site without a hard reload.
@@ -132,6 +145,25 @@ onMounted(load)
           </label>
         </div>
         <p v-if="errors.logo?.[0]" class="mt-2 text-sm text-danger-600">{{ errors.logo[0] }}</p>
+      </section>
+
+      <section class="rounded-lg border border-neutral-200 p-4">
+        <h2 class="mb-1 text-sm font-semibold text-neutral-800">{{ t('admin.school.stampSection') }}</h2>
+        <p class="mb-4 text-sm text-neutral-500">{{ t('admin.school.stampHint') }}</p>
+
+        <div class="flex items-center gap-4">
+          <div class="flex h-16 w-16 items-center justify-center overflow-hidden rounded-lg border border-neutral-200 bg-neutral-50">
+            <img v-if="stampPreview" :src="stampPreview" alt="" class="h-full w-full object-contain" />
+            <span v-else class="text-2xl text-neutral-300">—</span>
+          </div>
+          <label class="cursor-pointer">
+            <span class="inline-flex items-center rounded-lg border border-neutral-300 px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50">
+              {{ t('admin.school.chooseStamp') }}
+            </span>
+            <input type="file" accept="image/*" class="hidden" @change="onStampFileChange" />
+          </label>
+        </div>
+        <p v-if="errors.stamp?.[0]" class="mt-2 text-sm text-danger-600">{{ errors.stamp[0] }}</p>
       </section>
 
       <section class="space-y-4 rounded-lg border border-neutral-200 p-4">

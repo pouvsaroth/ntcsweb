@@ -16,6 +16,8 @@ export interface SchoolSettings {
   /** Which currency the admin Dashboard and Billing Dashboard convert mixed USD/KHR totals into — see CurrencyConversionService. */
   default_currency: Currency
   logo_url: string | null
+  /** The school's own stamp/seal image — printed on invoices/receipts next to the issuing staff member's signature. */
+  stamp_url: string | null
   /** The school's own static Bakong KHQR string (e.g. from ACLEDA Toanchet's "My QR") — see backend App\Support\Billing\Khqr. */
   khqr_template: string | null
 }
@@ -30,6 +32,8 @@ export interface SchoolSettingsInput {
   khqr_template: string
   /** Omitted when the admin isn't replacing the logo. */
   logo?: File
+  /** Omitted when the admin isn't replacing the stamp. */
+  stamp?: File
 }
 
 /**
@@ -49,6 +53,7 @@ function toFormData(input: SchoolSettingsInput): FormData {
   form.append('default_currency', input.default_currency)
   if (input.khqr_template.trim()) form.append('khqr_template', input.khqr_template.trim())
   if (input.logo) form.append('logo', input.logo)
+  if (input.stamp) form.append('stamp', input.stamp)
 
   return form
 }

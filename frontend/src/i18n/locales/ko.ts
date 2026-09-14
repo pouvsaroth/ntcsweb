@@ -116,6 +116,17 @@ const ko: MessageSchema = {
     },
   },
 
+  notifications: {
+    bell: '알림',
+    markAllRead: '모두 읽음으로 표시',
+    empty: '아직 알림이 없습니다.',
+    viewAll: '모두 보기',
+    types: {
+      leave_request_submitted: '{student_name} 님이 허가 요청을 제출했습니다',
+      leave_request_approved: '{student_name} 님의 허가 요청이 승인되었습니다',
+    },
+  },
+
   auth: {
     school: '학교',
     schoolHint: '어느 계정을 확인해야 하는지 알 수 있도록 학교 코드를 입력해 주세요. 플랫폼 관리자 계정으로 로그인하는 경우 비워 두세요.',
@@ -936,6 +947,9 @@ const ko: MessageSchema = {
       logoSection: '로고',
       logoHint: '공개 웹사이트의 헤더와 푸터에 표시됩니다.',
       chooseLogo: '로고 선택',
+      stampSection: '직인',
+      stampHint: '학교의 공식 직인 — 발급자의 서명 옆, 청구서와 영수증에 인쇄됩니다.',
+      chooseStamp: '직인 선택',
       infoSection: '연락처 정보',
       nameLabel: '학교 이름',
       emailLabel: '이메일',
@@ -1115,6 +1129,8 @@ const ko: MessageSchema = {
       nationalId: '주민등록번호',
       nationalIdPhoto: '신분증 사진',
       photo: '사진',
+      signature: '서명',
+      signatureHint: '이 직원이 발행하는 청구서나 영수증에 인쇄됩니다.',
 
       contactSection: '연락처 정보',
       facebook: '페이스북',

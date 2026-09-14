@@ -41,7 +41,10 @@ class InvoicePdfTest extends TestCase
         return View::make('pdf.invoice', [
             'invoice' => $invoice,
             'tenant' => $this->tenant,
+            'issuerStaff' => null,
             'logoDataUri' => null,
+            'stampDataUri' => null,
+            'signatureDataUri' => null,
             'khmerFontRegular' => $this->khmerFontDataUri('Regular'),
             'khmerFontBold' => $this->khmerFontDataUri('Bold'),
         ])->render();

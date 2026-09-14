@@ -45,10 +45,11 @@ use Stancl\Tenancy\Database\Concerns\TenantRun;
  * @property string $locale
  * @property string $default_currency
  * @property string|null $exam_fee_amount
+ * @property string|null $stamp
  * @property string $status
  * @property array|null $settings
  */
-#[Fillable(['name', 'slug', 'code', 'logo', 'email', 'phone', 'address', 'timezone', 'locale', 'default_currency', 'exam_fee_amount', 'status', 'settings'])]
+#[Fillable(['name', 'slug', 'code', 'logo', 'stamp', 'email', 'phone', 'address', 'timezone', 'locale', 'default_currency', 'exam_fee_amount', 'status', 'settings'])]
 class Tenant extends Model implements TenantWithDatabase
 {
     /** @use HasFactory<TenantFactory> */
@@ -161,6 +162,24 @@ class Tenant extends Model implements TenantWithDatabase
         }
 
         $path = Storage::disk('public')->path($this->logo);
+
+        return is_file($path) ? $path : null;
+    }
+
+    /** The school's own stamp/seal image, printed on invoices/receipts — same shape as `logo` throughout. */
+    public function stampUrl(): ?string
+    {
+        return $this->stamp ? Storage::disk('public')->url($this->stamp) : null;
+    }
+
+    /** Absolute filesystem path to the stamp, for the PDF renderer (Browsershot) — see logoPath()'s own docblock. */
+    public function stampPath(): ?string
+    {
+        if (! $this->stamp) {
+            return null;
+        }
+
+        $path = Storage::disk('public')->path($this->stamp);
 
         return is_file($path) ? $path : null;
     }

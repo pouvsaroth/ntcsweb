@@ -48,7 +48,6 @@ const comingSoonPages: [string, string][] = [
   ['announcements', 'adminNav.items.announcements'],
   ['documents', 'adminNav.items.documents'],
   ['contact-messages', 'adminNav.items.contactMessages'],
-  ['notifications', 'adminNav.items.notifications'],
   // Not in adminNav.ts's sidebar — reachable only via StudentBottomNav's
   // mobile tab bar, shown to a signed-in student.
   ['my-scores', 'studentNav.score'],
@@ -313,6 +312,12 @@ const adminRoutes: RouteRecordRaw[] = [
     name: 'admin.tenants',
     component: () => import('@/pages/admin/Tenants.vue'),
     meta: { titleKey: 'adminNav.items.tenants' },
+  },
+  {
+    path: 'notifications',
+    name: 'admin.notifications',
+    component: () => import('@/pages/admin/Notifications.vue'),
+    meta: { titleKey: 'adminNav.items.notifications' },
   },
   {
     path: 'languages',

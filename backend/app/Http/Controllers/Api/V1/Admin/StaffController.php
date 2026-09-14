@@ -78,7 +78,7 @@ final class StaffController extends Controller
             ], $position->role);
 
             $staff = Staff::query()->create([
-                ...$request->safe()->except(['photo', 'national_id_photo']),
+                ...$request->safe()->except(['photo', 'national_id_photo', 'signature']),
                 'employee_code' => $this->staffIdGenerator->next($this->context->getOrFail()),
             ]);
 
@@ -91,6 +91,7 @@ final class StaffController extends Controller
                 'national_id_photo_path' => $request->hasFile('national_id_photo')
                     ? $this->storeFile($request, 'national_id_photo')
                     : null,
+                'signature_path' => $request->hasFile('signature') ? $this->storeFile($request, 'signature') : null,
                 'profile_color' => $this->profileColorFor($fullName),
             ])->save();
 
@@ -121,25 +122,28 @@ final class StaffController extends Controller
     {
         $previousPhotoPath = $staff->photo_path;
         $previousNationalIdPhotoPath = $staff->national_id_photo_path;
+        $previousSignaturePath = $staff->signature_path;
 
         $newPhotoPath = $request->hasFile('photo') ? $this->storeFile($request, 'photo') : null;
         $newNationalIdPhotoPath = $request->hasFile('national_id_photo')
             ? $this->storeFile($request, 'national_id_photo')
             : null;
+        $newSignaturePath = $request->hasFile('signature') ? $this->storeFile($request, 'signature') : null;
 
-        DB::transaction(function () use ($request, $staff, $newPhotoPath, $newNationalIdPhotoPath) {
+        DB::transaction(function () use ($request, $staff, $newPhotoPath, $newNationalIdPhotoPath, $newSignaturePath) {
             $previousPositionId = $staff->position_id;
 
-            $staff->update($request->safe()->except(['photo', 'national_id_photo']));
+            $staff->update($request->safe()->except(['photo', 'national_id_photo', 'signature']));
 
             // Excluded from Fillable (see the Staff class docblock) — same
             // forceFill treatment as store(); only touched when a new file
-            // actually came in, so an edit that doesn't replace either photo
-            // never overwrites the existing path with null.
-            if ($newPhotoPath !== null || $newNationalIdPhotoPath !== null) {
+            // actually came in, so an edit that doesn't replace a photo/
+            // signature never overwrites the existing path with null.
+            if ($newPhotoPath !== null || $newNationalIdPhotoPath !== null || $newSignaturePath !== null) {
                 $staff->forceFill([
                     ...($newPhotoPath !== null ? ['photo_path' => $newPhotoPath] : []),
                     ...($newNationalIdPhotoPath !== null ? ['national_id_photo_path' => $newNationalIdPhotoPath] : []),
+                    ...($newSignaturePath !== null ? ['signature_path' => $newSignaturePath] : []),
                 ])->save();
             }
 
@@ -176,6 +180,10 @@ final class StaffController extends Controller
 
         if ($newNationalIdPhotoPath !== null && $previousNationalIdPhotoPath !== null) {
             Storage::disk('public')->delete($previousNationalIdPhotoPath);
+        }
+
+        if ($newSignaturePath !== null && $previousSignaturePath !== null) {
+            Storage::disk('public')->delete($previousSignaturePath);
         }
 
         return ApiResponse::success(new StaffResource($staff->fresh(['position.role', 'user'])));

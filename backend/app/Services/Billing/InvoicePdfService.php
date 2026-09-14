@@ -5,133 +5,63 @@ declare(strict_types=1);
 namespace App\Services\Billing;
 
 use App\Models\Invoice;
-use App\Models\Tenant;
+use App\Services\Pdf\BrowsershotRenderer;
+use App\Services\Pdf\KhmerFont;
+use App\Services\Pdf\PdfImageEncoder;
 use App\Support\Tenancy\TenantContext;
-use Spatie\Browsershot\Browsershot;
 
 /**
- * Renders straight from the tenant's own School Settings (name/logo/
- * address/phone/email) — never hard-coded — so every school's invoice
- * looks like their own school's, with zero per-tenant code.
+ * Renders straight from the tenant's own School Settings (name/logo/stamp/
+ * address/phone/email) — never hard-coded — so every school's invoice looks
+ * like their own school's, with zero per-tenant code. A5, matching the
+ * printed receipt (see ReceiptPdfService).
  *
- * Uses Browsershot (a headless, system-installed Chromium — see
- * docker/php/Dockerfile) rather than dompdf: dompdf has no real text-shaping
- * engine, so it draws Khmer glyphs one codepoint at a time with no vowel
- * reordering or coeng (subscript consonant) formation, corrupting anything
- * but plain Latin text. Chromium shapes text the same way a real browser
- * tab does, which is the only way to render Khmer (or any complex script)
- * correctly from PHP without hand-rolling a shaping engine.
- *
- * The logo and Khmer font are embedded as base64 `data:` URIs rather than
- * linked by URL: Browsershot refuses `file://` anywhere in the HTML
- * (local-file-disclosure guard, no bypass), and `http://localhost:8080`
- * isn't reachable from inside this container's own network namespace
- * (`localhost` there means the php container itself, not nginx). A data:
- * URI sidesteps both — no network hop, no blocked protocol.
+ * The signature shown is whichever staff member's account actually created
+ * the invoice (Invoice::createdBy — a User — via that user's own linked
+ * Staff record), not a fixed "always the director" signer: see
+ * EnrollmentService/InvoiceService, the only writers of `created_by`.
  */
 final class InvoicePdfService
 {
-    /** @var array<string, string> */
-    private static array $khmerFontCache = [];
-
-    public function __construct(private readonly TenantContext $context) {}
+    public function __construct(
+        private readonly TenantContext $context,
+        private readonly BrowsershotRenderer $renderer,
+    ) {}
 
     public function render(Invoice $invoice): string
     {
-        $invoice->loadMissing(['items.product', 'items.variant', 'student', 'payments' => fn ($q) => $q->completed()->orderBy('payment_date')]);
+        $invoice->loadMissing([
+            'items.product',
+            'items.variant',
+            'items.reference.schoolClass.schedules',
+            'student',
+            'payments' => fn ($q) => $q->completed()->orderBy('payment_date'),
+            'createdBy.staff.position',
+        ]);
 
         // `invoices` lives in the tenant database now, so it no longer
         // carries its own tenant() relation — the tenant is simply whichever
         // one is already in context for this request/job, exactly the one
         // whose database this Invoice was just read from.
         $tenant = $this->context->getOrFail();
+        $issuerStaff = $invoice->createdBy?->staff;
 
         $html = view('pdf.invoice', [
             'invoice' => $invoice,
             'tenant' => $tenant,
-            'logoDataUri' => $this->logoDataUri($tenant),
-            'khmerFontRegular' => $this->khmerFontDataUri('Regular'),
-            'khmerFontBold' => $this->khmerFontDataUri('Bold'),
+            'issuerStaff' => $issuerStaff,
+            'logoDataUri' => PdfImageEncoder::dataUri($tenant->logoPath()),
+            'stampDataUri' => PdfImageEncoder::dataUri($tenant->stampPath()),
+            'signatureDataUri' => PdfImageEncoder::dataUri($issuerStaff?->signaturePath()),
+            'khmerFontRegular' => KhmerFont::dataUri('Regular'),
+            'khmerFontBold' => KhmerFont::dataUri('Bold'),
         ])->render();
 
-        $home = $this->freshChromiumHome();
-
-        try {
-            return $this->browser($html, $home)->pdf();
-        } finally {
-            // Best-effort — a leftover directory here is harmless clutter,
-            // never worth failing (or even logging) an otherwise-successful
-            // render over.
-            @exec('rm -rf '.escapeshellarg($home));
-        }
-    }
-
-    /**
-     * A brand-new, never-before-used directory to use as Chromium's HOME
-     * for one render — see browser()'s docblock for why a shared one isn't
-     * safe. Chromium creates everything under it itself (.config/chromium/
-     * etc.); nothing needs to pre-exist beyond the parent temp directory.
-     */
-    private function freshChromiumHome(): string
-    {
-        return sys_get_temp_dir().'/browsershot-home-'.bin2hex(random_bytes(8));
+        return $this->renderer->render($html, 'A5', marginMm: 10);
     }
 
     public function filename(Invoice $invoice): string
     {
         return $invoice->invoice_number.'.pdf';
-    }
-
-    private function logoDataUri(?Tenant $tenant): ?string
-    {
-        $path = $tenant?->logoPath();
-
-        if ($path === null) {
-            return null;
-        }
-
-        $mime = mime_content_type($path) ?: 'image/png';
-
-        return 'data:'.$mime.';base64,'.base64_encode(file_get_contents($path));
-    }
-
-    private function khmerFontDataUri(string $weight): string
-    {
-        return self::$khmerFontCache[$weight] ??= 'data:font/ttf;base64,'.base64_encode(
-            file_get_contents(resource_path("fonts/khmer/NotoSansKhmer-{$weight}.ttf"))
-        );
-    }
-
-    private function browser(string $html, string $home): Browsershot
-    {
-        $browsershot = Browsershot::html($html)
-            ->format('A4')
-            ->showBackground()
-            ->noSandbox() // running as root (CLI) or www-data (php-fpm) inside the container — Chromium refuses its own sandbox in that context either way.
-            ->waitUntilNetworkIdle()
-            // php-fpm's www-data user has HOME=/var/www, which it doesn't own and can't write
-            // to — Chromium's crash reporter (crashpad) tries to create its database there on
-            // launch and dies immediately ("chrome_crashpad_handler: --database is required").
-            //
-            // A *shared* writable HOME (e.g. plain sys_get_temp_dir()) isn't enough on its
-            // own, though: crashpad's database lives under $HOME/.config/chromium, and
-            // whichever user's Chromium creates that directory FIRST owns it from then on
-            // (mode 0700) — e.g. `docker exec` running a test suite as root, before the real
-            // php-fpm/www-data request ever comes in, permanently breaks every later render
-            // with this exact error until someone notices and deletes it. $home (see
-            // freshChromiumHome()) is generated fresh per render so it can never collide
-            // with anything another user already created.
-            ->setNodeEnv(['HOME' => $home])
-            ->addChromiumArguments(['disable-crash-reporter']);
-
-        if ($chromePath = config('services.browsershot.chrome_path')) {
-            $browsershot->setChromePath($chromePath);
-        }
-
-        if ($nodeModulePath = config('services.browsershot.node_modules_path')) {
-            $browsershot->setNodeModulePath($nodeModulePath);
-        }
-
-        return $browsershot;
     }
 }

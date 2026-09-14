@@ -27,6 +27,8 @@ export interface Staff {
   telegram: string | null
   other_contact: string | null
   photo_url: string | null
+  /** Printed on an invoice/receipt this staff member issues — see StaffForm.vue. */
+  signature_url: string | null
   /** Server-generated avatar fallback color — see StaffController::profileColorFor() on the backend. Never user-editable. */
   profile_color: string | null
   hire_date: string | null
@@ -40,6 +42,7 @@ export interface StaffInput {
   /** Omitted on update when the admin isn't replacing the photo. */
   photo?: File
   national_id_photo?: File
+  signature?: File
   first_name: string
   last_name: string
   other_name: string
@@ -76,6 +79,7 @@ function toFormData(input: StaffInput, methodOverride?: 'PUT'): FormData {
 
   if (input.photo) form.append('photo', input.photo)
   if (input.national_id_photo) form.append('national_id_photo', input.national_id_photo)
+  if (input.signature) form.append('signature', input.signature)
 
   form.append('first_name', input.first_name)
   form.append('last_name', input.last_name)

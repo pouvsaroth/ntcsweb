@@ -119,6 +119,17 @@ const en = {
     },
   },
 
+  notifications: {
+    bell: 'Notifications',
+    markAllRead: 'Mark all as read',
+    empty: 'No notifications yet.',
+    viewAll: 'View all',
+    types: {
+      leave_request_submitted: '{student_name} submitted a permission request',
+      leave_request_approved: 'The permission request for {student_name} was approved',
+    },
+  },
+
   auth: {
     school: 'School',
     schoolHint: 'Type your school\'s code so we know which account to check. Leave blank if you\'re signing in with a platform admin account.',
@@ -940,6 +951,9 @@ const en = {
       logoSection: 'Logo',
       logoHint: 'Shown in the site header and footer across the public website.',
       chooseLogo: 'Choose Logo',
+      stampSection: 'Stamp',
+      stampHint: 'The school\'s official stamp/seal — printed on invoices and receipts next to the issuing staff member\'s signature.',
+      chooseStamp: 'Choose Stamp',
       infoSection: 'Contact Information',
       nameLabel: 'School Name',
       emailLabel: 'Email',
@@ -1119,6 +1133,8 @@ const en = {
       nationalId: 'National ID',
       nationalIdPhoto: 'National ID photo',
       photo: 'Photo',
+      signature: 'Signature',
+      signatureHint: 'Printed on an invoice or receipt this staff member issues.',
 
       contactSection: 'Contact information',
       facebook: 'Facebook',
@@ -1777,7 +1793,7 @@ const en = {
       loadFailed: 'Could not load this invoice.',
       saveFailed: 'Could not create this invoice.',
       statusDraft: 'Draft',
-      statusIssued: 'Issued',
+      statusIssued: 'Unpaid',
       statusPartiallyPaid: 'Partially Paid',
       statusPaid: 'Paid',
       statusOverdue: 'Overdue',

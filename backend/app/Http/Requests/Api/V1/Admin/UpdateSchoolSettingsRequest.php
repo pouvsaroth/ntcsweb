@@ -47,6 +47,7 @@ class UpdateSchoolSettingsRequest extends FormRequest
             'exam_fee_amount' => ['nullable', 'numeric', 'min:0'],
             // 10M matches upload_max_filesize in docker/php/uploads.ini.
             'logo' => ['nullable', 'image', 'mimes:jpeg,png,webp,gif', 'max:10240'],
+            'stamp' => ['nullable', 'image', 'mimes:jpeg,png,webp,gif', 'max:10240'],
             // The raw KHQR string decoded from the school's own bank app —
             // see App\Support\Billing\Khqr. Not validated as a real KHQR
             // payload here (that would mean re-parsing it, the exact risk

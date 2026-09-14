@@ -52,7 +52,7 @@ const eighteenYearsAgo = new Date(today.getFullYear() - 18, today.getMonth(), to
 // an adult, and — per the user's own request — default to Male) — edit mode
 // overwrites every one of these from the loaded staff record right after,
 // see the onMounted load() below.
-const form = reactive<Omit<StaffInput, 'photo' | 'national_id_photo'>>({
+const form = reactive<Omit<StaffInput, 'photo' | 'national_id_photo' | 'signature'>>({
   first_name: '',
   last_name: '',
   other_name: '',
@@ -77,6 +77,8 @@ const photoFile = ref<File | null>(null)
 const photoPreview = ref<string | null>(null)
 const nationalIdPhotoFile = ref<File | null>(null)
 const nationalIdPhotoPreview = ref<string | null>(null)
+const signatureFile = ref<File | null>(null)
+const signaturePreview = ref<string | null>(null)
 /** Read-only, display-only — server-generated (see StaffIdGenerator on the backend), never part of the submitted form. */
 const employeeCode = ref<string | null>(null)
 
@@ -190,6 +192,14 @@ function onNationalIdPhotoChange(event: Event) {
   nationalIdPhotoPreview.value = URL.createObjectURL(file)
 }
 
+function onSignatureChange(event: Event) {
+  const file = (event.target as HTMLInputElement).files?.[0]
+  if (!file) return
+
+  signatureFile.value = file
+  signaturePreview.value = URL.createObjectURL(file)
+}
+
 async function load() {
   loading.value = true
   loadError.value = null
@@ -222,6 +232,7 @@ async function load() {
     form.status = staff.status
     photoPreview.value = staff.photo_url
     nationalIdPhotoPreview.value = staff.national_id_photo_url
+    signaturePreview.value = staff.signature_url
 
     if (staff.village_code) await selectAddressFromVillageCode(staff.village_code)
   } catch (error) {
@@ -240,6 +251,7 @@ async function submit() {
     ...form,
     photo: photoFile.value ?? undefined,
     national_id_photo: nationalIdPhotoFile.value ?? undefined,
+    signature: signatureFile.value ?? undefined,
   }
 
   try {
@@ -402,6 +414,21 @@ onMounted(load)
                   @change="onNationalIdPhotoChange"
                 />
                 <p v-if="errors.national_id_photo?.[0]" class="mt-1.5 text-sm text-danger-600">{{ errors.national_id_photo[0] }}</p>
+              </div>
+
+              <div>
+                <label class="mb-1.5 block text-sm font-medium text-neutral-700">{{ t('admin.staff.signature') }}</label>
+                <p class="mb-2 text-xs text-neutral-500">{{ t('admin.staff.signatureHint') }}</p>
+                <div v-if="signaturePreview" class="mb-3 flex h-24 w-36 items-center justify-center overflow-hidden rounded-lg border border-neutral-200 bg-neutral-100">
+                  <img :src="signaturePreview" alt="" class="h-full w-full object-contain" />
+                </div>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  class="block w-full text-sm text-neutral-600 file:mr-3 file:rounded-lg file:border-0 file:bg-primary-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-primary-800 hover:file:bg-primary-100"
+                  @change="onSignatureChange"
+                />
+                <p v-if="errors.signature?.[0]" class="mt-1.5 text-sm text-danger-600">{{ errors.signature[0] }}</p>
               </div>
             </div>
           </section>

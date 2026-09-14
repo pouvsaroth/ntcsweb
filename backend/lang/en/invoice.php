@@ -12,6 +12,12 @@ declare(strict_types=1);
 return [
     'invoice' => 'INVOICE',
     'bill_to' => 'Bill To',
+    'student_id' => 'Student ID',
+    'name' => 'Name',
+    'english_name' => 'English Name',
+    'tel' => 'Tel',
+    'class' => 'Class',
+    'time' => 'Time',
     'invoice_date' => 'Invoice Date',
     'due_date' => 'Due Date',
     'description' => 'Description',
