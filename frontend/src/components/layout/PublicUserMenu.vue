@@ -114,14 +114,6 @@ async function handleLogout() {
         >
           {{ t('studentNav.myRequest') }}
         </RouterLink>
-        <RouterLink
-          v-if="auth.hasRole('student')"
-          to="/admin/my-feedback"
-          class="block w-full px-4 py-2 text-left text-sm text-neutral-700 hover:bg-neutral-50"
-          @click="menuOpen = false"
-        >
-          {{ t('studentNav.comment') }}
-        </RouterLink>
         <button
           type="button"
           class="block w-full px-4 py-2 text-left text-sm text-neutral-700 hover:bg-neutral-50"

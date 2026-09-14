@@ -10,6 +10,8 @@ import { publicContentService, type PublicCourse } from '@/services/publicConten
 const { t } = useI18n()
 const courses = ref<PublicCourse[]>([])
 const loading = ref(true)
+const pricingInfoOpen = ref(false)
+const pricingNoteKeys = ['programs.noteMonthly', 'programs.noteTerm', 'programs.noteVideo']
 
 interface ProgramGroup {
   id: number
@@ -46,6 +48,29 @@ onMounted(async () => {
 <template>
   <div>
     <SectionContainer>
+      <div class="mb-8 rounded-xl border border-neutral-200 bg-neutral-50">
+        <button
+          type="button"
+          class="flex w-full items-center justify-between gap-2 px-4 py-3 text-left text-sm font-medium text-neutral-700"
+          @click="pricingInfoOpen = !pricingInfoOpen"
+        >
+          {{ t('programs.pricingInfoTitle') }}
+          <svg
+            class="h-4 w-4 shrink-0 transition-transform"
+            :class="pricingInfoOpen ? 'rotate-180' : ''"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+        <ul v-if="pricingInfoOpen" class="list-disc space-y-1.5 px-4 pb-4 pl-8 text-xs leading-relaxed text-neutral-500">
+          <li v-for="key in pricingNoteKeys" :key="key">{{ t(key) }}</li>
+        </ul>
+      </div>
+
       <div v-if="loading" class="grid gap-6 sm:grid-cols-1 lg:grid-cols-2">
         <div v-for="i in 6" :key="i" class="h-40 animate-pulse rounded-[2rem] bg-neutral-100" />
       </div>
