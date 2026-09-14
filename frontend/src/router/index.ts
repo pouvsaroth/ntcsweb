@@ -41,17 +41,22 @@ const authRoutes: RouteRecordRaw[] = [
 
 const comingSoon = () => import('@/pages/admin/ComingSoon.vue')
 
-/** path -> adminNav.items translation key, so ComingSoon.vue's title always matches the sidebar label it was clicked from. */
-const comingSoonPages: [string, string][] = [
+/**
+ * path -> adminNav.items translation key, so ComingSoon.vue's title always
+ * matches the sidebar label it was clicked from. The optional 3rd element
+ * marks a page a student account is allowed to open (see the router guard's
+ * `studentAllowed` check below) — needed for my-scores/my-videos since
+ * they're reachable only via StudentBottomNav's mobile tab bar and
+ * PublicUserMenu, both shown to a signed-in student.
+ */
+const comingSoonPages: [string, string, boolean?][] = [
   ['news', 'adminNav.items.news'],
   ['events', 'adminNav.items.events'],
   ['announcements', 'adminNav.items.announcements'],
   ['documents', 'adminNav.items.documents'],
   ['contact-messages', 'adminNav.items.contactMessages'],
-  // Not in adminNav.ts's sidebar — reachable only via StudentBottomNav's
-  // mobile tab bar, shown to a signed-in student.
-  ['my-scores', 'studentNav.score'],
-  ['my-videos', 'studentNav.video'],
+  ['my-scores', 'studentNav.score', true],
+  ['my-videos', 'studentNav.video', true],
 ]
 
 const adminRoutes: RouteRecordRaw[] = [
@@ -245,13 +250,13 @@ const adminRoutes: RouteRecordRaw[] = [
     path: 'my-attendance',
     name: 'admin.my-attendance',
     component: () => import('@/pages/admin/MyAttendance.vue'),
-    meta: { titleKey: 'studentNav.attendant' },
+    meta: { titleKey: 'studentNav.attendant', studentAllowed: true },
   },
   {
     path: 'my-feedback',
     name: 'admin.my-feedback',
     component: () => import('@/pages/admin/MyFeedback.vue'),
-    meta: { titleKey: 'studentNav.myRequest' },
+    meta: { titleKey: 'studentNav.myRequest', studentAllowed: true },
   },
   {
     path: 'student-feedback',
@@ -560,11 +565,11 @@ const adminRoutes: RouteRecordRaw[] = [
     meta: { titleKey: 'adminNav.items.assetReports' },
   },
   ...comingSoonPages.map(
-    ([path, titleKey]): RouteRecordRaw => ({
+    ([path, titleKey, studentAllowed]): RouteRecordRaw => ({
       path,
       name: `admin.${path}`,
       component: comingSoon,
-      meta: { titleKey },
+      meta: { titleKey, studentAllowed },
     }),
   ),
 ]
@@ -606,8 +611,10 @@ router.beforeEach(async (to) => {
 
   // A student account has no admin permissions at all — the admin panel has
   // nothing for them, and a student is expected to stay on the public site
-  // (see Login.vue's own post-login redirect for the normal path here).
-  if (to.meta.requiresAuth && auth.hasRole('student')) {
+  // (see Login.vue's own post-login redirect for the normal path here) —
+  // except the handful of self-service pages under /admin/my-* that
+  // PublicUserMenu/StudentBottomNav link students to directly.
+  if (to.meta.requiresAuth && auth.hasRole('student') && !to.meta.studentAllowed) {
     return { path: '/' }
   }
 
