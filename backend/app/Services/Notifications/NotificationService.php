@@ -6,6 +6,7 @@ namespace App\Services\Notifications;
 
 use App\Models\User;
 use App\Models\UserNotification;
+use App\Support\Tenancy\TenantContext;
 use Illuminate\Support\Collection;
 
 /**
@@ -14,6 +15,8 @@ use Illuminate\Support\Collection;
  */
 final class NotificationService
 {
+    public function __construct(private readonly TenantContext $context) {}
+
     /**
      * @param  array<string, mixed>  $data
      */
@@ -38,5 +41,39 @@ final class NotificationService
         Collection::make($recipients)
             ->unique(fn (User $user) => $user->getKey())
             ->each(fn (User $user) => $this->notify($user, $type, $data, $link));
+    }
+
+    /**
+     * Every active user in the current tenant holding a given permission —
+     * e.g. "who can approve this." A permission (not a fixed role) so a
+     * tenant that customizes its own role/permission matrix still gets the
+     * right people notified, not whoever happened to hold a role by default.
+     *
+     * @return Collection<int, User>
+     */
+    public function usersWithPermission(string $permission): Collection
+    {
+        return User::query()
+            ->inTenant($this->context->getOrFail())
+            ->active()
+            ->whereHas('roles.permissions', fn ($query) => $query->where('slug', $permission))
+            ->get();
+    }
+
+    /**
+     * Every active user in the current tenant holding a given system role —
+     * for a recipient group with no permission of its own to key off, e.g.
+     * "every Staff-role account" as a stand-in for "the receptionist" (no
+     * fixed Receptionist role/position exists in this app).
+     *
+     * @return Collection<int, User>
+     */
+    public function usersWithRole(string $roleSlug): Collection
+    {
+        return User::query()
+            ->inTenant($this->context->getOrFail())
+            ->active()
+            ->whereHas('roles', fn ($query) => $query->where('slug', $roleSlug))
+            ->get();
     }
 }

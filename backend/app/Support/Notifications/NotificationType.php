@@ -14,4 +14,6 @@ final class NotificationType
     public const LEAVE_REQUEST_SUBMITTED = 'leave_request_submitted';
 
     public const LEAVE_REQUEST_APPROVED = 'leave_request_approved';
+
+    public const STUDENT_REGISTRATION_SUBMITTED = 'student_registration_submitted';
 }

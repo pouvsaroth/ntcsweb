@@ -124,6 +124,7 @@ const zh: MessageSchema = {
     types: {
       leave_request_submitted: '{student_name} 提交了一项请假申请',
       leave_request_approved: '{student_name} 的请假申请已获批准',
+      student_registration_submitted: '{student_name} 已注册，正在等待审批',
     },
   },
 

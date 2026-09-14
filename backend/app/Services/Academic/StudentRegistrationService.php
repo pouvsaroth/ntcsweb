@@ -9,7 +9,10 @@ use App\Models\Role;
 use App\Models\Student;
 use App\Models\User;
 use App\Services\Billing\PaymentService;
+use App\Services\Notifications\NotificationService;
+use App\Support\Authorization\Permissions;
 use App\Support\Billing\PaymentMethod;
+use App\Support\Notifications\NotificationType;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -36,6 +39,7 @@ final class StudentRegistrationService
         private readonly StudentIdGenerator $studentIdGenerator,
         private readonly EnrollmentService $enrollments,
         private readonly PaymentService $payments,
+        private readonly NotificationService $notifications,
     ) {}
 
     /**
@@ -43,7 +47,7 @@ final class StudentRegistrationService
      */
     public function register(array $data): Student
     {
-        return DB::transaction(function () use ($data) {
+        $student = DB::transaction(function () use ($data) {
             $tenantId = $this->context->idOrFail();
 
             $studentRole = Role::query()
@@ -99,6 +103,18 @@ final class StudentRegistrationService
 
             return $student->fresh();
         });
+
+        // Outside the transaction — see LeaveRequestService::submit()'s
+        // identical reasoning: a notification that fails to write is never
+        // worth rolling back an already-submitted registration over.
+        $this->notifications->notifyMany(
+            $this->notifications->usersWithPermission(Permissions::STUDENTS_APPROVE_REGISTRATION),
+            NotificationType::STUDENT_REGISTRATION_SUBMITTED,
+            ['student_id' => $student->id, 'student_name' => $student->fullName()],
+            link: '/admin/student-registrations',
+        );
+
+        return $student;
     }
 
     public function approve(Student $student, User $admin): Student

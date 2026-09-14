@@ -127,6 +127,7 @@ const en = {
     types: {
       leave_request_submitted: '{student_name} submitted a permission request',
       leave_request_approved: 'The permission request for {student_name} was approved',
+      student_registration_submitted: '{student_name} registered and is awaiting approval',
     },
   },
 

@@ -16,7 +16,6 @@ use App\Support\Notifications\NotificationType;
 use App\Support\Tenancy\TenantContext;
 use Carbon\CarbonPeriod;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -75,7 +74,7 @@ final class LeaveRequestService
         // Outside the transaction — a notification that fails to write is
         // never worth rolling back an already-submitted request over.
         $this->notifications->notifyMany(
-            $this->usersWithPermission(Permissions::LEAVE_REQUESTS_APPROVE),
+            $this->notifications->usersWithPermission(Permissions::LEAVE_REQUESTS_APPROVE),
             NotificationType::LEAVE_REQUEST_SUBMITTED,
             ['student_id' => $student->id, 'student_name' => $student->fullName(), 'leave_request_id' => $request->id],
             link: '/admin/approvals/queue',
@@ -132,33 +131,9 @@ final class LeaveRequestService
         $teacherUserIds = Staff::query()->whereIn('id', $student->teacherIds())->pluck('user_id')->filter();
         $recipients = $recipients->merge(User::query()->whereIn('id', $teacherUserIds)->get());
 
-        $recipients = $recipients->merge($this->usersWithRole(Role::STAFF));
+        $recipients = $recipients->merge($this->notifications->usersWithRole(Role::STAFF));
 
         $this->notifications->notifyMany($recipients, NotificationType::LEAVE_REQUEST_APPROVED, $data, $link);
-    }
-
-    /**
-     * @return Collection<int, User>
-     */
-    private function usersWithPermission(string $permission): Collection
-    {
-        return User::query()
-            ->inTenant($this->context->getOrFail())
-            ->active()
-            ->whereHas('roles.permissions', fn ($query) => $query->where('slug', $permission))
-            ->get();
-    }
-
-    /**
-     * @return Collection<int, User>
-     */
-    private function usersWithRole(string $roleSlug): Collection
-    {
-        return User::query()
-            ->inTenant($this->context->getOrFail())
-            ->active()
-            ->whereHas('roles', fn ($query) => $query->where('slug', $roleSlug))
-            ->get();
     }
 
     public function reject(LeaveRequest $request, string $reason, User $admin): LeaveRequest

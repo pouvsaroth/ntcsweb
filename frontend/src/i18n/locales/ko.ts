@@ -124,6 +124,7 @@ const ko: MessageSchema = {
     types: {
       leave_request_submitted: '{student_name} 님이 허가 요청을 제출했습니다',
       leave_request_approved: '{student_name} 님의 허가 요청이 승인되었습니다',
+      student_registration_submitted: '{student_name} 님이 등록했으며 승인을 기다리고 있습니다',
     },
   },
 

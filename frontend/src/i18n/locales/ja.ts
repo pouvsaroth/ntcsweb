@@ -124,6 +124,7 @@ const ja: MessageSchema = {
     types: {
       leave_request_submitted: '{student_name}さんが許可申請を提出しました',
       leave_request_approved: '{student_name}さんの許可申請が承認されました',
+      student_registration_submitted: '{student_name}さんが登録しました。承認待ちです',
     },
   },
 

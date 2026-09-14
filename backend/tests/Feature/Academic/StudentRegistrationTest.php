@@ -7,9 +7,11 @@ namespace Tests\Feature\Academic;
 use App\Models\Role;
 use App\Models\Student;
 use App\Models\User;
+use App\Models\UserNotification;
 use App\Notifications\Academic\StudentRegistrationApprovedNotification;
 use App\Support\Authorization\Permissions;
 use App\Support\Billing\PaymentMethod;
+use App\Support\Notifications\NotificationType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
@@ -68,6 +70,25 @@ class StudentRegistrationTest extends TestCase
         $invoice = $student->invoices()->firstOrFail();
         $this->assertSame('24.00', (string) $invoice->balance);
         $this->assertSame(0, $invoice->payments()->count());
+    }
+
+    public function test_self_registering_notifies_every_holder_of_the_approve_registration_permission(): void
+    {
+        $approver = $this->actingAsAdminWithPermissions([Permissions::STUDENTS_APPROVE_REGISTRATION]);
+        $this->setUpAcademicCatalog();
+
+        // Can view the pending queue but not approve it — must not be notified.
+        $bystander = User::factory()->forTenant($this->tenant)->create();
+
+        $this->withHeader('X-Tenant', $this->tenant->slug)
+            ->postJson('/api/v1/public/student-registrations', $this->registrationPayload())
+            ->assertCreated();
+
+        $this->assertSame(
+            1,
+            UserNotification::where('recipient_id', $approver->id)->where('type', NotificationType::STUDENT_REGISTRATION_SUBMITTED)->count(),
+        );
+        $this->assertSame(0, UserNotification::where('recipient_id', $bystander->id)->count());
     }
 
     public function test_a_fee_type_the_package_does_not_offer_is_rejected(): void

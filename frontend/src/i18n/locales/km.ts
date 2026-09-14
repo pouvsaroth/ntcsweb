@@ -124,6 +124,7 @@ const km: MessageSchema = {
     types: {
       leave_request_submitted: '{student_name} បានដាក់ស្នើសំណើសុំច្បាប់',
       leave_request_approved: 'សំណើសុំច្បាប់សម្រាប់ {student_name} ត្រូវបានអនុម័ត',
+      student_registration_submitted: '{student_name} បានចុះឈ្មោះ ហើយកំពុងរង់ចាំការអនុម័ត',
     },
   },
 
