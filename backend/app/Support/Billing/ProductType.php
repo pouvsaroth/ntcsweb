@@ -22,11 +22,13 @@ final class ProductType
 
     public const CERTIFICATE = 'CERTIFICATE';
 
+    public const EXAM_FEE = 'EXAM_FEE';
+
     public const OTHER = 'OTHER';
 
     /** @return list<string> */
     public static function all(): array
     {
-        return [self::COURSE_FEE, self::BOOK, self::T_SHIRT, self::UNIFORM, self::CERTIFICATE, self::OTHER];
+        return [self::COURSE_FEE, self::BOOK, self::T_SHIRT, self::UNIFORM, self::CERTIFICATE, self::EXAM_FEE, self::OTHER];
     }
 }

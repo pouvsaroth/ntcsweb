@@ -17,6 +17,7 @@ import DataTable from '@/components/ui/DataTable.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { enrollmentsService, type Enrollment, type EnrollmentStatus } from '@/services/enrollments'
 import { type LookupOption, lookupsService } from '@/services/lookups'
+import { studentsService, type Student } from '@/services/students'
 
 const { t, locale } = useI18n()
 
@@ -44,6 +45,42 @@ const statusFilterOptions = computed(() => [
 function onStatusFilterChange(value: string) {
   selectedStatus.value = value
   setFilter('status', value || undefined)
+}
+
+/** Filter by student — same debounced-search pattern as EnrollmentPackageForm.vue's student picker. */
+const selectedStudent = ref<Student | null>(null)
+const studentSearch = ref('')
+const studentResults = ref<Student[]>([])
+const searchingStudents = ref(false)
+let studentSearchDebounce: ReturnType<typeof setTimeout> | undefined
+
+function onStudentSearchInput() {
+  clearTimeout(studentSearchDebounce)
+  if (!studentSearch.value.trim()) {
+    studentResults.value = []
+    return
+  }
+  studentSearchDebounce = setTimeout(async () => {
+    searchingStudents.value = true
+    try {
+      const result = await studentsService.list({ search: studentSearch.value })
+      studentResults.value = result.data
+    } finally {
+      searchingStudents.value = false
+    }
+  }, 350)
+}
+
+function selectStudent(student: Student) {
+  selectedStudent.value = student
+  studentResults.value = []
+  studentSearch.value = ''
+  setFilter('student_id', String(student.id))
+}
+
+function clearStudentFilter() {
+  selectedStudent.value = null
+  setFilter('student_id', undefined)
 }
 
 const columns = [
@@ -120,6 +157,42 @@ onMounted(() => {
         <h1 class="text-xl font-semibold text-neutral-900">{{ t('admin.enrollments.title') }}</h1>
       </div>
       <div class="flex flex-wrap items-center gap-3">
+        <div class="relative w-56">
+          <div
+            v-if="selectedStudent"
+            class="flex items-center justify-between rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm shadow-sm"
+          >
+            <span class="truncate">{{ selectedStudent.full_name }} <span class="text-neutral-400">({{ selectedStudent.student_code }})</span></span>
+            <button type="button" class="ml-2 shrink-0 text-neutral-400 hover:text-neutral-600" @click="clearStudentFilter">
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <template v-else>
+            <input
+              v-model="studentSearch"
+              type="search"
+              :placeholder="t('admin.enrollments.searchStudentPlaceholder')"
+              class="block w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+              @input="onStudentSearchInput"
+            />
+            <ul
+              v-if="studentResults.length > 0"
+              class="absolute z-10 mt-1 max-h-64 w-full overflow-y-auto divide-y divide-neutral-100 rounded-lg border border-neutral-200 bg-white shadow-lg"
+            >
+              <li v-for="student in studentResults" :key="student.id">
+                <button
+                  type="button"
+                  class="block w-full px-3 py-2 text-left text-sm hover:bg-neutral-50"
+                  @click="selectStudent(student)"
+                >
+                  {{ student.full_name }} <span class="text-neutral-400">({{ student.student_code }})</span>
+                </button>
+              </li>
+            </ul>
+          </template>
+        </div>
         <BaseSelect
           :model-value="selectedStatus"
           :options="statusFilterOptions"

@@ -200,6 +200,34 @@ class EnrollmentTransferTest extends TestCase
         $this->assertSame('active', Enrollment::findOrFail($originalId)->status);
     }
 
+    /**
+     * A transfer moves a student to a different class/table/course — it is
+     * not a new enrollment, so the new row must keep the student's original
+     * enrolled_at rather than stamping the transfer date. Regression test
+     * for a bug where transferClass() always wrote now() here.
+     */
+    public function test_transferring_an_enrollment_keeps_the_original_enrolled_at_date(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE, Permissions::ENROLLMENTS_TRANSFER]);
+        $this->setUpAcademicCatalog();
+        $student = Student::factory()->create();
+
+        $originalId = $this->postJson('/api/v1/enrollments/package', [
+            'student_id' => $student->id,
+            'class_id' => $this->computerEveningClass->id,
+            'course_package_id' => $this->msWordPackage->id,
+            'fee_type' => 'term',
+            'enrolled_at' => '2025-01-15',
+        ])->assertCreated()->json('data.id');
+
+        $newClass = SchoolClass::factory()->forProgram($this->computerProgram)->create(['name' => 'Computer Evening B']);
+
+        $response = $this->postJson("/api/v1/enrollments/{$originalId}/transfer", ['class_id' => $newClass->id]);
+
+        $response->assertOk();
+        $response->assertJsonPath('data.enrolled_at', '2025-01-15');
+    }
+
     public function test_transferring_to_a_different_class_of_the_same_course_still_succeeds_once_paid(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE, Permissions::ENROLLMENTS_TRANSFER]);

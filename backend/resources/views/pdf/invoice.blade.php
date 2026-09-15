@@ -121,6 +121,9 @@
             @if($invoice->student->phone)
                 <p>{{ __('invoice.tel') }}: {{ $invoice->student->phone }}</p>
             @endif
+            @if($enrollmentItem?->reference?->enrollments_code)
+                <p>{{ __('invoice.enrollment_code') }}: {{ $enrollmentItem->reference->enrollments_code }}</p>
+            @endif
         </div>
         <div class="dates">
             <h3>{{ __('invoice.invoice_date') }}</h3>

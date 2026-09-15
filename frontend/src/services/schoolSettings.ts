@@ -22,6 +22,8 @@ export interface SchoolSettings {
   khqr_template: string | null
   /** How many days before a monthly-billed student's next payment is due the dashboard/student popup starts alerting. Always a number — the backend defaults it to 3. */
   monthly_payment_alert_days: number
+  /** The school-wide default exam fee — used to default the Print modal's Fee field, and the exam application self-service flow's own fee snapshot. Null until an admin sets one. */
+  exam_fee_amount: string | null
 }
 
 export interface SchoolSettingsInput {

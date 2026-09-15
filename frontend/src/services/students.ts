@@ -145,4 +145,27 @@ export const studentsService = {
   create: (input: StudentInput) => apiPost<Student>('/students', toFormData(input)),
 
   update: (id: number, input: StudentInput) => apiPost<Student>(`/students/${id}`, toFormData(input, 'PUT')),
+
+  /**
+   * A narrower sibling of update() for callers that only ever touch a
+   * handful of profile fields (e.g. the Exam Application form) and have no
+   * guardians/educations/status on hand — sends only the fields given
+   * instead of forcing the full StudentInput shape. UpdateStudentRequest on
+   * the backend already treats every field here as optional/"sometimes", so
+   * omitting a key leaves it untouched, exactly like update() omitting
+   * guardians/educations does.
+   */
+  updatePartial: (id: number, input: Partial<Pick<StudentInput, 'photo' | 'first_name' | 'last_name' | 'english_name' | 'gender' | 'date_of_birth' | 'phone' | 'village_code'>>) => {
+    const form = new FormData()
+    if (input.photo) form.append('photo', input.photo)
+    if (input.first_name !== undefined) form.append('first_name', input.first_name)
+    if (input.last_name !== undefined) form.append('last_name', input.last_name)
+    if (input.english_name) form.append('english_name', input.english_name)
+    if (input.gender) form.append('gender', input.gender)
+    if (input.date_of_birth) form.append('date_of_birth', input.date_of_birth)
+    if (input.phone) form.append('phone', input.phone)
+    if (input.village_code) form.append('village_code', input.village_code)
+    form.append('_method', 'PUT')
+    return apiPost<Student>(`/students/${id}`, form)
+  },
 }

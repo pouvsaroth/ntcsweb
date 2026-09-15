@@ -275,7 +275,11 @@ final class EnrollmentService
                 'table_id' => $tableId,
                 'course_package_id' => $packageId,
                 'academic_program_id' => $programId,
-                'enrolled_at' => now()->toDateString(),
+                // The student's original enrollment date, not today — a
+                // transfer moves them to a different class/table/course, it
+                // isn't a new enrollment. See EnrollmentEditModal.vue for the
+                // one deliberate, manual way to actually change this date.
+                'enrolled_at' => $enrollment->enrolled_at,
                 'enrollments_code' => $this->generateEnrollmentCode($enrollment->student_id),
                 'status' => Enrollment::STATUS_ACTIVE,
             ]);

@@ -270,7 +270,7 @@ const MODULES: ModuleEntry[] = [
   { name: 'Form categories', group: 'E-Approvals', actions: { manage: 'form-categories.manage' } },
   { name: 'Form templates', group: 'E-Approvals', actions: { manage: 'form-templates.manage' } },
   { name: 'Student feedback', group: 'Communication', actions: { view: 'student-feedback.view', reply: 'student-feedback.reply' } },
-  { name: 'Exam applications', group: 'Academic', actions: { view: 'exam-applications.view', approve: 'exam-applications.approve', reject: 'exam-applications.reject' } },
+  { name: 'Exam applications', group: 'Academic', actions: { view: 'exam-applications.view', create: 'exam-applications.create', update: 'exam-applications.update', delete: 'exam-applications.delete', approve: 'exam-applications.approve', reject: 'exam-applications.reject' } },
   { name: 'System', group: 'Settings', actions: { view: 'audit-logs.view' } },
 ]
 

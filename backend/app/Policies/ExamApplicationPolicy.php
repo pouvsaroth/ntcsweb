@@ -28,6 +28,22 @@ class ExamApplicationPolicy
         return $user->hasPermission(Permissions::EXAM_APPLICATIONS_VIEW);
     }
 
+    public function create(User $user): bool
+    {
+        return $user->hasPermission(Permissions::EXAM_APPLICATIONS_CREATE);
+    }
+
+    /** Also gates the Print (fee + Invoice/Payment) / Receive Word / Pay Back Exam toolbar actions — see Permissions::EXAM_APPLICATIONS_UPDATE. */
+    public function update(User $user, ExamApplication $examApplication): bool
+    {
+        return $user->hasPermission(Permissions::EXAM_APPLICATIONS_UPDATE);
+    }
+
+    public function delete(User $user, ExamApplication $examApplication): bool
+    {
+        return $user->hasPermission(Permissions::EXAM_APPLICATIONS_DELETE);
+    }
+
     public function approve(User $user, ExamApplication $examApplication): bool
     {
         return $user->hasPermission(Permissions::EXAM_APPLICATIONS_APPROVE);

@@ -158,6 +158,59 @@ class Student extends Model
         return trim("{$this->first_name} {$this->last_name}");
     }
 
+    /**
+     * "village, commune, district, province" in Khmer — falls back to the
+     * free-text `other_address` when no `village_code` is set. Lazy-loads
+     * `village.commune.district.province` if not already eager-loaded, so a
+     * single caller (e.g. one exam application lookup) is fine without extra
+     * plumbing, but a list should eager-load that chain itself first.
+     */
+    public function fullAddress(): ?string
+    {
+        $village = $this->village;
+
+        if ($village === null) {
+            return $this->other_address;
+        }
+
+        $commune = $village->commune;
+        $district = $commune?->district;
+        $province = $district?->province;
+
+        $parts = array_filter([
+            trim("{$village->unit_km} {$village->name_km}"),
+            $commune !== null ? trim("{$commune->unit_km} {$commune->name_km}") : null,
+            $district !== null ? trim("{$district->unit_km} {$district->name_km}") : null,
+            $province !== null ? trim("{$province->unit_km} {$province->name_km}") : null,
+        ]);
+
+        return $parts === [] ? null : implode(', ', $parts);
+    }
+
+    /**
+     * The same province/district/commune/village chain as {@see fullAddress()},
+     * split into its four levels — for a form that shows each as its own
+     * field (see the Exam Application form) rather than one concatenated
+     * string (the grid's "Address" column, which uses fullAddress()
+     * instead).
+     *
+     * @return array{province:?string, district:?string, commune:?string, village:?string}
+     */
+    public function addressParts(): array
+    {
+        $village = $this->village;
+        $commune = $village?->commune;
+        $district = $commune?->district;
+        $province = $district?->province;
+
+        return [
+            'province' => $province !== null ? trim("{$province->unit_km} {$province->name_km}") : null,
+            'district' => $district !== null ? trim("{$district->unit_km} {$district->name_km}") : null,
+            'commune' => $commune !== null ? trim("{$commune->unit_km} {$commune->name_km}") : null,
+            'village' => $village !== null ? trim("{$village->unit_km} {$village->name_km}") : null,
+        ];
+    }
+
     public function photoUrl(): ?string
     {
         return $this->photo_path !== null ? Storage::disk('public')->url($this->photo_path) : null;

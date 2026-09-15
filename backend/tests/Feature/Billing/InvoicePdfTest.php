@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Billing;
 
+use App\Models\Enrollment;
 use App\Models\Invoice;
+use App\Models\InvoiceItem;
 use App\Models\Student;
 use App\Support\Authorization\Permissions;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -79,6 +81,46 @@ class InvoicePdfTest extends TestCase
         $this->assertStringContainsString('វិក្កយបត្រ', $html);
         $this->assertStringContainsString('ត្រូវទូទាត់ដោយ', $html);
         $this->assertStringContainsString('សរុបរង', $html);
+    }
+
+    public function test_the_enrollment_code_appears_below_tel_when_the_invoice_came_from_an_enrollment(): void
+    {
+        $this->actingAsAdminWithPermissions([]);
+        app()->setLocale('en');
+
+        $student = Student::factory()->create(['phone' => '012345678']);
+        $enrollment = Enrollment::factory()->forStudent($student)->create(['enrollments_code' => 'NTS-000042-01']);
+        $invoice = Invoice::factory()->forStudent($student)->create();
+        InvoiceItem::factory()->forInvoice($invoice)->create([
+            'reference_type' => Enrollment::class,
+            'reference_id' => $enrollment->id,
+        ]);
+        $invoice->load(['items.product', 'items.variant', 'items.reference.schoolClass.schedules', 'student', 'payments']);
+
+        $html = View::make('pdf.invoice', [
+            'invoice' => $invoice,
+            'tenant' => $this->tenant,
+            'issuerStaff' => null,
+            'logoDataUri' => null,
+            'stampDataUri' => null,
+            'signatureDataUri' => null,
+            'khmerFontRegular' => $this->khmerFontDataUri('Regular'),
+            'khmerFontBold' => $this->khmerFontDataUri('Bold'),
+        ])->render();
+
+        $this->assertStringContainsString('Enrollment Code', $html);
+        $this->assertStringContainsString('NTS-000042-01', $html);
+        $this->assertTrue(strpos($html, 'Tel') < strpos($html, 'Enrollment Code'));
+    }
+
+    public function test_no_enrollment_code_line_when_the_invoice_has_no_enrollment_reference(): void
+    {
+        $this->actingAsAdminWithPermissions([]);
+        app()->setLocale('en');
+
+        $html = $this->invoiceView();
+
+        $this->assertStringNotContainsString('Enrollment Code', $html);
     }
 
     public function test_the_khmer_font_is_registered_for_the_body_and_bundled_files_exist(): void

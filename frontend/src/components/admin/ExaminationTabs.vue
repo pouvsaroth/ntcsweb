@@ -13,6 +13,7 @@ const route = useRoute()
 
 const tabs = [
   { to: '/admin/exams', labelKey: 'adminNav.items.exams' },
+  { to: '/admin/exams/approvals', labelKey: 'admin.exams.approvalsTab' },
   { to: '/admin/grades', labelKey: 'adminNav.items.grades' },
 ]
 </script>

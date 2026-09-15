@@ -443,9 +443,17 @@ final class Permissions
     // Exam Applications — a student's own self-submitted application to sit
     // an exam for one of their own enrollments (see ExamApplication's
     // docblock). Submitting/viewing your own is identity-gated (no
-    // permission needed, MyExamApplicationController); these three gate the
-    // admin queue only.
+    // permission needed, MyExamApplicationController); these gate the admin
+    // side only. CREATE/UPDATE also cover the Sell Word/Receive Word/Pay
+    // Back Exam toolbar actions — they're just field stamps on the same
+    // row, not separate abilities.
     public const EXAM_APPLICATIONS_VIEW = 'exam-applications.view';
+
+    public const EXAM_APPLICATIONS_CREATE = 'exam-applications.create';
+
+    public const EXAM_APPLICATIONS_UPDATE = 'exam-applications.update';
+
+    public const EXAM_APPLICATIONS_DELETE = 'exam-applications.delete';
 
     public const EXAM_APPLICATIONS_APPROVE = 'exam-applications.approve';
 
@@ -770,6 +778,9 @@ final class Permissions
             ],
             'Exam Applications' => [
                 self::EXAM_APPLICATIONS_VIEW => "View students' exam applications",
+                self::EXAM_APPLICATIONS_CREATE => 'Create exam applications',
+                self::EXAM_APPLICATIONS_UPDATE => 'Edit exam applications (including Sell/Receive/Pay Back Word)',
+                self::EXAM_APPLICATIONS_DELETE => 'Delete exam applications',
                 self::EXAM_APPLICATIONS_APPROVE => 'Approve exam applications',
                 self::EXAM_APPLICATIONS_REJECT => 'Reject exam applications',
             ],
@@ -928,6 +939,9 @@ final class Permissions
                 self::STUDENT_FEEDBACK_VIEW,
                 self::STUDENT_FEEDBACK_REPLY,
                 self::EXAM_APPLICATIONS_VIEW,
+                self::EXAM_APPLICATIONS_CREATE,
+                self::EXAM_APPLICATIONS_UPDATE,
+                self::EXAM_APPLICATIONS_DELETE,
                 self::EXAM_APPLICATIONS_APPROVE,
                 self::EXAM_APPLICATIONS_REJECT,
                 ...$academicManagement,

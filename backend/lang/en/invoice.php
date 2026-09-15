@@ -16,6 +16,7 @@ return [
     'name' => 'Name',
     'english_name' => 'English Name',
     'tel' => 'Tel',
+    'enrollment_code' => 'Enrollment Code',
     'class' => 'Class',
     'time' => 'Time',
     'invoice_date' => 'Invoice Date',
