@@ -20,6 +20,8 @@ export interface SchoolSettings {
   stamp_url: string | null
   /** The school's own static Bakong KHQR string (e.g. from ACLEDA Toanchet's "My QR") — see backend App\Support\Billing\Khqr. */
   khqr_template: string | null
+  /** How many days before a monthly-billed student's next payment is due the dashboard/student popup starts alerting. Always a number — the backend defaults it to 3. */
+  monthly_payment_alert_days: number
 }
 
 export interface SchoolSettingsInput {
@@ -30,6 +32,8 @@ export interface SchoolSettingsInput {
   locale: InvoiceLocale
   default_currency: Currency
   khqr_template: string
+  /** Empty string means "use the default" — omitted from the request rather than sent as 0/blank. */
+  monthly_payment_alert_days: string
   /** Omitted when the admin isn't replacing the logo. */
   logo?: File
   /** Omitted when the admin isn't replacing the stamp. */
@@ -52,6 +56,7 @@ function toFormData(input: SchoolSettingsInput): FormData {
   form.append('locale', input.locale)
   form.append('default_currency', input.default_currency)
   if (input.khqr_template.trim()) form.append('khqr_template', input.khqr_template.trim())
+  if (input.monthly_payment_alert_days.trim()) form.append('monthly_payment_alert_days', input.monthly_payment_alert_days.trim())
   if (input.logo) form.append('logo', input.logo)
   if (input.stamp) form.append('stamp', input.stamp)
 

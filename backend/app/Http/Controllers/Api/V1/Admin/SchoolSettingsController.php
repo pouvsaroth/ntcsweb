@@ -36,7 +36,7 @@ final class SchoolSettingsController extends Controller
         $tenant = $this->context->getOrFail();
         $this->authorize('update', $tenant);
 
-        $data = $request->safe()->except(['logo', 'stamp', 'khqr_template']);
+        $data = $request->safe()->except(['logo', 'stamp', 'khqr_template', 'monthly_payment_alert_days']);
         $logoPath = $tenant->logo;
         $stampPath = $tenant->stamp;
 
@@ -74,7 +74,13 @@ final class SchoolSettingsController extends Controller
             ...$data,
             'logo' => $logoPath,
             'stamp' => $stampPath,
-            'settings' => [...($tenant->settings ?? []), 'khqr_template' => $request->safe()->input('khqr_template')],
+            'settings' => [
+                ...($tenant->settings ?? []),
+                'khqr_template' => $request->safe()->input('khqr_template'),
+                'monthly_payment_alert_days' => $request->filled('monthly_payment_alert_days')
+                    ? (int) $request->safe()->input('monthly_payment_alert_days')
+                    : null,
+            ],
         ]);
 
         return ApiResponse::success($this->present($tenant->fresh()));
@@ -93,6 +99,7 @@ final class SchoolSettingsController extends Controller
             'logo_url' => $tenant->logoUrl(),
             'stamp_url' => $tenant->stampUrl(),
             'khqr_template' => $tenant->khqrTemplate(),
+            'monthly_payment_alert_days' => $tenant->monthlyPaymentAlertDays(),
         ];
     }
 }

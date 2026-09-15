@@ -44,7 +44,7 @@ final class InvoiceController extends Controller
 
         $invoices = ApiQuery::for($query, $request)
             ->searchable('invoice_number')
-            ->filterable(['status', 'student_id'])
+            ->filterable(['status', 'student_id', 'payment_type'])
             ->sortable(['invoice_number', 'invoice_date', 'due_date', 'total', 'balance', 'created_at'], default: '-created_at')
             ->paginate();
 

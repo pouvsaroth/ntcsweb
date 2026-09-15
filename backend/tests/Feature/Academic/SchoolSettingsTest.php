@@ -166,6 +166,44 @@ class SchoolSettingsTest extends TestCase
         $this->assertArrayNotHasKey('khqr_template', $response->json('data'));
     }
 
+    public function test_it_defaults_the_monthly_payment_alert_days_to_three(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::TENANT_SETTINGS_VIEW]);
+
+        $response = $this->getJson('/api/v1/settings/school');
+
+        $response->assertOk();
+        $response->assertJsonPath('data.monthly_payment_alert_days', 3);
+    }
+
+    public function test_it_saves_the_monthly_payment_alert_days_without_touching_other_settings_keys(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::TENANT_SETTINGS_UPDATE]);
+        $this->admin->tenant->update(['settings' => ['about' => ['history_title' => 'Our Story']]]);
+
+        $this->postJson('/api/v1/settings/school', [
+            'name' => 'NewTech Computer School',
+            'monthly_payment_alert_days' => 5,
+        ])->assertOk();
+
+        $tenant = $this->tenant->fresh();
+        $this->assertSame(5, $tenant->monthlyPaymentAlertDays());
+        $this->assertSame('Our Story', $tenant->setting('about')['history_title']);
+    }
+
+    public function test_the_monthly_payment_alert_days_must_be_a_reasonable_positive_number(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::TENANT_SETTINGS_UPDATE]);
+
+        $response = $this->postJson('/api/v1/settings/school', [
+            'name' => 'NewTech Computer School',
+            'monthly_payment_alert_days' => 0,
+        ]);
+
+        $response->assertUnprocessable();
+        $response->assertJsonValidationErrors('monthly_payment_alert_days');
+    }
+
     public function test_it_saves_the_invoice_language(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::TENANT_SETTINGS_UPDATE]);

@@ -7,6 +7,8 @@ import BaseCard from '@/components/ui/BaseCard.vue'
 import { accountingReportsService } from '@/services/accounting'
 import { attendanceService } from '@/services/attendance'
 import { enrollmentsService } from '@/services/enrollments'
+import type { MonthlyInvoice } from '@/services/monthlyInvoices'
+import { monthlyPaymentAlertsService } from '@/services/monthlyPaymentAlerts'
 import { studentsService } from '@/services/students'
 import { useAuthStore } from '@/stores/auth'
 import { formatMoney } from '@/utils/currency'
@@ -76,6 +78,7 @@ const monthlyExpense = ref<string>('—')
 const dailyExpense = ref<string>('—')
 const absentToday = ref<string>('—')
 const absentYesterday = ref<string>('—')
+const monthlyPaymentAlerts = ref<MonthlyInvoice[]>([])
 
 let currency: 'USD' | 'KHR' = 'USD'
 
@@ -134,6 +137,16 @@ async function loadStats(): Promise<void> {
   } catch {
     // Left as '—' — most likely the signed-in admin just lacks attendance.view.
   }
+
+  try {
+    monthlyPaymentAlerts.value = await monthlyPaymentAlertsService.list()
+  } catch {
+    // Left empty — most likely the signed-in admin just lacks invoices.view.
+  }
+}
+
+function formatDate(value: string | null): string {
+  return value ? new Date(value).toLocaleDateString() : '—'
 }
 
 onMounted(() => {
@@ -187,6 +200,33 @@ onMounted(() => {
           <p class="mt-1 text-3xl font-bold text-neutral-900">{{ absentYesterday }}</p>
         </BaseCard>
       </div>
+
+      <template v-if="monthlyPaymentAlerts.length > 0">
+        <h2 class="mt-8 text-sm font-semibold uppercase tracking-wide text-neutral-500">{{ t('admin.dashboard.monthlyPaymentAlertsSection') }}</h2>
+        <BaseCard class="mt-3">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+              <thead class="text-neutral-500">
+                <tr>
+                  <th class="py-1.5 pr-4 font-medium">{{ t('admin.invoices.columnStudent') }}</th>
+                  <th class="py-1.5 pr-4 font-medium">{{ t('admin.invoices.monthlyColumnCourse') }}</th>
+                  <th class="py-1.5 pr-4 font-medium">{{ t('admin.invoices.monthlyColumnNextPayment') }}</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-neutral-100">
+                <tr v-for="row in monthlyPaymentAlerts" :key="row.id">
+                  <td class="py-1.5 pr-4 text-neutral-800">{{ row.student?.name ?? '—' }}</td>
+                  <td class="py-1.5 pr-4 text-neutral-700">{{ row.course ?? '—' }}</td>
+                  <td class="py-1.5 pr-4 font-medium text-danger-600">{{ formatDate(row.next_payment_date) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <RouterLink to="/admin/invoices/monthly" class="mt-3 inline-block text-sm font-medium text-primary-700 hover:text-primary-800">
+            {{ t('admin.dashboard.monthlyPaymentAlertsViewAll') }}
+          </RouterLink>
+        </BaseCard>
+      </template>
 
       <h2 class="mt-8 text-sm font-semibold uppercase tracking-wide text-neutral-500">{{ t('admin.dashboard.title') }}</h2>
       <div class="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">

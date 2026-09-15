@@ -36,6 +36,7 @@ class InvoiceResource extends JsonResource
             'balance' => (float) $this->balance,
             'currency' => $this->currency,
             'notes' => $this->notes,
+            'payment_type' => $this->payment_type,
             'cancellation_reason' => $this->cancellation_reason,
             'cancelled_by' => $this->whenLoaded('cancelledBy', fn () => $this->cancelledBy?->name),
             'cancelled_at' => $this->cancelled_at?->toIso8601String(),

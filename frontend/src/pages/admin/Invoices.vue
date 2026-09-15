@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
 
+import InvoicesTabs from '@/components/admin/InvoicesTabs.vue'
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
@@ -10,7 +11,14 @@ import BasePagination from '@/components/ui/BasePagination.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
 import DataTable from '@/components/ui/DataTable.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
-import { invoiceStatuses, invoicesService, type Invoice, type InvoiceStatusValue } from '@/services/invoices'
+import {
+  invoiceStatuses,
+  invoicesService,
+  paymentTypes,
+  type Invoice,
+  type InvoiceStatusValue,
+  type PaymentTypeValue,
+} from '@/services/invoices'
 
 const { t } = useI18n()
 
@@ -48,9 +56,28 @@ function onStatusFilterChange(value: string) {
   setFilter('status', value || undefined)
 }
 
+function paymentTypeKey(type: PaymentTypeValue): string {
+  return type
+    .split('_')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join('')
+}
+
+const selectedPaymentType = ref('')
+
+const paymentTypeFilterOptions = computed(() =>
+  paymentTypes.map((type) => ({ value: type, label: t(`admin.invoices.paymentType${paymentTypeKey(type)}`) })),
+)
+
+function onPaymentTypeFilterChange(value: string) {
+  selectedPaymentType.value = value
+  setFilter('payment_type', value || undefined)
+}
+
 const columns = [
   { key: 'invoice_number', label: t('admin.invoices.columnNumber'), sortable: true },
   { key: 'student', label: t('admin.invoices.columnStudent') },
+  { key: 'payment_type', label: t('admin.invoices.columnPaymentType') },
   { key: 'total', label: t('admin.invoices.columnTotal'), sortable: true, align: 'text-right' },
   { key: 'balance', label: t('admin.invoices.columnBalance'), sortable: true, align: 'text-right' },
   { key: 'status', label: t('admin.invoices.columnStatus') },
@@ -68,6 +95,8 @@ onMounted(() => setFilter('status', selectedStatus.value || undefined))
 
 <template>
   <div>
+    <InvoicesTabs />
+
     <BaseAlert v-if="error" variant="danger" class="mb-4">{{ error }}</BaseAlert>
 
     <div class="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -83,6 +112,12 @@ onMounted(() => setFilter('status', selectedStatus.value || undefined))
         :placeholder="t('admin.invoices.filterAllStatuses')"
         @update:model-value="onStatusFilterChange"
       />
+      <BaseSelect
+        :model-value="selectedPaymentType"
+        :options="paymentTypeFilterOptions"
+        :placeholder="t('admin.invoices.filterAllPaymentTypes')"
+        @update:model-value="onPaymentTypeFilterChange"
+      />
       <BaseButton to="/admin/invoices/new">{{ t('admin.invoices.addInvoice') }}</BaseButton>
     </div>
 
@@ -96,6 +131,9 @@ onMounted(() => setFilter('status', selectedStatus.value || undefined))
       @sort="(col) => setSort(sort === col ? `-${col}` : col)"
     >
       <template #cell-student="{ row }">{{ row.student?.name ?? '—' }}</template>
+      <template #cell-payment_type="{ row }">
+        {{ row.payment_type ? t(`admin.invoices.paymentType${paymentTypeKey(row.payment_type)}`) : '—' }}
+      </template>
       <template #cell-total="{ row }">${{ row.total.toFixed(2) }}</template>
       <template #cell-balance="{ row }">${{ row.balance.toFixed(2) }}</template>
       <template #cell-status="{ row }">

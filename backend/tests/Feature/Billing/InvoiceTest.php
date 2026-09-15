@@ -48,6 +48,31 @@ class InvoiceTest extends TestCase
         $response->assertJsonPath('data.invoice_number', fn ($number) => str_starts_with($number, 'INV-'.now()->year.'-'));
     }
 
+    public function test_a_manual_invoice_can_record_a_payment_type(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::INVOICES_CREATE, Permissions::INVOICES_VIEW]);
+        $student = Student::factory()->create();
+        $product = Product::factory()->create(['price' => 10]);
+
+        $response = $this->postJson('/api/v1/invoices', [
+            'student_id' => $student->id,
+            'payment_type' => 'monthly',
+            'items' => [['product_id' => $product->id, 'quantity' => 1]],
+        ]);
+
+        $response->assertCreated();
+        $response->assertJsonPath('data.payment_type', 'monthly');
+
+        $rejected = $this->postJson('/api/v1/invoices', [
+            'student_id' => $student->id,
+            'payment_type' => 'yearly',
+            'items' => [['product_id' => $product->id, 'quantity' => 1]],
+        ]);
+
+        $rejected->assertUnprocessable();
+        $rejected->assertJsonValidationErrors('payment_type');
+    }
+
     public function test_the_frontend_cannot_inject_arbitrary_totals(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::INVOICES_CREATE]);

@@ -217,6 +217,21 @@ const adminRoutes: RouteRecordRaw[] = [
     meta: { titleKey: 'adminNav.items.classes' },
   },
   {
+    // The "View" button on Classes.vue after checking several classes —
+    // same ClassStudents.vue component, reading class_ids from the query
+    // string instead of a single :id route param.
+    path: 'classes/students',
+    name: 'admin.classes.students.multi',
+    component: () => import('@/pages/admin/ClassStudents.vue'),
+    meta: { titleKey: 'adminNav.items.classes' },
+  },
+  {
+    path: 'classes/attendance',
+    name: 'admin.classes.attendance',
+    component: () => import('@/pages/admin/MultiClassAttendance.vue'),
+    meta: { titleKey: 'adminNav.items.classes' },
+  },
+  {
     path: 'enrollments',
     name: 'admin.enrollments',
     component: () => import('@/pages/admin/Enrollments.vue'),
@@ -406,6 +421,12 @@ const adminRoutes: RouteRecordRaw[] = [
     path: 'invoices/new',
     name: 'admin.invoices.new',
     component: () => import('@/pages/admin/InvoiceForm.vue'),
+    meta: { titleKey: 'adminNav.items.invoices' },
+  },
+  {
+    path: 'invoices/monthly',
+    name: 'admin.invoices.monthly',
+    component: () => import('@/pages/admin/MonthlyInvoices.vue'),
     meta: { titleKey: 'adminNav.items.invoices' },
   },
   {

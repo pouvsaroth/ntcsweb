@@ -21,6 +21,10 @@ export function isInvoiceClosed(status: InvoiceStatusValue): boolean {
   return status === 'CANCELLED' || status === 'VOID'
 }
 
+export type PaymentTypeValue = 'monthly' | 'term' | 'video' | 'monthly_online' | 'term_online'
+
+export const paymentTypes: PaymentTypeValue[] = ['monthly', 'term', 'video', 'monthly_online', 'term_online']
+
 export type NotificationChannelValue = 'EMAIL' | 'TELEGRAM' | 'MESSENGER'
 
 export const notificationChannels: NotificationChannelValue[] = ['EMAIL', 'TELEGRAM', 'MESSENGER']
@@ -61,6 +65,7 @@ export interface Invoice {
   balance: number
   currency: Currency
   notes: string | null
+  payment_type: PaymentTypeValue | null
   cancellation_reason: string | null
   /** Only present once the invoice has actually been cancelled/voided (backend omits it via whenLoaded() otherwise). */
   cancelled_by?: string | null
@@ -102,6 +107,8 @@ export interface InvoiceInput {
   discount: string
   tax: string
   notes: string
+  /** Empty string means "not a course-fee invoice" — omitted from the payload when blank. */
+  payment_type: PaymentTypeValue | ''
   items: InvoiceItemInput[]
 }
 
@@ -126,6 +133,7 @@ function toInvoicePayload(input: InvoiceInput) {
     discount: input.discount.trim() ? Number(input.discount) : undefined,
     tax: input.tax.trim() ? Number(input.tax) : undefined,
     notes: input.notes || undefined,
+    payment_type: input.payment_type || undefined,
     items: input.items.map((item) => ({
       product_id: item.product_id,
       product_variant_id: item.product_variant_id,

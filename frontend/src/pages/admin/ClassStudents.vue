@@ -19,8 +19,27 @@ import { ApiRequestError } from '@/types/api'
 const { t, locale } = useI18n()
 const route = useRoute()
 
-const classId = computed(() => Number(route.params.id))
+/**
+ * Reached two ways: the single-class route `/admin/classes/:id/students`
+ * (route param), or the "View" button on Classes.vue after checking several
+ * classes, which lands on `/admin/classes/students?class_ids=1,2,3` (query
+ * string, no `:id`). Everything below branches on `classIds.length` rather
+ * than on which route matched — one class via either path renders identically.
+ */
+const classIds = computed<number[]>(() => {
+  if (route.params.id) return [Number(route.params.id)]
 
+  const raw = route.query.class_ids
+  const csv = typeof raw === 'string' ? raw : ''
+  return csv
+    .split(',')
+    .map((s) => Number(s.trim()))
+    .filter((n) => Number.isInteger(n) && n > 0)
+})
+
+const isSingleClass = computed(() => classIds.value.length === 1)
+
+/** Only fetched (and only shown) in single-class mode — see isSingleClass. */
 const schoolClass = ref<SchoolClass | null>(null)
 const roster = ref<Enrollment[]>([])
 const loading = ref(true)
@@ -35,14 +54,16 @@ const statusFilterOptions = computed(() => [
   ...statusLookup.value.map((option) => ({ value: option.code, label: option.name })),
 ])
 
-const columns = [
+/** The Class column only earns its place once rows can come from more than one class — see isSingleClass. */
+const columns = computed(() => [
   { key: 'index', label: '#' },
   { key: 'student', label: t('admin.classStudents.columnStudent'), sortable: true },
   { key: 'gender', label: t('admin.classStudents.columnGender') },
+  ...(isSingleClass.value ? [] : [{ key: 'class', label: t('admin.classStudents.columnClass') }]),
   { key: 'table', label: t('admin.classStudents.columnTable'), sortable: true },
   { key: 'book', label: t('admin.classStudents.columnBook'), sortable: true },
   { key: 'actions', label: t('admin.classStudents.columnActions'), align: 'text-right' },
-]
+])
 
 /**
  * The whole roster is fetched in one shot (it's one class, never paginated),
@@ -102,7 +123,14 @@ const academicYear = computed(() => {
 })
 
 async function loadRoster() {
-  const filter: Record<string, string | number> = { class_id: classId.value }
+  if (classIds.value.length === 0) {
+    roster.value = []
+    return
+  }
+
+  // The backend's `filter[class_id]` already accepts a comma-separated list
+  // (ApiQuery::applyFilters -> whereIn) — one class or several is the same call.
+  const filter: Record<string, string> = { class_id: classIds.value.join(',') }
   if (selectedStatus.value) filter.status = selectedStatus.value
 
   const enrollments = await enrollmentsService.listAll(filter)
@@ -114,14 +142,23 @@ async function load() {
   loadError.value = null
 
   try {
-    const [classResult] = await Promise.all([classesService.get(classId.value), loadRoster()])
-    schoolClass.value = classResult
+    if (isSingleClass.value) {
+      const [classResult] = await Promise.all([classesService.get(classIds.value[0]), loadRoster()])
+      schoolClass.value = classResult
+    } else {
+      schoolClass.value = null
+      await loadRoster()
+    }
   } catch (error) {
     loadError.value = error instanceof ApiRequestError ? error.message : t('admin.classStudents.loadFailed')
   } finally {
     loading.value = false
   }
 }
+
+const attendanceLink = computed(() =>
+  isSingleClass.value ? `/admin/attendance?class_id=${classIds.value[0]}` : `/admin/classes/attendance?class_ids=${classIds.value.join(',')}`,
+)
 
 async function onStatusFilterChange(value: string) {
   selectedStatus.value = value as EnrollmentStatus | ''
@@ -148,8 +185,15 @@ onMounted(() => {
     <BaseSpinner v-if="loading" class="mx-auto" />
     <BaseAlert v-else-if="loadError" variant="danger">{{ loadError }}</BaseAlert>
 
-    <template v-else-if="schoolClass">
-      <div class="mb-6 grid gap-x-8 gap-y-2 rounded-[--radius-card] border border-neutral-200 bg-white p-4 sm:grid-cols-2">
+    <p v-else-if="classIds.length === 0" class="rounded-[--radius-card] border border-dashed border-neutral-300 py-10 text-center text-sm text-neutral-500">
+      {{ t('admin.classStudents.noClassesSelected') }}
+    </p>
+
+    <template v-else>
+      <!-- Class/Teacher/Academic Year/Time only make sense for exactly one
+           class — with several selected, each row's own Class column (see
+           columns above) carries that instead. -->
+      <div v-if="schoolClass" class="mb-6 grid gap-x-8 gap-y-2 rounded-[--radius-card] border border-neutral-200 bg-white p-4 sm:grid-cols-2">
         <div class="flex justify-between border-b border-neutral-100 pb-2 sm:border-b-0 sm:pb-0">
           <span class="text-sm text-neutral-500">{{ t('admin.classStudents.class') }}</span>
           <span class="text-sm font-medium text-neutral-800">{{ schoolClass.name }}</span>
@@ -171,9 +215,10 @@ onMounted(() => {
           <span class="text-sm font-medium text-neutral-800">{{ schoolClass.assistant_teachers.map((t) => t.name).join(', ') }}</span>
         </div>
       </div>
+      <p v-else class="mb-4 text-sm text-neutral-500">{{ t('admin.classStudents.multiSubtitle', { count: classIds.length }) }}</p>
 
       <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <BaseButton :to="`/admin/attendance?class_id=${classId}`" variant="outline">{{ t('admin.classStudents.attendance') }}</BaseButton>
+        <BaseButton :to="attendanceLink" variant="outline">{{ t('admin.classStudents.attendance') }}</BaseButton>
         <BaseSelect
           :model-value="selectedStatus"
           :options="statusFilterOptions"
@@ -193,6 +238,7 @@ onMounted(() => {
         <template #cell-index="{ row }">{{ sortedRoster.indexOf(row) + 1 }}</template>
         <template #cell-student="{ row }">{{ row.student.full_name }}</template>
         <template #cell-gender="{ row }">{{ row.student.gender ?? '—' }}</template>
+        <template #cell-class="{ row }">{{ row.class?.name ?? '—' }}</template>
         <template #cell-table="{ row }">{{ row.table?.name ?? '—' }}</template>
         <template #cell-book="{ row }">{{ row.course_package?.name ?? '—' }}</template>
         <template #cell-actions="{ row }">

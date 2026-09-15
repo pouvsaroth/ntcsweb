@@ -16,6 +16,7 @@ import {
   type Invoice,
   type InvoiceStatusValue,
   type NotificationLog,
+  type PaymentTypeValue,
 } from '@/services/invoices'
 import { paymentsService, type Payment, type PaymentStatusValue } from '@/services/payments'
 import { ApiRequestError } from '@/types/api'
@@ -36,6 +37,13 @@ const actionError = ref<string | null>(null)
 function statusKey(status: InvoiceStatusValue): string {
   return status
     .toLowerCase()
+    .split('_')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join('')
+}
+
+function paymentTypeKey(type: PaymentTypeValue): string {
+  return type
     .split('_')
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join('')
@@ -346,6 +354,10 @@ onMounted(load)
             <dl class="space-y-2 text-sm">
               <div class="flex justify-between"><dt class="text-neutral-500">{{ t('admin.invoices.invoiceDate') }}</dt><dd>{{ formatDate(invoice.invoice_date) }}</dd></div>
               <div class="flex justify-between"><dt class="text-neutral-500">{{ t('admin.invoices.dueDate') }}</dt><dd>{{ formatDate(invoice.due_date) }}</dd></div>
+              <div class="flex justify-between">
+                <dt class="text-neutral-500">{{ t('admin.invoices.paymentType') }}</dt>
+                <dd>{{ invoice.payment_type ? t(`admin.invoices.paymentType${paymentTypeKey(invoice.payment_type)}`) : '—' }}</dd>
+              </div>
               <div class="flex justify-between"><dt class="text-neutral-500">{{ t('admin.invoices.createdBy') }}</dt><dd>{{ invoice.created_by ?? '—' }}</dd></div>
               <div class="flex justify-between"><dt class="text-neutral-500">{{ t('admin.invoices.columnCreatedAt') }}</dt><dd>{{ formatDateTime(invoice.created_at) }}</dd></div>
             </dl>

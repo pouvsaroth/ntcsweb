@@ -139,6 +139,18 @@ class Tenant extends Model implements TenantWithDatabase
     }
 
     /**
+     * How many days before a monthly-billed student's next payment is due
+     * the dashboard (and their own student-facing popup) should start
+     * flagging them — see MonthlyInvoiceController for how "next payment
+     * date" itself is computed. Defaults to 3 rather than requiring every
+     * school to configure this before the feature does anything.
+     */
+    public function monthlyPaymentAlertDays(): int
+    {
+        return (int) $this->setting('monthly_payment_alert_days', 3);
+    }
+
+    /**
      * `logo` stores a bare disk path (see SchoolSettingsController) — this is
      * the one place that turns it into something an `<img>` tag can load.
      */

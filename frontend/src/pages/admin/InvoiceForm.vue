@@ -7,8 +7,8 @@ import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
-import type { InvoiceInput, InvoiceItemInput } from '@/services/invoices'
-import { invoicesService } from '@/services/invoices'
+import type { InvoiceInput, InvoiceItemInput, PaymentTypeValue } from '@/services/invoices'
+import { invoicesService, paymentTypes } from '@/services/invoices'
 import { productsService, type Product } from '@/services/products'
 import { studentsService, type Student } from '@/services/students'
 import { ApiRequestError } from '@/types/api'
@@ -75,8 +75,18 @@ const form = reactive<InvoiceInput>({
   discount: '',
   tax: '',
   notes: '',
+  payment_type: '',
   items: [emptyItem()],
 })
+
+function paymentTypeKey(type: PaymentTypeValue): string {
+  return type
+    .split('_')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join('')
+}
+
+const paymentTypeOptions = computed(() => paymentTypes.map((type) => ({ value: type, label: t(`admin.invoices.paymentType${paymentTypeKey(type)}`) })))
 
 function addItem() {
   form.items.push(emptyItem())
@@ -197,6 +207,17 @@ onMounted(async () => {
       <section class="grid grid-cols-2 gap-4">
         <BaseInput v-model="form.invoice_date" type="date" :label="t('admin.invoices.invoiceDate')" :error="errors.invoice_date?.[0]" />
         <BaseInput v-model="form.due_date" type="date" :label="t('admin.invoices.dueDate')" :error="errors.due_date?.[0]" />
+      </section>
+
+      <section class="grid grid-cols-2 gap-4">
+        <BaseSelect
+          :model-value="form.payment_type"
+          :options="paymentTypeOptions"
+          :placeholder="t('admin.invoices.paymentTypeNone')"
+          :label="t('admin.invoices.paymentType')"
+          :error="errors.payment_type?.[0]"
+          @update:model-value="form.payment_type = $event as PaymentTypeValue | ''"
+        />
       </section>
 
       <section>

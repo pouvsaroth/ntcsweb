@@ -112,6 +112,7 @@ final class EnrollmentService
                 'currency' => $invoiceCurrency,
                 'discount' => (float) ($data['discount_price'] ?? 0),
                 'discount_reason' => $data['discount_reason'] ?? null,
+                'payment_type' => $feeType,
                 'items' => [[
                     'product_id' => $package->product_id,
                     'unit_price' => $fee,

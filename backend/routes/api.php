@@ -45,6 +45,8 @@ use App\Http\Controllers\Api\V1\Admin\GeneralSettingsController;
 use App\Http\Controllers\Api\V1\Admin\HomeSlideController as AdminHomeSlideController;
 use App\Http\Controllers\Api\V1\Admin\IncomeController;
 use App\Http\Controllers\Api\V1\Admin\InvoiceController;
+use App\Http\Controllers\Api\V1\Admin\MonthlyInvoiceController;
+use App\Http\Controllers\Api\V1\Admin\MonthlyPaymentAlertController;
 use App\Http\Controllers\Api\V1\Admin\LanguageController;
 use App\Http\Controllers\Api\V1\Admin\LeaveRequestController;
 use App\Http\Controllers\Api\V1\Admin\LookupCategoryController;
@@ -81,6 +83,7 @@ use App\Http\Controllers\Api\V1\MyAssetController;
 use App\Http\Controllers\Api\V1\MyAttendanceController;
 use App\Http\Controllers\Api\V1\MyExamApplicationController;
 use App\Http\Controllers\Api\V1\MyInvoiceController;
+use App\Http\Controllers\Api\V1\MyMonthlyPaymentAlertController;
 use App\Http\Controllers\Api\V1\MyLeaveRequestController;
 use App\Http\Controllers\Api\V1\MyStudentFeedbackController;
 use App\Http\Controllers\Api\V1\NotificationController;
@@ -360,6 +363,11 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::delete('product-variants/{variant}', [ProductVariantController::class, 'destroy'])->name('product-variants.destroy');
 
         Route::apiResource('invoices', InvoiceController::class)->only(['index', 'store', 'show']);
+        // A separate top-level path (not invoices/monthly) so it can never be
+        // shadowed by the invoices/{invoice} route-model-bound route above.
+        Route::get('monthly-invoices', [MonthlyInvoiceController::class, 'index'])->name('monthly-invoices.index');
+        // The dashboard's "students due for monthly payment" widget.
+        Route::get('monthly-payment-alerts', [MonthlyPaymentAlertController::class, 'index'])->name('monthly-payment-alerts.index');
         Route::post('invoices/{invoice}/cancel', [InvoiceController::class, 'cancel'])->name('invoices.cancel');
         Route::post('invoices/{invoice}/void', [InvoiceController::class, 'void'])->name('invoices.void');
         Route::get('invoices/{invoice}/pdf', [InvoiceController::class, 'downloadPdf'])->name('invoices.pdf');
@@ -492,6 +500,10 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('my-invoices', [MyInvoiceController::class, 'index'])->name('my-invoices.index');
         Route::get('my-invoices/{invoice}', [MyInvoiceController::class, 'show'])->name('my-invoices.show');
         Route::get('my-invoices/{invoice}/pdf', [MyInvoiceController::class, 'downloadPdf'])->name('my-invoices.pdf');
+
+        // Student self-service — identity-gated, same pattern as my-invoices.
+        // Backs the payment-due popup on the public site.
+        Route::get('my-monthly-payment-alerts', [MyMonthlyPaymentAlertController::class, 'index'])->name('my-monthly-payment-alerts.index');
 
         // Student self-service — identity-gated, same pattern as my-invoices.
         Route::get('my-attendance', [MyAttendanceController::class, 'index'])->name('my-attendance.index');

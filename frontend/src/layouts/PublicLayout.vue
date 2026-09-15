@@ -4,6 +4,7 @@ import { onMounted } from 'vue'
 import PublicFooter from '@/components/layout/PublicFooter.vue'
 import PublicHeader from '@/components/layout/PublicHeader.vue'
 import MobileBottomNav from '@/components/public/MobileBottomNav.vue'
+import MonthlyPaymentAlertModal from '@/components/public/MonthlyPaymentAlertModal.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useSiteStore } from '@/stores/site'
 
@@ -31,5 +32,6 @@ onMounted(() => {
     </main>
     <PublicFooter />
     <MobileBottomNav />
+    <MonthlyPaymentAlertModal />
   </div>
 </template>

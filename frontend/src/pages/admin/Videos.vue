@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import VideoFormModal from '@/components/admin/VideoFormModal.vue'
@@ -7,15 +7,28 @@ import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BasePagination from '@/components/ui/BasePagination.vue'
+import BaseSelect from '@/components/ui/BaseSelect.vue'
 import DataTable from '@/components/ui/DataTable.vue'
 import EditIconButton from '@/components/ui/EditIconButton.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
+import { coursePackagesService, type CoursePackage } from '@/services/coursePackages'
 import { type Video, videosService } from '@/services/videos'
 import { ApiRequestError } from '@/types/api'
 
 const { t } = useI18n()
 
-const { items, meta, loading, error, sort, setPage, setSearch, setSort, fetch } = usePaginatedResource<Video>((query) => videosService.list(query))
+const { items, meta, loading, error, sort, setPage, setSearch, setSort, setFilter, fetch } = usePaginatedResource<Video>((query) =>
+  videosService.list(query),
+)
+
+const coursePackages = ref<CoursePackage[]>([])
+const coursePackageOptions = computed(() => coursePackages.value.map((p) => ({ value: String(p.id), label: `${p.code} — ${p.name}` })))
+const selectedCoursePackage = ref('')
+
+function onCourseFilterChange(value: string) {
+  selectedCoursePackage.value = value
+  setFilter('course_package_id', value || undefined)
+}
 
 const columns = [
   { key: 'thumbnail_url', label: t('admin.videos.columnThumbnail') },
@@ -52,18 +65,33 @@ async function remove(video: Video) {
   }
 }
 
-onMounted(() => fetch())
+onMounted(() => {
+  void fetch()
+  void coursePackagesService.listAll().then((packages) => {
+    coursePackages.value = packages
+  })
+})
 </script>
 
 <template>
   <div>
-    <div class="mb-6 flex items-center justify-between">
-      <input
-        type="search"
-        :placeholder="t('common.searchPlaceholder')"
-        class="block w-full max-w-sm rounded-lg border border-neutral-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
-        @input="setSearch(($event.target as HTMLInputElement).value)"
-      />
+    <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex flex-wrap items-center gap-3">
+        <input
+          type="search"
+          :placeholder="t('common.searchPlaceholder')"
+          class="block w-full max-w-sm rounded-lg border border-neutral-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+          @input="setSearch(($event.target as HTMLInputElement).value)"
+        />
+        <div class="w-56">
+          <BaseSelect
+            :model-value="selectedCoursePackage"
+            :options="coursePackageOptions"
+            :placeholder="t('admin.videos.filterAllCourses')"
+            @update:model-value="onCourseFilterChange"
+          />
+        </div>
+      </div>
       <BaseButton @click="openCreate">{{ t('admin.videos.addVideo') }}</BaseButton>
     </div>
 

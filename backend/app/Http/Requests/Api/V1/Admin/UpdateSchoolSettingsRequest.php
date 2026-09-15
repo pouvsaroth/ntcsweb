@@ -54,6 +54,10 @@ class UpdateSchoolSettingsRequest extends FormRequest
             // Khqr's own docblock explains avoiding); Khqr::withAmount()
             // fails loudly at first use if this is garbage.
             'khqr_template' => ['nullable', 'string', 'max:1000'],
+            // How many days ahead of a monthly-billed student's next payment
+            // date the dashboard/student popup should start alerting — see
+            // Tenant::monthlyPaymentAlertDays().
+            'monthly_payment_alert_days' => ['nullable', 'integer', 'min:1', 'max:60'],
         ];
     }
 }

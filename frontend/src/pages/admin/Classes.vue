@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
@@ -14,10 +15,18 @@ import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { classStatuses, classesService, type ClassStatus, type SchoolClass } from '@/services/classes'
 
 const { t } = useI18n()
+const router = useRouter()
 
 const { items, meta, loading, error, sort, setPage, setSearch, setSort, setFilter, fetch } = usePaginatedResource<SchoolClass>((query) =>
   classesService.list(query),
 )
+
+const selectedIds = ref<number[]>([])
+
+function viewSelected() {
+  if (selectedIds.value.length === 0) return
+  router.push({ path: '/admin/classes/students', query: { class_ids: selectedIds.value.join(',') } })
+}
 
 const selectedStatus = ref<ClassStatus | ''>('active')
 const onlyStudying = ref(true)
@@ -99,7 +108,12 @@ onMounted(() => {
           {{ t('admin.classes.onlyStudyingFilter') }}
         </label>
       </div>
-      <BaseButton to="/admin/classes/new">{{ t('admin.classes.addClass') }}</BaseButton>
+      <div class="flex items-center gap-3">
+        <BaseButton variant="outline" :disabled="selectedIds.length === 0" @click="viewSelected">
+          {{ t('admin.classes.viewSelected', { count: selectedIds.length }) }}
+        </BaseButton>
+        <BaseButton to="/admin/classes/new">{{ t('admin.classes.addClass') }}</BaseButton>
+      </div>
     </div>
 
     <BaseAlert v-if="error" variant="danger" class="mb-4">{{ error }}</BaseAlert>
@@ -114,9 +128,22 @@ onMounted(() => {
       <div v-else class="space-y-2">
         <div v-for="row in items" :key="row.id" class="rounded-[--radius-card] border border-neutral-200 bg-white p-3 shadow-[--shadow-card]">
           <div class="flex items-start justify-between gap-2">
-            <RouterLink :to="`/admin/classes/${row.id}/students`" class="min-w-0 flex-1 truncate font-medium text-primary-700 hover:text-primary-800 hover:underline">
-              {{ row.name }}
-            </RouterLink>
+            <div class="flex min-w-0 flex-1 items-start gap-2">
+              <input
+                type="checkbox"
+                class="mt-1 rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+                :checked="selectedIds.includes(row.id)"
+                :aria-label="t('common.selectRow')"
+                @change="
+                  ($event.target as HTMLInputElement).checked
+                    ? selectedIds.push(row.id)
+                    : (selectedIds = selectedIds.filter((id) => id !== row.id))
+                "
+              />
+              <RouterLink :to="`/admin/classes/${row.id}/students`" class="min-w-0 flex-1 truncate font-medium text-primary-700 hover:text-primary-800 hover:underline">
+                {{ row.name }}
+              </RouterLink>
+            </div>
             <BaseBadge :variant="statusBadgeVariant[row.status]">
               {{ t(`admin.classes.status${row.status.charAt(0).toUpperCase()}${row.status.slice(1)}`) }}
             </BaseBadge>
@@ -142,8 +169,11 @@ onMounted(() => {
         row-key="id"
         :loading="loading"
         :sort="sort"
+        selectable
+        :selected="selectedIds"
         :empty-message="t('admin.classes.emptyMessage')"
         @sort="(col) => setSort(sort === col ? `-${col}` : col)"
+        @update:selected="selectedIds = $event as number[]"
       >
         <template #cell-name="{ row }">
           <RouterLink :to="`/admin/classes/${row.id}/students`" class="font-medium text-primary-700 hover:text-primary-800 hover:underline">

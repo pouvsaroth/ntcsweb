@@ -59,6 +59,7 @@ class EnrollmentPackageServiceTest extends TestCase
         $this->assertSame('24.00', (string) $invoice->total);
         $this->assertSame('0.00', (string) $invoice->paid_amount);
         $this->assertSame('24.00', (string) $invoice->balance);
+        $this->assertSame('term', $invoice->payment_type);
 
         $item = InvoiceItem::where('invoice_id', $invoice->id)->firstOrFail();
         $this->assertSame(Enrollment::class, $item->reference_type);

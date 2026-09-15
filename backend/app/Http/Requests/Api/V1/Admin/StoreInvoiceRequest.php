@@ -30,6 +30,7 @@ class StoreInvoiceRequest extends FormRequest
             'discount' => ['nullable', 'numeric', 'min:0', 'max:999999.99'],
             'tax' => ['nullable', 'numeric', 'min:0', 'max:999999.99'],
             'notes' => ['nullable', 'string', 'max:2000'],
+            'payment_type' => ['nullable', Rule::in(['monthly', 'term', 'video', 'monthly_online', 'term_online'])],
 
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', Rule::exists('tenant.products', 'id')->where('is_active', true)],

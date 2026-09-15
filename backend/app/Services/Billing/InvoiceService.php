@@ -34,7 +34,7 @@ final class InvoiceService
     ) {}
 
     /**
-     * @param  array{student_id:int, invoice_date?:string, due_date?:string|null, currency?:string, discount?:float, discount_reason?:string|null, tax?:float, notes?:string|null, items:list<array<string,mixed>>}  $data
+     * @param  array{student_id:int, invoice_date?:string, due_date?:string|null, currency?:string, discount?:float, discount_reason?:string|null, tax?:float, notes?:string|null, payment_type?:string|null, items:list<array<string,mixed>>}  $data
      */
     public function create(array $data, User $actor): Invoice
     {
@@ -51,6 +51,7 @@ final class InvoiceService
                 'discount_reason' => $data['discount_reason'] ?? null,
                 'tax' => (float) ($data['tax'] ?? 0),
                 'notes' => $data['notes'] ?? null,
+                'payment_type' => $data['payment_type'] ?? null,
                 'created_by' => $actor->getKey(),
                 // Omitted entirely when not given, rather than passed as
                 // null, so every existing caller keeps the model's own
