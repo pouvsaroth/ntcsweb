@@ -31,7 +31,17 @@ final class MonthlyBillingScheduleService
     {
         return Enrollment::query()
             ->whereHas('invoiceItems.invoice', fn (Builder $q) => $q->where('payment_type', 'monthly'))
-            ->with(['student', 'schoolClass', 'coursePackage'])
+            ->with([
+                'student', 'schoolClass', 'coursePackage',
+                // Newest first, so the latest one is simply `->first()` —
+                // backs the "reprint invoice" action on the Monthly Invoice
+                // tab (see MonthlyInvoiceResource::toArray()).
+                'invoiceItems' => function ($query) {
+                    $query->whereHas('invoice', fn (Builder $q) => $q->where('payment_type', 'monthly'))
+                        ->with('invoice')
+                        ->latest('id');
+                },
+            ])
             ->withCount(['invoiceItems as monthly_invoices_count' => function (Builder $q) {
                 $q->whereHas('invoice', fn (Builder $q2) => $q2->where('payment_type', 'monthly'));
             }]);

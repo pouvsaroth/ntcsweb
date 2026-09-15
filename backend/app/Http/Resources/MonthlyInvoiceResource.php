@@ -35,6 +35,11 @@ class MonthlyInvoiceResource extends JsonResource
             'status' => $this->status,
             'monthly_invoices_count' => $this->monthly_invoices_count,
             'next_payment_date' => $this->next_payment_date,
+            // Backs the "reprint invoice" action — the most recent monthly
+            // invoice actually issued for this enrollment, see
+            // MonthlyBillingScheduleService::latestMonthlyInvoice().
+            'latest_invoice_id' => $this->whenLoaded('invoiceItems', fn () => $this->invoiceItems->first()?->invoice_id),
+            'latest_invoice_number' => $this->whenLoaded('invoiceItems', fn () => $this->invoiceItems->first()?->invoice?->invoice_number),
         ];
     }
 }

@@ -1809,6 +1809,7 @@ const km: MessageSchema = {
       monthlyColumnInvoicesSoFar: 'ចំនួនវិក្កយបត្រដែលបានចេញ',
       monthlyColumnNextPayment: 'ការទូទាត់បន្ទាប់',
       monthlyEmptyMessage: 'មិនទាន់មានសិស្សទូទាត់ប្រចាំខែទេ។',
+      monthlyReprintAction: 'បោះពុម្ពវិក្កយបត្រឡើងវិញ',
       columnTotal: 'សរុប',
       columnBalance: 'នៅសល់',
       columnStatus: 'ស្ថានភាព',

@@ -1808,6 +1808,7 @@ const zh: MessageSchema = {
       monthlyColumnInvoicesSoFar: '已开账单数',
       monthlyColumnNextPayment: '下次付款日期',
       monthlyEmptyMessage: '暂无按月付款的学生。',
+      monthlyReprintAction: '重新打印账单',
       columnTotal: '总额',
       columnBalance: '余额',
       columnStatus: '状态',

@@ -1809,6 +1809,7 @@ const ko: MessageSchema = {
       monthlyColumnInvoicesSoFar: '지금까지의 청구서 수',
       monthlyColumnNextPayment: '다음 결제일',
       monthlyEmptyMessage: '아직 월별 결제 학생이 없습니다.',
+      monthlyReprintAction: '청구서 재발행',
       columnTotal: '합계',
       columnBalance: '잔액',
       columnStatus: '상태',

@@ -1809,6 +1809,7 @@ const ja: MessageSchema = {
       monthlyColumnInvoicesSoFar: 'これまでの請求書数',
       monthlyColumnNextPayment: '次回支払日',
       monthlyEmptyMessage: '月謝制の生徒はまだいません。',
+      monthlyReprintAction: '請求書を再印刷',
       columnTotal: '合計',
       columnBalance: '残高',
       columnStatus: 'ステータス',

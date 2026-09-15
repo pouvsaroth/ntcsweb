@@ -18,6 +18,9 @@ export interface MonthlyInvoice {
   status: string
   monthly_invoices_count: number
   next_payment_date: string | null
+  /** The most recent monthly invoice actually issued for this enrollment — null only if none has been issued yet, which shouldn't happen for a row that appears here at all. */
+  latest_invoice_id: number | null
+  latest_invoice_number: string | null
 }
 
 export const monthlyInvoicesService = {

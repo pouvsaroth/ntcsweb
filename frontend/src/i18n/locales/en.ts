@@ -1813,6 +1813,7 @@ const en = {
       monthlyColumnInvoicesSoFar: 'Invoices So Far',
       monthlyColumnNextPayment: 'Next Payment',
       monthlyEmptyMessage: 'No students on monthly billing yet.',
+      monthlyReprintAction: 'Reprint Invoice',
       columnTotal: 'Total',
       columnBalance: 'Balance',
       columnStatus: 'Status',
