@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Api\V1\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Admin\CancelEnrollmentRequest;
 use App\Http\Requests\Api\V1\Admin\ChangeEnrollmentStatusRequest;
+use App\Http\Requests\Api\V1\Admin\ChangeEnrollmentTableRequest;
 use App\Http\Requests\Api\V1\Admin\TransferEnrollmentRequest;
 use App\Http\Requests\Api\V1\Admin\UpdateEnrollmentRequest;
 use App\Http\Resources\EnrollmentResource;
@@ -85,6 +86,22 @@ final class EnrollmentController extends Controller
             $newPackage,
             $request->validated('fee_type'),
         );
+
+        return ApiResponse::success(new EnrollmentResource($enrollment->load(self::WITH)));
+    }
+
+    /**
+     * Reseats a student within their current class only — no class/course
+     * change is possible through this action, see ChangeEnrollmentTableRequest
+     * and EnrollmentPolicy::changeTable(). A plain in-place update (unlike
+     * transfer(), which drops and recreates the row): the enrollment's own
+     * identity, code, and history stay untouched — Enrollment's Auditable
+     * trait logs this as a routine UPDATE on its own, so there's nothing
+     * further to do here.
+     */
+    public function changeTable(ChangeEnrollmentTableRequest $request, Enrollment $enrollment): JsonResponse
+    {
+        $enrollment->update(['table_id' => $request->validated('table_id')]);
 
         return ApiResponse::success(new EnrollmentResource($enrollment->load(self::WITH)));
     }

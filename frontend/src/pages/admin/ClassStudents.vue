@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 
+import ChangeTableModal from '@/components/admin/ChangeTableModal.vue'
 import EnrollmentStatusModal from '@/components/admin/EnrollmentStatusModal.vue'
 import EnrollmentTransferModal from '@/components/admin/EnrollmentTransferModal.vue'
 import ActionIconButton from '@/components/ui/ActionIconButton.vue'
@@ -25,8 +26,12 @@ const auth = useAuthStore()
 // docblock) can reach this page and its roster, but never granted
 // enrollments.transfer/.change-status — hide the row actions those would
 // otherwise 403 on, rather than let a teacher discover that on submit.
+// enrollments.change-table is deliberately separate from transfer: a
+// Teacher can be granted just the seat-only action without also getting
+// the ability to move a student to a different class or course.
 const canTransfer = computed(() => auth.can('enrollments.transfer'))
 const canChangeStatus = computed(() => auth.can('enrollments.change-status'))
+const canChangeTable = computed(() => auth.can('enrollments.change-table'))
 
 /**
  * Reached two ways: the single-class route `/admin/classes/:id/students`
@@ -71,7 +76,9 @@ const columns = computed(() => [
   ...(isSingleClass.value ? [] : [{ key: 'class', label: t('admin.classStudents.columnClass') }]),
   { key: 'table', label: t('admin.classStudents.columnTable'), sortable: true },
   { key: 'book', label: t('admin.classStudents.columnBook'), sortable: true },
-  ...(canTransfer.value || canChangeStatus.value ? [{ key: 'actions', label: t('admin.classStudents.columnActions'), align: 'text-right' }] : []),
+  ...(canTransfer.value || canChangeStatus.value || canChangeTable.value
+    ? [{ key: 'actions', label: t('admin.classStudents.columnActions'), align: 'text-right' }]
+    : []),
 ])
 
 /**
@@ -107,6 +114,7 @@ function toggleTableSort(column: string) {
 
 const classModalOpen = ref(false)
 const statusModalOpen = ref(false)
+const tableModalOpen = ref(false)
 const activeEnrollment = ref<Enrollment | null>(null)
 
 function openChangeClass(enrollment: Enrollment) {
@@ -117,6 +125,11 @@ function openChangeClass(enrollment: Enrollment) {
 function openChangeStatus(enrollment: Enrollment) {
   activeEnrollment.value = enrollment
   statusModalOpen.value = true
+}
+
+function openChangeTable(enrollment: Enrollment) {
+  activeEnrollment.value = enrollment
+  tableModalOpen.value = true
 }
 
 /** "1:00 PM - 2:00 PM" for a single weekly slot; joins multiple as a comma list — same shape as Classes.vue's own summary. */
@@ -266,6 +279,15 @@ onMounted(() => {
                 />
               </svg>
             </ActionIconButton>
+            <ActionIconButton v-if="canChangeTable" :title="t('admin.enrollments.changeTable')" @click="openChangeTable(row)">
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z"
+                />
+              </svg>
+            </ActionIconButton>
           </div>
         </template>
       </DataTable>
@@ -273,5 +295,6 @@ onMounted(() => {
 
     <EnrollmentTransferModal v-model="classModalOpen" :enrollment="activeEnrollment" @saved="load" />
     <EnrollmentStatusModal v-model="statusModalOpen" :enrollment="activeEnrollment" @saved="load" />
+    <ChangeTableModal v-model="tableModalOpen" :enrollment="activeEnrollment" @saved="load" />
   </div>
 </template>

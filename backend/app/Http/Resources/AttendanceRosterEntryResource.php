@@ -32,6 +32,7 @@ class AttendanceRosterEntryResource extends JsonResource
             ],
             'attendance_record_id' => $record?->id,
             'status' => $record?->status,
+            'late_minutes' => $record?->late_minutes,
             'remarks' => $record?->remarks,
         ];
     }

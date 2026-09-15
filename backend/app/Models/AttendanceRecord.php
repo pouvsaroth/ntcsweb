@@ -24,7 +24,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $student_id
  * @property string $status
  */
-#[Fillable(['enrollment_id', 'class_id', 'student_id', 'date', 'status', 'remarks', 'recorded_by', 'recorded_at'])]
+#[Fillable(['enrollment_id', 'class_id', 'student_id', 'date', 'status', 'late_minutes', 'remarks', 'recorded_by', 'recorded_at'])]
 class AttendanceRecord extends Model
 {
     /** @use HasFactory<AttendanceRecordFactory> */
@@ -40,6 +40,7 @@ class AttendanceRecord extends Model
     {
         return [
             'date' => 'date',
+            'late_minutes' => 'integer',
             'recorded_at' => 'datetime',
         ];
     }

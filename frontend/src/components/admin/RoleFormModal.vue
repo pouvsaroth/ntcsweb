@@ -33,6 +33,7 @@ type Action =
   | 'pay'
   | 'export'
   | 'transfer'
+  | 'table'
   | 'return'
   | 'retire'
   | 'dispose'
@@ -168,6 +169,7 @@ const MODULES: ModuleEntry[] = [
       delete: 'enrollments.delete',
       cancel: 'enrollments.cancel',
       transfer: 'enrollments.transfer',
+      table: 'enrollments.change-table',
       status: 'enrollments.change-status',
     },
   },
@@ -274,7 +276,7 @@ const MODULES: ModuleEntry[] = [
 
 const COLUMNS: Action[] = [
   'view', 'create', 'update', 'delete', 'approve', 'reject', 'pay', 'cancel', 'deactivate', 'export', 'send', 'assign',
-  'return', 'transfer', 'retire', 'dispose', 'lost', 'found', 'resolve', 'complete',
+  'return', 'transfer', 'table', 'retire', 'dispose', 'lost', 'found', 'resolve', 'complete',
   'status', 'manage', 'reply', 'close', 'translations', 'languages',
 ]
 

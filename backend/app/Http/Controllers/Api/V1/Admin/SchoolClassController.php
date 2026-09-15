@@ -103,7 +103,7 @@ final class SchoolClassController extends Controller
      */
     public function availableTables(SchoolClass $class): JsonResponse
     {
-        $this->authorize('create', Enrollment::class);
+        $this->authorize('viewAvailableTables', Enrollment::class);
 
         if ($class->classroom_id === null) {
             return ApiResponse::success(['total_tables' => 0, 'available' => []]);

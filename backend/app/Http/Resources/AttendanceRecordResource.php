@@ -20,6 +20,7 @@ class AttendanceRecordResource extends JsonResource
             'enrollment_id' => $this->enrollment_id,
             'date' => $this->date?->toDateString(),
             'status' => $this->status,
+            'late_minutes' => $this->late_minutes,
             'remarks' => $this->remarks,
             'student' => $this->whenLoaded('student', fn () => [
                 'id' => $this->student->id,

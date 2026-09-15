@@ -1,4 +1,4 @@
-import { apiDelete, apiGetWithMeta, apiPost, apiPut } from '@/services/http'
+import { apiDelete, apiGetWithMeta, apiPatch, apiPost, apiPut } from '@/services/http'
 import type { AcademicProgram } from '@/services/academicPrograms'
 import type { SchoolClass } from '@/services/classes'
 import type { CoursePackage } from '@/services/coursePackages'
@@ -112,6 +112,9 @@ export const enrollmentsService = {
    */
   transfer: (id: number, input: { class_id: number; table_id?: number | null; course_package_id?: number | null; fee_type?: FeeType | null }) =>
     apiPost<Enrollment>(`/enrollments/${id}/transfer`, input),
+
+  /** Reseats a student within their current class only — see ChangeEnrollmentTableRequest on the backend for why this can never touch class/course. */
+  changeTable: (id: number, tableId: number | null) => apiPatch<Enrollment>(`/enrollments/${id}/table`, { table_id: tableId }),
 
   changeStatus: (id: number, input: { status: EnrollmentStatus; reason?: string | null; effective_date?: string | null }) =>
     apiPost<Enrollment>(`/enrollments/${id}/status`, input),

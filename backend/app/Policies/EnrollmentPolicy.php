@@ -67,4 +67,27 @@ class EnrollmentPolicy
     {
         return $user->hasPermission(Permissions::ENROLLMENTS_CHANGE_STATUS);
     }
+
+    /**
+     * Deliberately independent of transfer() — a school can grant a Teacher
+     * this without also handing them the ability to move a student to a
+     * different class or course. See Permissions::ENROLLMENTS_CHANGE_TABLE.
+     */
+    public function changeTable(User $user, Enrollment $enrollment): bool
+    {
+        return $user->hasPermission(Permissions::ENROLLMENTS_CHANGE_TABLE);
+    }
+
+    /**
+     * The table picker (SchoolClassController::availableTables()) is shared
+     * by every flow that ever needs to know which seats are free in a class
+     * — full transfer, table-only reseating, or a brand new enrollment —
+     * so it opens to whichever of those abilities the user actually holds.
+     */
+    public function viewAvailableTables(User $user): bool
+    {
+        return $user->hasPermission(Permissions::ENROLLMENTS_CREATE)
+            || $user->hasPermission(Permissions::ENROLLMENTS_TRANSFER)
+            || $user->hasPermission(Permissions::ENROLLMENTS_CHANGE_TABLE);
+    }
 }

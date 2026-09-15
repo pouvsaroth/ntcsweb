@@ -3,6 +3,7 @@ import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 
+import AttendanceTabs from '@/components/admin/AttendanceTabs.vue'
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
@@ -45,7 +46,7 @@ const loadingClasses = ref(true)
 const classId = ref<number | null>(null)
 const date = ref(today())
 const roster = ref<AttendanceRosterEntry[]>([])
-const rosterEntries = reactive<Record<number, { status: AttendanceStatusValue; remarks: string }>>({})
+const rosterEntries = reactive<Record<number, { status: AttendanceStatusValue; lateMinutes: string; remarks: string }>>({})
 const loadingRoster = ref(false)
 const rosterError = ref<string | null>(null)
 const saving = ref(false)
@@ -65,6 +66,7 @@ async function loadRoster() {
     for (const entry of roster.value) {
       rosterEntries[entry.enrollment_id] = {
         status: entry.status ?? 'PRESENT',
+        lateMinutes: entry.late_minutes != null ? String(entry.late_minutes) : '',
         remarks: entry.remarks ?? '',
       }
     }
@@ -90,11 +92,15 @@ async function save() {
   saved.value = false
 
   try {
-    const entries: AttendanceEntryInput[] = roster.value.map((entry) => ({
-      enrollment_id: entry.enrollment_id,
-      status: rosterEntries[entry.enrollment_id].status,
-      remarks: rosterEntries[entry.enrollment_id].remarks || null,
-    }))
+    const entries: AttendanceEntryInput[] = roster.value.map((entry) => {
+      const state = rosterEntries[entry.enrollment_id]
+      return {
+        enrollment_id: entry.enrollment_id,
+        status: state.status,
+        late_minutes: state.status === 'LATE' && state.lateMinutes !== '' ? Number(state.lateMinutes) : null,
+        remarks: state.remarks || null,
+      }
+    })
 
     await attendanceService.save(classId.value, date.value, entries)
     saved.value = true
@@ -154,6 +160,8 @@ onMounted(async () => {
 
 <template>
   <div>
+    <AttendanceTabs />
+
     <div class="mb-6">
       <h1 class="text-xl font-semibold text-neutral-900">{{ t('admin.attendance.title') }}</h1>
       <p class="mt-1 text-sm text-neutral-500">{{ t('admin.attendance.subtitle') }}</p>
@@ -223,6 +231,15 @@ onMounted(async () => {
                   {{ statusLabel(status) }}
                 </button>
               </div>
+
+              <input
+                v-if="rosterEntries[entry.enrollment_id]?.status === 'LATE'"
+                v-model="rosterEntries[entry.enrollment_id].lateMinutes"
+                type="number"
+                min="0"
+                :placeholder="t('admin.attendance.lateMinutesPlaceholder')"
+                class="w-28 rounded-lg border border-neutral-300 px-3 py-1.5 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+              />
 
               <input
                 v-model="rosterEntries[entry.enrollment_id].remarks"

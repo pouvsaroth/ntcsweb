@@ -227,6 +227,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::post('enrollments/package', [EnrollmentPackageController::class, 'store'])->name('enrollments.package.store');
         Route::post('enrollments/{enrollment}/cancel', [EnrollmentController::class, 'cancel'])->name('enrollments.cancel');
         Route::post('enrollments/{enrollment}/transfer', [EnrollmentController::class, 'transfer'])->name('enrollments.transfer');
+        Route::patch('enrollments/{enrollment}/table', [EnrollmentController::class, 'changeTable'])->name('enrollments.change-table');
         Route::post('enrollments/{enrollment}/status', [EnrollmentController::class, 'changeStatus'])->name('enrollments.status.update');
         Route::get('enrollments/{enrollment}/status-history', [EnrollmentController::class, 'statusHistory'])->name('enrollments.status-history');
 
@@ -262,6 +263,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::apiResource('attendance', AttendanceController::class)->only(['index', 'show']);
         Route::get('classes/{class}/attendance', [AttendanceController::class, 'roster'])->name('classes.attendance.roster');
         Route::post('classes/{class}/attendance', [AttendanceController::class, 'store'])->name('classes.attendance.store');
+        Route::get('classes/{class}/attendance-summary', [AttendanceController::class, 'summary'])->name('classes.attendance.summary');
 
         // Student-submitted leave/permission requests — approving one syncs
         // into AttendanceRecord (status Excused) via LeaveRequestService.

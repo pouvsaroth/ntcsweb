@@ -18,6 +18,7 @@ export interface AttendanceRosterEntry {
   student: AttendanceStudent
   attendance_record_id: number | null
   status: AttendanceStatusValue | null
+  late_minutes: number | null
   remarks: string | null
 }
 
@@ -26,6 +27,8 @@ export interface AttendanceRecord {
   enrollment_id: number
   date: string
   status: AttendanceStatusValue
+  /** Only meaningful when status is LATE. */
+  late_minutes: number | null
   remarks: string | null
   student?: AttendanceStudent
   class?: { id: number; name: string }
@@ -36,7 +39,22 @@ export interface AttendanceRecord {
 export interface AttendanceEntryInput {
   enrollment_id: number
   status: AttendanceStatusValue
+  late_minutes?: number | null
   remarks?: string | null
+}
+
+/** One row of the Attendance Summary tab — one enrolled student's totals over a date range. */
+export interface AttendanceSummaryRow {
+  enrollment_id: number
+  student: AttendanceStudent
+  course_package: { id: number; name: string } | null
+  present_days: number
+  present_hours: number
+  permission_days: number
+  permission_hours: number
+  absent_days: number
+  absent_hours: number
+  late_minutes: number
 }
 
 export const attendanceService = {
@@ -63,6 +81,10 @@ export const attendanceService = {
     })
     return { data: result.data, pagination: result.meta?.pagination as LengthAwarePaginationMeta }
   },
+
+  /** The Attendance Summary tab's data source — one row per student enrolled in the class. */
+  summary: (classId: number, params: { date_from: string; date_to: string; student_id?: number | null }) =>
+    apiGetWithMeta<AttendanceSummaryRow[]>(`/classes/${classId}/attendance-summary`, { params }).then((r) => r.data),
 
   /** Student self-service — own records only, scoped server-side. */
   async myList(query: PaginatedQuery): Promise<PaginatedResult<AttendanceRecord>> {

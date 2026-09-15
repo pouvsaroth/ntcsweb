@@ -41,7 +41,7 @@ final class AttendanceController extends Controller
         }
 
         $records = ApiQuery::for($query, $request)
-            ->filterable(['class_id', 'student_id', 'status'])
+            ->filterable(['class_id', 'student_id', 'status', 'enrollment_id'])
             ->sortable(['date', 'created_at'], default: '-date')
             ->paginate();
 
@@ -77,5 +77,28 @@ final class AttendanceController extends Controller
         );
 
         return ApiResponse::success(AttendanceRecordResource::collection($records->load(['student'])));
+    }
+
+    /**
+     * GET /classes/{class}/attendance-summary — per-student present/permission/
+     * absent day+hour totals (plus total late minutes) for the class over a
+     * date range, the Attendance Summary tab's data source. Read-only, so it
+     * authorizes off the same ability as the history list rather than
+     * `recordAttendance` — a viewer who can't take attendance can still see
+     * the summary.
+     */
+    public function summary(Request $request, SchoolClass $class): JsonResponse
+    {
+        $this->authorize('viewAny', AttendanceRecord::class);
+
+        $data = $request->validate([
+            'date_from' => ['required', 'date'],
+            'date_to' => ['required', 'date', 'after_or_equal:date_from'],
+            'student_id' => ['nullable', 'integer'],
+        ]);
+
+        return ApiResponse::success(
+            $this->attendance->summarizeForClass($class, $data['date_from'], $data['date_to'], isset($data['student_id']) ? (int) $data['student_id'] : null)
+        );
     }
 }

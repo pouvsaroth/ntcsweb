@@ -41,6 +41,9 @@ class RecordAttendanceRequest extends FormRequest
                 Rule::exists('tenant.enrollments', 'id')->where('class_id', $class->getKey()),
             ],
             'entries.*.status' => ['required', Rule::in(AttendanceStatus::all())],
+            // Only meaningful when status is LATE, but validated unconditionally rather than
+            // rejected/ignored otherwise — a stray value on a non-late entry is harmless.
+            'entries.*.late_minutes' => ['nullable', 'integer', 'min:0', 'max:600'],
             'entries.*.remarks' => ['nullable', 'string', 'max:500'],
         ];
     }
