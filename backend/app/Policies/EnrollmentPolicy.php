@@ -10,14 +10,32 @@ use App\Support\Authorization\Permissions;
 
 class EnrollmentPolicy
 {
+    /**
+     * Viewing is also open to anyone who can take attendance — a class's
+     * roster (ClassStudents.vue) is how a teacher/assistant actually reaches
+     * the "Attendance" action, and a role built from Classes + Attendance
+     * alone (deliberately excluding the Enrollments module, so the roster's
+     * transfer/status-change actions stay hidden — see
+     * ClassStudents.vue's own permission checks) must not 403 on the one
+     * read this whole flow depends on. Mirrors
+     * SchoolClassPolicy::recordAttendance()'s own "any attendance-permission
+     * holder, any class" scope, so this isn't a new looser precedent.
+     */
     public function viewAny(User $user): bool
     {
-        return $user->hasPermission(Permissions::ENROLLMENTS_VIEW);
+        return $user->hasPermission(Permissions::ENROLLMENTS_VIEW) || $this->canViewForAttendance($user);
     }
 
     public function view(User $user, Enrollment $enrollment): bool
     {
-        return $user->hasPermission(Permissions::ENROLLMENTS_VIEW);
+        return $user->hasPermission(Permissions::ENROLLMENTS_VIEW) || $this->canViewForAttendance($user);
+    }
+
+    private function canViewForAttendance(User $user): bool
+    {
+        return $user->hasPermission(Permissions::ATTENDANCE_VIEW)
+            || $user->hasPermission(Permissions::ATTENDANCE_CREATE)
+            || $user->hasPermission(Permissions::ATTENDANCE_UPDATE);
     }
 
     public function create(User $user): bool

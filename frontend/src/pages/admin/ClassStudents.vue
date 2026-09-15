@@ -14,10 +14,19 @@ import DataTable from '@/components/ui/DataTable.vue'
 import { classesService, type SchoolClass } from '@/services/classes'
 import { enrollmentsService, type Enrollment, type EnrollmentStatus } from '@/services/enrollments'
 import { type LookupOption, lookupsService } from '@/services/lookups'
+import { useAuthStore } from '@/stores/auth'
 import { ApiRequestError } from '@/types/api'
 
 const { t, locale } = useI18n()
 const route = useRoute()
+const auth = useAuthStore()
+
+// A role built from Classes + Attendance alone (see EnrollmentPolicy's own
+// docblock) can reach this page and its roster, but never granted
+// enrollments.transfer/.change-status — hide the row actions those would
+// otherwise 403 on, rather than let a teacher discover that on submit.
+const canTransfer = computed(() => auth.can('enrollments.transfer'))
+const canChangeStatus = computed(() => auth.can('enrollments.change-status'))
 
 /**
  * Reached two ways: the single-class route `/admin/classes/:id/students`
@@ -62,7 +71,7 @@ const columns = computed(() => [
   ...(isSingleClass.value ? [] : [{ key: 'class', label: t('admin.classStudents.columnClass') }]),
   { key: 'table', label: t('admin.classStudents.columnTable'), sortable: true },
   { key: 'book', label: t('admin.classStudents.columnBook'), sortable: true },
-  { key: 'actions', label: t('admin.classStudents.columnActions'), align: 'text-right' },
+  ...(canTransfer.value || canChangeStatus.value ? [{ key: 'actions', label: t('admin.classStudents.columnActions'), align: 'text-right' }] : []),
 ])
 
 /**
@@ -243,12 +252,12 @@ onMounted(() => {
         <template #cell-book="{ row }">{{ row.course_package?.name ?? '—' }}</template>
         <template #cell-actions="{ row }">
           <div class="flex justify-end gap-1">
-            <ActionIconButton :title="t('admin.enrollments.changeClass')" @click="openChangeClass(row)">
+            <ActionIconButton v-if="canTransfer" :title="t('admin.enrollments.changeClass')" @click="openChangeClass(row)">
               <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
               </svg>
             </ActionIconButton>
-            <ActionIconButton :title="t('admin.enrollments.changeStatus')" @click="openChangeStatus(row)">
+            <ActionIconButton v-if="canChangeStatus" :title="t('admin.enrollments.changeStatus')" @click="openChangeStatus(row)">
               <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path
                   stroke-linecap="round"

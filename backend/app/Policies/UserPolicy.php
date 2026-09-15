@@ -54,6 +54,23 @@ class UserPolicy
             && $this->outranks($actor, $target);
     }
 
+    /**
+     * Deliberately never self — changing *your own* password goes through
+     * PasswordController::change(), which re-verifies the current password
+     * first. Letting this admin-facing action also target yourself would be
+     * a way to swap your own password without proving you know the old one.
+     */
+    public function resetPassword(User $actor, User $target): bool
+    {
+        if ($actor->is($target)) {
+            return false;
+        }
+
+        return $this->sameTenant($actor, $target)
+            && $actor->hasPermission(Permissions::USERS_UPDATE)
+            && $this->outranks($actor, $target);
+    }
+
     public function delete(User $actor, User $target): bool
     {
         // Deleting yourself would leave a school with no way back in if you

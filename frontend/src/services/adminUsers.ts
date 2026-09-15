@@ -1,4 +1,4 @@
-import { apiGetWithMeta, apiPostWithMeta } from '@/services/http'
+import { apiGetWithMeta, apiPost, apiPostWithMeta } from '@/services/http'
 import type { PaginatedQuery } from '@/composables/usePaginatedResource'
 import type { LengthAwarePaginationMeta, PaginatedResult } from '@/types/api'
 import type { User } from '@/types/models'
@@ -40,4 +40,8 @@ export const adminUsersService = {
     const result = await apiPostWithMeta<User>('/users', input)
     return { user: result.data, temporaryPassword: (result.meta?.temporary_password as string) ?? null }
   },
+
+  /** A School Admin setting a new password for a student's or staff member's login — never usable on the admin's own account (see UserPolicy::resetPassword()). */
+  resetPassword: (userId: number, password: string, passwordConfirmation: string) =>
+    apiPost<void>(`/users/${userId}/reset-password`, { password, password_confirmation: passwordConfirmation }),
 }

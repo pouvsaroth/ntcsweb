@@ -332,6 +332,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         // is how an already-imported (never auto-provisioned) Student gets
         // portal access, or how an extra standalone account gets created.
         Route::apiResource('users', UserController::class)->only(['index', 'store']);
+        Route::post('users/{user}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset-password');
 
         // Read-only — see AuditLogPolicy/AuditLogController's docblocks for
         // why there is deliberately no store/update/destroy route here.

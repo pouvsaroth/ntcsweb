@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\V1\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\V1\Admin\ResetUserPasswordRequest;
 use App\Http\Requests\Api\V1\Admin\StoreUserRequest;
 use App\Http\Resources\UserResource;
 use App\Http\Responses\ApiResponse;
@@ -12,11 +13,14 @@ use App\Models\Role;
 use App\Models\Student;
 use App\Models\User;
 use App\Services\Auth\UserProvisioningService;
+use App\Support\Audit\AuditAction;
+use App\Support\Audit\AuditLogger;
 use App\Support\Query\ApiQuery;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
 
 final class UserController extends Controller
@@ -24,6 +28,7 @@ final class UserController extends Controller
     public function __construct(
         private readonly UserProvisioningService $provisioning,
         private readonly TenantContext $context,
+        private readonly AuditLogger $audit,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -74,5 +79,32 @@ final class UserController extends Controller
             ['temporary_password' => $temporaryPassword],
             Response::HTTP_CREATED,
         );
+    }
+
+    /**
+     * A School Admin setting a new password for a student's or staff
+     * member's login — see ResetUserPasswordRequest/UserPolicy::resetPassword()
+     * for why this can never target the acting admin's own account (that's
+     * PasswordController::change()'s job instead).
+     */
+    public function resetPassword(ResetUserPasswordRequest $request, User $user): JsonResponse
+    {
+        $user->forceFill([
+            'password' => $request->string('password')->toString(),
+            'remember_token' => Str::random(60),
+        ])->save();
+
+        // The target isn't the one making this request, so every existing
+        // session of theirs is revoked outright — nothing to preserve.
+        $user->tokens()->delete();
+
+        $this->audit->log(
+            AuditAction::PASSWORD_CHANGE,
+            'Users',
+            $user,
+            description: "Reset the password for {$user->name}",
+        );
+
+        return ApiResponse::success(message: __('Password updated.'));
     }
 }
