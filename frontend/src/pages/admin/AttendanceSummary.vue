@@ -132,7 +132,7 @@ async function openDetail(row: AttendanceSummaryRow) {
       page: 1,
       per_page: 200,
       sort: 'date',
-      filter: { enrollment_id: row.enrollment_id, date_from: dateFrom.value, date_to: dateTo.value },
+      filter: { enrollment_id: String(row.enrollment_id), date_from: dateFrom.value, date_to: dateTo.value },
     })
     detailRecords.value = result.data
   } catch (error) {
