@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRoute, useRouter } from 'vue-router'
 
 import AskForPermissionModal from '@/components/layout/AskForPermissionModal.vue'
 import ResignationFormModal from '@/components/layout/ResignationFormModal.vue'
@@ -42,8 +41,6 @@ type MergedRow = {
 
 const { t } = useI18n()
 const auth = useAuthStore()
-const route = useRoute()
-const router = useRouter()
 
 // Resignation only makes sense for a staff account — a student reaching
 // this page (see the router's studentAllowed guard) never has a staff
@@ -148,17 +145,7 @@ async function load() {
   }
 }
 
-onMounted(() => {
-  load()
-
-  // Deep-linked from the admin Staff/HRM nav group's "Form" item — see
-  // adminNav.ts — so clicking it opens this modal in one step instead of
-  // landing here and making the visitor find the button themselves.
-  if (route.query.open === 'resignation' && canResign.value) {
-    showResignationModal.value = true
-    void router.replace({ query: { ...route.query, open: undefined } })
-  }
-})
+onMounted(() => load())
 </script>
 
 <template>

@@ -93,10 +93,16 @@ export const adminNav: AdminNavGroup[] = [
       // granted to every role by default (see
       // Permissions::$selfServiceForEveryone), so this shows for any staff
       // account, not just those with staff-management permissions.
+      // Both items land on the same page — it shows an "Ask for Permission"
+      // block and a "Resignation" block side by side (see MyRequests.vue),
+      // rather than auto-opening one specific modal, so a visitor without a
+      // linked staff record (e.g. a school admin) isn't immediately shown a
+      // failing popup for whichever one they didn't mean to open. The
+      // `?tab=resignation` on the second link only exists so the two sidebar
+      // entries don't share an identical `to` (which the sidebar keys and
+      // highlights by) — MyRequests.vue never reads it.
       { labelKey: 'adminNav.items.requestLeave', to: '/admin/approvals/my-requests', permission: 'my-requests.view' },
-      // `?open=resignation` auto-opens ResignationFormModal on arrival —
-      // see MyRequests.vue's onMounted handling.
-      { labelKey: 'adminNav.items.resignationForm', to: '/admin/approvals/my-requests?open=resignation', permission: 'my-requests.view' },
+      { labelKey: 'adminNav.items.resignationForm', to: '/admin/approvals/my-requests?tab=resignation', permission: 'my-requests.view' },
     ],
   },
   {

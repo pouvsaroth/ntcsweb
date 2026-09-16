@@ -125,6 +125,7 @@ const MODULES: ModuleEntry[] = [
     actions: { view: 'staff.view', create: 'staff.create', update: 'staff.update', delete: 'staff.delete', status: 'staff.change-status' },
   },
   { name: 'Leave requests', group: 'Other', actions: { view: 'leave-requests.view', approve: 'leave-requests.approve', reject: 'leave-requests.reject' } },
+  { name: 'Resignation requests', group: 'Other', actions: { view: 'resignation-requests.view', approve: 'resignation-requests.approve', reject: 'resignation-requests.reject' } },
   {
     name: 'Students',
     group: 'Students',
@@ -198,6 +199,7 @@ const MODULES: ModuleEntry[] = [
   { name: 'Videos', group: 'Academic', actions: { view: 'videos.view', create: 'videos.create', update: 'videos.update', delete: 'videos.delete' } },
   { name: 'Home slides', group: 'Website', actions: { view: 'home-slides.view', create: 'home-slides.create', update: 'home-slides.update', delete: 'home-slides.delete' } },
   { name: 'Gallery', group: 'Website', actions: { view: 'gallery.view', create: 'gallery.create', update: 'gallery.update', delete: 'gallery.delete' } },
+  { name: 'Promotions', group: 'Website', actions: { view: 'promotions.view', create: 'promotions.create', update: 'promotions.update', delete: 'promotions.delete' } },
   { name: 'Programs', group: 'Website', actions: { view: 'programs.view', create: 'programs.create', update: 'programs.update', delete: 'programs.delete' } },
   { name: 'Products', group: 'Billing', actions: { view: 'products.view', create: 'products.create', update: 'products.update', delete: 'products.delete' } },
   { name: 'Invoices', group: 'Billing', actions: { view: 'invoices.view', create: 'invoices.create', update: 'invoices.update', cancel: 'invoices.cancel' } },
