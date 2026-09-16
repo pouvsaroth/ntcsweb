@@ -13,6 +13,7 @@ import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { apiDownload } from '@/services/http'
 import { assetReportsService, type AssetRepairCostReport, type AssetStatusReport } from '@/services/assetReports'
 import { ApiRequestError } from '@/types/api'
+import { formatDate, formatDateTime } from '@/utils/date'
 
 const { t } = useI18n()
 
@@ -235,7 +236,9 @@ onMounted(() => loadActiveTab())
         :rows="assignments.items.value"
         row-key="id"
         :loading="assignments.loading.value"
-      />
+      >
+        <template #cell-assigned_date="{ row }">{{ formatDate(row.assigned_date) }}</template>
+      </DataTable>
       <BasePagination v-if="assignments.meta.value" :meta="assignments.meta.value" class="mt-4" @update:page="assignments.setPage" />
     </template>
 
@@ -250,7 +253,7 @@ onMounted(() => loadActiveTab())
         row-key="id"
         :loading="history.loading.value"
       >
-        <template #cell-occurred_at="{ row }">{{ new Date(row.occurred_at).toLocaleString() }}</template>
+        <template #cell-occurred_at="{ row }">{{ formatDateTime(row.occurred_at) }}</template>
       </DataTable>
       <BasePagination v-if="history.meta.value" :meta="history.meta.value" class="mt-4" @update:page="history.setPage" />
     </template>

@@ -19,6 +19,7 @@ import {
   type MyExamApplicationEnrollment,
 } from '@/services/myExamApplications'
 import { ApiRequestError } from '@/types/api'
+import { formatDate } from '@/utils/date'
 
 /**
  * A student's own exam applications — submit one against an active
@@ -194,13 +195,13 @@ onMounted(() => load())
     />
 
     <DataTable v-else :columns="columns" :rows="visibleRows" row-key="id">
-      <template #cell-date="{ row }">{{ new Date(row.created_at).toLocaleDateString() }}</template>
+      <template #cell-date="{ row }">{{ formatDate(row.created_at) }}</template>
       <template #cell-course="{ row }">
         <button type="button" class="text-left font-medium text-primary-700 hover:underline" @click="detail = row">
           {{ [row.enrollment.course_package?.name, row.enrollment.school_class?.name].filter(Boolean).join(' — ') || '—' }}
         </button>
       </template>
-      <template #cell-examDate="{ row }">{{ row.exam_date }} {{ row.exam_time }}</template>
+      <template #cell-examDate="{ row }">{{ formatDate(row.exam_date) }} {{ row.exam_time }}</template>
       <template #cell-table="{ row }">{{ row.table_no }}</template>
       <template #cell-status="{ row }">
         <BaseBadge :variant="statusVariant[row.status]">{{ t(`admin.myExamApplications.status${row.status.charAt(0).toUpperCase()}${row.status.slice(1)}`) }}</BaseBadge>
@@ -255,7 +256,7 @@ onMounted(() => load())
       <template v-if="detail">
         <dl class="grid gap-y-2 text-sm">
           <div><dt class="text-neutral-500">{{ t('admin.myExamApplications.columnCourse') }}</dt><dd class="font-medium text-neutral-900">{{ [detail.enrollment.course_package?.name, detail.enrollment.school_class?.name].filter(Boolean).join(' — ') || '—' }}</dd></div>
-          <div><dt class="text-neutral-500">{{ t('admin.myExamApplications.columnExamDate') }}</dt><dd class="font-medium text-neutral-900">{{ detail.exam_date }} {{ detail.exam_time }}</dd></div>
+          <div><dt class="text-neutral-500">{{ t('admin.myExamApplications.columnExamDate') }}</dt><dd class="font-medium text-neutral-900">{{ formatDate(detail.exam_date) }} {{ detail.exam_time }}</dd></div>
           <div><dt class="text-neutral-500">{{ t('admin.myExamApplications.columnTable') }}</dt><dd class="font-medium text-neutral-900">{{ detail.table_no }}</dd></div>
           <div v-if="detail.decision_reason"><dt class="text-neutral-500">{{ t('admin.leaveRequests.decisionReason') }}</dt><dd class="font-medium text-neutral-900">{{ detail.decision_reason }}</dd></div>
         </dl>

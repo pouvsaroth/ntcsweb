@@ -18,6 +18,7 @@ import {
 import { projectTasksService, type ProjectTask, type ProjectTaskPriority } from '@/services/projects'
 import { useAuthStore } from '@/stores/auth'
 import { ApiRequestError } from '@/types/api'
+import { formatDateTime } from '@/utils/date'
 
 const props = defineProps<{
   modelValue: boolean
@@ -233,7 +234,7 @@ async function submit() {
             <li v-for="entry in history" :key="entry.id">
               <p class="text-neutral-700">{{ entry.description ?? entry.action }}</p>
               <p class="text-xs text-neutral-400">
-                {{ entry.user?.name ?? t('admin.projects.historySystem') }} · {{ new Date(entry.created_at).toLocaleString() }}
+                {{ entry.user?.name ?? t('admin.projects.historySystem') }} · {{ formatDateTime(entry.created_at) }}
               </p>
             </li>
           </ul>
@@ -272,7 +273,7 @@ async function submit() {
                   {{ t('common.remove') }}
                 </button>
               </div>
-              <p class="mt-1 text-xs text-neutral-400">{{ comment.user_name }} · {{ new Date(comment.created_at).toLocaleString() }}</p>
+              <p class="mt-1 text-xs text-neutral-400">{{ comment.user_name }} · {{ formatDateTime(comment.created_at) }}</p>
             </li>
           </ul>
         </section>

@@ -19,6 +19,7 @@ import {
   type InvoiceStatusValue,
   type PaymentTypeValue,
 } from '@/services/invoices'
+import { formatDate } from '@/utils/date'
 
 const { t } = useI18n()
 
@@ -85,10 +86,6 @@ const columns = [
   { key: 'created_at', label: t('admin.invoices.columnCreatedAt'), sortable: true },
   { key: 'actions', label: t('admin.invoices.columnActions'), align: 'text-right' },
 ]
-
-function formatDate(value: string | null): string {
-  return value ? new Date(value).toLocaleDateString() : '—'
-}
 
 onMounted(() => setFilter('status', selectedStatus.value || undefined))
 </script>

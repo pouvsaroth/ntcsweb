@@ -10,6 +10,7 @@ import DataTable from '@/components/ui/DataTable.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { incomeService } from '@/services/financialTransactions'
 import type { FinancialTransaction } from '@/services/financialTransactions'
+import { formatDate } from '@/utils/date'
 
 const { t } = useI18n()
 
@@ -41,6 +42,7 @@ onMounted(() => fetch())
     <BaseAlert v-if="error" variant="danger" class="mb-4">{{ error }}</BaseAlert>
 
     <DataTable :columns="columns" :rows="items" row-key="id" :loading="loading" :empty-message="t('admin.income.emptyMessage')">
+      <template #cell-transaction_date="{ row }">{{ formatDate(row.transaction_date) }}</template>
       <template #cell-credit_account="{ row }">{{ row.credit_account.code }} — {{ row.credit_account.name }}</template>
       <template #cell-description="{ row }">{{ row.description ?? '—' }}</template>
       <template #cell-amount="{ row }">${{ row.amount.toFixed(2) }}</template>

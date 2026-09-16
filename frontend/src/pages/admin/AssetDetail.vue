@@ -25,6 +25,7 @@ import { assetMaintenanceService, type AssetMaintenance } from '@/services/asset
 import { assetRepairsService, type AssetRepair } from '@/services/assetRepairs'
 import { assetsService, type Asset, type AssetCondition, type AssetDocument, type AssetStatus, type DisposalMethod } from '@/services/assets'
 import { ApiRequestError } from '@/types/api'
+import { formatDate, formatDateTime } from '@/utils/date'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -49,10 +50,6 @@ const statusVariant: Record<AssetStatus, 'neutral' | 'warning' | 'success' | 'da
   IN_STOCK: 'neutral', ASSIGNED: 'primary', IN_USE: 'success', ISSUE_REPORTED: 'warning', UNDER_INSPECTION: 'warning',
   BROKEN: 'danger', UNDER_REPAIR: 'warning', REPAIR_COMPLETED: 'primary', READY_FOR_USE: 'success', STOPPED_USE: 'neutral',
   RETIRED: 'neutral', DISPOSED: 'danger', LOST: 'danger', MISSING: 'danger',
-}
-
-function formatDate(value: string | null): string {
-  return value ? new Date(value).toLocaleDateString() : '—'
 }
 
 async function load() {
@@ -730,7 +727,7 @@ onMounted(load)
           :loading="history.loading.value"
           :empty-message="t('admin.assets.noHistory')"
         >
-          <template #cell-occurred_at="{ row }">{{ new Date(row.occurred_at).toLocaleString() }}</template>
+          <template #cell-occurred_at="{ row }">{{ formatDateTime(row.occurred_at) }}</template>
           <template #cell-actor="{ row }">{{ row.actor ?? '—' }}</template>
         </DataTable>
         <BasePagination v-if="history.meta.value" :meta="history.meta.value" class="mt-4" @update:page="history.setPage" />

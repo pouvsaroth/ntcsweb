@@ -18,6 +18,7 @@ import {
 } from '@/services/attendance'
 import { classesService, type SchoolClass } from '@/services/classes'
 import { ApiRequestError } from '@/types/api'
+import { formatDate } from '@/utils/date'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -226,7 +227,7 @@ onMounted(async () => {
         </thead>
         <tbody class="divide-y divide-neutral-100">
           <tr v-for="record in detailRecords" :key="record.id">
-            <td class="py-2 pr-3 text-neutral-700">{{ record.date }}</td>
+            <td class="py-2 pr-3 text-neutral-700">{{ formatDate(record.date) }}</td>
             <td class="py-2 pr-3">
               <BaseBadge :variant="statusVariant[record.status]">{{ statusLabel(record.status) }}</BaseBadge>
             </td>

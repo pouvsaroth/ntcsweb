@@ -12,6 +12,7 @@ import { monthlyPaymentAlertsService } from '@/services/monthlyPaymentAlerts'
 import { studentsService } from '@/services/students'
 import { useAuthStore } from '@/stores/auth'
 import { formatMoney } from '@/utils/currency'
+import { formatDate } from '@/utils/date'
 
 const auth = useAuthStore()
 const { t } = useI18n()
@@ -143,10 +144,6 @@ async function loadStats(): Promise<void> {
   } catch {
     // Left empty — most likely the signed-in admin just lacks invoices.view.
   }
-}
-
-function formatDate(value: string | null): string {
-  return value ? new Date(value).toLocaleDateString() : '—'
 }
 
 onMounted(() => {

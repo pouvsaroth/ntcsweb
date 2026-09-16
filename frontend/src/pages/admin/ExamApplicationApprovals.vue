@@ -12,6 +12,7 @@ import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { examApplicationsService, type ExamApplication } from '@/services/examApplications'
 import { useAuthStore } from '@/stores/auth'
 import { ApiRequestError } from '@/types/api'
+import { formatDate } from '@/utils/date'
 
 const { t } = useI18n()
 const auth = useAuthStore()
@@ -42,7 +43,7 @@ const columns = [
 ]
 
 function fmtDate(value: string | null): string {
-  return value ? value.slice(0, 10) : '—'
+  return formatDate(value)
 }
 
 function timeRange(a: ExamApplication): string {

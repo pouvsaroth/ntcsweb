@@ -13,6 +13,7 @@ import EmptyState from '@/components/ui/EmptyState.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { studentRegistrationsService, type StudentRegistration } from '@/services/studentRegistrations'
 import { ApiRequestError } from '@/types/api'
+import { formatDate } from '@/utils/date'
 
 const { t } = useI18n()
 
@@ -149,7 +150,7 @@ onMounted(() => fetch())
         </template>
         <span v-else>—</span>
       </template>
-      <template #cell-created_at="{ row }">{{ new Date(row.created_at).toLocaleDateString() }}</template>
+      <template #cell-created_at="{ row }">{{ formatDate(row.created_at) }}</template>
       <template #cell-actions="{ row }">
         <div class="flex justify-end gap-2">
           <BaseButton size="sm" :loading="approving" @click="approve(row)">{{ t('admin.studentRegistrations.approve') }}</BaseButton>
@@ -172,7 +173,7 @@ onMounted(() => fetch())
             <div><dt class="text-neutral-500">{{ t('admin.studentRegistrations.columnPhone') }}</dt><dd class="font-medium text-neutral-900">{{ detail.phone }}</dd></div>
             <div><dt class="text-neutral-500">{{ t('admin.studentRegistrations.email') }}</dt><dd class="font-medium text-neutral-900">{{ detail.email ?? '—' }}</dd></div>
             <div><dt class="text-neutral-500">{{ t('admin.studentRegistrations.gender') }}</dt><dd class="font-medium text-neutral-900">{{ detail.gender ?? '—' }}</dd></div>
-            <div><dt class="text-neutral-500">{{ t('admin.studentRegistrations.dateOfBirth') }}</dt><dd class="font-medium text-neutral-900">{{ detail.date_of_birth ?? '—' }}</dd></div>
+            <div><dt class="text-neutral-500">{{ t('admin.studentRegistrations.dateOfBirth') }}</dt><dd class="font-medium text-neutral-900">{{ formatDate(detail.date_of_birth) }}</dd></div>
             <div class="col-span-2"><dt class="text-neutral-500">{{ t('admin.studentRegistrations.address') }}</dt><dd class="font-medium text-neutral-900">{{ [detail.house_no, detail.street_no, detail.other_address].filter(Boolean).join(', ') || '—' }}</dd></div>
           </dl>
         </div>

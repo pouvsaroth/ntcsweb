@@ -8,6 +8,7 @@ import BasePagination from '@/components/ui/BasePagination.vue'
 import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { notificationsService, type AppNotification } from '@/services/notifications'
+import { formatDateTime } from '@/utils/date'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -25,7 +26,7 @@ function typeLabel(notification: AppNotification): string {
 }
 
 function formatWhen(value: string): string {
-  return new Date(value).toLocaleString()
+  return formatDateTime(value)
 }
 
 async function select(notification: AppNotification) {

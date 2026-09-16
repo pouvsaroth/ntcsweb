@@ -1,4 +1,5 @@
 import { formatMoney } from '@/utils/currency'
+import { formatDate } from '@/utils/date'
 import type { ExamApplication } from '@/services/examApplications'
 
 /**
@@ -46,7 +47,7 @@ export function printExamApplicationForm(
     ${row('Full Name', application.student.name)}
     ${row('Other Name', application.student.english_name)}
     ${row('Sex', application.student.gender)}
-    ${row('Birth Date', application.student.date_of_birth)}
+    ${row('Birth Date', formatDate(application.student.date_of_birth))}
     ${row('Phone', application.student.phone)}
     ${row('Address', application.student.address)}
     ${row('', '')}
@@ -58,7 +59,7 @@ export function printExamApplicationForm(
     ${row('Book', application.book?.title)}
     ${row('Room No', application.classroom?.name)}
     ${row('Table No', application.table?.name ?? application.table_no)}
-    ${row('Exam Date', application.exam_date)}
+    ${row('Exam Date', formatDate(application.exam_date))}
     ${row('Remark', application.remark)}
     ${row('Time In', application.exam_time?.slice(0, 5))}
     ${row('Time Out', application.exam_time_out?.slice(0, 5))}
@@ -68,7 +69,7 @@ export function printExamApplicationForm(
   <div class="grid">
     ${row('Fee', formatMoney(fee.fee, fee.currency))}
     ${row('Payment Method', fee.paymentMethod)}
-    ${row('Print Date', fee.printDate)}
+    ${row('Print Date', formatDate(fee.printDate))}
   </div>
 </body>
 </html>`

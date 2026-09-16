@@ -13,6 +13,7 @@ import EditIconButton from '@/components/ui/EditIconButton.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { academicYearsService, type AcademicYear } from '@/services/academicYears'
 import { ApiRequestError } from '@/types/api'
+import { formatDate } from '@/utils/date'
 
 const { t } = useI18n()
 
@@ -70,8 +71,8 @@ onMounted(() => fetch())
     <BaseAlert v-if="error || deleteError" variant="danger" class="mb-4">{{ error || deleteError }}</BaseAlert>
 
     <DataTable :columns="columns" :rows="items" row-key="id" :loading="loading" :empty-message="t('admin.academicYears.emptyMessage')">
-      <template #cell-start_date="{ row }">{{ row.start_date ?? '—' }}</template>
-      <template #cell-end_date="{ row }">{{ row.end_date ?? '—' }}</template>
+      <template #cell-start_date="{ row }">{{ formatDate(row.start_date) }}</template>
+      <template #cell-end_date="{ row }">{{ formatDate(row.end_date) }}</template>
       <template #cell-is_current="{ row }">
         <BaseBadge v-if="row.is_current" variant="success">{{ t('admin.academicYears.current') }}</BaseBadge>
         <span v-else>—</span>

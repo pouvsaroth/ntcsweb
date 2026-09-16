@@ -98,7 +98,7 @@ class LeaveRequest extends Model
 
     public function auditDisplayName(): string
     {
-        return "{$this->requesterName()}: {$this->from_date?->toDateString()}–{$this->to_date?->toDateString()}";
+        return "{$this->requesterName()}: {$this->from_date?->format('d-m-Y')}–{$this->to_date?->format('d-m-Y')}";
     }
 
     protected function auditActionForDirty(array $dirty): string

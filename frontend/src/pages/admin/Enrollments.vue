@@ -18,6 +18,7 @@ import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { enrollmentsService, type Enrollment, type EnrollmentStatus } from '@/services/enrollments'
 import { type LookupOption, lookupsService } from '@/services/lookups'
 import { studentsService, type Student } from '@/services/students'
+import { formatDate } from '@/utils/date'
 
 const { t, locale } = useI18n()
 
@@ -222,7 +223,7 @@ onMounted(() => {
       <template #cell-class="{ row }">{{ row.class.name }}</template>
       <template #cell-book="{ row }">{{ row.course_package?.name ?? '—' }}</template>
       <template #cell-table="{ row }">{{ row.table?.name ?? '—' }}</template>
-      <template #cell-enrolled_at="{ row }">{{ new Date(row.enrolled_at).toLocaleDateString() }}</template>
+      <template #cell-enrolled_at="{ row }">{{ formatDate(row.enrolled_at) }}</template>
       <template #cell-status="{ row }">
         <BaseBadge :variant="statusBadgeVariant[row.status]">
           {{ t(`admin.enrollments.status${statusKey(row.status)}`) }}

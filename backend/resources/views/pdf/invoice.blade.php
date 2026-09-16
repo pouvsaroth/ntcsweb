@@ -127,7 +127,7 @@
         </div>
         <div class="dates">
             <h3>{{ __('invoice.invoice_date') }}</h3>
-            <p>{{ $invoice->invoice_date->format('d M Y') }}</p>
+            <p>{{ $invoice->invoice_date->format('d-m-Y') }}</p>
             @if($enrolledClass)
                 <h3 style="margin-top:8px;">{{ __('invoice.class') }}</h3>
                 <p>{{ $enrolledClass->name }}</p>
@@ -136,7 +136,7 @@
             @endif
             @if($invoice->due_date)
                 <h3 style="margin-top:8px;">{{ __('invoice.due_date') }}</h3>
-                <p>{{ $invoice->due_date->format('d M Y') }}</p>
+                <p>{{ $invoice->due_date->format('d-m-Y') }}</p>
             @endif
         </div>
     </div>
@@ -185,7 +185,7 @@
                     <tr>
                         <td>{{ $payment->payment_number }}</td>
                         <td class="num">{{ __('invoice.methods.'.strtolower($payment->payment_method)) }}</td>
-                        <td class="num">{{ $payment->payment_date->format('d M Y') }}</td>
+                        <td class="num">{{ $payment->payment_date->format('d-m-Y') }}</td>
                         <td class="num">{{ $money((float) $payment->amount) }}</td>
                     </tr>
                 @endforeach

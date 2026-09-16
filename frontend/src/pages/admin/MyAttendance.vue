@@ -8,6 +8,7 @@ import BasePagination from '@/components/ui/BasePagination.vue'
 import DataTable from '@/components/ui/DataTable.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { attendanceService, type AttendanceRecord, type AttendanceStatusValue } from '@/services/attendance'
+import { formatDate } from '@/utils/date'
 
 const { t } = useI18n()
 
@@ -45,6 +46,7 @@ onMounted(() => fetch())
     <BaseAlert v-if="error" variant="danger" class="mb-4">{{ error }}</BaseAlert>
 
     <DataTable :columns="columns" :rows="items" row-key="id" :loading="loading" :empty-message="t('admin.myAttendance.emptyMessage')">
+      <template #cell-date="{ row }">{{ formatDate(row.date) }}</template>
       <template #cell-class="{ row }">{{ row.class?.name }}</template>
       <template #cell-status="{ row }">
         <BaseBadge :variant="statusVariant[row.status]">{{ statusLabel(row.status) }}</BaseBadge>

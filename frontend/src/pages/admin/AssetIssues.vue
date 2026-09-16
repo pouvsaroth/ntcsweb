@@ -10,6 +10,7 @@ import DataTable from '@/components/ui/DataTable.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { assetIssuesService, issuePriorities, issueStatuses, type AssetIssue, type IssuePriority, type IssueStatus } from '@/services/assetIssues'
 import { ApiRequestError } from '@/types/api'
+import { formatDate } from '@/utils/date'
 
 const { t } = useI18n()
 
@@ -99,7 +100,7 @@ onMounted(() => fetch())
         <BaseBadge :variant="priorityVariant[row.priority]">{{ t(`admin.assetIssues.priority${priorityKey(row.priority)}`) }}</BaseBadge>
       </template>
       <template #cell-status="{ row }">{{ t(`admin.assetIssues.issueStatus${statusKey(row.status)}`) }}</template>
-      <template #cell-reported_date="{ row }">{{ row.reported_date ? new Date(row.reported_date).toLocaleDateString() : '—' }}</template>
+      <template #cell-reported_date="{ row }">{{ formatDate(row.reported_date) }}</template>
       <template #cell-actions="{ row }">
         <button
           v-if="!['RESOLVED', 'CLOSED', 'CANCELLED'].includes(row.status)"

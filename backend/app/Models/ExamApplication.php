@@ -117,7 +117,7 @@ class ExamApplication extends Model
 
     public function auditDisplayName(): string
     {
-        return "{$this->student?->fullName()}: {$this->exam_date?->toDateString()}";
+        return "{$this->student?->fullName()}: {$this->exam_date?->format('d-m-Y')}";
     }
 
     protected function auditActionForDirty(array $dirty): string

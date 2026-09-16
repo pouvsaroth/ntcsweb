@@ -13,6 +13,7 @@ import type { StudentFeedback, StudentFeedbackStatus } from '@/services/myStuden
 import { studentFeedbackService } from '@/services/studentFeedback'
 import { useAuthStore } from '@/stores/auth'
 import { ApiRequestError } from '@/types/api'
+import { formatDate, formatDateTime } from '@/utils/date'
 
 /**
  * The admin/staff queue for every student's request or comment about the
@@ -133,7 +134,7 @@ onMounted(() => load())
     />
 
     <DataTable v-else :columns="columns" :rows="visibleRows" row-key="id">
-      <template #cell-date="{ row }">{{ new Date(row.created_at).toLocaleDateString() }}</template>
+      <template #cell-date="{ row }">{{ formatDate(row.created_at) }}</template>
       <template #cell-student="{ row }">{{ row.student?.name ?? '—' }}</template>
       <template #cell-subject="{ row }">
         <button type="button" class="text-left font-medium text-primary-700 hover:underline" @click="openDetail(row)">
@@ -168,7 +169,7 @@ onMounted(() => load())
           <li v-for="reply in detail.replies" :key="reply.id" class="rounded-lg border border-neutral-100 p-3">
             <div class="mb-1 flex items-center justify-between text-xs text-neutral-500">
               <span class="font-medium">{{ reply.user?.name ?? '—' }}</span>
-              <span>{{ new Date(reply.created_at).toLocaleString() }}</span>
+              <span>{{ formatDateTime(reply.created_at) }}</span>
             </div>
             <p class="text-sm text-neutral-800">{{ reply.body }}</p>
           </li>

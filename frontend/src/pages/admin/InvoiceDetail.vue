@@ -21,6 +21,7 @@ import {
 import { paymentsService, type Payment, type PaymentStatusValue } from '@/services/payments'
 import { ApiRequestError } from '@/types/api'
 import { formatMoney } from '@/utils/currency'
+import { formatDate, formatDateTime } from '@/utils/date'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -77,14 +78,6 @@ const notificationStatusVariant: Record<string, 'success' | 'warning' | 'danger'
   PENDING: 'warning',
   SENT: 'success',
   FAILED: 'danger',
-}
-
-function formatDate(value: string | null): string {
-  return value ? new Date(value).toLocaleDateString() : '—'
-}
-
-function formatDateTime(value: string | null): string {
-  return value ? new Date(value).toLocaleString() : '—'
 }
 
 async function load() {

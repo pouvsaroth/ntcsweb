@@ -10,6 +10,7 @@ import DataTable from '@/components/ui/DataTable.vue'
 import EditIconButton from '@/components/ui/EditIconButton.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { currencyRatesService, type CurrencyRate } from '@/services/currencyRates'
+import { formatDate } from '@/utils/date'
 
 const { t } = useI18n()
 
@@ -65,6 +66,7 @@ onMounted(() => fetch())
       :loading="loading"
       :empty-message="t('admin.currencyRates.emptyMessage')"
     >
+      <template #cell-effective_date="{ row }">{{ formatDate(row.effective_date) }}</template>
       <template #cell-khr_per_usd="{ row }">{{ row.khr_per_usd.toLocaleString() }} ៛</template>
       <template #cell-created_by="{ row }">{{ row.created_by ?? '—' }}</template>
       <template #cell-actions="{ row }">

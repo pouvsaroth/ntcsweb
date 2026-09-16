@@ -75,6 +75,6 @@ class AttendanceRecord extends Model
 
     public function auditDisplayName(): string
     {
-        return "{$this->student?->fullName()} on {$this->date?->toDateString()}";
+        return "{$this->student?->fullName()} on {$this->date?->format('d-m-Y')}";
     }
 }

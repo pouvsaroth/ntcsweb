@@ -76,7 +76,7 @@ class ResignationRequest extends Model
 
     public function auditDisplayName(): string
     {
-        return "{$this->staff?->fullName()}: {$this->resignation_date?->toDateString()}";
+        return "{$this->staff?->fullName()}: {$this->resignation_date?->format('d-m-Y')}";
     }
 
     protected function auditActionForDirty(array $dirty): string

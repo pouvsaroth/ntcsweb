@@ -22,6 +22,7 @@ import {
 } from '@/services/attendance'
 import { classesService, type SchoolClass } from '@/services/classes'
 import { ApiRequestError } from '@/types/api'
+import { formatDate } from '@/utils/date'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -272,6 +273,7 @@ onMounted(async () => {
         :loading="historyLoading"
         :empty-message="t('admin.attendance.emptyMessage')"
       >
+        <template #cell-date="{ row }">{{ formatDate(row.date) }}</template>
         <template #cell-student="{ row }">{{ row.student?.name }}</template>
         <template #cell-class="{ row }">{{ row.class?.name }}</template>
         <template #cell-status="{ row }">

@@ -11,6 +11,7 @@ import DataTable from '@/components/ui/DataTable.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { studentImportsService, type StudentImport, type StudentImportStatus } from '@/services/studentImports'
 import { ApiRequestError } from '@/types/api'
+import { formatDateTime } from '@/utils/date'
 
 const { t } = useI18n()
 
@@ -129,7 +130,7 @@ onUnmounted(() => clearInterval(pollHandle))
         </BaseBadge>
       </template>
       <template #cell-created_at="{ row }">
-        {{ new Date(row.created_at).toLocaleString() }}
+        {{ formatDateTime(row.created_at) }}
       </template>
       <template #cell-errors="{ row }">
         <button

@@ -6,6 +6,7 @@ import { useRoute } from 'vue-router'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import SectionContainer from '@/components/public/SectionContainer.vue'
 import { publicContentService, type NewsItem } from '@/services/publicContent'
+import { formatDate } from '@/utils/date'
 
 const route = useRoute()
 const { t } = useI18n()
@@ -26,7 +27,7 @@ onMounted(async () => {
     </div>
     <EmptyState v-else-if="!article" :title="t('news.notFoundTitle')" :message="t('news.notFoundMessage')" />
     <article v-else class="prose prose-neutral mx-auto max-w-3xl">
-      <p class="text-sm font-medium text-neutral-400">{{ article.published_at }}</p>
+      <p class="text-sm font-medium text-neutral-400">{{ formatDate(article.published_at) }}</p>
       <h1 class="mt-1 text-3xl font-bold text-neutral-900">{{ article.title }}</h1>
       <img v-if="article.cover_image" :src="article.cover_image" :alt="article.title" class="mt-6 w-full rounded-[--radius-card]" />
       <p class="mt-6 text-neutral-600">{{ article.excerpt }}</p>

@@ -7,6 +7,7 @@ import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseCard from '@/components/ui/BaseCard.vue'
 import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import { ApiRequestError } from '@/types/api'
+import { formatDate } from '@/utils/date'
 
 const { t } = useI18n()
 
@@ -120,7 +121,7 @@ onMounted(async () => {
           <ul v-else class="space-y-2 text-sm">
             <li v-for="record in summary.upcoming_maintenance" :key="record.id" class="flex justify-between">
               <RouterLink :to="`/admin/assets/${record.asset?.id}`" class="text-primary-700 hover:underline">{{ record.asset?.asset_number }}</RouterLink>
-              <span class="text-neutral-500">{{ record.scheduled_date }}</span>
+              <span class="text-neutral-500">{{ formatDate(record.scheduled_date) }}</span>
             </li>
           </ul>
         </BaseCard>
@@ -131,7 +132,7 @@ onMounted(async () => {
           <ul v-else class="space-y-2 text-sm">
             <li v-for="asset in summary.warranty_expiring" :key="asset.id" class="flex justify-between">
               <RouterLink :to="`/admin/assets/${asset.id}`" class="text-primary-700 hover:underline">{{ asset.asset_number }}</RouterLink>
-              <span class="text-neutral-500">{{ asset.warranty_end_date }}</span>
+              <span class="text-neutral-500">{{ formatDate(asset.warranty_end_date) }}</span>
             </li>
           </ul>
         </BaseCard>

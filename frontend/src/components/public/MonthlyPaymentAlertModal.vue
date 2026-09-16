@@ -6,6 +6,7 @@ import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import { myMonthlyPaymentAlertsService, type MyMonthlyPaymentAlert } from '@/services/myMonthlyPaymentAlerts'
 import { useAuthStore } from '@/stores/auth'
+import { formatDate } from '@/utils/date'
 
 /**
  * The student-facing "your monthly payment is coming due" popup — shown once
@@ -43,10 +44,6 @@ function dismiss(): void {
   } catch {
     // Nothing to persist if storage is unavailable — the popup will just show again next time.
   }
-}
-
-function formatDate(value: string | null): string {
-  return value ? new Date(value).toLocaleDateString() : '—'
 }
 
 watch(

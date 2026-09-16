@@ -10,6 +10,7 @@ import DataTable from '@/components/ui/DataTable.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { assetMaintenanceService, maintenanceStatuses, type AssetMaintenance, type MaintenanceStatus } from '@/services/assetMaintenance'
 import { ApiRequestError } from '@/types/api'
+import { formatDate } from '@/utils/date'
 
 const { t } = useI18n()
 
@@ -93,7 +94,7 @@ onMounted(() => fetch())
         <span v-else>—</span>
       </template>
       <template #cell-scheduled_date="{ row }">
-        {{ row.scheduled_date ? new Date(row.scheduled_date).toLocaleDateString() : '—' }}
+        {{ formatDate(row.scheduled_date) }}
         <BaseBadge v-if="row.is_overdue" variant="danger" class="ml-2">{{ t('admin.assetMaintenance.overdue') }}</BaseBadge>
       </template>
       <template #cell-status="{ row }">{{ t(`admin.assetMaintenance.maintenanceStatus${statusKey(row.status)}`) }}</template>

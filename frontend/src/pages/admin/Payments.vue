@@ -18,6 +18,7 @@ import {
   type PaymentStatusValue,
 } from '@/services/payments'
 import { ApiRequestError } from '@/types/api'
+import { formatDate } from '@/utils/date'
 
 const { t } = useI18n()
 
@@ -64,10 +65,6 @@ const columns = [
   { key: 'payment_date', label: t('admin.payments.columnDate'), sortable: true },
   { key: 'actions', label: t('admin.payments.columnActions'), align: 'text-right' },
 ]
-
-function formatDate(value: string | null): string {
-  return value ? new Date(value).toLocaleDateString() : '—'
-}
 
 // --- Cancel / Refund -----------------------------------------------------
 

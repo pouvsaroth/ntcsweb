@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
 import { notificationsService, type AppNotification } from '@/services/notifications'
+import { formatDateTime } from '@/utils/date'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -30,7 +31,7 @@ function typeLabel(notification: AppNotification): string {
 }
 
 function formatWhen(value: string): string {
-  return new Date(value).toLocaleString()
+  return formatDateTime(value)
 }
 
 async function toggle() {

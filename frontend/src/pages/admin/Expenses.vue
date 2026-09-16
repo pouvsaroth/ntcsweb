@@ -10,6 +10,7 @@ import BaseSelect from '@/components/ui/BaseSelect.vue'
 import DataTable from '@/components/ui/DataTable.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { expensesService, expenseStatuses, type Expense, type ExpenseStatus } from '@/services/expenses'
+import { formatDate } from '@/utils/date'
 
 const { t } = useI18n()
 
@@ -87,6 +88,7 @@ onMounted(() => fetch())
       <template #cell-expense_number="{ row }">
         <RouterLink :to="`/admin/expenses/${row.id}`" class="font-medium text-primary-700 hover:underline">{{ row.expense_number }}</RouterLink>
       </template>
+      <template #cell-expense_date="{ row }">{{ formatDate(row.expense_date) }}</template>
       <template #cell-account="{ row }">{{ row.account.code }} — {{ row.account.name }}</template>
       <template #cell-vendor="{ row }">{{ row.vendor ?? '—' }}</template>
       <template #cell-amount="{ row }">${{ row.amount.toFixed(2) }}</template>

@@ -15,6 +15,7 @@ import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { examApplicationStatuses, examApplicationsService, type ExamApplication, type ExamApplicationStatus } from '@/services/examApplications'
 import { useAuthStore } from '@/stores/auth'
 import { ApiRequestError } from '@/types/api'
+import { formatDate } from '@/utils/date'
 
 const { t } = useI18n()
 const auth = useAuthStore()
@@ -68,7 +69,7 @@ function statusLabel(status: ExamApplicationStatus): string {
 }
 
 function fmtDate(value: string | null): string {
-  return value ? value.slice(0, 10) : '—'
+  return formatDate(value)
 }
 
 function timeRange(a: ExamApplication): string {

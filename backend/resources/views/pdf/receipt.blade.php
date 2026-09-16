@@ -53,7 +53,7 @@
         <div class="row"><div class="label">Student</div><div class="value">{{ $invoice->student->student_code }} — {{ $invoice->student->fullName() }}</div></div>
         <div class="row"><div class="label">Invoice</div><div class="value">{{ $invoice->invoice_number }}</div></div>
         <div class="row"><div class="label">Payment Method</div><div class="value">{{ $payment->payment_method }}</div></div>
-        <div class="row"><div class="label">Date</div><div class="value">{{ $payment->payment_date->format('d M Y') }}</div></div>
+        <div class="row"><div class="label">Date</div><div class="value">{{ $payment->payment_date->format('d-m-Y') }}</div></div>
         @if($payment->reference_number)
             <div class="row"><div class="label">Reference</div><div class="value">{{ $payment->reference_number }}</div></div>
         @endif

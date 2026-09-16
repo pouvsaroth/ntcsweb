@@ -9,6 +9,7 @@ import PageHero from '@/components/public/PageHero.vue'
 import SectionContainer from '@/components/public/SectionContainer.vue'
 import { publicContentService, type EventItem } from '@/services/publicContent'
 import type { LengthAwarePaginationMeta } from '@/types/api'
+import { formatDate } from '@/utils/date'
 
 const { t } = useI18n()
 const events = ref<EventItem[]>([])
@@ -37,7 +38,7 @@ onMounted(() => load())
       <template v-else>
         <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           <BaseCard v-for="item in events" :key="item.id" hoverable>
-            <p class="text-xs font-medium text-secondary-600">{{ item.starts_at }}</p>
+            <p class="text-xs font-medium text-secondary-600">{{ formatDate(item.starts_at) }}</p>
             <h3 class="mt-1 font-semibold text-neutral-900">{{ item.title }}</h3>
             <p v-if="item.location" class="mt-2 text-sm text-neutral-500">📍 {{ item.location }}</p>
           </BaseCard>

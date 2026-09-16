@@ -12,6 +12,7 @@ import DataTable from '@/components/ui/DataTable.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { adminUsersService } from '@/services/adminUsers'
 import { auditLogsService, type AuditLogEntry } from '@/services/auditLogs'
+import { formatDateTime } from '@/utils/date'
 
 const { t } = useI18n()
 
@@ -93,10 +94,6 @@ const changedFields = computed(() => {
   }))
 })
 
-function formatDate(value: string): string {
-  return new Date(value).toLocaleString()
-}
-
 function formatValue(value: unknown): string {
   if (value === null || value === undefined) return '—'
   if (typeof value === 'object') return JSON.stringify(value)
@@ -176,7 +173,7 @@ onMounted(async () => {
       :empty-message="t('admin.auditLogs.emptyMessage')"
       @sort="(col) => setSort(sort === col ? `-${col}` : col)"
     >
-      <template #cell-created_at="{ row }">{{ formatDate(row.created_at) }}</template>
+      <template #cell-created_at="{ row }">{{ formatDateTime(row.created_at) }}</template>
       <template #cell-user="{ row }">{{ row.user?.name ?? t('admin.auditLogs.systemActor') }}</template>
       <template #cell-action="{ row }">
         <BaseBadge :variant="actionBadgeVariant[row.action] ?? 'neutral'">{{ row.action }}</BaseBadge>
@@ -219,7 +216,7 @@ onMounted(async () => {
           </div>
           <div>
             <dt class="text-xs font-medium uppercase text-neutral-500">{{ t('admin.auditLogs.columnDate') }}</dt>
-            <dd class="mt-1 text-neutral-800">{{ formatDate(detailLog.created_at) }}</dd>
+            <dd class="mt-1 text-neutral-800">{{ formatDateTime(detailLog.created_at) }}</dd>
           </div>
           <div>
             <dt class="text-xs font-medium uppercase text-neutral-500">{{ t('admin.auditLogs.columnIp') }}</dt>

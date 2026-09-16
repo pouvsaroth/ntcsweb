@@ -16,6 +16,7 @@ import { myLeaveRequestsService, type LeaveRequest } from '@/services/leaveReque
 import { myResignationRequestsService, type ResignationRequest } from '@/services/resignationRequests'
 import { useAuthStore } from '@/stores/auth'
 import { ApiRequestError } from '@/types/api'
+import { formatDate } from '@/utils/date'
 
 /**
  * "My Request" under eApprovals — every request the current user has
@@ -121,7 +122,7 @@ async function load() {
       kind: 'leave',
       id: r.id,
       reference: `LR-${String(r.id).padStart(6, '0')}`,
-      subject: t('admin.myRequests.leaveSubject', { from: r.from_date, to: r.to_date }),
+      subject: t('admin.myRequests.leaveSubject', { from: formatDate(r.from_date), to: formatDate(r.to_date) }),
       status: r.status,
       createdAt: r.created_at,
       leave: r,
@@ -131,7 +132,7 @@ async function load() {
       kind: 'resignation',
       id: r.id,
       reference: `RS-${String(r.id).padStart(6, '0')}`,
-      subject: t('admin.myRequests.resignationSubject', { date: r.resignation_date }),
+      subject: t('admin.myRequests.resignationSubject', { date: formatDate(r.resignation_date) }),
       status: r.status,
       createdAt: r.created_at,
       resignation: r,
@@ -185,7 +186,7 @@ onMounted(() => load())
     />
 
     <DataTable v-else :columns="columns" :rows="visibleRows" row-key="id">
-      <template #cell-date="{ row }">{{ new Date(row.createdAt).toLocaleDateString() }}</template>
+      <template #cell-date="{ row }">{{ formatDate(row.createdAt) }}</template>
       <template #cell-requestor>{{ auth.user?.name }}</template>
       <template #cell-subject="{ row }">
         <button type="button" class="text-left font-medium text-primary-700 hover:underline" @click="detail = row">
@@ -208,14 +209,14 @@ onMounted(() => load())
       </template>
       <template v-else-if="detail?.kind === 'leave' && detail.leave">
         <dl class="grid gap-y-2 text-sm">
-          <div><dt class="text-neutral-500">{{ t('admin.leaveRequests.columnDates') }}</dt><dd class="font-medium text-neutral-900">{{ detail.leave.from_date }} – {{ detail.leave.to_date }}</dd></div>
+          <div><dt class="text-neutral-500">{{ t('admin.leaveRequests.columnDates') }}</dt><dd class="font-medium text-neutral-900">{{ formatDate(detail.leave.from_date) }} – {{ formatDate(detail.leave.to_date) }}</dd></div>
           <div><dt class="text-neutral-500">{{ t('admin.leaveRequests.columnReason') }}</dt><dd class="font-medium text-neutral-900">{{ detail.leave.reason }}</dd></div>
           <div v-if="detail.leave.decision_reason"><dt class="text-neutral-500">{{ t('admin.leaveRequests.decisionReason') }}</dt><dd class="font-medium text-neutral-900">{{ detail.leave.decision_reason }}</dd></div>
         </dl>
       </template>
       <template v-else-if="detail?.kind === 'resignation' && detail.resignation">
         <dl class="grid gap-y-2 text-sm">
-          <div><dt class="text-neutral-500">{{ t('resignationRequest.resignationDate') }}</dt><dd class="font-medium text-neutral-900">{{ detail.resignation.resignation_date }}</dd></div>
+          <div><dt class="text-neutral-500">{{ t('resignationRequest.resignationDate') }}</dt><dd class="font-medium text-neutral-900">{{ formatDate(detail.resignation.resignation_date) }}</dd></div>
           <div><dt class="text-neutral-500">{{ t('resignationRequest.reason') }}</dt><dd class="font-medium text-neutral-900">{{ detail.resignation.reason }}</dd></div>
           <div v-if="detail.resignation.decision_reason"><dt class="text-neutral-500">{{ t('admin.leaveRequests.decisionReason') }}</dt><dd class="font-medium text-neutral-900">{{ detail.resignation.decision_reason }}</dd></div>
         </dl>

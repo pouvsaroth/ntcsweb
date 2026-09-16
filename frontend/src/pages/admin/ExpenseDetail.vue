@@ -11,6 +11,7 @@ import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import { expensesService, type Expense, type ExpenseStatus } from '@/services/expenses'
 import { ApiRequestError } from '@/types/api'
+import { formatDate } from '@/utils/date'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -38,10 +39,6 @@ const statusVariant: Record<ExpenseStatus, 'neutral' | 'warning' | 'success' | '
   PAID: 'success',
   REJECTED: 'danger',
   CANCELLED: 'neutral',
-}
-
-function formatDate(value: string | null): string {
-  return value ? new Date(value).toLocaleDateString() : '—'
 }
 
 async function load() {

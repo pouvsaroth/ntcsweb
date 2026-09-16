@@ -10,6 +10,7 @@ import PageHero from '@/components/public/PageHero.vue'
 import SectionContainer from '@/components/public/SectionContainer.vue'
 import { publicContentService, type NewsItem } from '@/services/publicContent'
 import type { LengthAwarePaginationMeta } from '@/types/api'
+import { formatDate } from '@/utils/date'
 
 const { t } = useI18n()
 const news = ref<NewsItem[]>([])
@@ -42,7 +43,7 @@ onMounted(() => load())
               <img v-if="item.cover_image" :src="item.cover_image" :alt="item.title" class="h-full w-full object-cover" />
             </div>
             <div class="p-5">
-              <p class="text-xs font-medium text-neutral-400">{{ item.published_at }}</p>
+              <p class="text-xs font-medium text-neutral-400">{{ formatDate(item.published_at) }}</p>
               <h3 class="mt-1 font-semibold text-neutral-900">{{ item.title }}</h3>
               <p class="mt-2 line-clamp-2 text-sm text-neutral-500">{{ item.excerpt }}</p>
               <RouterLink :to="`/news/${item.slug}`" class="mt-3 inline-block text-sm font-medium text-secondary-600 hover:text-secondary-700">

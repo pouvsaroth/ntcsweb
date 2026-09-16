@@ -15,6 +15,7 @@ import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { adminUsersService } from '@/services/adminUsers'
 import { useAuthStore } from '@/stores/auth'
 import type { User } from '@/types/models'
+import { formatDate } from '@/utils/date'
 
 const { t } = useI18n()
 const auth = useAuthStore()
@@ -71,6 +72,7 @@ onMounted(() => fetch())
       :empty-message="t('admin.users.emptyMessage')"
       @sort="(col) => setSort(sort === col ? `-${col}` : col)"
     >
+      <template #cell-created_at="{ row }">{{ formatDate(row.created_at) }}</template>
       <template #cell-email="{ row }">{{ row.email ?? row.phone ?? '—' }}</template>
       <template #cell-status="{ row }">
         <BaseBadge :variant="row.status === 'active' ? 'success' : row.status === 'suspended' ? 'danger' : 'neutral'">

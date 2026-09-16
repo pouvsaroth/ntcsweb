@@ -10,6 +10,7 @@ import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { invoicesService } from '@/services/invoices'
 import { monthlyInvoicesService, type MonthlyInvoice } from '@/services/monthlyInvoices'
 import { ApiRequestError } from '@/types/api'
+import { formatDate } from '@/utils/date'
 
 const { t } = useI18n()
 
@@ -29,10 +30,6 @@ const columns = [
   { key: 'next_payment_date', label: t('admin.invoices.monthlyColumnNextPayment') },
   { key: 'actions', label: t('admin.invoices.columnActions'), align: 'text-right' },
 ]
-
-function formatDate(value: string | null): string {
-  return value ? new Date(value).toLocaleDateString() : '—'
-}
 
 const reprintError = ref<string | null>(null)
 const reprintingId = ref<number | null>(null)

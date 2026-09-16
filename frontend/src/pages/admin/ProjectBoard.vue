@@ -15,6 +15,7 @@ import { projectTaskCommentsService } from '@/services/projectTaskComments'
 import { projectColumnsService, projectsService, projectTasksService, type Project, type ProjectColumn, type ProjectTask } from '@/services/projects'
 import { useAuthStore } from '@/stores/auth'
 import { ApiRequestError } from '@/types/api'
+import { formatDate } from '@/utils/date'
 
 /**
  * The Kanban board for one project. Drag-and-drop uses plain HTML5 DnD
@@ -399,7 +400,7 @@ async function submitMoveNote() {
               <p v-if="task.description" class="mt-1 line-clamp-2 text-xs text-neutral-500">{{ task.description }}</p>
               <div class="mt-2 flex flex-wrap items-center gap-2">
                 <BaseBadge :variant="priorityVariant[task.priority]">{{ t(`admin.projects.priority${task.priority.charAt(0).toUpperCase()}${task.priority.slice(1)}`) }}</BaseBadge>
-                <span v-if="task.due_date" class="text-xs text-neutral-400">{{ task.due_date }}</span>
+                <span v-if="task.due_date" class="text-xs text-neutral-400">{{ formatDate(task.due_date) }}</span>
                 <span v-if="task.assignee" class="ml-auto truncate text-xs text-neutral-500">{{ task.assignee }}</span>
               </div>
             </div>

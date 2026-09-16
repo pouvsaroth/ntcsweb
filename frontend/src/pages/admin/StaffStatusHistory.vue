@@ -12,6 +12,7 @@ import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { lookupsService } from '@/services/lookups'
 import { staffService } from '@/services/staff'
 import { staffStatusHistoriesService, type StaffStatusHistoryEntry } from '@/services/staffStatusHistories'
+import { formatDate, formatDateTime } from '@/utils/date'
 
 const { t, locale } = useI18n()
 
@@ -71,10 +72,6 @@ const columns = [
   { key: 'created_at', label: t('admin.staffStatusHistory.columnChangedAt') },
 ]
 
-function formatDate(value: string): string {
-  return new Date(value).toLocaleString()
-}
-
 onMounted(async () => {
   void fetch()
 
@@ -129,13 +126,13 @@ onMounted(async () => {
       <template #cell-to_status="{ row }">
         <BaseBadge :variant="statusBadgeVariant[row.to_status] ?? 'neutral'">{{ statusLabels[row.to_status] ?? row.to_status }}</BaseBadge>
       </template>
-      <template #cell-requested_date="{ row }">{{ row.requested_date ?? '—' }}</template>
-      <template #cell-effective_date="{ row }">{{ row.effective_date ?? '—' }}</template>
+      <template #cell-requested_date="{ row }">{{ formatDate(row.requested_date) }}</template>
+      <template #cell-effective_date="{ row }">{{ formatDate(row.effective_date) }}</template>
       <template #cell-reason="{ row }">
         <span class="line-clamp-1">{{ row.reason ?? '—' }}</span>
       </template>
       <template #cell-changed_by="{ row }">{{ row.changed_by ?? '—' }}</template>
-      <template #cell-created_at="{ row }">{{ formatDate(row.created_at) }}</template>
+      <template #cell-created_at="{ row }">{{ formatDateTime(row.created_at) }}</template>
     </DataTable>
 
     <BasePagination v-if="meta" :meta="meta" sticky class="mt-4" @update:page="setPage" />

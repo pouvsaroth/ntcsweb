@@ -12,6 +12,7 @@ import BaseSelect from '@/components/ui/BaseSelect.vue'
 import DataTable from '@/components/ui/DataTable.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { financialTransactionsService, transactionTypes, type FinancialTransaction, type TransactionType } from '@/services/financialTransactions'
+import { formatDate } from '@/utils/date'
 
 const { t } = useI18n()
 
@@ -80,6 +81,7 @@ onMounted(() => fetch())
     </div>
 
     <DataTable :columns="columns" :rows="items" row-key="id" :loading="loading" :empty-message="t('admin.transactions.emptyMessage')">
+      <template #cell-transaction_date="{ row }">{{ formatDate(row.transaction_date) }}</template>
       <template #cell-type="{ row }">
         <BaseBadge :variant="typeVariant[row.type as TransactionType]">{{ t(`admin.transactions.type${typeKey(row.type as TransactionType)}`) }}</BaseBadge>
       </template>
