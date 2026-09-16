@@ -26,6 +26,9 @@ class UpdateSchoolSettingsRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
+            // Shown below `name` on the Login page — purely cosmetic, never
+            // used anywhere else, so it's optional even when `name` isn't.
+            'name_en' => ['nullable', 'string', 'max:255'],
             'email' => ['nullable', 'email', 'max:255'],
             // Longer than the person-level phone fields elsewhere (max:32) —
             // this is the school's public contact line, which often needs

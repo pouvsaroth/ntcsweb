@@ -20,11 +20,13 @@ onMounted(() => site.load())
         <LanguageSwitcher />
       </div>
 
-      <div class="mb-8 flex flex-col items-center gap-3 text-center">
-        <span class="flex h-12 w-12 items-center justify-center rounded-xl bg-primary-600 text-lg font-bold text-secondary-900">
+      <div class="mb-8 flex flex-col items-center gap-2 text-center">
+        <img v-if="site.info.logo" :src="site.info.logo" alt="" class="h-16 w-16 rounded-xl object-contain" />
+        <span v-else class="flex h-12 w-12 items-center justify-center rounded-xl bg-primary-600 text-lg font-bold text-secondary-900">
           {{ site.info.name.charAt(0) }}
         </span>
         <h1 class="text-xl font-bold text-neutral-900">{{ site.info.name }}</h1>
+        <p v-if="site.info.name_en" class="text-sm text-neutral-500">{{ site.info.name_en }}</p>
       </div>
 
       <div class="rounded-[--radius-card] border border-neutral-200 bg-white p-6 shadow-[--shadow-card] sm:p-8">

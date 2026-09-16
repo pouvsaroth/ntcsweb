@@ -18,6 +18,7 @@ const publicRoutes: RouteRecordRaw[] = [
   { path: 'events', name: 'events', component: () => import('@/pages/public/Events.vue') },
   { path: 'announcements', name: 'announcements', component: () => import('@/pages/public/Announcements.vue') },
   { path: 'gallery', name: 'gallery', component: () => import('@/pages/public/Gallery.vue') },
+  { path: 'promotion', name: 'promotion', component: () => import('@/pages/public/Promotion.vue') },
   { path: 'documents', name: 'documents', component: () => import('@/pages/public/Documents.vue') },
   { path: 'contact', name: 'contact', component: () => import('@/pages/public/Contact.vue') },
   { path: ':pathMatch(.*)*', name: 'not-found', component: () => import('@/pages/public/NotFound.vue') },
@@ -95,6 +96,12 @@ const adminRoutes: RouteRecordRaw[] = [
     name: 'admin.gallery',
     component: () => import('@/pages/admin/Gallery.vue'),
     meta: { titleKey: 'adminNav.items.gallery' },
+  },
+  {
+    path: 'promotions',
+    name: 'admin.promotions',
+    component: () => import('@/pages/admin/Promotions.vue'),
+    meta: { titleKey: 'adminNav.items.promotions' },
   },
   {
     path: 'student-imports',
@@ -286,6 +293,12 @@ const adminRoutes: RouteRecordRaw[] = [
     meta: { titleKey: 'studentNav.myRequest', studentAllowed: true },
   },
   {
+    path: 'my-exam-applications',
+    name: 'admin.my-exam-applications',
+    component: () => import('@/pages/admin/MyExamApplications.vue'),
+    meta: { titleKey: 'admin.myExamApplications.title', studentAllowed: true },
+  },
+  {
     path: 'student-feedback',
     name: 'admin.student-feedback',
     component: () => import('@/pages/admin/StudentFeedback.vue'),
@@ -379,13 +392,13 @@ const adminRoutes: RouteRecordRaw[] = [
     path: 'approvals/forms',
     name: 'admin.approvals.forms',
     component: () => import('@/pages/admin/approvals/Forms.vue'),
-    meta: { titleKey: 'adminNav.items.forms' },
+    meta: { titleKey: 'adminNav.items.forms', studentAllowed: true },
   },
   {
     path: 'approvals/my-requests',
     name: 'admin.approvals.my-requests',
     component: () => import('@/pages/admin/approvals/MyRequests.vue'),
-    meta: { titleKey: 'adminNav.items.myRequests' },
+    meta: { titleKey: 'adminNav.items.myRequests', studentAllowed: true },
   },
   {
     path: 'approvals/queue',
@@ -404,6 +417,12 @@ const adminRoutes: RouteRecordRaw[] = [
     name: 'admin.school-settings',
     component: () => import('@/pages/admin/SchoolSettings.vue'),
     meta: { titleKey: 'adminNav.items.school' },
+  },
+  {
+    path: 'school-documents',
+    name: 'admin.school-documents',
+    component: () => import('@/pages/admin/SchoolDocuments.vue'),
+    meta: { titleKey: 'adminNav.items.schoolDocuments' },
   },
   {
     path: 'billing',

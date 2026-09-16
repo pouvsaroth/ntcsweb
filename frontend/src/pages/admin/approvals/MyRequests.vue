@@ -2,8 +2,10 @@
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import AskForPermissionModal from '@/components/layout/AskForPermissionModal.vue'
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
+import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import DataTable from '@/components/ui/DataTable.vue'
@@ -70,6 +72,12 @@ const statusVariant: Record<ApprovalRequestStatus, 'warning' | 'success' | 'dang
 }
 
 const detail = ref<MergedRow | null>(null)
+const showLeaveModal = ref(false)
+
+function onLeaveModalChange(open: boolean) {
+  showLeaveModal.value = open
+  if (!open) load()
+}
 
 async function load() {
   loading.value = true
@@ -114,9 +122,12 @@ onMounted(() => load())
 
 <template>
   <div>
-    <div class="mb-6">
-      <h1 class="text-xl font-semibold text-neutral-900">{{ t('admin.myRequests.title') }}</h1>
-      <p class="mt-1 text-sm text-neutral-500">{{ t('admin.myRequests.subtitle') }}</p>
+    <div class="mb-6 flex items-start justify-between gap-4">
+      <div>
+        <h1 class="text-xl font-semibold text-neutral-900">{{ t('admin.myRequests.title') }}</h1>
+        <p class="mt-1 text-sm text-neutral-500">{{ t('admin.myRequests.subtitle') }}</p>
+      </div>
+      <BaseButton @click="showLeaveModal = true">{{ t('leaveRequest.title') }}</BaseButton>
     </div>
 
     <BaseAlert v-if="error" variant="danger" class="mb-4">{{ error }}</BaseAlert>
@@ -172,5 +183,7 @@ onMounted(() => load())
         </dl>
       </template>
     </BaseModal>
+
+    <AskForPermissionModal :model-value="showLeaveModal" @update:model-value="onLeaveModalChange" />
   </div>
 </template>

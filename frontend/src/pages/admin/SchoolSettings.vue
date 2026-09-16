@@ -25,6 +25,7 @@ const currencyOptions: { value: 'USD' | 'KHR'; label: string }[] = [
 
 const form = reactive({
   name: '',
+  name_en: '',
   email: '',
   phone: '',
   address: '',
@@ -51,6 +52,7 @@ async function load() {
   try {
     const settings = await schoolSettingsService.get()
     form.name = settings.name
+    form.name_en = settings.name_en ?? ''
     form.email = settings.email ?? ''
     form.phone = settings.phone ?? ''
     form.address = settings.address ?? ''
@@ -92,6 +94,7 @@ async function save() {
   try {
     const result = await schoolSettingsService.save({ ...form, logo: logoFile.value ?? undefined, stamp: stampFile.value ?? undefined })
     form.name = result.name
+    form.name_en = result.name_en ?? ''
     form.email = result.email ?? ''
     form.phone = result.phone ?? ''
     form.address = result.address ?? ''
@@ -173,6 +176,12 @@ onMounted(load)
         <h2 class="mb-1 text-sm font-semibold text-neutral-800">{{ t('admin.school.infoSection') }}</h2>
 
         <BaseInput v-model="form.name" required :label="t('admin.school.nameLabel')" :error="errors.name?.[0]" />
+        <BaseInput
+          v-model="form.name_en"
+          :label="t('admin.school.nameEnLabel')"
+          :hint="t('admin.school.nameEnHint')"
+          :error="errors.name_en?.[0]"
+        />
         <BaseInput v-model="form.email" type="email" :label="t('admin.school.emailLabel')" :error="errors.email?.[0]" />
         <BaseInput v-model="form.phone" :label="t('admin.school.phoneLabel')" :error="errors.phone?.[0]" />
         <BaseInput v-model="form.address" :label="t('admin.school.addressLabel')" :error="errors.address?.[0]" />

@@ -6,6 +6,7 @@ import VideoFormModal from '@/components/admin/VideoFormModal.vue'
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
+import BaseModal from '@/components/ui/BaseModal.vue'
 import BasePagination from '@/components/ui/BasePagination.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
 import DataTable from '@/components/ui/DataTable.vue'
@@ -42,6 +43,8 @@ const columns = [
 const modalOpen = ref(false)
 const editingVideo = ref<Video | null>(null)
 const deleteError = ref<string | null>(null)
+
+const playerVideo = ref<Video | null>(null)
 
 function openCreate() {
   editingVideo.value = null
@@ -107,9 +110,19 @@ onMounted(() => {
       @sort="(col) => setSort(sort === col ? `-${col}` : col)"
     >
       <template #cell-thumbnail_url="{ row }">
-        <div class="h-12 w-20 overflow-hidden rounded-lg bg-neutral-100">
+        <button
+          type="button"
+          class="group relative block h-12 w-20 overflow-hidden rounded-lg bg-neutral-100"
+          :title="t('admin.videos.watch')"
+          @click="playerVideo = row"
+        >
           <img v-if="row.thumbnail_url" :src="row.thumbnail_url" alt="" class="h-full w-full object-cover" />
-        </div>
+          <span class="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/30">
+            <svg class="h-6 w-6 text-white opacity-0 transition-opacity group-hover:opacity-100" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M8 5v14l11-7z" />
+            </svg>
+          </span>
+        </button>
       </template>
       <template #cell-course_package="{ row }">{{ row.course_package?.name ?? '—' }}</template>
       <template #cell-status="{ row }">
@@ -130,5 +143,23 @@ onMounted(() => {
     <BasePagination v-if="meta" :meta="meta" sticky class="mt-4" @update:page="setPage" />
 
     <VideoFormModal v-model="modalOpen" :video="editingVideo" @saved="fetch" />
+
+    <BaseModal :model-value="playerVideo !== null" size="lg" :title="playerVideo?.title" @update:model-value="playerVideo = null">
+      <template v-if="playerVideo">
+        <div class="aspect-video w-full overflow-hidden rounded-lg bg-black">
+          <iframe
+            v-if="playerVideo.embed_url"
+            :src="playerVideo.embed_url"
+            class="h-full w-full"
+            title="Video player"
+            frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen
+          ></iframe>
+          <p v-else class="flex h-full items-center justify-center text-sm text-neutral-400">{{ t('admin.videos.noPlayableUrl') }}</p>
+        </div>
+        <p v-if="playerVideo.description" class="mt-3 text-sm text-neutral-600">{{ playerVideo.description }}</p>
+      </template>
+    </BaseModal>
   </div>
 </template>

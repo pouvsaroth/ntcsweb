@@ -21,10 +21,11 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 /**
- * A student's own leave/permission request — see LeaveRequest's own
- * docblock for why this is a separate entity from AttendanceRecord.
- * approve() is the one place that ever writes attendance on a student's
- * behalf here, and it does so entirely through the existing, unmodified
+ * A student's or staff member's own leave/permission request — see
+ * LeaveRequest's own docblock for why this is a separate entity from
+ * AttendanceRecord. approve() is the one place that ever writes attendance
+ * on a student's behalf here (never for a staff-owned request), and it does
+ * so entirely through the existing, unmodified
  * AttendanceService::recordForClass() — one call per (class, date) actually
  * affected, not a hand-rolled upsert.
  */
@@ -37,13 +38,17 @@ final class LeaveRequestService
     ) {}
 
     /**
+     * `$student` xor `$staff` — whichever the signed-in account is linked
+     * to; see MyLeaveRequestController::requesterOrFail().
+     *
      * @param  array{from_date:string, to_date:string, from_time?:string|null, to_time?:string|null, reason:string, attachments?:list<UploadedFile>}  $data
      */
-    public function submit(Student $student, array $data): LeaveRequest
+    public function submit(?Student $student, ?Staff $staff, array $data): LeaveRequest
     {
-        $request = DB::transaction(function () use ($student, $data) {
+        $request = DB::transaction(function () use ($student, $staff, $data) {
             $request = LeaveRequest::query()->create([
-                'student_id' => $student->id,
+                'student_id' => $student?->id,
+                'staff_id' => $staff?->id,
                 'from_date' => $data['from_date'],
                 'to_date' => $data['to_date'],
                 'from_time' => $data['from_time'] ?? null,
@@ -73,10 +78,11 @@ final class LeaveRequestService
 
         // Outside the transaction — a notification that fails to write is
         // never worth rolling back an already-submitted request over.
+        $requesterName = $student?->fullName() ?? $staff?->fullName();
         $this->notifications->notifyMany(
             $this->notifications->usersWithPermission(Permissions::LEAVE_REQUESTS_APPROVE),
             NotificationType::LEAVE_REQUEST_SUBMITTED,
-            ['student_id' => $student->id, 'student_name' => $student->fullName(), 'leave_request_id' => $request->id],
+            ['student_id' => $student?->id, 'staff_id' => $staff?->id, 'student_name' => $requesterName, 'leave_request_id' => $request->id],
             link: '/admin/approvals/queue',
         );
 
@@ -93,7 +99,11 @@ final class LeaveRequestService
                 throw ValidationException::withMessages(['status' => 'This leave request has already been decided.']);
             }
 
-            $this->applyToAttendance($request, $admin);
+            // A staff-owned request has no enrollments/attendance to mark
+            // Excused — approving one is just the status change below.
+            if ($request->student_id !== null) {
+                $this->applyToAttendance($request, $admin);
+            }
 
             $request->update([
                 'status' => LeaveRequest::STATUS_APPROVED,
@@ -110,18 +120,30 @@ final class LeaveRequestService
     }
 
     /**
-     * The student themselves, whoever teaches them (see Student::teacherIds()
-     * — teacher and assistant teacher alike), and every Staff-role account
-     * (this school's front-desk/registration staff — see Role::STAFF's own
-     * docblock; there's no separate "Receptionist" concept to target more
-     * narrowly than that).
+     * A student-owned request notifies: the student themselves, whoever
+     * teaches them (see Student::teacherIds() — teacher and assistant
+     * teacher alike), and every Staff-role account (this school's front-desk/
+     * registration staff — see Role::STAFF's own docblock; there's no
+     * separate "Receptionist" concept to target more narrowly than that). A
+     * staff-owned request just notifies the requester themselves — there's
+     * no "who teaches this staff member" equivalent to notify.
      */
     private function notifyOnApproval(LeaveRequest $request): void
     {
-        $student = $request->student;
-        $data = ['student_id' => $student->id, 'student_name' => $student->fullName(), 'leave_request_id' => $request->id];
+        $requesterName = $request->requesterName();
+        $data = ['student_id' => $request->student_id, 'staff_id' => $request->staff_id, 'student_name' => $requesterName, 'leave_request_id' => $request->id];
         $link = '/admin/approvals/my-requests';
 
+        if ($request->staff_id !== null) {
+            $staffUser = $request->staff?->user;
+            if ($staffUser !== null) {
+                $this->notifications->notifyMany(collect([$staffUser]), NotificationType::LEAVE_REQUEST_APPROVED, $data, $link);
+            }
+
+            return;
+        }
+
+        $student = $request->student;
         $recipients = collect();
 
         if ($student->user !== null) {

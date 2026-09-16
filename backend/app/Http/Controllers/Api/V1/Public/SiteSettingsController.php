@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Api\V1\Public;
 use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponse;
 use App\Support\Content\AboutPageContent;
+use App\Support\Content\SchoolDocumentsContent;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
 
@@ -31,6 +32,7 @@ final class SiteSettingsController extends Controller
 
         return ApiResponse::success([
             'name' => $tenant->name,
+            'name_en' => $tenant->name_en,
             'logo' => $tenant->logoUrl(),
             'email' => $tenant->email,
             'phone' => $tenant->phone,
@@ -38,6 +40,7 @@ final class SiteSettingsController extends Controller
             // null until the school has saved About content at least once —
             // the public About page falls back to static copy until then.
             'about' => AboutPageContent::isConfigured($tenant) ? AboutPageContent::forTenant($tenant) : null,
+            'documents' => SchoolDocumentsContent::forTenant($tenant),
             // Never the raw template itself (that's an account reference,
             // not public marketing content) — just whether the registration
             // wizard's payment step should offer QR as an option at all.

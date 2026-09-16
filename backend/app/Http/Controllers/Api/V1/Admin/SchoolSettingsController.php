@@ -90,6 +90,7 @@ final class SchoolSettingsController extends Controller
     {
         return [
             'name' => $tenant->name,
+            'name_en' => $tenant->name_en,
             'email' => $tenant->email,
             'phone' => $tenant->phone,
             'address' => $tenant->address,

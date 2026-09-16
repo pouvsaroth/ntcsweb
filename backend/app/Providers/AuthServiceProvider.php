@@ -43,6 +43,7 @@ use App\Models\Product;
 use App\Models\Program;
 use App\Models\Project;
 use App\Models\ProjectTaskComment;
+use App\Models\Promotion;
 use App\Models\RepairShop;
 use App\Models\Role;
 use App\Models\SchoolClass;
@@ -92,6 +93,7 @@ use App\Policies\ProductPolicy;
 use App\Policies\ProgramPolicy;
 use App\Policies\ProjectPolicy;
 use App\Policies\ProjectTaskCommentPolicy;
+use App\Policies\PromotionPolicy;
 use App\Policies\RepairShopPolicy;
 use App\Policies\RolePolicy;
 use App\Policies\SchoolClassPolicy;
@@ -135,6 +137,7 @@ class AuthServiceProvider extends ServiceProvider
         LookupValue::class => LookupValuePolicy::class,
         HomeSlide::class => HomeSlidePolicy::class,
         GalleryImage::class => GalleryImagePolicy::class,
+        Promotion::class => PromotionPolicy::class,
         Program::class => ProgramPolicy::class,
         Position::class => PositionPolicy::class,
         CurrencyRate::class => CurrencyRatePolicy::class,

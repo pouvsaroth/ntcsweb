@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
 
+import DocumentsAndFormMenu from '@/components/layout/DocumentsAndFormMenu.vue'
 import PublicUserMenu from '@/components/layout/PublicUserMenu.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import LanguageSwitcher from '@/components/ui/LanguageSwitcher.vue'
@@ -38,6 +39,7 @@ const mobileOpen = ref(false)
         >
           {{ t(item.labelKey) }}
         </RouterLink>
+        <DocumentsAndFormMenu />
       </nav>
 
       <div class="hidden items-center gap-2 lg:flex">
@@ -104,6 +106,7 @@ const mobileOpen = ref(false)
           >
             {{ t(item.labelKey) }}
           </RouterLink>
+          <DocumentsAndFormMenu mobile @navigate="mobileOpen = false" />
           <template v-if="!auth.isAuthenticated">
             <BaseButton to="/register" variant="outline" class="mt-2" block @click="mobileOpen = false">{{ t('nav.register') }}</BaseButton>
             <BaseButton href="/login" block>{{ t('nav.portalLogin') }}</BaseButton>

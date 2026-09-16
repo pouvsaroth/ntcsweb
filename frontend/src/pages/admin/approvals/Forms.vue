@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRoute, useRouter } from 'vue-router'
 
 import AskForPermissionModal from '@/components/layout/AskForPermissionModal.vue'
 import RequestFormModal from '@/components/admin/RequestFormModal.vue'
@@ -11,6 +12,8 @@ import { formTemplatesService, type FormTemplate } from '@/services/formTemplate
 import { ApiRequestError } from '@/types/api'
 
 const { t } = useI18n()
+const route = useRoute()
+const router = useRouter()
 
 const categories = ref<FormCategory[]>([])
 const activeCategoryId = ref<number | null>(null)
@@ -38,6 +41,29 @@ async function loadCategories() {
   }
 }
 
+/**
+ * `?code=` deep-links straight into a specific template's request modal —
+ * used by the public site's "Document and Form" menu (see
+ * documentsAndFormLinks in publicNav.ts) so "Request for Change Class" etc.
+ * open the right form in one click instead of landing on this catalog page
+ * and making the visitor hunt for it themselves.
+ */
+async function openByCode(code: string) {
+  try {
+    const result = await formTemplatesService.list({ per_page: 100 })
+    const match = result.data.find((template) => template.code === code && template.is_active)
+    if (!match) return
+
+    activeCategoryId.value = match.form_category_id
+    openRequest(match)
+  } catch {
+    // The catalog view below still works normally; a bad/stale ?code= just
+    // means no modal opens automatically.
+  } finally {
+    void router.replace({ query: { ...route.query, code: undefined } })
+  }
+}
+
 async function loadTemplates(categoryId: number) {
   loadingTemplates.value = true
   error.value = null
@@ -61,7 +87,12 @@ watch(activeCategoryId, (id) => {
   if (id !== null) void loadTemplates(id)
 })
 
-onMounted(() => loadCategories())
+onMounted(async () => {
+  await loadCategories()
+
+  const code = route.query.code
+  if (typeof code === 'string' && code) await openByCode(code)
+})
 </script>
 
 <template>

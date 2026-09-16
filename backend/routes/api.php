@@ -60,9 +60,11 @@ use App\Http\Controllers\Api\V1\Admin\ProjectColumnController;
 use App\Http\Controllers\Api\V1\Admin\ProjectController;
 use App\Http\Controllers\Api\V1\Admin\ProjectTaskCommentController;
 use App\Http\Controllers\Api\V1\Admin\ProjectTaskController;
+use App\Http\Controllers\Api\V1\Admin\PromotionController as AdminPromotionController;
 use App\Http\Controllers\Api\V1\Admin\RepairShopController;
 use App\Http\Controllers\Api\V1\Admin\RoleController;
 use App\Http\Controllers\Api\V1\Admin\SchoolClassController;
+use App\Http\Controllers\Api\V1\Admin\SchoolDocumentsController;
 use App\Http\Controllers\Api\V1\Admin\SchoolSettingsController;
 use App\Http\Controllers\Api\V1\Admin\StaffController;
 use App\Http\Controllers\Api\V1\Admin\StaffStatusHistoryController;
@@ -93,6 +95,7 @@ use App\Http\Controllers\Api\V1\Public\GalleryController as PublicGalleryControl
 use App\Http\Controllers\Api\V1\Public\HomeSlideController as PublicHomeSlideController;
 use App\Http\Controllers\Api\V1\Public\KhqrController as PublicKhqrController;
 use App\Http\Controllers\Api\V1\Public\ProgramController as PublicProgramController;
+use App\Http\Controllers\Api\V1\Public\PromotionController as PublicPromotionController;
 use App\Http\Controllers\Api\V1\Public\ScheduleController as PublicScheduleController;
 use App\Http\Controllers\Api\V1\Public\SiteSettingsController;
 use App\Http\Controllers\Api\V1\Public\StudentRegistrationController as PublicStudentRegistrationController;
@@ -320,6 +323,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
 
         Route::apiResource('home-slides', AdminHomeSlideController::class);
         Route::apiResource('gallery', AdminGalleryController::class);
+        Route::apiResource('promotions', AdminPromotionController::class);
         Route::apiResource('programs', AdminProgramController::class);
 
         // Position-based automatic user roles: Staff belongs to a Position,
@@ -562,6 +566,10 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('settings/school', [SchoolSettingsController::class, 'show'])->name('settings.school.show');
         Route::post('settings/school', [SchoolSettingsController::class, 'update'])->name('settings.school.update');
 
+        // Singleton, not a resource — see SchoolDocumentsController.
+        Route::get('settings/documents', [SchoolDocumentsController::class, 'show'])->name('settings.documents.show');
+        Route::post('settings/documents', [SchoolDocumentsController::class, 'update'])->name('settings.documents.update');
+
         // Cambodia's administrative hierarchy — platform-wide reference data
         // for the student registration form's cascading address selects.
         Route::prefix('geo')->name('geo.')->group(function () {
@@ -614,6 +622,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('gallery/{id}/download', [PublicGalleryController::class, 'download'])
             ->whereNumber('id')
             ->name('gallery.download');
+        Route::get('promotions', [PublicPromotionController::class, 'index'])->name('promotions.index');
         Route::get('programs', [PublicProgramController::class, 'index'])->name('programs.index');
         Route::get('course-packages', [PublicCoursePackageController::class, 'index'])->name('course-packages.index');
         Route::get('course-packages/{course_package}/classes', [PublicCoursePackageController::class, 'classes'])->name('course-packages.classes');

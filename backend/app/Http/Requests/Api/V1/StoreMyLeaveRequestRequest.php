@@ -8,14 +8,15 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
 /**
- * Identity-gated, not permission-gated — any signed-in student may file a
- * leave request for themselves. See MyLeaveRequestController's docblock.
+ * Identity-gated, not permission-gated — any signed-in student or staff
+ * member may file a leave request for themselves. See
+ * MyLeaveRequestController's docblock.
  */
 class StoreMyLeaveRequestRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->student !== null;
+        return $this->user()?->student !== null || $this->user()?->staff !== null;
     }
 
     public function rules(): array

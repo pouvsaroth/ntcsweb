@@ -27,7 +27,11 @@ class ApprovalRequestTest extends TestCase
         // "General" category (see the form_categories migration) alongside
         // the one this test creates itself.
         $this->getJson('/api/v1/form-categories')->assertOk()->assertJsonCount(2, 'data');
-        $this->getJson('/api/v1/form-templates')->assertOk()->assertJsonCount(1, 'data');
+        // 4, not 1: every tenant database also starts with three auto-seeded
+        // templates under "General" — "Request for Change Class", "Request
+        // for Extra Classes", and "Resignation Form" (see the form_templates
+        // seed migrations) — alongside the one this test creates itself.
+        $this->getJson('/api/v1/form-templates')->assertOk()->assertJsonCount(4, 'data');
     }
 
     public function test_creating_a_form_category_requires_the_manage_permission(): void

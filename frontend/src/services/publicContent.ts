@@ -45,6 +45,13 @@ export interface HomeSlide {
   sort_order: number
 }
 
+export interface Promotion {
+  id: number
+  image_url: string
+  title: string | null
+  sort_order: number
+}
+
 export interface Program {
   id: number
   title: string
@@ -169,6 +176,11 @@ export const publicContentService = {
   getEvents: (page = 1, perPage = 9) => fetchPublicList<EventItem>('/public/events', { page, per_page: perPage }),
 
   getGallery: (page = 1, perPage = 12) => fetchPublicList<GalleryImage>('/public/gallery', { page, per_page: perPage }),
+
+  // Real — see Public\PromotionController. Not paginated, same as
+  // getHomeSlides: a school's active promotion banners are never large
+  // enough to need it.
+  getPromotions: () => fetchPublicList<Promotion>('/public/promotions', { per_page: 50 }),
 
   getPrograms: (options: { featured?: boolean } = {}) =>
     fetchPublicList<Program>('/public/programs', { per_page: 50, featured: options.featured ? 1 : undefined }),

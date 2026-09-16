@@ -86,6 +86,15 @@ export const adminNav: AdminNavGroup[] = [
       { labelKey: 'adminNav.items.staffList', to: '/admin/staff', permission: 'staff.view' },
       { labelKey: 'adminNav.items.positions', to: '/admin/positions', permission: 'positions.view' },
       { labelKey: 'adminNav.items.staffStatusHistory', to: '/admin/staff-status-history', permission: 'staff.view' },
+      // Self-service, same page used by the public site's "Document and
+      // Form" menu for students — MyRequests.vue's backend auto-detects
+      // whether the signed-in account is a student or staff (see
+      // MyLeaveRequestController::requesterOrFail()). forms.view/
+      // my-requests.view are granted to every role by default (see
+      // Permissions::$selfServiceForEveryone), so this shows for any staff
+      // account, not just those with staff-management permissions.
+      { labelKey: 'adminNav.items.requestLeave', to: '/admin/approvals/my-requests', permission: 'my-requests.view' },
+      { labelKey: 'adminNav.items.resignationForm', to: '/admin/approvals/forms?code=RESIGNATION', permission: 'forms.view' },
     ],
   },
   {
@@ -141,6 +150,7 @@ export const adminNav: AdminNavGroup[] = [
       { labelKey: 'adminNav.items.events', to: '/admin/events', permission: 'events.view' },
       { labelKey: 'adminNav.items.announcements', to: '/admin/announcements', permission: 'announcements.view' },
       { labelKey: 'adminNav.items.gallery', to: '/admin/gallery', permission: 'gallery.view' },
+      { labelKey: 'adminNav.items.promotions', to: '/admin/promotions', permission: 'promotions.view' },
       { labelKey: 'adminNav.items.documents', to: '/admin/documents', permission: 'documents.view' },
     ],
   },
@@ -159,6 +169,7 @@ export const adminNav: AdminNavGroup[] = [
     labelKey: 'adminNav.groups.settings',
     items: [
       { labelKey: 'adminNav.items.school', to: '/admin/school-settings', permission: 'tenant-settings.view' },
+      { labelKey: 'adminNav.items.schoolDocuments', to: '/admin/school-documents', permission: 'tenant-settings.view' },
       { labelKey: 'adminNav.items.settings', to: '/admin/settings', permission: 'tenant-settings.view' },
       { labelKey: 'adminNav.items.users', to: '/admin/users', permission: 'users.view' },
       { labelKey: 'adminNav.items.roles', to: '/admin/roles', permission: 'roles.view' },

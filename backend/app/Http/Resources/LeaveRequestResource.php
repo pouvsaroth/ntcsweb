@@ -21,11 +21,15 @@ class LeaveRequestResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'student' => $this->whenLoaded('student', fn () => [
+            'student' => $this->whenLoaded('student', fn () => $this->student !== null ? [
                 'id' => $this->student->id,
                 'student_code' => $this->student->student_code,
                 'name' => $this->student->fullName(),
-            ]),
+            ] : null),
+            'staff' => $this->whenLoaded('staff', fn () => $this->staff !== null ? [
+                'id' => $this->staff->id,
+                'name' => $this->staff->fullName(),
+            ] : null),
             'from_date' => $this->from_date?->toDateString(),
             'to_date' => $this->to_date?->toDateString(),
             'from_time' => $this->from_time,

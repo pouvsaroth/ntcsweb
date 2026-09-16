@@ -39,6 +39,7 @@ use Stancl\Tenancy\Database\Concerns\TenantRun;
  *
  * @property int $id
  * @property string $name
+ * @property string|null $name_en
  * @property string $slug
  * @property string|null $code
  * @property string $timezone
@@ -49,7 +50,7 @@ use Stancl\Tenancy\Database\Concerns\TenantRun;
  * @property string $status
  * @property array|null $settings
  */
-#[Fillable(['name', 'slug', 'code', 'logo', 'stamp', 'email', 'phone', 'address', 'timezone', 'locale', 'default_currency', 'exam_fee_amount', 'status', 'settings'])]
+#[Fillable(['name', 'name_en', 'slug', 'code', 'logo', 'stamp', 'email', 'phone', 'address', 'timezone', 'locale', 'default_currency', 'exam_fee_amount', 'status', 'settings'])]
 class Tenant extends Model implements TenantWithDatabase
 {
     /** @use HasFactory<TenantFactory> */

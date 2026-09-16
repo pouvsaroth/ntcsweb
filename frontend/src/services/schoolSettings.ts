@@ -8,6 +8,8 @@ export type Currency = 'USD' | 'KHR'
 
 export interface SchoolSettings {
   name: string
+  /** Optional Latin-script name shown below `name` on the Login page. */
+  name_en: string | null
   email: string | null
   phone: string | null
   address: string | null
@@ -28,6 +30,7 @@ export interface SchoolSettings {
 
 export interface SchoolSettingsInput {
   name: string
+  name_en: string
   email: string
   phone: string
   address: string
@@ -52,6 +55,7 @@ function toFormData(input: SchoolSettingsInput): FormData {
   const form = new FormData()
 
   form.append('name', input.name)
+  if (input.name_en.trim()) form.append('name_en', input.name_en.trim())
   if (input.email.trim()) form.append('email', input.email.trim())
   if (input.phone.trim()) form.append('phone', input.phone.trim())
   if (input.address.trim()) form.append('address', input.address.trim())

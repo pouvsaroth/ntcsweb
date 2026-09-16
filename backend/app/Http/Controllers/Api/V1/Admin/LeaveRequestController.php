@@ -24,10 +24,10 @@ final class LeaveRequestController extends Controller
     {
         $this->authorize('viewAny', LeaveRequest::class);
 
-        $query = LeaveRequest::query()->with(['student', 'decidedBy']);
+        $query = LeaveRequest::query()->with(['student', 'staff', 'decidedBy']);
 
         $requests = ApiQuery::for($query, $request)
-            ->filterable(['status', 'student_id'])
+            ->filterable(['status', 'student_id', 'staff_id'])
             ->sortable(['from_date', 'created_at'], default: '-created_at')
             ->paginate();
 
@@ -39,7 +39,7 @@ final class LeaveRequestController extends Controller
         $this->authorize('view', $leaveRequest);
 
         return ApiResponse::success(new LeaveRequestResource(
-            $leaveRequest->load(['student', 'decidedBy', 'attachments'])
+            $leaveRequest->load(['student', 'staff', 'decidedBy', 'attachments'])
         ));
     }
 
@@ -49,13 +49,13 @@ final class LeaveRequestController extends Controller
 
         $leaveRequest = $this->leaveRequests->approve($leaveRequest, $request->user());
 
-        return ApiResponse::success(new LeaveRequestResource($leaveRequest->load(['student', 'decidedBy'])));
+        return ApiResponse::success(new LeaveRequestResource($leaveRequest->load(['student', 'staff', 'decidedBy'])));
     }
 
     public function reject(RejectLeaveRequestRequest $request, LeaveRequest $leaveRequest): JsonResponse
     {
         $leaveRequest = $this->leaveRequests->reject($leaveRequest, $request->validated('reason'), $request->user());
 
-        return ApiResponse::success(new LeaveRequestResource($leaveRequest->load(['student', 'decidedBy'])));
+        return ApiResponse::success(new LeaveRequestResource($leaveRequest->load(['student', 'staff', 'decidedBy'])));
     }
 }
