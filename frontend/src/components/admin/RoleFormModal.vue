@@ -124,8 +124,17 @@ const MODULES: ModuleEntry[] = [
     group: 'Staff',
     actions: { view: 'staff.view', create: 'staff.create', update: 'staff.update', delete: 'staff.delete', status: 'staff.change-status' },
   },
+  // Same slug as "Staff" above (its own sidebar entry just reuses staff.view
+  // — see adminNav.ts's staff group) — a separate row here purely so this
+  // matrix lists every HRM sidebar item, not because it's a distinct
+  // permission.
+  { name: 'Staff status history', group: 'Staff', actions: { view: 'staff.view' } },
+  // Also its own sidebar entry (Staff/HRM > "Request Leave") reusing the
+  // same self-service slug as "My requests" under E-Approvals below —
+  // toggling either row flips the same checkbox.
+  { name: 'Request Leave', group: 'Staff', actions: { view: 'my-requests.view' } },
   { name: 'Leave requests', group: 'Other', actions: { view: 'leave-requests.view', approve: 'leave-requests.approve', reject: 'leave-requests.reject' } },
-  { name: 'Resignation requests', group: 'Other', actions: { view: 'resignation-requests.view', approve: 'resignation-requests.approve', reject: 'resignation-requests.reject' } },
+  { name: 'Resignation requests', group: 'Staff', actions: { view: 'resignation-requests.view', approve: 'resignation-requests.approve', reject: 'resignation-requests.reject' } },
   {
     name: 'Students',
     group: 'Students',
