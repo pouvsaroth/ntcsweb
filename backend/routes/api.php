@@ -62,6 +62,7 @@ use App\Http\Controllers\Api\V1\Admin\ProjectTaskCommentController;
 use App\Http\Controllers\Api\V1\Admin\ProjectTaskController;
 use App\Http\Controllers\Api\V1\Admin\PromotionController as AdminPromotionController;
 use App\Http\Controllers\Api\V1\Admin\RepairShopController;
+use App\Http\Controllers\Api\V1\Admin\ResignationRequestController;
 use App\Http\Controllers\Api\V1\Admin\RoleController;
 use App\Http\Controllers\Api\V1\Admin\SchoolClassController;
 use App\Http\Controllers\Api\V1\Admin\SchoolDocumentsController;
@@ -88,6 +89,7 @@ use App\Http\Controllers\Api\V1\MyInvoiceController;
 use App\Http\Controllers\Api\V1\MyMonthlyPaymentAlertController;
 use App\Http\Controllers\Api\V1\MyLeaveRequestController;
 use App\Http\Controllers\Api\V1\MyStudentFeedbackController;
+use App\Http\Controllers\Api\V1\MyResignationRequestController;
 use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\Public\CoursePackageController as PublicCoursePackageController;
 use App\Http\Controllers\Api\V1\Public\EnrollmentInquiryController;
@@ -100,6 +102,7 @@ use App\Http\Controllers\Api\V1\Public\ScheduleController as PublicScheduleContr
 use App\Http\Controllers\Api\V1\Public\SiteSettingsController;
 use App\Http\Controllers\Api\V1\Public\StudentRegistrationController as PublicStudentRegistrationController;
 use App\Http\Controllers\Api\V1\Public\VideoLessonController;
+use App\Http\Controllers\Api\V1\Public\WebsiteVisitController;
 use App\Http\Controllers\Api\V1\TenantDirectoryController;
 use App\Http\Responses\ApiResponse;
 use Illuminate\Support\Facades\Route;
@@ -273,6 +276,11 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::apiResource('leave-requests', LeaveRequestController::class)->only(['index', 'show']);
         Route::post('leave-requests/{leave_request}/approve', [LeaveRequestController::class, 'approve'])->name('leave-requests.approve');
         Route::post('leave-requests/{leave_request}/reject', [LeaveRequestController::class, 'reject'])->name('leave-requests.reject');
+
+        // Staff-submitted resignation requests — see ResignationRequestService.
+        Route::apiResource('resignation-requests', ResignationRequestController::class)->only(['index', 'show']);
+        Route::post('resignation-requests/{resignation_request}/approve', [ResignationRequestController::class, 'approve'])->name('resignation-requests.approve');
+        Route::post('resignation-requests/{resignation_request}/reject', [ResignationRequestController::class, 'reject'])->name('resignation-requests.reject');
 
         // Student-submitted requests/comments about the school or a
         // teacher, with a reply thread. See StudentFeedbackPolicy.
@@ -526,6 +534,11 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('my-leave-requests', [MyLeaveRequestController::class, 'index'])->name('my-leave-requests.index');
         Route::post('my-leave-requests', [MyLeaveRequestController::class, 'store'])->name('my-leave-requests.store');
 
+        // Staff self-service — identity-gated, same pattern as my-leave-requests.
+        Route::get('my-resignation-requests/profile', [MyResignationRequestController::class, 'profile'])->name('my-resignation-requests.profile');
+        Route::get('my-resignation-requests', [MyResignationRequestController::class, 'index'])->name('my-resignation-requests.index');
+        Route::post('my-resignation-requests', [MyResignationRequestController::class, 'store'])->name('my-resignation-requests.store');
+
         // Self-service — identity-gated, same pattern as my-leave-requests.
         Route::get('my-approval-requests', [MyApprovalRequestController::class, 'index'])->name('my-approval-requests.index');
         Route::post('my-approval-requests', [MyApprovalRequestController::class, 'store'])->name('my-approval-requests.store');
@@ -623,6 +636,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             ->whereNumber('id')
             ->name('gallery.download');
         Route::get('promotions', [PublicPromotionController::class, 'index'])->name('promotions.index');
+        Route::get('visits', [WebsiteVisitController::class, 'stats'])->name('visits.stats');
+        Route::post('visits', [WebsiteVisitController::class, 'record'])->name('visits.record');
         Route::get('programs', [PublicProgramController::class, 'index'])->name('programs.index');
         Route::get('course-packages', [PublicCoursePackageController::class, 'index'])->name('course-packages.index');
         Route::get('course-packages/{course_package}/classes', [PublicCoursePackageController::class, 'classes'])->name('course-packages.classes');

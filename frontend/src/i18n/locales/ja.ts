@@ -4,6 +4,7 @@ const ja: MessageSchema = {
   nav: {
     home: 'ホーム',
     about: '学校について',
+    program: 'プログラム',
     videoLesson: '動画レッスン',
     programs: 'プログラム',
     schedule: '授業スケジュール',
@@ -25,8 +26,6 @@ const ja: MessageSchema = {
       requestComment: 'リクエスト・コメント',
       studentRequestLeave: '学生の休暇申請',
       examApplicationForm: '試験申請フォーム',
-      changeClass: 'クラス変更申請',
-      extraClasses: '追加授業申請',
       schoolRegulation: '学校規則',
       attendancePolicy: '出欠に関する規定',
     },
@@ -56,6 +55,7 @@ const ja: MessageSchema = {
     login: 'ログイン',
     contact: 'お問い合わせ',
     rightsReserved: 'All rights reserved.',
+    visitorStats: '訪問者数 — 本日 {today} · 昨日 {yesterday} · 今週 {weekly} · 今月 {monthly} · 今年 {yearly}',
   },
 
   leaveRequest: {
@@ -72,6 +72,21 @@ const ja: MessageSchema = {
     submit: '送信',
     submitSuccess: '申請を送信しました。承認をお待ちください。',
     submitFailed: '申請を送信できませんでした。',
+  },
+
+  resignationRequest: {
+    title: '退職届',
+    firstName: '名',
+    lastName: '姓',
+    gender: '性別',
+    position: '役職',
+    resignationDate: '退職日',
+    reason: '退職理由',
+    reasonPlaceholder: '退職の理由をご記入ください…',
+    submit: '送信',
+    submitSuccess: '退職届を送信しました。承認をお待ちください。',
+    submitFailed: '退職届を送信できませんでした。',
+    profileLoadFailed: '職員情報を読み込めませんでした。',
   },
 
   common: {
@@ -138,6 +153,8 @@ const ja: MessageSchema = {
     types: {
       leave_request_submitted: '{student_name}さんが許可申請を提出しました',
       leave_request_approved: '{student_name}さんの許可申請が承認されました',
+      resignation_request_submitted: '{staff_name}さんが退職届を提出しました',
+      resignation_request_approved: '{staff_name}さんの退職届が承認されました',
       student_registration_submitted: '{student_name}さんが登録しました。承認待ちです',
     },
   },
@@ -946,6 +963,7 @@ const ja: MessageSchema = {
       statusApproved: '承認済み',
       statusRejected: '却下',
       leaveSubject: '休暇・外出許可申請（{from} 〜 {to}）',
+      resignationSubject: '退職届（{date}）',
       loadFailed: '申請を読み込めませんでした。',
       emptyTitle: '申請はありません',
       emptyMessage: 'ここにはまだ何もありません。',
@@ -2768,7 +2786,7 @@ const ja: MessageSchema = {
       positions: '役職',
       staffStatusHistory: '職員ステータス履歴',
       requestLeave: '休暇申請',
-      resignationForm: '退職届',
+      resignationForm: 'フォーム',
       academicYears: '学年度',
       academicPrograms: '学習プログラム',
       programs: 'プログラム',

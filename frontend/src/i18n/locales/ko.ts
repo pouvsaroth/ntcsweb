@@ -4,6 +4,7 @@ const ko: MessageSchema = {
   nav: {
     home: '홈',
     about: '학교 소개',
+    program: '프로그램',
     videoLesson: '동영상 강의',
     programs: '교육 과정',
     schedule: '수업 시간표',
@@ -25,8 +26,6 @@ const ko: MessageSchema = {
       requestComment: '신청 및 댓글',
       studentRequestLeave: '학생 휴가 신청',
       examApplicationForm: '시험 신청서',
-      changeClass: '반 변경 신청',
-      extraClasses: '추가 수업 신청',
       schoolRegulation: '학교 규정',
       attendancePolicy: '학생 출결 정책',
     },
@@ -56,6 +55,7 @@ const ko: MessageSchema = {
     login: '로그인',
     contact: '연락처',
     rightsReserved: '모든 권리 보유.',
+    visitorStats: '방문자 — 오늘 {today} · 어제 {yesterday} · 이번 주 {weekly} · 이번 달 {monthly} · 올해 {yearly}',
   },
 
   leaveRequest: {
@@ -72,6 +72,21 @@ const ko: MessageSchema = {
     submit: '제출',
     submitSuccess: '신청이 제출되었으며 승인을 기다리고 있습니다.',
     submitFailed: '신청을 제출할 수 없습니다.',
+  },
+
+  resignationRequest: {
+    title: '사직서',
+    firstName: '이름',
+    lastName: '성',
+    gender: '성별',
+    position: '직위',
+    resignationDate: '사직일',
+    reason: '사직 사유',
+    reasonPlaceholder: '사직 사유를 알려주세요…',
+    submit: '제출',
+    submitSuccess: '사직 신청이 제출되었으며 승인을 기다리고 있습니다.',
+    submitFailed: '사직 신청을 제출할 수 없습니다.',
+    profileLoadFailed: '직원 정보를 불러올 수 없습니다.',
   },
 
   common: {
@@ -138,6 +153,8 @@ const ko: MessageSchema = {
     types: {
       leave_request_submitted: '{student_name} 님이 허가 요청을 제출했습니다',
       leave_request_approved: '{student_name} 님의 허가 요청이 승인되었습니다',
+      resignation_request_submitted: '{staff_name} 님이 사직 신청을 제출했습니다',
+      resignation_request_approved: '{staff_name} 님의 사직 신청이 승인되었습니다',
       student_registration_submitted: '{student_name} 님이 등록했으며 승인을 기다리고 있습니다',
     },
   },
@@ -946,6 +963,7 @@ const ko: MessageSchema = {
       statusApproved: '승인됨',
       statusRejected: '거절됨',
       leaveSubject: '휴가/외출 신청 ({from} – {to})',
+      resignationSubject: '사직 신청 ({date})',
       loadFailed: '신청 내역을 불러올 수 없습니다.',
       emptyTitle: '신청 내역 없음',
       emptyMessage: '아직 아무것도 없습니다.',
@@ -2768,7 +2786,7 @@ const ko: MessageSchema = {
       positions: '직책',
       staffStatusHistory: '직원 상태 이력',
       requestLeave: '휴가 신청',
-      resignationForm: '사직서',
+      resignationForm: '양식',
       academicYears: '학년도',
       academicPrograms: '학업 프로그램',
       programs: '프로그램',

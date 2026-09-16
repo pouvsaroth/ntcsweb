@@ -175,6 +175,16 @@ final class Permissions
 
     public const LEAVE_REQUESTS_REJECT = 'leave-requests.reject';
 
+    // Resignation Requests — a staff member's own self-submitted
+    // resignation, approved or rejected by an admin. Kept separate from
+    // Leave Requests (rather than reusing that permission) since resignation
+    // is HR-sensitive and, unlike leave, school-admin-only by default.
+    public const RESIGNATION_REQUESTS_VIEW = 'resignation-requests.view';
+
+    public const RESIGNATION_REQUESTS_APPROVE = 'resignation-requests.approve';
+
+    public const RESIGNATION_REQUESTS_REJECT = 'resignation-requests.reject';
+
     // Academic Years — a real, tenant-owned school year (e.g. "2026").
     public const ACADEMIC_YEARS_VIEW = 'academic-years.view';
 
@@ -620,6 +630,11 @@ final class Permissions
                 self::LEAVE_REQUESTS_APPROVE => 'Approve leave requests',
                 self::LEAVE_REQUESTS_REJECT => 'Reject leave requests',
             ],
+            'Resignation Requests' => [
+                self::RESIGNATION_REQUESTS_VIEW => 'View resignation requests',
+                self::RESIGNATION_REQUESTS_APPROVE => 'Approve resignation requests',
+                self::RESIGNATION_REQUESTS_REJECT => 'Reject resignation requests',
+            ],
             'Academic Years' => [
                 self::ACADEMIC_YEARS_VIEW => 'View academic years',
                 self::ACADEMIC_YEARS_CREATE => 'Create academic years',
@@ -952,6 +967,9 @@ final class Permissions
                 self::LEAVE_REQUESTS_VIEW,
                 self::LEAVE_REQUESTS_APPROVE,
                 self::LEAVE_REQUESTS_REJECT,
+                self::RESIGNATION_REQUESTS_VIEW,
+                self::RESIGNATION_REQUESTS_APPROVE,
+                self::RESIGNATION_REQUESTS_REJECT,
                 self::STUDENT_FEEDBACK_VIEW,
                 self::STUDENT_FEEDBACK_REPLY,
                 self::EXAM_APPLICATIONS_VIEW,

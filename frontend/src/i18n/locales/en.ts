@@ -7,6 +7,7 @@ const en = {
   nav: {
     home: 'Home',
     about: 'About',
+    program: 'Program',
     videoLesson: 'Video Lesson',
     programs: 'Programs',
     schedule: 'Day and Time Study',
@@ -28,8 +29,6 @@ const en = {
       requestComment: 'Request and Comment',
       studentRequestLeave: 'Student Request Leave',
       examApplicationForm: 'Exam Application Form',
-      changeClass: 'Request for Change Class',
-      extraClasses: 'Request for Extra Classes',
       schoolRegulation: 'School Regulation',
       attendancePolicy: 'Student Attendance Policy',
     },
@@ -59,6 +58,7 @@ const en = {
     login: 'Login',
     contact: 'Contact',
     rightsReserved: 'All rights reserved.',
+    visitorStats: 'visitors — today {today} · yesterday {yesterday} · this week {weekly} · this month {monthly} · this year {yearly}',
   },
 
   leaveRequest: {
@@ -75,6 +75,21 @@ const en = {
     submit: 'Submit',
     submitSuccess: 'Your request has been submitted and is now pending approval.',
     submitFailed: 'Could not submit your request.',
+  },
+
+  resignationRequest: {
+    title: 'Resignation',
+    firstName: 'First Name',
+    lastName: 'Last Name',
+    gender: 'Gender',
+    position: 'Position',
+    resignationDate: 'Resignation Date',
+    reason: 'Resignation Reason',
+    reasonPlaceholder: 'Tell us why you\'re resigning…',
+    submit: 'Submit',
+    submitSuccess: 'Your resignation request has been submitted and is now pending approval.',
+    submitFailed: 'Could not submit your resignation request.',
+    profileLoadFailed: 'Could not load your staff profile.',
   },
 
   common: {
@@ -141,6 +156,8 @@ const en = {
     types: {
       leave_request_submitted: '{student_name} submitted a permission request',
       leave_request_approved: 'The permission request for {student_name} was approved',
+      resignation_request_submitted: '{staff_name} submitted a resignation request',
+      resignation_request_approved: 'The resignation request for {staff_name} was approved',
       student_registration_submitted: '{student_name} registered and is awaiting approval',
     },
   },
@@ -950,6 +967,7 @@ const en = {
       statusApproved: 'Approved',
       statusRejected: 'Rejected',
       leaveSubject: 'Leave/Permission request ({from} – {to})',
+      resignationSubject: 'Resignation request ({date})',
       loadFailed: 'Could not load your requests.',
       emptyTitle: 'No requests',
       emptyMessage: 'Nothing here yet.',
@@ -2772,7 +2790,7 @@ const en = {
       positions: 'Positions',
       staffStatusHistory: 'Staff Status History',
       requestLeave: 'Request Leave',
-      resignationForm: 'Resignation Form',
+      resignationForm: 'Form',
       academicYears: 'Academic Years',
       academicPrograms: 'Academic Programs',
       programs: 'Programs',

@@ -4,13 +4,27 @@ export interface NavItem {
   to: string
 }
 
-export const publicNav: NavItem[] = [
+/** Rendered before the "Program" dropdown in the header — see PublicHeader.vue. */
+export const publicNavBeforeProgram: NavItem[] = [
   { labelKey: 'nav.home', to: '/' },
   { labelKey: 'nav.about', to: '/about' },
-  { labelKey: 'nav.videoLesson', to: '/video-lessons' },
+]
+
+/**
+ * The "Program" dropdown's items — folds what used to be four separate
+ * top-level links (Programs, Day and Time Study, Video Lesson, Photos) into
+ * one, so the header doesn't run out of room as more menus (Promotion,
+ * Document and Form) get added alongside it.
+ */
+export const programNav: NavItem[] = [
   { labelKey: 'nav.programs', to: '/programs' },
   { labelKey: 'nav.schedule', to: '/schedule' },
+  { labelKey: 'nav.videoLesson', to: '/video-lessons' },
   { labelKey: 'nav.gallery', to: '/gallery' },
+]
+
+/** Rendered after the "Program" dropdown, before "Document and Form" — see PublicHeader.vue. */
+export const publicNavAfterProgram: NavItem[] = [
   { labelKey: 'nav.promotion', to: '/promotion' },
   { labelKey: 'nav.contact', to: '/contact' },
 ]
@@ -29,10 +43,4 @@ export const documentsAndFormLinks: NavItem[] = [
   { labelKey: 'nav.documentsAndForm.requestComment', to: '/admin/my-feedback' },
   { labelKey: 'nav.documentsAndForm.studentRequestLeave', to: '/admin/approvals/my-requests' },
   { labelKey: 'nav.documentsAndForm.examApplicationForm', to: '/admin/my-exam-applications' },
-  // These two land on the Forms catalog with the matching template's request
-  // modal already open — see Forms.vue's `?code=` handling. The templates
-  // themselves are seeded for every school (codes CHANGE-CLASS/EXTRA-CLASS,
-  // see the 2026_09_16_030000 tenant migration) so this works out of the box.
-  { labelKey: 'nav.documentsAndForm.changeClass', to: '/admin/approvals/forms?code=CHANGE-CLASS' },
-  { labelKey: 'nav.documentsAndForm.extraClasses', to: '/admin/approvals/forms?code=EXTRA-CLASS' },
 ]

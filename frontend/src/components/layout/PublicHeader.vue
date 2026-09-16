@@ -4,10 +4,11 @@ import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
 
 import DocumentsAndFormMenu from '@/components/layout/DocumentsAndFormMenu.vue'
+import NavDropdown from '@/components/layout/NavDropdown.vue'
 import PublicUserMenu from '@/components/layout/PublicUserMenu.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import LanguageSwitcher from '@/components/ui/LanguageSwitcher.vue'
-import { publicNav } from '@/router/publicNav'
+import { programNav, publicNavAfterProgram, publicNavBeforeProgram } from '@/router/publicNav'
 import { useAuthStore } from '@/stores/auth'
 import { useSiteStore } from '@/stores/site'
 
@@ -31,7 +32,17 @@ const mobileOpen = ref(false)
       <!-- Desktop nav -->
       <nav class="hidden items-center gap-1 lg:flex" :aria-label="t('common.primaryNav')">
         <RouterLink
-          v-for="item in publicNav"
+          v-for="item in publicNavBeforeProgram"
+          :key="item.to"
+          :to="item.to"
+          class="rounded-lg px-3 py-2 text-sm font-medium text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
+          active-class="text-primary-800 bg-primary-50"
+        >
+          {{ t(item.labelKey) }}
+        </RouterLink>
+        <NavDropdown :title="t('nav.program')" :items="programNav" />
+        <RouterLink
+          v-for="item in publicNavAfterProgram"
           :key="item.to"
           :to="item.to"
           class="rounded-lg px-3 py-2 text-sm font-medium text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
@@ -97,7 +108,18 @@ const mobileOpen = ref(false)
       <div v-if="mobileOpen" class="border-t border-neutral-200 bg-white lg:hidden">
         <nav class="flex flex-col gap-1 px-4 py-3" :aria-label="t('common.primaryNav')">
           <RouterLink
-            v-for="item in publicNav"
+            v-for="item in publicNavBeforeProgram"
+            :key="item.to"
+            :to="item.to"
+            class="rounded-lg px-3 py-2.5 text-sm font-medium text-neutral-600 hover:bg-neutral-100"
+            active-class="text-primary-800 bg-primary-50"
+            @click="mobileOpen = false"
+          >
+            {{ t(item.labelKey) }}
+          </RouterLink>
+          <NavDropdown :title="t('nav.program')" :items="programNav" mobile @navigate="mobileOpen = false" />
+          <RouterLink
+            v-for="item in publicNavAfterProgram"
             :key="item.to"
             :to="item.to"
             class="rounded-lg px-3 py-2.5 text-sm font-medium text-neutral-600 hover:bg-neutral-100"

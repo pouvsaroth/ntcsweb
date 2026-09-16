@@ -12,19 +12,21 @@ import DataTable from '@/components/ui/DataTable.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import { approvalRequestsService, type ApprovalRequest, type ApprovalRequestStatus } from '@/services/approvalRequests'
 import { leaveRequestsService, type LeaveRequest } from '@/services/leaveRequests'
+import { resignationRequestsService, type ResignationRequest } from '@/services/resignationRequests'
 import { useAuthStore } from '@/stores/auth'
 import { ApiRequestError } from '@/types/api'
 
 /**
- * The approval queue — every pending/decided item across both the generic
- * ApprovalRequest catalog and the dedicated LeaveRequest flow, merged into
- * one table. See MyRequests.vue's docblock for why merging is done
- * client-side rather than through usePaginatedResource. Each source is only
- * fetched if the current user actually holds its view permission, same
- * gating the sidebar nav already applies.
+ * The approval queue — every pending/decided item across the generic
+ * ApprovalRequest catalog, the dedicated LeaveRequest flow, and the
+ * dedicated ResignationRequest flow, merged into one table. See
+ * MyRequests.vue's docblock for why merging is done client-side rather
+ * than through usePaginatedResource. Each source is only fetched if the
+ * current user actually holds its view permission, same gating the
+ * sidebar nav already applies.
  */
 type MergedRow = {
-  kind: 'approval' | 'leave'
+  kind: 'approval' | 'leave' | 'resignation'
   id: number
   reference: string
   requestor: string
@@ -33,6 +35,7 @@ type MergedRow = {
   createdAt: string
   approval?: ApprovalRequest
   leave?: LeaveRequest
+  resignation?: ResignationRequest
 }
 
 const { t } = useI18n()
@@ -47,6 +50,7 @@ const activeTab = ref<ApprovalRequestStatus>('pending')
 
 const canViewApprovals = computed(() => auth.can('approval-requests.view'))
 const canViewLeave = computed(() => auth.can('leave-requests.view'))
+const canViewResignation = computed(() => auth.can('resignation-requests.view'))
 
 const tabs: { key: ApprovalRequestStatus; labelKey: string }[] = [
   { key: 'pending', labelKey: 'admin.approvals.tabNew' },
@@ -83,12 +87,24 @@ const rejectOpen = ref(false)
 const rejectSubmitting = ref(false)
 const rejectError = ref<string | null>(null)
 
+const approvePermission: Record<MergedRow['kind'], string> = {
+  approval: 'approval-requests.approve',
+  leave: 'leave-requests.approve',
+  resignation: 'resignation-requests.approve',
+}
+
+const rejectPermission: Record<MergedRow['kind'], string> = {
+  approval: 'approval-requests.reject',
+  leave: 'leave-requests.reject',
+  resignation: 'resignation-requests.reject',
+}
+
 function canApprove(row: MergedRow): boolean {
-  return row.kind === 'approval' ? auth.can('approval-requests.approve') : auth.can('leave-requests.approve')
+  return auth.can(approvePermission[row.kind])
 }
 
 function canReject(row: MergedRow): boolean {
-  return row.kind === 'approval' ? auth.can('approval-requests.reject') : auth.can('leave-requests.reject')
+  return auth.can(rejectPermission[row.kind])
 }
 
 async function load() {
@@ -96,11 +112,14 @@ async function load() {
   error.value = null
 
   try {
-    const [approvals, leaves] = await Promise.all([
+    const [approvals, leaves, resignations] = await Promise.all([
       canViewApprovals.value ? approvalRequestsService.list() : Promise.resolve({ data: [] as ApprovalRequest[], pagination: undefined }),
       canViewLeave.value
         ? leaveRequestsService.list({ page: 1, per_page: 100, filter: {} })
         : Promise.resolve({ data: [] as LeaveRequest[], pagination: undefined }),
+      canViewResignation.value
+        ? resignationRequestsService.list({ page: 1, per_page: 100, filter: {} })
+        : Promise.resolve({ data: [] as ResignationRequest[], pagination: undefined }),
     ])
 
     const approvalRows: MergedRow[] = approvals.data.map((r) => ({
@@ -125,7 +144,18 @@ async function load() {
       leave: r,
     }))
 
-    rows.value = [...approvalRows, ...leaveRows].sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    const resignationRows: MergedRow[] = resignations.data.map((r) => ({
+      kind: 'resignation',
+      id: r.id,
+      reference: `RS-${String(r.id).padStart(6, '0')}`,
+      requestor: r.staff?.name ?? '—',
+      subject: t('admin.myRequests.resignationSubject', { date: r.resignation_date }),
+      status: r.status,
+      createdAt: r.created_at,
+      resignation: r,
+    }))
+
+    rows.value = [...approvalRows, ...leaveRows, ...resignationRows].sort((a, b) => b.createdAt.localeCompare(a.createdAt))
   } catch (e) {
     error.value = e instanceof ApiRequestError ? e.message : t('admin.approvals.loadFailed')
   } finally {
@@ -148,8 +178,10 @@ async function approve(row: MergedRow) {
   try {
     if (row.kind === 'approval') {
       await approvalRequestsService.approve(row.id)
-    } else {
+    } else if (row.kind === 'leave') {
       await leaveRequestsService.approve(row.id)
+    } else {
+      await resignationRequestsService.approve(row.id)
     }
     detail.value = null
     await load()
@@ -170,8 +202,10 @@ async function confirmReject(reason: string) {
   try {
     if (row.kind === 'approval') {
       await approvalRequestsService.reject(row.id, reason)
-    } else {
+    } else if (row.kind === 'leave') {
       await leaveRequestsService.reject(row.id, reason)
+    } else {
+      await resignationRequestsService.reject(row.id, reason)
     }
     rejectOpen.value = false
     detail.value = null
@@ -250,6 +284,13 @@ onMounted(() => load())
           <div><dt class="text-neutral-500">{{ t('admin.leaveRequests.columnDates') }}</dt><dd class="font-medium text-neutral-900">{{ detail.leave.from_date }} – {{ detail.leave.to_date }}</dd></div>
           <div><dt class="text-neutral-500">{{ t('admin.leaveRequests.columnReason') }}</dt><dd class="font-medium text-neutral-900">{{ detail.leave.reason }}</dd></div>
           <div v-if="detail.leave.decision_reason"><dt class="text-neutral-500">{{ t('admin.leaveRequests.decisionReason') }}</dt><dd class="font-medium text-neutral-900">{{ detail.leave.decision_reason }}</dd></div>
+        </dl>
+        <dl v-else-if="detail.kind === 'resignation' && detail.resignation" class="grid gap-y-2 text-sm">
+          <div><dt class="text-neutral-500">{{ t('resignationRequest.gender') }}</dt><dd class="font-medium text-neutral-900">{{ detail.resignation.staff?.gender || '—' }}</dd></div>
+          <div><dt class="text-neutral-500">{{ t('resignationRequest.position') }}</dt><dd class="font-medium text-neutral-900">{{ detail.resignation.staff?.position || '—' }}</dd></div>
+          <div><dt class="text-neutral-500">{{ t('resignationRequest.resignationDate') }}</dt><dd class="font-medium text-neutral-900">{{ detail.resignation.resignation_date }}</dd></div>
+          <div><dt class="text-neutral-500">{{ t('resignationRequest.reason') }}</dt><dd class="font-medium text-neutral-900">{{ detail.resignation.reason }}</dd></div>
+          <div v-if="detail.resignation.decision_reason"><dt class="text-neutral-500">{{ t('admin.leaveRequests.decisionReason') }}</dt><dd class="font-medium text-neutral-900">{{ detail.resignation.decision_reason }}</dd></div>
         </dl>
       </template>
 

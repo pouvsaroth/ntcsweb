@@ -45,6 +45,7 @@ use App\Models\Project;
 use App\Models\ProjectTaskComment;
 use App\Models\Promotion;
 use App\Models\RepairShop;
+use App\Models\ResignationRequest;
 use App\Models\Role;
 use App\Models\SchoolClass;
 use App\Models\Staff;
@@ -95,6 +96,7 @@ use App\Policies\ProjectPolicy;
 use App\Policies\ProjectTaskCommentPolicy;
 use App\Policies\PromotionPolicy;
 use App\Policies\RepairShopPolicy;
+use App\Policies\ResignationRequestPolicy;
 use App\Policies\RolePolicy;
 use App\Policies\SchoolClassPolicy;
 use App\Policies\StaffPolicy;
@@ -138,6 +140,7 @@ class AuthServiceProvider extends ServiceProvider
         HomeSlide::class => HomeSlidePolicy::class,
         GalleryImage::class => GalleryImagePolicy::class,
         Promotion::class => PromotionPolicy::class,
+        ResignationRequest::class => ResignationRequestPolicy::class,
         Program::class => ProgramPolicy::class,
         Position::class => PositionPolicy::class,
         CurrencyRate::class => CurrencyRatePolicy::class,

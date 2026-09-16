@@ -4,6 +4,7 @@ const km: MessageSchema = {
   nav: {
     home: 'ទំព័រដើម',
     about: 'អំពីយើង',
+    program: 'កម្មវិធីសិក្សា',
     videoLesson: 'មេរៀនវីដេអូ',
     programs: 'កម្មវិធីសិក្សា',
     schedule: 'កាលវិភាគសិក្សា',
@@ -25,8 +26,6 @@ const km: MessageSchema = {
       requestComment: 'សំណើ និងមតិយោបល់',
       studentRequestLeave: 'សិស្សស្នើសុំច្បាប់',
       examApplicationForm: 'ទម្រង់ពាក្យសុំប្រឡង',
-      changeClass: 'ស្នើសុំប្តូរថ្នាក់',
-      extraClasses: 'ស្នើសុំថ្នាក់បន្ថែម',
       schoolRegulation: 'បទបញ្ជាសាលា',
       attendancePolicy: 'គោលការណ៍អវត្តមានសិស្ស',
     },
@@ -56,6 +55,7 @@ const km: MessageSchema = {
     login: 'ចូលប្រើប្រាស់',
     contact: 'ទំនាក់ទំនង',
     rightsReserved: 'រក្សាសិទ្ធិគ្រប់យ៉ាង។',
+    visitorStats: 'អ្នកចូលមើល — ថ្ងៃនេះ {today} · ម្សិលមិញ {yesterday} · សប្តាហ៍នេះ {weekly} · ខែនេះ {monthly} · ឆ្នាំនេះ {yearly}',
   },
 
   leaveRequest: {
@@ -72,6 +72,21 @@ const km: MessageSchema = {
     submit: 'ដាក់ស្នើ',
     submitSuccess: 'សំណើរបស់អ្នកត្រូវបានដាក់ស្នើ ហើយកំពុងរង់ចាំការអនុម័ត។',
     submitFailed: 'មិនអាចដាក់ស្នើសំណើរបស់អ្នកបានទេ។',
+  },
+
+  resignationRequest: {
+    title: 'លាឈប់',
+    firstName: 'នាមខ្លួន',
+    lastName: 'នាមត្រកូល',
+    gender: 'ភេទ',
+    position: 'តួនាទី',
+    resignationDate: 'កាលបរិច្ឆេទលាឈប់',
+    reason: 'មូលហេតុលាឈប់',
+    reasonPlaceholder: 'សូមប្រាប់ពីមូលហេតុនៃការលាឈប់…',
+    submit: 'ដាក់ស្នើ',
+    submitSuccess: 'សំណើលាឈប់របស់អ្នកត្រូវបានដាក់ស្នើ ហើយកំពុងរង់ចាំការអនុម័ត។',
+    submitFailed: 'មិនអាចដាក់ស្នើសំណើលាឈប់របស់អ្នកបានទេ។',
+    profileLoadFailed: 'មិនអាចផ្ទុកទិន្នន័យបុគ្គលិករបស់អ្នកបានទេ។',
   },
 
   common: {
@@ -138,6 +153,8 @@ const km: MessageSchema = {
     types: {
       leave_request_submitted: '{student_name} បានដាក់ស្នើសំណើសុំច្បាប់',
       leave_request_approved: 'សំណើសុំច្បាប់សម្រាប់ {student_name} ត្រូវបានអនុម័ត',
+      resignation_request_submitted: '{staff_name} បានដាក់ស្នើសំណើលាឈប់',
+      resignation_request_approved: 'សំណើលាឈប់សម្រាប់ {staff_name} ត្រូវបានអនុម័ត',
       student_registration_submitted: '{student_name} បានចុះឈ្មោះ ហើយកំពុងរង់ចាំការអនុម័ត',
     },
   },
@@ -946,6 +963,7 @@ const km: MessageSchema = {
       statusApproved: 'បានអនុម័ត',
       statusRejected: 'បានបដិសេធ',
       leaveSubject: 'សំណើសុំច្បាប់/ការអនុញ្ញាត ({from} – {to})',
+      resignationSubject: 'សំណើលាឈប់ ({date})',
       loadFailed: 'មិនអាចផ្ទុកសំណើរបស់អ្នកបានទេ។',
       emptyTitle: 'មិនមានសំណើ',
       emptyMessage: 'មិនទាន់មានអ្វីនៅទីនេះទេ។',
@@ -2768,7 +2786,7 @@ const km: MessageSchema = {
       positions: 'តួនាទីការងារ',
       staffStatusHistory: 'ប្រវត្តិស្ថានភាពបុគ្គលិក',
       requestLeave: 'ស្នើសុំច្បាប់',
-      resignationForm: 'ទម្រង់លាឈប់',
+      resignationForm: 'ទម្រង់',
       academicYears: 'ឆ្នាំសិក្សា',
       academicPrograms: 'កម្មវិធីសិក្សា',
       programs: 'កម្មវិធីសិក្សា',

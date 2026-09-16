@@ -3,6 +3,7 @@ import { defineStore } from 'pinia'
 import { useFavicon } from '@vueuse/core'
 
 import { apiGet } from '@/services/http'
+import { websiteVisitsService, type WebsiteVisitStats } from '@/services/websiteVisits'
 import { ApiRequestError } from '@/types/api'
 
 export interface AboutStat {
@@ -79,10 +80,14 @@ const FALLBACK: PublicSiteInfo = {
  * tenant subdomain in production this is always true and that prompt never
  * appears.
  */
+/** localStorage key: the last calendar date (YYYY-MM-DD) this browser recorded a visit for this tenant. */
+const VISIT_PING_KEY = 'ntcsweb.visit_ping_date'
+
 export const useSiteStore = defineStore('site', () => {
   const info = ref<PublicSiteInfo>(FALLBACK)
   const loaded = ref(false)
   const resolved = ref(false)
+  const visitStats = ref<WebsiteVisitStats | null>(null)
 
   // Reactively swaps the browser tab's favicon to the school's own logo the
   // moment `load()` resolves — falls back to the static default icon for an
@@ -107,5 +112,41 @@ export const useSiteStore = defineStore('site', () => {
     }
   }
 
-  return { info, loaded, resolved, load }
+  /**
+   * The public footer's small "visitors" line. Increments today's count at
+   * most once per browser per calendar day — a `localStorage` flag tracks
+   * that, not `loaded`/a ref, so it survives a full page reload and still
+   * only counts once even across separate tabs opened the same day. Any
+   * failure (storage blocked in a private window, request failing) just
+   * leaves the footer's numbers unset rather than surfacing an error —
+   * a visitor counter is never worth interrupting the page for.
+   */
+  async function pingVisit(): Promise<void> {
+    const today = new Date().toISOString().slice(0, 10)
+
+    let alreadyPingedToday = false
+    try {
+      alreadyPingedToday = localStorage.getItem(VISIT_PING_KEY) === today
+    } catch {
+      // Storage inaccessible — treat as "not pinged," same as a first visit.
+    }
+
+    try {
+      visitStats.value = alreadyPingedToday
+        ? await websiteVisitsService.stats()
+        : await websiteVisitsService.record()
+
+      if (!alreadyPingedToday) {
+        try {
+          localStorage.setItem(VISIT_PING_KEY, today)
+        } catch {
+          // Non-fatal — worst case this browser is counted again today.
+        }
+      }
+    } catch {
+      // Footer just shows nothing.
+    }
+  }
+
+  return { info, loaded, resolved, visitStats, load, pingVisit }
 })

@@ -13,6 +13,7 @@ const auth = useAuthStore()
 
 onMounted(() => {
   site.load()
+  site.pingVisit()
   // The router guard only resolves auth lazily for requiresAuth/guestOnly
   // routes (admin, login) — a plain public route never triggers it, so a
   // student staying on the public site after login (see Login.vue) would

@@ -4,6 +4,7 @@ const zh: MessageSchema = {
   nav: {
     home: '首页',
     about: '关于我们',
+    program: '课程',
     videoLesson: '视频课程',
     programs: '课程项目',
     schedule: '上课时间表',
@@ -25,8 +26,6 @@ const zh: MessageSchema = {
       requestComment: '申请与留言',
       studentRequestLeave: '学生请假申请',
       examApplicationForm: '考试申请表',
-      changeClass: '申请转班',
-      extraClasses: '申请加课',
       schoolRegulation: '学校规章',
       attendancePolicy: '学生出勤政策',
     },
@@ -56,6 +55,7 @@ const zh: MessageSchema = {
     login: '登录',
     contact: '联系方式',
     rightsReserved: '版权所有。',
+    visitorStats: '访客 — 今天 {today} · 昨天 {yesterday} · 本周 {weekly} · 本月 {monthly} · 今年 {yearly}',
   },
 
   leaveRequest: {
@@ -72,6 +72,21 @@ const zh: MessageSchema = {
     submit: '提交',
     submitSuccess: '您的申请已提交，正在等待审批。',
     submitFailed: '无法提交您的申请。',
+  },
+
+  resignationRequest: {
+    title: '辞职申请',
+    firstName: '名',
+    lastName: '姓',
+    gender: '性别',
+    position: '职位',
+    resignationDate: '离职日期',
+    reason: '离职原因',
+    reasonPlaceholder: '请说明离职原因…',
+    submit: '提交',
+    submitSuccess: '您的辞职申请已提交，正在等待审批。',
+    submitFailed: '无法提交您的辞职申请。',
+    profileLoadFailed: '无法加载您的员工资料。',
   },
 
   common: {
@@ -138,6 +153,8 @@ const zh: MessageSchema = {
     types: {
       leave_request_submitted: '{student_name} 提交了一项请假申请',
       leave_request_approved: '{student_name} 的请假申请已获批准',
+      resignation_request_submitted: '{staff_name} 提交了一项辞职申请',
+      resignation_request_approved: '{staff_name} 的辞职申请已获批准',
       student_registration_submitted: '{student_name} 已注册，正在等待审批',
     },
   },
@@ -945,6 +962,7 @@ const zh: MessageSchema = {
       statusApproved: '已批准',
       statusRejected: '已拒绝',
       leaveSubject: '请假/许可申请（{from} – {to}）',
+      resignationSubject: '辞职申请（{date}）',
       loadFailed: '无法加载您的申请。',
       emptyTitle: '暂无申请',
       emptyMessage: '这里还没有任何内容。',
@@ -2767,7 +2785,7 @@ const zh: MessageSchema = {
       positions: '职位',
       staffStatusHistory: '员工状态历史',
       requestLeave: '请假申请',
-      resignationForm: '辞职申请表',
+      resignationForm: '表格',
       academicYears: '学年',
       academicPrograms: '学术项目',
       programs: '课程项目',

@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRoute, useRouter } from 'vue-router'
 
 import AskForPermissionModal from '@/components/layout/AskForPermissionModal.vue'
+import ResignationFormModal from '@/components/layout/ResignationFormModal.vue'
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
@@ -12,20 +14,22 @@ import DataTable from '@/components/ui/DataTable.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import { myApprovalRequestsService, type ApprovalRequest, type ApprovalRequestStatus } from '@/services/approvalRequests'
 import { myLeaveRequestsService, type LeaveRequest } from '@/services/leaveRequests'
+import { myResignationRequestsService, type ResignationRequest } from '@/services/resignationRequests'
 import { useAuthStore } from '@/stores/auth'
 import { ApiRequestError } from '@/types/api'
 
 /**
  * "My Request" under eApprovals — every request the current user has
- * submitted, whether it's a generic ApprovalRequest or a LeaveRequest (which
- * keeps its own dedicated backend flow; see AskForPermissionModal). Both
- * self-service endpoints are fetched at a generous per_page and merged
- * client-side rather than through usePaginatedResource, since combining two
- * independently-paginated sources behind one page control isn't meaningful
- * here — a user's own request list is never large enough to need it.
+ * submitted, whether it's a generic ApprovalRequest, a LeaveRequest, or (for
+ * staff accounts) a ResignationRequest — each keeps its own dedicated
+ * backend flow; see AskForPermissionModal/ResignationFormModal. Every
+ * source is fetched at a generous per_page and merged client-side rather
+ * than through usePaginatedResource, since combining independently-
+ * paginated sources behind one page control isn't meaningful here — a
+ * user's own request list is never large enough to need it.
  */
 type MergedRow = {
-  kind: 'approval' | 'leave'
+  kind: 'approval' | 'leave' | 'resignation'
   id: number
   reference: string
   subject: string
@@ -33,10 +37,18 @@ type MergedRow = {
   createdAt: string
   approval?: ApprovalRequest
   leave?: LeaveRequest
+  resignation?: ResignationRequest
 }
 
 const { t } = useI18n()
 const auth = useAuthStore()
+const route = useRoute()
+const router = useRouter()
+
+// Resignation only makes sense for a staff account — a student reaching
+// this page (see the router's studentAllowed guard) never has a staff
+// record, so the self-service resignation endpoint would just 422 for them.
+const canResign = computed(() => !auth.hasRole('student'))
 
 const rows = ref<MergedRow[]>([])
 const loading = ref(false)
@@ -73,9 +85,15 @@ const statusVariant: Record<ApprovalRequestStatus, 'warning' | 'success' | 'dang
 
 const detail = ref<MergedRow | null>(null)
 const showLeaveModal = ref(false)
+const showResignationModal = ref(false)
 
 function onLeaveModalChange(open: boolean) {
   showLeaveModal.value = open
+  if (!open) load()
+}
+
+function onResignationModalChange(open: boolean) {
+  showResignationModal.value = open
   if (!open) load()
 }
 
@@ -84,9 +102,12 @@ async function load() {
   error.value = null
 
   try {
-    const [approvals, leaves] = await Promise.all([
+    const [approvals, leaves, resignations] = await Promise.all([
       myApprovalRequestsService.list(),
       myLeaveRequestsService.list({ page: 1, per_page: 100, filter: {} }),
+      canResign.value
+        ? myResignationRequestsService.list({ page: 1, per_page: 100, filter: {} })
+        : Promise.resolve({ data: [] as ResignationRequest[], pagination: undefined }),
     ])
 
     const approvalRows: MergedRow[] = approvals.data.map((r) => ({
@@ -109,7 +130,17 @@ async function load() {
       leave: r,
     }))
 
-    rows.value = [...approvalRows, ...leaveRows].sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    const resignationRows: MergedRow[] = resignations.data.map((r) => ({
+      kind: 'resignation',
+      id: r.id,
+      reference: `RS-${String(r.id).padStart(6, '0')}`,
+      subject: t('admin.myRequests.resignationSubject', { date: r.resignation_date }),
+      status: r.status,
+      createdAt: r.created_at,
+      resignation: r,
+    }))
+
+    rows.value = [...approvalRows, ...leaveRows, ...resignationRows].sort((a, b) => b.createdAt.localeCompare(a.createdAt))
   } catch (e) {
     error.value = e instanceof ApiRequestError ? e.message : t('admin.myRequests.loadFailed')
   } finally {
@@ -117,7 +148,17 @@ async function load() {
   }
 }
 
-onMounted(() => load())
+onMounted(() => {
+  load()
+
+  // Deep-linked from the admin Staff/HRM nav group's "Form" item — see
+  // adminNav.ts — so clicking it opens this modal in one step instead of
+  // landing here and making the visitor find the button themselves.
+  if (route.query.open === 'resignation' && canResign.value) {
+    showResignationModal.value = true
+    void router.replace({ query: { ...route.query, open: undefined } })
+  }
+})
 </script>
 
 <template>
@@ -127,7 +168,10 @@ onMounted(() => load())
         <h1 class="text-xl font-semibold text-neutral-900">{{ t('admin.myRequests.title') }}</h1>
         <p class="mt-1 text-sm text-neutral-500">{{ t('admin.myRequests.subtitle') }}</p>
       </div>
-      <BaseButton @click="showLeaveModal = true">{{ t('leaveRequest.title') }}</BaseButton>
+      <div class="flex gap-2">
+        <BaseButton @click="showLeaveModal = true">{{ t('leaveRequest.title') }}</BaseButton>
+        <BaseButton v-if="canResign" variant="outline" @click="showResignationModal = true">{{ t('resignationRequest.title') }}</BaseButton>
+      </div>
     </div>
 
     <BaseAlert v-if="error" variant="danger" class="mb-4">{{ error }}</BaseAlert>
@@ -182,8 +226,16 @@ onMounted(() => load())
           <div v-if="detail.leave.decision_reason"><dt class="text-neutral-500">{{ t('admin.leaveRequests.decisionReason') }}</dt><dd class="font-medium text-neutral-900">{{ detail.leave.decision_reason }}</dd></div>
         </dl>
       </template>
+      <template v-else-if="detail?.kind === 'resignation' && detail.resignation">
+        <dl class="grid gap-y-2 text-sm">
+          <div><dt class="text-neutral-500">{{ t('resignationRequest.resignationDate') }}</dt><dd class="font-medium text-neutral-900">{{ detail.resignation.resignation_date }}</dd></div>
+          <div><dt class="text-neutral-500">{{ t('resignationRequest.reason') }}</dt><dd class="font-medium text-neutral-900">{{ detail.resignation.reason }}</dd></div>
+          <div v-if="detail.resignation.decision_reason"><dt class="text-neutral-500">{{ t('admin.leaveRequests.decisionReason') }}</dt><dd class="font-medium text-neutral-900">{{ detail.resignation.decision_reason }}</dd></div>
+        </dl>
+      </template>
     </BaseModal>
 
     <AskForPermissionModal :model-value="showLeaveModal" @update:model-value="onLeaveModalChange" />
+    <ResignationFormModal v-if="canResign" :model-value="showResignationModal" @update:model-value="onResignationModalChange" />
   </div>
 </template>

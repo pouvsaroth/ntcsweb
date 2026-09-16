@@ -89,12 +89,14 @@ export const adminNav: AdminNavGroup[] = [
       // Self-service, same page used by the public site's "Document and
       // Form" menu for students — MyRequests.vue's backend auto-detects
       // whether the signed-in account is a student or staff (see
-      // MyLeaveRequestController::requesterOrFail()). forms.view/
-      // my-requests.view are granted to every role by default (see
+      // MyLeaveRequestController::requesterOrFail()). my-requests.view is
+      // granted to every role by default (see
       // Permissions::$selfServiceForEveryone), so this shows for any staff
       // account, not just those with staff-management permissions.
       { labelKey: 'adminNav.items.requestLeave', to: '/admin/approvals/my-requests', permission: 'my-requests.view' },
-      { labelKey: 'adminNav.items.resignationForm', to: '/admin/approvals/forms?code=RESIGNATION', permission: 'forms.view' },
+      // `?open=resignation` auto-opens ResignationFormModal on arrival —
+      // see MyRequests.vue's onMounted handling.
+      { labelKey: 'adminNav.items.resignationForm', to: '/admin/approvals/my-requests?open=resignation', permission: 'my-requests.view' },
     ],
   },
   {
