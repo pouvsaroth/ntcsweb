@@ -209,4 +209,124 @@ class AuthenticationTest extends TestCase
 
         $this->assertSame(1, $user->tokens()->count());
     }
+
+    /**
+     * The one-device rule (AuthService::ensureNoOtherActiveDevice()): a
+     * still-unexpired token from a previous login blocks a new one for a
+     * different device, with the exact message the user is told to act on.
+     */
+    public function test_a_second_token_login_is_blocked_while_the_first_is_still_valid(): void
+    {
+        $user = User::factory()->forTenant($this->tenant)->create(['password' => Hash::make('correct-password')]);
+        $user->createToken('phone', ['*'], now()->addDays(30));
+
+        $this->actingInTenant($this->tenant);
+
+        $response = $this->postJson('/api/v1/auth/login', [
+            'login' => $user->email,
+            'password' => 'correct-password',
+            'device_name' => 'laptop',
+        ]);
+
+        $response->assertUnprocessable();
+        $response->assertJsonPath(
+            'errors.login.0',
+            'You are logging in another device, please logout first or you can ask admin for help.',
+        );
+        $this->assertSame(1, $user->tokens()->count());
+    }
+
+    /**
+     * Re-authenticating from the *same* device (matched by device_name) is
+     * not "another device" — tokenResponse() replaces that token exactly as
+     * it did before this rule existed (e.g. reinstalling the mobile app).
+     */
+    public function test_reauthenticating_the_same_named_device_is_not_blocked(): void
+    {
+        $user = User::factory()->forTenant($this->tenant)->create(['password' => Hash::make('correct-password')]);
+        $user->createToken('phone', ['*'], now()->addDays(30));
+
+        $this->actingInTenant($this->tenant);
+
+        $response = $this->postJson('/api/v1/auth/login', [
+            'login' => $user->email,
+            'password' => 'correct-password',
+            'device_name' => 'phone',
+        ]);
+
+        $response->assertOk();
+        $this->assertSame(1, $user->tokens()->count());
+    }
+
+    /**
+     * An expired token left behind by a past login is not "still active" —
+     * nothing to log out of, so a new login is not blocked by it.
+     */
+    public function test_an_expired_token_does_not_block_a_new_login(): void
+    {
+        $user = User::factory()->forTenant($this->tenant)->create(['password' => Hash::make('correct-password')]);
+        $user->createToken('old-phone', ['*'], now()->subDay());
+
+        $this->actingInTenant($this->tenant);
+
+        $response = $this->postJson('/api/v1/auth/login', [
+            'login' => $user->email,
+            'password' => 'correct-password',
+            'device_name' => 'laptop',
+        ]);
+
+        $response->assertOk();
+    }
+
+    /**
+     * Mirrors the token case above, but for the session transport the SPA
+     * actually uses: session_login_active still true from a previous login
+     * nobody signed out of blocks a new session login. Set directly rather
+     * than via a real login request, since a fresh test user never has one
+     * left over on its own.
+     */
+    public function test_a_session_login_is_blocked_while_another_session_is_still_active(): void
+    {
+        $user = User::factory()->forTenant($this->tenant)->create(['password' => Hash::make('correct-password')]);
+        $user->activateSessionLogin();
+
+        $this->actingInTenant($this->tenant);
+
+        $response = $this->postJson('/api/v1/auth/login', [
+            'login' => $user->email,
+            'password' => 'correct-password',
+        ]);
+
+        $response->assertUnprocessable();
+        $response->assertJsonPath(
+            'errors.login.0',
+            'You are logging in another device, please logout first or you can ask admin for help.',
+        );
+    }
+
+    /**
+     * Logging out deletes the session row outright (Store::invalidate()
+     * destroys it via the handler), so the device is immediately free to log
+     * back in — the whole point of the rule is "log out first," not "wait."
+     */
+    public function test_logging_out_a_session_immediately_clears_the_one_device_lock(): void
+    {
+        $user = User::factory()->forTenant($this->tenant)->create(['password' => Hash::make('correct-password')]);
+
+        $this->actingInTenant($this->tenant);
+
+        $this->postJson('/api/v1/auth/login', [
+            'login' => $user->email,
+            'password' => 'correct-password',
+        ])->assertOk();
+
+        $this->postJson('/api/v1/auth/logout')->assertOk();
+
+        $response = $this->postJson('/api/v1/auth/login', [
+            'login' => $user->email,
+            'password' => 'correct-password',
+        ]);
+
+        $response->assertOk();
+    }
 }

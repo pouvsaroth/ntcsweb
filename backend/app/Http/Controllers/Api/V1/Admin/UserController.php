@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Api\V1\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Admin\ResetUserPasswordRequest;
 use App\Http\Requests\Api\V1\Admin\StoreUserRequest;
+use App\Http\Requests\Api\V1\Admin\UpdateUserRequest;
 use App\Http\Resources\UserResource;
 use App\Http\Responses\ApiResponse;
 use App\Models\Role;
@@ -35,7 +36,7 @@ final class UserController extends Controller
     {
         $this->authorize('viewAny', User::class);
 
-        $users = ApiQuery::for(User::query()->inTenant($this->context->id())->with('roles'), $request)
+        $users = ApiQuery::for(User::query()->inTenant($this->context->id())->with(['roles', 'student:id,user_id']), $request)
             ->searchable('name', 'email')
             ->filterable(['status'])
             ->sortable(['name', 'email', 'created_at'], default: '-created_at')
@@ -82,6 +83,46 @@ final class UserController extends Controller
     }
 
     /**
+     * Profile fields plus, for a standalone (non-student-linked) account
+     * only, a role reassignment — see UpdateUserRequest's docblock. A role
+     * change replaces every role this user currently holds rather than
+     * adding to them: unlike StaffController::update() (which only swaps the
+     * one role tied to the old/new Position), this is the user's only role
+     * source, so a plain sync is correct here.
+     */
+    public function update(UpdateUserRequest $request, User $user): JsonResponse
+    {
+        DB::transaction(function () use ($request, $user) {
+            $user->update($request->safe()->only(['name', 'email']));
+
+            $roleId = $request->validated('role_id');
+
+            if ($roleId !== null) {
+                $newRole = Role::query()->findOrFail($roleId);
+                $currentRoles = $user->roles()->get();
+
+                if (! $currentRoles->contains(fn (Role $role) => $role->is($newRole))) {
+                    if ($currentRoles->isNotEmpty()) {
+                        $user->detachRoles(...$currentRoles->all());
+                    }
+                    $user->attachRoles($newRole);
+
+                    $this->audit->log(
+                        AuditAction::ROLE_CHANGE,
+                        'Users',
+                        $user,
+                        old: ['role' => $currentRoles->pluck('name')->implode(', ') ?: '—'],
+                        new: ['role' => $newRole->name],
+                        description: "Changed user role for {$user->name} to {$newRole->name}",
+                    );
+                }
+            }
+        });
+
+        return ApiResponse::success(new UserResource($user->load('roles')));
+    }
+
+    /**
      * A School Admin setting a new password for a student's or staff
      * member's login — see ResetUserPasswordRequest/UserPolicy::resetPassword()
      * for why this can never target the acting admin's own account (that's
@@ -97,6 +138,7 @@ final class UserController extends Controller
         // The target isn't the one making this request, so every existing
         // session of theirs is revoked outright — nothing to preserve.
         $user->tokens()->delete();
+        $user->deactivateSessionLogin();
 
         $this->audit->log(
             AuditAction::PASSWORD_CHANGE,
@@ -106,5 +148,32 @@ final class UserController extends Controller
         );
 
         return ApiResponse::success(message: __('Password updated.'));
+    }
+
+    /**
+     * Clears the one-device login lock (AuthService::ensureNoOtherActiveDevice())
+     * for a user who lost access to (or simply forgot to sign out of) their
+     * other device — see UserPolicy::forceLogout() for who may do this. This
+     * only frees them to log in again; it does not itself kill the other
+     * device's existing browser session (Laravel's own session store is
+     * driver-dependent — see the session_login_active migration's docblock —
+     * so there is no reliable way to reach into it from here). Revoking every
+     * Sanctum token, however, is a real and immediate revocation.
+     */
+    public function forceLogout(User $user): JsonResponse
+    {
+        $this->authorize('forceLogout', $user);
+
+        $user->tokens()->delete();
+        $user->deactivateSessionLogin();
+
+        $this->audit->log(
+            AuditAction::FORCE_LOGOUT,
+            'Users',
+            $user,
+            description: "Signed {$user->name} out of every device",
+        );
+
+        return ApiResponse::success(message: __('Every device has been signed out.'));
     }
 }

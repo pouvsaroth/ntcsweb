@@ -57,13 +57,15 @@ final class AuthController extends Controller
 
         $request->clearRateLimiter();
 
+        $deviceName = $request->string('device_name')->trim()->toString();
+
+        $this->auth->ensureNoOtherActiveDevice($user, $deviceName !== '' ? $deviceName : null);
+
         $user->recordLogin($request->ip());
 
         $this->audit->logFor(AuditAction::LOGIN, 'Auth', $user->tenant_id, $user, [
-            'transport' => $request->filled('device_name') ? 'token' : 'session',
+            'transport' => $deviceName !== '' ? 'token' : 'session',
         ]);
-
-        $deviceName = $request->string('device_name')->trim()->toString();
 
         return $deviceName !== ''
             ? $this->tokenResponse($user, $deviceName)
@@ -86,6 +88,8 @@ final class AuthController extends Controller
         if ($token !== null && ! $token instanceof \Laravel\Sanctum\TransientToken) {
             $token->delete();
         } else {
+            $user?->deactivateSessionLogin();
+
             Auth::guard('web')->logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();
@@ -194,6 +198,7 @@ final class AuthController extends Controller
     private function sessionResponse(LoginRequest $request, User $user): JsonResponse
     {
         Auth::guard('web')->login($user, $request->boolean('remember'));
+        $user->activateSessionLogin();
 
         // Rotate the session id on privilege change to defeat session fixation.
         $request->session()->regenerate();

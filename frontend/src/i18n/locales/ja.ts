@@ -501,6 +501,12 @@ const ja: MessageSchema = {
       temporaryPasswordTitle: 'ユーザーが作成されました',
       temporaryPasswordMessage: '初期パスワードは本人の電話番号です — それでログインできることを伝え、後で変更するよう勧めてください。',
       temporaryPasswordLabel: '初期パスワード',
+      editTitle: 'ユーザーを編集',
+      roleLockedToStudent: 'このアカウントは生徒に紐付いているため、ロールは常に生徒のままです。',
+      forceLogoutTitle: '強制ログアウト',
+      forceLogoutConfirm: '{name} を全てのデバイスからログアウトさせますか？ 他の場所でログアウトし忘れてロックされている場合に使用してください。',
+      forceLogoutSuccess: '{name} を全てのデバイスからログアウトさせました。',
+      forceLogoutFailed: 'このユーザーをデバイスからログアウトさせることができませんでした。',
     },
     comingSoon: {
       notBuiltYet: '{title}はまだ実装されていません',

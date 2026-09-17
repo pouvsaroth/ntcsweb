@@ -27,6 +27,10 @@ final class AuditAction
 
     public const LOGOUT = 'LOGOUT';
 
+    // An admin clearing every live session/token for a user stuck locked out
+    // by AuthService::ensureNoOtherActiveDevice() — see UserController::forceLogout().
+    public const FORCE_LOGOUT = 'FORCE_LOGOUT';
+
     public const PASSWORD_CHANGE = 'PASSWORD_CHANGE';
 
     public const PASSWORD_RESET_REQUESTED = 'PASSWORD_RESET_REQUESTED';

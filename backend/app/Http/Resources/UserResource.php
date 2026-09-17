@@ -32,6 +32,11 @@ class UserResource extends JsonResource
             'roles' => RoleResource::collection($this->whenLoaded('roles')),
             'tenant' => new TenantResource($this->whenLoaded('tenant')),
 
+            // Whether this account is linked to a Student — its role is
+            // always forced to Student in that case (see StoreUserRequest),
+            // so the admin Users page hides the role-reassignment control.
+            'student_id' => $this->whenLoaded('student', fn () => $this->student?->id),
+
             // Exposed only on /auth/me and to the acting user themselves; a
             // school admin listing users has no need for the flattened set.
             'permissions' => $this->when(

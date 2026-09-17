@@ -500,6 +500,12 @@ const zh: MessageSchema = {
       temporaryPasswordTitle: '用户已创建',
       temporaryPasswordMessage: '默认密码就是本人的电话号码——请告知对方可以用它登录，并建议登录后尽快修改。',
       temporaryPasswordLabel: '默认密码',
+      editTitle: '编辑用户',
+      roleLockedToStudent: '该账号已关联学生，因此角色始终固定为学生。',
+      forceLogoutTitle: '强制注销',
+      forceLogoutConfirm: '将 {name} 从所有设备注销吗？当对方因忘记在别处注销而被锁定时，可使用此操作。',
+      forceLogoutSuccess: '已将 {name} 从所有设备注销。',
+      forceLogoutFailed: '无法将该用户从其设备注销。',
     },
     comingSoon: {
       notBuiltYet: '{title}尚未开发',

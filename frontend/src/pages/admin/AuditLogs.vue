@@ -18,7 +18,7 @@ const { t } = useI18n()
 
 const ACTIONS = [
   'CREATE', 'UPDATE', 'DELETE', 'RESTORE',
-  'LOGIN', 'LOGIN_FAILED', 'LOGIN_BLOCKED', 'LOGOUT',
+  'LOGIN', 'LOGIN_FAILED', 'LOGIN_BLOCKED', 'LOGOUT', 'FORCE_LOGOUT',
   'PASSWORD_CHANGE', 'PASSWORD_RESET_REQUESTED', 'EMAIL_VERIFIED',
   'ROLE_CHANGE', 'STATUS_CHANGE', 'POSITION_CHANGE',
 ] as const
@@ -34,6 +34,7 @@ const actionBadgeVariant: Record<string, 'success' | 'warning' | 'danger' | 'neu
   LOGIN_FAILED: 'danger',
   LOGIN_BLOCKED: 'danger',
   LOGOUT: 'neutral',
+  FORCE_LOGOUT: 'danger',
   PASSWORD_CHANGE: 'primary',
   PASSWORD_RESET_REQUESTED: 'primary',
   EMAIL_VERIFIED: 'primary',

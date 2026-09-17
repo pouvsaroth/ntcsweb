@@ -71,6 +71,24 @@ class UserPolicy
             && $this->outranks($actor, $target);
     }
 
+    /**
+     * Clearing every live session/token for a user stuck locked out by
+     * AuthService::ensureNoOtherActiveDevice() — same rules as
+     * resetPassword() and the same reasoning for never self: whoever is
+     * calling this is already signed in on the device they're using, so
+     * there is nothing of their own left to force out.
+     */
+    public function forceLogout(User $actor, User $target): bool
+    {
+        if ($actor->is($target)) {
+            return false;
+        }
+
+        return $this->sameTenant($actor, $target)
+            && $actor->hasPermission(Permissions::USERS_UPDATE)
+            && $this->outranks($actor, $target);
+    }
+
     public function delete(User $actor, User $target): bool
     {
         // Deleting yourself would leave a school with no way back in if you

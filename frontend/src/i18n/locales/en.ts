@@ -504,6 +504,12 @@ const en = {
       temporaryPasswordTitle: 'User created',
       temporaryPasswordMessage: 'Their password is their phone number — let them know they can log in with it, and encourage them to change it afterward.',
       temporaryPasswordLabel: 'Default password',
+      editTitle: 'Edit user',
+      roleLockedToStudent: 'This account is linked to a student, so its role is always Student.',
+      forceLogoutTitle: 'Force logout',
+      forceLogoutConfirm: 'Sign {name} out of every device? Use this if they are locked out after forgetting to log out elsewhere.',
+      forceLogoutSuccess: '{name} has been signed out of every device.',
+      forceLogoutFailed: 'Could not sign this user out of their devices.',
     },
     comingSoon: {
       notBuiltYet: '{title} is not built yet',

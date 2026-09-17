@@ -56,6 +56,10 @@ export interface User {
   created_at: string
   roles?: Role[]
   tenant?: Tenant
+  /** Non-null only when this account is linked to a Student — its role is
+   * then always forced to Student, so the admin Users page hides role
+   * reassignment for it. */
+  student_id?: number | null
   /** Only present on /auth/me, or when viewing your own account. */
   permissions?: string[] | ['*']
 }

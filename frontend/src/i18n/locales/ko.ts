@@ -501,6 +501,12 @@ const ko: MessageSchema = {
       temporaryPasswordTitle: '사용자가 생성되었습니다',
       temporaryPasswordMessage: '기본 비밀번호는 본인의 전화번호입니다 — 이를 이용해 로그인할 수 있음을 알려주고, 이후 변경하도록 권장하세요.',
       temporaryPasswordLabel: '기본 비밀번호',
+      editTitle: '사용자 수정',
+      roleLockedToStudent: '이 계정은 학생과 연결되어 있어 역할은 항상 학생으로 고정됩니다.',
+      forceLogoutTitle: '강제 로그아웃',
+      forceLogoutConfirm: '{name}님을 모든 기기에서 로그아웃시키겠습니까? 다른 곳에서 로그아웃을 잊어 잠긴 경우 사용하세요.',
+      forceLogoutSuccess: '{name}님이 모든 기기에서 로그아웃되었습니다.',
+      forceLogoutFailed: '이 사용자를 기기에서 로그아웃시킬 수 없습니다.',
     },
     comingSoon: {
       notBuiltYet: '{title} 기능은 아직 개발되지 않았습니다',

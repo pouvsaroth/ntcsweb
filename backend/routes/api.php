@@ -348,12 +348,15 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
 
         Route::apiResource('roles', RoleController::class)->except(['show']);
 
-        // index/store only for now: editing/removing an existing account is a
-        // separate, bigger "user management" surface not yet built. `store`
-        // is how an already-imported (never auto-provisioned) Student gets
-        // portal access, or how an extra standalone account gets created.
-        Route::apiResource('users', UserController::class)->only(['index', 'store']);
+        // Removing an existing account is a separate, bigger "user
+        // management" surface not yet built. `store` is how an
+        // already-imported (never auto-provisioned) Student gets portal
+        // access, or how an extra standalone account gets created; `update`
+        // covers editing an existing account's profile fields and, for a
+        // standalone (non-student-linked) account, reassigning its role.
+        Route::apiResource('users', UserController::class)->only(['index', 'store', 'update']);
         Route::post('users/{user}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset-password');
+        Route::post('users/{user}/force-logout', [UserController::class, 'forceLogout'])->name('users.force-logout');
 
         // Read-only — see AuditLogPolicy/AuditLogController's docblocks for
         // why there is deliberately no store/update/destroy route here.

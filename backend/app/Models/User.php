@@ -169,6 +169,21 @@ class User extends Authenticatable implements MustVerifyEmailContract
     }
 
     /**
+     * The one-device-at-a-time flag — see AuthService::ensureNoOtherActiveDevice()
+     * and the migration that added this column for why it's a plain flag
+     * rather than a lookup into Laravel's own (driver-dependent) session store.
+     */
+    public function activateSessionLogin(): void
+    {
+        $this->forceFill(['session_login_active' => true])->saveQuietly(['timestamps' => false]);
+    }
+
+    public function deactivateSessionLogin(): void
+    {
+        $this->forceFill(['session_login_active' => false])->saveQuietly(['timestamps' => false]);
+    }
+
+    /**
      * Stored under `tenants/{id}/avatars` for a school user, or
      * `platform/avatars` for a super admin (tenant_id NULL) — see
      * AuthController::updateProfile(), the only place avatar_path is set.
