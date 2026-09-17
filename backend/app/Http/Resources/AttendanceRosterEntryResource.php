@@ -30,6 +30,9 @@ class AttendanceRosterEntryResource extends JsonResource
                 'student_code' => $this->student->student_code,
                 'name' => $this->student->fullName(),
             ],
+            // The seat this student is actually checked in by, not their
+            // student code — see Enrollment::table()'s docblock.
+            'table_no' => $this->table?->name,
             'attendance_record_id' => $record?->id,
             'status' => $record?->status,
             'late_minutes' => $record?->late_minutes,

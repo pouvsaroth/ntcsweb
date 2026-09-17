@@ -45,6 +45,26 @@ class AttendanceTest extends TestCase
         $this->assertNull($response->json('data.0.status'));
     }
 
+    /**
+     * The roster identifies each row by the student's assigned seat, not
+     * their student code — see AttendanceRosterEntryResource's docblock.
+     */
+    public function test_the_roster_reports_each_students_assigned_table(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::ATTENDANCE_CREATE]);
+        $class = SchoolClass::factory()->create();
+        $table = \App\Models\ClassroomTable::factory()->create(['name' => 'Table 3']);
+        $seatedEnrollment = Enrollment::factory()->forClass($class)->create(['table_id' => $table->id]);
+        $unseatedEnrollment = Enrollment::factory()->forClass($class)->create(['table_id' => null]);
+
+        $response = $this->getJson("/api/v1/classes/{$class->id}/attendance?date=".now()->toDateString());
+
+        $response->assertOk();
+        $rows = collect($response->json('data'))->keyBy('enrollment_id');
+        $this->assertSame('Table 3', $rows[$seatedEnrollment->id]['table_no']);
+        $this->assertNull($rows[$unseatedEnrollment->id]['table_no']);
+    }
+
     public function test_recording_attendance_saves_one_record_per_student_and_one_audit_entry_for_the_whole_batch(): void
     {
         $admin = $this->actingAsAdminWithPermissions([Permissions::ATTENDANCE_CREATE, Permissions::ATTENDANCE_VIEW]);

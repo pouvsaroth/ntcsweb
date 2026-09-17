@@ -38,7 +38,7 @@ final class AttendanceService
     {
         return $class->enrollments()
             ->active()
-            ->with(['student', 'attendanceRecords' => fn ($query) => $query->onDate($date)])
+            ->with(['student', 'table', 'attendanceRecords' => fn ($query) => $query->onDate($date)])
             ->get();
     }
 

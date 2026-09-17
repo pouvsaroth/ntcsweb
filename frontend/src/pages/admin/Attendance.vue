@@ -207,7 +207,7 @@ onMounted(async () => {
             <div v-for="entry in roster" :key="entry.enrollment_id" class="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:gap-4">
               <div class="sm:w-56">
                 <p class="font-medium text-neutral-800">{{ entry.student.name }}</p>
-                <p class="text-xs text-neutral-500">{{ entry.student.student_code }}</p>
+                <p class="text-xs text-neutral-500">{{ entry.table_no ?? '—' }}</p>
               </div>
 
               <div class="flex flex-wrap gap-1.5">

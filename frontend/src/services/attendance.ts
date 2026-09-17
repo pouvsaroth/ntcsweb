@@ -16,6 +16,8 @@ export interface AttendanceStudent {
 export interface AttendanceRosterEntry {
   enrollment_id: number
   student: AttendanceStudent
+  /** The seat this student is checked in by — null when unassigned. Attendance is verified by this, not student_code. */
+  table_no: string | null
   attendance_record_id: number | null
   status: AttendanceStatusValue | null
   late_minutes: number | null
