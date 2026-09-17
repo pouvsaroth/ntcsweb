@@ -26,6 +26,7 @@ use App\Models\CurrencyRate;
 use App\Models\Department;
 use App\Models\Enrollment;
 use App\Models\ExamApplication;
+use App\Models\ExamScore;
 use App\Models\Expense;
 use App\Models\FinancialTransaction;
 use App\Models\FormCategory;
@@ -77,6 +78,7 @@ use App\Policies\CurrencyRatePolicy;
 use App\Policies\DepartmentPolicy;
 use App\Policies\EnrollmentPolicy;
 use App\Policies\ExamApplicationPolicy;
+use App\Policies\ExamScorePolicy;
 use App\Policies\ExpensePolicy;
 use App\Policies\FinancialTransactionPolicy;
 use App\Policies\FormCategoryPolicy;
@@ -169,6 +171,7 @@ class AuthServiceProvider extends ServiceProvider
         ProjectTaskComment::class => ProjectTaskCommentPolicy::class,
         StudentFeedback::class => StudentFeedbackPolicy::class,
         ExamApplication::class => ExamApplicationPolicy::class,
+        ExamScore::class => ExamScorePolicy::class,
     ];
 
     public function register(): void

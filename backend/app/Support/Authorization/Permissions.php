@@ -478,6 +478,17 @@ final class Permissions
 
     public const EXAM_APPLICATIONS_REJECT = 'exam-applications.reject';
 
+    // Exam Scores — the Grades tab: entering a 0–100 score against an
+    // approved exam application (see ExamScore). VIEW/UPDATE alone only
+    // reach applications whose enrollment is in a class the user's own
+    // Staff record teaches (class_teachers); MANAGE_ALL lifts that to every
+    // class — school-admin by default.
+    public const EXAM_SCORES_VIEW = 'exam-scores.view';
+
+    public const EXAM_SCORES_UPDATE = 'exam-scores.update';
+
+    public const EXAM_SCORES_MANAGE_ALL = 'exam-scores.manage-all';
+
     // Student Feedback — a student's own self-submitted request or comment
     // about the school or about a specific teacher (see StudentFeedback's
     // docblock). Submitting/viewing/replying to your own thread needs no
@@ -814,6 +825,11 @@ final class Permissions
                 self::EXAM_APPLICATIONS_APPROVE => 'Approve exam applications',
                 self::EXAM_APPLICATIONS_REJECT => 'Reject exam applications',
             ],
+            'Exam Scores' => [
+                self::EXAM_SCORES_VIEW => 'View exam scores (own classes)',
+                self::EXAM_SCORES_UPDATE => 'Enter exam scores (own classes)',
+                self::EXAM_SCORES_MANAGE_ALL => 'View and enter exam scores for every class',
+            ],
             'System' => [
                 self::AUDIT_LOGS_VIEW => 'View audit logs',
             ],
@@ -978,6 +994,9 @@ final class Permissions
                 self::EXAM_APPLICATIONS_DELETE,
                 self::EXAM_APPLICATIONS_APPROVE,
                 self::EXAM_APPLICATIONS_REJECT,
+                self::EXAM_SCORES_VIEW,
+                self::EXAM_SCORES_UPDATE,
+                self::EXAM_SCORES_MANAGE_ALL,
                 ...$academicManagement,
                 ...$billing,
                 ...$accounting,
@@ -1020,6 +1039,9 @@ final class Permissions
                 self::ATTENDANCE_CREATE,
                 self::ATTENDANCE_UPDATE,
                 self::LEAVE_REQUESTS_VIEW,
+                // Grades tab — scoped to their own classes, see EXAM_SCORES_VIEW.
+                self::EXAM_SCORES_VIEW,
+                self::EXAM_SCORES_UPDATE,
                 ...$projectsForEveryone,
             ],
             // Staff commonly handle front-desk registration, so they can

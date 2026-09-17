@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
@@ -100,6 +101,20 @@ class ExamApplication extends Model
     public function table(): BelongsTo
     {
         return $this->belongsTo(ClassroomTable::class, 'table_id');
+    }
+
+    /** See ExamScore — only ever set on an approved application. */
+    public function score(): HasOne
+    {
+        return $this->hasOne(ExamScore::class);
+    }
+
+    /**
+     * @param  Builder<static>  $query
+     */
+    public function scopeApproved(Builder $query): void
+    {
+        $query->where('status', self::STATUS_APPROVED);
     }
 
     /**

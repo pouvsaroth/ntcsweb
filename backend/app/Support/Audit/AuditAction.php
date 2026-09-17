@@ -72,6 +72,10 @@ final class AuditAction
     // date), not one per student; see AttendanceRecord's docblock.
     public const ATTENDANCE_RECORDED = 'ATTENDANCE_RECORDED';
 
+    // Exam scores — one entry per batch save from the Grades tab, same
+    // reasoning as ATTENDANCE_RECORDED; see ExamScore's docblock.
+    public const EXAM_SCORES_RECORDED = 'EXAM_SCORES_RECORDED';
+
     // Accounting — Expense/FinancialTransaction don't use the Auditable
     // trait either, same reasoning as Invoice/Payment. Account itself DOES
     // use Auditable (a simple config record) and reuses the generic

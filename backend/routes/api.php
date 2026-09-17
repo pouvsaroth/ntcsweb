@@ -35,6 +35,7 @@ use App\Http\Controllers\Api\V1\Admin\CurrencyRateController;
 use App\Http\Controllers\Api\V1\Admin\DepartmentController;
 use App\Http\Controllers\Api\V1\Admin\EnrollmentController;
 use App\Http\Controllers\Api\V1\Admin\ExamApplicationController;
+use App\Http\Controllers\Api\V1\Admin\ExamScoreController;
 use App\Http\Controllers\Api\V1\Admin\EnrollmentPackageController;
 use App\Http\Controllers\Api\V1\Admin\ExpenseController;
 use App\Http\Controllers\Api\V1\Admin\FinancialTransactionController;
@@ -299,6 +300,13 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::post('exam-applications/{exam_application}/print', [ExamApplicationController::class, 'print'])->name('exam-applications.print');
         Route::post('exam-applications/{exam_application}/approve', [ExamApplicationController::class, 'approve'])->name('exam-applications.approve');
         Route::post('exam-applications/{exam_application}/reject', [ExamApplicationController::class, 'reject'])->name('exam-applications.reject');
+
+        // Grades tab — scores against approved exam applications only, scoped
+        // to the user's own classes unless they hold exam-scores.manage-all.
+        // See ExamScoreService.
+        Route::get('exam-scores/options', [ExamScoreController::class, 'options'])->name('exam-scores.options');
+        Route::get('exam-scores', [ExamScoreController::class, 'index'])->name('exam-scores.index');
+        Route::post('exam-scores', [ExamScoreController::class, 'store'])->name('exam-scores.store');
 
         // eApprovals — generic form-template catalog + approval queue. See
         // ApprovalRequestPolicy's docblock: index on categories/templates is
