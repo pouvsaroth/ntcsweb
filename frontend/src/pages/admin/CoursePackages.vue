@@ -26,6 +26,10 @@ const columns = [
   { key: 'program', label: t('admin.coursePackages.columnProgram') },
   { key: 'books', label: t('admin.coursePackages.columnBooks') },
   { key: 'fee_monthly', label: t('admin.coursePackages.columnFeeMonthly') },
+  { key: 'fee_term', label: t('admin.coursePackages.columnFeeTerm') },
+  { key: 'fee_video', label: t('admin.coursePackages.columnFeeVideo') },
+  { key: 'fee_monthly_online', label: t('admin.coursePackages.columnFeeMonthlyOnline') },
+  { key: 'fee_term_online', label: t('admin.coursePackages.columnFeeTermOnline') },
   { key: 'currency', label: t('admin.coursePackages.columnCurrency') },
   { key: 'is_active', label: t('admin.coursePackages.columnStatus') },
   { key: 'show_on_website', label: t('admin.coursePackages.columnShowOnWebsite') },
@@ -82,6 +86,10 @@ onMounted(() => fetch())
       <template #cell-program="{ row }">{{ row.academic_program?.code ?? '—' }}</template>
       <template #cell-books="{ row }">{{ row.books?.map((b) => b.title).join(', ') || '—' }}</template>
       <template #cell-fee_monthly="{ row }">{{ row.fee_monthly !== null ? row.fee_monthly.toFixed(2) : '—' }}</template>
+      <template #cell-fee_term="{ row }">{{ row.fee_term !== null ? row.fee_term.toFixed(2) : '—' }}</template>
+      <template #cell-fee_video="{ row }">{{ row.fee_video !== null ? row.fee_video.toFixed(2) : '—' }}</template>
+      <template #cell-fee_monthly_online="{ row }">{{ row.fee_monthly_online !== null ? row.fee_monthly_online.toFixed(2) : '—' }}</template>
+      <template #cell-fee_term_online="{ row }">{{ row.fee_term_online !== null ? row.fee_term_online.toFixed(2) : '—' }}</template>
       <template #cell-currency="{ row }">{{ row.currency }}</template>
       <template #cell-is_active="{ row }">
         <BaseBadge :variant="row.is_active ? 'success' : 'neutral'">
