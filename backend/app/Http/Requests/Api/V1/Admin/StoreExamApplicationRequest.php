@@ -27,7 +27,16 @@ class StoreExamApplicationRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'enrollment_id' => ['required', Rule::exists('tenant.enrollments', 'id')],
+            'enrollment_id' => [
+                'required',
+                Rule::exists('tenant.enrollments', 'id'),
+                // At most one exam application per enrollment, ever, in any
+                // status — an enrollment that's already applied (pending,
+                // approved, or rejected) can't apply again. The roster's
+                // bulk "Send to Exam" (ClassStudents.vue) is the easiest way
+                // to double-submit the same student by accident.
+                Rule::unique('tenant.exam_applications', 'enrollment_id')->whereNull('deleted_at'),
+            ],
             'file_code' => ['nullable', 'string', 'max:50'],
             'book_id' => ['nullable', Rule::exists('tenant.books', 'id')],
             'exam_date' => ['nullable', 'date'],
@@ -52,5 +61,12 @@ class StoreExamApplicationRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         ExamApplicationTableValidation::ensureTableBelongsToClassroom($validator, $this);
+    }
+
+    public function messages(): array
+    {
+        return [
+            'enrollment_id.unique' => __('This enrollment already has an exam application.'),
+        ];
     }
 }

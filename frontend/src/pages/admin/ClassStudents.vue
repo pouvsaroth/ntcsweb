@@ -6,6 +6,7 @@ import { useRoute } from 'vue-router'
 import ChangeTableModal from '@/components/admin/ChangeTableModal.vue'
 import EnrollmentStatusModal from '@/components/admin/EnrollmentStatusModal.vue'
 import EnrollmentTransferModal from '@/components/admin/EnrollmentTransferModal.vue'
+import SendToExamModal from '@/components/admin/SendToExamModal.vue'
 import ActionIconButton from '@/components/ui/ActionIconButton.vue'
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
@@ -32,6 +33,7 @@ const auth = useAuthStore()
 const canTransfer = computed(() => auth.can('enrollments.transfer'))
 const canChangeStatus = computed(() => auth.can('enrollments.change-status'))
 const canChangeTable = computed(() => auth.can('enrollments.change-table'))
+const canSendToExam = computed(() => auth.can('exam-applications.create'))
 
 /**
  * Reached two ways: the single-class route `/admin/classes/:id/students`
@@ -184,12 +186,33 @@ const attendanceLink = computed(() =>
 
 async function onStatusFilterChange(value: string) {
   selectedStatus.value = value as EnrollmentStatus | ''
+  selectedIds.value = []
 
   try {
     await loadRoster()
   } catch (error) {
     loadError.value = error instanceof ApiRequestError ? error.message : t('admin.classStudents.loadFailed')
   }
+}
+
+// --- Send to Exam --------------------------------------------------------
+// The teacher checks students, sets one shared exam date/time/remark in
+// SendToExamModal, and that fires one pending Exam Application per checked
+// enrollment (no bulk-create endpoint exists on the backend).
+
+const selectedIds = ref<number[]>([])
+const sendToExamModalOpen = ref(false)
+const sendToExamMessage = ref<string | null>(null)
+
+function openSendToExam() {
+  if (selectedIds.value.length === 0) return
+  sendToExamMessage.value = null
+  sendToExamModalOpen.value = true
+}
+
+function onSentToExam(count: number) {
+  sendToExamMessage.value = t('admin.classStudents.sendToExamSuccess', { count })
+  selectedIds.value = []
 }
 
 onMounted(() => {
@@ -240,7 +263,12 @@ onMounted(() => {
       <p v-else class="mb-4 text-sm text-neutral-500">{{ t('admin.classStudents.multiSubtitle', { count: classIds.length }) }}</p>
 
       <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <BaseButton :to="attendanceLink" variant="outline">{{ t('admin.classStudents.attendance') }}</BaseButton>
+        <div class="flex flex-wrap items-center gap-2">
+          <BaseButton :to="attendanceLink" variant="outline">{{ t('admin.classStudents.attendance') }}</BaseButton>
+          <BaseButton v-if="canSendToExam" variant="outline" :disabled="selectedIds.length === 0" @click="openSendToExam">
+            {{ t('admin.classStudents.sendToExam') }}
+          </BaseButton>
+        </div>
         <BaseSelect
           :model-value="selectedStatus"
           :options="statusFilterOptions"
@@ -249,13 +277,18 @@ onMounted(() => {
         />
       </div>
 
+      <BaseAlert v-if="sendToExamMessage" variant="success" class="mb-4">{{ sendToExamMessage }}</BaseAlert>
+
       <DataTable
         :columns="columns"
         :rows="sortedRoster"
         row-key="id"
         :sort="tableSort"
+        :selectable="canSendToExam"
+        :selected="selectedIds"
         :empty-message="t('admin.classStudents.emptyMessage')"
         @sort="toggleTableSort"
+        @update:selected="selectedIds = $event as number[]"
       >
         <template #cell-index="{ row }">{{ sortedRoster.indexOf(row) + 1 }}</template>
         <template #cell-student="{ row }">{{ row.student.full_name }}</template>
@@ -296,5 +329,6 @@ onMounted(() => {
     <EnrollmentTransferModal v-model="classModalOpen" :enrollment="activeEnrollment" @saved="load" />
     <EnrollmentStatusModal v-model="statusModalOpen" :enrollment="activeEnrollment" @saved="load" />
     <ChangeTableModal v-model="tableModalOpen" :enrollment="activeEnrollment" @saved="load" />
+    <SendToExamModal v-model="sendToExamModalOpen" :enrollment-ids="selectedIds" @saved="onSentToExam" />
   </div>
 </template>

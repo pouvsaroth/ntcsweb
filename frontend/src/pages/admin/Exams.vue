@@ -48,7 +48,7 @@ const statusVariant: Record<ExamApplicationStatus, 'success' | 'danger' | 'warni
 
 const columns = [
   { key: 'status', label: t('admin.exams.columnStatus') },
-  { key: 'student_code', label: t('admin.exams.columnStudentCode') },
+  { key: 'enrollment_code', label: t('admin.exams.columnEnrollmentCode') },
   { key: 'full_name', label: t('admin.exams.columnFullName') },
   { key: 'other_name', label: t('admin.exams.columnOtherName') },
   { key: 'sex', label: t('admin.exams.columnSex') },
@@ -61,7 +61,6 @@ const columns = [
   { key: 'address', label: t('admin.exams.columnAddress') },
   { key: 'room_number', label: t('admin.exams.columnRoomNumber') },
   { key: 'table_no', label: t('admin.exams.columnTableNumber') },
-  { key: 'enrollment_code', label: t('admin.exams.columnEnrollmentCode') },
 ]
 
 function statusLabel(status: ExamApplicationStatus): string {
@@ -196,9 +195,9 @@ function openPrint() {
       <template #cell-status="{ row }">
         <BaseBadge :variant="statusVariant[(row as ExamApplication).status]">{{ statusLabel((row as ExamApplication).status) }}</BaseBadge>
       </template>
-      <template #cell-student_code="{ row }">
+      <template #cell-enrollment_code="{ row }">
         <button type="button" class="font-medium text-primary-700 hover:underline" @click="openApplicationForm((row as ExamApplication).enrollment_code)">
-          {{ (row as ExamApplication).student.student_code }}
+          {{ (row as ExamApplication).enrollment_code ?? '—' }}
         </button>
       </template>
       <template #cell-full_name="{ row }">{{ (row as ExamApplication).student.name }}</template>
@@ -213,7 +212,6 @@ function openPrint() {
       <template #cell-address="{ row }">{{ (row as ExamApplication).student.address ?? '—' }}</template>
       <template #cell-room_number="{ row }">{{ (row as ExamApplication).classroom?.name ?? '—' }}</template>
       <template #cell-table_no="{ row }">{{ (row as ExamApplication).table?.name ?? (row as ExamApplication).table_no ?? '—' }}</template>
-      <template #cell-enrollment_code="{ row }">{{ (row as ExamApplication).enrollment_code ?? '—' }}</template>
     </DataTable>
 
     <BasePagination v-if="meta" :meta="meta" sticky class="mt-4" @update:page="setPage" />

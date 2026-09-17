@@ -25,7 +25,13 @@ class StoreMyExamApplicationRequest extends FormRequest
         $enrollmentIds = $this->user()->student->enrollments()->active()->pluck('id');
 
         return [
-            'enrollment_id' => ['required', Rule::in($enrollmentIds)],
+            'enrollment_id' => [
+                'required',
+                Rule::in($enrollmentIds),
+                // Mirrors StoreExamApplicationRequest's own rule: at most one
+                // exam application per enrollment, ever, regardless of status.
+                Rule::unique('tenant.exam_applications', 'enrollment_id')->whereNull('deleted_at'),
+            ],
             'exam_date' => ['required', 'date', 'after_or_equal:today'],
             'exam_time' => ['required', 'date_format:H:i'],
             'table_no' => ['required', 'string', 'max:20'],
@@ -33,6 +39,13 @@ class StoreMyExamApplicationRequest extends FormRequest
             // submit at all. See ExamApplicationService's docblock for why
             // this doesn't create a real Payment record itself.
             'has_paid' => ['required', 'accepted'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'enrollment_id.unique' => __('You already have an exam application for this enrollment.'),
         ];
     }
 }

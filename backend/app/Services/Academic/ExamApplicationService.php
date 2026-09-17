@@ -134,9 +134,26 @@ final class ExamApplicationService
     /**
      * @param  array{enrollment_id:int, book_id?:int|null, file_code?:string|null, exam_date?:string|null, exam_time?:string|null, exam_time_out?:string|null, table_no?:string|null, classroom_id?:int|null, table_id?:int|null, status:string, remark?:string|null}  $data
      */
+    /**
+     * Defaults `classroom_id`/`table_id`/`book_id` from the enrollment
+     * itself whenever the caller didn't pick them explicitly (they arrive
+     * here as `null` either way — StoreExamApplicationRequest's fields are
+     * all `nullable`, never `sometimes`) — the roster's bulk "Send to Exam"
+     * (ClassStudents.vue) never sends them at all, so without this every
+     * bulk-created application would sit with an empty room/table/book
+     * until someone filled it in by hand. The room/table are simply the
+     * student's own class/seat; the book is the first (by sort_order) in
+     * their course package — a package with more than one book still needs
+     * a human to confirm which one, but this default is right the vast
+     * majority of the time and is always editable afterward.
+     */
     public function createForAdmin(array $data): ExamApplication
     {
-        $enrollment = Enrollment::query()->findOrFail($data['enrollment_id']);
+        $enrollment = Enrollment::query()->with(['schoolClass', 'coursePackage.books'])->findOrFail($data['enrollment_id']);
+
+        $data['classroom_id'] ??= $enrollment->schoolClass?->classroom_id;
+        $data['table_id'] ??= $enrollment->table_id;
+        $data['book_id'] ??= $enrollment->coursePackage?->books->first()?->id;
 
         return ExamApplication::query()->create([
             ...$data,

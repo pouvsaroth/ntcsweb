@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import ExamApplicationFormModal from '@/components/admin/ExamApplicationFormModal.vue'
 import ExaminationTabs from '@/components/admin/ExaminationTabs.vue'
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
@@ -19,6 +20,9 @@ const auth = useAuthStore()
 
 const canApprove = computed(() => auth.can('exam-applications.approve'))
 const canReject = computed(() => auth.can('exam-applications.reject'))
+// Every row on this tab is already status=pending (see the query below), so
+// this is really "can edit a pending application" rather than a per-row check.
+const canEdit = computed(() => auth.can('exam-applications.update'))
 
 /**
  * Every pending application, regardless of who created it — an
@@ -95,6 +99,14 @@ async function submitReject() {
     acting.value = null
   }
 }
+
+const formModalOpen = ref(false)
+const editingEnrollmentCode = ref<string | null>(null)
+
+function openEdit(application: ExamApplication) {
+  editingEnrollmentCode.value = application.enrollment_code
+  formModalOpen.value = true
+}
 </script>
 
 <template>
@@ -119,6 +131,15 @@ async function submitReject() {
       <template #cell-submitted_at="{ row }">{{ (row as ExamApplication).student_marked_paid_at ? fmtDate((row as ExamApplication).student_marked_paid_at) : '—' }}</template>
       <template #cell-actions="{ row }">
         <div class="flex gap-2">
+          <BaseButton
+            v-if="canEdit"
+            size="sm"
+            variant="outline"
+            :disabled="acting === (row as ExamApplication).id"
+            @click="openEdit(row as ExamApplication)"
+          >
+            {{ t('common.edit') }}
+          </BaseButton>
           <BaseButton
             v-if="canApprove"
             size="sm"
@@ -158,5 +179,7 @@ async function submitReject() {
         </BaseButton>
       </template>
     </BaseModal>
+
+    <ExamApplicationFormModal v-model="formModalOpen" :initial-enrollment-code="editingEnrollmentCode" @saved="fetch" />
   </div>
 </template>
