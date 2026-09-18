@@ -19,6 +19,7 @@ const ja: MessageSchema = {
     contact: 'お問い合わせ',
     register: '登録',
     portalLogin: 'ログイン',
+    signIn: 'ログイン',
     documentsAndForm: {
       title: '書類・申請',
       formGroup: '申請',
@@ -33,7 +34,7 @@ const ja: MessageSchema = {
 
   mobileNav: {
     home: 'ホーム',
-    programsFee: 'プログラムと料金',
+    programsFee: 'プログラム',
     register: '登録',
     schedule: '授業スケジュール',
     photo: '写真',

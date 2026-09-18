@@ -8,7 +8,6 @@ const publicRoutes: RouteRecordRaw[] = [
   { path: 'about', name: 'about', component: () => import('@/pages/public/About.vue') },
   { path: 'video-lessons', name: 'video-lessons', component: () => import('@/pages/public/VideoLessons.vue') },
   { path: 'programs', name: 'programs', component: () => import('@/pages/public/Programs.vue') },
-  { path: 'schedule', name: 'schedule', component: () => import('@/pages/public/Schedule.vue') },
   { path: 'register', name: 'register', component: () => import('@/pages/public/Register.vue') },
   { path: 'enrollment-inquiry', name: 'enrollment-inquiry', component: () => import('@/pages/public/EnrollmentInquiry.vue') },
   { path: 'teachers', name: 'teachers', component: () => import('@/pages/public/Teachers.vue') },

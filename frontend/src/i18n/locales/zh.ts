@@ -19,6 +19,7 @@ const zh: MessageSchema = {
     contact: '联系我们',
     register: '注册',
     portalLogin: '登录',
+    signIn: '登录',
     documentsAndForm: {
       title: '文档与表格',
       formGroup: '表格',
@@ -33,7 +34,7 @@ const zh: MessageSchema = {
 
   mobileNav: {
     home: '首页',
-    programsFee: '课程与费用',
+    programsFee: '课程',
     register: '注册',
     schedule: '上课时间表',
     photo: '照片',

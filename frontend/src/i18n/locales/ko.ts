@@ -19,6 +19,7 @@ const ko: MessageSchema = {
     contact: '문의하기',
     register: '등록',
     portalLogin: '로그인',
+    signIn: '로그인',
     documentsAndForm: {
       title: '문서 및 신청서',
       formGroup: '신청서',
@@ -33,7 +34,7 @@ const ko: MessageSchema = {
 
   mobileNav: {
     home: '홈',
-    programsFee: '프로그램 및 수강료',
+    programsFee: '프로그램',
     register: '등록',
     schedule: '수업 시간표',
     photo: '사진',

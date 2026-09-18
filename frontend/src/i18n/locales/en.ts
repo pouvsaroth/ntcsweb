@@ -22,6 +22,7 @@ const en = {
     contact: 'Contact',
     register: 'Register',
     portalLogin: 'Login',
+    signIn: 'Sign in',
     documentsAndForm: {
       title: 'Document and Form',
       formGroup: 'Form',
@@ -36,7 +37,7 @@ const en = {
 
   mobileNav: {
     home: 'Home',
-    programsFee: 'Program and Fee',
+    programsFee: 'Program',
     register: 'Register',
     schedule: 'Day and Time Study',
     photo: 'Photo',

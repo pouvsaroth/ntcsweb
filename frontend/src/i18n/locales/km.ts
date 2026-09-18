@@ -19,6 +19,7 @@ const km: MessageSchema = {
     contact: 'ទំនាក់ទំនង',
     register: 'ចុះឈ្មោះ',
     portalLogin: 'ចូលប្រើប្រាស់',
+    signIn: 'ចូលប្រើប្រាស់',
     documentsAndForm: {
       title: 'ឯកសារ និងទម្រង់',
       formGroup: 'ទម្រង់',
@@ -33,7 +34,7 @@ const km: MessageSchema = {
 
   mobileNav: {
     home: 'ទំព័រដើម',
-    programsFee: 'កម្មវិធីសិក្សា និងតម្លៃ',
+    programsFee: 'កម្មវិធីសិក្សា',
     register: 'ចុះឈ្មោះ',
     schedule: 'កាលវិភាគសិក្សា',
     photo: 'រូបភាព',

@@ -4,11 +4,15 @@ import { RouterLink } from 'vue-router'
 
 const { t } = useI18n()
 
+/**
+ * Day and Time Study isn't its own tab here — it's now part of the
+ * Programs page (see Programs.vue and publicNav.ts's `programNavItem`), so
+ * this bar doesn't need a second, redundant path to the same content.
+ */
 const items = [
   { labelKey: 'mobileNav.home', to: '/', icon: 'home' },
   { labelKey: 'mobileNav.programsFee', to: '/programs', icon: 'programs' },
   { labelKey: 'mobileNav.register', to: '/register', icon: 'register' },
-  { labelKey: 'mobileNav.schedule', to: '/schedule', icon: 'schedule' },
   { labelKey: 'mobileNav.photo', to: '/gallery', icon: 'photo' },
 ] as const
 </script>
@@ -21,7 +25,7 @@ const items = [
     class="fixed inset-x-0 bottom-0 z-40 border-t border-neutral-200 bg-white pb-[env(safe-area-inset-bottom)] lg:hidden"
     :aria-label="t('common.primaryNav')"
   >
-    <div class="grid grid-cols-5">
+    <div class="grid grid-cols-4">
       <RouterLink
         v-for="item in items"
         :key="item.to"
@@ -37,9 +41,6 @@ const items = [
         </svg>
         <svg v-else-if="item.icon === 'register'" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3M13 7a4 4 0 11-8 0 4 4 0 018 0zM1 21v-2a4 4 0 014-4h4a4 4 0 014 4v2" />
-        </svg>
-        <svg v-else-if="item.icon === 'schedule'" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
         </svg>
         <svg v-else class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14M14 8h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
