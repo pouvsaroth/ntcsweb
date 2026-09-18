@@ -31,12 +31,17 @@ import { formatDate } from '@/utils/date'
  */
 const { t } = useI18n()
 
+// Narrower than ExamApplicationStatus on purpose — not_exam has no tab of
+// its own (see statusVariant's comment below), so a not_exam row simply
+// never matches any of these three and stays invisible.
+type VisibleTabStatus = 'pending' | 'approved' | 'rejected'
+
 const rows = ref<MyExamApplication[]>([])
 const loading = ref(false)
 const error = ref<string | null>(null)
-const activeTab = ref<ExamApplicationStatus>('pending')
+const activeTab = ref<VisibleTabStatus>('pending')
 
-const tabs: { key: ExamApplicationStatus; labelKey: string }[] = [
+const tabs: { key: VisibleTabStatus; labelKey: string }[] = [
   { key: 'pending', labelKey: 'admin.myExamApplications.tabPending' },
   { key: 'approved', labelKey: 'admin.myExamApplications.tabApproved' },
   { key: 'rejected', labelKey: 'admin.myExamApplications.tabRejected' },
