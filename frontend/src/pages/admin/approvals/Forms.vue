@@ -1,19 +1,27 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
 import AskForPermissionModal from '@/components/layout/AskForPermissionModal.vue'
+import ResignationFormModal from '@/components/layout/ResignationFormModal.vue'
 import RequestFormModal from '@/components/admin/RequestFormModal.vue'
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import { formCategoriesService, type FormCategory } from '@/services/formCategories'
 import { formTemplatesService, type FormTemplate } from '@/services/formTemplates'
+import { useAuthStore } from '@/stores/auth'
 import { ApiRequestError } from '@/types/api'
 
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
+const auth = useAuthStore()
+
+// Resignation only makes sense for a staff account — same gate as
+// MyRequests.vue's canResign (a student never has a staff record, so the
+// self-service resignation endpoint would just 422 for them).
+const canResign = computed(() => !auth.hasRole('student'))
 
 const categories = ref<FormCategory[]>([])
 const activeCategoryId = ref<number | null>(null)
@@ -25,6 +33,7 @@ const error = ref<string | null>(null)
 const requestModalOpen = ref(false)
 const selectedTemplate = ref<FormTemplate | null>(null)
 const leaveModalOpen = ref(false)
+const resignationModalOpen = ref(false)
 
 async function loadCategories() {
   loadingCategories.value = true
@@ -106,18 +115,34 @@ onMounted(async () => {
 
     <div class="mb-6 rounded-[--radius-card] border border-neutral-200 bg-white p-4">
       <p class="mb-3 text-sm font-medium text-neutral-700">{{ t('admin.forms.quickActions') }}</p>
-      <button
-        type="button"
-        class="flex w-full max-w-xs flex-col items-start gap-2 rounded-lg border border-neutral-200 p-4 text-left transition-colors hover:border-primary-300 hover:bg-primary-50"
-        @click="leaveModalOpen = true"
-      >
-        <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-primary-100 text-primary-700">
-          <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
-        </span>
-        <span class="font-medium text-neutral-900">{{ t('leaveRequest.title') }}</span>
-      </button>
+      <div class="flex flex-wrap gap-3">
+        <button
+          type="button"
+          class="flex w-full max-w-xs flex-col items-start gap-2 rounded-lg border border-neutral-200 p-4 text-left transition-colors hover:border-primary-300 hover:bg-primary-50"
+          @click="leaveModalOpen = true"
+        >
+          <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-primary-100 text-primary-700">
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          </span>
+          <span class="font-medium text-neutral-900">{{ t('leaveRequest.title') }}</span>
+        </button>
+
+        <button
+          v-if="canResign"
+          type="button"
+          class="flex w-full max-w-xs flex-col items-start gap-2 rounded-lg border border-neutral-200 p-4 text-left transition-colors hover:border-primary-300 hover:bg-primary-50"
+          @click="resignationModalOpen = true"
+        >
+          <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-primary-100 text-primary-700">
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 5v1a3 3 0 01-3 3H6a3 3 0 01-3-3V6a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+          </span>
+          <span class="font-medium text-neutral-900">{{ t('resignationRequest.title') }}</span>
+        </button>
+      </div>
     </div>
 
     <div v-if="loadingCategories" class="flex justify-center py-10"><BaseSpinner /></div>
@@ -179,5 +204,6 @@ onMounted(async () => {
 
     <RequestFormModal v-model="requestModalOpen" :template="selectedTemplate" />
     <AskForPermissionModal v-model="leaveModalOpen" />
+    <ResignationFormModal v-if="canResign" v-model="resignationModalOpen" />
   </div>
 </template>

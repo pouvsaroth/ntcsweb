@@ -35,11 +35,11 @@ export const publicNavAfterProgram: NavItem[] = [
 /**
  * The "Document and Form" group's Form links — every route here sits under
  * `/admin`, which already carries `meta: { requiresAuth: true }` (see
- * router/index.ts's beforeEach). Rendered inside PublicUserMenu.vue's
- * student section rather than as a standalone header menu, since these are
- * only ever relevant to a signed-in student. Staff's own "Request Leave" and
- * "Resignation Form" live in the admin panel's Staff nav group instead (see
- * adminNav.ts).
+ * router/index.ts's beforeEach). Rendered inside AdminSidebar's "My
+ * Profile" group (see adminNav.ts) rather than as a standalone header menu,
+ * since these are only ever relevant to a signed-in student. Staff's own
+ * "Request Leave" and "Resignation Form" live in the admin panel's Staff nav
+ * group instead (see adminNav.ts).
  */
 export const documentsAndFormLinks: NavItem[] = [
   { labelKey: 'nav.documentsAndForm.requestComment', to: '/admin/my-feedback' },
@@ -51,7 +51,7 @@ export const documentsAndFormLinks: NavItem[] = [
  * The "Document and Form" group's Document links — external files a school
  * admin uploaded under School Documents (see siteStore's `info.documents`),
  * so `urlKey` names the field on that object rather than a route. Rendered
- * alongside `documentsAndFormLinks` in PublicUserMenu.vue's student section.
+ * alongside `documentsAndFormLinks` in AdminSidebar's "My Profile" group.
  */
 export const documentLinks: { labelKey: string; urlKey: 'school_regulation_url' | 'student_attendance_policy_url' }[] = [
   { labelKey: 'nav.documentsAndForm.schoolRegulation', urlKey: 'school_regulation_url' },

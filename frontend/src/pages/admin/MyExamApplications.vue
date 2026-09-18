@@ -48,13 +48,28 @@ const counts = computed(() => ({
 
 const visibleRows = computed(() => rows.value.filter((r) => r.status === activeTab.value))
 
+// Same columns the admin's Examination tab shows (see Exams.vue) — just
+// scoped to this student's own rows and read-only, no room/table/book
+// reassignment or student-record editing.
 const columns = [
   { key: 'date', label: t('admin.myExamApplications.columnDate') },
   { key: 'course', label: t('admin.myExamApplications.columnCourse') },
+  { key: 'book', label: t('admin.exams.columnBook') },
   { key: 'examDate', label: t('admin.myExamApplications.columnExamDate') },
+  { key: 'timeExam', label: t('admin.exams.columnTimeExam') },
+  { key: 'room', label: t('admin.exams.columnRoomNumber') },
   { key: 'table', label: t('admin.myExamApplications.columnTable') },
+  { key: 'buyDate', label: t('admin.exams.columnBuyDate') },
+  { key: 'receiveDate', label: t('admin.exams.columnReceiveDate') },
   { key: 'status', label: t('admin.myExamApplications.columnStatus') },
 ]
+
+function timeRange(row: MyExamApplication): string {
+  const timeIn = row.exam_time?.slice(0, 5)
+  const timeOut = row.exam_time_out?.slice(0, 5)
+  if (!timeIn && !timeOut) return '—'
+  return `${timeIn ?? '—'} - ${timeOut ?? '—'}`
+}
 
 const statusVariant: Record<ExamApplicationStatus, 'warning' | 'success' | 'danger'> = {
   pending: 'warning',
@@ -201,8 +216,13 @@ onMounted(() => load())
           {{ [row.enrollment.course_package?.name, row.enrollment.school_class?.name].filter(Boolean).join(' — ') || '—' }}
         </button>
       </template>
-      <template #cell-examDate="{ row }">{{ formatDate(row.exam_date) }} {{ row.exam_time }}</template>
-      <template #cell-table="{ row }">{{ row.table_no }}</template>
+      <template #cell-book="{ row }">{{ row.book?.title ?? row.enrollment.course_package?.name ?? '—' }}</template>
+      <template #cell-examDate="{ row }">{{ formatDate(row.exam_date) }}</template>
+      <template #cell-timeExam="{ row }">{{ timeRange(row) }}</template>
+      <template #cell-room="{ row }">{{ row.classroom?.name ?? '—' }}</template>
+      <template #cell-table="{ row }">{{ row.table?.name ?? row.table_no ?? '—' }}</template>
+      <template #cell-buyDate="{ row }">{{ row.sold_at ? formatDate(row.sold_at) : '—' }}</template>
+      <template #cell-receiveDate="{ row }">{{ row.received_at ? formatDate(row.received_at) : '—' }}</template>
       <template #cell-status="{ row }">
         <BaseBadge :variant="statusVariant[row.status]">{{ t(`admin.myExamApplications.status${row.status.charAt(0).toUpperCase()}${row.status.slice(1)}`) }}</BaseBadge>
       </template>
@@ -254,10 +274,22 @@ onMounted(() => load())
     <!-- Detail -->
     <BaseModal :model-value="detail !== null" :title="t('admin.myExamApplications.detailTitle')" @update:model-value="detail = null">
       <template v-if="detail">
-        <dl class="grid gap-y-2 text-sm">
+        <!-- The same information the admin's Examination tab shows for this
+             row (see ExamApplicationFormModal.vue) — read-only here, since a
+             student can't reassign their own room/table/book or edit their
+             official student record. -->
+        <dl class="grid grid-cols-1 gap-y-2 text-sm sm:grid-cols-2 sm:gap-x-4">
           <div><dt class="text-neutral-500">{{ t('admin.myExamApplications.columnCourse') }}</dt><dd class="font-medium text-neutral-900">{{ [detail.enrollment.course_package?.name, detail.enrollment.school_class?.name].filter(Boolean).join(' — ') || '—' }}</dd></div>
-          <div><dt class="text-neutral-500">{{ t('admin.myExamApplications.columnExamDate') }}</dt><dd class="font-medium text-neutral-900">{{ formatDate(detail.exam_date) }} {{ detail.exam_time }}</dd></div>
-          <div><dt class="text-neutral-500">{{ t('admin.myExamApplications.columnTable') }}</dt><dd class="font-medium text-neutral-900">{{ detail.table_no }}</dd></div>
+          <div><dt class="text-neutral-500">{{ t('admin.exams.columnBook') }}</dt><dd class="font-medium text-neutral-900">{{ detail.book?.title ?? '—' }}</dd></div>
+          <div><dt class="text-neutral-500">{{ t('admin.myExamApplications.columnExamDate') }}</dt><dd class="font-medium text-neutral-900">{{ formatDate(detail.exam_date) }}</dd></div>
+          <div><dt class="text-neutral-500">{{ t('admin.exams.columnTimeExam') }}</dt><dd class="font-medium text-neutral-900">{{ timeRange(detail) }}</dd></div>
+          <div><dt class="text-neutral-500">{{ t('admin.exams.columnRoomNumber') }}</dt><dd class="font-medium text-neutral-900">{{ detail.classroom?.name ?? '—' }}</dd></div>
+          <div><dt class="text-neutral-500">{{ t('admin.myExamApplications.columnTable') }}</dt><dd class="font-medium text-neutral-900">{{ detail.table?.name ?? detail.table_no ?? '—' }}</dd></div>
+          <div><dt class="text-neutral-500">{{ t('admin.exams.columnBuyDate') }}</dt><dd class="font-medium text-neutral-900">{{ detail.sold_at ? formatDate(detail.sold_at) : '—' }}</dd></div>
+          <div><dt class="text-neutral-500">{{ t('admin.exams.columnReceiveDate') }}</dt><dd class="font-medium text-neutral-900">{{ detail.received_at ? formatDate(detail.received_at) : '—' }}</dd></div>
+          <div v-if="detail.student?.date_of_birth"><dt class="text-neutral-500">{{ t('admin.exams.columnBirthDate') }}</dt><dd class="font-medium text-neutral-900">{{ formatDate(detail.student.date_of_birth) }}</dd></div>
+          <div v-if="detail.student?.address"><dt class="text-neutral-500">{{ t('admin.exams.columnAddress') }}</dt><dd class="font-medium text-neutral-900">{{ detail.student.address }}</dd></div>
+          <div v-if="detail.remark"><dt class="text-neutral-500">{{ t('admin.exams.remark') }}</dt><dd class="font-medium text-neutral-900">{{ detail.remark }}</dd></div>
           <div v-if="detail.decision_reason"><dt class="text-neutral-500">{{ t('admin.leaveRequests.decisionReason') }}</dt><dd class="font-medium text-neutral-900">{{ detail.decision_reason }}</dd></div>
         </dl>
       </template>

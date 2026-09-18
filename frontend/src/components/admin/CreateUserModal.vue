@@ -62,6 +62,7 @@ function selectStudent(student: Student) {
   studentResults.value = []
   studentSearch.value = ''
   form.name = student.full_name
+  form.phone = student.phone ?? ''
 }
 
 function resetForm() {

@@ -1,6 +1,16 @@
+import { documentLinks, documentsAndFormLinks } from '@/router/publicNav'
+
 export interface AdminNavItem {
   labelKey: string
-  to: string
+  /** Omitted only for an external document link — see `urlKey`. */
+  to?: string
+  /**
+   * An external file a school admin uploaded under School Documents (see
+   * siteStore's `info.documents`) instead of an in-app route — AdminSidebar
+   * renders this as a plain `<a target="_blank">` and hides the item
+   * entirely if that document hasn't been uploaded.
+   */
+  urlKey?: 'school_regulation_url' | 'student_attendance_policy_url'
   /** Only shown to a platform Super Admin (tenant_id IS NULL). */
   superAdminOnly?: boolean
   /**
@@ -10,6 +20,14 @@ export interface AdminNavItem {
    * queue, not just someone with the generic approval-queue permission.
    */
   permission?: string | string[]
+  /**
+   * Only shown to the Student role — these self-service pages (My Scores,
+   * My Attendance, ...) aren't gated by any permission at all (Student
+   * holds none, see backend Permissions::rolePermissions()), so a
+   * permission check would hide them from the one role they're actually
+   * for.
+   */
+  studentOnly?: boolean
 }
 
 export interface AdminNavGroup {
@@ -31,6 +49,20 @@ export const adminNav: AdminNavGroup[] = [
   {
     labelKey: 'adminNav.groups.overview',
     items: [{ labelKey: 'adminNav.items.dashboard', to: '/admin', permission: 'dashboard.view' }],
+  },
+  {
+    // A student's own sidebar — same pages that used to live only in
+    // PublicUserMenu.vue's dropdown (and StudentBottomNav's mobile tab
+    // bar). Reusing publicNav.ts's documentsAndFormLinks for the last
+    // three keeps that one array as the single source for their
+    // labels/routes.
+    labelKey: 'adminNav.groups.myProfile',
+    items: [
+      { labelKey: 'studentNav.score', to: '/admin/my-scores', studentOnly: true },
+      { labelKey: 'studentNav.attendant', to: '/admin/my-attendance', studentOnly: true },
+      ...documentsAndFormLinks.map((item) => ({ ...item, studentOnly: true })),
+      ...documentLinks.map((item) => ({ ...item, studentOnly: true })),
+    ],
   },
   {
     labelKey: 'adminNav.groups.projectManagement',
@@ -204,11 +236,13 @@ export const adminNav: AdminNavGroup[] = [
 export interface AdminNavAccess {
   isSuperAdmin: boolean
   can: (permission: string) => boolean
+  hasRole: (...slugs: string[]) => boolean
 }
 
 /** The same visibility rule AdminSidebar.vue applies per item — shared so the router guard's "can this account even reach this page" check can't drift from what the sidebar actually shows. */
 export function isNavItemVisible(item: AdminNavItem, access: AdminNavAccess): boolean {
   if (item.superAdminOnly && !access.isSuperAdmin) return false
+  if (item.studentOnly && !access.hasRole('student')) return false
   if (item.permission) {
     const required = Array.isArray(item.permission) ? item.permission : [item.permission]
     if (!required.some((permission) => access.can(permission))) return false
@@ -220,7 +254,9 @@ export function isNavItemVisible(item: AdminNavItem, access: AdminNavAccess): bo
 export function firstAccessibleAdminPath(access: AdminNavAccess): string | null {
   for (const group of adminNav) {
     for (const item of group.items) {
-      if (isNavItemVisible(item, access)) return item.to
+      // An external document link (`urlKey`, no `to`) is never a valid
+      // redirect target — skip past it to the next real route.
+      if (item.to && isNavItemVisible(item, access)) return item.to
     }
   }
   return null

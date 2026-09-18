@@ -2808,6 +2808,7 @@ const en = {
   adminNav: {
     groups: {
       overview: 'Overview',
+      myProfile: 'My Profile',
       projectManagement: 'Project Management',
       platform: 'Platform',
       academic: 'Academic',

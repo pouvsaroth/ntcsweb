@@ -8,6 +8,7 @@ import EditProfileModal from '@/components/layout/EditProfileModal.vue'
 import { adminNav, isNavItemVisible } from '@/router/adminNav'
 import { useAdminUiStore } from '@/stores/adminUi'
 import { useAuthStore } from '@/stores/auth'
+import { useSiteStore } from '@/stores/site'
 
 const { t } = useI18n()
 
@@ -16,6 +17,7 @@ const emit = defineEmits<{ close: [] }>()
 
 const auth = useAuthStore()
 const adminUi = useAdminUiStore()
+const site = useSiteStore()
 const route = useRoute()
 const router = useRouter()
 
@@ -35,7 +37,10 @@ const visibleGroups = computed(() =>
   adminNav
     .map((group) => ({
       ...group,
-      items: group.items.filter((item) => isNavItemVisible(item, auth)),
+      // An external document link (`urlKey`) is filtered out entirely when
+      // the school hasn't uploaded that file yet — same as the old
+      // PublicUserMenu.vue rendering, just moved here.
+      items: group.items.filter((item) => isNavItemVisible(item, auth) && (!item.urlKey || site.info.documents[item.urlKey])),
     }))
     .filter((group) => group.items.length > 0),
 )
@@ -235,16 +240,26 @@ watch(
         >
           <div class="overflow-hidden">
             <div class="mt-1 space-y-0.5 pb-2">
-              <RouterLink
-                v-for="item in group.items"
-                :key="item.to"
-                :to="item.to"
-                class="block rounded-lg px-3 py-2 text-sm font-medium text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
-                active-class="bg-primary-50 text-primary-800"
-                @click="emit('close')"
-              >
-                {{ t(item.labelKey) }}
-              </RouterLink>
+              <template v-for="item in group.items" :key="item.to ?? item.urlKey">
+                <a
+                  v-if="item.urlKey"
+                  :href="site.info.documents[item.urlKey] ?? undefined"
+                  target="_blank"
+                  rel="noopener"
+                  class="block rounded-lg px-3 py-2 text-sm font-medium text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
+                >
+                  {{ t(item.labelKey) }}
+                </a>
+                <RouterLink
+                  v-else
+                  :to="item.to!"
+                  class="block rounded-lg px-3 py-2 text-sm font-medium text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
+                  active-class="bg-primary-50 text-primary-800"
+                  @click="emit('close')"
+                >
+                  {{ t(item.labelKey) }}
+                </RouterLink>
+              </template>
             </div>
           </div>
         </div>

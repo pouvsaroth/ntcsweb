@@ -2804,6 +2804,7 @@ const ja: MessageSchema = {
   adminNav: {
     groups: {
       overview: '概要',
+      myProfile: 'マイプロフィール',
       projectManagement: 'プロジェクト管理',
       platform: 'プラットフォーム',
       academic: '教務',

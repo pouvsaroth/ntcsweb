@@ -2803,6 +2803,7 @@ const zh: MessageSchema = {
   adminNav: {
     groups: {
       overview: '概览',
+      myProfile: '我的资料',
       projectManagement: '项目管理',
       platform: '平台',
       academic: '教务',

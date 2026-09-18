@@ -2804,6 +2804,7 @@ const km: MessageSchema = {
   adminNav: {
     groups: {
       overview: 'ទិដ្ឋភាពទូទៅ',
+      myProfile: 'ប្រវត្តិរូបខ្ញុំ',
       projectManagement: 'ការគ្រប់គ្រងគម្រោង',
       platform: 'វេទិកា',
       academic: 'ការសិក្សា',

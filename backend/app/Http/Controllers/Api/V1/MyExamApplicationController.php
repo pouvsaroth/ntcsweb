@@ -35,7 +35,12 @@ final class MyExamApplicationController extends Controller
     {
         $student = $this->studentOrFail($request);
 
-        $query = ExamApplication::query()->where('student_id', $student->id)->with('enrollment.coursePackage', 'enrollment.schoolClass');
+        // book/classroom/table/student are the same "what does the admin's
+        // Examination tab show" detail a student sees for their own rows —
+        // ExamApplicationResource already renders all of it, it just needs
+        // these eager-loaded (whenLoaded() otherwise silently omits them).
+        $query = ExamApplication::query()->where('student_id', $student->id)
+            ->with('enrollment.coursePackage', 'enrollment.schoolClass', 'book', 'classroom', 'table', 'student');
 
         $applications = ApiQuery::for($query, $request)
             ->filterable(['status'])

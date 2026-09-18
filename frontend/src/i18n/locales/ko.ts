@@ -2804,6 +2804,7 @@ const ko: MessageSchema = {
   adminNav: {
     groups: {
       overview: '개요',
+      myProfile: '내 프로필',
       projectManagement: '프로젝트 관리',
       platform: '플랫폼',
       academic: '학사',

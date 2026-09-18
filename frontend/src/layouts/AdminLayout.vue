@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import AdminHeader from '@/components/layout/AdminHeader.vue'
@@ -7,11 +7,21 @@ import AdminSidebar from '@/components/layout/AdminSidebar.vue'
 import StudentBottomNav from '@/components/layout/StudentBottomNav.vue'
 import { useAdminUiStore } from '@/stores/adminUi'
 import { useAuthStore } from '@/stores/auth'
+import { useSiteStore } from '@/stores/site'
 
 const sidebarOpen = ref(false)
 const adminUi = useAdminUiStore()
 const auth = useAuthStore()
+const site = useSiteStore()
 const { t } = useI18n()
+
+// A student landing straight here (e.g. a hard refresh on /admin/my-scores,
+// not by clicking through from the public site first) would otherwise never
+// trigger this — AdminSidebar's "My Profile" group needs it loaded to know
+// whether School Regulation/Attendance Policy have actually been uploaded.
+// A no-op if PublicLayout/AuthLayout already loaded it (see site.ts's
+// `loaded` guard).
+onMounted(() => site.load())
 </script>
 
 <template>

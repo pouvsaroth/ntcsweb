@@ -50,7 +50,7 @@ class AppServiceProvider extends ServiceProvider
     {
         Password::defaults(function () {
             return app()->isProduction()
-                ? Password::min(10)->letters()->mixedCase()->numbers()->uncompromised()
+                ? Password::min(8)->letters()->mixedCase()->numbers()->uncompromised()
                 : Password::min(8)->letters()->numbers();
         });
     }
