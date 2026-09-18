@@ -51,7 +51,7 @@ class StoreStudentRegistrationRequest extends FormRequest
 
             'payment_method' => ['required', Rule::in([PaymentMethod::CASH, PaymentMethod::QR])],
 
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'password' => ['required', 'string', 'min:6', 'confirmed'],
         ];
     }
 

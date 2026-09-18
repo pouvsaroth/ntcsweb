@@ -48,11 +48,8 @@ class AppServiceProvider extends ServiceProvider
 
     private function configurePasswords(): void
     {
-        Password::defaults(function () {
-            return app()->isProduction()
-                ? Password::min(8)->letters()->mixedCase()->numbers()->uncompromised()
-                : Password::min(8)->letters()->numbers();
-        });
+        // Any characters the user likes; only a minimum length is enforced.
+        Password::defaults(fn () => Password::min(6));
     }
 
     private function configureEmailVerification(): void
