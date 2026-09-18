@@ -15,7 +15,10 @@ import { ApiRequestError } from '@/types/api'
  * student, then this fires one POST /exam-applications per enrollment (no
  * bulk-create endpoint exists) — same book/room/table-less shape a student's
  * own self-submission starts with; those get filled in later from the
- * Application Form.
+ * Application Form. Status starts at `draft`, not `pending` — nobody has
+ * actually applied yet at this point, just been scheduled. It only becomes
+ * pending once the student applies online (or an admin submits on their
+ * behalf) — see ExamApplicationService::applyOnline()'s docblock.
  */
 const props = defineProps<{ modelValue: boolean; enrollmentIds: number[] }>()
 const emit = defineEmits<{ 'update:modelValue': [value: boolean]; saved: [count: number] }>()
@@ -53,7 +56,7 @@ async function submit() {
   try {
     for (const enrollmentId of props.enrollmentIds) {
       await examApplicationsService.create(enrollmentId, {
-        status: 'pending',
+        status: 'draft',
         exam_date: form.exam_date || null,
         exam_time: form.exam_time || null,
         exam_time_out: form.exam_time_out || null,

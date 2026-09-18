@@ -35,15 +35,22 @@ function onStatusFilterChange(value: string) {
   statusFilter.value = value as ExamApplicationStatus | ''
   setFilter('status', statusFilter.value || undefined)
 }
+/** "not_exam" -> "NotExam" — a plain first-letter capitalize (as every other status here only ever needed) breaks on the underscore. */
+function statusKeySuffix(status: string): string {
+  return status.replace(/(^|_)([a-z])/g, (_match, _sep, letter: string) => letter.toUpperCase())
+}
+
 const statusFilterOptions = computed(() => [
   { value: '', label: t('admin.exams.allStatuses') },
-  ...examApplicationStatuses.map((status) => ({ value: status, label: t(`admin.exams.status${status.charAt(0).toUpperCase()}${status.slice(1)}`) })),
+  ...examApplicationStatuses.map((status) => ({ value: status, label: t(`admin.exams.status${statusKeySuffix(status)}`) })),
 ])
 
-const statusVariant: Record<ExamApplicationStatus, 'success' | 'danger' | 'warning'> = {
+const statusVariant: Record<ExamApplicationStatus, 'success' | 'danger' | 'warning' | 'neutral'> = {
+  draft: 'neutral',
   pending: 'warning',
   approved: 'success',
   rejected: 'danger',
+  not_exam: 'neutral',
 }
 
 const columns = [
@@ -61,10 +68,11 @@ const columns = [
   { key: 'address', label: t('admin.exams.columnAddress') },
   { key: 'room_number', label: t('admin.exams.columnRoomNumber') },
   { key: 'table_no', label: t('admin.exams.columnTableNumber') },
+  { key: 'actions', label: t('admin.exams.columnActions') },
 ]
 
 function statusLabel(status: ExamApplicationStatus): string {
-  return t(`admin.exams.status${status.charAt(0).toUpperCase()}${status.slice(1)}`)
+  return t(`admin.exams.status${statusKeySuffix(status)}`)
 }
 
 function fmtDate(value: string | null): string {
@@ -101,6 +109,27 @@ async function runBulkAction(action: (ids: number[]) => Promise<unknown>) {
 
 const receiveWord = () => runBulkAction((ids) => examApplicationsService.receive(ids))
 const payBackExam = () => runBulkAction((ids) => examApplicationsService.payBack(ids))
+
+/**
+ * "Not Exam" — a student was sent to exam (still draft) but doesn't want
+ * to sit it. Only offered on a draft row (see ExamApplicationService::
+ * markNotExam()); a row that's already pending/approved/rejected is a real
+ * application at that point, handled by Approve/Reject instead.
+ */
+async function markNotExam(application: ExamApplication) {
+  if (!confirm(t('admin.exams.confirmNotExam'))) return
+
+  acting.value = true
+  actionError.value = null
+  try {
+    await examApplicationsService.markNotExam(application.id)
+    await fetch()
+  } catch (err) {
+    actionError.value = err instanceof ApiRequestError ? err.message : t('admin.exams.actionFailed')
+  } finally {
+    acting.value = false
+  }
+}
 
 async function deleteSelected() {
   if (selectedIds.value.length === 0) return
@@ -212,6 +241,17 @@ function openPrint() {
       <template #cell-address="{ row }">{{ (row as ExamApplication).student.address ?? '—' }}</template>
       <template #cell-room_number="{ row }">{{ (row as ExamApplication).classroom?.name ?? '—' }}</template>
       <template #cell-table_no="{ row }">{{ (row as ExamApplication).table?.name ?? (row as ExamApplication).table_no ?? '—' }}</template>
+      <template #cell-actions="{ row }">
+        <BaseButton
+          v-if="canUpdate && (row as ExamApplication).status === 'draft'"
+          variant="outline"
+          size="sm"
+          :disabled="acting"
+          @click="markNotExam(row as ExamApplication)"
+        >
+          {{ t('admin.exams.notExam') }}
+        </BaseButton>
+      </template>
     </DataTable>
 
     <BasePagination v-if="meta" :meta="meta" sticky class="mt-4" @update:page="setPage" />

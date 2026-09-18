@@ -8,13 +8,16 @@ use App\Models\Enrollment;
 use App\Models\ExamApplication;
 use App\Models\Product;
 use App\Models\Student;
+use App\Models\Tenant;
 use App\Models\User;
 use App\Services\Billing\InvoiceService;
 use App\Services\Billing\PaymentService;
 use App\Support\Billing\ProductType;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -36,9 +39,25 @@ final class ExamApplicationService
     ) {}
 
     /**
-     * @param  array{enrollment_id:int, exam_date:string, exam_time:string, table_no:string}  $data
+     * The student self-service "Apply" flow. Unlike the old submit(), the
+     * student never sets exam-day logistics (book/room/table/date) — that
+     * stays exclusively a teacher/admin action via the Examination tab (see
+     * createForAdmin()/updateForAdmin()). What this does:
+     *
+     *   1. Saves the student's own personal-info edits back to their real
+     *      Student record — same fields the admin's Application Form edits,
+     *      just self-service (no `students.update` permission needed).
+     *   2. Either creates a fresh, blank-logistics application (status
+     *      pending) for this enrollment, or — if a teacher already sent
+     *      this enrollment to exam (see the migration's docblock on "at
+     *      most one application per enrollment, ever") — leaves that
+     *      existing row's logistics untouched and simply stamps the fee
+     *      snapshot + payment declaration onto it, since the student is
+     *      only now getting around to confirming/paying.
+     *
+     * @param  array{first_name:string, last_name:string, english_name:?string, gender:?string, date_of_birth:?string, phone:?string, village_code:?string}  $studentFields
      */
-    public function submit(Student $student, array $data): ExamApplication
+    public function applyOnline(Student $student, int $enrollmentId, array $studentFields, ?UploadedFile $photo): ExamApplication
     {
         $tenant = $this->context->getOrFail();
 
@@ -48,17 +67,77 @@ final class ExamApplicationService
             ]);
         }
 
-        return ExamApplication::query()->create([
-            'student_id' => $student->id,
-            'enrollment_id' => $data['enrollment_id'],
-            'exam_date' => $data['exam_date'],
-            'exam_time' => $data['exam_time'],
-            'table_no' => $data['table_no'],
-            'fee_amount' => $tenant->exam_fee_amount,
-            'fee_currency' => $tenant->default_currency,
-            'student_marked_paid_at' => now(),
-            'status' => ExamApplication::STATUS_PENDING,
-        ]);
+        return DB::transaction(function () use ($student, $enrollmentId, $studentFields, $photo, $tenant) {
+            $previousPhotoPath = $student->photo_path;
+            $newPhotoPath = $photo !== null ? $this->storeStudentPhoto($photo, $tenant) : null;
+
+            $student->update([
+                ...$studentFields,
+                ...($newPhotoPath !== null ? ['photo_path' => $newPhotoPath] : []),
+            ]);
+
+            if ($newPhotoPath !== null && $previousPhotoPath !== null) {
+                Storage::disk('public')->delete($previousPhotoPath);
+            }
+
+            $existing = ExamApplication::query()->where('enrollment_id', $enrollmentId)->first();
+
+            if ($existing !== null) {
+                // Whatever it was (draft, from "Send to Exam", or already
+                // pending from an earlier submission), applying always
+                // lands it on pending — this *is* the "student actually
+                // applied" moment the Approval tab is waiting for.
+                $existing->update([
+                    'fee_amount' => $tenant->exam_fee_amount,
+                    'fee_currency' => $tenant->default_currency,
+                    'student_marked_paid_at' => now(),
+                    'status' => ExamApplication::STATUS_PENDING,
+                ]);
+
+                return $existing->fresh();
+            }
+
+            return ExamApplication::query()->create([
+                'student_id' => $student->id,
+                'enrollment_id' => $enrollmentId,
+                'fee_amount' => $tenant->exam_fee_amount,
+                'fee_currency' => $tenant->default_currency,
+                'student_marked_paid_at' => now(),
+                'status' => ExamApplication::STATUS_PENDING,
+            ]);
+        });
+    }
+
+    private function storeStudentPhoto(UploadedFile $photo, Tenant $tenant): string
+    {
+        $path = $photo->store($tenant->storagePath('students'), 'public');
+
+        if ($path === false) {
+            abort(500, 'Failed to store the uploaded photo.');
+        }
+
+        return $path;
+    }
+
+    /**
+     * The student self-service equivalent of lookupByEnrollmentCode() — no
+     * code to type, since the student picks from their own enrollments (see
+     * MyExamApplicationController::enrollments()). Ownership is the caller's
+     * job to check ($enrollment->student_id === $student->id) before this
+     * is reached.
+     */
+    public function lookupForStudent(int $enrollmentId): Enrollment
+    {
+        $enrollment = Enrollment::query()
+            ->with(['student', 'coursePackage'])
+            ->findOrFail($enrollmentId);
+
+        $enrollment->setRelation(
+            'latestExamApplication',
+            ExamApplication::query()->where('enrollment_id', $enrollment->id)->with(['book', 'classroom', 'table'])->latest('id')->first(),
+        );
+
+        return $enrollment;
     }
 
     public function approve(ExamApplication $application, User $admin): ExamApplication
@@ -97,6 +176,33 @@ final class ExamApplicationService
                 'decided_by' => $admin->getKey(),
                 'decided_at' => now(),
             ]);
+
+            return $application->fresh();
+        });
+    }
+
+    /**
+     * "Not Exam" — the Examination tab's per-row action for a student who
+     * was sent to exam (still DRAFT) but doesn't want to sit it. Only a
+     * still-draft row qualifies: once a student has actually applied
+     * (pending/approved/rejected), this isn't the right action any more —
+     * reject() covers "applied, then turned down". Kept, not deleted, so
+     * there's a record they were offered the exam and declined; the
+     * enrollment moves straight to completed since they're done with the
+     * course either way.
+     */
+    public function markNotExam(ExamApplication $application): ExamApplication
+    {
+        return DB::transaction(function () use ($application) {
+            /** @var ExamApplication $application */
+            $application = ExamApplication::query()->whereKey($application->getKey())->lockForUpdate()->firstOrFail();
+
+            if ($application->status !== ExamApplication::STATUS_DRAFT) {
+                throw ValidationException::withMessages(['status' => 'Only a not-yet-applied exam application can be marked Not Exam.']);
+            }
+
+            $application->update(['status' => ExamApplication::STATUS_NOT_EXAM]);
+            $application->enrollment()->update(['status' => Enrollment::STATUS_COMPLETED]);
 
             return $application->fresh();
         });

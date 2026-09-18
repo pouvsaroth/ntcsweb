@@ -45,14 +45,19 @@ class StoreExamApplicationRequest extends FormRequest
             'table_no' => ['nullable', 'string', 'max:20'],
             'classroom_id' => ['nullable', Rule::exists('tenant.classrooms', 'id')],
             'table_id' => ['nullable', Rule::exists('tenant.classroom_tables', 'id')],
-            // Nullable, not required: the redesigned Application Form has no
-            // status selector at all — a new admin-created application
-            // simply starts PENDING (the model's own default) like a
-            // student's own submission does, and status only ever changes
-            // afterward via approve()/reject() or the "Exam Application
-            // Approval" tab. Still accepted here for API flexibility.
+            // Nullable, not required: the Application Form has no status
+            // selector at all — a new admin-created application simply
+            // starts PENDING (the model's own default) like a student's own
+            // submission does. The roster's bulk "Send to Exam"
+            // (SendToExamModal.vue) is the one caller that does pass a
+            // status explicitly — DRAFT, since nobody has actually applied
+            // yet at that point (see ExamApplicationService::applyOnline()'s
+            // docblock). Status otherwise only ever changes afterward via
+            // approve()/reject()/markNotExam() or the "Exam Application
+            // Approval" tab.
             'status' => ['sometimes', 'nullable', Rule::in([
-                ExamApplication::STATUS_PENDING, ExamApplication::STATUS_APPROVED, ExamApplication::STATUS_REJECTED,
+                ExamApplication::STATUS_DRAFT, ExamApplication::STATUS_PENDING,
+                ExamApplication::STATUS_APPROVED, ExamApplication::STATUS_REJECTED, ExamApplication::STATUS_NOT_EXAM,
             ])],
             'remark' => ['nullable', 'string', 'max:1000'],
         ];

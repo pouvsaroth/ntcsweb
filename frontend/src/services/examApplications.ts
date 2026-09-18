@@ -2,9 +2,9 @@ import { apiDelete, apiGetWithMeta, apiPost, apiPut } from '@/services/http'
 import type { PaginatedQuery } from '@/composables/usePaginatedResource'
 import type { LengthAwarePaginationMeta, PaginatedResult } from '@/types/api'
 
-export type ExamApplicationStatus = 'pending' | 'approved' | 'rejected'
+export type ExamApplicationStatus = 'draft' | 'pending' | 'approved' | 'rejected' | 'not_exam'
 
-export const examApplicationStatuses: ExamApplicationStatus[] = ['pending', 'approved', 'rejected']
+export const examApplicationStatuses: ExamApplicationStatus[] = ['draft', 'pending', 'approved', 'rejected', 'not_exam']
 
 export interface ExamApplicationStudent {
   id: number
@@ -126,4 +126,7 @@ export const examApplicationsService = {
 
   approve: (id: number) => apiPost<ExamApplication>(`/exam-applications/${id}/approve`),
   reject: (id: number, reason: string) => apiPost<ExamApplication>(`/exam-applications/${id}/reject`, { reason }),
+
+  /** "Not Exam" — only valid on a still-draft row (see ExamApplicationService::markNotExam()). Also completes the enrollment server-side. */
+  markNotExam: (id: number) => apiPost<ExamApplication>(`/exam-applications/${id}/not-exam`),
 }

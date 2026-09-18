@@ -11,12 +11,14 @@ import BaseSelect from '@/components/ui/BaseSelect.vue'
 import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import DataTable from '@/components/ui/DataTable.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
+import AddressSelects from '@/components/admin/AddressSelects.vue'
 import {
   myExamApplicationsService,
   type ExamApplicationStatus,
   type ExamFee,
   type MyExamApplication,
   type MyExamApplicationEnrollment,
+  type MyExamApplicationLookup,
 } from '@/services/myExamApplications'
 import { ApiRequestError } from '@/types/api'
 import { formatDate } from '@/utils/date'
@@ -71,10 +73,14 @@ function timeRange(row: MyExamApplication): string {
   return `${timeIn ?? '—'} - ${timeOut ?? '—'}`
 }
 
-const statusVariant: Record<ExamApplicationStatus, 'warning' | 'success' | 'danger'> = {
+// not_exam has no tab of its own — a row with that status simply never
+// matches `activeTab` and stays invisible, same as any other status this
+// page doesn't have a tab for. Still typed here for correctness.
+const statusVariant: Record<ExamApplicationStatus, 'warning' | 'success' | 'danger' | 'neutral'> = {
   pending: 'warning',
   approved: 'success',
   rejected: 'danger',
+  not_exam: 'neutral',
 }
 
 async function load() {
@@ -93,8 +99,26 @@ async function load() {
 
 // --- New application ---
 
+/**
+ * Two steps, same as the admin's Application Form "Show Data" flow: pick a
+ * course, then review/complete the information it loads. Unlike the admin
+ * form, the student only ever edits their own personal info — exam-day
+ * logistics (book/room/table/date) are display-only, whatever a teacher/
+ * admin has already set (or blank, if nobody has yet — see
+ * ExamApplicationService::applyOnline() on the backend).
+ */
 const createOpen = ref(false)
-const createForm = reactive({ enrollment_id: '', exam_date: '', exam_time: '', table_no: '', has_paid: false })
+const createForm = reactive({
+  enrollment_id: '',
+  first_name: '',
+  last_name: '',
+  english_name: '',
+  gender: '',
+  date_of_birth: '',
+  phone: '',
+  village_code: '',
+  has_paid: false,
+})
 const enrollments = ref<MyExamApplicationEnrollment[]>([])
 const enrollmentsLoading = ref(false)
 const enrollmentsError = ref<string | null>(null)
@@ -103,6 +127,16 @@ const feeLoading = ref(false)
 const createErrors = ref<Record<string, string[]>>({})
 const createGeneralError = ref<string | null>(null)
 const creating = ref(false)
+
+const lookup = ref<MyExamApplicationLookup | null>(null)
+const lookupLoading = ref(false)
+const lookupError = ref<string | null>(null)
+
+const photoFile = ref<File | null>(null)
+const photoPreview = ref<string | null>(null)
+const uploadInput = ref<HTMLInputElement | null>(null)
+const backCameraInput = ref<HTMLInputElement | null>(null)
+const frontCameraInput = ref<HTMLInputElement | null>(null)
 
 const enrollmentOptions = computed(() =>
   enrollments.value.map((enrollment) => ({
@@ -113,12 +147,20 @@ const enrollmentOptions = computed(() =>
 
 async function openCreate() {
   createForm.enrollment_id = ''
-  createForm.exam_date = ''
-  createForm.exam_time = ''
-  createForm.table_no = ''
+  createForm.first_name = ''
+  createForm.last_name = ''
+  createForm.english_name = ''
+  createForm.gender = ''
+  createForm.date_of_birth = ''
+  createForm.phone = ''
+  createForm.village_code = ''
   createForm.has_paid = false
   createErrors.value = {}
   createGeneralError.value = null
+  lookup.value = null
+  lookupError.value = null
+  photoFile.value = null
+  photoPreview.value = null
   createOpen.value = true
 
   if (enrollments.value.length === 0 && !enrollmentsLoading.value) {
@@ -145,7 +187,47 @@ async function openCreate() {
   }
 }
 
+async function pickEnrollment(value: string) {
+  createForm.enrollment_id = value
+  lookup.value = null
+  lookupError.value = null
+  photoFile.value = null
+  photoPreview.value = null
+
+  if (!value) return
+
+  lookupLoading.value = true
+  try {
+    lookup.value = await myExamApplicationsService.lookup(Number(value))
+    const student = lookup.value.student
+    createForm.first_name = student.first_name
+    createForm.last_name = student.last_name
+    createForm.english_name = student.english_name ?? ''
+    createForm.gender = student.gender ?? ''
+    createForm.date_of_birth = student.date_of_birth ?? ''
+    createForm.phone = student.phone ?? ''
+    createForm.village_code = student.village_code ?? ''
+    photoPreview.value = student.photo_url
+  } catch (e) {
+    lookupError.value = e instanceof ApiRequestError ? e.message : t('admin.myExamApplications.lookupFailed')
+  } finally {
+    lookupLoading.value = false
+  }
+}
+
+function onPhotoChange(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+
+  photoFile.value = file
+  photoPreview.value = URL.createObjectURL(file)
+  input.value = ''
+}
+
 async function submitCreate() {
+  if (!lookup.value) return
+
   creating.value = true
   createErrors.value = {}
   createGeneralError.value = null
@@ -153,9 +235,14 @@ async function submitCreate() {
   try {
     await myExamApplicationsService.submit({
       enrollment_id: Number(createForm.enrollment_id),
-      exam_date: createForm.exam_date,
-      exam_time: createForm.exam_time,
-      table_no: createForm.table_no,
+      first_name: createForm.first_name,
+      last_name: createForm.last_name,
+      english_name: createForm.english_name,
+      gender: createForm.gender,
+      date_of_birth: createForm.date_of_birth,
+      phone: createForm.phone,
+      village_code: createForm.village_code,
+      photo: photoFile.value,
       has_paid: createForm.has_paid,
     })
     createOpen.value = false
@@ -229,45 +316,129 @@ onMounted(() => load())
     </DataTable>
 
     <!-- New application -->
-    <BaseModal v-model="createOpen" :title="t('admin.myExamApplications.createTitle')">
+    <BaseModal v-model="createOpen" :title="t('admin.myExamApplications.createTitle')" size="lg">
       <form class="space-y-4" @submit.prevent="submitCreate">
         <BaseAlert v-if="createGeneralError" variant="danger">{{ createGeneralError }}</BaseAlert>
         <BaseAlert v-if="enrollmentsError" variant="danger">{{ enrollmentsError }}</BaseAlert>
+        <BaseAlert v-if="lookupError" variant="danger">{{ lookupError }}</BaseAlert>
 
         <BaseSelect
-          v-model="createForm.enrollment_id"
+          :model-value="createForm.enrollment_id"
           :label="t('admin.myExamApplications.enrollmentLabel')"
           :placeholder="t('admin.myExamApplications.selectEnrollment')"
           :options="enrollmentOptions"
           :disabled="enrollmentsLoading"
           required
           :error="createErrors.enrollment_id?.[0]"
+          @update:model-value="pickEnrollment"
         />
 
-        <div class="grid grid-cols-2 gap-3">
-          <BaseInput v-model="createForm.exam_date" type="date" required :label="t('admin.myExamApplications.examDateLabel')" :error="createErrors.exam_date?.[0]" />
-          <BaseInput v-model="createForm.exam_time" type="time" required :label="t('admin.myExamApplications.examTimeLabel')" :error="createErrors.exam_time?.[0]" />
-        </div>
+        <div v-if="lookupLoading" class="flex justify-center py-8"><BaseSpinner /></div>
 
-        <BaseInput v-model="createForm.table_no" required :label="t('admin.myExamApplications.tableLabel')" :error="createErrors.table_no?.[0]" />
+        <p v-else-if="!lookup" class="py-8 text-center text-sm text-neutral-400">{{ t('admin.myExamApplications.selectCoursePrompt') }}</p>
 
-        <div class="rounded-lg bg-neutral-50 p-3 text-sm text-neutral-700">
-          {{ t('admin.myExamApplications.feeLabel') }}:
-          <span class="font-medium text-neutral-900">
-            {{ feeLoading ? '…' : fee?.amount != null ? `${fee.amount} ${fee.currency ?? ''}` : t('admin.myExamApplications.feeNotSet') }}
-          </span>
-        </div>
+        <template v-else>
+          <!-- Student Information — the same fields the admin's Application
+               Form edits, just self-service: this always updates the
+               student's own real record, no permission needed. -->
+          <section>
+            <h3 class="mb-3 border-b border-neutral-200 pb-2 text-sm font-semibold text-primary-800">{{ t('admin.exams.studentInformation') }}</h3>
 
-        <label class="flex items-center gap-2 text-sm text-neutral-700">
-          <input v-model="createForm.has_paid" type="checkbox" class="rounded border-neutral-300 text-primary-600 focus:ring-primary-500" />
-          {{ t('admin.myExamApplications.hasPaidLabel') }}
-        </label>
-        <p v-if="createErrors.has_paid?.[0]" class="text-sm text-danger-600">{{ createErrors.has_paid[0] }}</p>
+            <div class="mb-4 flex items-center gap-4">
+              <div class="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full border border-neutral-200 bg-neutral-100">
+                <img v-if="photoPreview" :src="photoPreview" alt="" class="h-full w-full object-cover" />
+                <svg v-else class="h-10 w-10 text-neutral-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0ZM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+                </svg>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  class="inline-flex items-center gap-1.5 rounded-lg bg-primary-50 px-3 py-2 text-sm font-medium text-primary-800 hover:bg-primary-100"
+                  @click="uploadInput?.click()"
+                >
+                  {{ t('common.uploadPhoto') }}
+                </button>
+                <button
+                  type="button"
+                  class="inline-flex items-center gap-1.5 rounded-lg bg-primary-50 px-3 py-2 text-sm font-medium text-primary-800 hover:bg-primary-100"
+                  @click="backCameraInput?.click()"
+                >
+                  {{ t('common.takePhotoBack') }}
+                </button>
+                <button
+                  type="button"
+                  class="inline-flex items-center gap-1.5 rounded-lg bg-primary-50 px-3 py-2 text-sm font-medium text-primary-800 hover:bg-primary-100"
+                  @click="frontCameraInput?.click()"
+                >
+                  {{ t('common.takePhotoFront') }}
+                </button>
+              </div>
+              <input ref="uploadInput" type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="hidden" @change="onPhotoChange" />
+              <input ref="backCameraInput" type="file" accept="image/jpeg,image/png,image/webp,image/gif" capture="environment" class="hidden" @change="onPhotoChange" />
+              <input ref="frontCameraInput" type="file" accept="image/jpeg,image/png,image/webp,image/gif" capture="user" class="hidden" @change="onPhotoChange" />
+            </div>
+
+            <div class="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2">
+              <BaseInput v-model="createForm.first_name" required :label="t('admin.exams.firstName')" :error="createErrors.first_name?.[0]" />
+              <BaseInput v-model="createForm.last_name" required :label="t('admin.exams.lastName')" :error="createErrors.last_name?.[0]" />
+              <BaseInput v-model="createForm.english_name" :label="t('admin.exams.otherName')" :error="createErrors.english_name?.[0]" />
+
+              <div>
+                <label class="mb-1 block text-sm font-medium text-neutral-700">{{ t('admin.exams.sex') }}</label>
+                <div class="flex items-center gap-4 pt-2">
+                  <label class="flex items-center gap-1.5 text-sm text-neutral-700">
+                    <input v-model="createForm.gender" type="radio" value="male" />
+                    {{ t('admin.exams.genderMale') }}
+                  </label>
+                  <label class="flex items-center gap-1.5 text-sm text-neutral-700">
+                    <input v-model="createForm.gender" type="radio" value="female" />
+                    {{ t('admin.exams.genderFemale') }}
+                  </label>
+                </div>
+              </div>
+
+              <BaseInput v-model="createForm.date_of_birth" type="date" :label="t('admin.exams.birthDate')" :error="createErrors.date_of_birth?.[0]" />
+              <BaseInput v-model="createForm.phone" :label="t('admin.exams.phone')" :error="createErrors.phone?.[0]" />
+
+              <AddressSelects v-model="createForm.village_code" />
+            </div>
+          </section>
+
+          <!-- Examination Information — display-only. Only a teacher/admin
+               ever sets these, via the Examination tab. -->
+          <section>
+            <h3 class="mb-3 border-b border-neutral-200 pb-2 text-sm font-semibold text-primary-800">{{ t('admin.exams.examinationInformation') }}</h3>
+
+            <dl class="grid grid-cols-1 gap-x-4 gap-y-2 text-sm sm:grid-cols-2">
+              <div><dt class="text-neutral-500">{{ t('admin.exams.course') }}</dt><dd class="font-medium text-neutral-900">{{ lookup.course_package?.name ?? '—' }}</dd></div>
+              <div><dt class="text-neutral-500">{{ t('admin.exams.book') }}</dt><dd class="font-medium text-neutral-900">{{ lookup.exam_application?.book?.title ?? t('admin.myExamApplications.notScheduledYet') }}</dd></div>
+              <div><dt class="text-neutral-500">{{ t('admin.exams.examDate') }}</dt><dd class="font-medium text-neutral-900">{{ lookup.exam_application?.exam_date ? formatDate(lookup.exam_application.exam_date) : t('admin.myExamApplications.notScheduledYet') }}</dd></div>
+              <div><dt class="text-neutral-500">{{ t('admin.exams.columnTimeExam') }}</dt><dd class="font-medium text-neutral-900">{{ lookup.exam_application ? timeRange(lookup.exam_application) : t('admin.myExamApplications.notScheduledYet') }}</dd></div>
+              <div><dt class="text-neutral-500">{{ t('admin.exams.roomNumber') }}</dt><dd class="font-medium text-neutral-900">{{ lookup.exam_application?.classroom?.name ?? t('admin.myExamApplications.notScheduledYet') }}</dd></div>
+              <div><dt class="text-neutral-500">{{ t('admin.exams.tableNumber') }}</dt><dd class="font-medium text-neutral-900">{{ lookup.exam_application?.table?.name ?? lookup.exam_application?.table_no ?? t('admin.myExamApplications.notScheduledYet') }}</dd></div>
+              <div v-if="lookup.exam_application?.remark"><dt class="text-neutral-500">{{ t('admin.exams.remark') }}</dt><dd class="font-medium text-neutral-900">{{ lookup.exam_application.remark }}</dd></div>
+            </dl>
+          </section>
+
+          <div class="rounded-lg bg-neutral-50 p-3 text-sm text-neutral-700">
+            {{ t('admin.myExamApplications.feeLabel') }}:
+            <span class="font-medium text-neutral-900">
+              {{ feeLoading ? '…' : fee?.amount != null ? `${fee.amount} ${fee.currency ?? ''}` : t('admin.myExamApplications.feeNotSet') }}
+            </span>
+          </div>
+
+          <label class="flex items-center gap-2 text-sm text-neutral-700">
+            <input v-model="createForm.has_paid" type="checkbox" class="rounded border-neutral-300 text-primary-600 focus:ring-primary-500" />
+            {{ t('admin.myExamApplications.hasPaidLabel') }}
+          </label>
+          <p v-if="createErrors.has_paid?.[0]" class="text-sm text-danger-600">{{ createErrors.has_paid[0] }}</p>
+        </template>
       </form>
 
       <template #footer>
         <BaseButton variant="outline" @click="createOpen = false">{{ t('common.cancel') }}</BaseButton>
-        <BaseButton :loading="creating" @click="submitCreate">{{ t('admin.myExamApplications.submit') }}</BaseButton>
+        <BaseButton :disabled="!lookup" :loading="creating" @click="submitCreate">{{ t('admin.myExamApplications.submit') }}</BaseButton>
       </template>
     </BaseModal>
 

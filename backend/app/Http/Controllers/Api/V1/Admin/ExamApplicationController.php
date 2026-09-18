@@ -187,6 +187,21 @@ final class ExamApplicationController extends Controller
     }
 
     /**
+     * "Not Exam" — a per-row action in the Examination tab for a student
+     * who was sent to exam (still draft) but doesn't want to sit it. Gated
+     * by the same `update` ability as Receive/Pay Back/Print, not a
+     * dedicated permission.
+     */
+    public function markNotExam(ExamApplication $examApplication): JsonResponse
+    {
+        $this->authorize('update', $examApplication);
+
+        $examApplication = $this->examApplications->markNotExam($examApplication);
+
+        return ApiResponse::success(new ExamApplicationResource($examApplication->load(self::WITH)));
+    }
+
+    /**
      * Shared by sell/receive/payBack: validates the id list, then checks the
      * `update` ability against every row individually (not just once) —
      * authorizing on the first row and silently trusting the rest would let

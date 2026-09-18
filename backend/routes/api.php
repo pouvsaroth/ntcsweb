@@ -301,6 +301,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::post('exam-applications/{exam_application}/print', [ExamApplicationController::class, 'print'])->name('exam-applications.print');
         Route::post('exam-applications/{exam_application}/approve', [ExamApplicationController::class, 'approve'])->name('exam-applications.approve');
         Route::post('exam-applications/{exam_application}/reject', [ExamApplicationController::class, 'reject'])->name('exam-applications.reject');
+        Route::post('exam-applications/{exam_application}/not-exam', [ExamApplicationController::class, 'markNotExam'])->name('exam-applications.not-exam');
 
         // Grades tab — scores against approved exam applications only, scoped
         // to the user's own classes unless they hold exam-scores.manage-all.
@@ -563,6 +564,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
 
         // Self-service — identity-gated, same pattern as my-leave-requests.
         Route::get('my-exam-applications/enrollments', [MyExamApplicationController::class, 'enrollments'])->name('my-exam-applications.enrollments');
+        Route::get('my-exam-applications/lookup/{enrollment}', [MyExamApplicationController::class, 'lookup'])->name('my-exam-applications.lookup');
         Route::get('my-exam-applications/fee', [MyExamApplicationController::class, 'fee'])->name('my-exam-applications.fee');
         Route::get('my-exam-applications', [MyExamApplicationController::class, 'index'])->name('my-exam-applications.index');
         Route::post('my-exam-applications', [MyExamApplicationController::class, 'store'])->name('my-exam-applications.store');

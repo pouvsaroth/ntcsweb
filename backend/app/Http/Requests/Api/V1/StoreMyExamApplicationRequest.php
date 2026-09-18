@@ -4,14 +4,22 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Api\V1;
 
+use App\Models\ExamApplication;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 /**
- * Identity-gated, not permission-gated — any signed-in student may submit
- * an exam application for one of their own enrollments. See
- * MyExamApplicationController's docblock, same pattern as
- * StoreMyLeaveRequestRequest.
+ * Identity-gated, not permission-gated — any signed-in student may apply
+ * for one of their own enrollments. See MyExamApplicationController's
+ * docblock, same pattern as StoreMyLeaveRequestRequest.
+ *
+ * No exam_date/exam_time/table_no here any more — the student never sets
+ * exam-day logistics, only a teacher/admin does (see
+ * ExamApplicationService::applyOnline()'s docblock). The personal-info
+ * fields mirror the admin Application Form's editable "Student
+ * Information" section exactly (see UpdateStudentRequest's own rules for
+ * these same fields).
  */
 class StoreMyExamApplicationRequest extends FormRequest
 {
@@ -25,16 +33,15 @@ class StoreMyExamApplicationRequest extends FormRequest
         $enrollmentIds = $this->user()->student->enrollments()->active()->pluck('id');
 
         return [
-            'enrollment_id' => [
-                'required',
-                Rule::in($enrollmentIds),
-                // Mirrors StoreExamApplicationRequest's own rule: at most one
-                // exam application per enrollment, ever, regardless of status.
-                Rule::unique('tenant.exam_applications', 'enrollment_id')->whereNull('deleted_at'),
-            ],
-            'exam_date' => ['required', 'date', 'after_or_equal:today'],
-            'exam_time' => ['required', 'date_format:H:i'],
-            'table_no' => ['required', 'string', 'max:20'],
+            'enrollment_id' => ['required', Rule::in($enrollmentIds)],
+            'first_name' => ['required', 'string', 'max:255'],
+            'last_name' => ['required', 'string', 'max:255'],
+            'english_name' => ['nullable', 'string', 'max:255'],
+            'gender' => ['nullable', 'string', 'max:10'],
+            'date_of_birth' => ['nullable', 'date', 'before:today'],
+            'phone' => ['nullable', 'string', 'max:32'],
+            'village_code' => ['nullable', 'string', 'max:20'],
+            'photo' => ['nullable', 'image', 'mimes:jpeg,png,webp,gif', 'max:10240'],
             // The "I have paid the exam fee" checkbox — must be checked to
             // submit at all. See ExamApplicationService's docblock for why
             // this doesn't create a real Payment record itself.
@@ -42,10 +49,28 @@ class StoreMyExamApplicationRequest extends FormRequest
         ];
     }
 
-    public function messages(): array
+    public function withValidator(Validator $validator): void
     {
-        return [
-            'enrollment_id.unique' => __('You already have an exam application for this enrollment.'),
-        ];
+        $validator->after(function (Validator $validator) {
+            $enrollmentId = $this->input('enrollment_id');
+            if ($validator->errors()->isNotEmpty() || $enrollmentId === null) {
+                return;
+            }
+
+            // Mirrors StoreExamApplicationRequest's own rule: at most one
+            // exam application per enrollment, ever — but unlike a fresh
+            // create, resubmitting against an existing *draft* or *pending*
+            // one (a teacher already sent this enrollment to exam) is
+            // exactly the point of this endpoint, so only a *decided* one
+            // (or Not Exam) blocks it.
+            $existingStatus = ExamApplication::query()
+                ->where('enrollment_id', $enrollmentId)
+                ->whereNull('deleted_at')
+                ->value('status');
+
+            if (in_array($existingStatus, [ExamApplication::STATUS_APPROVED, ExamApplication::STATUS_REJECTED, ExamApplication::STATUS_NOT_EXAM], true)) {
+                $validator->errors()->add('enrollment_id', __('This enrollment already has a decided exam application.'));
+            }
+        });
     }
 }

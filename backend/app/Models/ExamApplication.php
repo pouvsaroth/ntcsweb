@@ -50,11 +50,25 @@ class ExamApplication extends Model
     protected $connection = 'tenant';
 
     /** @use HasFactory<ExamApplicationFactory> */
+    // A row "Send to Exam" (ClassStudents.vue's roster action) creates —
+    // exam-day logistics may already be set, but nobody has actually
+    // applied yet. Never appears in the "Exam Application Approval" tab
+    // (that queries status=pending) until it becomes PENDING, either via
+    // the student applying online or an admin submitting on their behalf
+    // — see ExamApplicationService::applyOnline().
+    public const STATUS_DRAFT = 'draft';
+
     public const STATUS_PENDING = 'pending';
 
     public const STATUS_APPROVED = 'approved';
 
     public const STATUS_REJECTED = 'rejected';
+
+    // The student was sent to exam (still DRAFT) but doesn't want to sit
+    // it — see ExamApplicationService::markNotExam(). Distinct from
+    // REJECTED: rejected means they applied and an admin turned it down;
+    // this means they never applied at all.
+    public const STATUS_NOT_EXAM = 'not_exam';
 
     protected $attributes = [
         'status' => self::STATUS_PENDING,

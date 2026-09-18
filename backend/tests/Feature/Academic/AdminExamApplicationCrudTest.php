@@ -266,6 +266,60 @@ class AdminExamApplicationCrudTest extends TestCase
         $this->assertNotNull($application->fresh()->paid_back_at);
     }
 
+    public function test_send_to_exam_creates_a_draft_application(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::EXAM_APPLICATIONS_CREATE]);
+        $enrollment = $this->enrollmentWithCode();
+
+        // Same shape SendToExamModal.vue's bulk roster action sends.
+        $response = $this->postJson('/api/v1/exam-applications', [
+            'enrollment_id' => $enrollment->id,
+            'status' => ExamApplication::STATUS_DRAFT,
+        ]);
+
+        $response->assertCreated();
+        $response->assertJsonPath('data.status', ExamApplication::STATUS_DRAFT);
+    }
+
+    public function test_marking_not_exam_completes_the_enrollment(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::EXAM_APPLICATIONS_UPDATE]);
+        $enrollment = $this->enrollmentWithCode();
+        $enrollment->update(['status' => Enrollment::STATUS_ACTIVE]);
+        $application = ExamApplication::factory()->forStudent($enrollment->student)->forEnrollment($enrollment)->create([
+            'status' => ExamApplication::STATUS_DRAFT,
+        ]);
+
+        $response = $this->postJson("/api/v1/exam-applications/{$application->id}/not-exam");
+
+        $response->assertOk();
+        $response->assertJsonPath('data.status', ExamApplication::STATUS_NOT_EXAM);
+        $this->assertSame(Enrollment::STATUS_COMPLETED, $enrollment->fresh()->status);
+    }
+
+    public function test_marking_not_exam_on_a_non_draft_application_fails(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::EXAM_APPLICATIONS_UPDATE]);
+        $enrollment = $this->enrollmentWithCode();
+        $application = ExamApplication::factory()->forStudent($enrollment->student)->forEnrollment($enrollment)->create([
+            'status' => ExamApplication::STATUS_PENDING,
+        ]);
+
+        $this->postJson("/api/v1/exam-applications/{$application->id}/not-exam")->assertUnprocessable();
+        $this->assertSame(ExamApplication::STATUS_PENDING, $application->fresh()->status);
+    }
+
+    public function test_marking_not_exam_requires_the_update_permission(): void
+    {
+        $this->actingAsAdminWithPermissions([]);
+        $enrollment = $this->enrollmentWithCode();
+        $application = ExamApplication::factory()->forStudent($enrollment->student)->forEnrollment($enrollment)->create([
+            'status' => ExamApplication::STATUS_DRAFT,
+        ]);
+
+        $this->postJson("/api/v1/exam-applications/{$application->id}/not-exam")->assertForbidden();
+    }
+
     public function test_bulk_actions_require_the_update_permission(): void
     {
         $this->actingAsAdminWithPermissions([]);
