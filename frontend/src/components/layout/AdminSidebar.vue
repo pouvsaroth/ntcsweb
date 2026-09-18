@@ -103,10 +103,10 @@ watch(
 
 <template>
   <!-- Mobile overlay -->
-  <div v-if="open" class="fixed inset-0 z-30 bg-neutral-900/50 lg:hidden" @click="emit('close')" />
+  <div v-if="open" class="fixed inset-0 z-50 bg-neutral-900/50 lg:hidden" @click="emit('close')" />
 
   <aside
-    class="fixed inset-y-0 left-0 z-40 flex w-64 flex-col transform border-r border-neutral-200 bg-white transition-[transform,width] lg:translate-x-0"
+    class="fixed inset-y-0 left-0 z-50 flex w-64 flex-col transform border-r border-neutral-200 bg-white transition-[transform,width] lg:translate-x-0"
     :class="[open ? 'translate-x-0' : '-translate-x-full', adminUi.sidebarCollapsed ? 'lg:w-16' : 'lg:w-64']"
   >
     <!-- A profile card, not a static app logo — the signed-in user's own
