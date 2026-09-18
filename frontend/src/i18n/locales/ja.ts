@@ -1092,6 +1092,15 @@ const ja: MessageSchema = {
       emptyTitle: '申請はまだありません',
       emptyMessage: '上の「新規」ボタンから試験を申請してください。',
     },
+    myVideos: {
+      title: '動画',
+      subtitle: '受講中のコースの動画です。',
+      backToCourses: 'コース一覧へ戻る',
+      videoCount: '{count} 本の動画',
+      emptyTitle: '動画はまだありません',
+      emptyMessage: '受講中のコースに動画が公開されるとここに表示されます。',
+      loadFailed: '動画を読み込めませんでした。',
+    },
     studentFeedback: {
       title: '生徒フィードバック',
       subtitle: '生徒が学校または教師について送信したリクエストやコメントです。',

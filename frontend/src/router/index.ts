@@ -45,9 +45,9 @@ const comingSoon = () => import('@/pages/admin/ComingSoon.vue')
  * path -> adminNav.items translation key, so ComingSoon.vue's title always
  * matches the sidebar label it was clicked from. The optional 3rd element
  * marks a page a student account is allowed to open (see the router guard's
- * `studentAllowed` check below) — needed for my-scores/my-videos since
- * they're reachable only via StudentBottomNav's mobile tab bar and
- * PublicUserMenu, both shown to a signed-in student.
+ * `studentAllowed` check below) — needed for my-scores since it's reachable
+ * only via StudentBottomNav's mobile tab bar and PublicUserMenu, both shown
+ * to a signed-in student.
  */
 const comingSoonPages: [string, string, boolean?][] = [
   ['news', 'adminNav.items.news'],
@@ -56,7 +56,6 @@ const comingSoonPages: [string, string, boolean?][] = [
   ['documents', 'adminNav.items.documents'],
   ['contact-messages', 'adminNav.items.contactMessages'],
   ['my-scores', 'studentNav.score', true],
-  ['my-videos', 'studentNav.video', true],
 ]
 
 const adminRoutes: RouteRecordRaw[] = [
@@ -296,6 +295,12 @@ const adminRoutes: RouteRecordRaw[] = [
     name: 'admin.my-exam-applications',
     component: () => import('@/pages/admin/MyExamApplications.vue'),
     meta: { titleKey: 'admin.myExamApplications.title', studentAllowed: true },
+  },
+  {
+    path: 'my-videos',
+    name: 'admin.my-videos',
+    component: () => import('@/pages/admin/MyVideos.vue'),
+    meta: { titleKey: 'studentNav.video', studentAllowed: true },
   },
   {
     path: 'student-feedback',

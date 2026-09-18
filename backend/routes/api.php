@@ -91,6 +91,7 @@ use App\Http\Controllers\Api\V1\MyMonthlyPaymentAlertController;
 use App\Http\Controllers\Api\V1\MyLeaveRequestController;
 use App\Http\Controllers\Api\V1\MyStudentFeedbackController;
 use App\Http\Controllers\Api\V1\MyResignationRequestController;
+use App\Http\Controllers\Api\V1\MyVideoController;
 use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\Public\CoursePackageController as PublicCoursePackageController;
 use App\Http\Controllers\Api\V1\Public\EnrollmentInquiryController;
@@ -568,6 +569,9 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
 
         // Self-service — identity-gated (Staff/Student/User's own assignments), same pattern as my-invoices.
         Route::get('my-assets', [MyAssetController::class, 'index'])->name('my-assets.index');
+
+        // Student self-service — identity-gated, same pattern as my-attendance.
+        Route::get('my-videos', [MyVideoController::class, 'index'])->name('my-videos.index');
 
         // The admin header's notification bell — identity-gated (a user's own notifications), same pattern as my-leave-requests.
         Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');

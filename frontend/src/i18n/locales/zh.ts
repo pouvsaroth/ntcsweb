@@ -1091,6 +1091,15 @@ const zh: MessageSchema = {
       emptyTitle: '暂无申请',
       emptyMessage: '点击上方的新建按钮申请考试。',
     },
+    myVideos: {
+      title: '视频',
+      subtitle: '您正在学习的课程的视频。',
+      backToCourses: '返回课程列表',
+      videoCount: '{count} 个视频',
+      emptyTitle: '暂无视频',
+      emptyMessage: '老师为您正在学习的课程发布视频后，会显示在这里。',
+      loadFailed: '无法加载您的视频。',
+    },
     studentFeedback: {
       title: '学生反馈',
       subtitle: '学生就学校或老师发送的申请和留言。',

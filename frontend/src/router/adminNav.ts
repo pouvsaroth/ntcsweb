@@ -60,6 +60,7 @@ export const adminNav: AdminNavGroup[] = [
     items: [
       { labelKey: 'studentNav.score', to: '/admin/my-scores', studentOnly: true },
       { labelKey: 'studentNav.attendant', to: '/admin/my-attendance', studentOnly: true },
+      { labelKey: 'studentNav.video', to: '/admin/my-videos', studentOnly: true },
       ...documentsAndFormLinks.map((item) => ({ ...item, studentOnly: true })),
       ...documentLinks.map((item) => ({ ...item, studentOnly: true })),
     ],

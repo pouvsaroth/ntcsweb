@@ -1096,6 +1096,15 @@ const en = {
       emptyTitle: 'No applications',
       emptyMessage: 'Apply for an exam using the New button above.',
     },
+    myVideos: {
+      title: 'Video',
+      subtitle: 'Videos for the courses you are studying.',
+      backToCourses: 'Back to courses',
+      videoCount: '{count} videos',
+      emptyTitle: 'No videos yet',
+      emptyMessage: 'Videos will appear here once your teacher publishes them for a course you are studying.',
+      loadFailed: 'Could not load your videos.',
+    },
     studentFeedback: {
       title: 'Student Feedback',
       subtitle: 'Requests and comments students have sent about the school or a teacher.',

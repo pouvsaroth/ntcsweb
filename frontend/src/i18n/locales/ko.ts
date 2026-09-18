@@ -1092,6 +1092,15 @@ const ko: MessageSchema = {
       emptyTitle: '신청이 없습니다',
       emptyMessage: '위의 새로 작성 버튼으로 시험을 신청하세요.',
     },
+    myVideos: {
+      title: '동영상',
+      subtitle: '수강 중인 과정의 동영상입니다.',
+      backToCourses: '과정 목록으로',
+      videoCount: '동영상 {count}개',
+      emptyTitle: '아직 동영상이 없습니다',
+      emptyMessage: '수강 중인 과정에 동영상이 게시되면 여기에 표시됩니다.',
+      loadFailed: '동영상을 불러올 수 없습니다.',
+    },
     studentFeedback: {
       title: '학생 피드백',
       subtitle: '학생이 학교 또는 선생님에 대해 보낸 신청과 댓글입니다.',
