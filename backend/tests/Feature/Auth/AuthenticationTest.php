@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Auth;
 
+use App\Models\Role;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -234,6 +235,35 @@ class AuthenticationTest extends TestCase
             'You are logging in another device, please logout first or you can ask admin for help.',
         );
         $this->assertSame(1, $user->tokens()->count());
+    }
+
+    /**
+     * School Admin is exempt from the one-device rule entirely (see
+     * AuthService::ensureNoOtherActiveDevice()) — they're the ones who clear
+     * it for everyone else, and routinely need their own account open on
+     * more than one device at once.
+     */
+    public function test_a_school_admin_is_not_blocked_by_a_still_active_device(): void
+    {
+        $adminRole = Role::factory()->forTenant($this->tenant)->system()->create([
+            'slug' => Role::SCHOOL_ADMIN,
+            'name' => 'School Admin',
+            'level' => Role::LEVELS[Role::SCHOOL_ADMIN],
+        ]);
+        $user = User::factory()->forTenant($this->tenant)->create(['password' => Hash::make('correct-password')]);
+        $user->attachRoles($adminRole);
+        $user->createToken('phone', ['*'], now()->addDays(30));
+
+        $this->actingInTenant($this->tenant);
+
+        $response = $this->postJson('/api/v1/auth/login', [
+            'login' => $user->email,
+            'password' => 'correct-password',
+            'device_name' => 'laptop',
+        ]);
+
+        $response->assertOk();
+        $this->assertSame(2, $user->tokens()->count());
     }
 
     /**

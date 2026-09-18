@@ -21,6 +21,7 @@ export interface UserCreated {
 
 export interface UpdateUserInput {
   name: string
+  phone: string
   email: string
   /** Omit entirely for a student-linked account — its role is always Student and cannot be reassigned here. */
   role_id?: number

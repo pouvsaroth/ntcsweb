@@ -93,7 +93,7 @@ final class UserController extends Controller
     public function update(UpdateUserRequest $request, User $user): JsonResponse
     {
         DB::transaction(function () use ($request, $user) {
-            $user->update($request->safe()->only(['name', 'email']));
+            $user->update($request->safe()->only(['name', 'phone', 'email']));
 
             $roleId = $request->validated('role_id');
 

@@ -36,6 +36,7 @@ class UpdateUserRequest extends FormRequest
 
         return [
             'name' => ['required', 'string', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:32'],
             'email' => ['nullable', 'email:rfc', 'max:255'],
             'role_id' => [
                 'nullable',

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Auth;
 
+use App\Models\Role;
 use App\Models\User;
 use App\Support\Audit\AuditAction;
 use App\Support\Audit\AuditLogger;
@@ -112,6 +113,11 @@ final readonly class AuthService
      * migration) — only an explicit logout or an admin clears it, exactly
      * matching "you must log out first."
      *
+     * School Admin is exempt from this check entirely — they're the ones who
+     * clear it for everyone else, and in practice need their own account
+     * open on more than one device (e.g. the office desktop and their
+     * phone) at the same time.
+     *
      * `$replacingDeviceName` excludes the one case that isn't really
      * "another device": a token login re-using the same device name that
      * tokenResponse() is about to replace anyway (e.g. reinstalling the same
@@ -121,6 +127,10 @@ final readonly class AuthService
      */
     public function ensureNoOtherActiveDevice(User $user, ?string $replacingDeviceName): void
     {
+        if ($user->hasRole(Role::SCHOOL_ADMIN)) {
+            return;
+        }
+
         $hasOtherToken = $user->tokens()
             ->when($replacingDeviceName !== null, fn ($query) => $query->where('name', '!=', $replacingDeviceName))
             ->where(fn ($query) => $query->whereNull('expires_at')->orWhere('expires_at', '>', now()))

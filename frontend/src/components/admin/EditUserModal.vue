@@ -27,7 +27,7 @@ const roleOptions = computed(() => roles.value.map((role) => ({ value: String(ro
 /** A student-linked account's role is always forced to Student — see StoreUserRequest — so it's not offered here. */
 const isStudentLinked = computed(() => props.user?.student_id != null)
 
-const form = reactive({ name: '', email: '', role_id: '' })
+const form = reactive({ name: '', phone: '', email: '', role_id: '' })
 const errors = ref<Record<string, string[]>>({})
 const generalError = ref<string | null>(null)
 const submitting = ref(false)
@@ -41,6 +41,7 @@ watch(
   ([open, user]) => {
     if (!open || !user) return
     form.name = user.name
+    form.phone = user.phone ?? ''
     form.email = user.email ?? ''
     form.role_id = user.roles?.[0] ? String(user.roles[0].id) : ''
     errors.value = {}
@@ -63,6 +64,7 @@ async function submit() {
   try {
     await adminUsersService.update(props.user.id, {
       name: form.name,
+      phone: form.phone,
       email: form.email,
       ...(isStudentLinked.value ? {} : { role_id: form.role_id ? Number(form.role_id) : undefined }),
     })
@@ -86,6 +88,7 @@ async function submit() {
       <BaseAlert v-if="generalError" variant="danger">{{ generalError }}</BaseAlert>
 
       <BaseInput v-model="form.name" required :label="t('admin.users.name')" :error="errors.name?.[0]" />
+      <BaseInput v-model="form.phone" :label="t('admin.users.phone')" :error="errors.phone?.[0]" />
       <BaseInput v-model="form.email" type="email" :label="t('admin.users.email')" :error="errors.email?.[0]" />
 
       <BaseSelect
