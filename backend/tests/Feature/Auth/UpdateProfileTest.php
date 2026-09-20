@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Auth;
 
+use App\Models\Student;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -71,6 +72,48 @@ class UpdateProfileTest extends TestCase
 
         Storage::disk('public')->assertMissing("tenants/{$this->tenant->id}/avatars/old.jpg");
         Storage::disk('public')->assertExists($this->user->fresh()->avatar_path);
+    }
+
+    public function test_uploading_an_avatar_as_a_student_also_updates_their_student_photo(): void
+    {
+        Storage::fake('public');
+        $student = Student::factory()->create(['user_id' => $this->user->id, 'photo_path' => null]);
+
+        $this->post('/api/v1/auth/me', [
+            'name' => 'Original Name',
+            'phone' => '011111111',
+            'avatar' => UploadedFile::fake()->image('avatar.jpg'),
+        ], ['Accept' => 'application/json'])->assertOk();
+
+        $freshUser = $this->user->fresh();
+        $this->assertSame($freshUser->avatar_path, $student->fresh()->photo_path);
+    }
+
+    public function test_uploading_an_avatar_as_a_student_deletes_their_old_student_photo_if_different(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put("tenants/{$this->tenant->id}/students/old.jpg", 'fake-old-photo');
+        Student::factory()->create(['user_id' => $this->user->id, 'photo_path' => "tenants/{$this->tenant->id}/students/old.jpg"]);
+
+        $this->post('/api/v1/auth/me', [
+            'name' => 'Original Name',
+            'phone' => '011111111',
+            'avatar' => UploadedFile::fake()->image('avatar.jpg'),
+        ], ['Accept' => 'application/json'])->assertOk();
+
+        Storage::disk('public')->assertMissing("tenants/{$this->tenant->id}/students/old.jpg");
+    }
+
+    public function test_updating_the_profile_without_an_avatar_does_not_touch_the_student_photo(): void
+    {
+        $student = Student::factory()->create(['user_id' => $this->user->id, 'photo_path' => 'tenants/1/students/existing.jpg']);
+
+        $this->postJson('/api/v1/auth/me', [
+            'name' => 'New Name',
+            'phone' => '011111111',
+        ])->assertOk();
+
+        $this->assertSame('tenants/1/students/existing.jpg', $student->fresh()->photo_path);
     }
 
     public function test_phone_must_be_unique_within_the_tenant(): void

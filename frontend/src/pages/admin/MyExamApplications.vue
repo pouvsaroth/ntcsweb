@@ -11,6 +11,7 @@ import BaseSelect from '@/components/ui/BaseSelect.vue'
 import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import DataTable from '@/components/ui/DataTable.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
+import WebcamCaptureModal from '@/components/ui/WebcamCaptureModal.vue'
 import AddressSelects from '@/components/admin/AddressSelects.vue'
 import {
   myExamApplicationsService,
@@ -21,6 +22,7 @@ import {
   type MyExamApplicationLookup,
 } from '@/services/myExamApplications'
 import { ApiRequestError } from '@/types/api'
+import { formatMoney } from '@/utils/currency'
 import { formatDate } from '@/utils/date'
 
 /**
@@ -129,6 +131,12 @@ const enrollmentsLoading = ref(false)
 const enrollmentsError = ref<string | null>(null)
 const fee = ref<ExamFee | null>(null)
 const feeLoading = ref(false)
+
+/** KHR shows as a rounded, thousands-separated whole number (e.g. "15,000 ៛", never "15000.00") — see formatMoney's own docblock. */
+const feeDisplay = computed(() => {
+  if (fee.value?.amount == null) return null
+  return formatMoney(Number(fee.value.amount), (fee.value.currency as 'USD' | 'KHR' | null) ?? 'USD')
+})
 const createErrors = ref<Record<string, string[]>>({})
 const createGeneralError = ref<string | null>(null)
 const creating = ref(false)
@@ -140,8 +148,7 @@ const lookupError = ref<string | null>(null)
 const photoFile = ref<File | null>(null)
 const photoPreview = ref<string | null>(null)
 const uploadInput = ref<HTMLInputElement | null>(null)
-const backCameraInput = ref<HTMLInputElement | null>(null)
-const frontCameraInput = ref<HTMLInputElement | null>(null)
+const webcamModalOpen = ref(false)
 
 const enrollmentOptions = computed(() =>
   enrollments.value.map((enrollment) => ({
@@ -225,9 +232,13 @@ function onPhotoChange(event: Event) {
   const file = input.files?.[0]
   if (!file) return
 
+  setPhotoFile(file)
+  input.value = ''
+}
+
+function setPhotoFile(file: File) {
   photoFile.value = file
   photoPreview.value = URL.createObjectURL(file)
-  input.value = ''
 }
 
 async function submitCreate() {
@@ -255,6 +266,20 @@ async function submitCreate() {
   } catch (e) {
     if (e instanceof ApiRequestError && e.errors) {
       createErrors.value = e.errors
+
+      // Every field error above renders inline next to its own input — but
+      // a rule like "the school hasn't configured an exam fee yet" lands on
+      // a key (`exam_fee_amount`) this form has no input for, and would
+      // otherwise fail completely silently: the request rejected, nothing
+      // visibly wrong. Anything on an unrendered key surfaces here instead.
+      const renderedFields = new Set([
+        'enrollment_id', 'first_name', 'last_name', 'english_name', 'gender',
+        'date_of_birth', 'phone', 'village_code', 'photo', 'has_paid',
+      ])
+      const unmapped = Object.entries(e.errors)
+        .filter(([field]) => !renderedFields.has(field))
+        .flatMap(([, messages]) => messages)
+      createGeneralError.value = unmapped.length > 0 ? unmapped.join(' ') : null
     } else {
       createGeneralError.value = e instanceof ApiRequestError ? e.message : t('admin.myExamApplications.submitFailed')
     }
@@ -362,26 +387,25 @@ onMounted(() => load())
                   class="inline-flex items-center gap-1.5 rounded-lg bg-primary-50 px-3 py-2 text-sm font-medium text-primary-800 hover:bg-primary-100"
                   @click="uploadInput?.click()"
                 >
+                  <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 7.5L12 3m0 0L7.5 7.5M12 3v13.5" />
+                  </svg>
                   {{ t('common.uploadPhoto') }}
                 </button>
                 <button
                   type="button"
                   class="inline-flex items-center gap-1.5 rounded-lg bg-primary-50 px-3 py-2 text-sm font-medium text-primary-800 hover:bg-primary-100"
-                  @click="backCameraInput?.click()"
+                  @click="webcamModalOpen = true"
                 >
-                  {{ t('common.takePhotoBack') }}
-                </button>
-                <button
-                  type="button"
-                  class="inline-flex items-center gap-1.5 rounded-lg bg-primary-50 px-3 py-2 text-sm font-medium text-primary-800 hover:bg-primary-100"
-                  @click="frontCameraInput?.click()"
-                >
-                  {{ t('common.takePhotoFront') }}
+                  <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.25 2.25 0 018.92 4.5h6.16c.891 0 1.71.484 2.083 1.267l.415.865a1.5 1.5 0 001.348.868h.334c1.036 0 1.875.84 1.875 1.875v9.375A2.25 2.25 0 0118.875 21H5.625a2.25 2.25 0 01-2.25-2.25V9.375c0-1.036.84-1.875 1.875-1.875h.334a1.5 1.5 0 001.35-.868l.893-.457z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" />
+                  </svg>
+                  {{ t('common.takePhoto') }}
                 </button>
               </div>
               <input ref="uploadInput" type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="hidden" @change="onPhotoChange" />
-              <input ref="backCameraInput" type="file" accept="image/jpeg,image/png,image/webp,image/gif" capture="environment" class="hidden" @change="onPhotoChange" />
-              <input ref="frontCameraInput" type="file" accept="image/jpeg,image/png,image/webp,image/gif" capture="user" class="hidden" @change="onPhotoChange" />
+              <WebcamCaptureModal v-model="webcamModalOpen" @captured="setPhotoFile" />
             </div>
 
             <div class="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2">
@@ -429,7 +453,7 @@ onMounted(() => load())
           <div class="rounded-lg bg-neutral-50 p-3 text-sm text-neutral-700">
             {{ t('admin.myExamApplications.feeLabel') }}:
             <span class="font-medium text-neutral-900">
-              {{ feeLoading ? '…' : fee?.amount != null ? `${fee.amount} ${fee.currency ?? ''}` : t('admin.myExamApplications.feeNotSet') }}
+              {{ feeLoading ? '…' : (feeDisplay ?? t('admin.myExamApplications.feeNotSet')) }}
             </span>
           </div>
 

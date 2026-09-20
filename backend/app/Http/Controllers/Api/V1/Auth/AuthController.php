@@ -152,6 +152,21 @@ final class AuthController extends Controller
             ...($newAvatarPath !== null ? ['avatar_path' => $newAvatarPath] : []),
         ]);
 
+        // A student's own "official" photo (used on ID cards, exam
+        // applications, and the admin Students list — see
+        // Student::photoUrl()) is a completely separate field from their
+        // login avatar. Keeping them in sync here means a student updating
+        // their profile picture from Account Settings doesn't leave the
+        // school admin looking at a blank photo in the Students list.
+        if ($newAvatarPath !== null && $user->student !== null) {
+            $previousStudentPhotoPath = $user->student->photo_path;
+            $user->student->update(['photo_path' => $newAvatarPath]);
+
+            if ($previousStudentPhotoPath !== null && $previousStudentPhotoPath !== $previousAvatarPath) {
+                Storage::disk('public')->delete($previousStudentPhotoPath);
+            }
+        }
+
         // Only removed once the new path is safely persisted — see
         // HomeSlideController::update() for why this ordering matters.
         if ($newAvatarPath !== null && $previousAvatarPath !== null) {

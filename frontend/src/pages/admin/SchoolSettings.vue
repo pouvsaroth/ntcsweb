@@ -33,6 +33,7 @@ const form = reactive({
   default_currency: 'USD' as 'USD' | 'KHR',
   khqr_template: '',
   monthly_payment_alert_days: '',
+  exam_fee_amount: '',
 })
 const logoFile = ref<File | null>(null)
 const logoPreview = ref<string | null>(null)
@@ -60,6 +61,7 @@ async function load() {
     form.default_currency = settings.default_currency
     form.khqr_template = settings.khqr_template ?? ''
     form.monthly_payment_alert_days = String(settings.monthly_payment_alert_days)
+    form.exam_fee_amount = settings.exam_fee_amount ?? ''
     logoPreview.value = settings.logo_url
     stampPreview.value = settings.stamp_url
   } catch (error) {
@@ -102,6 +104,7 @@ async function save() {
     form.default_currency = result.default_currency
     form.khqr_template = result.khqr_template ?? ''
     form.monthly_payment_alert_days = String(result.monthly_payment_alert_days)
+    form.exam_fee_amount = result.exam_fee_amount ?? ''
     logoPreview.value = result.logo_url
     logoFile.value = null
     stampPreview.value = result.stamp_url
@@ -207,6 +210,15 @@ onMounted(load)
           :label="t('admin.school.monthlyPaymentAlertDaysLabel')"
           :hint="t('admin.school.monthlyPaymentAlertDaysHint')"
           :error="errors.monthly_payment_alert_days?.[0]"
+        />
+        <BaseInput
+          v-model="form.exam_fee_amount"
+          type="number"
+          min="0"
+          step="1"
+          :label="t('admin.school.examFeeLabel')"
+          :hint="t('admin.school.examFeeHint')"
+          :error="errors.exam_fee_amount?.[0]"
         />
       </section>
 

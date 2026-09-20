@@ -39,10 +39,12 @@ class UpdateProfileRequest extends FormRequest
                     ->ignore($user->getKey()),
             ],
 
-            // Same shape as HomeSlide's/Student's upload, tighter size cap —
-            // an avatar has no legitimate reason to be as large as a homepage
-            // slide image.
-            'avatar' => ['nullable', 'image', 'mimes:jpeg,png,webp,gif', 'max:2048'],
+            // Same shape and size cap as every other image upload in the app
+            // (HomeSlide, Student, Staff, ...) — a webcam capture in
+            // particular is an uncompressed PNG and routinely exceeds a
+            // couple MB, so a tighter cap here just meant this was the one
+            // upload in the app that kept rejecting normal photos.
+            'avatar' => ['nullable', 'image', 'mimes:jpeg,png,webp,gif', 'max:10240'],
         ];
     }
 }

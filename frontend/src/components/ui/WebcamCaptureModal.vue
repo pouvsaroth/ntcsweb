@@ -27,19 +27,72 @@ const capturedPreview = ref<string | null>(null)
 const error = ref<string | null>(null)
 const starting = ref(false)
 
+/**
+ * `facingMode: 'user'` is a hint most laptop webcams and phone front
+ * cameras satisfy, but some external/virtual desktop webcams reject it
+ * outright with OverconstrainedError rather than just ignoring it — falling
+ * back to a bare, unconstrained request here is what makes "it should
+ * connect to the computer's camera too" actually true for those devices.
+ */
+async function requestCameraStream(): Promise<MediaStream> {
+  try {
+    return await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'OverconstrainedError') {
+      return await navigator.mediaDevices.getUserMedia({ video: true })
+    }
+    throw err
+  }
+}
+
+/**
+ * One generic "check your permissions" message was actively misleading for
+ * every cause but the one it named — a missing camera, one already locked
+ * by another app (Zoom/Teams), and an OS-level privacy block all produce
+ * different DOMException names and need different instructions to resolve.
+ */
+function describeCameraError(err: unknown): string {
+  // eslint-disable-next-line no-console
+  console.error('Failed to access the camera', err)
+
+  if (!(err instanceof DOMException)) return t('common.webcam.accessDenied')
+
+  switch (err.name) {
+    case 'NotAllowedError':
+    case 'SecurityError':
+      return t('common.webcam.accessDenied')
+    case 'NotFoundError':
+    case 'DevicesNotFoundError':
+      return t('common.webcam.noCameraFound')
+    case 'NotReadableError':
+    case 'TrackStartError':
+      return t('common.webcam.cameraInUse')
+    default:
+      return t('common.webcam.accessDenied')
+  }
+}
+
 async function startCamera() {
   error.value = null
   capturedPreview.value = null
   starting.value = true
 
+  if (!navigator.mediaDevices?.getUserMedia) {
+    // No HTTPS (or localhost/127.0.0.1) — the browser simply doesn't expose
+    // the camera API outside a secure context, regardless of permissions.
+    error.value = t('common.webcam.notSupported')
+    starting.value = false
+    return
+  }
+
   try {
-    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
+    stream = await requestCameraStream()
     if (videoEl.value) {
       videoEl.value.srcObject = stream
       await videoEl.value.play()
     }
-  } catch {
-    error.value = t('common.webcam.accessDenied')
+  } catch (err) {
+    error.value = describeCameraError(err)
   } finally {
     starting.value = false
   }

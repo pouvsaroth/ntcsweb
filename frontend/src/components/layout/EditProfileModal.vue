@@ -6,6 +6,7 @@ import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
+import WebcamCaptureModal from '@/components/ui/WebcamCaptureModal.vue'
 import { useAuthStore } from '@/stores/auth'
 import { ApiRequestError } from '@/types/api'
 
@@ -23,8 +24,7 @@ const generalError = ref<string | null>(null)
 const submitting = ref(false)
 
 const uploadInput = ref<HTMLInputElement | null>(null)
-const backCameraInput = ref<HTMLInputElement | null>(null)
-const frontCameraInput = ref<HTMLInputElement | null>(null)
+const webcamModalOpen = ref(false)
 
 watch(
   () => props.modelValue,
@@ -46,11 +46,15 @@ function onAvatarChange(event: Event) {
   const file = input.files?.[0]
   if (!file) return
 
-  avatarFile.value = file
-  avatarPreview.value = URL.createObjectURL(file)
+  setAvatarFile(file)
   // Cleared so re-picking the same file (e.g. retaking a photo that lands
   // at the same path) still fires @change next time.
   input.value = ''
+}
+
+function setAvatarFile(file: File) {
+  avatarFile.value = file
+  avatarPreview.value = URL.createObjectURL(file)
 }
 
 async function submit() {
@@ -89,11 +93,10 @@ async function submit() {
           <span v-else class="text-lg font-semibold text-primary-800">{{ form.name.charAt(0) || '?' }}</span>
         </div>
 
-        <!-- Three explicit sources rather than one plain file input: a
-             gallery pick, plus a `capture` input per camera (back/front) so
-             a phone opens straight into that camera instead of a chooser.
-             `capture` is simply ignored on desktop, where all three just
-             open the normal file browser. -->
+        <!-- Two sources: a gallery pick, plus one Camera button that opens a
+             live getUserMedia stream (WebcamCaptureModal) — works the same
+             way on a computer's webcam or a phone's camera, no separate
+             back/front picker needed. -->
         <div class="flex flex-wrap gap-2">
           <button
             type="button"
@@ -108,25 +111,13 @@ async function submit() {
           <button
             type="button"
             class="inline-flex items-center gap-1.5 rounded-lg bg-primary-50 px-3 py-2 text-sm font-medium text-primary-800 hover:bg-primary-100"
-            @click="backCameraInput?.click()"
+            @click="webcamModalOpen = true"
           >
             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.25 2.25 0 018.92 4.5h6.16c.891 0 1.71.484 2.083 1.267l.415.865a1.5 1.5 0 001.348.868h.334c1.036 0 1.875.84 1.875 1.875v9.375A2.25 2.25 0 0118.875 21H5.625a2.25 2.25 0 01-2.25-2.25V9.375c0-1.036.84-1.875 1.875-1.875h.334a1.5 1.5 0 001.35-.868l.893-.457z" />
               <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" />
             </svg>
-            {{ t('common.takePhotoBack') }}
-          </button>
-          <button
-            type="button"
-            class="inline-flex items-center gap-1.5 rounded-lg bg-primary-50 px-3 py-2 text-sm font-medium text-primary-800 hover:bg-primary-100"
-            @click="frontCameraInput?.click()"
-          >
-            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.25 2.25 0 018.92 4.5h6.16c.891 0 1.71.484 2.083 1.267l.415.865a1.5 1.5 0 001.348.868h.334c1.036 0 1.875.84 1.875 1.875v9.375A2.25 2.25 0 0118.875 21H5.625a2.25 2.25 0 01-2.25-2.25V9.375c0-1.036.84-1.875 1.875-1.875h.334a1.5 1.5 0 001.35-.868l.893-.457z" />
-              <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" />
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 10.5v4.5m-2.25-2.25h4.5" />
-            </svg>
-            {{ t('common.takePhotoFront') }}
+            {{ t('common.takePhoto') }}
           </button>
         </div>
 
@@ -134,22 +125,6 @@ async function submit() {
           ref="uploadInput"
           type="file"
           accept="image/jpeg,image/png,image/webp,image/gif"
-          class="hidden"
-          @change="onAvatarChange"
-        />
-        <input
-          ref="backCameraInput"
-          type="file"
-          accept="image/jpeg,image/png,image/webp,image/gif"
-          capture="environment"
-          class="hidden"
-          @change="onAvatarChange"
-        />
-        <input
-          ref="frontCameraInput"
-          type="file"
-          accept="image/jpeg,image/png,image/webp,image/gif"
-          capture="user"
           class="hidden"
           @change="onAvatarChange"
         />
@@ -164,5 +139,7 @@ async function submit() {
       <BaseButton variant="outline" @click="emit('update:modelValue', false)">{{ t('common.close') }}</BaseButton>
       <BaseButton :loading="submitting" @click="submit">{{ t('common.save') }}</BaseButton>
     </template>
+
+    <WebcamCaptureModal v-model="webcamModalOpen" @captured="setAvatarFile" />
   </BaseModal>
 </template>

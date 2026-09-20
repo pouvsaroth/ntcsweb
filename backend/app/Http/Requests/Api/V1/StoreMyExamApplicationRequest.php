@@ -42,10 +42,16 @@ class StoreMyExamApplicationRequest extends FormRequest
             'phone' => ['nullable', 'string', 'max:32'],
             'village_code' => ['nullable', 'string', 'max:20'],
             'photo' => ['nullable', 'image', 'mimes:jpeg,png,webp,gif', 'max:10240'],
-            // The "I have paid the exam fee" checkbox — must be checked to
-            // submit at all. See ExamApplicationService's docblock for why
-            // this doesn't create a real Payment record itself.
-            'has_paid' => ['required', 'accepted'],
+            // The "I have paid the exam fee" checkbox — informational only,
+            // not a gate: whether or not it's checked, submission still goes
+            // through and stamps student_marked_paid_at the same way (see
+            // ExamApplicationService::applyOnline()), which is itself never
+            // proof of real payment — the school still verifies and collects
+            // the fee in person via the admin's Print flow. Requiring it
+            // just blocked students who hadn't paid yet from applying at all,
+            // which defeats the point of letting them apply first and pay
+            // later.
+            'has_paid' => ['nullable', 'boolean'],
         ];
     }
 

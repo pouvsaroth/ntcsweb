@@ -168,7 +168,7 @@ class ExamApplicationTest extends TestCase
         $this->postJson('/api/v1/my-exam-applications', $this->validPayload($enrollment))->assertUnprocessable();
     }
 
-    public function test_submitting_without_marking_paid_fails(): void
+    public function test_submitting_without_marking_paid_still_succeeds(): void
     {
         $this->actingAsAdminWithPermissions([]);
         $this->setExamFee();
@@ -179,7 +179,7 @@ class ExamApplicationTest extends TestCase
         $payload = $this->validPayload($enrollment);
         $payload['has_paid'] = false;
 
-        $this->postJson('/api/v1/my-exam-applications', $payload)->assertUnprocessable();
+        $this->postJson('/api/v1/my-exam-applications', $payload)->assertCreated();
     }
 
     public function test_submitting_when_the_tenant_has_no_exam_fee_configured_fails(): void
