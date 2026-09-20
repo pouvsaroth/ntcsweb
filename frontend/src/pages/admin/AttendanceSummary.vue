@@ -211,7 +211,11 @@ onMounted(async () => {
     </template>
     <p v-else class="py-8 text-center text-sm text-neutral-400">{{ t('admin.attendance.pickClassPrompt') }}</p>
 
-    <BaseModal v-model="detailOpen" :title="detailRow?.student.name" size="lg">
+    <BaseModal
+      v-model="detailOpen"
+      :title="detailRow ? `${t('admin.attendance.historyTitle')} — ${detailRow.student.name}` : undefined"
+      size="lg"
+    >
       <BaseAlert v-if="detailError" variant="danger" class="mb-4">{{ detailError }}</BaseAlert>
 
       <div v-if="detailLoading" class="py-8 text-center text-sm text-neutral-400">{{ t('common.loading') }}</div>

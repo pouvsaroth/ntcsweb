@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Academic;
 
 use App\Models\AuditLog;
+use App\Models\ClassSchedule;
 use App\Models\Enrollment;
 use App\Models\Position;
 use App\Models\SchoolClass;
@@ -224,6 +225,33 @@ class AttendanceTest extends TestCase
 
         $response->assertJsonCount(1, 'data');
         $response->assertJsonPath('data.0.status', AttendanceStatus::PRESENT);
+    }
+
+    public function test_a_students_attendance_history_includes_the_classs_scheduled_start_and_end_time(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::ATTENDANCE_CREATE]);
+        [$class, $enrollments] = $this->classWithStudents(1);
+        $date = now();
+
+        ClassSchedule::factory()->forClass($class)->onDay($date->dayOfWeekIso)->at('13:00:00', '15:00:00')->create();
+        // A different day's slot on the same class — must not be picked instead of the one above.
+        ClassSchedule::factory()->forClass($class)->onDay($date->copy()->addDay()->dayOfWeekIso)->at('09:00:00', '10:00:00')->create();
+
+        $this->postJson("/api/v1/classes/{$class->id}/attendance", [
+            'date' => $date->toDateString(),
+            'entries' => [['enrollment_id' => $enrollments[0]->id, 'status' => AttendanceStatus::LATE, 'late_minutes' => 12]],
+        ])->assertOk();
+
+        $ownerStudent = Student::findOrFail($enrollments[0]->student_id);
+        $ownerUser = User::factory()->forTenant($this->tenant)->create();
+        $ownerStudent->forceFill(['user_id' => $ownerUser->id])->save();
+
+        $this->actingAsTenantUser($ownerUser);
+        $response = $this->getJson('/api/v1/my-attendance')->assertOk();
+
+        $response->assertJsonPath('data.0.class.start_time', '13:00');
+        $response->assertJsonPath('data.0.class.end_time', '15:00');
+        $response->assertJsonPath('data.0.late_minutes', 12);
     }
 
     public function test_viewing_all_attendance_requires_the_attendance_view_permission(): void

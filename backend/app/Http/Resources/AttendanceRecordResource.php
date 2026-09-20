@@ -27,10 +27,21 @@ class AttendanceRecordResource extends JsonResource
                 'student_code' => $this->student->student_code,
                 'name' => $this->student->fullName(),
             ]),
-            'class' => $this->whenLoaded('schoolClass', fn () => [
-                'id' => $this->schoolClass->id,
-                'name' => $this->schoolClass->name,
-            ]),
+            'class' => $this->whenLoaded('schoolClass', function () {
+                // The weekly slot this attendance date actually fell on — a class can meet
+                // several days a week, each with its own time, so we match by day-of-week
+                // rather than just taking the first schedule row.
+                $schedule = $this->schoolClass->relationLoaded('schedules')
+                    ? $this->schoolClass->schedules->firstWhere('day_of_week', $this->date?->dayOfWeekIso)
+                    : null;
+
+                return [
+                    'id' => $this->schoolClass->id,
+                    'name' => $this->schoolClass->name,
+                    'start_time' => $schedule ? substr((string) $schedule->start_time, 0, 5) : null,
+                    'end_time' => $schedule ? substr((string) $schedule->end_time, 0, 5) : null,
+                ];
+            }),
             'recorded_by' => $this->whenLoaded('recordedBy', fn () => $this->recordedBy?->name),
             'recorded_at' => $this->recorded_at?->toIso8601String(),
         ];

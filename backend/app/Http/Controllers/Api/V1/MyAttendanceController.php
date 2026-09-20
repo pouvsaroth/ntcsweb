@@ -24,7 +24,7 @@ final class MyAttendanceController extends Controller
     {
         $student = $this->studentOrFail($request);
 
-        $query = AttendanceRecord::query()->where('student_id', $student->id)->with('schoolClass');
+        $query = AttendanceRecord::query()->where('student_id', $student->id)->with('schoolClass.schedules');
 
         $records = ApiQuery::for($query, $request)
             ->filterable(['class_id', 'status'])

@@ -54,6 +54,7 @@ const statusVariant: Record<ExamApplicationStatus, 'success' | 'danger' | 'warni
 }
 
 const columns = [
+  { key: 'actions', label: t('admin.exams.columnActions') },
   { key: 'status', label: t('admin.exams.columnStatus') },
   { key: 'enrollment_code', label: t('admin.exams.columnEnrollmentCode') },
   { key: 'full_name', label: t('admin.exams.columnFullName') },
@@ -68,7 +69,6 @@ const columns = [
   { key: 'address', label: t('admin.exams.columnAddress') },
   { key: 'room_number', label: t('admin.exams.columnRoomNumber') },
   { key: 'table_no', label: t('admin.exams.columnTableNumber') },
-  { key: 'actions', label: t('admin.exams.columnActions') },
 ]
 
 function statusLabel(status: ExamApplicationStatus): string {
@@ -221,6 +221,27 @@ function openPrint() {
       :empty-message="t('admin.exams.emptyMessage')"
       @update:selected="selectedIds = $event as number[]"
     >
+      <template #cell-actions="{ row }">
+        <div class="flex gap-1.5">
+          <BaseButton
+            v-if="canUpdate"
+            variant="outline"
+            size="sm"
+            @click="openApplicationForm((row as ExamApplication).enrollment_code)"
+          >
+            {{ t('admin.exams.update') }}
+          </BaseButton>
+          <BaseButton
+            v-if="canUpdate && (row as ExamApplication).status === 'draft'"
+            variant="outline"
+            size="sm"
+            :disabled="acting"
+            @click="markNotExam(row as ExamApplication)"
+          >
+            {{ t('admin.exams.notExam') }}
+          </BaseButton>
+        </div>
+      </template>
       <template #cell-status="{ row }">
         <BaseBadge :variant="statusVariant[(row as ExamApplication).status]">{{ statusLabel((row as ExamApplication).status) }}</BaseBadge>
       </template>
@@ -241,17 +262,6 @@ function openPrint() {
       <template #cell-address="{ row }">{{ (row as ExamApplication).student.address ?? '—' }}</template>
       <template #cell-room_number="{ row }">{{ (row as ExamApplication).classroom?.name ?? '—' }}</template>
       <template #cell-table_no="{ row }">{{ (row as ExamApplication).table?.name ?? (row as ExamApplication).table_no ?? '—' }}</template>
-      <template #cell-actions="{ row }">
-        <BaseButton
-          v-if="canUpdate && (row as ExamApplication).status === 'draft'"
-          variant="outline"
-          size="sm"
-          :disabled="acting"
-          @click="markNotExam(row as ExamApplication)"
-        >
-          {{ t('admin.exams.notExam') }}
-        </BaseButton>
-      </template>
     </DataTable>
 
     <BasePagination v-if="meta" :meta="meta" sticky class="mt-4" @update:page="setPage" />

@@ -5,24 +5,18 @@ import { useRoute } from 'vue-router'
 
 import AttendanceTabs from '@/components/admin/AttendanceTabs.vue'
 import BaseAlert from '@/components/ui/BaseAlert.vue'
-import BaseBadge from '@/components/ui/BaseBadge.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
-import BasePagination from '@/components/ui/BasePagination.vue'
-import DataTable from '@/components/ui/DataTable.vue'
-import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import {
   attendanceService,
   attendanceStatuses,
   type AttendanceEntryInput,
-  type AttendanceRecord,
   type AttendanceRosterEntry,
   type AttendanceStatusValue,
 } from '@/services/attendance'
 import { classesService, type SchoolClass } from '@/services/classes'
 import { ApiRequestError } from '@/types/api'
-import { formatDate } from '@/utils/date'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -106,7 +100,6 @@ async function save() {
     await attendanceService.save(classId.value, date.value, entries)
     saved.value = true
     await loadRoster()
-    await fetchHistory()
   } catch (error) {
     saveError.value = error instanceof ApiRequestError ? error.message : t('admin.attendance.saveFailed')
   } finally {
@@ -115,25 +108,6 @@ async function save() {
 }
 
 watch([classId, date], () => void loadRoster())
-
-// --- History -----------------------------------------------------------
-
-const {
-  items: historyItems,
-  meta: historyMeta,
-  loading: historyLoading,
-  error: historyError,
-  setPage: setHistoryPage,
-  fetch: fetchHistory,
-} = usePaginatedResource<AttendanceRecord>((query) => attendanceService.list(query))
-
-const historyColumns = [
-  { key: 'date', label: t('admin.attendance.columnDate') },
-  { key: 'student', label: t('admin.attendance.columnStudent') },
-  { key: 'class', label: t('admin.attendance.columnClass') },
-  { key: 'status', label: t('admin.attendance.columnStatus') },
-  { key: 'remarks', label: t('admin.attendance.columnRemarks') },
-]
 
 function statusLabel(status: AttendanceStatusValue): string {
   return t(`admin.attendance.status${status.charAt(0)}${status.slice(1).toLowerCase()}`)
@@ -154,8 +128,6 @@ onMounted(async () => {
   if (Number.isInteger(classIdFromQuery) && classes.value.some((c) => c.id === classIdFromQuery)) {
     classId.value = classIdFromQuery
   }
-
-  await fetchHistory()
 })
 </script>
 
@@ -259,30 +231,6 @@ onMounted(async () => {
         <p v-else class="py-8 text-center text-sm text-neutral-400">{{ t('admin.attendance.noStudents') }}</p>
       </template>
       <p v-else class="py-8 text-center text-sm text-neutral-400">{{ t('admin.attendance.pickClassPrompt') }}</p>
-    </div>
-
-    <div>
-      <h2 class="mb-3 text-base font-semibold text-neutral-900">{{ t('admin.attendance.historyTitle') }}</h2>
-
-      <BaseAlert v-if="historyError" variant="danger" class="mb-4">{{ historyError }}</BaseAlert>
-
-      <DataTable
-        :columns="historyColumns"
-        :rows="historyItems"
-        row-key="id"
-        :loading="historyLoading"
-        :empty-message="t('admin.attendance.emptyMessage')"
-      >
-        <template #cell-date="{ row }">{{ formatDate(row.date) }}</template>
-        <template #cell-student="{ row }">{{ row.student?.name }}</template>
-        <template #cell-class="{ row }">{{ row.class?.name }}</template>
-        <template #cell-status="{ row }">
-          <BaseBadge :variant="statusVariant[row.status]">{{ statusLabel(row.status) }}</BaseBadge>
-        </template>
-        <template #cell-remarks="{ row }">{{ row.remarks ?? '—' }}</template>
-      </DataTable>
-
-      <BasePagination v-if="historyMeta" :meta="historyMeta" sticky class="mt-4" @update:page="setHistoryPage" />
     </div>
   </div>
 </template>

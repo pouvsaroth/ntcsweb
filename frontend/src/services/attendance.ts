@@ -33,7 +33,7 @@ export interface AttendanceRecord {
   late_minutes: number | null
   remarks: string | null
   student?: AttendanceStudent
-  class?: { id: number; name: string }
+  class?: { id: number; name: string; start_time: string | null; end_time: string | null }
   recorded_by?: string | null
   recorded_at?: string | null
 }

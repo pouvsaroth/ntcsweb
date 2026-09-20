@@ -19,7 +19,10 @@ const { items, meta, loading, error, setPage, fetch } = usePaginatedResource<Att
 const columns = [
   { key: 'date', label: t('admin.myAttendance.columnDate') },
   { key: 'class', label: t('admin.myAttendance.columnClass') },
+  { key: 'from_time', label: t('admin.myAttendance.columnFromTime') },
+  { key: 'to_time', label: t('admin.myAttendance.columnToTime') },
   { key: 'status', label: t('admin.myAttendance.columnStatus') },
+  { key: 'late_minutes', label: t('admin.myAttendance.columnLateMinutes') },
   { key: 'remarks', label: t('admin.myAttendance.columnRemarks') },
 ]
 
@@ -48,9 +51,12 @@ onMounted(() => fetch())
     <DataTable :columns="columns" :rows="items" row-key="id" :loading="loading" :empty-message="t('admin.myAttendance.emptyMessage')">
       <template #cell-date="{ row }">{{ formatDate(row.date) }}</template>
       <template #cell-class="{ row }">{{ row.class?.name }}</template>
+      <template #cell-from_time="{ row }">{{ row.class?.start_time ?? '—' }}</template>
+      <template #cell-to_time="{ row }">{{ row.class?.end_time ?? '—' }}</template>
       <template #cell-status="{ row }">
         <BaseBadge :variant="statusVariant[row.status]">{{ statusLabel(row.status) }}</BaseBadge>
       </template>
+      <template #cell-late_minutes="{ row }">{{ row.status === 'LATE' && row.late_minutes != null ? row.late_minutes : '—' }}</template>
       <template #cell-remarks="{ row }">{{ row.remarks ?? '—' }}</template>
     </DataTable>
 

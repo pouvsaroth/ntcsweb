@@ -30,7 +30,7 @@ final class AttendanceController extends Controller
             'date_to' => ['nullable', 'date'],
         ]);
 
-        $query = AttendanceRecord::query()->with(['student', 'schoolClass']);
+        $query = AttendanceRecord::query()->with(['student', 'schoolClass.schedules']);
 
         if ($request->filled('date_from')) {
             $query->whereDate('date', '>=', $request->string('date_from')->toString());
@@ -52,7 +52,7 @@ final class AttendanceController extends Controller
     {
         $this->authorize('view', $attendance);
 
-        return ApiResponse::success(new AttendanceRecordResource($attendance->load(['student', 'schoolClass', 'recordedBy'])));
+        return ApiResponse::success(new AttendanceRecordResource($attendance->load(['student', 'schoolClass.schedules', 'recordedBy'])));
     }
 
     /** GET /classes/{class}/attendance?date=YYYY-MM-DD — the "take attendance" screen's data source. */
