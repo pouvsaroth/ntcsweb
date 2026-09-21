@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 
+import { CENTRAL_HOSTS, ERP_HOST } from '@/config'
 import { firstAccessibleAdminPath } from '@/router/adminNav'
 import { useAuthStore } from '@/stores/auth'
 
@@ -655,6 +656,24 @@ const router = createRouter({
  * round trip they don't need.
  */
 router.beforeEach(async (to) => {
+  // Domain split: a school's own domain/subdomain serves only its public
+  // website; the shared ERP domain serves only the login/admin side. Pure
+  // hostname/path checks, so this runs before anything auth-related below.
+  // nginx (docker/nginx/prod.conf) is the primary enforcement — this is a
+  // client-side backstop for any environment that isn't behind it (see
+  // CENTRAL_HOSTS's docblock).
+  const hostname = window.location.hostname
+  const isPublicRoute = !to.meta.requiresAuth && !to.meta.guestOnly
+
+  if (hostname === ERP_HOST && isPublicRoute) {
+    return { path: '/login', query: to.query }
+  }
+
+  if (hostname !== ERP_HOST && !CENTRAL_HOSTS.includes(hostname) && !isPublicRoute) {
+    window.location.href = `https://${ERP_HOST}${to.fullPath}`
+    return false
+  }
+
   const auth = useAuthStore()
 
   if (!auth.initialized && (to.meta.requiresAuth || to.meta.guestOnly)) {

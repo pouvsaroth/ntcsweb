@@ -75,6 +75,23 @@ export const authService = {
     }
   },
 
+  /**
+   * The shared ERP login domain's "which school is this?" lookup — see
+   * AuthController::tenantsForLogin(). Never throws on a lookup failure
+   * (rate-limited, network hiccup, etc.); the caller just falls back to
+   * manual school entry, same as an empty result.
+   */
+  async tenantsForLogin(identity: string): Promise<{ id: number; slug: string; name: string }[]> {
+    try {
+      const result = await apiGetWithMeta<{ id: number; slug: string; name: string }[]>('/auth/tenants-for-login', {
+        params: { identity },
+      })
+      return result.data
+    } catch {
+      return []
+    }
+  },
+
   forgotPassword(email: string, tenant?: string) {
     return withCsrf(() => apiPost<void>('/auth/forgot-password', { email, tenant }))
   },

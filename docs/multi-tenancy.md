@@ -75,6 +75,42 @@ authenticates with a real `createToken()` bearer token and deliberately avoids
 exercises this ordering. Reverting the `appendToPriorityList()` call reproduces the 500
 immediately if this test is run — verified by hand while diagnosing the bug.
 
+### The shared ERP login domain
+
+`erp.newtechkh.com` is a central domain (`TENANCY_CENTRAL_DOMAINS`) with no `/public/*`
+content of its own — every school's own domain/subdomain serves only its public website,
+and every login/admin session goes through this one shared address instead. It's a
+subdomain of one tenant's own domain (`newtechkh.com`, the one actually DNS+TLS-configured
+domain today) rather than the platform's own `ntcsweb.com`, which is only ever a config
+default/placeholder in this codebase and has never been confirmed to resolve anywhere in
+production — see `docs/deployment.md`. This didn't need a new resolution mechanism, just a
+new way to fill in the existing one:
+
+- `App\Http\Controllers\Api\V1\Auth\AuthController::tenantsForLogin()` (public,
+  `GET /api/v1/auth/tenants-for-login?identity=`) looks up every **active** tenant with an
+  **active** `User` row matching that email/phone — across every tenant, not scoped to one,
+  which is fine since neither `User` nor `Tenant` uses `BelongsToTenant` (see above). Same
+  minimal id/slug/name shape as `TenantDirectoryController`, same `throttle:auth` limiter as
+  login itself (it's a slightly stronger oracle than the plain tenant directory — it
+  confirms an account exists somewhere for that identity).
+- The frontend (`Login.vue`) calls this first on the ERP domain, then submits the chosen
+  slug as the existing `tenant` field on the existing `/auth/login` call — resolved by
+  `RequestTenantResolver` exactly as it always has been. `AuthService::authenticate()`,
+  `EnsureTenantMatchesUser`, and `TenantContext` are all completely unchanged.
+- One identity can have separate `User` rows (different passwords) at more than one
+  tenant — already possible today (see `test_users_across_tenants_may_share_the_same_email`)
+  — so a match at 2+ tenants means the picker shows all of them and password verification
+  still only ever runs once, after a specific tenant is chosen. There is no "one identity,
+  many tenants" account model; these stay entirely separate accounts that merely share an
+  email.
+- A school's own domain redirecting `/admin`, `/login`, etc. to the ERP domain is handled
+  by `docker/nginx/prod.conf` (a `map $host $is_central_domain` block, hand-kept in sync
+  with `TENANCY_CENTRAL_DOMAINS`), with a client-side backstop in the SPA's router guard
+  (`frontend/src/router/index.ts`, using `frontend/src/config.ts`'s `CENTRAL_HOSTS`) for
+  any deployment not sitting behind that nginx config.
+- Super Admin login (`admin.ntcsweb.com`) is untouched and stays a separate central domain
+  — it is not merged into the shared ERP domain.
+
 ### Adding subdomain / custom domain support later
 
 Nothing changes. `DomainTenantResolver` already handles both cases; a school gets a

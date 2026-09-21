@@ -9,16 +9,19 @@ use App\Http\Requests\Api\V1\Auth\LoginRequest;
 use App\Http\Requests\Api\V1\Auth\UpdateProfileRequest;
 use App\Http\Resources\UserResource;
 use App\Http\Responses\ApiResponse;
+use App\Models\Tenant;
 use App\Models\User;
 use App\Services\Auth\AuthService;
 use App\Services\Billing\CurrencyConversionService;
 use App\Support\Audit\AuditAction;
 use App\Support\Audit\AuditLogger;
+use App\Support\Auth\PhoneNumber;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Laravel\Sanctum\TransientToken;
 
 /**
  * Sign-in and sign-out for both supported transports.
@@ -73,6 +76,59 @@ final class AuthController extends Controller
     }
 
     /**
+     * The shared ERP login domain (see RequestTenantResolver/TenantHost's
+     * `isCentral()`) has no hostname to resolve a tenant from, so the login
+     * form can't know in advance which school's credentials to check —
+     * unlike a school's own subdomain, where that's implicit. This lets it
+     * ask first: given an email/phone, which school(s) does an account
+     * actually exist at, so the picker (or an unambiguous single choice) can
+     * fill in the `tenant` field before the real `login()` call above runs
+     * completely unchanged.
+     *
+     * Deliberately public and deliberately minimal (id/slug/name only, same
+     * shape as TenantDirectoryController) — this is a *slightly* stronger
+     * oracle than that endpoint (it confirms an email has an account
+     * *somewhere*, not just that a school exists), which is exactly why it's
+     * throttled the same as login itself (`throttle:auth`, see routes/api.php)
+     * rather than the looser `throttle:api` the plain tenant directory uses.
+     * An unknown identity or one with no active account anywhere returns an
+     * empty list, not an error — the frontend falls back to manual entry.
+     */
+    public function tenantsForLogin(Request $request): JsonResponse
+    {
+        $identity = trim((string) $request->query('identity', ''));
+
+        if ($identity === '') {
+            return ApiResponse::success([]);
+        }
+
+        $email = mb_strtolower($identity);
+        $phone = PhoneNumber::normalize($identity);
+
+        $tenants = Tenant::query()
+            ->active()
+            ->whereHas('users', function ($query) use ($email, $phone) {
+                $query->active()->where(function ($query) use ($email, $phone) {
+                    $query->where('email', $email);
+
+                    if ($phone !== null) {
+                        $query->orWhere('phone', $phone);
+                    }
+                });
+            })
+            ->orderBy('name')
+            ->get(['id', 'slug', 'name']);
+
+        return ApiResponse::success(
+            $tenants->map(fn (Tenant $tenant) => [
+                'id' => $tenant->id,
+                'slug' => $tenant->slug,
+                'name' => $tenant->name,
+            ])->all()
+        );
+    }
+
+    /**
      * Ends the current session or revokes the presenting token — never both,
      * and never every token, so signing out of a phone does not sign the user
      * out of their laptop.
@@ -85,7 +141,7 @@ final class AuthController extends Controller
 
         $token = $user?->currentAccessToken();
 
-        if ($token !== null && ! $token instanceof \Laravel\Sanctum\TransientToken) {
+        if ($token !== null && ! $token instanceof TransientToken) {
             $token->delete();
         } else {
             $user?->deactivateSessionLogin();
