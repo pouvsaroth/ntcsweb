@@ -4,6 +4,11 @@ import { firstAccessibleAdminPath } from '@/router/adminNav'
 import { useAuthStore } from '@/stores/auth'
 
 const authRoutes: RouteRecordRaw[] = [
+  // The bare domain root has no route of its own — send it to the login
+  // form. Redirecting to the *named* route (rather than duplicating a
+  // component here) means the guestOnly guard below still runs against it,
+  // so an already-authenticated visitor lands on their dashboard instead.
+  { path: '', redirect: { name: 'login' } },
   { path: 'login', name: 'login', component: () => import('@/pages/auth/Login.vue'), meta: { guestOnly: true } },
   {
     path: 'forgot-password',
