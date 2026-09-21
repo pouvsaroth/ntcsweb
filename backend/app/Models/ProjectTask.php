@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -24,7 +25,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string $priority
  * @property int $order
  */
-#[Fillable(['project_id', 'project_column_id', 'title', 'description', 'priority', 'due_date', 'assignee_id', 'order', 'created_by'])]
+#[Fillable([
+    'project_id', 'project_column_id', 'title', 'description', 'priority',
+    'start_date', 'due_date', 'estimated_hours', 'project_milestone_id',
+    'assignee_id', 'order', 'created_by',
+])]
 class ProjectTask extends Model
 {
     use Auditable, HasFactory, SoftDeletes;
@@ -45,7 +50,9 @@ class ProjectTask extends Model
     protected function casts(): array
     {
         return [
+            'start_date' => 'date',
             'due_date' => 'date',
+            'estimated_hours' => 'decimal:2',
         ];
     }
 
@@ -57,6 +64,11 @@ class ProjectTask extends Model
     public function column(): BelongsTo
     {
         return $this->belongsTo(ProjectColumn::class, 'project_column_id');
+    }
+
+    public function milestone(): BelongsTo
+    {
+        return $this->belongsTo(ProjectMilestone::class, 'project_milestone_id');
     }
 
     public function assignee(): BelongsTo
@@ -72,6 +84,43 @@ class ProjectTask extends Model
     public function comments(): HasMany
     {
         return $this->hasMany(ProjectTaskComment::class)->latest();
+    }
+
+    public function labels(): BelongsToMany
+    {
+        return $this->belongsToMany(ProjectLabel::class, 'project_task_label');
+    }
+
+    public function checklistItems(): HasMany
+    {
+        return $this->hasMany(ProjectTaskChecklistItem::class)->orderBy('order');
+    }
+
+    public function attachments(): HasMany
+    {
+        return $this->hasMany(ProjectTaskAttachment::class);
+    }
+
+    /** Cards this one depends on (its blockers). */
+    public function dependencies(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            self::class,
+            'project_task_dependencies',
+            'project_task_id',
+            'depends_on_project_task_id',
+        );
+    }
+
+    /** Cards that depend on this one. */
+    public function dependents(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            self::class,
+            'project_task_dependencies',
+            'depends_on_project_task_id',
+            'project_task_id',
+        );
     }
 
     public function auditModule(): string

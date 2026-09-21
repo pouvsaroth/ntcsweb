@@ -27,14 +27,20 @@ final class ProjectTaskController extends Controller
     {
         $task = $this->tasks->create($projectColumn, $request->user(), $request->validated());
 
-        return ApiResponse::created(new ProjectTaskResource($task->load(['assignee', 'creator'])));
+        return ApiResponse::created($this->taskResource($task));
     }
 
     public function update(UpdateProjectTaskRequest $request, ProjectTask $projectTask): JsonResponse
     {
-        $projectTask->update($request->validated());
+        $data = $request->validated();
 
-        return ApiResponse::success(new ProjectTaskResource($projectTask->load(['assignee', 'creator'])));
+        $projectTask->update(collect($data)->except('label_ids')->all());
+
+        if (array_key_exists('label_ids', $data)) {
+            $projectTask->labels()->sync($data['label_ids']);
+        }
+
+        return ApiResponse::success($this->taskResource($projectTask));
     }
 
     public function destroy(ProjectTask $projectTask): JsonResponse
@@ -52,7 +58,15 @@ final class ProjectTaskController extends Controller
 
         $task = $this->tasks->move($projectTask, $destination, (int) $request->validated('order'));
 
-        return ApiResponse::success(new ProjectTaskResource($task->load(['assignee', 'creator'])));
+        return ApiResponse::success($this->taskResource($task));
+    }
+
+    /** Every write endpoint returns the card in the same fully-loaded shape the board renders it in. */
+    private function taskResource(ProjectTask $task): ProjectTaskResource
+    {
+        return new ProjectTaskResource($task->load([
+            'assignee', 'creator', 'milestone', 'labels', 'checklistItems', 'attachments.uploadedBy', 'dependencies',
+        ]));
     }
 
     /**

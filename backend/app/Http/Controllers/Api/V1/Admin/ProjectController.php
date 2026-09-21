@@ -44,7 +44,11 @@ final class ProjectController extends Controller
         $this->authorize('view', $project);
 
         return ApiResponse::success(new ProjectResource(
-            $project->load(['creator', 'columns.tasks.assignee', 'columns.tasks.creator'])
+            $project->load([
+                'creator', 'milestones',
+                'columns.tasks.assignee', 'columns.tasks.creator', 'columns.tasks.milestone',
+                'columns.tasks.labels', 'columns.tasks.checklistItems', 'columns.tasks.dependencies',
+            ])
         ));
     }
 

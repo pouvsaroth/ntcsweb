@@ -24,12 +24,20 @@ class StoreProjectTaskRequest extends FormRequest
     {
         $tenantId = app(TenantContext::class)->idOrFail();
 
+        /** @var ProjectColumn $column */
+        $column = $this->route('project_column');
+
         return [
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:5000'],
             'priority' => ['sometimes', Rule::in([ProjectTask::PRIORITY_LOW, ProjectTask::PRIORITY_MEDIUM, ProjectTask::PRIORITY_HIGH])],
-            'due_date' => ['nullable', 'date'],
+            'start_date' => ['nullable', 'date'],
+            'due_date' => ['nullable', 'date', 'after_or_equal:start_date'],
+            'estimated_hours' => ['nullable', 'numeric', 'min:0', 'max:9999.99'],
+            'project_milestone_id' => ['nullable', 'integer', Rule::exists('tenant.project_milestones', 'id')->where('project_id', $column->project_id)],
             'assignee_id' => ['nullable', 'integer', Rule::exists('users', 'id')->where('tenant_id', $tenantId)],
+            'label_ids' => ['sometimes', 'array'],
+            'label_ids.*' => ['integer', Rule::exists('tenant.project_labels', 'id')],
         ];
     }
 }

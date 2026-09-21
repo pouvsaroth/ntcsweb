@@ -205,6 +205,98 @@ class ProjectBoardTest extends TestCase
         $this->assertSoftDeleted('project_tasks', ['id' => $task->id], 'tenant');
     }
 
+    public function test_estimated_hours_cannot_be_negative(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::PROJECTS_UPDATE]);
+        $project = Project::factory()->create();
+        $column = ProjectColumn::factory()->create(['project_id' => $project->id]);
+
+        $response = $this->postJson("/api/v1/project-columns/{$column->id}/tasks", [
+            'title' => 'Design the homepage',
+            'estimated_hours' => -1,
+        ]);
+
+        $response->assertUnprocessable();
+    }
+
+    public function test_estimated_hours_accepts_decimals(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::PROJECTS_UPDATE]);
+        $project = Project::factory()->create();
+        $column = ProjectColumn::factory()->create(['project_id' => $project->id]);
+
+        $response = $this->postJson("/api/v1/project-columns/{$column->id}/tasks", [
+            'title' => 'Design the homepage',
+            'estimated_hours' => 4.5,
+        ]);
+
+        $response->assertCreated();
+        $response->assertJsonPath('data.estimated_hours', 4.5);
+    }
+
+    public function test_start_date_cannot_be_after_due_date(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::PROJECTS_UPDATE]);
+        $project = Project::factory()->create();
+        $column = ProjectColumn::factory()->create(['project_id' => $project->id]);
+
+        $response = $this->postJson("/api/v1/project-columns/{$column->id}/tasks", [
+            'title' => 'Design the homepage',
+            'start_date' => '2026-02-10',
+            'due_date' => '2026-02-01',
+        ]);
+
+        $response->assertUnprocessable();
+    }
+
+    public function test_updating_only_the_start_date_is_still_validated_against_the_tasks_existing_due_date(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::PROJECTS_UPDATE]);
+        $project = Project::factory()->create();
+        $column = ProjectColumn::factory()->create(['project_id' => $project->id]);
+        $task = ProjectTask::factory()->create([
+            'project_id' => $project->id,
+            'project_column_id' => $column->id,
+            'due_date' => '2026-02-01',
+        ]);
+
+        $response = $this->putJson("/api/v1/project-tasks/{$task->id}", ['start_date' => '2026-02-10']);
+
+        $response->assertUnprocessable();
+    }
+
+    public function test_a_task_can_be_assigned_to_a_milestone_within_the_same_project(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::PROJECTS_UPDATE]);
+        $project = Project::factory()->create();
+        $column = ProjectColumn::factory()->create(['project_id' => $project->id]);
+        $milestone = \App\Models\ProjectMilestone::factory()->create(['project_id' => $project->id]);
+
+        $response = $this->postJson("/api/v1/project-columns/{$column->id}/tasks", [
+            'title' => 'Design the homepage',
+            'project_milestone_id' => $milestone->id,
+        ]);
+
+        $response->assertCreated();
+        $response->assertJsonPath('data.milestone.id', $milestone->id);
+    }
+
+    public function test_a_task_cannot_be_assigned_to_a_milestone_from_another_project(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::PROJECTS_UPDATE]);
+        $project = Project::factory()->create();
+        $otherProject = Project::factory()->create();
+        $column = ProjectColumn::factory()->create(['project_id' => $project->id]);
+        $milestone = \App\Models\ProjectMilestone::factory()->create(['project_id' => $otherProject->id]);
+
+        $response = $this->postJson("/api/v1/project-columns/{$column->id}/tasks", [
+            'title' => 'Design the homepage',
+            'project_milestone_id' => $milestone->id,
+        ]);
+
+        $response->assertUnprocessable();
+    }
+
     public function test_a_task_can_be_assigned_to_a_tenant_user(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::PROJECTS_UPDATE]);

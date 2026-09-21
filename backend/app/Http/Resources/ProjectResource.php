@@ -23,6 +23,7 @@ class ProjectResource extends JsonResource
             'created_by' => $this->whenLoaded('creator', fn () => $this->creator?->name),
             'task_count' => $this->whenCounted('tasks'),
             'columns' => ProjectColumnResource::collection($this->whenLoaded('columns')),
+            'milestones' => ProjectMilestoneResource::collection($this->whenLoaded('milestones')),
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }

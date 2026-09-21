@@ -24,16 +24,25 @@ final class ProjectTaskService
         $maxOrder = $column->tasks()->max('order');
         $nextOrder = $maxOrder === null ? 0 : $maxOrder + 1;
 
-        return $column->tasks()->create([
+        $task = $column->tasks()->create([
             'project_id' => $column->project_id,
             'title' => $data['title'],
             'description' => $data['description'] ?? null,
             'priority' => $data['priority'] ?? ProjectTask::PRIORITY_MEDIUM,
+            'start_date' => $data['start_date'] ?? null,
             'due_date' => $data['due_date'] ?? null,
+            'estimated_hours' => $data['estimated_hours'] ?? null,
+            'project_milestone_id' => $data['project_milestone_id'] ?? null,
             'assignee_id' => $data['assignee_id'] ?? null,
             'order' => $nextOrder,
             'created_by' => $creator->getKey(),
         ]);
+
+        if (array_key_exists('label_ids', $data)) {
+            $task->labels()->sync($data['label_ids']);
+        }
+
+        return $task;
     }
 
     public function move(ProjectTask $task, ProjectColumn $destination, int $targetIndex): ProjectTask

@@ -38,8 +38,8 @@ class Project extends Model
     ];
 
     /**
-     * Soft-deleting a project cascades to its columns and tasks — a column/
-     * task is only ever reached through its (non-deleted) project, so
+     * Soft-deleting a project cascades to its columns, tasks, and milestones
+     * — each is only ever reached through its (non-deleted) project, so
      * leaving them as live rows after their project is gone would just be
      * unreachable clutter. Deletes one at a time (not a bulk query delete)
      * so each row still fires its own model events — Auditable logs each
@@ -50,12 +50,18 @@ class Project extends Model
         static::deleting(function (Project $project) {
             $project->tasks()->get()->each->delete();
             $project->columns()->get()->each->delete();
+            $project->milestones()->get()->each->delete();
         });
     }
 
     public function columns(): HasMany
     {
         return $this->hasMany(ProjectColumn::class)->orderBy('order');
+    }
+
+    public function milestones(): HasMany
+    {
+        return $this->hasMany(ProjectMilestone::class)->orderBy('order');
     }
 
     public function tasks(): HasMany

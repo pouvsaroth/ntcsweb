@@ -23,7 +23,6 @@ use App\Http\Controllers\Api\V1\Admin\AssetRepairController;
 use App\Http\Controllers\Api\V1\Admin\AssetReportController;
 use App\Http\Controllers\Api\V1\Admin\AttendanceController;
 use App\Http\Controllers\Api\V1\Admin\AuditLogController;
-use App\Http\Controllers\Api\V1\Admin\DatabaseBackupController;
 use App\Http\Controllers\Api\V1\Admin\BillingDashboardController;
 use App\Http\Controllers\Api\V1\Admin\BookCategoryController;
 use App\Http\Controllers\Api\V1\Admin\BookController;
@@ -32,11 +31,12 @@ use App\Http\Controllers\Api\V1\Admin\ClassroomController;
 use App\Http\Controllers\Api\V1\Admin\ClassroomTableController;
 use App\Http\Controllers\Api\V1\Admin\CoursePackageController;
 use App\Http\Controllers\Api\V1\Admin\CurrencyRateController;
+use App\Http\Controllers\Api\V1\Admin\DatabaseBackupController;
 use App\Http\Controllers\Api\V1\Admin\DepartmentController;
 use App\Http\Controllers\Api\V1\Admin\EnrollmentController;
+use App\Http\Controllers\Api\V1\Admin\EnrollmentPackageController;
 use App\Http\Controllers\Api\V1\Admin\ExamApplicationController;
 use App\Http\Controllers\Api\V1\Admin\ExamScoreController;
-use App\Http\Controllers\Api\V1\Admin\EnrollmentPackageController;
 use App\Http\Controllers\Api\V1\Admin\ExpenseController;
 use App\Http\Controllers\Api\V1\Admin\FinancialTransactionController;
 use App\Http\Controllers\Api\V1\Admin\FormCategoryController;
@@ -46,12 +46,12 @@ use App\Http\Controllers\Api\V1\Admin\GeneralSettingsController;
 use App\Http\Controllers\Api\V1\Admin\HomeSlideController as AdminHomeSlideController;
 use App\Http\Controllers\Api\V1\Admin\IncomeController;
 use App\Http\Controllers\Api\V1\Admin\InvoiceController;
-use App\Http\Controllers\Api\V1\Admin\MonthlyInvoiceController;
-use App\Http\Controllers\Api\V1\Admin\MonthlyPaymentAlertController;
 use App\Http\Controllers\Api\V1\Admin\LanguageController;
 use App\Http\Controllers\Api\V1\Admin\LeaveRequestController;
 use App\Http\Controllers\Api\V1\Admin\LookupCategoryController;
 use App\Http\Controllers\Api\V1\Admin\LookupValueController;
+use App\Http\Controllers\Api\V1\Admin\MonthlyInvoiceController;
+use App\Http\Controllers\Api\V1\Admin\MonthlyPaymentAlertController;
 use App\Http\Controllers\Api\V1\Admin\PaymentController;
 use App\Http\Controllers\Api\V1\Admin\PositionController;
 use App\Http\Controllers\Api\V1\Admin\ProductController;
@@ -59,8 +59,13 @@ use App\Http\Controllers\Api\V1\Admin\ProductVariantController;
 use App\Http\Controllers\Api\V1\Admin\ProgramController as AdminProgramController;
 use App\Http\Controllers\Api\V1\Admin\ProjectColumnController;
 use App\Http\Controllers\Api\V1\Admin\ProjectController;
+use App\Http\Controllers\Api\V1\Admin\ProjectLabelController;
+use App\Http\Controllers\Api\V1\Admin\ProjectMilestoneController;
+use App\Http\Controllers\Api\V1\Admin\ProjectTaskAttachmentController;
+use App\Http\Controllers\Api\V1\Admin\ProjectTaskChecklistItemController;
 use App\Http\Controllers\Api\V1\Admin\ProjectTaskCommentController;
 use App\Http\Controllers\Api\V1\Admin\ProjectTaskController;
+use App\Http\Controllers\Api\V1\Admin\ProjectTaskDependencyController;
 use App\Http\Controllers\Api\V1\Admin\PromotionController as AdminPromotionController;
 use App\Http\Controllers\Api\V1\Admin\RepairShopController;
 use App\Http\Controllers\Api\V1\Admin\ResignationRequestController;
@@ -87,10 +92,10 @@ use App\Http\Controllers\Api\V1\MyAssetController;
 use App\Http\Controllers\Api\V1\MyAttendanceController;
 use App\Http\Controllers\Api\V1\MyExamApplicationController;
 use App\Http\Controllers\Api\V1\MyInvoiceController;
-use App\Http\Controllers\Api\V1\MyMonthlyPaymentAlertController;
 use App\Http\Controllers\Api\V1\MyLeaveRequestController;
-use App\Http\Controllers\Api\V1\MyStudentFeedbackController;
+use App\Http\Controllers\Api\V1\MyMonthlyPaymentAlertController;
 use App\Http\Controllers\Api\V1\MyResignationRequestController;
+use App\Http\Controllers\Api\V1\MyStudentFeedbackController;
 use App\Http\Controllers\Api\V1\MyVideoController;
 use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\Public\CoursePackageController as PublicCoursePackageController;
@@ -159,6 +164,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         // LoginRequest, so one address cannot grind through many accounts.
         Route::middleware('throttle:auth')->group(function () {
             Route::post('login', [AuthController::class, 'login'])->name('login');
+            Route::get('tenants-for-login', [AuthController::class, 'tenantsForLogin'])->name('tenants-for-login');
             Route::post('forgot-password', [PasswordController::class, 'forgot'])->name('forgot-password');
             Route::post('reset-password', [PasswordController::class, 'reset'])->name('reset-password');
         });
@@ -338,6 +344,30 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('project-tasks/{project_task}/comments', [ProjectTaskCommentController::class, 'index'])->name('project-tasks.comments.index');
         Route::post('project-tasks/{project_task}/comments', [ProjectTaskCommentController::class, 'store'])->name('project-tasks.comments.store');
         Route::delete('project-task-comments/{project_task_comment}', [ProjectTaskCommentController::class, 'destroy'])->name('project-task-comments.destroy');
+
+        // Sprint/Milestone — per-project, same lifecycle as columns.
+        Route::post('projects/{project}/milestones', [ProjectMilestoneController::class, 'store'])->name('projects.milestones.store');
+        Route::put('project-milestones/{project_milestone}', [ProjectMilestoneController::class, 'update'])->name('project-milestones.update');
+        Route::delete('project-milestones/{project_milestone}', [ProjectMilestoneController::class, 'destroy'])->name('project-milestones.destroy');
+
+        // Labels — a tenant-wide catalog shared by every project's cards, not nested under one project.
+        Route::get('project-labels', [ProjectLabelController::class, 'index'])->name('project-labels.index');
+        Route::post('project-labels', [ProjectLabelController::class, 'store'])->name('project-labels.store');
+        Route::delete('project-labels/{project_label}', [ProjectLabelController::class, 'destroy'])->name('project-labels.destroy');
+
+        // Checklist/Subtasks.
+        Route::post('project-tasks/{project_task}/checklist-items', [ProjectTaskChecklistItemController::class, 'store'])->name('project-tasks.checklist-items.store');
+        Route::put('project-task-checklist-items/{project_task_checklist_item}', [ProjectTaskChecklistItemController::class, 'update'])->name('project-task-checklist-items.update');
+        Route::delete('project-task-checklist-items/{project_task_checklist_item}', [ProjectTaskChecklistItemController::class, 'destroy'])->name('project-task-checklist-items.destroy');
+
+        // Attachments.
+        Route::get('project-tasks/{project_task}/attachments', [ProjectTaskAttachmentController::class, 'index'])->name('project-tasks.attachments.index');
+        Route::post('project-tasks/{project_task}/attachments', [ProjectTaskAttachmentController::class, 'store'])->name('project-tasks.attachments.store');
+        Route::delete('project-tasks/{project_task}/attachments/{attachment}', [ProjectTaskAttachmentController::class, 'destroy'])->name('project-tasks.attachments.destroy');
+
+        // Dependencies — "this card depends on that card."
+        Route::post('project-tasks/{project_task}/dependencies', [ProjectTaskDependencyController::class, 'store'])->name('project-tasks.dependencies.store');
+        Route::delete('project-tasks/{project_task}/dependencies/{depends_on_project_task}', [ProjectTaskDependencyController::class, 'destroy'])->name('project-tasks.dependencies.destroy');
 
         Route::apiResource('home-slides', AdminHomeSlideController::class);
         Route::apiResource('gallery', AdminGalleryController::class);

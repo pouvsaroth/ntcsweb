@@ -46,6 +46,9 @@ const priorityVariant: Record<string, 'neutral' | 'warning' | 'danger'> = {
   high: 'danger',
 }
 
+/** Every card across every column, for the Edit/Add Card modal's dependency picker — a card can't depend on one in a different project anyway, so the whole board's own task list is exactly the right candidate set. */
+const allTasks = computed(() => project.value?.columns.flatMap((c) => c.tasks) ?? [])
+
 async function load() {
   loading.value = true
   error.value = null
@@ -398,9 +401,22 @@ async function submitMoveNote() {
               </button>
               <p class="pr-4 text-sm font-medium text-neutral-900">{{ task.title }}</p>
               <p v-if="task.description" class="mt-1 line-clamp-2 text-xs text-neutral-500">{{ task.description }}</p>
+              <div v-if="task.labels.length > 0" class="mt-2 flex flex-wrap gap-1">
+                <span
+                  v-for="label in task.labels"
+                  :key="label.id"
+                  class="rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] font-medium text-neutral-600"
+                >
+                  {{ label.name }}
+                </span>
+              </div>
               <div class="mt-2 flex flex-wrap items-center gap-2">
                 <BaseBadge :variant="priorityVariant[task.priority]">{{ t(`admin.projects.priority${task.priority.charAt(0).toUpperCase()}${task.priority.slice(1)}`) }}</BaseBadge>
+                <span v-if="task.milestone" class="text-xs text-neutral-400">{{ task.milestone.name }}</span>
                 <span v-if="task.due_date" class="text-xs text-neutral-400">{{ formatDate(task.due_date) }}</span>
+                <span v-if="task.checklist_progress && task.checklist_progress.total > 0" class="text-xs text-neutral-400">
+                  {{ t('admin.projects.checklistProgress', { completed: task.checklist_progress.completed, total: task.checklist_progress.total }) }}
+                </span>
                 <span v-if="task.assignee" class="ml-auto truncate text-xs text-neutral-500">{{ task.assignee }}</span>
               </div>
             </div>
@@ -439,6 +455,8 @@ async function submitMoveNote() {
       v-model="taskModalOpen"
       :column-id="taskTargetColumnId ?? undefined"
       :task="editingTask"
+      :milestones="project?.milestones"
+      :candidate-tasks="allTasks"
       @saved="onTaskSaved"
     />
 
