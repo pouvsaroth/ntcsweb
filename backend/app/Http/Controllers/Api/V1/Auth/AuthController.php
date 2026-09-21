@@ -206,7 +206,11 @@ final class AuthController extends Controller
 
         $user->loadMissing('roles', 'tenant');
 
-        $tenant = $this->context->get();
+        // hostname() only returns the real custom domain when primaryDomain
+        // is already eager-loaded — otherwise it silently falls back to
+        // slug.root_domain, and the context's tenant never carries this
+        // relation on its own.
+        $tenant = $this->context->get()?->loadMissing('primaryDomain');
 
         return ApiResponse::success(
             new UserResource($user),

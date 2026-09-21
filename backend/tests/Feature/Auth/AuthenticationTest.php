@@ -6,6 +6,7 @@ namespace Tests\Feature\Auth;
 
 use App\Models\Role;
 use App\Models\Tenant;
+use App\Models\TenantDomain;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -197,6 +198,31 @@ class AuthenticationTest extends TestCase
 
         $response->assertOk();
         $response->assertJsonPath('meta.tenant.hostname', 'newtech.'.config('tenancy.root_domain'));
+    }
+
+    /**
+     * Regression test: `me()` must eager-load the tenant's primaryDomain
+     * relation itself — Tenant::hostname() silently falls back to the slug
+     * subdomain whenever that relation isn't already loaded on the model,
+     * and the tenant resolved onto TenantContext never carries it by default.
+     */
+    public function test_me_exposes_a_custom_domain_when_one_is_the_tenants_primary(): void
+    {
+        TenantDomain::create([
+            'tenant_id' => $this->tenant->id,
+            'hostname' => 'newtechkh.com',
+            'type' => TenantDomain::TYPE_CUSTOM,
+            'is_primary' => true,
+            'verified_at' => now(),
+        ]);
+
+        $user = User::factory()->forTenant($this->tenant)->create();
+
+        $this->actingAsTenantUser($user);
+        $response = $this->getJson('/api/v1/auth/me');
+
+        $response->assertOk();
+        $response->assertJsonPath('meta.tenant.hostname', 'newtechkh.com');
     }
 
     public function test_a_suspended_users_live_session_stops_working_immediately(): void
