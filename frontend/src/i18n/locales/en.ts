@@ -176,6 +176,7 @@ const en = {
   },
 
   auth: {
+    platformTagline: 'Sign in to manage your school',
     school: 'School',
     schoolHint: 'Type your school\'s code so we know which account to check. Leave blank if you\'re signing in with a platform admin account.',
     schoolPlaceholder: 'e.g. newtech',

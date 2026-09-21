@@ -173,6 +173,7 @@ const ja: MessageSchema = {
   },
 
   auth: {
+    platformTagline: 'ログインして学校を管理する',
     school: '学校',
     schoolHint: 'どちらのアカウントを確認すればよいか分かるよう、学校のコードを入力してください。プラットフォーム管理者アカウントでサインインする場合は空欄のままにしてください。',
     schoolPlaceholder: '例: newtech',

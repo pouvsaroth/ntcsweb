@@ -173,6 +173,7 @@ const zh: MessageSchema = {
   },
 
   auth: {
+    platformTagline: '登录以管理您的学校',
     school: '学校',
     schoolHint: '请输入您学校的代码，以便我们确认要查询的账户。如果您使用平台管理员账户登录，请留空。',
     schoolPlaceholder: '例如：newtech',

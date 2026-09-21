@@ -173,6 +173,7 @@ const ko: MessageSchema = {
   },
 
   auth: {
+    platformTagline: '로그인하여 학교를 관리하세요',
     school: '학교',
     schoolHint: '어느 계정을 확인해야 하는지 알 수 있도록 학교 코드를 입력해 주세요. 플랫폼 관리자 계정으로 로그인하는 경우 비워 두세요.',
     schoolPlaceholder: '예: newtech',
