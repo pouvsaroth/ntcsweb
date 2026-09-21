@@ -649,10 +649,13 @@ router.beforeEach(async (to) => {
 
   // A student account only has permissions for its own handful of
   // self-service pages under /admin/my-* (see studentAllowed below) — sent
-  // back to /admin on anything else, which the dashboard-permission check
-  // right below then routes on to whichever of those they can actually reach.
+  // straight to the first of those they can actually reach on anything else.
+  // Must not redirect to plain /admin: that's the dashboard route, which
+  // isn't studentAllowed either, so bouncing there would re-trigger this
+  // exact check and redirect forever.
   if (to.meta.requiresAuth && auth.hasRole('student') && !to.meta.studentAllowed) {
-    return { path: '/admin' }
+    const fallback = firstAccessibleAdminPath(auth)
+    if (fallback && fallback !== to.path) return { path: fallback }
   }
 
   // Dashboard's own widgets are each gated by their real permission at the
