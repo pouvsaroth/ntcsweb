@@ -188,10 +188,7 @@ const ko: MessageSchema = {
       signUpPrompt: '계정이 없으신가요?',
       signUp: '회원가입',
       genericError: '문제가 발생했습니다. 다시 시도해 주세요.',
-      continue: '계속',
-      change: '변경',
-      selectSchool: '학교를 선택하세요',
-      noSchoolsFound: '이 계정에 연결된 학교를 찾을 수 없습니다 — 아래에 학교 코드를 직접 입력할 수 있습니다.',
+      selectSchool: '비밀번호가 두 개 이상의 학교와 일치합니다 — 로그인할 학교를 선택하세요.',
     },
     forgotPassword: {
       title: '비밀번호 찾기',

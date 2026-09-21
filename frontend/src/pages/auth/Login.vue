@@ -7,7 +7,7 @@ import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import { ERP_HOST } from '@/config'
-import { authService } from '@/services/auth'
+import { loginRequiresTenantSelection, type LoginTenantChoice } from '@/services/auth'
 import { useAuthStore } from '@/stores/auth'
 import { useSiteStore } from '@/stores/site'
 import { ApiRequestError } from '@/types/api'
@@ -19,13 +19,12 @@ const route = useRoute()
 const { t } = useI18n()
 
 /**
- * The shared ERP domain has no hostname to infer a school from and, unlike
- * any other central domain (localhost, admin.ntcsweb.com), it's meant for
- * ordinary school accounts, not just a lone platform Super Admin — so
- * instead of typing a school code from memory, the identifier is looked up
- * first (see continueWithIdentity()) and the matching school(s) are shown as
- * a pick, or filled in automatically when there's only one. Every other
- * central domain keeps today's single-step manual field below unchanged.
+ * The shared ERP domain has no hostname to infer a school from, but the
+ * login form itself still only ever asks for an identity and a password —
+ * see AuthController::loginAcrossTenants(), which checks the password
+ * against every account across every school that matches before this page
+ * ever needs to know which one is meant. Every other central domain
+ * (localhost, admin.ntcsweb.com) keeps the manual school field below.
  */
 const isErpDomain = window.location.hostname === ERP_HOST
 
@@ -33,7 +32,7 @@ const isErpDomain = window.location.hostname === ERP_HOST
 // resolves and this never shows. On a central domain (localhost, no
 // subdomain) it 404s — see useSiteStore's `resolved` — and there is
 // genuinely no way to know which school to check credentials against
-// without asking. Superseded by the identity lookup above on the ERP domain.
+// without asking. Not shown on the ERP domain, which never needs it at all.
 const showSchoolField = computed(() => site.loaded && !site.resolved && !isErpDomain)
 
 // Pre-filled from ?tenant=slug so a school-specific login link still works
@@ -48,32 +47,30 @@ const errors = ref<Record<string, string[]>>({})
 const generalError = ref<string | null>(null)
 const submitting = ref(false)
 
-// --- ERP domain: identity-first step ---
+// --- Ambiguous login: more than one school verified, no password re-entry ---
 
-const identityStep = ref(isErpDomain)
-const checkingIdentity = ref(false)
-const identityLookedUp = ref(false)
-const tenantOptions = ref<{ id: number; slug: string; name: string }[]>([])
+const tenantChoices = ref<LoginTenantChoice[]>([])
+const selectionToken = ref<string | null>(null)
+const selectingTenant = ref(false)
 
-async function continueWithIdentity() {
-  if (!form.login.trim()) return
+async function chooseTenant(tenantId: number) {
+  if (!selectionToken.value) return
 
-  checkingIdentity.value = true
+  selectingTenant.value = true
+  generalError.value = null
+
   try {
-    tenantOptions.value = await authService.tenantsForLogin(form.login.trim())
-    school.value = tenantOptions.value.length === 1 ? tenantOptions.value[0].slug : ''
-    identityLookedUp.value = true
-    identityStep.value = false
+    await auth.selectTenant({ selection_token: selectionToken.value, tenant_id: tenantId, remember: form.remember })
+    await afterLogin()
+  } catch (error) {
+    // The token is single-use and short-lived — most likely it expired.
+    // Back to the plain form rather than leaving a dead-end picker up.
+    tenantChoices.value = []
+    selectionToken.value = null
+    generalError.value = error instanceof ApiRequestError ? error.message : t('auth.login.genericError')
   } finally {
-    checkingIdentity.value = false
+    selectingTenant.value = false
   }
-}
-
-function changeIdentity() {
-  identityStep.value = true
-  identityLookedUp.value = false
-  tenantOptions.value = []
-  school.value = ''
 }
 
 /**
@@ -95,28 +92,38 @@ onMounted(() => {
   }
 })
 
+async function afterLogin() {
+  if (form.remember) {
+    localStorage.setItem(REMEMBERED_LOGIN_KEY, form.login)
+  } else {
+    localStorage.removeItem(REMEMBERED_LOGIN_KEY)
+  }
+
+  // A student logs into the public website itself, not the admin panel —
+  // there's nothing there for them (no admin permissions) and the whole
+  // point of a student login is unlocking their enrolled course's video
+  // lessons/invoices while staying on the site they arrived on. Everyone
+  // else (staff/teacher/admin) keeps going to /admin as before.
+  const fallback = auth.hasRole('student') ? '/' : '/admin'
+  const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : fallback
+  await router.push(redirect)
+}
+
 async function submit() {
   submitting.value = true
   errors.value = {}
   generalError.value = null
 
   try {
-    await auth.login({ ...form, tenant: school.value.trim() || undefined }, showSchoolField.value || isErpDomain)
+    const result = await auth.login({ ...form, tenant: school.value.trim() || undefined }, showSchoolField.value || isErpDomain)
 
-    if (form.remember) {
-      localStorage.setItem(REMEMBERED_LOGIN_KEY, form.login)
-    } else {
-      localStorage.removeItem(REMEMBERED_LOGIN_KEY)
+    if (loginRequiresTenantSelection(result)) {
+      tenantChoices.value = result.tenants
+      selectionToken.value = result.selection_token
+      return
     }
 
-    // A student logs into the public website itself, not the admin panel —
-    // there's nothing there for them (no admin permissions) and the whole
-    // point of a student login is unlocking their enrolled course's video
-    // lessons/invoices while staying on the site they arrived on. Everyone
-    // else (staff/teacher/admin) keeps going to /admin as before.
-    const fallback = auth.hasRole('student') ? '/' : '/admin'
-    const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : fallback
-    await router.push(redirect)
+    await afterLogin()
   } catch (error) {
     if (error instanceof ApiRequestError) {
       if (error.errors) {
@@ -139,48 +146,25 @@ async function submit() {
     <p class="mb-6 text-sm text-neutral-500">{{ t('auth.login.subtitle') }}</p>
 
     <BaseAlert v-if="generalError" variant="danger" class="mb-4">{{ generalError }}</BaseAlert>
-    <!-- On the ERP flow, step 2 hides the identifier field (already collected in step 1), which is where errors.login normally renders — so surface it here instead. -->
-    <BaseAlert v-if="isErpDomain && !identityStep && errors.login?.[0]" variant="danger" class="mb-4">{{ errors.login[0] }}</BaseAlert>
 
-    <!-- ERP domain, step 1: who is signing in, before any school is known. -->
-    <form v-if="identityStep" class="space-y-4" @submit.prevent="continueWithIdentity">
-      <BaseInput
-        v-model="form.login"
-        type="text"
-        :label="t('auth.login.identifier')"
-        autocomplete="username"
-        required
-      />
-      <BaseButton type="submit" :loading="checkingIdentity" block>{{ t('auth.login.continue') }}</BaseButton>
-    </form>
-
-    <form v-else class="space-y-4" @submit.prevent="submit">
-      <div v-if="isErpDomain" class="flex items-center justify-between rounded-lg bg-neutral-50 px-3 py-2 text-sm">
-        <span class="truncate text-neutral-600">{{ form.login }}</span>
-        <button type="button" class="shrink-0 font-medium text-secondary-600 hover:text-secondary-700" @click="changeIdentity">
-          {{ t('auth.login.change') }}
+    <!-- The password already checked out at more than one school — just pick which one, nothing else. -->
+    <div v-if="tenantChoices.length > 0">
+      <p class="mb-3 text-sm text-neutral-600">{{ t('auth.login.selectSchool') }}</p>
+      <div class="space-y-2">
+        <button
+          v-for="option in tenantChoices"
+          :key="option.id"
+          type="button"
+          :disabled="selectingTenant"
+          class="flex w-full items-center rounded-lg border border-neutral-300 px-3 py-2.5 text-left text-sm hover:border-primary-400 hover:bg-primary-50 disabled:opacity-50"
+          @click="chooseTenant(option.id)"
+        >
+          {{ option.name }}
         </button>
       </div>
+    </div>
 
-      <div v-if="isErpDomain && tenantOptions.length > 1">
-        <label class="mb-1.5 block text-sm font-medium text-neutral-700">{{ t('auth.login.selectSchool') }}</label>
-        <div class="space-y-2">
-          <label
-            v-for="option in tenantOptions"
-            :key="option.id"
-            class="flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm"
-            :class="school === option.slug ? 'border-primary-500 ring-1 ring-primary-500' : 'border-neutral-300'"
-          >
-            <input v-model="school" type="radio" :value="option.slug" class="text-primary-600 focus:ring-primary-500" />
-            {{ option.name }}
-          </label>
-        </div>
-      </div>
-
-      <BaseAlert v-if="isErpDomain && identityLookedUp && tenantOptions.length === 0" variant="info">
-        {{ t('auth.login.noSchoolsFound') }}
-      </BaseAlert>
-
+    <form v-else class="space-y-4" @submit.prevent="submit">
       <!--
         Deliberately not `required`: a platform Super Admin account belongs
         to no school and must be able to sign in with this left blank — see
@@ -189,7 +173,7 @@ async function submit() {
         "credentials do not match" error, same as typing the wrong slug.
       -->
       <BaseInput
-        v-if="showSchoolField || (isErpDomain && identityLookedUp && tenantOptions.length === 0)"
+        v-if="showSchoolField"
         v-model="school"
         type="text"
         :label="t('auth.school')"
@@ -198,7 +182,6 @@ async function submit() {
       />
 
       <BaseInput
-        v-if="!isErpDomain"
         v-model="form.login"
         type="text"
         :label="t('auth.login.identifier')"

@@ -1,7 +1,7 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 
-import { authService, type LoginPayload, type MeResult } from '@/services/auth'
+import { authService, loginRequiresTenantSelection, type LoginPayload, type LoginResult, type MeResult } from '@/services/auth'
 import { type ActingTenant, getActingTenant, resetDevTenant, setActingTenant, setDevTenant } from '@/services/http'
 import type { User } from '@/types/models'
 import { ApiRequestError } from '@/types/api'
@@ -74,9 +74,18 @@ export const useAuthStore = defineStore('auth', () => {
     initialized.value = true
   }
 
-  async function login(payload: LoginPayload, schoolFieldShown = false): Promise<void> {
+  /**
+   * Returns the raw LoginResult so the caller (Login.vue) can tell a
+   * completed sign-in apart from "pick which school" — see
+   * loginRequiresTenantSelection()'s docblock. Session state is only
+   * applied once sign-in has actually finished (here, or in
+   * selectTenant() below).
+   */
+  async function login(payload: LoginPayload, schoolFieldShown = false): Promise<LoginResult> {
+    let result: LoginResult
+
     try {
-      await authService.login(payload, schoolFieldShown)
+      result = await authService.login(payload, schoolFieldShown)
     } catch (error) {
       // Dev only, and only when the school picker never even appeared (the
       // ordinary case on a fresh local boot — see http.ts's auto-detected
@@ -91,14 +100,28 @@ export const useAuthStore = defineStore('auth', () => {
 
       if (!canRetryAsPlatformAdmin) throw error
 
-      await authService.login(payload, true)
+      result = await authService.login(payload, true)
+    }
+
+    if (loginRequiresTenantSelection(result)) {
+      return result
     }
 
     // The login response only returns the user; roles/permissions come from
     // /auth/me's meta, so a fresh fetch is the simplest way to get a fully
     // consistent session state rather than duplicating that shape here.
-    const result = await authService.me()
-    if (result) applySession(result)
+    const meResult = await authService.me()
+    if (meResult) applySession(meResult)
+
+    return result
+  }
+
+  /** Finishes a login that came back needing a school picked — see login() and Login.vue. No password is sent again; the selection token is what proves it already checked out. */
+  async function selectTenant(payload: { selection_token: string; tenant_id: number; device_name?: string; remember?: boolean }): Promise<void> {
+    await authService.selectTenant(payload)
+
+    const meResult = await authService.me()
+    if (meResult) applySession(meResult)
   }
 
   async function logout(): Promise<void> {
@@ -148,6 +171,7 @@ export const useAuthStore = defineStore('auth', () => {
     hasRole,
     initialize,
     login,
+    selectTenant,
     logout,
     updateProfile,
     enterTenant,

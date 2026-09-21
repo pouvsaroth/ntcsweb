@@ -188,10 +188,7 @@ const zh: MessageSchema = {
       signUpPrompt: '还没有账户？',
       signUp: '注册',
       genericError: '出现了一些问题，请重试。',
-      continue: '继续',
-      change: '更改',
-      selectSchool: '选择您的学校',
-      noSchoolsFound: '未找到与此账号关联的学校 — 您可以在下方手动输入学校代码。',
+      selectSchool: '您的密码与多所学校匹配 — 请选择要登录的学校。',
     },
     forgotPassword: {
       title: '忘记密码',

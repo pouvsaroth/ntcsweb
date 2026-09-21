@@ -12,6 +12,27 @@ export interface LoginPayload {
   tenant?: string
 }
 
+/** A school this identity has a verified account at — see AuthController::loginAcrossTenants(). */
+export interface LoginTenantChoice {
+  id: number
+  slug: string
+  name: string
+}
+
+/**
+ * The shared ERP domain's login can't always finish in one step: if the
+ * password verified at more than one school, the server holds off on
+ * actually signing anyone in and hands back `tenants` to pick from instead —
+ * see selectTenant() below, which is what finishes it.
+ */
+export type LoginResult = { user: User } | { requires_tenant_selection: true; selection_token: string; tenants: LoginTenantChoice[] }
+
+export function loginRequiresTenantSelection(
+  result: LoginResult,
+): result is { requires_tenant_selection: true; selection_token: string; tenants: LoginTenantChoice[] } {
+  return 'requires_tenant_selection' in result
+}
+
 export interface MeResult {
   user: User
   permissions: string[] | ['*']
@@ -38,22 +59,29 @@ async function withCsrf<T>(fn: () => Promise<T>): Promise<T> {
 
 export const authService = {
   /**
-   * `schoolFieldShown` — pass `true` only when Login.vue actually presented
-   * its school picker to the person signing in (`showSchoolField`). In dev,
-   * the instance-wide X-Tenant default (see http.ts) already resolves the
+   * `schoolFieldShown` — pass `true` whenever Login.vue is on a central
+   * domain and deliberately not sending a `tenant` (the manual school field
+   * on admin.ntcsweb.com/localhost left blank — a platform Super Admin —
+   * or the shared ERP domain's single-page form, which never sends one at
+   * all; see AuthController::loginAcrossTenants()). In dev, the
+   * instance-wide X-Tenant default (see http.ts) already resolves the
    * *common* case correctly — a tenant-scoped admin on a fresh boot, where
-   * the picker never even renders — so this must NOT touch headers then, or
-   * it silently blanks that default and breaks that ordinary login. It's
-   * only needed for the *other* case: the picker was shown and left blank on
-   * purpose, which means a platform Super Admin, and that intent must beat
-   * the ambient default for this one request. RequestTenantResolver already
-   * treats an empty value the same as absent. No-op in production, where
-   * that default header never exists in the first place.
+   * none of the above applies — so this must NOT touch headers then, or it
+   * silently blanks that default and breaks that ordinary login. Every
+   * other case must beat the ambient default for this one request, since
+   * `RequestTenantResolver` treats an empty value the same as absent. No-op
+   * in production, where that default header never exists in the first
+   * place.
    */
   login(payload: LoginPayload, schoolFieldShown = false) {
     const headers = import.meta.env.DEV && schoolFieldShown ? { 'X-Tenant': payload.tenant ?? '' } : undefined
 
-    return withCsrf(() => apiPost<{ user: User }>('/auth/login', payload, { headers }))
+    return withCsrf(() => apiPost<LoginResult>('/auth/login', payload, { headers }))
+  },
+
+  /** Step two after login() comes back with `requires_tenant_selection` — see LoginResult's docblock. */
+  selectTenant(payload: { selection_token: string; tenant_id: number; device_name?: string; remember?: boolean }) {
+    return withCsrf(() => apiPost<{ user: User }>('/auth/login/select-tenant', payload))
   },
 
   logout() {
@@ -72,23 +100,6 @@ export const authService = {
       }
     } catch {
       return null
-    }
-  },
-
-  /**
-   * The shared ERP login domain's "which school is this?" lookup — see
-   * AuthController::tenantsForLogin(). Never throws on a lookup failure
-   * (rate-limited, network hiccup, etc.); the caller just falls back to
-   * manual school entry, same as an empty result.
-   */
-  async tenantsForLogin(identity: string): Promise<{ id: number; slug: string; name: string }[]> {
-    try {
-      const result = await apiGetWithMeta<{ id: number; slug: string; name: string }[]>('/auth/tenants-for-login', {
-        params: { identity },
-      })
-      return result.data
-    } catch {
-      return []
     }
   },
 

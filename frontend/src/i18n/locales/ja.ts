@@ -188,10 +188,7 @@ const ja: MessageSchema = {
       signUpPrompt: 'アカウントをお持ちでない方',
       signUp: '新規登録',
       genericError: '問題が発生しました。もう一度お試しください。',
-      continue: '続ける',
-      change: '変更',
-      selectSchool: '学校を選択してください',
-      noSchoolsFound: 'このアカウントに一致する学校が見つかりませんでした — 下に学校コードを直接入力できます。',
+      selectSchool: 'パスワードが複数の学校と一致しました — サインインする学校を選択してください。',
     },
     forgotPassword: {
       title: 'パスワードをお忘れの方',

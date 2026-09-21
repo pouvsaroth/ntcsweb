@@ -11,6 +11,7 @@ use App\Support\Audit\AuditLogger;
 use App\Support\Auth\PhoneNumber;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Auth\Events\Failed;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 
@@ -101,6 +102,56 @@ final readonly class AuthService
         }
 
         return $user;
+    }
+
+    /**
+     * The shared ERP login domain has no tenant in context at all (no
+     * hostname, no explicit `tenant` field) — this is the entry point for
+     * that one page's single email/phone + password form. Verifies the
+     * password against every account across every (active) tenant that
+     * matches the identity, rather than exactly one tenant-scoped row —
+     * necessarily weaker than {@see authenticate()}'s "select from the
+     * resolved tenant only" guarantee, since there is no tenant yet to
+     * resolve against, but each candidate's own password hash still has to
+     * verify, so this never turns into a plain "does this email exist"
+     * oracle: failing every check looks identical to matching zero rows.
+     *
+     * @return Collection<int, User> every account whose password verified —
+     *                               empty means "no such account anywhere"
+     */
+    public function authenticateAcrossTenants(string $login, string $password): Collection
+    {
+        $email = mb_strtolower(trim($login));
+        $phone = PhoneNumber::normalize($login);
+
+        $candidates = User::query()
+            ->with(['roles', 'tenant'])
+            ->active()
+            ->where(function ($query) use ($email, $phone) {
+                $query->where('email', $email);
+
+                if ($phone !== null) {
+                    $query->orWhere('phone', $phone);
+                }
+            })
+            // A suspended/closed school's accounts must not verify here even
+            // if the password is right — same reasoning as active() above,
+            // just reached through the tenant instead of the user. A NULL
+            // tenant_id is a platform super admin, who has no tenant row to
+            // check at all.
+            ->where(function ($query) {
+                $query->whereNull('tenant_id')->orWhereHas('tenant', fn ($query) => $query->active());
+            })
+            ->get();
+
+        $verified = $candidates->filter(fn (User $user) => Hash::check($password, $user->password));
+
+        if ($verified->isEmpty()) {
+            // Same timing-safe shape as authenticate() below.
+            Hash::check($password, self::TIMING_SAFE_DUMMY);
+        }
+
+        return $verified->values();
     }
 
     /**

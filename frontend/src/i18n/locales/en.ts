@@ -191,10 +191,7 @@ const en = {
       signUpPrompt: "Don't have an account?",
       signUp: 'Sign up',
       genericError: 'Something went wrong. Please try again.',
-      continue: 'Continue',
-      change: 'Change',
-      selectSchool: 'Select your school',
-      noSchoolsFound: "We couldn't find a school for this account — you can type its code manually below.",
+      selectSchool: 'Your password matched more than one school — select which one to sign in to.',
     },
     forgotPassword: {
       title: 'Forgot password',

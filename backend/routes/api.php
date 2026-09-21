@@ -164,7 +164,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         // LoginRequest, so one address cannot grind through many accounts.
         Route::middleware('throttle:auth')->group(function () {
             Route::post('login', [AuthController::class, 'login'])->name('login');
-            Route::get('tenants-for-login', [AuthController::class, 'tenantsForLogin'])->name('tenants-for-login');
+            Route::post('login/select-tenant', [AuthController::class, 'selectTenant'])->name('login.select-tenant');
             Route::post('forgot-password', [PasswordController::class, 'forgot'])->name('forgot-password');
             Route::post('reset-password', [PasswordController::class, 'reset'])->name('reset-password');
         });

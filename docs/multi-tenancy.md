@@ -83,26 +83,36 @@ and every login/admin session goes through this one shared address instead. It's
 subdomain of one tenant's own domain (`newtechkh.com`, the one actually DNS+TLS-configured
 domain today) rather than the platform's own `ntcsweb.com`, which is only ever a config
 default/placeholder in this codebase and has never been confirmed to resolve anywhere in
-production — see `docs/deployment.md`. This didn't need a new resolution mechanism, just a
-new way to fill in the existing one:
+production — see `docs/deployment.md`.
 
-- `App\Http\Controllers\Api\V1\Auth\AuthController::tenantsForLogin()` (public,
-  `GET /api/v1/auth/tenants-for-login?identity=`) looks up every **active** tenant with an
-  **active** `User` row matching that email/phone — across every tenant, not scoped to one,
-  which is fine since neither `User` nor `Tenant` uses `BelongsToTenant` (see above). Same
-  minimal id/slug/name shape as `TenantDirectoryController`, same `throttle:auth` limiter as
-  login itself (it's a slightly stronger oracle than the plain tenant directory — it
-  confirms an account exists somewhere for that identity).
-- The frontend (`Login.vue`) calls this first on the ERP domain, then submits the chosen
-  slug as the existing `tenant` field on the existing `/auth/login` call — resolved by
-  `RequestTenantResolver` exactly as it always has been. `AuthService::authenticate()`,
-  `EnsureTenantMatchesUser`, and `TenantContext` are all completely unchanged.
-- One identity can have separate `User` rows (different passwords) at more than one
-  tenant — already possible today (see `test_users_across_tenants_may_share_the_same_email`)
-  — so a match at 2+ tenants means the picker shows all of them and password verification
-  still only ever runs once, after a specific tenant is chosen. There is no "one identity,
-  many tenants" account model; these stay entirely separate accounts that merely share an
-  email.
+The login page itself is a single email/phone + password form, same as any other domain —
+there's no separate "which school?" step before the password. `AuthController::login()`
+detects it's being asked to sign in with no tenant in context at all (no hostname, no
+explicit `tenant` field — i.e. the ERP domain) and switches to
+`AuthService::authenticateAcrossTenants()` instead of the ordinary tenant-scoped
+`authenticate()`:
+
+- It checks the password against every **active** `User` row (at an **active** tenant, or
+  a platform Super Admin's `tenant_id IS NULL` row) matching that email/phone — across every
+  tenant, not scoped to one, which is fine since neither `User` nor `Tenant` uses
+  `BelongsToTenant` (see above). Failing every check looks identical to matching zero
+  rows, so this never becomes a plain "does this email exist" oracle.
+- **Exactly one match** completes the login immediately, same response shape as always.
+- **More than one match** (one identity can have separate `User` rows — different
+  passwords — at more than one tenant; already possible today, see
+  `test_users_across_tenants_may_share_the_same_email`) does *not* sign anyone in yet.
+  The response carries `requires_tenant_selection: true`, a short-lived single-use
+  `selection_token` (cached server-side against exactly those candidate user ids — a client
+  can never pick a tenant that didn't verify), and the list of schools to choose from.
+  `Login.vue` shows that list with no password field; picking one calls
+  `POST /auth/login/select-tenant` with the token and the chosen `tenant_id`, which redeems
+  the token, re-confirms the chosen tenant was one of the original candidates, sets
+  `TenantContext` explicitly (the same way `TestCase::actingInTenant()` does), and finishes
+  through the same device/audit/response logic as any other login.
+- **Zero matches** fails with the same generic `auth.failed` message as always.
+- There is no "one identity, many tenants" account model here — these stay entirely
+  separate accounts that merely share an email; `EnsureTenantMatchesUser` and the rest of
+  the tenant-scoped pipeline are otherwise completely unchanged.
 - A school's own domain redirecting `/admin`, `/login`, etc. to the ERP domain is handled
   by `docker/nginx/prod.conf` (a `map $host $is_central_domain` block, hand-kept in sync
   with `TENANCY_CENTRAL_DOMAINS`), with a client-side backstop in the SPA's router guard

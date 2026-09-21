@@ -6,21 +6,24 @@ namespace App\Http\Controllers\Api\V1\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Auth\LoginRequest;
+use App\Http\Requests\Api\V1\Auth\SelectLoginTenantRequest;
 use App\Http\Requests\Api\V1\Auth\UpdateProfileRequest;
 use App\Http\Resources\UserResource;
 use App\Http\Responses\ApiResponse;
-use App\Models\Tenant;
 use App\Models\User;
 use App\Services\Auth\AuthService;
 use App\Services\Billing\CurrencyConversionService;
 use App\Support\Audit\AuditAction;
 use App\Support\Audit\AuditLogger;
-use App\Support\Auth\PhoneNumber;
 use App\Support\Tenancy\TenantContext;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\TransientToken;
 
 /**
@@ -36,6 +39,9 @@ use Laravel\Sanctum\TransientToken;
  */
 final class AuthController extends Controller
 {
+    /** Prefix for the short-lived cache entry a "pick your school" response is redeemed against — see respondWithTenantChoices()/selectTenant(). */
+    private const TENANT_SELECTION_CACHE_PREFIX = 'login-tenant-selection:';
+
     public function __construct(
         private readonly AuthService $auth,
         private readonly TenantContext $context,
@@ -46,6 +52,17 @@ final class AuthController extends Controller
     public function login(LoginRequest $request): JsonResponse
     {
         $request->ensureIsNotRateLimited();
+
+        // The shared ERP domain has no tenant in context at all — no
+        // hostname, no explicit `tenant` field/header — since ResolveTenant
+        // already ran before this controller and found nothing. Every other
+        // domain (a school's own, or a central one with an explicit `tenant`
+        // typed/picked) already has a tenant resolved by now, so this only
+        // ever branches for the ERP domain's single email/phone+password
+        // form — see AuthService::authenticateAcrossTenants().
+        if ($this->context->id() === null && ! $this->context->isPlatform()) {
+            return $this->loginAcrossTenants($request);
+        }
 
         try {
             $user = $this->auth->authenticate(
@@ -60,72 +77,96 @@ final class AuthController extends Controller
 
         $request->clearRateLimiter();
 
-        $deviceName = $request->string('device_name')->trim()->toString();
+        return $this->finishLogin($request, $user);
+    }
 
-        $this->auth->ensureNoOtherActiveDevice($user, $deviceName !== '' ? $deviceName : null);
+    private function loginAcrossTenants(LoginRequest $request): JsonResponse
+    {
+        $verified = $this->auth->authenticateAcrossTenants(
+            $request->string('login')->toString(),
+            $request->string('password')->toString(),
+        );
 
-        $user->recordLogin($request->ip());
+        if ($verified->isEmpty()) {
+            $request->hitRateLimiter();
 
-        $this->audit->logFor(AuditAction::LOGIN, 'Auth', $user->tenant_id, $user, [
-            'transport' => $deviceName !== '' ? 'token' : 'session',
-        ]);
+            throw ValidationException::withMessages(['login' => __('auth.failed')]);
+        }
 
-        return $deviceName !== ''
-            ? $this->tokenResponse($user, $deviceName)
-            : $this->sessionResponse($request, $user);
+        $request->clearRateLimiter();
+
+        if ($verified->count() > 1) {
+            return $this->respondWithTenantChoices($verified);
+        }
+
+        /** @var User $user */
+        $user = $verified->first();
+
+        if ($user->tenant_id !== null) {
+            $this->context->set($user->tenant);
+        }
+
+        return $this->finishLogin($request, $user);
     }
 
     /**
-     * The shared ERP login domain (see RequestTenantResolver/TenantHost's
-     * `isCentral()`) has no hostname to resolve a tenant from, so the login
-     * form can't know in advance which school's credentials to check —
-     * unlike a school's own subdomain, where that's implicit. This lets it
-     * ask first: given an email/phone, which school(s) does an account
-     * actually exist at, so the picker (or an unambiguous single choice) can
-     * fill in the `tenant` field before the real `login()` call above runs
-     * completely unchanged.
-     *
-     * Deliberately public and deliberately minimal (id/slug/name only, same
-     * shape as TenantDirectoryController) — this is a *slightly* stronger
-     * oracle than that endpoint (it confirms an email has an account
-     * *somewhere*, not just that a school exists), which is exactly why it's
-     * throttled the same as login itself (`throttle:auth`, see routes/api.php)
-     * rather than the looser `throttle:api` the plain tenant directory uses.
-     * An unknown identity or one with no active account anywhere returns an
-     * empty list, not an error — the frontend falls back to manual entry.
+     * More than one account verified for this identity+password — cache the
+     * exact candidate ids (never trust a tenant id handed back by the client
+     * alone) behind a short-lived, single-use token, and hand back just
+     * enough for the picker: which schools, not which accounts. No session
+     * or token is issued yet; see selectTenant().
      */
-    public function tenantsForLogin(Request $request): JsonResponse
+    private function respondWithTenantChoices(Collection $verified): JsonResponse
     {
-        $identity = trim((string) $request->query('identity', ''));
+        $token = Str::random(40);
 
-        if ($identity === '') {
-            return ApiResponse::success([]);
+        Cache::put(
+            self::TENANT_SELECTION_CACHE_PREFIX.$token,
+            $verified->pluck('id')->all(),
+            now()->addMinutes(5),
+        );
+
+        return ApiResponse::success([
+            'requires_tenant_selection' => true,
+            'selection_token' => $token,
+            'tenants' => $verified->map(fn (User $user) => [
+                'id' => $user->tenant_id,
+                'slug' => $user->tenant?->slug,
+                'name' => $user->tenant?->name,
+            ])->values(),
+        ]);
+    }
+
+    /**
+     * The second step of the ERP domain's login, only reached after
+     * loginAcrossTenants() found more than one verified account — the
+     * password already checked out, so this only needs to confirm the
+     * chosen school was actually one of the accounts that verified (via the
+     * cache token, not by trusting the request's own tenant_id) before
+     * finishing the same way any other login does.
+     */
+    public function selectTenant(SelectLoginTenantRequest $request): JsonResponse
+    {
+        $cacheKey = self::TENANT_SELECTION_CACHE_PREFIX.$request->validated('selection_token');
+        $candidateIds = Cache::pull($cacheKey);
+
+        if (! is_array($candidateIds)) {
+            throw ValidationException::withMessages(['selection_token' => __('auth.failed')]);
         }
 
-        $email = mb_strtolower($identity);
-        $phone = PhoneNumber::normalize($identity);
+        $user = User::query()
+            ->with(['roles', 'tenant'])
+            ->whereIn('id', $candidateIds)
+            ->where('tenant_id', $request->validated('tenant_id'))
+            ->first();
 
-        $tenants = Tenant::query()
-            ->active()
-            ->whereHas('users', function ($query) use ($email, $phone) {
-                $query->active()->where(function ($query) use ($email, $phone) {
-                    $query->where('email', $email);
+        if ($user === null) {
+            throw ValidationException::withMessages(['tenant_id' => __('auth.failed')]);
+        }
 
-                    if ($phone !== null) {
-                        $query->orWhere('phone', $phone);
-                    }
-                });
-            })
-            ->orderBy('name')
-            ->get(['id', 'slug', 'name']);
+        $this->context->set($user->tenant);
 
-        return ApiResponse::success(
-            $tenants->map(fn (Tenant $tenant) => [
-                'id' => $tenant->id,
-                'slug' => $tenant->slug,
-                'name' => $tenant->name,
-            ])->all()
-        );
+        return $this->finishLogin($request, $user);
     }
 
     /**
@@ -248,6 +289,29 @@ final class AuthController extends Controller
         return $path;
     }
 
+    /**
+     * The tail end of every successful login, regardless of which of the
+     * three paths above got here (single-tenant, ERP single-match, or ERP
+     * after a tenant pick) — the one-device rule, recording the login,
+     * auditing it, and issuing whichever of the two response shapes applies.
+     */
+    private function finishLogin(Request $request, User $user): JsonResponse
+    {
+        $deviceName = $request->string('device_name')->trim()->toString();
+
+        $this->auth->ensureNoOtherActiveDevice($user, $deviceName !== '' ? $deviceName : null);
+
+        $user->recordLogin($request->ip());
+
+        $this->audit->logFor(AuditAction::LOGIN, 'Auth', $user->tenant_id, $user, [
+            'transport' => $deviceName !== '' ? 'token' : 'session',
+        ]);
+
+        return $deviceName !== ''
+            ? $this->tokenResponse($user, $deviceName)
+            : $this->sessionResponse($request, $user);
+    }
+
     private function tokenResponse(User $user, string $deviceName): JsonResponse
     {
         // Same-named tokens are replaced so re-installing an app does not leave
@@ -266,7 +330,7 @@ final class AuthController extends Controller
         ], __('Signed in.'));
     }
 
-    private function sessionResponse(LoginRequest $request, User $user): JsonResponse
+    private function sessionResponse(Request $request, User $user): JsonResponse
     {
         Auth::guard('web')->login($user, $request->boolean('remember'));
         $user->activateSessionLogin();
