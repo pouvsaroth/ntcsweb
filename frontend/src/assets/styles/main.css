@@ -1,6 +1,14 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/forms";
 
+/* Tailwind's automatic content detection scans from the Vite config's
+   `root`, which for the admin build (vite.config.admin.ts) is `admin/` —
+   an otherwise-empty folder with just an index.html. Without this, the
+   admin bundle's CSS silently ends up with zero utility classes, since it
+   never sees any of pages/components/layouts. Public build's root already
+   covers `src/`, so this is redundant (but harmless) there. */
+@source "../../";
+
 /* ==========================================================================
    DESIGN TOKENS — NTCS brand palette, sourced from the school logo
    ==========================================================================
