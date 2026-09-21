@@ -1,8 +1,14 @@
 import { apiDownload, apiGetWithMeta, apiPost } from '@/services/http'
 import type { PaginatedQuery } from '@/composables/usePaginatedResource'
+import { i18n } from '@/i18n'
 import type { Payment } from '@/services/payments'
 import type { Currency } from '@/services/schoolSettings'
 import type { LengthAwarePaginationMeta, PaginatedResult } from '@/types/api'
+
+/** Only 'en'/'km' have invoice translations (see InvoicePdfService::SUPPORTED_LOCALES) — everything else falls back to English rather than the tenant's own fixed School Settings language, matching "whatever language I'm currently using" for every UI locale that isn't Khmer. */
+function currentInvoiceLocale(): 'en' | 'km' {
+  return i18n.global.locale.value === 'km' ? 'km' : 'en'
+}
 
 export type InvoiceStatusValue = 'DRAFT' | 'ISSUED' | 'PARTIALLY_PAID' | 'PAID' | 'OVERDUE' | 'CANCELLED' | 'VOID'
 
@@ -175,5 +181,6 @@ export const invoicesService = {
       notes: input.notes || undefined,
     }),
 
-  downloadPdf: (id: number, invoiceNumber: string) => apiDownload(`/invoices/${id}/pdf`, `${invoiceNumber}.pdf`),
+  downloadPdf: (id: number, invoiceNumber: string) =>
+    apiDownload(`/invoices/${id}/pdf?locale=${currentInvoiceLocale()}`, `${invoiceNumber}.pdf`),
 }

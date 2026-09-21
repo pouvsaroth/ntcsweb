@@ -61,6 +61,8 @@ export interface Enrollment {
   created_at: string
   /** Only present right after enrollInPackage() creates the invoice alongside it — absent everywhere else this type is used. */
   invoice_id?: number
+  /** Same as invoice_id — lets "Save and Print" go straight to downloading the PDF without fetching the invoice first just to learn its own number. */
+  invoice_number?: string
 }
 
 /**

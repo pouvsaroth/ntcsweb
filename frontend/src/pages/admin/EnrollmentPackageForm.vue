@@ -263,17 +263,23 @@ async function submit() {
   }
 }
 
-/** Same invoice download as the Invoice detail page's "Download PDF" button — just jumped straight to from here instead of navigating to the invoice first. */
+/**
+ * Same invoice download as the Invoice detail page's "Download PDF" button
+ * — jumped straight to from here instead of navigating to the invoice
+ * first. enrollInPackage() already hands back the new invoice's id *and*
+ * number (see EnrollmentResource), so this skips fetching the invoice
+ * itself just to learn its own number — one less round trip on the button
+ * click that was previously the slowest part of "Save and Print".
+ */
 async function submitAndPrint() {
   submittingAndPrinting.value = true
   try {
     const enrollment = await createEnrollment()
     if (!enrollment) return
 
-    if (enrollment.invoice_id) {
+    if (enrollment.invoice_id && enrollment.invoice_number) {
       try {
-        const invoice = await invoicesService.get(enrollment.invoice_id)
-        await invoicesService.downloadPdf(invoice.id, invoice.invoice_number)
+        await invoicesService.downloadPdf(enrollment.invoice_id, enrollment.invoice_number)
       } catch (error) {
         generalError.value = error instanceof ApiRequestError ? error.message : t('admin.invoices.downloadFailed')
       }

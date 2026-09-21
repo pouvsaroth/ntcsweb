@@ -8,6 +8,7 @@ use App\Models\Enrollment;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Student;
+use App\Services\Billing\InvoicePdfService;
 use App\Support\Authorization\Permissions;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\View;
@@ -29,8 +30,8 @@ class InvoicePdfTest extends TestCase
 
     /**
      * Renders the Blade view directly (not through InvoicePdfService's real
-     * Browsershot/Chromium call) — proves the label translations and
-     * @font-face wiring are correct without paying for a browser launch on
+     * Browsershot/Chromium call) — proves the label translations and the
+     * `@font-face` wiring are correct without paying for a browser launch on
      * every test. The download endpoint test below is the one that
      * exercises the real Browsershot pipeline end to end.
      */
@@ -162,5 +163,50 @@ class InvoicePdfTest extends TestCase
         $pdf = $response->getContent();
         $this->assertStringStartsWith('%PDF-', $pdf);
         $this->assertStringContainsString('NotoSansKhmer', $pdf);
+    }
+
+    /**
+     * `?locale=` lets whoever clicks "download" get the invoice in their own
+     * admin UI's current language, regardless of the tenant's fixed School
+     * Settings language — see InvoicePdfService::render()'s docblock. Runs
+     * the real Browsershot pipeline (same Chromium-availability guard as the
+     * test above) since the locale override lives inside render() itself;
+     * label-translation correctness for each language is already covered by
+     * the fast Blade-view tests above, so this only needs to prove the query
+     * param reaches render() and that the override doesn't leak past it.
+     */
+    public function test_a_locale_query_param_overrides_the_tenants_own_invoice_language(): void
+    {
+        if (! file_exists(config('services.browsershot.chrome_path') ?: '/usr/bin/chromium')) {
+            $this->markTestSkipped('Chromium is not available in this environment — see docker/php/Dockerfile.');
+        }
+
+        $this->actingAsAdminWithPermissions([Permissions::INVOICES_VIEW]);
+        $this->tenant->update(['locale' => 'en']);
+        app()->setLocale('en');
+
+        $student = Student::factory()->create(['first_name' => 'សុខា', 'last_name' => 'ចាន់']);
+        $invoice = Invoice::factory()->forStudent($student)->create();
+
+        $response = $this->get("/api/v1/invoices/{$invoice->id}/pdf?locale=km");
+
+        $response->assertOk();
+        $pdf = $response->getContent();
+        $this->assertStringStartsWith('%PDF-', $pdf);
+        $this->assertStringContainsString('NotoSansKhmer', $pdf);
+
+        // The tenant's own School Settings language ('en') must still be
+        // what's active afterward — a one-off `?locale=km` print must never
+        // leak into anything rendered later in the same request/job (e.g. a
+        // subsequent emailed copy).
+        $this->assertSame('en', app()->getLocale());
+    }
+
+    public function test_an_unsupported_locale_query_param_falls_back_to_the_tenants_own_language(): void
+    {
+        $this->assertNull(InvoicePdfService::resolveRequestedLocale('fr'));
+        $this->assertNull(InvoicePdfService::resolveRequestedLocale(null));
+        $this->assertSame('km', InvoicePdfService::resolveRequestedLocale('km'));
+        $this->assertSame('en', InvoicePdfService::resolveRequestedLocale('en'));
     }
 }

@@ -137,7 +137,11 @@ final class EnrollmentService
             // Transient — never persisted, just carried through to
             // EnrollmentResource so the admin UI can offer "Save and Print"
             // (jump straight to this invoice) without a second round trip.
+            // invoice_number rides along too so the frontend can go straight
+            // to downloading the PDF instead of fetching the invoice first
+            // just to learn its own number.
             $enrollment->setAttribute('invoice_id', $invoice->getKey());
+            $enrollment->setAttribute('invoice_number', $invoice->invoice_number);
 
             $this->audit->log(
                 AuditAction::ENROLLMENT_INVOICED,

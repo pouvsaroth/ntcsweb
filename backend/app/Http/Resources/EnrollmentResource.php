@@ -34,6 +34,7 @@ class EnrollmentResource extends JsonResource
             // the invoice alongside it — absent everywhere else this resource
             // is used (index/show/transfer/etc.).
             'invoice_id' => $this->when(array_key_exists('invoice_id', $this->getAttributes()), fn () => $this->getAttribute('invoice_id')),
+            'invoice_number' => $this->when(array_key_exists('invoice_number', $this->getAttributes()), fn () => $this->getAttribute('invoice_number')),
         ];
     }
 }

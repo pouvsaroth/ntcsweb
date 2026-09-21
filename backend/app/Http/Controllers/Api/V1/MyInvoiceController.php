@@ -54,7 +54,9 @@ final class MyInvoiceController extends Controller
         $student = $this->studentOrFail($request);
         abort_unless($invoice->student_id === $student->id, 404);
 
-        return response($pdf->render($invoice), 200, [
+        $locale = InvoicePdfService::resolveRequestedLocale($request->query('locale'));
+
+        return response($pdf->render($invoice, $locale), 200, [
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => 'attachment; filename="'.$pdf->filename($invoice).'"',
         ]);

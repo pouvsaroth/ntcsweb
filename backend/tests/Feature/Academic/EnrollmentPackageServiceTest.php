@@ -55,6 +55,12 @@ class EnrollmentPackageServiceTest extends TestCase
         $enrollment = Enrollment::firstOrFail();
         $invoice = Invoice::firstOrFail();
 
+        // Lets the admin UI's "Save and Print" jump straight to downloading
+        // the invoice PDF without a second round trip just to learn its own
+        // number — see EnrollmentService::enrollInPackage()'s docblock.
+        $response->assertJsonPath('data.invoice_id', $invoice->id);
+        $response->assertJsonPath('data.invoice_number', $invoice->invoice_number);
+
         $this->assertSame($student->id, $invoice->student_id);
         $this->assertSame('24.00', (string) $invoice->total);
         $this->assertSame('0.00', (string) $invoice->paid_amount);

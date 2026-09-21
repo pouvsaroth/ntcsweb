@@ -81,11 +81,13 @@ final class InvoiceController extends Controller
         return ApiResponse::success(new InvoiceResource($invoice));
     }
 
-    public function downloadPdf(Invoice $invoice, InvoicePdfService $pdf): HttpResponse
+    public function downloadPdf(Request $request, Invoice $invoice, InvoicePdfService $pdf): HttpResponse
     {
         $this->authorize('view', $invoice);
 
-        return response($pdf->render($invoice), 200, [
+        $locale = InvoicePdfService::resolveRequestedLocale($request->query('locale'));
+
+        return response($pdf->render($invoice, $locale), 200, [
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => 'attachment; filename="'.$pdf->filename($invoice).'"',
         ]);
