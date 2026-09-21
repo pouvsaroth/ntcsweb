@@ -43,6 +43,8 @@ export interface MeResult {
     default_currency: 'USD' | 'KHR'
     /** Today's KHR-per-USD rate, or null if the school has never entered one — see CurrencyConversionService. */
     khr_per_usd_rate: number | null
+    /** The school's own public website's hostname — see AdminHeader.vue's "Go to website" link, needed now that the admin app is a separate origin from it. */
+    hostname: string
   } | null
 }
 

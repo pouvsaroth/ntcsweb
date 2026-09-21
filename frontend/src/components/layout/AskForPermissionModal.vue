@@ -11,8 +11,9 @@ import { ApiRequestError } from '@/types/api'
 
 /**
  * A student's self-submitted leave/permission request — launched from
- * PublicUserMenu's "Ask for Permission" entry, and from the eApprovals
- * "Forms" page's Quick Actions tile (see admin/approvals/Forms.vue). Starts
+ * AdminSidebar's "My Profile" group ("Ask for Permission" entry), and from
+ * the eApprovals "Forms" page's Quick Actions tile (see
+ * admin/approvals/Forms.vue). Starts
  * pending; an admin approves or rejects it from the eApprovals "Approvals"
  * queue (see admin/approvals/Approvals.vue), and approving syncs matching
  * class days into the student's attendance as Excused

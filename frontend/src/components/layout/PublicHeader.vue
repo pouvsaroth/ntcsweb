@@ -2,21 +2,26 @@
 import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
 
-import PublicUserMenu from '@/components/layout/PublicUserMenu.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import LanguageSwitcher from '@/components/ui/LanguageSwitcher.vue'
 import { programNavItem, publicNavAfterProgram, publicNavBeforeProgram } from '@/router/publicNav'
-import { useAuthStore } from '@/stores/auth'
 import { useSiteStore } from '@/stores/site'
 
 const site = useSiteStore()
-const auth = useAuthStore()
 const { t } = useI18n()
 
 // One flat list — Program used to open a dropdown of separate
 // destinations; it's now a plain link like every other item here (see
 // publicNav.ts's programNavItem docblock).
 const mainNavItems = [...publicNavBeforeProgram, programNavItem, ...publicNavAfterProgram]
+
+// This site never has a logged-in visitor to greet — login only happens on
+// the shared ERP domain (see docs/multi-tenancy.md), and every role
+// (students included) lands in the admin app afterward, not back here. The
+// plain `/login` link below is a real <a> (not a router-link) on purpose:
+// nginx redirects that path to the ERP domain before this bundle's router
+// ever sees it (see docker/nginx/prod.conf), so a full navigation is exactly
+// what's wanted.
 </script>
 
 <template>
@@ -32,11 +37,10 @@ const mainNavItems = [...publicNavBeforeProgram, programNavItem, ...publicNavAft
         <span class="text-lg">{{ site.info.name }}</span>
       </RouterLink>
 
-      <!-- Mobile/tablet only — replaces the logo with a profile/login
-           control in the same top-left slot. -->
+      <!-- Mobile/tablet only — replaces the logo with a login control in
+           the same top-left slot. -->
       <div class="flex items-center lg:hidden">
-        <PublicUserMenu v-if="auth.isAuthenticated" compact align="left" />
-        <BaseButton v-else href="/login" size="sm">{{ t('nav.signIn') }}</BaseButton>
+        <BaseButton href="/login" size="sm">{{ t('nav.signIn') }}</BaseButton>
       </div>
 
       <!-- Desktop nav -->
@@ -53,13 +57,8 @@ const mainNavItems = [...publicNavBeforeProgram, programNavItem, ...publicNavAft
       </nav>
 
       <div class="hidden items-center gap-2 lg:flex">
-        <template v-if="auth.isAuthenticated">
-          <PublicUserMenu />
-        </template>
-        <template v-else>
-          <BaseButton to="/register" variant="outline" size="sm">{{ t('nav.register') }}</BaseButton>
-          <BaseButton href="/login" size="sm">{{ t('nav.portalLogin') }}</BaseButton>
-        </template>
+        <BaseButton to="/register" variant="outline" size="sm">{{ t('nav.register') }}</BaseButton>
+        <BaseButton href="/login" size="sm">{{ t('nav.portalLogin') }}</BaseButton>
         <LanguageSwitcher />
       </div>
 

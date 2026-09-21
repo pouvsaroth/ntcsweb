@@ -7,11 +7,16 @@ import BaseButton from '@/components/ui/BaseButton.vue'
 import LanguageSwitcher from '@/components/ui/LanguageSwitcher.vue'
 import NotificationBell from '@/components/layout/NotificationBell.vue'
 import { adminNav } from '@/router/adminNav'
+import { useAuthStore } from '@/stores/auth'
 
 defineEmits<{ 'toggle-sidebar': [] }>()
 
 const route = useRoute()
 const { t } = useI18n()
+const auth = useAuthStore()
+
+/** Absolute now that the admin app is a separate origin from the school's own public website — see Tenant::hostname() and AuthController::me(). Null (button hidden) for a platform Super Admin browsing no particular school. */
+const websiteUrl = computed(() => (auth.tenantHostname ? `https://${auth.tenantHostname}/` : null))
 
 /** The current section's name (e.g. "Students", "Books") — same key each page's sidebar link and <h1> already use, so this always matches whatever menu you're on. */
 const pageTitle = computed(() => (route.meta.titleKey ? t(String(route.meta.titleKey)) : null))
@@ -59,8 +64,10 @@ const sectionLink = computed(() => {
 
     <div class="flex items-center gap-2">
       <!-- Opens in a new tab, not the current one — an admin mid-form
-           shouldn't lose their place just to peek at the live site. -->
-      <BaseButton href="/" target="_blank" variant="outline" size="sm">
+           shouldn't lose their place just to peek at the live site. Hidden
+           for a platform Super Admin browsing no particular school, who has
+           no one website to link to. -->
+      <BaseButton v-if="websiteUrl" :href="websiteUrl" target="_blank" variant="outline" size="sm">
         <svg class="mr-1.5 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
         </svg>

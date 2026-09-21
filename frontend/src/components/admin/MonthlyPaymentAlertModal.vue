@@ -9,11 +9,13 @@ import { useAuthStore } from '@/stores/auth'
 import { formatDate } from '@/utils/date'
 
 /**
- * The student-facing "your monthly payment is coming due" popup — shown once
- * per day per browser (see DISMISSED_KEY) rather than on every page load, so
- * a student who's already seen it today isn't nagged on every navigation.
- * Backed by MyMonthlyPaymentAlertController, which already scopes strictly
- * to the signed-in student's own enrollments.
+ * The student-facing "your monthly payment is coming due" popup, mounted
+ * from AdminLayout.vue (a student's self-service pages all live under
+ * /admin/my-* now — see docs/multi-tenancy.md's ERP domain section) — shown
+ * once per day per browser (see DISMISSED_KEY) rather than on every page
+ * load, so a student who's already seen it today isn't nagged on every
+ * navigation. Backed by MyMonthlyPaymentAlertController, which already
+ * scopes strictly to the signed-in student's own enrollments.
  */
 const auth = useAuthStore()
 const { t } = useI18n()

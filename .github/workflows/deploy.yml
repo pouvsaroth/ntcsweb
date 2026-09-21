@@ -93,13 +93,16 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - run: npm ci
-      - run: npx vue-tsc --noEmit
-      - run: npm run build
+      # `build:admin` runs `vue-tsc -b` itself (the real build's type-check,
+      # not a separate/weaker `--noEmit` pass) before bundling. Only the
+      # admin/ERP bundle — see .github/workflows/deploy-website.yml for the
+      # public website's own independent build+deploy.
+      - run: npm run build:admin
 
       - uses: actions/upload-artifact@v4
         with:
-          name: frontend-dist
-          path: frontend/dist
+          name: frontend-dist-admin
+          path: frontend/dist/admin
           retention-days: 1
 
   deploy:
@@ -109,8 +112,8 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: frontend-dist
-          path: dist
+          name: frontend-dist-admin
+          path: dist-admin
 
       - name: Configure SSH
         run: |
@@ -119,10 +122,13 @@ jobs:
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts
 
-      - name: Upload frontend build
+      # Scoped to frontend/dist/admin/ specifically (not the parent dist/
+      # folder) so this never touches dist/public/, which
+      # deploy-website.yml's own independent run manages.
+      - name: Upload admin frontend build
         run: |
           rsync -az --delete -e "ssh -i ~/.ssh/deploy_key" \
-            dist/ "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${{ secrets.DEPLOY_PATH }}/frontend/dist/"
+            dist-admin/ "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${{ secrets.DEPLOY_PATH }}/frontend/dist/admin/"
 
       # The backend itself is bind-mounted into the php/queue containers, so
       # a `git reset --hard` alone already changes the code they see; `up -d

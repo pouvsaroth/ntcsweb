@@ -99,13 +99,11 @@ async function afterLogin() {
     localStorage.removeItem(REMEMBERED_LOGIN_KEY)
   }
 
-  // A student logs into the public website itself, not the admin panel —
-  // there's nothing there for them (no admin permissions) and the whole
-  // point of a student login is unlocking their enrolled course's video
-  // lessons/invoices while staying on the site they arrived on. Everyone
-  // else (staff/teacher/admin) keeps going to /admin as before.
-  const fallback = auth.hasRole('student') ? '/' : '/admin'
-  const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : fallback
+  // Every role, including a student, lands in the admin app now — this is
+  // the only place login happens (see the ERP domain section of
+  // docs/multi-tenancy.md), and the public website is a separate, fully
+  // anonymous bundle with no session of its own to hand off to.
+  const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/admin'
   await router.push(redirect)
 }
 

@@ -54,7 +54,7 @@ function toFormData(input: LeaveRequestInput): FormData {
   return form
 }
 
-/** Student self-service — own requests only, scoped server-side. See PublicUserMenu's "Ask for Permission" entry. */
+/** Student self-service — own requests only, scoped server-side. See AdminSidebar's "Ask for Permission" entry. */
 export const myLeaveRequestsService = {
   async list(query: PaginatedQuery): Promise<PaginatedResult<LeaveRequest>> {
     const result = await apiGetWithMeta<LeaveRequest[]>('/my-leave-requests', {

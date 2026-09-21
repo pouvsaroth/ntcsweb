@@ -44,7 +44,6 @@ const en = {
   },
 
   studentNav: {
-    website: 'Website',
     score: 'Score',
     attendant: 'Attendant',
     video: 'Video',

@@ -224,6 +224,12 @@ final class AuthController extends Controller
                         // enrollment still re-resolves its own rate
                         // server-side for the date it's actually billed on.
                         'khr_per_usd_rate' => $this->currencyConversion->rateForDate(now()),
+                        // Now that the admin app is served from a different
+                        // origin than the school's own public website (see
+                        // docs/multi-tenancy.md's ERP domain section),
+                        // AdminHeader's "Go to website" link needs this to
+                        // build an absolute URL rather than a same-origin `/`.
+                        'hostname' => $tenant->hostname(),
                     ]
                     : null,
             ],

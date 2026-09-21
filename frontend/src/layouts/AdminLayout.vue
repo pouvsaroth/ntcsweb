@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import AdminHeader from '@/components/layout/AdminHeader.vue'
 import AdminSidebar from '@/components/layout/AdminSidebar.vue'
 import StudentBottomNav from '@/components/layout/StudentBottomNav.vue'
+import MonthlyPaymentAlertModal from '@/components/admin/MonthlyPaymentAlertModal.vue'
 import { useAdminUiStore } from '@/stores/adminUi'
 import { useAuthStore } from '@/stores/auth'
 import { useSiteStore } from '@/stores/site'
@@ -59,5 +60,6 @@ onMounted(() => site.load())
     </div>
 
     <StudentBottomNav v-if="auth.hasRole('student')" />
+    <MonthlyPaymentAlertModal v-if="auth.hasRole('student')" />
   </div>
 </template>

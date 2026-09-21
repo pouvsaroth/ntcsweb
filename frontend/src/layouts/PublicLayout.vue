@@ -4,21 +4,13 @@ import { onMounted } from 'vue'
 import PublicFooter from '@/components/layout/PublicFooter.vue'
 import PublicHeader from '@/components/layout/PublicHeader.vue'
 import MobileBottomNav from '@/components/public/MobileBottomNav.vue'
-import MonthlyPaymentAlertModal from '@/components/public/MonthlyPaymentAlertModal.vue'
-import { useAuthStore } from '@/stores/auth'
 import { useSiteStore } from '@/stores/site'
 
 const site = useSiteStore()
-const auth = useAuthStore()
 
 onMounted(() => {
   site.load()
   site.pingVisit()
-  // The router guard only resolves auth lazily for requiresAuth/guestOnly
-  // routes (admin, login) — a plain public route never triggers it, so a
-  // student staying on the public site after login (see Login.vue) would
-  // otherwise never have their session checked here at all.
-  if (!auth.initialized) auth.initialize()
 })
 </script>
 
@@ -33,6 +25,5 @@ onMounted(() => {
     </main>
     <PublicFooter />
     <MobileBottomNav />
-    <MonthlyPaymentAlertModal />
   </div>
 </template>

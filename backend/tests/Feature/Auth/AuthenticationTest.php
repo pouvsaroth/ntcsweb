@@ -182,6 +182,23 @@ class AuthenticationTest extends TestCase
         $this->assertGuest();
     }
 
+    /**
+     * AdminHeader.vue's "Go to website" link needs an absolute URL now that
+     * the admin app is a separate origin from the school's own public
+     * website — see Tenant::hostname() (falls back to the slug subdomain
+     * when no custom domain is set) and AdminHeader.vue.
+     */
+    public function test_me_exposes_the_tenants_own_hostname(): void
+    {
+        $user = User::factory()->forTenant($this->tenant)->create();
+
+        $this->actingAsTenantUser($user);
+        $response = $this->getJson('/api/v1/auth/me');
+
+        $response->assertOk();
+        $response->assertJsonPath('meta.tenant.hostname', 'newtech.'.config('tenancy.root_domain'));
+    }
+
     public function test_a_suspended_users_live_session_stops_working_immediately(): void
     {
         $user = User::factory()->forTenant($this->tenant)->create();

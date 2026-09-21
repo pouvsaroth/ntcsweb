@@ -5,7 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vue-tsc -b && vite build",
+    "dev:admin": "vite --config vite.config.admin.ts",
+    "build": "vue-tsc -b && vite build && vite build --config vite.config.admin.ts",
+    "build:public": "vue-tsc -b && vite build",
+    "build:admin": "vue-tsc -b && vite build --config vite.config.admin.ts",
     "preview": "vite preview",
     "type-check": "vue-tsc -b --noEmit"
   },

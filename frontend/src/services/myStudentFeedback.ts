@@ -45,7 +45,7 @@ export interface StudentFeedbackTeacherOption {
   name: string
 }
 
-/** Student self-service — own requests/comments only, scoped server-side. See PublicUserMenu's "My Request"/"Comment" entries. */
+/** Student self-service — own requests/comments only, scoped server-side. See AdminSidebar's "My Request"/"Comment" entries. */
 export const myStudentFeedbackService = {
   async list(query: Partial<PaginatedQuery> = {}): Promise<PaginatedResult<StudentFeedback>> {
     const result = await apiGetWithMeta<StudentFeedback[]>('/my-feedback', {
