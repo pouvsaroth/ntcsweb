@@ -185,7 +185,7 @@ final class AuthController extends Controller
         if ($token !== null && ! $token instanceof TransientToken) {
             $token->delete();
         } else {
-            $user?->deactivateSessionLogin();
+            $user?->forgetLoginSession($request->session()->getId());
 
             Auth::guard('web')->logout();
             $request->session()->invalidate();
@@ -302,8 +302,9 @@ final class AuthController extends Controller
     /**
      * The tail end of every successful login, regardless of which of the
      * three paths above got here (single-tenant, ERP single-match, or ERP
-     * after a tenant pick) — the one-device rule, recording the login,
-     * auditing it, and issuing whichever of the two response shapes applies.
+     * after a tenant pick) — the per-role concurrent-device limit, recording
+     * the login, auditing it, and issuing whichever of the two response
+     * shapes applies.
      */
     private function finishLogin(Request $request, User $user): JsonResponse
     {
@@ -343,10 +344,13 @@ final class AuthController extends Controller
     private function sessionResponse(Request $request, User $user): JsonResponse
     {
         Auth::guard('web')->login($user, $request->boolean('remember'));
-        $user->activateSessionLogin();
 
-        // Rotate the session id on privilege change to defeat session fixation.
+        // Rotate the session id on privilege change to defeat session
+        // fixation — done before recordLoginSession() so the row is keyed by
+        // the id this session will actually keep using.
         $request->session()->regenerate();
+
+        $user->recordLoginSession($request->session()->getId(), $request->ip(), $request->userAgent());
 
         return ApiResponse::success([
             'user' => new UserResource($user->loadMissing('roles', 'tenant')),

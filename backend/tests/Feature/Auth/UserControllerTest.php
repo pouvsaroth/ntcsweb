@@ -209,13 +209,13 @@ class UserControllerTest extends TestCase
 
         $target = User::factory()->forTenant($this->tenant)->create();
         $target->createToken('phone', ['*'], now()->addDays(30));
-        $target->activateSessionLogin();
+        $target->recordLoginSession('a-session-id', '127.0.0.1', 'PHPUnit');
 
         $response = $this->postJson("/api/v1/users/{$target->id}/force-logout");
 
         $response->assertOk();
         $this->assertSame(0, $target->tokens()->count());
-        $this->assertFalse($target->fresh()->session_login_active);
+        $this->assertSame(0, $target->loginSessions()->count());
     }
 
     public function test_force_logout_requires_the_permission(): void

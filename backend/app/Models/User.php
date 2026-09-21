@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -169,18 +170,61 @@ class User extends Authenticatable implements MustVerifyEmailContract
     }
 
     /**
-     * The one-device-at-a-time flag — see AuthService::ensureNoOtherActiveDevice()
-     * and the migration that added this column for why it's a plain flag
-     * rather than a lookup into Laravel's own (driver-dependent) session store.
+     * The open browser (session-transport) logins backing the concurrent-
+     * device count in AuthService::ensureNoOtherActiveDevice() — see
+     * UserSession's docblock for why this is a table rather than a flag.
+     *
+     * @return HasMany<UserSession>
      */
-    public function activateSessionLogin(): void
+    public function loginSessions(): HasMany
     {
-        $this->forceFill(['session_login_active' => true])->saveQuietly(['timestamps' => false]);
+        return $this->hasMany(UserSession::class);
     }
 
-    public function deactivateSessionLogin(): void
+    public function recordLoginSession(string $sessionId, ?string $ip, ?string $userAgent): void
     {
-        $this->forceFill(['session_login_active' => false])->saveQuietly(['timestamps' => false]);
+        $this->loginSessions()->create([
+            'session_id' => $sessionId,
+            'ip_address' => $ip,
+            'user_agent' => $userAgent,
+        ]);
+    }
+
+    /**
+     * Frees the one slot this session was occupying. Matched by session id,
+     * not "all of them" — signing out of one browser must never sign out the
+     * others (see AuthController::logout()'s docblock).
+     */
+    public function forgetLoginSession(string $sessionId): void
+    {
+        $this->loginSessions()->where('session_id', $sessionId)->delete();
+    }
+
+    /**
+     * How many devices this user may be signed into at once, summed across
+     * both transports (browser sessions + Sanctum tokens) — enforced by
+     * AuthService::ensureNoOtherActiveDevice(). Null means no limit.
+     *
+     * School Admin: unlimited — they're the ones who clear this for everyone
+     * else, and routinely need their own account open on more than one
+     * device (e.g. the office desktop and their phone) at once.
+     * Student: one — a student's account reaches grades, invoices, and other
+     * personal records the school does not want cached on an open-ended
+     * number of devices.
+     * Everyone else (Teacher, Staff, Super Admin, or an account with no role
+     * at all): a middle-ground allowance of three.
+     */
+    public function maxConcurrentDevices(): ?int
+    {
+        if ($this->hasRole(Role::SCHOOL_ADMIN)) {
+            return null;
+        }
+
+        if ($this->hasRole(Role::STUDENT)) {
+            return 1;
+        }
+
+        return 3;
     }
 
     /**

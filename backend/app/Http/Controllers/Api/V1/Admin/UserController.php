@@ -138,7 +138,7 @@ final class UserController extends Controller
         // The target isn't the one making this request, so every existing
         // session of theirs is revoked outright — nothing to preserve.
         $user->tokens()->delete();
-        $user->deactivateSessionLogin();
+        $user->loginSessions()->delete();
 
         $this->audit->log(
             AuditAction::PASSWORD_CHANGE,
@@ -151,13 +151,13 @@ final class UserController extends Controller
     }
 
     /**
-     * Clears the one-device login lock (AuthService::ensureNoOtherActiveDevice())
-     * for a user who lost access to (or simply forgot to sign out of) their
-     * other device — see UserPolicy::forceLogout() for who may do this. This
-     * only frees them to log in again; it does not itself kill the other
-     * device's existing browser session (Laravel's own session store is
-     * driver-dependent — see the session_login_active migration's docblock —
-     * so there is no reliable way to reach into it from here). Revoking every
+     * Clears every concurrent-device slot (AuthService::ensureNoOtherActiveDevice())
+     * for a user who lost access to (or simply forgot to sign out of) one or
+     * more of their devices — see UserPolicy::forceLogout() for who may do
+     * this. This only frees them to log in again; it does not itself kill an
+     * other device's existing browser session (Laravel's own session store
+     * is driver-dependent — see the UserSession migration's docblock — so
+     * there is no reliable way to reach into it from here). Revoking every
      * Sanctum token, however, is a real and immediate revocation.
      */
     public function forceLogout(User $user): JsonResponse
@@ -165,7 +165,7 @@ final class UserController extends Controller
         $this->authorize('forceLogout', $user);
 
         $user->tokens()->delete();
-        $user->deactivateSessionLogin();
+        $user->loginSessions()->delete();
 
         $this->audit->log(
             AuditAction::FORCE_LOGOUT,

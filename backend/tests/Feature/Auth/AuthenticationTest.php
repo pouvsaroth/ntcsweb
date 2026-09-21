@@ -40,6 +40,15 @@ class AuthenticationTest extends TestCase
         $this->withHeader('Origin', 'http://localhost');
     }
 
+    private function roleFor(string $slug): Role
+    {
+        return Role::factory()->forTenant($this->tenant)->system()->create([
+            'slug' => $slug,
+            'name' => $slug,
+            'level' => Role::LEVELS[$slug],
+        ]);
+    }
+
     public function test_a_user_can_log_in_with_correct_credentials_via_session(): void
     {
         $user = User::factory()->forTenant($this->tenant)->create(['password' => Hash::make('correct-password')]);
@@ -255,13 +264,16 @@ class AuthenticationTest extends TestCase
     }
 
     /**
-     * The one-device rule (AuthService::ensureNoOtherActiveDevice()): a
-     * still-unexpired token from a previous login blocks a new one for a
-     * different device, with the exact message the user is told to act on.
+     * The per-role concurrent-device limit (AuthService::ensureNoOtherActiveDevice(),
+     * User::maxConcurrentDevices()): a Student may only ever have one device
+     * signed in, so a still-unexpired token from a previous login blocks a
+     * new one for a different device, with the exact message the user is
+     * told to act on.
      */
-    public function test_a_second_token_login_is_blocked_while_the_first_is_still_valid(): void
+    public function test_a_student_is_blocked_by_a_second_device(): void
     {
         $user = User::factory()->forTenant($this->tenant)->create(['password' => Hash::make('correct-password')]);
+        $user->attachRoles($this->roleFor(Role::STUDENT));
         $user->createToken('phone', ['*'], now()->addDays(30));
 
         $this->actingInTenant($this->tenant);
@@ -281,20 +293,65 @@ class AuthenticationTest extends TestCase
     }
 
     /**
-     * School Admin is exempt from the one-device rule entirely (see
-     * AuthService::ensureNoOtherActiveDevice()) — they're the ones who clear
-     * it for everyone else, and routinely need their own account open on
-     * more than one device at once.
+     * Every role other than Student/School Admin (Teacher, Staff, or an
+     * account with no role at all — see User::maxConcurrentDevices()) may
+     * have up to three devices signed in at once, mixed freely across the
+     * token and session transports.
+     */
+    public function test_a_non_student_non_admin_user_may_have_up_to_three_active_devices(): void
+    {
+        $user = User::factory()->forTenant($this->tenant)->create(['password' => Hash::make('correct-password')]);
+        $user->createToken('phone', ['*'], now()->addDays(30));
+        $user->recordLoginSession('existing-browser-session', '127.0.0.1', 'PHPUnit');
+
+        $this->actingInTenant($this->tenant);
+
+        $response = $this->postJson('/api/v1/auth/login', [
+            'login' => $user->email,
+            'password' => 'correct-password',
+            'device_name' => 'laptop',
+        ]);
+
+        $response->assertOk();
+        $this->assertSame(2, $user->tokens()->count());
+    }
+
+    /**
+     * The fourth device is where that same allowance runs out.
+     */
+    public function test_a_non_student_non_admin_user_is_blocked_by_a_fourth_device(): void
+    {
+        $user = User::factory()->forTenant($this->tenant)->create(['password' => Hash::make('correct-password')]);
+        $user->createToken('phone', ['*'], now()->addDays(30));
+        $user->createToken('tablet', ['*'], now()->addDays(30));
+        $user->recordLoginSession('existing-browser-session', '127.0.0.1', 'PHPUnit');
+
+        $this->actingInTenant($this->tenant);
+
+        $response = $this->postJson('/api/v1/auth/login', [
+            'login' => $user->email,
+            'password' => 'correct-password',
+            'device_name' => 'laptop',
+        ]);
+
+        $response->assertUnprocessable();
+        $response->assertJsonPath(
+            'errors.login.0',
+            'You are logging in another device, please logout first or you can ask admin for help.',
+        );
+        $this->assertSame(2, $user->tokens()->count());
+    }
+
+    /**
+     * School Admin has no concurrent-device limit at all (see
+     * User::maxConcurrentDevices()) — they're the ones who clear it for
+     * everyone else, and routinely need their own account open on more than
+     * one device at once.
      */
     public function test_a_school_admin_is_not_blocked_by_a_still_active_device(): void
     {
-        $adminRole = Role::factory()->forTenant($this->tenant)->system()->create([
-            'slug' => Role::SCHOOL_ADMIN,
-            'name' => 'School Admin',
-            'level' => Role::LEVELS[Role::SCHOOL_ADMIN],
-        ]);
         $user = User::factory()->forTenant($this->tenant)->create(['password' => Hash::make('correct-password')]);
-        $user->attachRoles($adminRole);
+        $user->attachRoles($this->roleFor(Role::SCHOOL_ADMIN));
         $user->createToken('phone', ['*'], now()->addDays(30));
 
         $this->actingInTenant($this->tenant);
@@ -353,15 +410,17 @@ class AuthenticationTest extends TestCase
 
     /**
      * Mirrors the token case above, but for the session transport the SPA
-     * actually uses: session_login_active still true from a previous login
-     * nobody signed out of blocks a new session login. Set directly rather
-     * than via a real login request, since a fresh test user never has one
-     * left over on its own.
+     * actually uses, and for a Student specifically — their one-device
+     * allowance means a single still-open browser session (a UserSession
+     * row nobody signed out of) blocks a new session login on its own. Set
+     * directly rather than via a real login request, since a fresh test
+     * user never has one left over on its own.
      */
-    public function test_a_session_login_is_blocked_while_another_session_is_still_active(): void
+    public function test_a_student_is_blocked_by_a_still_active_session(): void
     {
         $user = User::factory()->forTenant($this->tenant)->create(['password' => Hash::make('correct-password')]);
-        $user->activateSessionLogin();
+        $user->attachRoles($this->roleFor(Role::STUDENT));
+        $user->recordLoginSession('existing-browser-session', '127.0.0.1', 'PHPUnit');
 
         $this->actingInTenant($this->tenant);
 
@@ -378,22 +437,38 @@ class AuthenticationTest extends TestCase
     }
 
     /**
-     * Logging out deletes the session row outright (Store::invalidate()
-     * destroys it via the handler), so the device is immediately free to log
-     * back in — the whole point of the rule is "log out first," not "wait."
+     * Logging out deletes the UserSession row outright, so the device is
+     * immediately free to log back in — the whole point of the rule is "log
+     * out first," not "wait." Uses a Student (one-device limit) so the
+     * assertion is only true if the slot really was freed by the logout.
+     *
+     * The session cookie is carried forward by hand between requests — the
+     * test client doesn't do this automatically the way a real browser
+     * would — so that logout() sees the *same* session id recordLoginSession()
+     * stored, rather than a fresh, unrelated one.
      */
-    public function test_logging_out_a_session_immediately_clears_the_one_device_lock(): void
+    public function test_logging_out_a_session_immediately_frees_its_device_slot(): void
     {
         $user = User::factory()->forTenant($this->tenant)->create(['password' => Hash::make('correct-password')]);
+        $user->attachRoles($this->roleFor(Role::STUDENT));
 
         $this->actingInTenant($this->tenant);
 
-        $this->postJson('/api/v1/auth/login', [
+        $loginResponse = $this->postJson('/api/v1/auth/login', [
             'login' => $user->email,
             'password' => 'correct-password',
         ])->assertOk();
 
-        $this->postJson('/api/v1/auth/logout')->assertOk();
+        // postJson() sends no cookies at all unless withCredentials() opts in
+        // (mirroring a real fetch() call needing credentials: 'include'), and
+        // withCookie() takes the plain value — the test harness re-encrypts
+        // it the same way a real EncryptCookies response cookie would be.
+        $sessionCookie = $loginResponse->getCookie(config('session.cookie'));
+
+        $this->withCredentials()
+            ->withCookie($sessionCookie->getName(), $sessionCookie->getValue())
+            ->postJson('/api/v1/auth/logout')
+            ->assertOk();
 
         $response = $this->postJson('/api/v1/auth/login', [
             'login' => $user->email,
@@ -401,5 +476,6 @@ class AuthenticationTest extends TestCase
         ]);
 
         $response->assertOk();
+        $this->assertSame(1, $user->loginSessions()->count());
     }
 }

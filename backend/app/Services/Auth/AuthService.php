@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Services\Auth;
 
-use App\Models\Role;
 use App\Models\User;
 use App\Support\Audit\AuditAction;
 use App\Support\Audit\AuditLogger;
@@ -155,39 +154,44 @@ final readonly class AuthService
     }
 
     /**
-     * One login at a time, school-wide policy: a user with a still-open
-     * session or Bearer token elsewhere must log out there first, or have a
-     * School Admin clear it for them (see UserController::forceLogout()) —
-     * there is no self-service override, since by definition they can't
-     * reach the device that's still signed in. There is deliberately no
-     * time-based expiry on the session side either (see User::$session_login_active's
-     * migration) — only an explicit logout or an admin clears it, exactly
-     * matching "you must log out first."
+     * A per-role concurrent-device cap (see User::maxConcurrentDevices()): a
+     * user already signed in on that many devices must log one of them out
+     * first, or have a School Admin clear it for them (see
+     * UserController::forceLogout()) — there is no self-service override,
+     * since by definition they can't reach the device that's still signed
+     * in. There is deliberately no time-based expiry on the session side
+     * either (see the migration that creates UserSession) — only an
+     * explicit logout or an admin clears a slot, exactly matching "you must
+     * log out first."
      *
-     * School Admin is exempt from this check entirely — they're the ones who
-     * clear it for everyone else, and in practice need their own account
-     * open on more than one device (e.g. the office desktop and their
-     * phone) at the same time.
+     * A device is either an open browser session (one UserSession row) or a
+     * live Sanctum token — the two transports share one pool of slots, so a
+     * Teacher can't get three browser tabs *and* three mobile tokens.
      *
-     * `$replacingDeviceName` excludes the one case that isn't really
+     * `$replacingDeviceName` excludes the one token case that isn't really
      * "another device": a token login re-using the same device name that
      * tokenResponse() is about to replace anyway (e.g. reinstalling the same
-     * mobile app).
+     * mobile app). Sessions have no equivalent — the session transport never
+     * "replaces" a prior login, it just adds one more open browser.
      *
      * @throws ValidationException
      */
     public function ensureNoOtherActiveDevice(User $user, ?string $replacingDeviceName): void
     {
-        if ($user->hasRole(Role::SCHOOL_ADMIN)) {
+        $limit = $user->maxConcurrentDevices();
+
+        if ($limit === null) {
             return;
         }
 
-        $hasOtherToken = $user->tokens()
+        $activeTokenCount = $user->tokens()
             ->when($replacingDeviceName !== null, fn ($query) => $query->where('name', '!=', $replacingDeviceName))
             ->where(fn ($query) => $query->whereNull('expires_at')->orWhere('expires_at', '>', now()))
-            ->exists();
+            ->count();
 
-        if ($user->session_login_active || $hasOtherToken) {
+        $activeDeviceCount = $activeTokenCount + $user->loginSessions()->count();
+
+        if ($activeDeviceCount >= $limit) {
             $this->audit->logFor(AuditAction::LOGIN_BLOCKED, 'Auth', $user->tenant_id, $user, ['reason' => 'already_logged_in_elsewhere']);
 
             throw ValidationException::withMessages([
