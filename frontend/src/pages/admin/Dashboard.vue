@@ -68,6 +68,18 @@ const quickAccessItems: QuickAccessItem[] = [
     permission: 'students.approve-registration',
     icon: 'M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z',
   },
+  {
+    labelKey: 'adminNav.items.users',
+    to: '/admin/users',
+    permission: 'users.view',
+    icon: 'M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z',
+  },
+  {
+    labelKey: 'adminNav.items.roles',
+    to: '/admin/roles',
+    permission: 'roles.view',
+    icon: 'M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z',
+  },
 ]
 
 /**
