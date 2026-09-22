@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ConfirmReasonModal from '@/components/admin/ConfirmReasonModal.vue'
+import ExamApplicationFormModal from '@/components/admin/ExamApplicationFormModal.vue'
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
@@ -11,23 +12,26 @@ import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import DataTable from '@/components/ui/DataTable.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import { approvalRequestsService, type ApprovalRequest, type ApprovalRequestStatus } from '@/services/approvalRequests'
+import { examApplicationsService, type ExamApplication } from '@/services/examApplications'
 import { leaveRequestsService, type LeaveRequest } from '@/services/leaveRequests'
 import { resignationRequestsService, type ResignationRequest } from '@/services/resignationRequests'
 import { useAuthStore } from '@/stores/auth'
+import { useConfirmDialogStore } from '@/stores/confirmDialog'
 import { ApiRequestError } from '@/types/api'
 import { formatDate } from '@/utils/date'
 
 /**
  * The approval queue — every pending/decided item across the generic
- * ApprovalRequest catalog, the dedicated LeaveRequest flow, and the
- * dedicated ResignationRequest flow, merged into one table. See
- * MyRequests.vue's docblock for why merging is done client-side rather
- * than through usePaginatedResource. Each source is only fetched if the
- * current user actually holds its view permission, same gating the
- * sidebar nav already applies.
+ * ApprovalRequest catalog, the dedicated LeaveRequest flow, the dedicated
+ * ResignationRequest flow, and exam applications (moved here from their own
+ * "Exam Application Approval" tab under Examination — see ExaminationTabs.vue),
+ * merged into one table. See MyRequests.vue's docblock for why merging is
+ * done client-side rather than through usePaginatedResource. Each source is
+ * only fetched if the current user actually holds its view permission, same
+ * gating the sidebar nav already applies.
  */
 type MergedRow = {
-  kind: 'approval' | 'leave' | 'resignation'
+  kind: 'approval' | 'leave' | 'resignation' | 'exam'
   id: number
   reference: string
   requestor: string
@@ -37,10 +41,12 @@ type MergedRow = {
   approval?: ApprovalRequest
   leave?: LeaveRequest
   resignation?: ResignationRequest
+  exam?: ExamApplication
 }
 
 const { t } = useI18n()
 const auth = useAuthStore()
+const confirmDialog = useConfirmDialogStore()
 
 const rows = ref<MergedRow[]>([])
 const loading = ref(false)
@@ -52,6 +58,11 @@ const activeTab = ref<ApprovalRequestStatus>('pending')
 const canViewApprovals = computed(() => auth.can('approval-requests.view'))
 const canViewLeave = computed(() => auth.can('leave-requests.view'))
 const canViewResignation = computed(() => auth.can('resignation-requests.view'))
+const canViewExams = computed(() => auth.can('exam-applications.view'))
+// Only exam applications can be edited from this queue — a reviewer fixing
+// the student's info or the room/table/date assignment before deciding.
+// Leave/resignation requests have no equivalent "amend before deciding" step.
+const canUpdateExam = computed(() => auth.can('exam-applications.update'))
 
 const tabs: { key: ApprovalRequestStatus; labelKey: string }[] = [
   { key: 'pending', labelKey: 'admin.approvals.tabNew' },
@@ -68,12 +79,12 @@ const counts = computed(() => ({
 const visibleRows = computed(() => rows.value.filter((r) => r.status === activeTab.value))
 
 const columns = [
+  { key: 'actions', label: t('admin.approvals.columnActions') },
   { key: 'date', label: t('admin.approvals.columnDate') },
   { key: 'requestor', label: t('admin.approvals.columnRequestor') },
   { key: 'subject', label: t('admin.approvals.columnSubject') },
   { key: 'reference', label: t('admin.approvals.columnReference') },
   { key: 'status', label: t('admin.approvals.columnStatus') },
-  { key: 'actions', label: t('admin.approvals.columnActions'), align: 'text-right' },
 ]
 
 const statusVariant: Record<ApprovalRequestStatus, 'warning' | 'success' | 'danger'> = {
@@ -92,12 +103,14 @@ const approvePermission: Record<MergedRow['kind'], string> = {
   approval: 'approval-requests.approve',
   leave: 'leave-requests.approve',
   resignation: 'resignation-requests.approve',
+  exam: 'exam-applications.approve',
 }
 
 const rejectPermission: Record<MergedRow['kind'], string> = {
   approval: 'approval-requests.reject',
   leave: 'leave-requests.reject',
   resignation: 'resignation-requests.reject',
+  exam: 'exam-applications.reject',
 }
 
 function canApprove(row: MergedRow): boolean {
@@ -108,12 +121,25 @@ function canReject(row: MergedRow): boolean {
   return auth.can(rejectPermission[row.kind])
 }
 
+// --- Exam application edit (see ExamApplicationFormModal — the same
+// Student Information + Examination Information layout the applicant's own
+// "Apply for an exam" form uses, but with the exam-day fields editable too,
+// since a reviewer may need to correct a room/table/date before deciding) ---
+
+const examFormModalOpen = ref(false)
+const editingEnrollmentCode = ref<string | null>(null)
+
+function openEditExam(row: MergedRow) {
+  editingEnrollmentCode.value = row.exam?.enrollment_code ?? null
+  examFormModalOpen.value = true
+}
+
 async function load() {
   loading.value = true
   error.value = null
 
   try {
-    const [approvals, leaves, resignations] = await Promise.all([
+    const [approvals, leaves, resignations, exams] = await Promise.all([
       canViewApprovals.value ? approvalRequestsService.list() : Promise.resolve({ data: [] as ApprovalRequest[], pagination: undefined }),
       canViewLeave.value
         ? leaveRequestsService.list({ page: 1, per_page: 100, filter: {} })
@@ -121,6 +147,12 @@ async function load() {
       canViewResignation.value
         ? resignationRequestsService.list({ page: 1, per_page: 100, filter: {} })
         : Promise.resolve({ data: [] as ResignationRequest[], pagination: undefined }),
+      // draft/not_exam/make_up applications belong to their own Exams tab,
+      // not this decision queue — only the three statuses this page's own
+      // tabs cover are fetched here.
+      canViewExams.value
+        ? examApplicationsService.list({ page: 1, per_page: 100, filter: { status: 'pending,approved,rejected' } })
+        : Promise.resolve({ data: [] as ExamApplication[], pagination: undefined }),
     ])
 
     const approvalRows: MergedRow[] = approvals.data.map((r) => ({
@@ -156,7 +188,24 @@ async function load() {
       resignation: r,
     }))
 
-    rows.value = [...approvalRows, ...leaveRows, ...resignationRows].sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    // Narrows ExamApplicationStatus down to the three this queue's own tabs
+    // cover — the status filter above should already guarantee this, but a
+    // draft/not_exam/make_up row slipping through would otherwise crash
+    // `counts`/`visibleRows`, which only know about ApprovalRequestStatus.
+    const examRows: MergedRow[] = exams.data
+      .filter((r): r is ExamApplication & { status: ApprovalRequestStatus } => r.status === 'pending' || r.status === 'approved' || r.status === 'rejected')
+      .map((r) => ({
+        kind: 'exam',
+        id: r.id,
+        reference: r.enrollment_code ?? `EX-${String(r.id).padStart(6, '0')}`,
+        requestor: r.student.name,
+        subject: t('admin.approvals.examSubject', { date: formatDate(r.exam_date) }),
+        status: r.status,
+        createdAt: r.created_at,
+        exam: r,
+      }))
+
+    rows.value = [...approvalRows, ...leaveRows, ...resignationRows, ...examRows].sort((a, b) => b.createdAt.localeCompare(a.createdAt))
   } catch (e) {
     error.value = e instanceof ApiRequestError ? e.message : t('admin.approvals.loadFailed')
   } finally {
@@ -171,7 +220,7 @@ function openReject(row: MergedRow) {
 }
 
 async function approve(row: MergedRow) {
-  if (!window.confirm(t('admin.approvals.approveConfirm'))) return
+  if (!(await confirmDialog.confirm(t('admin.approvals.approveConfirm')))) return
 
   approving.value = true
   actionError.value = null
@@ -181,8 +230,10 @@ async function approve(row: MergedRow) {
       await approvalRequestsService.approve(row.id)
     } else if (row.kind === 'leave') {
       await leaveRequestsService.approve(row.id)
-    } else {
+    } else if (row.kind === 'resignation') {
       await resignationRequestsService.approve(row.id)
+    } else {
+      await examApplicationsService.approve(row.id)
     }
     detail.value = null
     await load()
@@ -205,8 +256,10 @@ async function confirmReject(reason: string) {
       await approvalRequestsService.reject(row.id, reason)
     } else if (row.kind === 'leave') {
       await leaveRequestsService.reject(row.id, reason)
-    } else {
+    } else if (row.kind === 'resignation') {
       await resignationRequestsService.reject(row.id, reason)
+    } else {
+      await examApplicationsService.reject(row.id, reason)
     }
     rejectOpen.value = false
     detail.value = null
@@ -264,7 +317,8 @@ onMounted(() => load())
         <BaseBadge :variant="statusVariant[row.status]">{{ t(`admin.myRequests.status${row.status.charAt(0).toUpperCase()}${row.status.slice(1)}`) }}</BaseBadge>
       </template>
       <template #cell-actions="{ row }">
-        <div v-if="row.status === 'pending'" class="flex justify-end gap-2">
+        <div v-if="row.status === 'pending'" class="flex gap-2">
+          <BaseButton v-if="row.kind === 'exam' && canUpdateExam" size="sm" variant="outline" @click="openEditExam(row)">{{ t('common.edit') }}</BaseButton>
           <BaseButton v-if="canApprove(row)" size="sm" :loading="approving" @click="approve(row)">{{ t('admin.approvals.approve') }}</BaseButton>
           <BaseButton v-if="canReject(row)" size="sm" variant="danger" @click="openReject(row)">{{ t('admin.approvals.reject') }}</BaseButton>
         </div>
@@ -284,6 +338,21 @@ onMounted(() => load())
         <dl v-else-if="detail.kind === 'leave' && detail.leave" class="grid gap-y-2 text-sm">
           <div><dt class="text-neutral-500">{{ t('admin.leaveRequests.columnDates') }}</dt><dd class="font-medium text-neutral-900">{{ formatDate(detail.leave.from_date) }} – {{ formatDate(detail.leave.to_date) }}</dd></div>
           <div><dt class="text-neutral-500">{{ t('admin.leaveRequests.columnReason') }}</dt><dd class="font-medium text-neutral-900">{{ detail.leave.reason }}</dd></div>
+          <div v-if="detail.leave.attachments.length > 0">
+            <dt class="text-neutral-500">{{ t('admin.leaveRequests.attachments') }}</dt>
+            <dd class="mt-1 flex flex-col gap-1">
+              <a
+                v-for="attachment in detail.leave.attachments"
+                :key="attachment.id"
+                :href="attachment.url"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="font-medium text-primary-700 hover:underline"
+              >
+                {{ attachment.file_name }}
+              </a>
+            </dd>
+          </div>
           <div v-if="detail.leave.decision_reason"><dt class="text-neutral-500">{{ t('admin.leaveRequests.decisionReason') }}</dt><dd class="font-medium text-neutral-900">{{ detail.leave.decision_reason }}</dd></div>
         </dl>
         <dl v-else-if="detail.kind === 'resignation' && detail.resignation" class="grid gap-y-2 text-sm">
@@ -293,11 +362,19 @@ onMounted(() => load())
           <div><dt class="text-neutral-500">{{ t('resignationRequest.reason') }}</dt><dd class="font-medium text-neutral-900">{{ detail.resignation.reason }}</dd></div>
           <div v-if="detail.resignation.decision_reason"><dt class="text-neutral-500">{{ t('admin.leaveRequests.decisionReason') }}</dt><dd class="font-medium text-neutral-900">{{ detail.resignation.decision_reason }}</dd></div>
         </dl>
+        <dl v-else-if="detail.kind === 'exam' && detail.exam" class="grid gap-y-2 text-sm">
+          <div><dt class="text-neutral-500">{{ t('admin.exams.columnBook') }}</dt><dd class="font-medium text-neutral-900">{{ detail.exam.book?.title ?? detail.exam.enrollment.course_package?.name ?? '—' }}</dd></div>
+          <div><dt class="text-neutral-500">{{ t('admin.exams.columnExamDate') }}</dt><dd class="font-medium text-neutral-900">{{ formatDate(detail.exam.exam_date) }}</dd></div>
+          <div><dt class="text-neutral-500">{{ t('admin.exams.columnTimeExam') }}</dt><dd class="font-medium text-neutral-900">{{ detail.exam.exam_time?.slice(0, 5) ?? '—' }} – {{ detail.exam.exam_time_out?.slice(0, 5) ?? '—' }}</dd></div>
+          <div><dt class="text-neutral-500">{{ t('admin.exams.columnTableNumber') }}</dt><dd class="font-medium text-neutral-900">{{ detail.exam.table?.name ?? detail.exam.table_no ?? '—' }}</dd></div>
+          <div v-if="detail.exam.decision_reason"><dt class="text-neutral-500">{{ t('admin.leaveRequests.decisionReason') }}</dt><dd class="font-medium text-neutral-900">{{ detail.exam.decision_reason }}</dd></div>
+        </dl>
       </template>
 
       <template #footer>
         <BaseButton variant="outline" @click="detail = null">{{ t('common.close') }}</BaseButton>
         <template v-if="detail?.status === 'pending'">
+          <BaseButton v-if="detail.kind === 'exam' && canUpdateExam" variant="outline" @click="openEditExam(detail)">{{ t('common.edit') }}</BaseButton>
           <BaseButton v-if="canReject(detail)" variant="danger" @click="openReject(detail)">{{ t('admin.approvals.reject') }}</BaseButton>
           <BaseButton v-if="canApprove(detail)" :loading="approving" @click="approve(detail)">{{ t('admin.approvals.approve') }}</BaseButton>
         </template>
@@ -314,5 +391,7 @@ onMounted(() => load())
       :error="rejectError"
       @confirm="confirmReject"
     />
+
+    <ExamApplicationFormModal v-model="examFormModalOpen" :initial-enrollment-code="editingEnrollmentCode" @saved="load" />
   </div>
 </template>

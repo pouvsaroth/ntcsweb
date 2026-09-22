@@ -26,7 +26,6 @@ const auth = useAuthStore()
  */
 const allTabs = computed(() => [
   { to: '/admin/exams', labelKey: 'adminNav.items.exams', visible: auth.can('exam-applications.view') },
-  { to: '/admin/exams/approvals', labelKey: 'admin.exams.approvalsTab', visible: auth.can('exam-applications.view') },
   { to: '/admin/grades', labelKey: 'adminNav.items.grades', visible: auth.can('exam-scores.view') || auth.can('exam-scores.manage-all') },
   // Make-up applications are exam applications (STATUS_MAKE_UP, see
   // ExamApplication), so this reuses the same permission as Exams/Approvals

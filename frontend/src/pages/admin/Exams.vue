@@ -4,7 +4,6 @@ import { useI18n } from 'vue-i18n'
 
 import ExamApplicationFormModal from '@/components/admin/ExamApplicationFormModal.vue'
 import ExaminationTabs from '@/components/admin/ExaminationTabs.vue'
-import PrintExamApplicationModal from '@/components/admin/PrintExamApplicationModal.vue'
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
@@ -14,11 +13,13 @@ import DataTable from '@/components/ui/DataTable.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { examApplicationStatuses, examApplicationsService, type ExamApplication, type ExamApplicationStatus } from '@/services/examApplications'
 import { useAuthStore } from '@/stores/auth'
+import { useConfirmDialogStore } from '@/stores/confirmDialog'
 import { ApiRequestError } from '@/types/api'
 import { formatDate } from '@/utils/date'
 
 const { t } = useI18n()
 const auth = useAuthStore()
+const confirmDialog = useConfirmDialogStore()
 
 const canCreate = computed(() => auth.can('exam-applications.create'))
 const canUpdate = computed(() => auth.can('exam-applications.update'))
@@ -69,8 +70,6 @@ const columns = [
   { key: 'book', label: t('admin.exams.columnBook') },
   { key: 'exam_date', label: t('admin.exams.columnExamDate') },
   { key: 'time_exam', label: t('admin.exams.columnTimeExam') },
-  { key: 'sold_at', label: t('admin.exams.columnBuyDate') },
-  { key: 'received_at', label: t('admin.exams.columnReceiveDate') },
   { key: 'birth_date', label: t('admin.exams.columnBirthDate') },
   { key: 'address', label: t('admin.exams.columnAddress') },
   { key: 'room_number', label: t('admin.exams.columnRoomNumber') },
@@ -98,24 +97,6 @@ const selectedIds = ref<number[]>([])
 const actionError = ref<string | null>(null)
 const acting = ref(false)
 
-async function runBulkAction(action: (ids: number[]) => Promise<unknown>) {
-  if (selectedIds.value.length === 0) return
-  acting.value = true
-  actionError.value = null
-  try {
-    await action(selectedIds.value)
-    selectedIds.value = []
-    await fetch()
-  } catch (err) {
-    actionError.value = err instanceof ApiRequestError ? err.message : t('admin.exams.actionFailed')
-  } finally {
-    acting.value = false
-  }
-}
-
-const receiveWord = () => runBulkAction((ids) => examApplicationsService.receive(ids))
-const payBackExam = () => runBulkAction((ids) => examApplicationsService.payBack(ids))
-
 /**
  * "Not Exam" — a student was sent to exam (still draft) but doesn't want
  * to sit it. Only offered on a draft row (see ExamApplicationService::
@@ -123,7 +104,7 @@ const payBackExam = () => runBulkAction((ids) => examApplicationsService.payBack
  * application at that point, handled by Approve/Reject instead.
  */
 async function markNotExam(application: ExamApplication) {
-  if (!confirm(t('admin.exams.confirmNotExam'))) return
+  if (!(await confirmDialog.confirm({ message: t('admin.exams.confirmNotExam'), danger: true }))) return
 
   acting.value = true
   actionError.value = null
@@ -139,7 +120,7 @@ async function markNotExam(application: ExamApplication) {
 
 async function deleteSelected() {
   if (selectedIds.value.length === 0) return
-  if (!confirm(t('admin.exams.confirmDelete', { count: selectedIds.value.length }))) return
+  if (!(await confirmDialog.confirm({ message: t('admin.exams.confirmDelete', { count: selectedIds.value.length }), danger: true }))) return
 
   acting.value = true
   actionError.value = null
@@ -169,16 +150,6 @@ function openApplicationForm(enrollmentCode: string | null = null) {
   editingEnrollmentCode.value = enrollmentCode
   formModalOpen.value = true
 }
-
-// --- Print modal ---------------------------------------------------------
-
-const printModalOpen = ref(false)
-/** Print needs exactly one selected row — the document it produces is inherently a single student's form. */
-const printTarget = computed(() => (selectedIds.value.length === 1 ? items.value.find((a) => a.id === selectedIds.value[0]) ?? null : null))
-
-function openPrint() {
-  if (printTarget.value) printModalOpen.value = true
-}
 </script>
 
 <template>
@@ -192,15 +163,6 @@ function openPrint() {
 
     <div class="mb-4 flex flex-wrap items-center gap-2">
       <BaseButton v-if="canCreate" @click="openApplicationForm()">{{ t('admin.exams.applicationForm') }}</BaseButton>
-      <BaseButton v-if="canUpdate" variant="outline" :disabled="!printTarget || acting" @click="openPrint">
-        {{ t('admin.exams.print') }}
-      </BaseButton>
-      <BaseButton v-if="canUpdate" variant="outline" :disabled="selectedIds.length === 0 || acting" @click="receiveWord">
-        {{ t('admin.exams.receiveWord') }}
-      </BaseButton>
-      <BaseButton v-if="canUpdate" variant="outline" :disabled="selectedIds.length === 0 || acting" @click="payBackExam">
-        {{ t('admin.exams.payBackExam') }}
-      </BaseButton>
       <BaseButton variant="outline" @click="printList">{{ t('admin.exams.printList') }}</BaseButton>
       <BaseButton v-if="canDelete" variant="danger" :disabled="selectedIds.length === 0 || acting" @click="deleteSelected">
         {{ t('common.remove') }}
@@ -262,8 +224,6 @@ function openPrint() {
       <template #cell-book="{ row }">{{ (row as ExamApplication).book?.title ?? (row as ExamApplication).enrollment.course_package?.name ?? '—' }}</template>
       <template #cell-exam_date="{ row }">{{ fmtDate((row as ExamApplication).exam_date) }}</template>
       <template #cell-time_exam="{ row }">{{ timeRange(row as ExamApplication) }}</template>
-      <template #cell-sold_at="{ row }">{{ fmtDate((row as ExamApplication).sold_at) }}</template>
-      <template #cell-received_at="{ row }">{{ fmtDate((row as ExamApplication).received_at) }}</template>
       <template #cell-birth_date="{ row }">{{ fmtDate((row as ExamApplication).student.date_of_birth) }}</template>
       <template #cell-address="{ row }">{{ (row as ExamApplication).student.address ?? '—' }}</template>
       <template #cell-room_number="{ row }">{{ (row as ExamApplication).classroom?.name ?? '—' }}</template>
@@ -273,6 +233,5 @@ function openPrint() {
     <BasePagination v-if="meta" :meta="meta" sticky class="mt-4" @update:page="setPage" />
 
     <ExamApplicationFormModal v-model="formModalOpen" :initial-enrollment-code="editingEnrollmentCode" @saved="fetch" />
-    <PrintExamApplicationModal v-model="printModalOpen" :application="printTarget" @saved="fetch" />
   </div>
 </template>
