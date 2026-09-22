@@ -2853,6 +2853,7 @@ const km: MessageSchema = {
     groups: {
       overview: 'ទិដ្ឋភាពទូទៅ',
       myProfile: 'ប្រវត្តិរូបខ្ញុំ',
+      dashboard: 'ផ្ទាំងគ្រប់គ្រង',
       dashboardManagement: 'ការគ្រប់គ្រងផ្ទាំងគ្រប់គ្រង',
       projectManagement: 'ការគ្រប់គ្រងគម្រោង',
       platform: 'វេទិកា',

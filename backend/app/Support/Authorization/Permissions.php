@@ -510,12 +510,35 @@ final class Permissions
     // the real endpoint too once one of these features actually gets built.
     public const DASHBOARD_VIEW = 'dashboard.view';
 
-    // Dashboard Management — per-role visibility of the three dashboard
-    // sections that, unlike the quick-access tiles above them, carry no
-    // permission of their own to reuse (the tiles stay gated by their real
-    // CRUD permission, e.g. STUDENTS_CREATE — see Dashboard.vue). These three
-    // let a school hide, say, the financial stat cards from a Teacher role
-    // without touching that role's actual accounting/billing access.
+    // Dashboard card visibility — deliberately separate from every card's
+    // own real CRUD permission (e.g. a Teacher can hold STUDENTS_VIEW
+    // without DASHBOARD_CARDS_REGISTER_STUDENT ever showing that shortcut on
+    // their dashboard). This is what lets a school say "Teacher sees Classes
+    // and Attendance, Receptionist sees Enrollment and Student" as two
+    // independent choices from "who can actually create/update those
+    // records" — see Dashboard.vue, which checks these instead of the
+    // underlying module permission for every quick-access tile.
+    public const DASHBOARD_CARDS_REGISTER_STUDENT = 'dashboard.cards.register-student';
+
+    public const DASHBOARD_CARDS_ENROLLMENT = 'dashboard.cards.enrollment';
+
+    public const DASHBOARD_CARDS_CLASSES = 'dashboard.cards.classes';
+
+    public const DASHBOARD_CARDS_STUDENT_PAYMENT = 'dashboard.cards.student-payment';
+
+    public const DASHBOARD_CARDS_STUDENT_ATTENDANCE = 'dashboard.cards.student-attendance';
+
+    public const DASHBOARD_CARDS_TEACHER_ATTENDANCE = 'dashboard.cards.teacher-attendance';
+
+    public const DASHBOARD_CARDS_REGISTRATION_PENDING = 'dashboard.cards.registration-pending';
+
+    public const DASHBOARD_CARDS_USERS = 'dashboard.cards.users';
+
+    public const DASHBOARD_CARDS_ROLES = 'dashboard.cards.roles';
+
+    // Same idea as the cards above, but for the three stat sections below the
+    // tile grid, which never had a CRUD permission of their own to reuse in
+    // the first place.
     public const DASHBOARD_ATTENDANCE_VIEW = 'dashboard.attendance.view';
 
     public const DASHBOARD_FINANCE_VIEW = 'dashboard.finance.view';
@@ -557,13 +580,20 @@ final class Permissions
     public static function catalog(): array
     {
         return [
-            'Overview' => [
+            'Dashboard' => [
                 self::DASHBOARD_VIEW => 'View the dashboard',
-            ],
-            'Dashboard Management' => [
-                self::DASHBOARD_ATTENDANCE_VIEW => 'View the dashboard attendance cards (absent today/yesterday)',
-                self::DASHBOARD_FINANCE_VIEW => 'View the dashboard financial/enrollment stat cards',
-                self::DASHBOARD_PAYMENT_ALERTS_VIEW => 'View the dashboard monthly payment alerts',
+                self::DASHBOARD_CARDS_REGISTER_STUDENT => 'Show the Register Student card',
+                self::DASHBOARD_CARDS_ENROLLMENT => 'Show the Enrollment card',
+                self::DASHBOARD_CARDS_CLASSES => 'Show the Classes card',
+                self::DASHBOARD_CARDS_STUDENT_PAYMENT => 'Show the Student Payment card',
+                self::DASHBOARD_CARDS_STUDENT_ATTENDANCE => 'Show the Student Attendance card',
+                self::DASHBOARD_CARDS_TEACHER_ATTENDANCE => 'Show the Teacher Attendance card',
+                self::DASHBOARD_CARDS_REGISTRATION_PENDING => 'Show the Registration Pending card',
+                self::DASHBOARD_CARDS_USERS => 'Show the Users card',
+                self::DASHBOARD_CARDS_ROLES => 'Show the Roles card',
+                self::DASHBOARD_ATTENDANCE_VIEW => 'Show the attendance stat cards (absent today/yesterday)',
+                self::DASHBOARD_FINANCE_VIEW => 'Show the financial/enrollment stat cards',
+                self::DASHBOARD_PAYMENT_ALERTS_VIEW => 'Show the monthly payment alerts',
             ],
             'Platform' => [
                 self::TENANTS_VIEW => 'View schools',
@@ -966,6 +996,12 @@ final class Permissions
             self::DASHBOARD_ATTENDANCE_VIEW, self::DASHBOARD_FINANCE_VIEW, self::DASHBOARD_PAYMENT_ALERTS_VIEW,
         ];
 
+        $allDashboardCards = [
+            self::DASHBOARD_CARDS_REGISTER_STUDENT, self::DASHBOARD_CARDS_ENROLLMENT, self::DASHBOARD_CARDS_CLASSES,
+            self::DASHBOARD_CARDS_STUDENT_PAYMENT, self::DASHBOARD_CARDS_STUDENT_ATTENDANCE, self::DASHBOARD_CARDS_TEACHER_ATTENDANCE,
+            self::DASHBOARD_CARDS_REGISTRATION_PENDING, self::DASHBOARD_CARDS_USERS, self::DASHBOARD_CARDS_ROLES,
+        ];
+
         // News/Events/Announcements/Documents/Contact Messages/admin
         // Notifications/Examination are all still "coming soon" placeholders
         // (see ComingSoon.vue) — school-admin only by default, same
@@ -978,6 +1014,7 @@ final class Permissions
         return [
             Role::SCHOOL_ADMIN => [
                 ...$selfServiceForEveryone,
+                ...$allDashboardCards,
                 ...$comingSoonPlaceholders,
                 self::TENANT_SETTINGS_VIEW,
                 self::TENANT_SETTINGS_UPDATE,
@@ -1039,6 +1076,14 @@ final class Permissions
             // same as Staff.
             Role::TEACHER => [
                 ...$selfServiceForEveryone,
+                // Matches what a Teacher already sees today via the
+                // underlying module permission below (classes.view,
+                // attendance.view, staff.view, users.view) — see
+                // Dashboard.vue's card list.
+                self::DASHBOARD_CARDS_CLASSES,
+                self::DASHBOARD_CARDS_STUDENT_ATTENDANCE,
+                self::DASHBOARD_CARDS_TEACHER_ATTENDANCE,
+                self::DASHBOARD_CARDS_USERS,
                 self::USERS_VIEW,
                 self::STUDENTS_VIEW,
                 self::BUILDINGS_VIEW,
@@ -1073,6 +1118,16 @@ final class Permissions
             // academic programs/packages) itself.
             Role::STAFF => [
                 ...$selfServiceForEveryone,
+                // Matches what Staff already see today via the underlying
+                // module permission below (students.create, enrollments.
+                // create, classes.view, staff.view, students.approve-
+                // registration, users.view) — see Dashboard.vue's card list.
+                self::DASHBOARD_CARDS_REGISTER_STUDENT,
+                self::DASHBOARD_CARDS_ENROLLMENT,
+                self::DASHBOARD_CARDS_CLASSES,
+                self::DASHBOARD_CARDS_TEACHER_ATTENDANCE,
+                self::DASHBOARD_CARDS_REGISTRATION_PENDING,
+                self::DASHBOARD_CARDS_USERS,
                 self::USERS_VIEW,
                 self::POSITIONS_VIEW,
                 self::STAFF_VIEW,

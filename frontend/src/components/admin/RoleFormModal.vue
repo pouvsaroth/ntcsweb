@@ -60,8 +60,7 @@ type Action =
  * their own (e.g. Leave requests, folded into the Approvals queue).
  */
 const GROUPS = [
-  'Overview',
-  'Dashboard Management',
+  'Dashboard',
   'Project Management',
   'Academic',
   'Students',
@@ -104,16 +103,30 @@ type GroupChild =
   | { kind: 'parent'; key: string; name: string; modules: ModuleEntry[] }
 
 const MODULES: ModuleEntry[] = [
-  { name: 'Dashboard', group: 'Overview', actions: { view: 'dashboard.view' } },
-  // The dashboard's quick-access tiles (Register student, Enrollment,
-  // Classes, ...) aren't listed here — each already shows/hides per role
-  // through its own real CRUD permission below (e.g. Students > Create),
-  // same as before this group existed. These three cover the sections that
-  // used to have no permission at all: any role reaching the dashboard saw
-  // them unconditionally.
-  { name: 'Attendance cards', group: 'Dashboard Management', actions: { view: 'dashboard.attendance.view' } },
-  { name: 'Financial & enrollment stat cards', group: 'Dashboard Management', actions: { view: 'dashboard.finance.view' } },
-  { name: 'Monthly payment alerts', group: 'Dashboard Management', actions: { view: 'dashboard.payment-alerts.view' } },
+  { name: 'Dashboard', group: 'Dashboard', actions: { view: 'dashboard.view' } },
+  // Every dashboard card is its own dedicated permission, independent of
+  // that page's real CRUD permission below (e.g. "Register student card"
+  // is dashboard.cards.register-student, not students.create) — so a school
+  // can give Teacher the Classes/Attendance cards and Staff the Enrollment/
+  // Students cards without changing who can actually create/update those
+  // records. See Permissions::DASHBOARD_CARDS_REGISTER_STUDENT etc. and
+  // Dashboard.vue, which checks these instead of the module permission for
+  // every tile.
+  { name: 'Register student card', group: 'Dashboard', actions: { view: 'dashboard.cards.register-student' } },
+  { name: 'Enrollment card', group: 'Dashboard', actions: { view: 'dashboard.cards.enrollment' } },
+  { name: 'Classes card', group: 'Dashboard', actions: { view: 'dashboard.cards.classes' } },
+  { name: 'Student payment card', group: 'Dashboard', actions: { view: 'dashboard.cards.student-payment' } },
+  { name: 'Student attendance card', group: 'Dashboard', actions: { view: 'dashboard.cards.student-attendance' } },
+  { name: 'Teacher attendance card', group: 'Dashboard', actions: { view: 'dashboard.cards.teacher-attendance' } },
+  { name: 'Registration pending card', group: 'Dashboard', actions: { view: 'dashboard.cards.registration-pending' } },
+  { name: 'Users card', group: 'Dashboard', actions: { view: 'dashboard.cards.users' } },
+  { name: 'Roles card', group: 'Dashboard', actions: { view: 'dashboard.cards.roles' } },
+  // These three never had a CRUD permission of their own to reuse in the
+  // first place — any role reaching the dashboard saw them unconditionally
+  // until Permissions::DASHBOARD_ATTENDANCE_VIEW etc. were added.
+  { name: 'Attendance stat cards', group: 'Dashboard', actions: { view: 'dashboard.attendance.view' } },
+  { name: 'Financial & enrollment stat cards', group: 'Dashboard', actions: { view: 'dashboard.finance.view' } },
+  { name: 'Monthly payment alerts', group: 'Dashboard', actions: { view: 'dashboard.payment-alerts.view' } },
   { name: 'School settings', group: 'Settings', actions: { view: 'tenant-settings.view', update: 'tenant-settings.update' } },
   { name: 'Users', group: 'Settings', actions: { view: 'users.view', create: 'users.create', update: 'users.update', delete: 'users.delete' } },
   {
@@ -425,8 +438,7 @@ function toggleModule(module: (typeof MODULES)[number], checked: boolean) {
  * has no sidebar group of its own, so it falls through to its raw label.
  */
 const GROUP_I18N_KEYS: Partial<Record<(typeof GROUPS)[number], string>> = {
-  Overview: 'overview',
-  'Dashboard Management': 'dashboardManagement',
+  Dashboard: 'dashboard',
   'Project Management': 'projectManagement',
   Academic: 'academic',
   Students: 'students',

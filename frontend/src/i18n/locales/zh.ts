@@ -2852,6 +2852,7 @@ const zh: MessageSchema = {
     groups: {
       overview: '概览',
       myProfile: '我的资料',
+      dashboard: '仪表板',
       dashboardManagement: '仪表板管理',
       projectManagement: '项目管理',
       platform: '平台',
