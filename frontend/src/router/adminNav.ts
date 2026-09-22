@@ -58,6 +58,12 @@ export const adminNav: AdminNavGroup[] = [
     // labels/routes.
     labelKey: 'adminNav.groups.myProfile',
     items: [
+      // No `permission` here on purpose: the Overview group's own Dashboard
+      // item above requires dashboard.view, which the Student role
+      // deliberately never holds (see Permissions::defaultsForSystemRoles())
+      // — this is the only way back to their home page (Dashboard.vue's
+      // student card grid) once they've navigated away from it.
+      { labelKey: 'adminNav.items.dashboard', to: '/admin', studentOnly: true },
       { labelKey: 'studentNav.score', to: '/admin/my-scores', studentOnly: true },
       { labelKey: 'studentNav.attendant', to: '/admin/my-attendance', studentOnly: true },
       { labelKey: 'studentNav.video', to: '/admin/my-videos', studentOnly: true },

@@ -70,6 +70,52 @@ const quickAccessItems: QuickAccessItem[] = [
   },
 ]
 
+/**
+ * The Student role's own home page — this account never sees the grid
+ * above (it holds none of those permissions by design, see
+ * Permissions::defaultsForSystemRoles()). No `permission` on any of these:
+ * they're the same identity-gated self-service pages already reachable from
+ * StudentBottomNav.vue/adminNav.ts's "My Profile" group, just gathered here
+ * as the landing page instead of scattered across the sidebar/tab bar.
+ */
+const studentQuickAccessItems: QuickAccessItem[] = [
+  {
+    labelKey: 'studentNav.score',
+    to: '/admin/my-scores',
+    icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z',
+  },
+  {
+    labelKey: 'studentNav.attendant',
+    to: '/admin/my-attendance',
+    icon: 'M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z',
+  },
+  {
+    labelKey: 'studentNav.video',
+    to: '/admin/my-videos',
+    icon: 'M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z',
+  },
+  {
+    labelKey: 'studentNav.myRequest',
+    to: '/admin/my-feedback',
+    icon: 'M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z',
+  },
+  {
+    labelKey: 'adminNav.items.requestLeave',
+    to: '/admin/approvals/my-requests',
+    icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z',
+  },
+  {
+    labelKey: 'admin.myExamApplications.title',
+    to: '/admin/my-exam-applications',
+    icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V4a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V20a2 2 0 01-2 2z',
+  },
+  {
+    labelKey: 'adminNav.items.notifications',
+    to: '/admin/notifications',
+    icon: 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9',
+  },
+]
+
 const studyingCount = ref<string>('—')
 /** Active enrollments right now — same "studying" definition as the Classes list's active-student count/filter, not Student.status. */
 const studyingEnrollmentsCount = ref<string>('—')
@@ -153,13 +199,31 @@ async function loadStats(): Promise<void> {
 }
 
 onMounted(() => {
-  if (!auth.isSuperAdmin) void loadStats()
+  if (!auth.isSuperAdmin && !auth.hasRole('student')) void loadStats()
 })
 </script>
 
 <template>
   <div>
-    <template v-if="!auth.isSuperAdmin">
+    <template v-if="auth.hasRole('student')">
+      <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+        <RouterLink
+          v-for="item in studentQuickAccessItems"
+          :key="item.to"
+          :to="item.to"
+          class="relative flex flex-col items-center gap-2 rounded-[--radius-card] border border-neutral-200 bg-white p-4 text-center shadow-[--shadow-card] transition-shadow hover:shadow-[--shadow-card-hover]"
+        >
+          <span class="flex h-10 w-10 items-center justify-center rounded-full bg-primary-100 text-primary-700">
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" :d="item.icon" />
+            </svg>
+          </span>
+          <span class="text-xs font-medium text-neutral-700">{{ t(item.labelKey) }}</span>
+        </RouterLink>
+      </div>
+    </template>
+
+    <template v-else-if="!auth.isSuperAdmin">
       <h2 class="mt-8 text-sm font-semibold uppercase tracking-wide text-neutral-500">{{ t('admin.dashboard.quickAccess') }}</h2>
       <div class="mt-3 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
         <RouterLink

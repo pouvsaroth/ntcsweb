@@ -47,7 +47,10 @@ const adminRoutes: RouteRecordRaw[] = [
     path: '',
     name: 'admin.dashboard',
     component: () => import('@/pages/admin/Dashboard.vue'),
-    meta: { titleKey: 'adminNav.items.dashboard' },
+    // Doubles as the student home page — Dashboard.vue renders a different
+    // card grid for auth.hasRole('student') — see the two guard checks
+    // below that special-case this route for students.
+    meta: { titleKey: 'adminNav.items.dashboard', studentAllowed: true },
   },
   {
     path: 'projects',
@@ -350,7 +353,7 @@ const adminRoutes: RouteRecordRaw[] = [
     path: 'notifications',
     name: 'admin.notifications',
     component: () => import('@/pages/admin/Notifications.vue'),
-    meta: { titleKey: 'adminNav.items.notifications' },
+    meta: { titleKey: 'adminNav.items.notifications', studentAllowed: true },
   },
   {
     path: 'languages',
@@ -632,6 +635,11 @@ const router = createRouter({
   },
 })
 
+/** A student has no dashboard.view permission by design, but still lands on the dashboard route as their own home page (see Dashboard.vue's student branch) — this is the one route where "can reach it" isn't just the permission. */
+function canReachDashboard(auth: ReturnType<typeof useAuthStore>): boolean {
+  return auth.can('dashboard.view') || auth.hasRole('student')
+}
+
 /**
  * Auth is resolved once, lazily, on the first navigation that needs it — not
  * eagerly on every app boot. This bundle never serves a school's own public
@@ -655,9 +663,9 @@ router.beforeEach(async (to) => {
   // A student account only has permissions for its own handful of
   // self-service pages under /admin/my-* (see studentAllowed below) — sent
   // straight to the first of those they can actually reach on anything else.
-  // Must not redirect to plain /admin: that's the dashboard route, which
-  // isn't studentAllowed either, so bouncing there would re-trigger this
-  // exact check and redirect forever.
+  // The dashboard route is studentAllowed too (Dashboard.vue renders a
+  // student-specific card grid there — see canReachDashboard below), so this
+  // doesn't re-trigger on a bounce to plain /admin.
   if (to.meta.requiresAuth && auth.hasRole('student') && !to.meta.studentAllowed) {
     const fallback = firstAccessibleAdminPath(auth)
     if (fallback && fallback !== to.path) return { path: fallback }
@@ -668,14 +676,17 @@ router.beforeEach(async (to) => {
   // — but the page shell itself (title, quick-access tiles) still isn't
   // something to show an account that wasn't granted dashboard.view. Send
   // them to the first thing their role can actually reach instead of
-  // landing on a page with nothing on it.
-  if (to.name === 'admin.dashboard' && !auth.can('dashboard.view')) {
+  // landing on a page with nothing on it. A student always reaches it
+  // though — it's their home page, not the admin one — even though the
+  // Student role deliberately holds no dashboard.view permission (see
+  // Permissions::defaultsForSystemRoles()).
+  if (to.name === 'admin.dashboard' && !canReachDashboard(auth)) {
     const fallback = firstAccessibleAdminPath(auth)
     if (fallback && fallback !== to.path) return { path: fallback }
   }
 
   if (to.meta.guestOnly && auth.isAuthenticated) {
-    const landing = auth.can('dashboard.view') ? '/admin' : firstAccessibleAdminPath(auth)
+    const landing = canReachDashboard(auth) ? '/admin' : firstAccessibleAdminPath(auth)
     return { path: landing ?? '/admin' }
   }
 
