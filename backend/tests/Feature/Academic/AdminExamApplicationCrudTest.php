@@ -359,6 +359,43 @@ class AdminExamApplicationCrudTest extends TestCase
         $this->assertNotEquals($adminCreated->id, $response->json('data.0.id'));
     }
 
+    public function test_awaiting_action_filter_returns_draft_pending_and_unscored_approved_only(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::EXAM_APPLICATIONS_VIEW]);
+        $enrollment = $this->enrollmentWithCode();
+
+        $draft = ExamApplication::factory()->forStudent($enrollment->student)->forEnrollment($enrollment)
+            ->create(['status' => ExamApplication::STATUS_DRAFT]);
+        $pending = ExamApplication::factory()->forStudent($enrollment->student)->forEnrollment($enrollment)
+            ->create(['status' => ExamApplication::STATUS_PENDING]);
+        $approvedUnscored = ExamApplication::factory()->forStudent($enrollment->student)->forEnrollment($enrollment)
+            ->create(['status' => ExamApplication::STATUS_APPROVED]);
+        $approvedScored = ExamApplication::factory()->forStudent($enrollment->student)->forEnrollment($enrollment)
+            ->create(['status' => ExamApplication::STATUS_APPROVED]);
+        $approvedScored->score()->create(['score' => '85.00']);
+        $makeUpUnscored = ExamApplication::factory()->forStudent($enrollment->student)->forEnrollment($enrollment)
+            ->create(['status' => ExamApplication::STATUS_MAKE_UP]);
+        $makeUpScored = ExamApplication::factory()->forStudent($enrollment->student)->forEnrollment($enrollment)
+            ->create(['status' => ExamApplication::STATUS_MAKE_UP]);
+        $makeUpScored->score()->create(['score' => '90.00']);
+        ExamApplication::factory()->forStudent($enrollment->student)->forEnrollment($enrollment)
+            ->create(['status' => ExamApplication::STATUS_REJECTED]);
+        ExamApplication::factory()->forStudent($enrollment->student)->forEnrollment($enrollment)
+            ->create(['status' => ExamApplication::STATUS_NOT_EXAM]);
+
+        $response = $this->getJson('/api/v1/exam-applications?awaiting_action=1');
+
+        $response->assertOk();
+        $response->assertJsonCount(4, 'data');
+        $ids = collect($response->json('data'))->pluck('id');
+        $ids->each(fn ($id) => $this->assertNotEquals($approvedScored->id, $id));
+        $ids->each(fn ($id) => $this->assertNotEquals($makeUpScored->id, $id));
+        $this->assertTrue($ids->contains($draft->id));
+        $this->assertTrue($ids->contains($pending->id));
+        $this->assertTrue($ids->contains($approvedUnscored->id));
+        $this->assertTrue($ids->contains($makeUpUnscored->id));
+    }
+
     public function test_deleting_an_exam_application_requires_the_delete_permission(): void
     {
         $this->actingAsAdminWithPermissions([]);

@@ -27,6 +27,8 @@ interface Draft {
   entry: ExamScoreEntry
   score: string
   remark: string
+  /** Check alongside a failing score to generate a scoreable retake for this student — see ExamScoreEntryInput's `make_up`. */
+  makeUp: boolean
 }
 
 const drafts = ref<Draft[]>([])
@@ -42,7 +44,7 @@ async function load() {
 
   try {
     const entries = await examScoresService.list({ ...props.filters, scored: false })
-    drafts.value = entries.map((entry) => ({ entry, score: '', remark: '' }))
+    drafts.value = entries.map((entry) => ({ entry, score: '', remark: '', makeUp: false }))
   } catch (error) {
     loadError.value = error instanceof ApiRequestError ? error.message : t('admin.grades.loadFailed')
   } finally {
@@ -69,6 +71,7 @@ async function save() {
         exam_application_id: draft.entry.exam_application_id,
         score: Number(draft.score),
         remark: String(draft.remark).trim() || null,
+        make_up: draft.makeUp,
       }))
 
     if (entries.length === 0) return
@@ -121,6 +124,11 @@ async function save() {
           :placeholder="t('admin.grades.remarkPlaceholder')"
           class="flex-1 rounded-lg border border-neutral-300 px-3 py-1.5 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
         />
+
+        <label class="flex shrink-0 items-center gap-1.5 text-sm text-neutral-700">
+          <input v-model="draft.makeUp" type="checkbox" class="rounded border-neutral-300 text-primary-600 focus:ring-primary-500" />
+          {{ t('admin.grades.makeUpExam') }}
+        </label>
       </div>
     </div>
 

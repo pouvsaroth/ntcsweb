@@ -26,6 +26,7 @@ class RecordExamScoresRequest extends FormRequest
             'entries.*.exam_application_id' => ['required', 'integer', 'distinct'],
             'entries.*.score' => ['present', 'nullable', 'numeric', 'min:0', 'max:100'],
             'entries.*.remark' => ['nullable', 'string', 'max:500'],
+            'entries.*.make_up' => ['nullable', 'boolean'],
         ];
     }
 }

@@ -98,8 +98,8 @@ const quickAccessItems: QuickAccessItem[] = [
  * above (it holds none of those permissions by design, see
  * Permissions::defaultsForSystemRoles()). No `permission` on any of these:
  * they're the same identity-gated self-service pages already reachable from
- * StudentBottomNav.vue/adminNav.ts's "My Profile" group, just gathered here
- * as the landing page instead of scattered across the sidebar/tab bar.
+ * adminNav.ts's "My Profile" group, just gathered here as the landing page
+ * instead of scattered across the sidebar/tab bar.
  */
 const studentQuickAccessItems: QuickAccessItem[] = [
   {

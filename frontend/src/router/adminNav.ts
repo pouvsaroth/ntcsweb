@@ -52,10 +52,10 @@ export const adminNav: AdminNavGroup[] = [
   },
   {
     // A student's own sidebar — same pages that used to live only in
-    // PublicUserMenu.vue's dropdown (and StudentBottomNav's mobile tab
-    // bar). Reusing publicNav.ts's documentsAndFormLinks for the last
-    // three keeps that one array as the single source for their
-    // labels/routes.
+    // PublicUserMenu.vue's dropdown (and, before Dashboard.vue grew its own
+    // student card grid, MobileBottomNav's mobile tab bar). Reusing
+    // publicNav.ts's documentsAndFormLinks for the last three keeps that one
+    // array as the single source for their labels/routes.
     labelKey: 'adminNav.groups.myProfile',
     items: [
       // No `permission` here on purpose: the Overview group's own Dashboard

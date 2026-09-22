@@ -30,8 +30,8 @@ const comingSoon = () => import('@/pages/admin/ComingSoon.vue')
  * path -> adminNav.items translation key, so ComingSoon.vue's title always
  * matches the sidebar label it was clicked from. The optional 3rd element
  * marks a page a student account is allowed to open (see the router guard's
- * `studentAllowed` check below) — needed for my-scores since it's reachable
- * via StudentBottomNav's mobile tab bar.
+ * `studentAllowed` check below) — needed for my-scores since it's one of
+ * Dashboard.vue's student card grid tiles.
  */
 const comingSoonPages: [string, string, boolean?][] = [
   ['news', 'adminNav.items.news'],
@@ -264,6 +264,12 @@ const adminRoutes: RouteRecordRaw[] = [
     name: 'admin.grades',
     component: () => import('@/pages/admin/Grades.vue'),
     meta: { titleKey: 'adminNav.items.grades' },
+  },
+  {
+    path: 'exams/make-up',
+    name: 'admin.exams.make-up',
+    component: () => import('@/pages/admin/MakeUpExam.vue'),
+    meta: { titleKey: 'adminNav.items.makeUpExam' },
   },
   {
     path: 'my-attendance',

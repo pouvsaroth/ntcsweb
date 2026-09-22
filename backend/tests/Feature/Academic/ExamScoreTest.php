@@ -96,6 +96,44 @@ class ExamScoreTest extends TestCase
             ->assertJsonPath('data.0.remark', 'Good');
     }
 
+    public function test_checking_make_up_creates_a_scoreable_retake_application(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::EXAM_SCORES_MANAGE_ALL]);
+        $app = $this->application();
+
+        $this->postJson('/api/v1/exam-scores', ['entries' => [
+            ['exam_application_id' => $app->id, 'score' => 40, 'make_up' => true],
+        ]])->assertOk();
+
+        $retake = ExamApplication::query()->where('retake_of_id', $app->id)->first();
+        $this->assertNotNull($retake);
+        $this->assertSame(ExamApplication::STATUS_MAKE_UP, $retake->status);
+        $this->assertSame($app->student_id, $retake->student_id);
+        $this->assertSame($app->enrollment_id, $retake->enrollment_id);
+        $this->assertSame($app->book_id, $retake->book_id);
+
+        // The retake itself is immediately scoreable — no separate approval step.
+        $this->getJson('/api/v1/exam-scores')->assertJsonFragment(['exam_application_id' => $retake->id]);
+
+        $this->getJson("/api/v1/exam-scores?student_id={$app->student_id}")
+            ->assertJsonPath('data.0.has_make_up', true);
+    }
+
+    public function test_checking_make_up_twice_never_creates_a_second_retake(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::EXAM_SCORES_MANAGE_ALL]);
+        $app = $this->application();
+
+        $this->postJson('/api/v1/exam-scores', ['entries' => [
+            ['exam_application_id' => $app->id, 'score' => 40, 'make_up' => true],
+        ]])->assertOk();
+        $this->postJson('/api/v1/exam-scores', ['entries' => [
+            ['exam_application_id' => $app->id, 'score' => 42, 'make_up' => true],
+        ]])->assertOk();
+
+        $this->assertSame(1, ExamApplication::query()->where('retake_of_id', $app->id)->count());
+    }
+
     public function test_a_score_cannot_be_saved_for_an_application_that_is_not_approved(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::EXAM_SCORES_MANAGE_ALL]);

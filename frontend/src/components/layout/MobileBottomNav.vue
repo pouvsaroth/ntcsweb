@@ -6,9 +6,9 @@ const { t } = useI18n()
 </script>
 
 <template>
-  <!-- A student's mobile-only quick-access bar — just a single Home button
-       back to Dashboard.vue's student card grid (Score/Attendant/Video/...
-       all live there now, see admin.ts's `studentAllowed` dashboard route).
+  <!-- Every account's mobile-only quick-access bar — just a single Home
+       button back to Dashboard.vue (its own role-specific card grid, see
+       admin.ts's `studentAllowed` dashboard route for the student case).
        Profile is still reachable from AdminSidebar's own profile card. -->
   <nav
     class="fixed inset-x-0 bottom-0 z-40 border-t border-neutral-200 bg-white pb-[env(safe-area-inset-bottom)] lg:hidden"
@@ -23,7 +23,7 @@ const { t } = useI18n()
             d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
           />
         </svg>
-        <span class="text-center text-[10px] font-medium leading-tight">{{ t('studentNav.home') }}</span>
+        <span class="text-center text-[10px] font-medium leading-tight">{{ t('common.home') }}</span>
       </RouterLink>
     </div>
   </nav>

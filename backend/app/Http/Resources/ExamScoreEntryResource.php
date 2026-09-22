@@ -40,6 +40,10 @@ class ExamScoreEntryResource extends JsonResource
             'remark' => $this->score?->remark,
             'recorded_by' => $this->score?->recordedBy?->name,
             'recorded_at' => $this->score?->recorded_at?->toIso8601String(),
+            // Whether ExamScoreService::record() already generated a
+            // STATUS_MAKE_UP application from this row — drives the Grades
+            // tab's Make-up Exam checkbox (checked + disabled once true).
+            'has_make_up' => $this->retake !== null,
         ];
     }
 }

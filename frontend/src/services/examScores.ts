@@ -20,6 +20,8 @@ export interface ExamScoreEntry {
   remark: string | null
   recorded_by: string | null
   recorded_at: string | null
+  /** Whether a STATUS_MAKE_UP application was already generated from this row (see ExamScoreService::record()'s `make_up` entry flag) — drives the Make-up Exam checkbox's checked+disabled state. */
+  has_make_up: boolean
 }
 
 /** One real Course/Class/Book combination that has at least one scoreable application — see ExamScoreService::options(). */
@@ -43,6 +45,8 @@ export interface ExamScoreEntryInput {
   /** null clears an existing score rather than storing one. */
   score: number | null
   remark?: string | null
+  /** Generates a scoreable STATUS_MAKE_UP application for the same student/enrollment/book — see ExamScoreService::record(). Ignored when clearing a score, and a no-op if a retake already exists for this row. */
+  make_up?: boolean
 }
 
 export const examScoresService = {

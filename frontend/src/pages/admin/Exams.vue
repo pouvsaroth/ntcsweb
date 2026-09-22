@@ -24,16 +24,20 @@ const canCreate = computed(() => auth.can('exam-applications.create'))
 const canUpdate = computed(() => auth.can('exam-applications.update'))
 const canDelete = computed(() => auth.can('exam-applications.delete'))
 
+/** The dropdown's default (see statusFilter below) — draft/pending applications plus approved-but-not-yet-scored ones, i.e. everything this tab can still act on. Mutually exclusive with the `status` filter, so it's kept out of `filters` entirely and passed as its own param instead (see examApplicationsService.list()). */
+const AWAITING_ACTION = 'awaiting_action'
+
+const statusFilter = ref<ExamApplicationStatus | '' | typeof AWAITING_ACTION>(AWAITING_ACTION)
+
 const { items, meta, loading, error, setPage, setFilter, fetch } = usePaginatedResource<ExamApplication>((query) =>
-  examApplicationsService.list(query),
+  examApplicationsService.list(query, { awaitingAction: statusFilter.value === AWAITING_ACTION }),
 )
 
 onMounted(() => void fetch())
 
-const statusFilter = ref<ExamApplicationStatus | ''>('')
 function onStatusFilterChange(value: string) {
-  statusFilter.value = value as ExamApplicationStatus | ''
-  setFilter('status', statusFilter.value || undefined)
+  statusFilter.value = value as ExamApplicationStatus | '' | typeof AWAITING_ACTION
+  setFilter('status', statusFilter.value === AWAITING_ACTION ? undefined : statusFilter.value || undefined)
 }
 /** "not_exam" -> "NotExam" — a plain first-letter capitalize (as every other status here only ever needed) breaks on the underscore. */
 function statusKeySuffix(status: string): string {
@@ -41,16 +45,18 @@ function statusKeySuffix(status: string): string {
 }
 
 const statusFilterOptions = computed(() => [
+  { value: AWAITING_ACTION, label: t('admin.exams.awaitingAction') },
   { value: '', label: t('admin.exams.allStatuses') },
   ...examApplicationStatuses.map((status) => ({ value: status, label: t(`admin.exams.status${statusKeySuffix(status)}`) })),
 ])
 
-const statusVariant: Record<ExamApplicationStatus, 'success' | 'danger' | 'warning' | 'neutral'> = {
+const statusVariant: Record<ExamApplicationStatus, 'success' | 'danger' | 'warning' | 'neutral' | 'primary'> = {
   draft: 'neutral',
   pending: 'warning',
   approved: 'success',
   rejected: 'danger',
   not_exam: 'neutral',
+  make_up: 'primary',
 }
 
 const columns = [

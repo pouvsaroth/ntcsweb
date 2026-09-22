@@ -15,16 +15,16 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 /**
- * The Grades tab. Only approved exam applications can be scored — a student
- * with no application (or a pending/rejected one) never shows up here, and
- * record() refuses one even by id-guessing. Without
- * Permissions::EXAM_SCORES_MANAGE_ALL, both reading and writing are limited
- * to applications whose enrollment sits in a class the user's own Staff
- * record teaches (class_teachers).
+ * The Grades tab. Only approved (or make-up, see ExamApplication::
+ * scopeScoreable()) exam applications can be scored — a student with no
+ * application (or a pending/rejected one) never shows up here, and record()
+ * refuses one even by id-guessing. Without Permissions::EXAM_SCORES_MANAGE_ALL,
+ * both reading and writing are limited to applications whose enrollment sits
+ * in a class the user's own Staff record teaches (class_teachers).
  */
 final class ExamScoreService
 {
-    public const WITH = ['student', 'enrollment.coursePackage', 'enrollment.schoolClass', 'book', 'score.recordedBy'];
+    public const WITH = ['student', 'enrollment.coursePackage', 'enrollment.schoolClass', 'book', 'score.recordedBy', 'retake'];
 
     public function __construct(private readonly AuditLogger $audit) {}
 
@@ -33,7 +33,7 @@ final class ExamScoreService
      */
     public function scoreableQuery(User $user): Builder
     {
-        $query = ExamApplication::query()->approved();
+        $query = ExamApplication::query()->scoreable();
 
         if ($user->hasPermission(Permissions::EXAM_SCORES_MANAGE_ALL)) {
             return $query;
@@ -111,16 +111,22 @@ final class ExamScoreService
     }
 
     /**
-     * A null `score` clears an existing score rather than storing one.
+     * A null `score` clears an existing score rather than storing one. A
+     * true `make_up` (only meaningful alongside a real score, never a
+     * clear) generates a fresh STATUS_MAKE_UP application for the same
+     * student/enrollment/book — immediately scoreable itself, no separate
+     * approval step — unless one already exists for this row (see
+     * ExamApplication::retake()), in which case it's a no-op: checking the
+     * box twice never creates a second retake.
      *
-     * @param  list<array{exam_application_id:int, score:float|int|string|null, remark?:string|null}>  $entries
+     * @param  list<array{exam_application_id:int, score:float|int|string|null, remark?:string|null, make_up?:bool}>  $entries
      */
     public function record(array $entries, User $actor): void
     {
         DB::connection('tenant')->transaction(function () use ($entries, $actor) {
             $ids = array_values(array_unique(array_map(fn ($e) => (int) $e['exam_application_id'], $entries)));
 
-            $applications = $this->scoreableQuery($actor)->with('student')->whereKey($ids)->get()->keyBy('id');
+            $applications = $this->scoreableQuery($actor)->with('retake')->whereKey($ids)->get()->keyBy('id');
 
             if ($applications->count() !== count($ids)) {
                 throw ValidationException::withMessages([
@@ -128,7 +134,7 @@ final class ExamScoreService
                 ]);
             }
 
-            $saved = $cleared = 0;
+            $saved = $cleared = $retakesCreated = 0;
 
             foreach ($entries as $entry) {
                 $applicationId = (int) $entry['exam_application_id'];
@@ -149,13 +155,28 @@ final class ExamScoreService
                     ],
                 );
                 $saved++;
+
+                $application = $applications[$applicationId];
+
+                if (($entry['make_up'] ?? false) && $application->retake === null) {
+                    ExamApplication::query()->create([
+                        'student_id' => $application->student_id,
+                        'enrollment_id' => $application->enrollment_id,
+                        'book_id' => $application->book_id,
+                        'retake_of_id' => $application->id,
+                        'status' => ExamApplication::STATUS_MAKE_UP,
+                    ]);
+                    $retakesCreated++;
+                }
             }
 
             $this->audit->log(
                 AuditAction::EXAM_SCORES_RECORDED,
                 'Exam Scores',
-                new: ['exam_application_ids' => $ids, 'saved' => $saved, 'cleared' => $cleared],
-                description: "Recorded {$saved} exam score(s)".($cleared > 0 ? ", cleared {$cleared}" : ''),
+                new: ['exam_application_ids' => $ids, 'saved' => $saved, 'cleared' => $cleared, 'retakes_created' => $retakesCreated],
+                description: "Recorded {$saved} exam score(s)"
+                    .($cleared > 0 ? ", cleared {$cleared}" : '')
+                    .($retakesCreated > 0 ? ", created {$retakesCreated} make-up application(s)" : ''),
                 actor: $actor,
             );
         });

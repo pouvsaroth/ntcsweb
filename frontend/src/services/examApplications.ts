@@ -2,9 +2,9 @@ import { apiDelete, apiGetWithMeta, apiPost, apiPut } from '@/services/http'
 import type { PaginatedQuery } from '@/composables/usePaginatedResource'
 import type { LengthAwarePaginationMeta, PaginatedResult } from '@/types/api'
 
-export type ExamApplicationStatus = 'draft' | 'pending' | 'approved' | 'rejected' | 'not_exam'
+export type ExamApplicationStatus = 'draft' | 'pending' | 'approved' | 'rejected' | 'not_exam' | 'make_up'
 
-export const examApplicationStatuses: ExamApplicationStatus[] = ['draft', 'pending', 'approved', 'rejected', 'not_exam']
+export const examApplicationStatuses: ExamApplicationStatus[] = ['draft', 'pending', 'approved', 'rejected', 'not_exam', 'make_up']
 
 export interface ExamApplicationStudent {
   id: number
@@ -88,9 +88,23 @@ export interface ExamApplicationFeeInput {
 }
 
 export const examApplicationsService = {
-  async list(query: PaginatedQuery): Promise<PaginatedResult<ExamApplication>> {
+  /**
+   * `awaitingAction` is a plain top-level query param (see
+   * ExamApplicationController::index()), not a `filter[...]` entry — it
+   * means "draft/pending, or approved but not yet scored," which isn't a
+   * single column value ApiQuery's generic filterable() could express. Used
+   * by Exams.vue's default "Awaiting action" view, mutually exclusive with
+   * `query.filter.status`.
+   */
+  async list(query: PaginatedQuery, opts: { awaitingAction?: boolean } = {}): Promise<PaginatedResult<ExamApplication>> {
     const result = await apiGetWithMeta<ExamApplication[]>('/exam-applications', {
-      params: { page: query.page, per_page: query.per_page, sort: query.sort, filter: query.filter },
+      params: {
+        page: query.page,
+        per_page: query.per_page,
+        sort: query.sort,
+        filter: query.filter,
+        ...(opts.awaitingAction ? { awaiting_action: '1' } : {}),
+      },
     })
     return { data: result.data, pagination: result.meta?.pagination as LengthAwarePaginationMeta }
   },

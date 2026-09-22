@@ -16,6 +16,7 @@ use App\Models\Tenant;
 use App\Services\Academic\ExamApplicationService;
 use App\Support\Query\ApiQuery;
 use App\Support\Tenancy\TenantContext;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -45,6 +46,25 @@ final class ExamApplicationController extends Controller
 
         if ($request->boolean('student_submitted')) {
             $query->whereNotNull('student_marked_paid_at');
+        }
+
+        // The Exams tab's default view (see Exams.vue's "Awaiting action"
+        // dropdown option, selected on first load): draft/pending
+        // applications still need a decision, and an approved or make-up
+        // one still needs a score recorded (see the Grades tab /
+        // ExamScoreController — a make-up is scoreable immediately, no
+        // separate approval step). Once scored, or once rejected/marked
+        // not_exam, a row has nothing left this tab can act on, so it drops
+        // out of this default list — a plain top-level param, not
+        // `filter[status]`, since "approved/make-up but unscored" isn't a
+        // single column value ApiQuery's generic filterable() could express.
+        if ($request->boolean('awaiting_action')) {
+            $query->where(function (Builder $inner) {
+                $inner->whereIn('status', [ExamApplication::STATUS_DRAFT, ExamApplication::STATUS_PENDING])
+                    ->orWhere(function (Builder $scoreable) {
+                        $scoreable->scoreable()->doesntHave('score');
+                    });
+            });
         }
 
         $applications = ApiQuery::for($query, $request)

@@ -124,6 +124,35 @@ async function onScoresSaved() {
   await load()
 }
 
+// --- Make-up Exam checkbox (already-scored rows) ------------------------
+// Re-submits the row's own unchanged score with `make_up: true` — the same
+// ExamScoreService::record() call the Add Score popup's own checkbox
+// makes, just for a student flagged after the fact rather than at first
+// scoring. Disabled once has_make_up is true: the server itself is
+// idempotent (see the backend docblock), but there's no reason to let
+// someone click it again.
+
+const makeUpSaving = ref<Set<number>>(new Set())
+const makeUpError = ref<string | null>(null)
+
+async function toggleMakeUp(row: ExamScoreEntry) {
+  if (row.has_make_up || row.score === null || makeUpSaving.value.has(row.exam_application_id)) return
+
+  makeUpSaving.value = new Set(makeUpSaving.value).add(row.exam_application_id)
+  makeUpError.value = null
+
+  try {
+    await examScoresService.record([{ exam_application_id: row.exam_application_id, score: Number(row.score), remark: row.remark, make_up: true }])
+    await load()
+  } catch (error) {
+    makeUpError.value = error instanceof ApiRequestError ? error.message : t('admin.grades.saveFailed')
+  } finally {
+    const next = new Set(makeUpSaving.value)
+    next.delete(row.exam_application_id)
+    makeUpSaving.value = next
+  }
+}
+
 const columns = [
   { key: 'enrollment_code', label: t('admin.grades.columnEnrollmentCode') },
   { key: 'student', label: t('admin.grades.columnStudent') },
@@ -133,10 +162,23 @@ const columns = [
   { key: 'exam_date', label: t('admin.grades.columnExamDate') },
   { key: 'score', label: t('admin.grades.columnScore') },
   { key: 'remark', label: t('admin.grades.columnRemark') },
+  { key: 'make_up', label: t('admin.grades.makeUpExam') },
 ]
 
 onMounted(async () => {
-  options.value = await examScoresService.options()
+  // Unguarded before: a failed options() call (e.g. a role that reaches
+  // this tab — ExaminationTabs shows it unconditionally — but lacks
+  // exam-scores.view) threw here, load() never ran, and since `loading`
+  // starts true and only load()'s own finally block ever clears it, the
+  // page spun forever with no error shown at all.
+  try {
+    options.value = await examScoresService.options()
+  } catch (err) {
+    loadError.value = err instanceof ApiRequestError ? err.message : t('admin.grades.loadFailed')
+    loading.value = false
+    return
+  }
+
   await load()
 })
 </script>
@@ -179,6 +221,7 @@ onMounted(async () => {
     </div>
 
     <BaseAlert v-if="loadError" variant="danger" class="mb-4">{{ loadError }}</BaseAlert>
+    <BaseAlert v-if="makeUpError" variant="danger" class="mb-4">{{ makeUpError }}</BaseAlert>
 
     <BaseSpinner v-if="loading" class="mx-auto" />
 
@@ -191,6 +234,15 @@ onMounted(async () => {
       <template #cell-exam_date="{ row }">{{ (row as ExamScoreEntry).exam_date ? formatDate((row as ExamScoreEntry).exam_date) : '—' }}</template>
       <template #cell-score="{ row }">{{ (row as ExamScoreEntry).score ?? '—' }}</template>
       <template #cell-remark="{ row }">{{ (row as ExamScoreEntry).remark ?? '—' }}</template>
+      <template #cell-make_up="{ row }">
+        <input
+          type="checkbox"
+          :checked="(row as ExamScoreEntry).has_make_up"
+          :disabled="!canUpdate || (row as ExamScoreEntry).has_make_up || makeUpSaving.has((row as ExamScoreEntry).exam_application_id)"
+          class="rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+          @change="toggleMakeUp(row as ExamScoreEntry)"
+        />
+      </template>
     </DataTable>
 
     <AddExamScoreModal v-model="scoreModalOpen" :filters="scoreModalFilters" @saved="onScoresSaved" />

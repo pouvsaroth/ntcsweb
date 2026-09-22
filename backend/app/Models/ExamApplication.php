@@ -39,7 +39,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string $status
  */
 #[Fillable([
-    'student_id', 'enrollment_id', 'book_id', 'file_code', 'exam_date', 'exam_time', 'exam_time_out',
+    'student_id', 'enrollment_id', 'book_id', 'retake_of_id', 'file_code', 'exam_date', 'exam_time', 'exam_time_out',
     'table_no', 'classroom_id', 'table_id', 'fee_amount', 'fee_currency', 'student_marked_paid_at',
     'status', 'decision_reason', 'remark', 'decided_by', 'decided_at', 'sold_at', 'received_at', 'paid_back_at',
 ])]
@@ -69,6 +69,13 @@ class ExamApplication extends Model
     // REJECTED: rejected means they applied and an admin turned it down;
     // this means they never applied at all.
     public const STATUS_NOT_EXAM = 'not_exam';
+
+    // A retake, auto-created by ExamScoreService::record() when a score is
+    // saved with its `make_up` flag set — see `retake_of_id`. Treated as
+    // already-approved for scoring purposes (see scopeScoreable()): no
+    // separate re-approval step, since checking the box and saving *is*
+    // the approval.
+    public const STATUS_MAKE_UP = 'make_up';
 
     protected $attributes = [
         'status' => self::STATUS_PENDING,
@@ -117,10 +124,22 @@ class ExamApplication extends Model
         return $this->belongsTo(ClassroomTable::class, 'table_id');
     }
 
-    /** See ExamScore — only ever set on an approved application. */
+    /** See ExamScore — only ever set on an approved (or make-up) application. */
     public function score(): HasOne
     {
         return $this->hasOne(ExamScore::class);
+    }
+
+    /** The original application a make-up was generated from — null on every ordinary row. */
+    public function retakeOf(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'retake_of_id');
+    }
+
+    /** The make-up generated from this row, if a score was ever saved with the `make_up` flag — see ExamScoreService::record(). At most one: re-checking the box is a no-op, not a second retake. */
+    public function retake(): HasOne
+    {
+        return $this->hasOne(self::class, 'retake_of_id');
     }
 
     /**
@@ -129,6 +148,18 @@ class ExamApplication extends Model
     public function scopeApproved(Builder $query): void
     {
         $query->where('status', self::STATUS_APPROVED);
+    }
+
+    /**
+     * Approved or make-up — the two statuses ExamScoreService lets a score
+     * be recorded against. A make-up skips the separate approval step
+     * entirely (see STATUS_MAKE_UP's docblock).
+     *
+     * @param  Builder<static>  $query
+     */
+    public function scopeScoreable(Builder $query): void
+    {
+        $query->whereIn('status', [self::STATUS_APPROVED, self::STATUS_MAKE_UP]);
     }
 
     /**
