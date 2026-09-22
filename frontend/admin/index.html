@@ -6,6 +6,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>NTCSWEB Admin</title>
 
+    <!--
+      Makes "Add to Home Screen" install this as a standalone app instead of
+      a plain bookmark — without this, iOS/Android open a new browser tab
+      every time the home-screen icon is tapped, so a student who reopens it
+      a few times ends up with a pile of stacked tabs. With it, the OS
+      launches (or refocuses) one standalone window, no browser chrome, no
+      tab pileup. `scope` is the whole origin, not just /admin, since the
+      unauthenticated redirect target (/login) lives outside /admin/* — see
+      router/admin.ts's authRoutes — and must stay inside this same window.
+    -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#f5a800" />
+    <link rel="apple-touch-icon" href="/icons/admin-apple-touch.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="NTCSWEB" />
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <!--
