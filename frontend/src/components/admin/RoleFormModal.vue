@@ -61,6 +61,7 @@ type Action =
  */
 const GROUPS = [
   'Overview',
+  'Dashboard Management',
   'Project Management',
   'Academic',
   'Students',
@@ -104,6 +105,15 @@ type GroupChild =
 
 const MODULES: ModuleEntry[] = [
   { name: 'Dashboard', group: 'Overview', actions: { view: 'dashboard.view' } },
+  // The dashboard's quick-access tiles (Register student, Enrollment,
+  // Classes, ...) aren't listed here — each already shows/hides per role
+  // through its own real CRUD permission below (e.g. Students > Create),
+  // same as before this group existed. These three cover the sections that
+  // used to have no permission at all: any role reaching the dashboard saw
+  // them unconditionally.
+  { name: 'Attendance cards', group: 'Dashboard Management', actions: { view: 'dashboard.attendance.view' } },
+  { name: 'Financial & enrollment stat cards', group: 'Dashboard Management', actions: { view: 'dashboard.finance.view' } },
+  { name: 'Monthly payment alerts', group: 'Dashboard Management', actions: { view: 'dashboard.payment-alerts.view' } },
   { name: 'School settings', group: 'Settings', actions: { view: 'tenant-settings.view', update: 'tenant-settings.update' } },
   { name: 'Users', group: 'Settings', actions: { view: 'users.view', create: 'users.create', update: 'users.update', delete: 'users.delete' } },
   {
@@ -416,6 +426,7 @@ function toggleModule(module: (typeof MODULES)[number], checked: boolean) {
  */
 const GROUP_I18N_KEYS: Partial<Record<(typeof GROUPS)[number], string>> = {
   Overview: 'overview',
+  'Dashboard Management': 'dashboardManagement',
   'Project Management': 'projectManagement',
   Academic: 'academic',
   Students: 'students',

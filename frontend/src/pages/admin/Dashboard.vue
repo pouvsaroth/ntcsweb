@@ -107,42 +107,48 @@ function yesterday(): string {
 }
 
 async function loadStats(): Promise<void> {
-  try {
-    const result = await studentsService.list({ per_page: 1, filter: { status: 'active' } })
-    if (result.pagination.type === 'length_aware') studyingCount.value = String(result.pagination.total)
-  } catch {
-    // Left as '—' — most likely the signed-in admin just lacks students.view.
+  if (auth.can('dashboard.finance.view')) {
+    try {
+      const result = await studentsService.list({ per_page: 1, filter: { status: 'active' } })
+      if (result.pagination.type === 'length_aware') studyingCount.value = String(result.pagination.total)
+    } catch {
+      // Left as '—' — most likely the signed-in admin just lacks students.view.
+    }
+
+    try {
+      const result = await enrollmentsService.list({ page: 1, per_page: 1, filter: { status: 'active' } })
+      if (result.pagination.type === 'length_aware') studyingEnrollmentsCount.value = String(result.pagination.total)
+    } catch {
+      // Left as '—' — most likely the signed-in admin just lacks enrollments.view.
+    }
+
+    try {
+      const summary = await accountingReportsService.dashboard({ date_from: firstOfMonth(), date_to: today() })
+      currency = summary.currency
+      monthlyIncome.value = money(summary.total_revenue)
+      dailyIncome.value = money(summary.todays_income)
+      monthlyExpense.value = money(summary.total_expenses)
+      dailyExpense.value = money(summary.todays_expenses)
+    } catch {
+      // Left as '—' — most likely the signed-in admin just lacks accounting-dashboard.view.
+    }
   }
 
-  try {
-    const result = await enrollmentsService.list({ page: 1, per_page: 1, filter: { status: 'active' } })
-    if (result.pagination.type === 'length_aware') studyingEnrollmentsCount.value = String(result.pagination.total)
-  } catch {
-    // Left as '—' — most likely the signed-in admin just lacks enrollments.view.
+  if (auth.can('dashboard.attendance.view')) {
+    try {
+      absentToday.value = String(await attendanceService.countByStatus(today(), 'ABSENT'))
+      absentYesterday.value = String(await attendanceService.countByStatus(yesterday(), 'ABSENT'))
+    } catch {
+      // Left as '—' — most likely the signed-in admin just lacks attendance.view.
+    }
   }
 
-  try {
-    const summary = await accountingReportsService.dashboard({ date_from: firstOfMonth(), date_to: today() })
-    currency = summary.currency
-    monthlyIncome.value = money(summary.total_revenue)
-    dailyIncome.value = money(summary.todays_income)
-    monthlyExpense.value = money(summary.total_expenses)
-    dailyExpense.value = money(summary.todays_expenses)
-  } catch {
-    // Left as '—' — most likely the signed-in admin just lacks accounting-dashboard.view.
-  }
-
-  try {
-    absentToday.value = String(await attendanceService.countByStatus(today(), 'ABSENT'))
-    absentYesterday.value = String(await attendanceService.countByStatus(yesterday(), 'ABSENT'))
-  } catch {
-    // Left as '—' — most likely the signed-in admin just lacks attendance.view.
-  }
-
-  try {
-    monthlyPaymentAlerts.value = await monthlyPaymentAlertsService.list()
-  } catch {
-    // Left empty — most likely the signed-in admin just lacks invoices.view.
+  if (auth.can('dashboard.payment-alerts.view')) {
+    try {
+      monthlyPaymentAlerts.value = await monthlyPaymentAlertsService.list()
+    } catch {
+      // Left empty — most likely the signed-in admin just lacks invoices.view.
+    }
   }
 }
 
@@ -153,13 +159,6 @@ onMounted(() => {
 
 <template>
   <div>
-    <h1 class="text-xl font-semibold text-neutral-900">
-      {{ t('admin.dashboard.welcomeBack', { name: auth.user?.name ?? '' }) }}
-    </h1>
-    <p class="mt-1 text-sm text-neutral-500">
-      {{ auth.isSuperAdmin ? t('admin.dashboard.platformAdministration') : auth.tenantName }}
-    </p>
-
     <template v-if="!auth.isSuperAdmin">
       <h2 class="mt-8 text-sm font-semibold uppercase tracking-wide text-neutral-500">{{ t('admin.dashboard.quickAccess') }}</h2>
       <div class="mt-3 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
@@ -186,19 +185,21 @@ onMounted(() => {
         </RouterLink>
       </div>
 
-      <h2 class="mt-8 text-sm font-semibold uppercase tracking-wide text-neutral-500">{{ t('admin.dashboard.attendanceSection') }}</h2>
-      <div class="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <BaseCard>
-          <p class="text-sm font-medium text-neutral-500">{{ t('admin.dashboard.statAbsentToday') }}</p>
-          <p class="mt-1 text-3xl font-bold text-neutral-900">{{ absentToday }}</p>
-        </BaseCard>
-        <BaseCard>
-          <p class="text-sm font-medium text-neutral-500">{{ t('admin.dashboard.statAbsentYesterday') }}</p>
-          <p class="mt-1 text-3xl font-bold text-neutral-900">{{ absentYesterday }}</p>
-        </BaseCard>
-      </div>
+      <template v-if="auth.can('dashboard.attendance.view')">
+        <h2 class="mt-8 text-sm font-semibold uppercase tracking-wide text-neutral-500">{{ t('admin.dashboard.attendanceSection') }}</h2>
+        <div class="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <BaseCard>
+            <p class="text-sm font-medium text-neutral-500">{{ t('admin.dashboard.statAbsentToday') }}</p>
+            <p class="mt-1 text-3xl font-bold text-neutral-900">{{ absentToday }}</p>
+          </BaseCard>
+          <BaseCard>
+            <p class="text-sm font-medium text-neutral-500">{{ t('admin.dashboard.statAbsentYesterday') }}</p>
+            <p class="mt-1 text-3xl font-bold text-neutral-900">{{ absentYesterday }}</p>
+          </BaseCard>
+        </div>
+      </template>
 
-      <template v-if="monthlyPaymentAlerts.length > 0">
+      <template v-if="auth.can('dashboard.payment-alerts.view') && monthlyPaymentAlerts.length > 0">
         <h2 class="mt-8 text-sm font-semibold uppercase tracking-wide text-neutral-500">{{ t('admin.dashboard.monthlyPaymentAlertsSection') }}</h2>
         <BaseCard class="mt-3">
           <div class="overflow-x-auto">
@@ -225,29 +226,31 @@ onMounted(() => {
         </BaseCard>
       </template>
 
-      <h2 class="mt-8 text-sm font-semibold uppercase tracking-wide text-neutral-500">{{ t('admin.dashboard.title') }}</h2>
-      <div class="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        <BaseCard>
-          <p class="text-sm font-medium text-neutral-500">{{ t('admin.dashboard.statStudentsStudying') }}</p>
-          <p class="mt-1 text-3xl font-bold text-neutral-900">{{ studyingCount }}</p>
-        </BaseCard>
-        <BaseCard>
-          <p class="text-sm font-medium text-neutral-500">{{ t('admin.dashboard.statMonthlyIncome') }}</p>
-          <p class="mt-1 text-3xl font-bold text-neutral-900">{{ monthlyIncome }}</p>
-        </BaseCard>
-        <BaseCard>
-          <p class="text-sm font-medium text-neutral-500">{{ t('admin.dashboard.statDailyIncome') }}</p>
-          <p class="mt-1 text-3xl font-bold text-neutral-900">{{ dailyIncome }}</p>
-        </BaseCard>
-        <BaseCard>
-          <p class="text-sm font-medium text-neutral-500">{{ t('admin.dashboard.statMonthlyExpense') }}</p>
-          <p class="mt-1 text-3xl font-bold text-neutral-900">{{ monthlyExpense }}</p>
-        </BaseCard>
-        <BaseCard>
-          <p class="text-sm font-medium text-neutral-500">{{ t('admin.dashboard.statDailyExpense') }}</p>
-          <p class="mt-1 text-3xl font-bold text-neutral-900">{{ dailyExpense }}</p>
-        </BaseCard>
-      </div>
+      <template v-if="auth.can('dashboard.finance.view')">
+        <h2 class="mt-8 text-sm font-semibold uppercase tracking-wide text-neutral-500">{{ t('admin.dashboard.title') }}</h2>
+        <div class="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <BaseCard>
+            <p class="text-sm font-medium text-neutral-500">{{ t('admin.dashboard.statStudentsStudying') }}</p>
+            <p class="mt-1 text-3xl font-bold text-neutral-900">{{ studyingCount }}</p>
+          </BaseCard>
+          <BaseCard>
+            <p class="text-sm font-medium text-neutral-500">{{ t('admin.dashboard.statMonthlyIncome') }}</p>
+            <p class="mt-1 text-3xl font-bold text-neutral-900">{{ monthlyIncome }}</p>
+          </BaseCard>
+          <BaseCard>
+            <p class="text-sm font-medium text-neutral-500">{{ t('admin.dashboard.statDailyIncome') }}</p>
+            <p class="mt-1 text-3xl font-bold text-neutral-900">{{ dailyIncome }}</p>
+          </BaseCard>
+          <BaseCard>
+            <p class="text-sm font-medium text-neutral-500">{{ t('admin.dashboard.statMonthlyExpense') }}</p>
+            <p class="mt-1 text-3xl font-bold text-neutral-900">{{ monthlyExpense }}</p>
+          </BaseCard>
+          <BaseCard>
+            <p class="text-sm font-medium text-neutral-500">{{ t('admin.dashboard.statDailyExpense') }}</p>
+            <p class="mt-1 text-3xl font-bold text-neutral-900">{{ dailyExpense }}</p>
+          </BaseCard>
+        </div>
+      </template>
     </template>
   </div>
 </template>

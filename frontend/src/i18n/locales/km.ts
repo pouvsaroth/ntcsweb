@@ -455,8 +455,8 @@ const km: MessageSchema = {
       platformAdministration: 'ការគ្រប់គ្រងវេទិកា',
       title: 'ផ្ទាំងគ្រប់គ្រង',
       quickAccess: 'ចូលប្រើរហ័ស',
-      registerStudent: 'ចុះឈ្មោះសិស្ស',
-      enrollment: 'ការចុះឈ្មោះចូលរៀន',
+      registerStudent: 'ព័ត៌មានសិស្ស',
+      enrollment: 'ចុះឈ្មោះចូលរៀន',
       classes: 'ថ្នាក់រៀន',
       classesStudyingTooltip: 'សិស្សដែលកំពុងសិក្សា',
       studentPayment: 'ការទូទាត់របស់សិស្ស',
@@ -2852,6 +2852,7 @@ const km: MessageSchema = {
     groups: {
       overview: 'ទិដ្ឋភាពទូទៅ',
       myProfile: 'ប្រវត្តិរូបខ្ញុំ',
+      dashboardManagement: 'ការគ្រប់គ្រងផ្ទាំងគ្រប់គ្រង',
       projectManagement: 'ការគ្រប់គ្រងគម្រោង',
       platform: 'វេទិកា',
       academic: 'ការសិក្សា',

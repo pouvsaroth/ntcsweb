@@ -2856,6 +2856,7 @@ const en = {
     groups: {
       overview: 'Overview',
       myProfile: 'My Profile',
+      dashboardManagement: 'Dashboard Management',
       projectManagement: 'Project Management',
       platform: 'Platform',
       academic: 'Academic',

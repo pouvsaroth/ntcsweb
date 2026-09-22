@@ -2852,6 +2852,7 @@ const ja: MessageSchema = {
     groups: {
       overview: '概要',
       myProfile: 'マイプロフィール',
+      dashboardManagement: 'ダッシュボード管理',
       projectManagement: 'プロジェクト管理',
       platform: 'プラットフォーム',
       academic: '教務',

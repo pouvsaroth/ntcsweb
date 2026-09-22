@@ -510,6 +510,18 @@ final class Permissions
     // the real endpoint too once one of these features actually gets built.
     public const DASHBOARD_VIEW = 'dashboard.view';
 
+    // Dashboard Management — per-role visibility of the three dashboard
+    // sections that, unlike the quick-access tiles above them, carry no
+    // permission of their own to reuse (the tiles stay gated by their real
+    // CRUD permission, e.g. STUDENTS_CREATE — see Dashboard.vue). These three
+    // let a school hide, say, the financial stat cards from a Teacher role
+    // without touching that role's actual accounting/billing access.
+    public const DASHBOARD_ATTENDANCE_VIEW = 'dashboard.attendance.view';
+
+    public const DASHBOARD_FINANCE_VIEW = 'dashboard.finance.view';
+
+    public const DASHBOARD_PAYMENT_ALERTS_VIEW = 'dashboard.payment-alerts.view';
+
     // My Assets stays identity-based at the API layer on purpose (see
     // MyAssetController's own docblock — any authenticated account sees
     // whatever is assigned to them, no assets.view required) — this slug
@@ -547,6 +559,11 @@ final class Permissions
         return [
             'Overview' => [
                 self::DASHBOARD_VIEW => 'View the dashboard',
+            ],
+            'Dashboard Management' => [
+                self::DASHBOARD_ATTENDANCE_VIEW => 'View the dashboard attendance cards (absent today/yesterday)',
+                self::DASHBOARD_FINANCE_VIEW => 'View the dashboard financial/enrollment stat cards',
+                self::DASHBOARD_PAYMENT_ALERTS_VIEW => 'View the dashboard monthly payment alerts',
             ],
             'Platform' => [
                 self::TENANTS_VIEW => 'View schools',
@@ -944,7 +961,10 @@ final class Permissions
         // $projectsForEveryone above. A school admin can still uncheck any
         // of these on a custom role via the Role editor; this is only the
         // out-of-the-box default.
-        $selfServiceForEveryone = [self::DASHBOARD_VIEW, self::MY_ASSETS_VIEW, self::FORMS_VIEW, self::MY_REQUESTS_VIEW];
+        $selfServiceForEveryone = [
+            self::DASHBOARD_VIEW, self::MY_ASSETS_VIEW, self::FORMS_VIEW, self::MY_REQUESTS_VIEW,
+            self::DASHBOARD_ATTENDANCE_VIEW, self::DASHBOARD_FINANCE_VIEW, self::DASHBOARD_PAYMENT_ALERTS_VIEW,
+        ];
 
         // News/Events/Announcements/Documents/Contact Messages/admin
         // Notifications/Examination are all still "coming soon" placeholders
