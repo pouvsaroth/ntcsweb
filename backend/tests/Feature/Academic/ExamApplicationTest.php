@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Academic;
 
+use App\Models\Book;
+use App\Models\Classroom;
+use App\Models\ClassroomTable;
+use App\Models\CoursePackage;
 use App\Models\Enrollment;
 use App\Models\ExamApplication;
 use App\Models\SchoolClass;
@@ -66,8 +70,11 @@ class ExamApplicationTest extends TestCase
         $response->assertJsonPath('data.status', ExamApplication::STATUS_PENDING);
         $response->assertJsonPath('data.fee_amount', '25.00');
         $response->assertJsonPath('data.fee_currency', Tenant::CURRENCY_USD);
-        // No exam-day logistics — the student never sets these, only a
-        // teacher/admin does.
+        // The student never picks exam-day logistics — this enrollment has
+        // no course package/classroom/table of its own for applyOnline() to
+        // default from (see the next test for when it does), so exam_date
+        // (never defaulted, always a teacher's own call) and book both stay
+        // unset here too.
         $response->assertJsonPath('data.exam_date', null);
         $response->assertJsonPath('data.book', null);
         $this->assertSame(1, ExamApplication::where('student_id', $student->id)->count());
@@ -76,6 +83,43 @@ class ExamApplicationTest extends TestCase
         $this->assertSame('Test', $student->fresh()->first_name);
         $this->assertSame('Student', $student->fresh()->last_name);
         $this->assertSame('Tester', $student->fresh()->english_name);
+    }
+
+    /**
+     * The gap this fixes: a student applying with no teacher-created draft
+     * ahead of them used to land in the Approval queue with an empty room/
+     * table/book that a reviewer had to look up and fill in by hand before
+     * they could even consider approving it — see
+     * ExamApplicationService::applyOnline()'s docblock and createForAdmin(),
+     * which this now mirrors.
+     */
+    public function test_applying_defaults_classroom_table_and_book_from_the_enrollment(): void
+    {
+        $this->actingAsAdminWithPermissions([]);
+        $this->setExamFee(25.00);
+        [$student, $user] = $this->studentWithUser();
+
+        $classroom = Classroom::factory()->create();
+        $table = ClassroomTable::factory()->create(['classroom_id' => $classroom->id]);
+        $class = SchoolClass::factory()->create(['classroom_id' => $classroom->id]);
+        $book = Book::factory()->create();
+        $coursePackage = CoursePackage::factory()->create();
+        $coursePackage->books()->attach($book->id, ['sort_order' => 1]);
+
+        $enrollment = Enrollment::factory()->forClass($class)->forStudent($student)->create([
+            'table_id' => $table->id,
+            'course_package_id' => $coursePackage->id,
+        ]);
+        $this->actingAsTenantUser($user);
+
+        $response = $this->postJson('/api/v1/my-exam-applications', $this->validPayload($enrollment));
+
+        $response->assertCreated();
+        $response->assertJsonPath('data.classroom.id', $classroom->id);
+        $response->assertJsonPath('data.table.id', $table->id);
+        $response->assertJsonPath('data.book.id', $book->id);
+        // Still never defaulted — exam day itself stays a teacher's own call.
+        $response->assertJsonPath('data.exam_date', null);
     }
 
     public function test_applying_against_an_enrollment_a_teacher_already_sent_to_exam_keeps_the_exam_logistics(): void

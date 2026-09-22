@@ -67,12 +67,31 @@ class AdminExamApplicationCrudTest extends TestCase
         $this->actingAsAdminWithPermissions([Permissions::EXAM_APPLICATIONS_VIEW]);
         $enrollment = $this->enrollmentWithCode();
         ExamApplication::factory()->forStudent($enrollment->student)->forEnrollment($enrollment)->create(['status' => ExamApplication::STATUS_APPROVED]);
-        $latest = ExamApplication::factory()->forStudent($enrollment->student)->forEnrollment($enrollment)->create(['status' => ExamApplication::STATUS_PENDING]);
+
+        $book = Book::factory()->create();
+        $classroom = Classroom::factory()->create();
+        $table = ClassroomTable::factory()->create(['classroom_id' => $classroom->id]);
+        $latest = ExamApplication::factory()->forStudent($enrollment->student)->forEnrollment($enrollment)->create([
+            'status' => ExamApplication::STATUS_PENDING,
+            'book_id' => $book->id,
+            'classroom_id' => $classroom->id,
+            'table_id' => $table->id,
+        ]);
 
         $response = $this->getJson('/api/v1/exam-applications/lookup?enrollment_code=NTS-000123-01');
 
         $response->assertOk();
         $response->assertJsonPath('data.exam_application.id', $latest->id);
+        // Regression guard: lookupByEnrollmentCode() used to fetch the
+        // existing application with no eager loading at all, so
+        // ExamApplicationResource's whenLoaded('book'/'classroom'/'table')
+        // silently omitted them from the JSON — the Application Form then
+        // read that as "nothing assigned" and rendered every Examination
+        // Information field blank even though the application already had
+        // a book/room/table.
+        $response->assertJsonPath('data.exam_application.book.id', $book->id);
+        $response->assertJsonPath('data.exam_application.classroom.id', $classroom->id);
+        $response->assertJsonPath('data.exam_application.table.id', $table->id);
     }
 
     public function test_an_admin_can_create_an_exam_application_with_only_the_required_fields(): void

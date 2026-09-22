@@ -24,7 +24,12 @@ final class LeaveRequestController extends Controller
     {
         $this->authorize('viewAny', LeaveRequest::class);
 
-        $query = LeaveRequest::query()->with(['student', 'staff', 'decidedBy']);
+        // 'attachments' matches show()'s own eager loads — without it here,
+        // LeaveRequestResource's whenLoaded('attachments') has nothing to
+        // resolve for every row in the list, so the Approval queue's detail
+        // view (which reads straight off this list, not a per-row show()
+        // call) never has anything to show.
+        $query = LeaveRequest::query()->with(['student', 'staff', 'decidedBy', 'attachments']);
 
         $requests = ApiQuery::for($query, $request)
             ->filterable(['status', 'student_id', 'staff_id'])

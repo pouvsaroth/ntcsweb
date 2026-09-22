@@ -8,6 +8,7 @@ use App\Models\AttendanceRecord;
 use App\Models\ClassSchedule;
 use App\Models\Enrollment;
 use App\Models\LeaveRequest;
+use App\Models\LeaveRequestAttachment;
 use App\Models\Permission;
 use App\Models\Position;
 use App\Models\Role;
@@ -167,6 +168,32 @@ class LeaveRequestTest extends TestCase
         $this->actingAsAdminWithPermissions([]);
 
         $this->getJson('/api/v1/leave-requests')->assertForbidden();
+    }
+
+    /**
+     * Regression guard: index() used to eager-load student/staff/decidedBy
+     * but not attachments, so LeaveRequestResource's whenLoaded('attachments')
+     * had nothing to resolve here even though show() (a single request)
+     * always got it right — a reviewer working from the list (the Approval
+     * queue's own detail view reads straight off this list, not a per-row
+     * show() call) never saw an attachment a student had actually uploaded.
+     */
+    public function test_viewing_all_leave_requests_includes_each_ones_attachments(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::LEAVE_REQUESTS_VIEW]);
+        [$student] = $this->studentWithUser();
+        $leaveRequest = LeaveRequest::factory()->create(['student_id' => $student->id]);
+        $attachment = LeaveRequestAttachment::factory()->create([
+            'leave_request_id' => $leaveRequest->id,
+            'file_name' => 'doctor-note.jpg',
+        ]);
+
+        $response = $this->getJson('/api/v1/leave-requests');
+
+        $response->assertOk();
+        $response->assertJsonCount(1, 'data.0.attachments');
+        $response->assertJsonPath('data.0.attachments.0.id', $attachment->id);
+        $response->assertJsonPath('data.0.attachments.0.file_name', 'doctor-note.jpg');
     }
 
     public function test_submitting_a_leave_request_notifies_every_holder_of_the_approve_permission(): void

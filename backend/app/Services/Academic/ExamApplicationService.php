@@ -39,19 +39,23 @@ final class ExamApplicationService
     ) {}
 
     /**
-     * The student self-service "Apply" flow. Unlike the old submit(), the
-     * student never sets exam-day logistics (book/room/table/date) — that
-     * stays exclusively a teacher/admin action via the Examination tab (see
-     * createForAdmin()/updateForAdmin()). What this does:
+     * The student self-service "Apply" flow. The student never *picks*
+     * exam-day logistics (book/room/table/date) themselves — that stays a
+     * teacher/admin decision, confirmed or corrected via the Examination
+     * tab (see createForAdmin()/updateForAdmin()) — but this still seeds
+     * them with the same enrollment-derived defaults createForAdmin() uses,
+     * rather than leaving them blank. What this does:
      *
      *   1. Saves the student's own personal-info edits back to their real
      *      Student record — same fields the admin's Application Form edits,
      *      just self-service (no `students.update` permission needed).
-     *   2. Either creates a fresh, blank-logistics application (status
-     *      pending) for this enrollment, or — if a teacher already sent
-     *      this enrollment to exam (see the migration's docblock on "at
-     *      most one application per enrollment, ever") — leaves that
-     *      existing row's logistics untouched and simply stamps the fee
+     *   2. Either creates a fresh application (status pending) for this
+     *      enrollment, defaulting classroom/table/book the same way
+     *      createForAdmin() does, or — if a teacher already sent this
+     *      enrollment to exam (see the migration's docblock on "at most one
+     *      application per enrollment, ever") — leaves that existing row's
+     *      logistics untouched (it already has its own defaults, or a
+     *      teacher's deliberate override) and simply stamps the fee
      *      snapshot + payment declaration onto it, since the student is
      *      only now getting around to confirming/paying.
      *
@@ -97,9 +101,19 @@ final class ExamApplicationService
                 return $existing->fresh();
             }
 
+            // Same enrollment-derived defaults createForAdmin() applies —
+            // without them, a student applying with no teacher-created draft
+            // ahead of them would land in the Approval queue with an empty
+            // room/table/book that a reviewer has to look up and fill in by
+            // hand before they can even consider approving it.
+            $enrollment = Enrollment::query()->with(['schoolClass', 'coursePackage.books'])->findOrFail($enrollmentId);
+
             return ExamApplication::query()->create([
                 'student_id' => $student->id,
                 'enrollment_id' => $enrollmentId,
+                'classroom_id' => $enrollment->schoolClass?->classroom_id,
+                'table_id' => $enrollment->table_id,
+                'book_id' => $enrollment->coursePackage?->books->first()?->id,
                 'fee_amount' => $tenant->exam_fee_amount,
                 'fee_currency' => $tenant->default_currency,
                 'student_marked_paid_at' => now(),
@@ -229,9 +243,15 @@ final class ExamApplicationService
             throw ValidationException::withMessages(['enrollment_code' => 'No enrollment found for this Enrollment Code.']);
         }
 
+        // Eager-loaded so ExamApplicationResource's whenLoaded('book'/'classroom'/'table')
+        // actually serializes them — without this they silently come back
+        // missing from the JSON (not null, just absent), which the
+        // Application Form reads as "nothing set" and shows every
+        // Examination Information field blank even when the application
+        // already has a book/room/table assigned.
         $enrollment->setRelation(
             'latestExamApplication',
-            ExamApplication::query()->where('enrollment_id', $enrollment->id)->latest('id')->first(),
+            ExamApplication::query()->where('enrollment_id', $enrollment->id)->with(['book', 'classroom', 'table'])->latest('id')->first(),
         );
 
         return $enrollment;
