@@ -47,6 +47,7 @@ type Action =
   | 'close'
   | 'translations'
   | 'languages'
+  | 'manageAll'
 
 /**
  * The same section headings as AdminSidebar.vue's own adminNav.ts, so a
@@ -305,13 +306,26 @@ const MODULES: ModuleEntry[] = [
   { name: 'Form templates', group: 'E-Approvals', actions: { manage: 'form-templates.manage' } },
   { name: 'Student feedback', group: 'Communication', actions: { view: 'student-feedback.view', reply: 'student-feedback.reply' } },
   { name: 'Exam applications', group: 'Academic', actions: { view: 'exam-applications.view', create: 'exam-applications.create', update: 'exam-applications.update', delete: 'exam-applications.delete', approve: 'exam-applications.approve', reject: 'exam-applications.reject' } },
+  // The Examination tab bar has four tabs (Exams, Approvals, Grades,
+  // Make-up Exam) — this row and the next two make each one's own
+  // requirement visible here, even though Make-up Exam deliberately reuses
+  // "Exam applications"' own view permission rather than getting a
+  // dedicated one (see ExaminationTabs.vue). Exam Scores previously had no
+  // row here at all — the Grades tab's permission existed on the backend
+  // but a school admin had no way to grant or revoke it from this screen.
+  { name: 'Make-up exam', group: 'Academic', actions: { view: 'exam-applications.view' } },
+  {
+    name: 'Exam scores',
+    group: 'Academic',
+    actions: { view: 'exam-scores.view', update: 'exam-scores.update', manageAll: 'exam-scores.manage-all' },
+  },
   { name: 'System', group: 'Settings', actions: { view: 'audit-logs.view' } },
 ]
 
 const COLUMNS: Action[] = [
   'view', 'create', 'update', 'delete', 'approve', 'reject', 'pay', 'cancel', 'deactivate', 'export', 'send', 'assign',
   'return', 'transfer', 'table', 'retire', 'dispose', 'lost', 'found', 'resolve', 'complete',
-  'status', 'manage', 'reply', 'close', 'translations', 'languages',
+  'status', 'manage', 'reply', 'close', 'translations', 'languages', 'manageAll',
 ]
 
 const isEditing = computed(() => props.role != null)
@@ -571,7 +585,7 @@ async function submit() {
           <table class="min-w-full text-sm">
             <thead class="sticky top-0 z-20 bg-neutral-50 text-xs font-semibold uppercase tracking-wide text-neutral-500">
               <tr>
-                <th class="sticky left-0 z-30 w-px whitespace-nowrap border-r border-neutral-200 bg-neutral-50 px-3 py-2 text-left">
+                <th class="w-px whitespace-nowrap border-r border-neutral-200 bg-neutral-50 px-3 py-2 text-left lg:sticky lg:left-0 lg:z-30">
                   {{ t('admin.roles.module') }}
                 </th>
                 <th v-for="column in COLUMNS" :key="column" class="px-3 py-2 text-center">{{ columnLabel(column) }}</th>
@@ -604,7 +618,7 @@ async function submit() {
                 <template v-for="child in group.children" :key="child.key">
                   <!-- A single module, listed directly under the group. -->
                   <tr v-if="child.kind === 'module'" v-show="!isGroupCollapsed(group.name)">
-                    <td class="sticky left-0 z-10 w-px whitespace-nowrap border-r border-neutral-200 bg-white py-2 pl-16 pr-3 text-neutral-700">
+                    <td class="w-px whitespace-nowrap border-r border-neutral-200 bg-white py-2 pl-16 pr-3 text-neutral-700 lg:sticky lg:left-0 lg:z-10">
                       <label class="flex items-center gap-2">
                         <input
                           type="checkbox"
@@ -651,7 +665,7 @@ async function submit() {
                       </td>
                     </tr>
                     <tr v-for="module in child.modules" v-show="!isGroupCollapsed(group.name) && !isGroupCollapsed(child.key)" :key="module.name">
-                      <td class="sticky left-0 z-10 w-px whitespace-nowrap border-r border-neutral-200 bg-white py-2 pl-24 pr-3 text-neutral-700">
+                      <td class="w-px whitespace-nowrap border-r border-neutral-200 bg-white py-2 pl-24 pr-3 text-neutral-700 lg:sticky lg:left-0 lg:z-10">
                         <label class="flex items-center gap-2">
                           <input
                             type="checkbox"

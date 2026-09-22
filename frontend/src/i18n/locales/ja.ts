@@ -1504,6 +1504,7 @@ const ja: MessageSchema = {
       actionClose: '締める',
       actionTranslations: '翻訳',
       actionLanguages: '言語',
+      actionManageAll: '全クラスを管理',
       columnName: '名前',
       columnLevel: 'レベル',
       columnUsers: 'ユーザー数',

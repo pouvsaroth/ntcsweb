@@ -1504,6 +1504,7 @@ const ko: MessageSchema = {
       actionClose: '마감',
       actionTranslations: '번역',
       actionLanguages: '언어',
+      actionManageAll: '전체 학급 관리',
       columnName: '이름',
       columnLevel: '레벨',
       columnUsers: '사용자',

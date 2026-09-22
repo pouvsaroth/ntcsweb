@@ -1503,6 +1503,7 @@ const zh: MessageSchema = {
       actionClose: '结账',
       actionTranslations: '翻译',
       actionLanguages: '语言',
+      actionManageAll: '管理所有班级',
       columnName: '名称',
       columnLevel: '级别',
       columnUsers: '用户数',

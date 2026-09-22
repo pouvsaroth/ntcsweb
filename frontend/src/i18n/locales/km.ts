@@ -1504,6 +1504,7 @@ const km: MessageSchema = {
       actionClose: 'បិទ',
       actionTranslations: 'ការបកប្រែ',
       actionLanguages: 'ភាសា',
+      actionManageAll: 'គ្រប់គ្រងគ្រប់ថ្នាក់',
       columnName: 'ឈ្មោះ',
       columnLevel: 'កម្រិត',
       columnUsers: 'អ្នកប្រើប្រាស់',

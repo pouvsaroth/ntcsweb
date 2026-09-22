@@ -1508,6 +1508,7 @@ const en = {
       actionClose: 'Close',
       actionTranslations: 'Translations',
       actionLanguages: 'Languages',
+      actionManageAll: 'Manage All Classes',
       columnName: 'Name',
       columnLevel: 'Level',
       columnUsers: 'Users',
