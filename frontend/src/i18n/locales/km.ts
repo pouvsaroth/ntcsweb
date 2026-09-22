@@ -41,6 +41,7 @@ const km: MessageSchema = {
   },
 
   studentNav: {
+    home: 'ទំព័រដើម',
     score: 'ពិន្ទុ',
     attendant: 'វត្តមាន',
     video: 'វីដេអូ',

@@ -41,6 +41,7 @@ const ja: MessageSchema = {
   },
 
   studentNav: {
+    home: 'ホーム',
     score: '成績',
     attendant: '出席',
     video: '動画',

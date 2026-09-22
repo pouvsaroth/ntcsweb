@@ -44,6 +44,7 @@ const en = {
   },
 
   studentNav: {
+    home: 'Home',
     score: 'Score',
     attendant: 'Attendant',
     video: 'Video',

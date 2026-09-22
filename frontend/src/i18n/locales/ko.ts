@@ -41,6 +41,7 @@ const ko: MessageSchema = {
   },
 
   studentNav: {
+    home: '홈',
     score: '성적',
     attendant: '출석',
     video: '동영상',

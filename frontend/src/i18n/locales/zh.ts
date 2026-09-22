@@ -41,6 +41,7 @@ const zh: MessageSchema = {
   },
 
   studentNav: {
+    home: '首页',
     score: '成绩',
     attendant: '出勤',
     video: '视频',
