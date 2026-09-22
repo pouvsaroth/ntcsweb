@@ -68,11 +68,11 @@ const counts = computed(() => ({
 const visibleRows = computed(() => rows.value.filter((r) => r.status === activeTab.value))
 
 const columns = [
+  { key: 'status', label: t('admin.myRequests.columnStatus') },
   { key: 'date', label: t('admin.myRequests.columnDate') },
   { key: 'requestor', label: t('admin.myRequests.columnRequestor') },
   { key: 'subject', label: t('admin.myRequests.columnSubject') },
   { key: 'reference', label: t('admin.myRequests.columnReference') },
-  { key: 'status', label: t('admin.myRequests.columnStatus') },
 ]
 
 const statusVariant: Record<ApprovalRequestStatus, 'warning' | 'success' | 'danger'> = {

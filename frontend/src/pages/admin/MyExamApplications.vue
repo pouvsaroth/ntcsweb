@@ -61,6 +61,7 @@ const visibleRows = computed(() => rows.value.filter((r) => r.status === activeT
 // scoped to this student's own rows and read-only, no room/table/book
 // reassignment or student-record editing.
 const columns = [
+  { key: 'status', label: t('admin.myExamApplications.columnStatus') },
   { key: 'date', label: t('admin.myExamApplications.columnDate') },
   { key: 'course', label: t('admin.myExamApplications.columnCourse') },
   { key: 'book', label: t('admin.exams.columnBook') },
@@ -68,9 +69,6 @@ const columns = [
   { key: 'timeExam', label: t('admin.exams.columnTimeExam') },
   { key: 'room', label: t('admin.exams.columnRoomNumber') },
   { key: 'table', label: t('admin.myExamApplications.columnTable') },
-  { key: 'buyDate', label: t('admin.exams.columnBuyDate') },
-  { key: 'receiveDate', label: t('admin.exams.columnReceiveDate') },
-  { key: 'status', label: t('admin.myExamApplications.columnStatus') },
 ]
 
 function timeRange(row: MyExamApplication): string {
@@ -327,6 +325,9 @@ onMounted(() => load())
     />
 
     <DataTable v-else :columns="columns" :rows="visibleRows" row-key="id">
+      <template #cell-status="{ row }">
+        <BaseBadge :variant="statusVariant[row.status]">{{ t(`admin.myExamApplications.status${row.status.charAt(0).toUpperCase()}${row.status.slice(1)}`) }}</BaseBadge>
+      </template>
       <template #cell-date="{ row }">{{ formatDate(row.created_at) }}</template>
       <template #cell-course="{ row }">
         <button type="button" class="text-left font-medium text-primary-700 hover:underline" @click="detail = row">
@@ -338,11 +339,6 @@ onMounted(() => load())
       <template #cell-timeExam="{ row }">{{ timeRange(row) }}</template>
       <template #cell-room="{ row }">{{ row.classroom?.name ?? '—' }}</template>
       <template #cell-table="{ row }">{{ row.table?.name ?? row.table_no ?? '—' }}</template>
-      <template #cell-buyDate="{ row }">{{ row.sold_at ? formatDate(row.sold_at) : '—' }}</template>
-      <template #cell-receiveDate="{ row }">{{ row.received_at ? formatDate(row.received_at) : '—' }}</template>
-      <template #cell-status="{ row }">
-        <BaseBadge :variant="statusVariant[row.status]">{{ t(`admin.myExamApplications.status${row.status.charAt(0).toUpperCase()}${row.status.slice(1)}`) }}</BaseBadge>
-      </template>
     </DataTable>
 
     <!-- New application -->
@@ -485,8 +481,6 @@ onMounted(() => load())
           <div><dt class="text-neutral-500">{{ t('admin.exams.columnTimeExam') }}</dt><dd class="font-medium text-neutral-900">{{ timeRange(detail) }}</dd></div>
           <div><dt class="text-neutral-500">{{ t('admin.exams.columnRoomNumber') }}</dt><dd class="font-medium text-neutral-900">{{ detail.classroom?.name ?? '—' }}</dd></div>
           <div><dt class="text-neutral-500">{{ t('admin.myExamApplications.columnTable') }}</dt><dd class="font-medium text-neutral-900">{{ detail.table?.name ?? detail.table_no ?? '—' }}</dd></div>
-          <div><dt class="text-neutral-500">{{ t('admin.exams.columnBuyDate') }}</dt><dd class="font-medium text-neutral-900">{{ detail.sold_at ? formatDate(detail.sold_at) : '—' }}</dd></div>
-          <div><dt class="text-neutral-500">{{ t('admin.exams.columnReceiveDate') }}</dt><dd class="font-medium text-neutral-900">{{ detail.received_at ? formatDate(detail.received_at) : '—' }}</dd></div>
           <div v-if="detail.student?.date_of_birth"><dt class="text-neutral-500">{{ t('admin.exams.columnBirthDate') }}</dt><dd class="font-medium text-neutral-900">{{ formatDate(detail.student.date_of_birth) }}</dd></div>
           <div v-if="detail.student?.address"><dt class="text-neutral-500">{{ t('admin.exams.columnAddress') }}</dt><dd class="font-medium text-neutral-900">{{ detail.student.address }}</dd></div>
           <div v-if="detail.remark"><dt class="text-neutral-500">{{ t('admin.exams.remark') }}</dt><dd class="font-medium text-neutral-900">{{ detail.remark }}</dd></div>

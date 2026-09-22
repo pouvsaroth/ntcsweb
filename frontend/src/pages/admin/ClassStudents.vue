@@ -73,10 +73,10 @@ const statusFilterOptions = computed(() => [
 /** The Class column only earns its place once rows can come from more than one class — see isSingleClass. */
 const columns = computed(() => [
   { key: 'index', label: '#' },
+  { key: 'table', label: t('admin.classStudents.columnTable'), sortable: true },
   { key: 'student', label: t('admin.classStudents.columnStudent'), sortable: true },
   { key: 'gender', label: t('admin.classStudents.columnGender') },
   ...(isSingleClass.value ? [] : [{ key: 'class', label: t('admin.classStudents.columnClass') }]),
-  { key: 'table', label: t('admin.classStudents.columnTable'), sortable: true },
   { key: 'book', label: t('admin.classStudents.columnBook'), sortable: true },
   ...(canTransfer.value || canChangeStatus.value || canChangeTable.value
     ? [{ key: 'actions', label: t('admin.classStudents.columnActions'), align: 'text-right' }]
@@ -291,10 +291,10 @@ onMounted(() => {
         @update:selected="selectedIds = $event as number[]"
       >
         <template #cell-index="{ row }">{{ sortedRoster.indexOf(row) + 1 }}</template>
+        <template #cell-table="{ row }">{{ row.table?.name ?? '—' }}</template>
         <template #cell-student="{ row }">{{ row.student.full_name }}</template>
         <template #cell-gender="{ row }">{{ row.student.gender ?? '—' }}</template>
         <template #cell-class="{ row }">{{ row.class?.name ?? '—' }}</template>
-        <template #cell-table="{ row }">{{ row.table?.name ?? '—' }}</template>
         <template #cell-book="{ row }">{{ row.course_package?.name ?? '—' }}</template>
         <template #cell-actions="{ row }">
           <div class="flex justify-end gap-1">
