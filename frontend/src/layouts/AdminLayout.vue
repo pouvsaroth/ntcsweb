@@ -6,6 +6,7 @@ import AdminHeader from '@/components/layout/AdminHeader.vue'
 import AdminSidebar from '@/components/layout/AdminSidebar.vue'
 import MobileBottomNav from '@/components/layout/MobileBottomNav.vue'
 import MonthlyPaymentAlertModal from '@/components/admin/MonthlyPaymentAlertModal.vue'
+import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 import { useAdminUiStore } from '@/stores/adminUi'
 import { useAuthStore } from '@/stores/auth'
 import { useSiteStore } from '@/stores/site'
@@ -61,5 +62,6 @@ onMounted(() => site.load())
 
     <MobileBottomNav />
     <MonthlyPaymentAlertModal v-if="auth.hasRole('student')" />
+    <ConfirmDialog />
   </div>
 </template>
