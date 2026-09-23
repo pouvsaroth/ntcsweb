@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Academic;
 
+use App\Models\Enrollment;
 use App\Models\ExamApplication;
 use App\Models\ExamScore;
 use App\Models\User;
@@ -119,6 +120,12 @@ final class ExamScoreService
      * ExamApplication::retake()), in which case it's a no-op: checking the
      * box twice never creates a second retake.
      *
+     * A saved score with `make_up` left unchecked means the opposite: this
+     * was their one sitting and there's nothing more to retake, so the
+     * enrollment moves straight to completed — the same signal
+     * ExamApplicationService::markNotExam() sends for "won't be sitting
+     * this exam again," just reached from the scored-and-done side instead.
+     *
      * @param  list<array{exam_application_id:int, score:float|int|string|null, remark?:string|null, make_up?:bool}>  $entries
      */
     public function record(array $entries, User $actor): void
@@ -158,15 +165,19 @@ final class ExamScoreService
 
                 $application = $applications[$applicationId];
 
-                if (($entry['make_up'] ?? false) && $application->retake === null) {
-                    ExamApplication::query()->create([
-                        'student_id' => $application->student_id,
-                        'enrollment_id' => $application->enrollment_id,
-                        'book_id' => $application->book_id,
-                        'retake_of_id' => $application->id,
-                        'status' => ExamApplication::STATUS_MAKE_UP,
-                    ]);
-                    $retakesCreated++;
+                if ($entry['make_up'] ?? false) {
+                    if ($application->retake === null) {
+                        ExamApplication::query()->create([
+                            'student_id' => $application->student_id,
+                            'enrollment_id' => $application->enrollment_id,
+                            'book_id' => $application->book_id,
+                            'retake_of_id' => $application->id,
+                            'status' => ExamApplication::STATUS_MAKE_UP,
+                        ]);
+                        $retakesCreated++;
+                    }
+                } else {
+                    $application->enrollment()->update(['status' => Enrollment::STATUS_COMPLETED]);
                 }
             }
 

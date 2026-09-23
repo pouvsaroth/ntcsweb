@@ -96,6 +96,19 @@ class ExamScoreTest extends TestCase
             ->assertJsonPath('data.0.remark', 'Good');
     }
 
+    public function test_saving_a_score_without_make_up_completes_the_enrollment(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::EXAM_SCORES_MANAGE_ALL]);
+        $app = $this->application();
+        $app->enrollment->update(['status' => Enrollment::STATUS_ACTIVE]);
+
+        $this->postJson('/api/v1/exam-scores', ['entries' => [
+            ['exam_application_id' => $app->id, 'score' => 87.5],
+        ]])->assertOk();
+
+        $this->assertSame(Enrollment::STATUS_COMPLETED, $app->enrollment->fresh()->status);
+    }
+
     public function test_checking_make_up_creates_a_scoreable_retake_application(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::EXAM_SCORES_MANAGE_ALL]);
@@ -117,6 +130,10 @@ class ExamScoreTest extends TestCase
 
         $this->getJson("/api/v1/exam-scores?student_id={$app->student_id}")
             ->assertJsonPath('data.0.has_make_up', true);
+
+        // Unlike the no-retake case, there's still an exam left to sit —
+        // the enrollment must not be marked completed underneath it.
+        $this->assertNotSame(Enrollment::STATUS_COMPLETED, $app->enrollment->fresh()->status);
     }
 
     public function test_checking_make_up_twice_never_creates_a_second_retake(): void
