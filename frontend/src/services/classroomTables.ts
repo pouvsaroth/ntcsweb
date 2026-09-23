@@ -5,6 +5,7 @@ import type { LengthAwarePaginationMeta, PaginatedResult } from '@/types/api'
 export interface ClassroomTable {
   id: number
   name: string
+  sort_order: number
   classroom_id: number
   classroom?: { id: number; name: string } | null
   created_at: string
@@ -12,6 +13,7 @@ export interface ClassroomTable {
 
 export interface ClassroomTableInput {
   name: string
+  sort_order?: number
   classroom_id: number
 }
 

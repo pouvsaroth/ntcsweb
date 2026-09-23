@@ -25,6 +25,7 @@ const deleteError = ref<string | null>(null)
 
 const columns = computed(() => [
   { key: 'name', label: t('admin.classroomTables.columnName') },
+  { key: 'sort_order', label: t('admin.classroomTables.columnOrder') },
   { key: 'actions', label: t('admin.classroomTables.columnActions'), align: 'text-right' },
 ])
 

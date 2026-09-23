@@ -23,6 +23,7 @@ class StoreClassroomTableRequest extends FormRequest
                 'required', 'string', 'max:255',
                 Rule::unique('tenant.classroom_tables', 'name')->where('classroom_id', $this->input('classroom_id')),
             ],
+            'sort_order' => ['sometimes', 'integer', 'min:0'],
         ];
     }
 }

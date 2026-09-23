@@ -1560,6 +1560,8 @@ const ko: MessageSchema = {
       editTitle: 'Edit Table',
       name: '이름',
       columnName: '이름',
+      columnOrder: '순서 번호',
+      sortOrder: '순서 번호',
       columnActions: '작업',
       delete: '삭제',
       deleteConfirm: 'Delete this table?',

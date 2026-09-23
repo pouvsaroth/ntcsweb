@@ -18,6 +18,7 @@ class ClassroomTableResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
+            'sort_order' => $this->sort_order,
             'classroom_id' => $this->classroom_id,
             'classroom' => $this->whenLoaded('classroom', fn () => $this->classroom !== null ? [
                 'id' => $this->classroom->id,

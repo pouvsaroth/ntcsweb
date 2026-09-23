@@ -23,7 +23,7 @@ final class ClassroomTableController extends Controller
 
         $tables = ApiQuery::for(ClassroomTable::query()->with('classroom'), $request)
             ->filterable(['classroom_id'])
-            ->sortable(['name', 'created_at'], default: 'name')
+            ->sortable(['sort_order', 'name', 'created_at'], default: 'sort_order')
             ->paginate();
 
         return ApiResponse::success(ClassroomTableResource::collection($tables));

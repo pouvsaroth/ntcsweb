@@ -22,7 +22,7 @@ const { t } = useI18n()
 
 const isEditing = computed(() => props.table != null)
 
-const form = reactive({ name: '' })
+const form = reactive({ name: '', sort_order: 0 })
 const errors = ref<Record<string, string[]>>({})
 const generalError = ref<string | null>(null)
 const submitting = ref(false)
@@ -33,6 +33,7 @@ watch(
     if (!open) return
 
     form.name = props.table?.name ?? ''
+    form.sort_order = props.table?.sort_order ?? 0
     errors.value = {}
     generalError.value = null
   },
@@ -77,6 +78,13 @@ async function submit() {
       <BaseAlert v-if="generalError" variant="danger">{{ generalError }}</BaseAlert>
 
       <BaseInput v-model="form.name" required :label="t('admin.classroomTables.name')" :error="errors.name?.[0]" />
+      <BaseInput
+        :model-value="String(form.sort_order)"
+        type="number"
+        :label="t('admin.classroomTables.sortOrder')"
+        :error="errors.sort_order?.[0]"
+        @update:model-value="form.sort_order = Number($event) || 0"
+      />
     </form>
 
     <template #footer>

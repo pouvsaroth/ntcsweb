@@ -1559,6 +1559,8 @@ const zh: MessageSchema = {
       editTitle: 'Edit Table',
       name: '名称',
       columnName: '名称',
+      columnOrder: '排序号',
+      sortOrder: '排序号',
       columnActions: '操作',
       delete: '删除',
       deleteConfirm: 'Delete this table?',

@@ -1564,6 +1564,8 @@ const en = {
       editTitle: 'Edit Table',
       name: 'Name',
       columnName: 'Name',
+      columnOrder: 'Order No.',
+      sortOrder: 'Order No.',
       columnActions: 'Actions',
       delete: 'Delete',
       deleteConfirm: 'Delete this table?',

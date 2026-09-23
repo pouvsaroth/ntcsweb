@@ -1560,6 +1560,8 @@ const km: MessageSchema = {
       editTitle: 'Edit Table',
       name: 'ឈ្មោះ',
       columnName: 'ឈ្មោះ',
+      columnOrder: 'លេខរៀង',
+      sortOrder: 'លេខរៀង',
       columnActions: 'សកម្មភាព',
       delete: 'លុប',
       deleteConfirm: 'Delete this table?',

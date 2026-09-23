@@ -18,13 +18,18 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  *
  * @property int $classroom_id
  * @property string $name
+ * @property int $sort_order
  */
-#[Fillable(['classroom_id', 'name'])]
+#[Fillable(['classroom_id', 'name', 'sort_order'])]
 class ClassroomTable extends Model
 {
     use HasFactory, SoftDeletes;
 
     protected $connection = 'tenant';
+
+    protected $attributes = [
+        'sort_order' => 0,
+    ];
 
     /** @use HasFactory<ClassroomTableFactory> */
     public function classroom(): BelongsTo

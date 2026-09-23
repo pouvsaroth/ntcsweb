@@ -1560,6 +1560,8 @@ const ja: MessageSchema = {
       editTitle: 'Edit Table',
       name: '名前',
       columnName: '名前',
+      columnOrder: '並び順',
+      sortOrder: '並び順',
       columnActions: '操作',
       delete: '削除',
       deleteConfirm: 'Delete this table?',
