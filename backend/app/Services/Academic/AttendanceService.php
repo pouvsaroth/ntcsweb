@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Academic;
 
 use App\Models\AttendanceRecord;
+use App\Models\ClassroomTable;
 use App\Models\Enrollment;
 use App\Models\SchoolClass;
 use App\Models\User;
@@ -39,6 +40,8 @@ final class AttendanceService
         return $class->enrollments()
             ->active()
             ->with(['student', 'table', 'attendanceRecords' => fn ($query) => $query->onDate($date)])
+            ->orderBy(ClassroomTable::query()->select('sort_order')->whereColumn('classroom_tables.id', 'enrollments.table_id'))
+            ->orderBy(ClassroomTable::query()->select('name')->whereColumn('classroom_tables.id', 'enrollments.table_id'))
             ->get();
     }
 

@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Academic;
 
+use App\Models\AttendanceRecord;
 use App\Models\AuditLog;
+use App\Models\ClassroomTable;
 use App\Models\ClassSchedule;
 use App\Models\Enrollment;
 use App\Models\Position;
@@ -54,7 +56,7 @@ class AttendanceTest extends TestCase
     {
         $this->actingAsAdminWithPermissions([Permissions::ATTENDANCE_CREATE]);
         $class = SchoolClass::factory()->create();
-        $table = \App\Models\ClassroomTable::factory()->create(['name' => 'Table 3']);
+        $table = ClassroomTable::factory()->create(['name' => 'Table 3']);
         $seatedEnrollment = Enrollment::factory()->forClass($class)->create(['table_id' => $table->id]);
         $unseatedEnrollment = Enrollment::factory()->forClass($class)->create(['table_id' => null]);
 
@@ -64,6 +66,26 @@ class AttendanceTest extends TestCase
         $rows = collect($response->json('data'))->keyBy('enrollment_id');
         $this->assertSame('Table 3', $rows[$seatedEnrollment->id]['table_no']);
         $this->assertNull($rows[$unseatedEnrollment->id]['table_no']);
+    }
+
+    /** Seats should line up in physical table order, not enrollment/creation order. */
+    public function test_the_roster_is_ordered_by_table_order_number(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::ATTENDANCE_CREATE]);
+        $class = SchoolClass::factory()->create();
+        $tableB = ClassroomTable::factory()->create(['name' => 'COM-AIO-02', 'sort_order' => 2]);
+        $tableA = ClassroomTable::factory()->create(['name' => 'COM-AIO-01', 'sort_order' => 1]);
+        $enrollmentB = Enrollment::factory()->forClass($class)->create(['table_id' => $tableB->id]);
+        $enrollmentA = Enrollment::factory()->forClass($class)->create(['table_id' => $tableA->id]);
+        $unseatedEnrollment = Enrollment::factory()->forClass($class)->create(['table_id' => null]);
+
+        $response = $this->getJson("/api/v1/classes/{$class->id}/attendance?date=".now()->toDateString());
+
+        $response->assertOk();
+        $this->assertSame(
+            [$enrollmentA->id, $enrollmentB->id, $unseatedEnrollment->id],
+            collect($response->json('data'))->pluck('enrollment_id')->all(),
+        );
     }
 
     public function test_recording_attendance_saves_one_record_per_student_and_one_audit_entry_for_the_whole_batch(): void
@@ -85,7 +107,7 @@ class AttendanceTest extends TestCase
 
         $response->assertOk();
         $response->assertJsonCount(3, 'data');
-        $this->assertSame(3, \App\Models\AttendanceRecord::where('class_id', $class->id)->where('date', $date)->count());
+        $this->assertSame(3, AttendanceRecord::where('class_id', $class->id)->where('date', $date)->count());
 
         // Exactly one new audit row for the whole batch, not one per student.
         $this->assertSame($before + 1, AuditLog::count());
@@ -110,8 +132,8 @@ class AttendanceTest extends TestCase
             'entries' => [['enrollment_id' => $enrollments[0]->id, 'status' => AttendanceStatus::PRESENT]],
         ])->assertOk();
 
-        $this->assertSame(1, \App\Models\AttendanceRecord::where('enrollment_id', $enrollments[0]->id)->count());
-        $this->assertSame(AttendanceStatus::PRESENT, \App\Models\AttendanceRecord::where('enrollment_id', $enrollments[0]->id)->first()->status);
+        $this->assertSame(1, AttendanceRecord::where('enrollment_id', $enrollments[0]->id)->count());
+        $this->assertSame(AttendanceStatus::PRESENT, AttendanceRecord::where('enrollment_id', $enrollments[0]->id)->first()->status);
     }
 
     public function test_a_student_not_enrolled_in_the_class_is_rejected(): void
