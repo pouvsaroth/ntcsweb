@@ -316,6 +316,22 @@ class AdminExamApplicationCrudTest extends TestCase
         $this->assertSame(Enrollment::STATUS_COMPLETED, $enrollment->fresh()->status);
     }
 
+    public function test_marking_not_exam_on_a_make_up_application_completes_the_enrollment(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::EXAM_APPLICATIONS_UPDATE]);
+        $enrollment = $this->enrollmentWithCode();
+        $enrollment->update(['status' => Enrollment::STATUS_ACTIVE]);
+        $application = ExamApplication::factory()->forStudent($enrollment->student)->forEnrollment($enrollment)->create([
+            'status' => ExamApplication::STATUS_MAKE_UP,
+        ]);
+
+        $response = $this->postJson("/api/v1/exam-applications/{$application->id}/not-exam");
+
+        $response->assertOk();
+        $response->assertJsonPath('data.status', ExamApplication::STATUS_NOT_EXAM);
+        $this->assertSame(Enrollment::STATUS_COMPLETED, $enrollment->fresh()->status);
+    }
+
     public function test_marking_not_exam_on_a_non_draft_application_fails(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::EXAM_APPLICATIONS_UPDATE]);

@@ -197,13 +197,14 @@ final class ExamApplicationService
 
     /**
      * "Not Exam" — the Examination tab's per-row action for a student who
-     * was sent to exam (still DRAFT) but doesn't want to sit it. Only a
-     * still-draft row qualifies: once a student has actually applied
-     * (pending/approved/rejected), this isn't the right action any more —
-     * reject() covers "applied, then turned down". Kept, not deleted, so
-     * there's a record they were offered the exam and declined; the
-     * enrollment moves straight to completed since they're done with the
-     * course either way.
+     * was sent to exam (still DRAFT) but doesn't want to sit it, or who has
+     * a still-unscored MAKE_UP retake they'd rather give up on ("លះបង់ការប្រឡង")
+     * than sit again. Only those two qualify: once a student has actually
+     * applied (pending/approved/rejected), this isn't the right action any
+     * more — reject() covers "applied, then turned down". Kept, not
+     * deleted, so there's a record they were offered the exam and
+     * declined; the enrollment moves straight to completed since they're
+     * done with the course either way.
      */
     public function markNotExam(ExamApplication $application): ExamApplication
     {
@@ -211,8 +212,8 @@ final class ExamApplicationService
             /** @var ExamApplication $application */
             $application = ExamApplication::query()->whereKey($application->getKey())->lockForUpdate()->firstOrFail();
 
-            if ($application->status !== ExamApplication::STATUS_DRAFT) {
-                throw ValidationException::withMessages(['status' => 'Only a not-yet-applied exam application can be marked Not Exam.']);
+            if (! in_array($application->status, [ExamApplication::STATUS_DRAFT, ExamApplication::STATUS_MAKE_UP], true)) {
+                throw ValidationException::withMessages(['status' => 'Only a not-yet-applied or make-up exam application can be marked Not Exam.']);
             }
 
             $application->update(['status' => ExamApplication::STATUS_NOT_EXAM]);

@@ -4,12 +4,14 @@ import { useI18n } from 'vue-i18n'
 
 import ExamApplicationFormModal from '@/components/admin/ExamApplicationFormModal.vue'
 import ExaminationTabs from '@/components/admin/ExaminationTabs.vue'
+import ActionIconButton from '@/components/ui/ActionIconButton.vue'
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BasePagination from '@/components/ui/BasePagination.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
 import DataTable from '@/components/ui/DataTable.vue'
+import EditIconButton from '@/components/ui/EditIconButton.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { examApplicationStatuses, examApplicationsService, type ExamApplication, type ExamApplicationStatus } from '@/services/examApplications'
 import { useAuthStore } from '@/stores/auth'
@@ -118,6 +120,30 @@ async function markNotExam(application: ExamApplication) {
   }
 }
 
+/**
+ * A direct status flip to Approved, from any status — unlike the Approval
+ * queue's own Approve action (ExamApplicationService::approve()), this
+ * doesn't require the row to already be pending first, doesn't touch
+ * decided_by/decided_at, and never touches book/room/table/date (the
+ * update request only ever sends the one field it validated — see
+ * UpdateExamApplicationRequest's `status` rule). A convenience shortcut for
+ * a school that doesn't need the review step, not a replacement for it.
+ */
+async function approveAuto(application: ExamApplication) {
+  if (!(await confirmDialog.confirm({ message: t('admin.exams.confirmApproveAuto') }))) return
+
+  acting.value = true
+  actionError.value = null
+  try {
+    await examApplicationsService.update(application.id, { status: 'approved' })
+    await fetch()
+  } catch (err) {
+    actionError.value = err instanceof ApiRequestError ? err.message : t('admin.exams.actionFailed')
+  } finally {
+    acting.value = false
+  }
+}
+
 async function deleteSelected() {
   if (selectedIds.value.length === 0) return
   if (!(await confirmDialog.confirm({ message: t('admin.exams.confirmDelete', { count: selectedIds.value.length }), danger: true }))) return
@@ -190,24 +216,37 @@ function openApplicationForm(enrollmentCode: string | null = null) {
       @update:selected="selectedIds = $event as number[]"
     >
       <template #cell-actions="{ row }">
-        <div class="flex gap-1.5">
-          <BaseButton
-            v-if="canUpdate"
-            variant="outline"
-            size="sm"
-            @click="openApplicationForm((row as ExamApplication).enrollment_code)"
-          >
-            {{ t('admin.exams.update') }}
-          </BaseButton>
-          <BaseButton
+        <div class="flex gap-1">
+          <EditIconButton v-if="canUpdate" :title="t('admin.exams.update')" @click="openApplicationForm((row as ExamApplication).enrollment_code)" />
+          <ActionIconButton
             v-if="canUpdate && (row as ExamApplication).status === 'draft'"
-            variant="outline"
-            size="sm"
-            :disabled="acting"
+            :title="t('admin.exams.approveAuto')"
+            @click="approveAuto(row as ExamApplication)"
+          >
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </ActionIconButton>
+          <ActionIconButton
+            v-if="canUpdate && (row as ExamApplication).status === 'draft'"
+            variant="danger"
+            :title="t('admin.exams.notExam')"
             @click="markNotExam(row as ExamApplication)"
           >
-            {{ t('admin.exams.notExam') }}
-          </BaseButton>
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </ActionIconButton>
+          <ActionIconButton
+            v-if="canUpdate && (row as ExamApplication).status === 'make_up'"
+            variant="danger"
+            :title="t('admin.exams.giveUpExam')"
+            @click="markNotExam(row as ExamApplication)"
+          >
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </ActionIconButton>
         </div>
       </template>
       <template #cell-status="{ row }">
