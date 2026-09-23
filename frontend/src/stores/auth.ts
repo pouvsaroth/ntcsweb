@@ -104,7 +104,21 @@ export const useAuthStore = defineStore('auth', () => {
 
       if (!canRetryAsPlatformAdmin) throw error
 
-      result = await authService.login(payload, true)
+      try {
+        result = await authService.login(payload, true)
+      } catch {
+        // The retry only ever exists to rescue the one real case above
+        // describes (a platform Super Admin caught by the ambient dev
+        // tenant guess) — if it *also* fails, the original, correctly
+        // tenant-scoped error is the one actually worth showing: it's in
+        // the tenant's own language, and it's the check that actually
+        // matches what the person typed. The retry's tenant-less error is
+        // always the same generic, English, "no such account anywhere"
+        // message regardless of why either attempt failed, so surfacing it
+        // instead would silently swap a specific, correctly localized error
+        // for a strictly less informative one.
+        throw error
+      }
     }
 
     if (loginRequiresTenantSelection(result)) {
