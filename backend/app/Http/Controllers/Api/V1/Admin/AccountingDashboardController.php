@@ -7,8 +7,10 @@ namespace App\Http\Controllers\Api\V1\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponse;
 use App\Models\Account;
+use App\Models\FinancialTransaction;
 use App\Models\Invoice;
 use App\Services\Accounting\AccountingReportService;
+use App\Support\Accounting\AccountType;
 use App\Support\Authorization\Permissions;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
@@ -50,6 +52,56 @@ final class AccountingDashboardController extends Controller
             'outstanding_receivables' => (float) Invoice::query()->outstanding()->sum('balance'),
             'overdue_receivables' => (float) Invoice::query()->overdue()->sum('balance'),
             ...$this->cashByAccount(),
+        ]);
+    }
+
+    /**
+     * The rows behind the dashboard's income tiles — every posting that
+     * touches a Revenue account in the range, oldest first. Signed the same
+     * way totalRevenue() nets them (credit to revenue +, debit to revenue −,
+     * i.e. a cancelled/refunded payment's reversal is negative), so the rows
+     * add up to `total`, which is exactly the tile's figure. Each row keeps
+     * its own currency; `total` is converted to the school's, like the tile.
+     * Unpaginated: bounded by one date range (the tile only ever asks for a
+     * month), not by ledger size.
+     */
+    public function income(Request $request): JsonResponse
+    {
+        abort_unless($request->user()?->hasPermission(Permissions::ACCOUNTING_DASHBOARD_VIEW), 403);
+
+        $validated = $request->validate([
+            'date_from' => ['required', 'date'],
+            'date_to' => ['required', 'date', 'after_or_equal:date_from'],
+        ]);
+
+        $revenueIds = Account::query()->where('type', AccountType::REVENUE)->pluck('id')->all();
+
+        $rows = FinancialTransaction::query()
+            ->whereDate('transaction_date', '>=', $validated['date_from'])
+            ->whereDate('transaction_date', '<=', $validated['date_to'])
+            ->where(fn ($query) => $query->whereIn('credit_account_id', $revenueIds)->orWhereIn('debit_account_id', $revenueIds))
+            ->orderBy('transaction_date')
+            ->orderBy('id')
+            ->get(['id', 'transaction_date', 'description', 'amount', 'currency', 'debit_account_id', 'credit_account_id'])
+            ->map(function (FinancialTransaction $transaction) use ($revenueIds) {
+                $sign = (in_array($transaction->credit_account_id, $revenueIds) ? 1 : 0)
+                    - (in_array($transaction->debit_account_id, $revenueIds) ? 1 : 0);
+
+                return $sign === 0 ? null : [
+                    'id' => $transaction->id,
+                    'date' => $transaction->transaction_date?->toDateString(),
+                    'description' => $transaction->description,
+                    'amount' => $sign * (float) $transaction->amount,
+                    'currency' => $transaction->currency,
+                ];
+            })
+            ->filter()
+            ->values();
+
+        return ApiResponse::success([
+            'currency' => $this->tenantContext->getOrFail()->default_currency,
+            'total' => $this->reports->totalRevenue($validated['date_from'], $validated['date_to']),
+            'items' => $rows,
         ]);
     }
 

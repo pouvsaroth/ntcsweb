@@ -77,6 +77,33 @@ class AccountingDashboardTest extends TestCase
         $this->assertEqualsWithDelta(80000.0, $response->json('data.todays_income'), 0.001);
     }
 
+    public function test_the_income_detail_lists_each_posting_oldest_first_and_adds_up_to_the_tile(): void
+    {
+        $this->actingAsAdminWithPermissions([
+            Permissions::INVOICES_CREATE, Permissions::PAYMENTS_CREATE, Permissions::PAYMENTS_CANCEL, Permissions::ACCOUNTING_DASHBOARD_VIEW,
+        ]);
+        $this->setUpChartOfAccounts();
+
+        $course = Product::factory()->create(['type' => ProductType::COURSE_FEE, 'price' => 100]);
+        $invoiceId = $this->postJson('/api/v1/invoices', [
+            'student_id' => Student::factory()->create()->id,
+            'items' => [['product_id' => $course->id, 'quantity' => 1]],
+        ])->assertCreated()->json('data.id');
+
+        $today = now()->toDateString();
+        $yesterday = now()->subDay()->toDateString();
+        $this->postJson("/api/v1/invoices/{$invoiceId}/payments", ['amount' => 30, 'payment_method' => PaymentMethod::CASH, 'payment_date' => $today])->assertCreated();
+        $this->postJson("/api/v1/invoices/{$invoiceId}/payments", ['amount' => 50, 'payment_method' => PaymentMethod::CASH, 'payment_date' => $yesterday])->assertCreated();
+        $cancelledId = $this->postJson("/api/v1/invoices/{$invoiceId}/payments", ['amount' => 20, 'payment_method' => PaymentMethod::CASH, 'payment_date' => $today])->assertCreated()->json('data.id');
+        $this->postJson("/api/v1/payments/{$cancelledId}/cancel", ['reason' => 'Entered twice'])->assertOk();
+
+        $response = $this->getJson("/api/v1/accounting/dashboard/income?date_from={$yesterday}&date_to={$today}")->assertOk();
+
+        $this->assertSame([$yesterday, $today, $today, $today], array_column($response->json('data.items'), 'date'));
+        $this->assertEquals([50, 30, 20, -20], array_column($response->json('data.items'), 'amount'));
+        $this->assertEqualsWithDelta(80.0, $response->json('data.total'), 0.001);
+    }
+
     public function test_the_dashboard_requires_the_accounting_dashboard_view_permission(): void
     {
         $this->actingAsAdminWithPermissions([]);

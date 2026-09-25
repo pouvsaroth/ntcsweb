@@ -4,7 +4,8 @@ import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
 
 import BaseCard from '@/components/ui/BaseCard.vue'
-import { accountingReportsService } from '@/services/accounting'
+import BaseModal from '@/components/ui/BaseModal.vue'
+import { accountingReportsService, type IncomeDetail } from '@/services/accounting'
 import { attendanceService } from '@/services/attendance'
 import { enrollmentsService } from '@/services/enrollments'
 import type { MonthlyInvoice } from '@/services/monthlyInvoices'
@@ -181,6 +182,26 @@ function yesterday(): string {
   return toDateString(date)
 }
 
+const incomeDetailOpen = ref(false)
+const incomeDetail = ref<IncomeDetail | null>(null)
+const incomeDetailLoading = ref(false)
+const incomeDetailError = ref<string | null>(null)
+
+/** Same range as the Monthly Income tile, so the rows add up to its figure. */
+async function openIncomeDetail(): Promise<void> {
+  incomeDetailOpen.value = true
+  incomeDetailLoading.value = true
+  incomeDetailError.value = null
+
+  try {
+    incomeDetail.value = await accountingReportsService.income({ date_from: firstOfMonth(), date_to: today() })
+  } catch {
+    incomeDetailError.value = t('admin.dashboard.incomeDetailLoadFailed')
+  } finally {
+    incomeDetailLoading.value = false
+  }
+}
+
 async function loadStats(): Promise<void> {
   if (auth.can('dashboard.finance.view')) {
     try {
@@ -326,10 +347,12 @@ onMounted(() => {
             <p class="text-sm font-medium text-neutral-500">{{ t('admin.dashboard.statStudentsStudying') }}</p>
             <p class="mt-1 text-3xl font-bold text-neutral-900">{{ studyingCount }}</p>
           </BaseCard>
-          <BaseCard>
-            <p class="text-sm font-medium text-neutral-500">{{ t('admin.dashboard.statMonthlyIncome') }}</p>
-            <p class="mt-1 text-3xl font-bold text-neutral-900">{{ monthlyIncome }}</p>
-          </BaseCard>
+          <button type="button" class="rounded-[--radius-card] text-left transition hover:ring-2 hover:ring-primary-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500" @click="openIncomeDetail">
+            <BaseCard class="h-full">
+              <p class="text-sm font-medium text-neutral-500">{{ t('admin.dashboard.statMonthlyIncome') }}</p>
+              <p class="mt-1 text-3xl font-bold text-neutral-900">{{ monthlyIncome }}</p>
+            </BaseCard>
+          </button>
           <BaseCard>
             <p class="text-sm font-medium text-neutral-500">{{ t('admin.dashboard.statDailyIncome') }}</p>
             <p class="mt-1 text-3xl font-bold text-neutral-900">{{ dailyIncome }}</p>
@@ -345,5 +368,39 @@ onMounted(() => {
         </div>
       </template>
     </template>
+
+    <BaseModal v-model="incomeDetailOpen" :title="t('admin.dashboard.incomeDetailTitle')" size="lg">
+      <p v-if="incomeDetailLoading" class="py-6 text-center text-sm text-neutral-500">{{ t('common.loading') }}</p>
+      <p v-else-if="incomeDetailError" class="py-6 text-center text-sm text-danger-600">{{ incomeDetailError }}</p>
+      <p v-else-if="incomeDetail && incomeDetail.items.length === 0" class="py-6 text-center text-sm text-neutral-500">
+        {{ t('admin.dashboard.incomeDetailEmpty') }}
+      </p>
+      <div v-else-if="incomeDetail" class="max-h-[60vh] overflow-auto">
+        <table class="min-w-full text-sm">
+          <thead class="sticky top-0 bg-neutral-50 text-left text-xs font-semibold uppercase tracking-wide text-neutral-500">
+            <tr>
+              <th class="px-3 py-2">{{ t('admin.dashboard.incomeDetailDate') }}</th>
+              <th class="px-3 py-2">{{ t('admin.dashboard.incomeDetailDescription') }}</th>
+              <th class="px-3 py-2 text-right">{{ t('admin.dashboard.incomeDetailAmount') }}</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-neutral-100">
+            <tr v-for="item in incomeDetail.items" :key="item.id">
+              <td class="whitespace-nowrap px-3 py-2 text-neutral-700">{{ formatDate(item.date) }}</td>
+              <td class="px-3 py-2 text-neutral-700">{{ item.description ?? '—' }}</td>
+              <td class="whitespace-nowrap px-3 py-2 text-right font-medium" :class="item.amount < 0 ? 'text-danger-600' : 'text-neutral-900'">
+                {{ item.amount < 0 ? '-' : '' }}{{ formatMoney(Math.abs(item.amount), item.currency) }}
+              </td>
+            </tr>
+          </tbody>
+          <tfoot class="sticky bottom-0 bg-white">
+            <tr class="border-t border-neutral-200 font-semibold text-neutral-900">
+              <td class="px-3 py-2" colspan="2">{{ t('admin.dashboard.incomeDetailTotal') }}</td>
+              <td class="whitespace-nowrap px-3 py-2 text-right">{{ formatMoney(incomeDetail.total, incomeDetail.currency) }}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </BaseModal>
   </div>
 </template>

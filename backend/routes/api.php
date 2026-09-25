@@ -485,6 +485,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::post('financial-transactions/adjustment', [FinancialTransactionController::class, 'adjustment'])->name('financial-transactions.adjustment');
 
         Route::get('accounting/dashboard', [AccountingDashboardController::class, 'summary'])->name('accounting.dashboard');
+        Route::get('accounting/dashboard/income', [AccountingDashboardController::class, 'income'])->name('accounting.dashboard.income');
         Route::get('accounting/reports/revenue', [AccountingReportController::class, 'revenue'])->name('accounting.reports.revenue');
         Route::get('accounting/reports/expenses', [AccountingReportController::class, 'expenses'])->name('accounting.reports.expenses');
         Route::get('accounting/reports/profit-loss', [AccountingReportController::class, 'profitLoss'])->name('accounting.reports.profit-loss');

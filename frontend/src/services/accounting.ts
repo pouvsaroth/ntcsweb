@@ -100,8 +100,28 @@ export interface DateRangeFilter {
   date_to?: string
 }
 
+/** One posting behind the dashboard's income tile — see AccountingDashboardController::income(). */
+export interface IncomeDetailItem {
+  id: number
+  date: string
+  description: string | null
+  /** Signed: a cancelled/refunded payment's reversal is negative. In the row's own currency. */
+  amount: number
+  currency: 'USD' | 'KHR'
+}
+
+export interface IncomeDetail {
+  /** `total` is converted to this currency — the same figure as the dashboard tile. */
+  currency: 'USD' | 'KHR'
+  total: number
+  items: IncomeDetailItem[]
+}
+
 export const accountingReportsService = {
   dashboard: (params: DateRangeFilter = {}) => apiGetWithMeta<AccountingSummary>('/accounting/dashboard', { params }).then((r) => r.data),
+
+  income: (params: Required<DateRangeFilter>) =>
+    apiGetWithMeta<IncomeDetail>('/accounting/dashboard/income', { params }).then((r) => r.data),
 
   revenue: (params: DateRangeFilter = {}) =>
     apiGetWithMeta<{ lines: ReportLine[]; total: number }>('/accounting/reports/revenue', { params }).then((r) => r.data),
