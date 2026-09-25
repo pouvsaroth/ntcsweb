@@ -105,6 +105,27 @@ class Invoice extends Model
     }
 
     /**
+     * An enrollment invoice's course package (also covers migrated legacy
+     * invoices, whose product is just "Legacy Payment" but whose item still
+     * references the enrollment); otherwise the items' own product names,
+     * e.g. "Exam Fee". Expects items.product and items.reference (with
+     * Enrollment's coursePackage) to be eager-loaded — see
+     * InvoiceController::index().
+     */
+    public function courseName(): ?string
+    {
+        $names = $this->items
+            ->map(fn (InvoiceItem $item) => $item->reference instanceof Enrollment
+                ? $item->reference->coursePackage?->name
+                : $item->product?->name)
+            ->filter()
+            ->unique()
+            ->values();
+
+        return $names->isEmpty() ? null : $names->implode(', ');
+    }
+
+    /**
      * @param  Builder<static>  $query
      */
     public function scopeOutstanding(Builder $query): void

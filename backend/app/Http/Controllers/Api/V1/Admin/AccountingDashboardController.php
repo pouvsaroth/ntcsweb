@@ -7,12 +7,16 @@ namespace App\Http\Controllers\Api\V1\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponse;
 use App\Models\Account;
+use App\Models\Enrollment;
 use App\Models\FinancialTransaction;
 use App\Models\Invoice;
+use App\Models\Payment;
 use App\Services\Accounting\AccountingReportService;
 use App\Support\Accounting\AccountType;
 use App\Support\Authorization\Permissions;
 use App\Support\Tenancy\TenantContext;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -76,21 +80,35 @@ final class AccountingDashboardController extends Controller
 
         $revenueIds = Account::query()->where('type', AccountType::REVENUE)->pluck('id')->all();
 
-        $rows = FinancialTransaction::query()
+        $transactions = FinancialTransaction::query()
             ->whereDate('transaction_date', '>=', $validated['date_from'])
             ->whereDate('transaction_date', '<=', $validated['date_to'])
             ->where(fn ($query) => $query->whereIn('credit_account_id', $revenueIds)->orWhereIn('debit_account_id', $revenueIds))
             ->orderBy('transaction_date')
             ->orderBy('id')
-            ->get(['id', 'transaction_date', 'description', 'amount', 'currency', 'debit_account_id', 'credit_account_id'])
-            ->map(function (FinancialTransaction $transaction) use ($revenueIds) {
+            ->get(['id', 'transaction_date', 'description', 'amount', 'currency', 'debit_account_id', 'credit_account_id', 'reference_type', 'reference_id']);
+
+        // A payment's income posting and any reversal of it both reference
+        // the Payment — one batched load for all of them.
+        $payments = Payment::query()
+            ->whereIn('id', $transactions->where('reference_type', Payment::class)->pluck('reference_id')->unique())
+            ->with([
+                'student',
+                'invoice.items.product',
+                'invoice.items.reference' => fn (MorphTo $morph) => $morph->morphWith([Enrollment::class => ['coursePackage']]),
+            ])
+            ->get()
+            ->keyBy('id');
+
+        $rows = $transactions
+            ->map(function (FinancialTransaction $transaction) use ($revenueIds, $payments) {
                 $sign = (in_array($transaction->credit_account_id, $revenueIds) ? 1 : 0)
                     - (in_array($transaction->debit_account_id, $revenueIds) ? 1 : 0);
 
                 return $sign === 0 ? null : [
                     'id' => $transaction->id,
                     'date' => $transaction->transaction_date?->toDateString(),
-                    'description' => $transaction->description,
+                    'description' => $this->incomeDescription($transaction, $payments),
                     'amount' => $sign * (float) $transaction->amount,
                     'currency' => $transaction->currency,
                 ];
@@ -103,6 +121,27 @@ final class AccountingDashboardController extends Controller
             'total' => $this->reports->totalRevenue($validated['date_from'], $validated['date_to']),
             'items' => $rows,
         ]);
+    }
+
+    /**
+     * "Student name — Course" for a payment (the course package for an
+     * enrollment invoice, else the invoice's product names — see
+     * Invoice::courseName()); the ledger's own description for anything
+     * not paid by a student (manual income, adjustments).
+     *
+     * @param  Collection<int, Payment>  $payments
+     */
+    private function incomeDescription(FinancialTransaction $transaction, Collection $payments): ?string
+    {
+        $payment = $transaction->reference_type === Payment::class ? $payments->get($transaction->reference_id) : null;
+
+        if ($payment === null) {
+            return $transaction->description;
+        }
+
+        $parts = array_filter([$payment->student?->fullName(), $payment->invoice?->courseName()]);
+
+        return $parts === [] ? $transaction->description : implode(' — ', $parts);
     }
 
     /**

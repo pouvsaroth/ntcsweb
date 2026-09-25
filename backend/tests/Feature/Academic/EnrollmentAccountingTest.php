@@ -62,6 +62,32 @@ class EnrollmentAccountingTest extends TestCase
         $this->assertSame(\App\Support\Billing\InvoiceStatus::PAID, $invoice->status);
     }
 
+    public function test_the_dashboard_income_detail_names_the_student_and_the_enrollments_course(): void
+    {
+        $this->actingAsAdminWithPermissions([
+            Permissions::ENROLLMENTS_CREATE, Permissions::PAYMENTS_CREATE, Permissions::ACCOUNTING_DASHBOARD_VIEW,
+        ]);
+        $this->setUpAcademicCatalog();
+        $this->setUpChartOfAccounts();
+        $student = Student::factory()->create();
+
+        $enrollment = $this->postJson('/api/v1/enrollments/package', [
+            'student_id' => $student->id,
+            'class_id' => $this->computerEveningClass->id,
+            'course_package_id' => $this->msWordPackage->id,
+            'fee_type' => 'term',
+        ])->assertCreated()->json('data');
+
+        $invoiceId = \App\Models\InvoiceItem::where('reference_type', \App\Models\Enrollment::class)
+            ->where('reference_id', $enrollment['id'])->firstOrFail()->invoice_id;
+        $this->postJson("/api/v1/invoices/{$invoiceId}/payments", ['amount' => 24, 'payment_method' => PaymentMethod::CASH])->assertCreated();
+
+        $today = now()->toDateString();
+        $this->getJson("/api/v1/accounting/dashboard/income?date_from={$today}&date_to={$today}")
+            ->assertOk()
+            ->assertJsonPath('data.items.0.description', "{$student->fullName()} — {$this->msWordPackage->name}");
+    }
+
     public function test_the_invoice_list_shows_the_enrollments_course_package_name(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE, Permissions::INVOICES_VIEW]);
