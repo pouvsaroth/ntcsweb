@@ -205,26 +205,18 @@ class User extends Authenticatable implements MustVerifyEmailContract
      * both transports (browser sessions + Sanctum tokens) — enforced by
      * AuthService::ensureNoOtherActiveDevice(). Null means no limit.
      *
-     * School Admin: unlimited — they're the ones who clear this for everyone
-     * else, and routinely need their own account open on more than one
-     * device (e.g. the office desktop and their phone) at once.
-     * Student: one — a student's account reaches grades, invoices, and other
-     * personal records the school does not want cached on an open-ended
-     * number of devices.
-     * Everyone else (Teacher, Staff, Super Admin, or an account with no role
-     * at all): a middle-ground allowance of three.
+     * Unlimited for every role, at the school's request (2026-09-25): a
+     * browser can't reliably tell the same physical device apart from a
+     * different one (each browser keeps its own storage), so the old
+     * Student=1 / others=3 caps kept locking students out of their own
+     * device — a second browser, a private window or a lost session cookie
+     * all counted as "another device". Login sessions are still recorded, so
+     * UserController::forceLogout() keeps working; returning an int here
+     * again re-enables a cap.
      */
     public function maxConcurrentDevices(): ?int
     {
-        if ($this->hasRole(Role::SCHOOL_ADMIN)) {
-            return null;
-        }
-
-        if ($this->hasRole(Role::STUDENT)) {
-            return 1;
-        }
-
-        return 3;
+        return null;
     }
 
     /**

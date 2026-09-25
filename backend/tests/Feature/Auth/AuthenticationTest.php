@@ -264,106 +264,31 @@ class AuthenticationTest extends TestCase
     }
 
     /**
-     * The per-role concurrent-device limit (AuthService::ensureNoOtherActiveDevice(),
-     * User::maxConcurrentDevices()): a Student may only ever have one device
-     * signed in, so a still-unexpired token from a previous login blocks a
-     * new one for a different device, with the exact message the user is
-     * told to act on.
+     * No concurrent-device limit for any role (see User::maxConcurrentDevices()):
+     * a Student, a School Admin and a role-less account can each add another
+     * device on top of still-active tokens and browser sessions.
      */
-    public function test_a_student_is_blocked_by_a_second_device(): void
+    public function test_no_role_is_blocked_by_other_still_active_devices(): void
     {
-        $user = User::factory()->forTenant($this->tenant)->create(['password' => Hash::make('correct-password')]);
-        $user->attachRoles($this->roleFor(Role::STUDENT));
-        $user->createToken('phone', ['*'], now()->addDays(30));
+        foreach ([Role::STUDENT, Role::SCHOOL_ADMIN, null] as $role) {
+            $user = User::factory()->forTenant($this->tenant)->create(['password' => Hash::make('correct-password')]);
+            if ($role !== null) {
+                $user->attachRoles($this->roleFor($role));
+            }
+            $user->createToken('phone', ['*'], now()->addDays(30));
+            $user->createToken('tablet', ['*'], now()->addDays(30));
+            $user->recordLoginSession('existing-browser-session-'.$user->id, '127.0.0.1', 'PHPUnit');
 
-        $this->actingInTenant($this->tenant);
+            $this->actingInTenant($this->tenant);
 
-        $response = $this->postJson('/api/v1/auth/login', [
-            'login' => $user->email,
-            'password' => 'correct-password',
-            'device_name' => 'laptop',
-        ]);
+            $this->postJson('/api/v1/auth/login', [
+                'login' => $user->email,
+                'password' => 'correct-password',
+                'device_name' => 'laptop',
+            ])->assertOk();
 
-        $response->assertUnprocessable();
-        $response->assertJsonPath(
-            'errors.login.0',
-            'You are logging in another device, please logout first or you can ask admin for help.',
-        );
-        $this->assertSame(1, $user->tokens()->count());
-    }
-
-    /**
-     * Every role other than Student/School Admin (Teacher, Staff, or an
-     * account with no role at all — see User::maxConcurrentDevices()) may
-     * have up to three devices signed in at once, mixed freely across the
-     * token and session transports.
-     */
-    public function test_a_non_student_non_admin_user_may_have_up_to_three_active_devices(): void
-    {
-        $user = User::factory()->forTenant($this->tenant)->create(['password' => Hash::make('correct-password')]);
-        $user->createToken('phone', ['*'], now()->addDays(30));
-        $user->recordLoginSession('existing-browser-session', '127.0.0.1', 'PHPUnit');
-
-        $this->actingInTenant($this->tenant);
-
-        $response = $this->postJson('/api/v1/auth/login', [
-            'login' => $user->email,
-            'password' => 'correct-password',
-            'device_name' => 'laptop',
-        ]);
-
-        $response->assertOk();
-        $this->assertSame(2, $user->tokens()->count());
-    }
-
-    /**
-     * The fourth device is where that same allowance runs out.
-     */
-    public function test_a_non_student_non_admin_user_is_blocked_by_a_fourth_device(): void
-    {
-        $user = User::factory()->forTenant($this->tenant)->create(['password' => Hash::make('correct-password')]);
-        $user->createToken('phone', ['*'], now()->addDays(30));
-        $user->createToken('tablet', ['*'], now()->addDays(30));
-        $user->recordLoginSession('existing-browser-session', '127.0.0.1', 'PHPUnit');
-
-        $this->actingInTenant($this->tenant);
-
-        $response = $this->postJson('/api/v1/auth/login', [
-            'login' => $user->email,
-            'password' => 'correct-password',
-            'device_name' => 'laptop',
-        ]);
-
-        $response->assertUnprocessable();
-        $response->assertJsonPath(
-            'errors.login.0',
-            'You are logging in another device, please logout first or you can ask admin for help.',
-        );
-        $this->assertSame(2, $user->tokens()->count());
-    }
-
-    /**
-     * School Admin has no concurrent-device limit at all (see
-     * User::maxConcurrentDevices()) — they're the ones who clear it for
-     * everyone else, and routinely need their own account open on more than
-     * one device at once.
-     */
-    public function test_a_school_admin_is_not_blocked_by_a_still_active_device(): void
-    {
-        $user = User::factory()->forTenant($this->tenant)->create(['password' => Hash::make('correct-password')]);
-        $user->attachRoles($this->roleFor(Role::SCHOOL_ADMIN));
-        $user->createToken('phone', ['*'], now()->addDays(30));
-
-        $this->actingInTenant($this->tenant);
-
-        $response = $this->postJson('/api/v1/auth/login', [
-            'login' => $user->email,
-            'password' => 'correct-password',
-            'device_name' => 'laptop',
-        ]);
-
-        $response->assertOk();
-        $this->assertSame(2, $user->tokens()->count());
+            $this->assertSame(3, $user->tokens()->count());
+        }
     }
 
     /**
@@ -409,14 +334,11 @@ class AuthenticationTest extends TestCase
     }
 
     /**
-     * Mirrors the token case above, but for the session transport the SPA
-     * actually uses, and for a Student specifically — their one-device
-     * allowance means a single still-open browser session (a UserSession
-     * row nobody signed out of) blocks a new session login on its own. Set
-     * directly rather than via a real login request, since a fresh test
-     * user never has one left over on its own.
+     * The session transport the SPA actually uses: a Student with a browser
+     * session nobody signed out of (another browser, a private window, a
+     * lost cookie) can still sign in again.
      */
-    public function test_a_student_is_blocked_by_a_still_active_session(): void
+    public function test_a_student_with_a_still_open_session_can_sign_in_again(): void
     {
         $user = User::factory()->forTenant($this->tenant)->create(['password' => Hash::make('correct-password')]);
         $user->attachRoles($this->roleFor(Role::STUDENT));
@@ -424,23 +346,17 @@ class AuthenticationTest extends TestCase
 
         $this->actingInTenant($this->tenant);
 
-        $response = $this->postJson('/api/v1/auth/login', [
+        $this->postJson('/api/v1/auth/login', [
             'login' => $user->email,
             'password' => 'correct-password',
-        ]);
-
-        $response->assertUnprocessable();
-        $response->assertJsonPath(
-            'errors.login.0',
-            'You are logging in another device, please logout first or you can ask admin for help.',
-        );
+        ])->assertOk();
     }
 
     /**
      * Logging out deletes the UserSession row outright, so the device is
      * immediately free to log back in — the whole point of the rule is "log
-     * out first," not "wait." Uses a Student (one-device limit) so the
-     * assertion is only true if the slot really was freed by the logout.
+     * out first," not "wait." (With no device limit today this can't be
+     * blocked either way; kept for when a cap is re-enabled.)
      *
      * The session cookie is carried forward by hand between requests — the
      * test client doesn't do this automatically the way a real browser
