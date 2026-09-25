@@ -61,4 +61,23 @@ class EnrollmentAccountingTest extends TestCase
         $this->assertSame('0.00', (string) $invoice->balance);
         $this->assertSame(\App\Support\Billing\InvoiceStatus::PAID, $invoice->status);
     }
+
+    public function test_the_invoice_list_shows_the_enrollments_course_package_name(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE, Permissions::INVOICES_VIEW]);
+        $this->setUpAcademicCatalog();
+        $this->setUpChartOfAccounts();
+        $student = Student::factory()->create();
+
+        $this->postJson('/api/v1/enrollments/package', [
+            'student_id' => $student->id,
+            'class_id' => $this->computerEveningClass->id,
+            'course_package_id' => $this->msWordPackage->id,
+            'fee_type' => 'term',
+        ])->assertCreated();
+
+        $this->getJson('/api/v1/invoices')
+            ->assertOk()
+            ->assertJsonPath('data.0.course', $this->msWordPackage->name);
+    }
 }

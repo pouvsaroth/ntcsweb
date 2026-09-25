@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Http\Resources;
 
+use App\Models\Enrollment;
 use App\Models\Invoice;
+use App\Models\InvoiceItem;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -35,6 +37,9 @@ class InvoiceResource extends JsonResource
             'paid_amount' => (float) $this->paid_amount,
             'balance' => (float) $this->balance,
             'currency' => $this->currency,
+            // Only the list endpoint eager-loads items.reference/items.product
+            // for this — see InvoiceController::index().
+            'course' => $this->when($this->hasCourseRelationsLoaded(), fn () => $this->courseName()),
             'notes' => $this->notes,
             'payment_type' => $this->payment_type,
             'cancellation_reason' => $this->cancellation_reason,
@@ -45,5 +50,30 @@ class InvoiceResource extends JsonResource
             'payments' => PaymentResource::collection($this->whenLoaded('payments')),
             'created_at' => $this->created_at?->toIso8601String(),
         ];
+    }
+
+    private function hasCourseRelationsLoaded(): bool
+    {
+        return $this->relationLoaded('items')
+            && $this->items->every(fn (InvoiceItem $item) => $item->relationLoaded('reference') && $item->relationLoaded('product'));
+    }
+
+    /**
+     * An enrollment invoice's course package (also covers migrated legacy
+     * invoices, whose product is just "Legacy Payment" but whose item still
+     * references the enrollment); otherwise the items' own product names,
+     * e.g. "Exam Fee".
+     */
+    private function courseName(): ?string
+    {
+        $names = $this->items
+            ->map(fn (InvoiceItem $item) => $item->reference instanceof Enrollment
+                ? $item->reference->coursePackage?->name
+                : $item->product?->name)
+            ->filter()
+            ->unique()
+            ->values();
+
+        return $names->isEmpty() ? null : $names->implode(', ');
     }
 }

@@ -70,6 +70,8 @@ export interface Invoice {
   paid_amount: number
   balance: number
   currency: Currency
+  /** List endpoint only: the enrollment's course package name, else the items' product names — see InvoiceResource::courseName(). */
+  course?: string | null
   notes: string | null
   payment_type: PaymentTypeValue | null
   cancellation_reason: string | null

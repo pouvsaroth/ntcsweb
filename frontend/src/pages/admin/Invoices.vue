@@ -19,6 +19,7 @@ import {
   type InvoiceStatusValue,
   type PaymentTypeValue,
 } from '@/services/invoices'
+import { formatMoney } from '@/utils/currency'
 import { formatDate } from '@/utils/date'
 
 const { t } = useI18n()
@@ -78,6 +79,7 @@ function onPaymentTypeFilterChange(value: string) {
 const columns = [
   { key: 'invoice_number', label: t('admin.invoices.columnNumber'), sortable: true },
   { key: 'student', label: t('admin.invoices.columnStudent') },
+  { key: 'course', label: t('admin.invoices.monthlyColumnCourse') },
   { key: 'payment_type', label: t('admin.invoices.columnPaymentType') },
   { key: 'total', label: t('admin.invoices.columnTotal'), sortable: true, align: 'text-right' },
   { key: 'balance', label: t('admin.invoices.columnBalance'), sortable: true, align: 'text-right' },
@@ -128,11 +130,12 @@ onMounted(() => setFilter('status', selectedStatus.value || undefined))
       @sort="(col) => setSort(sort === col ? `-${col}` : col)"
     >
       <template #cell-student="{ row }">{{ row.student?.name ?? '—' }}</template>
+      <template #cell-course="{ row }">{{ row.course ?? '—' }}</template>
       <template #cell-payment_type="{ row }">
         {{ row.payment_type ? t(`admin.invoices.paymentType${paymentTypeKey(row.payment_type)}`) : '—' }}
       </template>
-      <template #cell-total="{ row }">${{ row.total.toFixed(2) }}</template>
-      <template #cell-balance="{ row }">${{ row.balance.toFixed(2) }}</template>
+      <template #cell-total="{ row }">{{ formatMoney(row.total, row.currency) }}</template>
+      <template #cell-balance="{ row }">{{ formatMoney(row.balance, row.currency) }}</template>
       <template #cell-status="{ row }">
         <BaseBadge :variant="statusVariant[row.status]">{{ t(`admin.invoices.status${statusKey(row.status)}`) }}</BaseBadge>
       </template>

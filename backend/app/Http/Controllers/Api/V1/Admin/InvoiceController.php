@@ -12,11 +12,13 @@ use App\Http\Resources\InvoiceResource;
 use App\Http\Resources\NotificationLogResource;
 use App\Http\Responses\ApiResponse;
 use App\Jobs\SendInvoiceNotificationJob;
+use App\Models\Enrollment;
 use App\Models\Invoice;
 use App\Services\Billing\InvoicePdfService;
 use App\Services\Billing\InvoiceService;
 use App\Support\Query\ApiQuery;
 use App\Support\Tenancy\TenantContext;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
@@ -32,7 +34,12 @@ final class InvoiceController extends Controller
     {
         $this->authorize('viewAny', Invoice::class);
 
-        $query = Invoice::query()->with('student');
+        $query = Invoice::query()->with([
+            'student',
+            // For the list's Course column — see InvoiceResource::courseName().
+            'items.product',
+            'items.reference' => fn (MorphTo $morph) => $morph->morphWith([Enrollment::class => ['coursePackage']]),
+        ]);
 
         if ($request->filled('date_from')) {
             $query->whereDate('invoice_date', '>=', $request->string('date_from')->toString());
