@@ -331,6 +331,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         // docblock), so they have no viewAny/index route of their own —
         // they're only ever reached nested under a project (see
         // ProjectController::show(), which eager-loads the whole board).
+        // Before apiResource so "assignees" isn't swallowed by projects/{project}.
+        Route::get('projects/assignees', [ProjectController::class, 'assignees'])->name('projects.assignees');
         Route::apiResource('projects', ProjectController::class);
         Route::post('projects/{project}/columns', [ProjectColumnController::class, 'store'])->name('projects.columns.store');
         Route::post('projects/{project}/columns/reorder', [ProjectColumnController::class, 'reorder'])->name('projects.columns.reorder');

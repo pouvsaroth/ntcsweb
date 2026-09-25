@@ -7,6 +7,7 @@ namespace Tests\Feature\Projects;
 use App\Models\Project;
 use App\Models\ProjectColumn;
 use App\Models\ProjectTask;
+use App\Models\Staff;
 use App\Models\User;
 use App\Support\Authorization\Permissions;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -297,12 +298,12 @@ class ProjectBoardTest extends TestCase
         $response->assertUnprocessable();
     }
 
-    public function test_a_task_can_be_assigned_to_a_tenant_user(): void
+    public function test_a_task_can_be_assigned_to_an_active_staff_member(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::PROJECTS_UPDATE]);
         $project = Project::factory()->create();
         $column = ProjectColumn::factory()->create(['project_id' => $project->id]);
-        $assignee = User::factory()->forTenant($this->tenant)->create();
+        $assignee = $this->staffUser(Staff::STATUS_ACTIVE);
 
         $response = $this->postJson("/api/v1/project-columns/{$column->id}/tasks", [
             'title' => 'Draft the proposal',
@@ -314,5 +315,51 @@ class ProjectBoardTest extends TestCase
         $response->assertCreated();
         $response->assertJsonPath('data.assignee', $assignee->name);
         $response->assertJsonPath('data.priority', ProjectTask::PRIORITY_HIGH);
+    }
+
+    public function test_a_user_who_is_not_active_staff_cannot_be_assigned(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::PROJECTS_UPDATE]);
+        $column = ProjectColumn::factory()->create(['project_id' => Project::factory()->create()->id]);
+
+        foreach ([User::factory()->forTenant($this->tenant)->create(), $this->staffUser(Staff::STATUS_RESIGNED)] as $user) {
+            $this->postJson("/api/v1/project-columns/{$column->id}/tasks", ['title' => 'Task', 'assignee_id' => $user->id])
+                ->assertUnprocessable()
+                ->assertJsonValidationErrors('assignee_id');
+        }
+    }
+
+    public function test_a_card_keeps_its_assignee_after_they_leave(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::PROJECTS_UPDATE]);
+        $column = ProjectColumn::factory()->create(['project_id' => Project::factory()->create()->id]);
+        $assignee = $this->staffUser(Staff::STATUS_ACTIVE);
+        $taskId = $this->postJson("/api/v1/project-columns/{$column->id}/tasks", ['title' => 'Task', 'assignee_id' => $assignee->id])
+            ->assertCreated()->json('data.id');
+
+        Staff::query()->where('user_id', $assignee->id)->update(['status' => Staff::STATUS_RESIGNED]);
+
+        $this->putJson("/api/v1/project-tasks/{$taskId}", ['title' => 'Renamed', 'assignee_id' => $assignee->id])->assertOk();
+    }
+
+    public function test_assignees_lists_only_active_staff_with_a_login(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::PROJECTS_VIEW]);
+        $active = $this->staffUser(Staff::STATUS_ACTIVE);
+        $this->staffUser(Staff::STATUS_RESIGNED);
+        Staff::factory()->create(['status' => Staff::STATUS_ACTIVE]);
+
+        $this->getJson('/api/v1/projects/assignees')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $active->id);
+    }
+
+    private function staffUser(string $status): User
+    {
+        $user = User::factory()->forTenant($this->tenant)->create();
+        Staff::factory()->create(['status' => $status])->forceFill(['user_id' => $user->id])->save();
+
+        return $user;
     }
 }

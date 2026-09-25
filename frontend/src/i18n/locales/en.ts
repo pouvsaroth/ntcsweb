@@ -99,6 +99,7 @@ const en = {
     lookupLoadFailed: 'Could not load options.',
     noRecordsFound: 'No records found.',
     searchPlaceholder: 'Search…',
+    noResults: 'No matches',
     selectAll: 'Select all',
     selectRow: 'Select row',
     showingResults: 'Showing {from}–{to} of {total}',

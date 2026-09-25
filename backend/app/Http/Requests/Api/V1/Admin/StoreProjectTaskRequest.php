@@ -6,6 +6,7 @@ namespace App\Http\Requests\Api\V1\Admin;
 
 use App\Models\ProjectColumn;
 use App\Models\ProjectTask;
+use App\Models\Staff;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -35,7 +36,12 @@ class StoreProjectTaskRequest extends FormRequest
             'due_date' => ['nullable', 'date', 'after_or_equal:start_date'],
             'estimated_hours' => ['nullable', 'numeric', 'min:0', 'max:9999.99'],
             'project_milestone_id' => ['nullable', 'integer', Rule::exists('tenant.project_milestones', 'id')->where('project_id', $column->project_id)],
-            'assignee_id' => ['nullable', 'integer', Rule::exists('users', 'id')->where('tenant_id', $tenantId)],
+            // Only active staff (with a login) can be assigned — see ProjectController::assignees().
+            'assignee_id' => [
+                'nullable', 'integer',
+                Rule::exists('users', 'id')->where('tenant_id', $tenantId),
+                Rule::exists('tenant.staff', 'user_id')->where('status', Staff::STATUS_ACTIVE),
+            ],
             'label_ids' => ['sometimes', 'array'],
             'label_ids.*' => ['integer', Rule::exists('tenant.project_labels', 'id')],
         ];

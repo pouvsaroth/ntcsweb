@@ -9,7 +9,7 @@ import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
 import BaseSpinner from '@/components/ui/BaseSpinner.vue'
-import { adminUsersService } from '@/services/adminUsers'
+import SearchableSelect from '@/components/ui/SearchableSelect.vue'
 import {
   projectTaskCommentsService,
   projectTaskHistoryService,
@@ -20,6 +20,7 @@ import {
   projectTaskAttachmentsService,
   projectTaskChecklistItemsService,
   projectTaskDependenciesService,
+  projectsService,
   projectTasksService,
   type ProjectMilestone,
   type ProjectTask,
@@ -50,7 +51,19 @@ const auth = useAuthStore()
 
 const isEditing = computed(() => props.task != null)
 
-const assigneeOptions = ref<{ value: string; label: string }[]>([])
+const assignees = ref<{ value: string; label: string; hint?: string }[]>([])
+
+/**
+ * Active staff only (see ProjectController::assignees()) — plus, when editing
+ * a card whose assignee has since left, that person, so the field doesn't
+ * silently blank out; the backend still accepts re-saving them unchanged.
+ */
+const assigneeOptions = computed(() => {
+  const current = props.task?.assignee_id ? String(props.task.assignee_id) : ''
+  if (!current || assignees.value.some((option) => option.value === current)) return assignees.value
+
+  return [{ value: current, label: props.task?.assignee ?? `#${current}` }, ...assignees.value]
+})
 
 const priorityOptions = computed(() => [
   { value: 'low', label: t('admin.projects.priorityLow') },
@@ -78,8 +91,8 @@ const generalError = ref<string | null>(null)
 const submitting = ref(false)
 
 async function loadAssignees() {
-  const result = await adminUsersService.list({ page: 1, per_page: 100, sort: 'name' })
-  assigneeOptions.value = result.data.map((user) => ({ value: String(user.id), label: user.name }))
+  const result = await projectsService.assignees()
+  assignees.value = result.map((staff) => ({ value: String(staff.id), label: staff.name, hint: staff.employee_code ?? undefined }))
 }
 
 // --- Checklist/Subtasks ---
@@ -469,7 +482,7 @@ async function submit() {
           :label="t('admin.projects.taskPriority')"
           :error="errors.priority?.[0]"
         />
-        <BaseSelect
+        <SearchableSelect
           v-model="form.assignee_id"
           :options="assigneeOptions"
           :placeholder="t('admin.projects.taskUnassigned')"

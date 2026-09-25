@@ -96,6 +96,7 @@ const km: MessageSchema = {
     lookupLoadFailed: 'មិនអាចផ្ទុកជម្រើសបានទេ។',
     noRecordsFound: 'រកមិនឃើញទិន្នន័យទេ។',
     searchPlaceholder: 'ស្វែងរក…',
+    noResults: 'រកមិនឃើញ',
     selectAll: 'ជ្រើសរើសទាំងអស់',
     selectRow: 'ជ្រើសរើសជួរ',
     showingResults: 'បង្ហាញ {from}–{to} នៃ {total}',

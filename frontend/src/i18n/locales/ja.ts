@@ -96,6 +96,7 @@ const ja: MessageSchema = {
     lookupLoadFailed: '選択肢を読み込めませんでした。',
     noRecordsFound: 'データが見つかりませんでした。',
     searchPlaceholder: '検索…',
+    noResults: '一致する項目はありません',
     selectAll: 'すべて選択',
     selectRow: '行を選択',
     showingResults: '{total}件中 {from}–{to}件を表示',

@@ -1,4 +1,4 @@
-import { apiDelete, apiGetWithMeta, apiPost, apiPut } from '@/services/http'
+import { apiDelete, apiGet, apiGetWithMeta, apiPost, apiPut } from '@/services/http'
 import type { PaginatedQuery } from '@/composables/usePaginatedResource'
 import type { LengthAwarePaginationMeta, PaginatedResult } from '@/types/api'
 
@@ -117,7 +117,16 @@ export interface ProjectTaskInput {
   label_ids?: number[]
 }
 
+/** Active staff with a login — `id` is their user id, what ProjectTask.assignee_id stores. */
+export interface ProjectAssignee {
+  id: number
+  name: string
+  employee_code: string | null
+}
+
 export const projectsService = {
+  assignees: () => apiGet<ProjectAssignee[]>('/projects/assignees'),
+
   async list(query: Partial<PaginatedQuery> = {}): Promise<PaginatedResult<Project>> {
     const result = await apiGetWithMeta<Project[]>('/projects', {
       params: { page: query.page, per_page: query.per_page ?? 50, sort: query.sort ?? '-created_at', filter: query.filter },

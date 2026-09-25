@@ -96,6 +96,7 @@ const zh: MessageSchema = {
     lookupLoadFailed: '无法加载选项。',
     noRecordsFound: '未找到相关记录。',
     searchPlaceholder: '搜索…',
+    noResults: '无匹配项',
     selectAll: '全选',
     selectRow: '选择该行',
     showingResults: '显示第 {from}–{to} 项，共 {total} 项',

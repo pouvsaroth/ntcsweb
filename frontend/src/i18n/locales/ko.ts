@@ -96,6 +96,7 @@ const ko: MessageSchema = {
     lookupLoadFailed: '옵션을 불러올 수 없습니다.',
     noRecordsFound: '검색 결과가 없습니다.',
     searchPlaceholder: '검색…',
+    noResults: '일치하는 항목이 없습니다',
     selectAll: '전체 선택',
     selectRow: '행 선택',
     showingResults: '전체 {total}건 중 {from}–{to}건 표시',

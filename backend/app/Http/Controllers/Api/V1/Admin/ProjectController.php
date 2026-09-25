@@ -10,6 +10,7 @@ use App\Http\Requests\Api\V1\Admin\UpdateProjectRequest;
 use App\Http\Resources\ProjectResource;
 use App\Http\Responses\ApiResponse;
 use App\Models\Project;
+use App\Models\Staff;
 use App\Support\Query\ApiQuery;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -27,6 +28,31 @@ final class ProjectController extends Controller
             ->paginate();
 
         return ApiResponse::success(ProjectResource::collection($projects));
+    }
+
+    /**
+     * Who a task can be assigned to: active staff with a login account.
+     * `id` is the staff member's user id — ProjectTask.assignee_id points at
+     * users — labelled with their staff name. Gated on projects.view like
+     * the board itself, so it doesn't depend on staff.view/users.view.
+     */
+    public function assignees(): JsonResponse
+    {
+        $this->authorize('viewAny', Project::class);
+
+        $assignees = Staff::query()
+            ->where('status', Staff::STATUS_ACTIVE)
+            ->whereNotNull('user_id')
+            ->orderBy('first_name')
+            ->orderBy('last_name')
+            ->get(['user_id', 'first_name', 'last_name', 'employee_code'])
+            ->map(fn (Staff $staff) => [
+                'id' => $staff->user_id,
+                'name' => $staff->fullName(),
+                'employee_code' => $staff->employee_code,
+            ]);
+
+        return ApiResponse::success($assignees);
     }
 
     public function store(StoreProjectRequest $request): JsonResponse

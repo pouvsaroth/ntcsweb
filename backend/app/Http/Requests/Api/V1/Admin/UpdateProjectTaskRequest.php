@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Api\V1\Admin;
 
 use App\Models\ProjectTask;
+use App\Models\Staff;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -35,7 +36,16 @@ class UpdateProjectTaskRequest extends FormRequest
             'due_date' => ['nullable', 'date'],
             'estimated_hours' => ['nullable', 'numeric', 'min:0', 'max:9999.99'],
             'project_milestone_id' => ['nullable', 'integer', Rule::exists('tenant.project_milestones', 'id')->where('project_id', $task->project_id)],
-            'assignee_id' => ['nullable', 'integer', Rule::exists('users', 'id')->where('tenant_id', $tenantId)],
+            // Only active staff (with a login) can be assigned — see
+            // ProjectController::assignees(). Re-saving a card whose assignee
+            // has since left keeps them, instead of blocking every edit.
+            'assignee_id' => [
+                'nullable', 'integer',
+                Rule::exists('users', 'id')->where('tenant_id', $tenantId),
+                ...((int) $this->input('assignee_id') === $task->assignee_id
+                    ? []
+                    : [Rule::exists('tenant.staff', 'user_id')->where('status', Staff::STATUS_ACTIVE)]),
+            ],
             'label_ids' => ['sometimes', 'array'],
             'label_ids.*' => ['integer', Rule::exists('tenant.project_labels', 'id')],
         ];
