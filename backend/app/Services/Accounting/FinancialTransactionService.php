@@ -54,9 +54,13 @@ final class FinancialTransactionService
      * account can be resolved at all — Billing must keep working even
      * before Accounting is configured; see AccountingSettingsController.
      *
+     * `$actor` is null only for the one-time backfill of payments imported
+     * straight into the database (no staff member recorded them) — see
+     * the 2026_09_25_050000 tenant migration.
+     *
      * @return Collection<int, FinancialTransaction>
      */
-    public function recognizeIncomeForPayment(Payment $payment, User $actor): Collection
+    public function recognizeIncomeForPayment(Payment $payment, ?User $actor): Collection
     {
         if ($this->alreadyPosted($payment)) {
             return new Collection;
@@ -372,7 +376,7 @@ final class FinancialTransactionService
         float $amount,
         string $currency,
         ?string $description,
-        User $actor,
+        ?User $actor,
         ?string $referenceType = null,
         ?int $referenceId = null,
         ?FinancialTransaction $reverses = null,
@@ -389,7 +393,7 @@ final class FinancialTransactionService
             'reference_type' => $referenceType,
             'reference_id' => $referenceId,
             'reverses_transaction_id' => $reverses?->getKey(),
-            'created_by' => $actor->getKey(),
+            'created_by' => $actor?->getKey(),
         ]);
     }
 }
