@@ -85,8 +85,9 @@ class AccountingDashboardTest extends TestCase
         $this->setUpChartOfAccounts();
 
         $course = Product::factory()->create(['type' => ProductType::COURSE_FEE, 'price' => 100]);
+        $student = Student::factory()->create();
         $invoiceId = $this->postJson('/api/v1/invoices', [
-            'student_id' => Student::factory()->create()->id,
+            'student_id' => $student->id,
             'items' => [['product_id' => $course->id, 'quantity' => 1]],
         ])->assertCreated()->json('data.id');
 
@@ -102,6 +103,8 @@ class AccountingDashboardTest extends TestCase
         $this->assertSame([$yesterday, $today, $today, $today], array_column($response->json('data.items'), 'date'));
         $this->assertEquals([50, 30, 20, -20], array_column($response->json('data.items'), 'amount'));
         $this->assertEqualsWithDelta(80.0, $response->json('data.total'), 0.001);
+        // Not an enrollment invoice, so the product name stands in for the course.
+        $this->assertSame("{$student->fullName()} — {$course->name}", $response->json('data.items.0.description'));
     }
 
     public function test_the_dashboard_requires_the_accounting_dashboard_view_permission(): void
