@@ -34,6 +34,7 @@ class PaymentFactory extends Factory
         return $this->state([
             'invoice_id' => $invoice->getKey(),
             'student_id' => $invoice->student_id,
+            'currency' => $invoice->currency,
         ]);
     }
 }

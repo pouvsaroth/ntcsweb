@@ -2228,6 +2228,7 @@ const ja: MessageSchema = {
       columnNumber: '支払い番号',
       columnInvoice: '請求書',
       columnAmount: '金額',
+      columnCurrency: '通貨',
       columnMethod: '方法',
       columnStatus: 'ステータス',
       columnDate: '日付',

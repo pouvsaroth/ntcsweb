@@ -18,6 +18,7 @@ import {
   type PaymentStatusValue,
 } from '@/services/payments'
 import { ApiRequestError } from '@/types/api'
+import { formatMoney } from '@/utils/currency'
 import { formatDate } from '@/utils/date'
 
 const { t } = useI18n()
@@ -60,6 +61,7 @@ const columns = [
   { key: 'payment_number', label: t('admin.payments.columnNumber'), sortable: true },
   { key: 'invoice_number', label: t('admin.payments.columnInvoice') },
   { key: 'amount', label: t('admin.payments.columnAmount'), sortable: true, align: 'text-right' },
+  { key: 'currency', label: t('admin.payments.columnCurrency') },
   { key: 'payment_method', label: t('admin.payments.columnMethod') },
   { key: 'status', label: t('admin.payments.columnStatus') },
   { key: 'payment_date', label: t('admin.payments.columnDate'), sortable: true },
@@ -161,7 +163,7 @@ onMounted(() => fetch())
           {{ row.invoice_number ?? row.invoice_id }}
         </RouterLink>
       </template>
-      <template #cell-amount="{ row }">${{ row.amount.toFixed(2) }}</template>
+      <template #cell-amount="{ row }">{{ formatMoney(row.amount, row.currency) }}</template>
       <template #cell-payment_method="{ row }">{{ t(`admin.payments.method${toPascalCase(row.payment_method)}`) }}</template>
       <template #cell-status="{ row }">
         <BaseBadge :variant="statusVariant[row.status]">{{ t(`admin.payments.status${toPascalCase(row.status)}`) }}</BaseBadge>

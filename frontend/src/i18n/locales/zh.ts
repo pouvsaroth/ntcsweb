@@ -2227,6 +2227,7 @@ const zh: MessageSchema = {
       columnNumber: '付款编号',
       columnInvoice: '账单',
       columnAmount: '金额',
+      columnCurrency: '货币',
       columnMethod: '方式',
       columnStatus: '状态',
       columnDate: '日期',

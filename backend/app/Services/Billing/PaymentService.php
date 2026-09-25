@@ -76,6 +76,7 @@ final class PaymentService
                 'invoice_id' => $invoice->id,
                 'student_id' => $invoice->student_id,
                 'amount' => $amount,
+                'currency' => $invoice->currency,
                 'payment_method' => $data['payment_method'],
                 'payment_date' => $data['payment_date'] ?? now()->toDateString(),
                 'reference_number' => $data['reference_number'] ?? null,

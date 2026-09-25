@@ -2232,6 +2232,7 @@ const en = {
       columnNumber: 'Payment #',
       columnInvoice: 'Invoice',
       columnAmount: 'Amount',
+      columnCurrency: 'Currency',
       columnMethod: 'Method',
       columnStatus: 'Status',
       columnDate: 'Date',

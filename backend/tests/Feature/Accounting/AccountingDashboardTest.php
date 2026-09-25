@@ -70,6 +70,7 @@ class AccountingDashboardTest extends TestCase
         $this->postJson("/api/v1/invoices/{$invoiceId}/payments", ['amount' => 80000, 'payment_method' => PaymentMethod::CASH])->assertCreated();
 
         $this->assertSame('KHR', FinancialTransaction::query()->firstOrFail()->currency);
+        $this->assertSame('KHR', \App\Models\Payment::query()->firstOrFail()->currency);
 
         $response = $this->getJson('/api/v1/accounting/dashboard')->assertOk();
         $response->assertJsonPath('data.currency', 'KHR');

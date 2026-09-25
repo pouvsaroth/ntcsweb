@@ -17,6 +17,8 @@ export interface Payment {
   invoice_number?: string | null
   student_id: number
   amount: number
+  /** Always its invoice's currency. */
+  currency: 'USD' | 'KHR'
   payment_method: PaymentMethodValue
   status: PaymentStatusValue
   payment_date: string | null

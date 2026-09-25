@@ -24,10 +24,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $invoice_id
  * @property int $student_id
  * @property string $amount
+ * @property string $currency
  * @property string $status
  */
 #[Fillable([
-    'payment_number', 'invoice_id', 'student_id', 'amount', 'payment_method',
+    'payment_number', 'invoice_id', 'student_id', 'amount', 'currency', 'payment_method',
     'status', 'payment_date', 'reference_number', 'received_by', 'notes',
     'cancellation_reason', 'cancelled_by', 'cancelled_at',
 ])]

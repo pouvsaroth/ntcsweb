@@ -2228,6 +2228,7 @@ const km: MessageSchema = {
       columnNumber: 'លេខទូទាត់',
       columnInvoice: 'វិក្កយបត្រ',
       columnAmount: 'ចំនួនទឹកប្រាក់',
+      columnCurrency: 'រូបិយប័ណ្ណ',
       columnMethod: 'វិធី',
       columnStatus: 'ស្ថានភាព',
       columnDate: 'កាលបរិច្ឆេទ',

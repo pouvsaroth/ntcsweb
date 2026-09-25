@@ -2228,6 +2228,7 @@ const ko: MessageSchema = {
       columnNumber: '결제 번호',
       columnInvoice: '청구서',
       columnAmount: '금액',
+      columnCurrency: '통화',
       columnMethod: '방법',
       columnStatus: '상태',
       columnDate: '날짜',
