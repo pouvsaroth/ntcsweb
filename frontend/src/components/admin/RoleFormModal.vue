@@ -117,6 +117,7 @@ const MODULES: ModuleEntry[] = [
   { name: 'Enrollment card', group: 'Dashboard', actions: { view: 'dashboard.cards.enrollment' } },
   { name: 'Classes card', group: 'Dashboard', actions: { view: 'dashboard.cards.classes' } },
   { name: 'Student payment card', group: 'Dashboard', actions: { view: 'dashboard.cards.student-payment' } },
+  { name: 'Invoices card', group: 'Dashboard', actions: { view: 'dashboard.cards.invoices' } },
   { name: 'Student attendance card', group: 'Dashboard', actions: { view: 'dashboard.cards.student-attendance' } },
   { name: 'Teacher attendance card', group: 'Dashboard', actions: { view: 'dashboard.cards.teacher-attendance' } },
   { name: 'Registration pending card', group: 'Dashboard', actions: { view: 'dashboard.cards.registration-pending' } },

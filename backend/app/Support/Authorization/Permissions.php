@@ -526,6 +526,8 @@ final class Permissions
 
     public const DASHBOARD_CARDS_STUDENT_PAYMENT = 'dashboard.cards.student-payment';
 
+    public const DASHBOARD_CARDS_INVOICES = 'dashboard.cards.invoices';
+
     public const DASHBOARD_CARDS_STUDENT_ATTENDANCE = 'dashboard.cards.student-attendance';
 
     public const DASHBOARD_CARDS_TEACHER_ATTENDANCE = 'dashboard.cards.teacher-attendance';
@@ -586,6 +588,7 @@ final class Permissions
                 self::DASHBOARD_CARDS_ENROLLMENT => 'Show the Enrollment card',
                 self::DASHBOARD_CARDS_CLASSES => 'Show the Classes card',
                 self::DASHBOARD_CARDS_STUDENT_PAYMENT => 'Show the Student Payment card',
+                self::DASHBOARD_CARDS_INVOICES => 'Show the Invoices card',
                 self::DASHBOARD_CARDS_STUDENT_ATTENDANCE => 'Show the Student Attendance card',
                 self::DASHBOARD_CARDS_TEACHER_ATTENDANCE => 'Show the Teacher Attendance card',
                 self::DASHBOARD_CARDS_REGISTRATION_PENDING => 'Show the Registration Pending card',
@@ -998,7 +1001,7 @@ final class Permissions
 
         $allDashboardCards = [
             self::DASHBOARD_CARDS_REGISTER_STUDENT, self::DASHBOARD_CARDS_ENROLLMENT, self::DASHBOARD_CARDS_CLASSES,
-            self::DASHBOARD_CARDS_STUDENT_PAYMENT, self::DASHBOARD_CARDS_STUDENT_ATTENDANCE, self::DASHBOARD_CARDS_TEACHER_ATTENDANCE,
+            self::DASHBOARD_CARDS_STUDENT_PAYMENT, self::DASHBOARD_CARDS_INVOICES, self::DASHBOARD_CARDS_STUDENT_ATTENDANCE, self::DASHBOARD_CARDS_TEACHER_ATTENDANCE,
             self::DASHBOARD_CARDS_REGISTRATION_PENDING, self::DASHBOARD_CARDS_USERS, self::DASHBOARD_CARDS_ROLES,
         ];
 
