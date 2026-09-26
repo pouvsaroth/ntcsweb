@@ -50,6 +50,12 @@ final class PaymentController extends Controller
     {
         $payment = $this->payments->record($invoice, $request->validated(), $request->user());
 
+        // Amount 0 with a discount covering the whole balance: the invoice
+        // is settled, but there's no Payment to return.
+        if ($payment === null) {
+            return ApiResponse::success(['payment' => null, 'invoice_id' => $invoice->getKey()]);
+        }
+
         return ApiResponse::created(new PaymentResource($payment->load('invoice')));
     }
 

@@ -177,7 +177,8 @@ export const invoicesService = {
   notifications: (id: number) => apiGetWithMeta<NotificationLog[]>(`/invoices/${id}/notifications`).then((r) => r.data),
 
   recordPayment: (id: number, input: RecordPaymentInput) =>
-    apiPost<Payment>(`/invoices/${id}/payments`, {
+    // `payment` is null when a full discount settled the invoice with amount 0.
+    apiPost<Payment | { payment: null; invoice_id: number }>(`/invoices/${id}/payments`, {
       amount: Number(input.amount) || 0,
       payment_method: input.payment_method,
       payment_date: input.payment_date || undefined,

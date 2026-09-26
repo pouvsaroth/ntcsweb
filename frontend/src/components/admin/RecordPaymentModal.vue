@@ -51,7 +51,9 @@ watch(
   (_, previous) => {
     const previousBalance = Math.max(0, props.balance - (Number(previous) || 0))
     if (form.amount === '' || Number(form.amount) === Number(previousBalance.toFixed(2))) {
-      form.amount = balanceAfterDiscount.value > 0 ? balanceAfterDiscount.value.toFixed(2) : ''
+      // 0.00 when the discount covers everything (e.g. 100%) — the backend
+      // then settles the invoice by the discount alone.
+      form.amount = balanceAfterDiscount.value.toFixed(2)
     }
   },
 )

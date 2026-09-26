@@ -39,9 +39,12 @@ final class PaymentService
     ) {}
 
     /**
+     * Returns null when amount is 0 and the discount settles the whole
+     * balance — no Payment (and no ledger income) is recorded for that.
+     *
      * @param  array{amount:float, payment_method:string, payment_date?:string, reference_number?:string|null, notes?:string|null, discount?:float|null, discount_reason?:string|null}  $data
      */
-    public function record(Invoice $invoice, array $data, User $actor): Payment
+    public function record(Invoice $invoice, array $data, User $actor): ?Payment
     {
         return DB::transaction(function () use ($invoice, $data, $actor) {
             // Locked for the whole transaction: two concurrent payments
@@ -57,14 +60,22 @@ final class PaymentService
             $amount = round((float) $data['amount'], 2);
             $discount = round((float) ($data['discount'] ?? 0), 2);
 
-            // Must leave something to pay — a discount that settles the
-            // whole balance isn't a payment and has nothing to record here.
-            if ($discount > 0 && round($discount - (float) $invoice->balance, 2) >= 0) {
-                throw ValidationException::withMessages(['discount' => 'The discount must be less than the remaining balance of '.number_format((float) $invoice->balance, 2).'.']);
+            if ($discount > 0 && round($discount - (float) $invoice->balance, 2) > 0) {
+                throw ValidationException::withMessages(['discount' => 'The discount cannot exceed the remaining balance of '.number_format((float) $invoice->balance, 2).'.']);
             }
 
-            if ($amount <= 0) {
+            // A discount covering the whole remaining balance (e.g. 100%)
+            // leaves nothing to pay: amount 0 is allowed then, and only then.
+            $settlesBalance = $discount > 0 && round($discount - (float) $invoice->balance, 2) === 0.0;
+
+            if ($amount < 0 || ($amount == 0 && ! $settlesBalance)) {
                 throw ValidationException::withMessages(['amount' => 'The payment amount must be greater than zero.']);
+            }
+
+            if ($amount == 0) {
+                $this->settleByDiscount($invoice, $discount, $data['discount_reason'] ?? null);
+
+                return null;
             }
 
             $alreadyPaid = round((float) $invoice->payments()->completed()->sum('amount'), 2);
@@ -125,6 +136,27 @@ final class PaymentService
 
             return $payment->fresh();
         });
+    }
+
+    /** The amount-0 branch of record(): the discount alone brings the balance to 0, so the invoice becomes PAID. */
+    private function settleByDiscount(Invoice $invoice, float $discount, ?string $reason): void
+    {
+        $old = ['discount' => (float) $invoice->discount, 'status' => $invoice->status];
+
+        $invoice->update([
+            'discount' => round((float) $invoice->discount + $discount, 2),
+            'discount_reason' => $reason ?? $invoice->discount_reason,
+        ]);
+        $this->invoices->recalculate($invoice);
+
+        $this->audit->log(
+            AuditAction::INVOICE_UPDATED,
+            'Invoices',
+            $invoice,
+            old: $old,
+            new: ['discount' => (float) $invoice->discount, 'discount_reason' => $invoice->discount_reason, 'status' => $invoice->status],
+            description: "Settled invoice {$invoice->invoice_number} with a {$discount} {$invoice->currency} discount (nothing left to pay)",
+        );
     }
 
     public function cancel(Payment $payment, string $reason, User $actor): Payment

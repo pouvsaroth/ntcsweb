@@ -26,7 +26,8 @@ class StorePaymentRequest extends FormRequest
             // PaymentService, not here — that check needs a row lock inside
             // a transaction to be race-safe (see PaymentService::record()),
             // which a validation rule can't provide.
-            'amount' => ['required', 'numeric', 'min:0.01', 'max:999999.99'],
+            // 0 only when the discount settles the whole balance — see PaymentService::record().
+            'amount' => ['required', 'numeric', 'min:0', 'max:999999.99'],
             'payment_method' => ['required', Rule::in(PaymentMethod::all())],
             'payment_date' => ['nullable', 'date'],
             'reference_number' => ['nullable', 'string', 'max:100'],

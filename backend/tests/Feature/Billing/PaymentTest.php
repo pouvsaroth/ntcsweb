@@ -99,12 +99,45 @@ class PaymentTest extends TestCase
         $invoice->assertJsonPath('data.balance', 0);
     }
 
-    public function test_a_payment_discount_must_be_less_than_the_balance_and_is_rolled_back_on_failure(): void
+    public function test_a_full_discount_with_amount_zero_settles_the_invoice_without_a_payment(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::INVOICES_CREATE, Permissions::PAYMENTS_CREATE, Permissions::INVOICES_VIEW]);
         $invoiceId = $this->invoiceOf(100);
 
-        $this->postJson("/api/v1/invoices/{$invoiceId}/payments", ['amount' => 1, 'payment_method' => PaymentMethod::CASH, 'discount' => 100])
+        $this->postJson("/api/v1/invoices/{$invoiceId}/payments", [
+            'amount' => 0,
+            'payment_method' => PaymentMethod::CASH,
+            'discount' => 100,
+            'discount_reason' => 'SCHOLARSHIP',
+        ])->assertOk()->assertJsonPath('data.payment', null);
+
+        $this->getJson("/api/v1/invoices/{$invoiceId}")
+            ->assertJsonPath('data.status', InvoiceStatus::PAID)
+            ->assertJsonPath('data.total', 0)
+            ->assertJsonPath('data.balance', 0)
+            ->assertJsonPath('data.discount_reason', 'SCHOLARSHIP');
+        $this->assertSame(0, Payment::count());
+        $this->assertDatabaseHas('audit_logs', ['action' => AuditAction::INVOICE_UPDATED]);
+    }
+
+    public function test_amount_zero_is_rejected_unless_the_discount_covers_the_whole_balance(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::INVOICES_CREATE, Permissions::PAYMENTS_CREATE, Permissions::INVOICES_VIEW]);
+        $invoiceId = $this->invoiceOf(100);
+
+        $this->postJson("/api/v1/invoices/{$invoiceId}/payments", ['amount' => 0, 'payment_method' => PaymentMethod::CASH, 'discount' => 40])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('amount');
+
+        $this->getJson("/api/v1/invoices/{$invoiceId}")->assertJsonPath('data.discount', 0);
+    }
+
+    public function test_a_payment_discount_cannot_exceed_the_balance_and_is_rolled_back_on_failure(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::INVOICES_CREATE, Permissions::PAYMENTS_CREATE, Permissions::INVOICES_VIEW]);
+        $invoiceId = $this->invoiceOf(100);
+
+        $this->postJson("/api/v1/invoices/{$invoiceId}/payments", ['amount' => 1, 'payment_method' => PaymentMethod::CASH, 'discount' => 150])
             ->assertUnprocessable()
             ->assertJsonValidationErrors('discount');
 
