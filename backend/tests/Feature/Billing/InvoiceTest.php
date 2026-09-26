@@ -48,6 +48,36 @@ class InvoiceTest extends TestCase
         $response->assertJsonPath('data.invoice_number', fn ($number) => str_starts_with($number, 'INV-'.now()->year.'-'));
     }
 
+    public function test_the_list_search_covers_student_course_amount_status_and_date_not_just_the_number(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::INVOICES_CREATE, Permissions::INVOICES_VIEW]);
+
+        $make = function (array $student, string $productName, float $price): string {
+            return $this->postJson('/api/v1/invoices', [
+                'student_id' => Student::factory()->create($student)->id,
+                'due_date' => '2026-10-15',
+                'items' => [['product_id' => Product::factory()->create(['name' => $productName, 'price' => $price])->id, 'quantity' => 1]],
+            ])->assertCreated()->json('data.invoice_number');
+        };
+
+        $dara = $make(['first_name' => 'Dara', 'last_name' => 'Sok', 'student_code' => 'NTS-777001'], 'Microsoft Word', 12345);
+        $other = $make(['first_name' => 'Vanna', 'last_name' => 'Chan', 'student_code' => 'NTS-888002'], 'Graphic Design', 60);
+
+        $numbersFor = fn (string $term) => collect($this->getJson('/api/v1/invoices?search='.urlencode($term))->assertOk()->json('data'))
+            ->pluck('invoice_number')->all();
+
+        $this->assertSame([$dara], $numbersFor('Sok Dara'));
+        $this->assertSame([$dara], $numbersFor('dara'));
+        $this->assertSame([$dara], $numbersFor('777001'));
+        $this->assertSame([$dara], $numbersFor('microsoft'));
+        $this->assertSame([$dara], $numbersFor('12,345'));
+        $this->assertSame([$other], $numbersFor('graphic'));
+        $this->assertSame([$dara], $numbersFor($dara));
+        $this->assertEqualsCanonicalizing([$dara, $other], $numbersFor('15-10-2026'));
+        $this->assertEqualsCanonicalizing([$dara, $other], $numbersFor('issued'));
+        $this->assertSame([], $numbersFor('nobody-matches-this'));
+    }
+
     public function test_a_manual_invoice_can_record_a_payment_type(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::INVOICES_CREATE, Permissions::INVOICES_VIEW]);

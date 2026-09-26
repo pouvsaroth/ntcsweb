@@ -18,6 +18,7 @@ use App\Services\Billing\InvoicePdfService;
 use App\Services\Billing\InvoiceService;
 use App\Support\Query\ApiQuery;
 use App\Support\Tenancy\TenantContext;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -49,8 +50,11 @@ final class InvoiceController extends Controller
             $query->whereDate('invoice_date', '<=', $request->string('date_to')->toString());
         }
 
+        $this->applySearch($query, trim($request->string('search')->toString()));
+
+        // No ->searchable(): the search spans relations (student, course),
+        // which ApiQuery's plain-column search can't — see applySearch().
         $invoices = ApiQuery::for($query, $request)
-            ->searchable('invoice_number')
             ->filterable(['status', 'student_id', 'payment_type'])
             ->sortable(['invoice_number', 'invoice_date', 'due_date', 'total', 'balance', 'created_at'], default: '-created_at')
             ->paginate();
@@ -63,6 +67,59 @@ final class InvoiceController extends Controller
         $invoice = $this->invoices->create($request->validated(), $request->user());
 
         return ApiResponse::created(new InvoiceResource($invoice));
+    }
+
+    /**
+     * One search box over everything the Invoices list shows: invoice
+     * number, student (name either order, English name, code, phone), course
+     * (package, product, item description), payment type, status, currency,
+     * amounts (typed with or without thousands separators), dates as
+     * displayed (dd-mm-yyyy), plus notes and discount reason.
+     *
+     * @param  Builder<Invoice>  $query
+     */
+    private function applySearch(Builder $query, string $term): void
+    {
+        if ($term === '') {
+            return;
+        }
+
+        // Escape LIKE wildcards — same reason as ApiQuery::applySearch().
+        $like = '%'.addcslashes($term, '%_\\').'%';
+        // "Partially paid" / "partially_paid" both reach PARTIALLY_PAID.
+        $codeLike = '%'.addcslashes(str_replace(' ', '_', $term), '%_\\').'%';
+        $number = preg_replace('/[^0-9.]/', '', $term);
+
+        $query->where(function (Builder $inner) use ($like, $codeLike, $number) {
+            $inner->where('invoice_number', 'ILIKE', $like)
+                ->orWhere('status', 'ILIKE', $codeLike)
+                ->orWhere('payment_type', 'ILIKE', $codeLike)
+                ->orWhere('currency', 'ILIKE', $like)
+                ->orWhere('notes', 'ILIKE', $like)
+                ->orWhere('discount_reason', 'ILIKE', $like)
+                ->orWhereRaw("to_char(invoice_date, 'DD-MM-YYYY') ILIKE ?", [$like])
+                ->orWhereRaw("to_char(due_date, 'DD-MM-YYYY') ILIKE ?", [$like])
+                ->orWhereRaw("to_char(created_at, 'DD-MM-YYYY') ILIKE ?", [$like])
+                ->orWhereHas('student', fn (Builder $student) => $student
+                    ->where('student_code', 'ILIKE', $like)
+                    ->orWhere('english_name', 'ILIKE', $like)
+                    ->orWhere('phone', 'ILIKE', $like)
+                    ->orWhereRaw("concat_ws(' ', last_name, first_name) ILIKE ?", [$like])
+                    ->orWhereRaw("concat_ws(' ', first_name, last_name) ILIKE ?", [$like]))
+                ->orWhereHas('items', fn (Builder $item) => $item
+                    ->where('description', 'ILIKE', $like)
+                    ->orWhereHas('product', fn (Builder $product) => $product->where('name', 'ILIKE', $like))
+                    ->orWhereHasMorph('reference', [Enrollment::class], fn (Builder $enrollment) => $enrollment
+                        ->whereHas('coursePackage', fn (Builder $package) => $package->where('name', 'ILIKE', $like))));
+
+            // Only when the term has digits — "90" or "80,000" as shown in
+            // the list; without this guard every term would match any amount.
+            if ($number !== '' && $number !== '.') {
+                $amountLike = '%'.$number.'%';
+                $inner->orWhereRaw('total::text ILIKE ?', [$amountLike])
+                    ->orWhereRaw('balance::text ILIKE ?', [$amountLike]);
+            }
+        });
     }
 
     public function show(Invoice $invoice): JsonResponse
