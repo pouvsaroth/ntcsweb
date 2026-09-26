@@ -1,7 +1,15 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" translate="no">
   <head>
     <meta charset="UTF-8" />
+    <!--
+      The app has its own language switcher (vue-i18n). Browser page
+      translation (e.g. Chrome's "Translate this page") swaps Vue's text
+      nodes for its own <font> wrappers, so later locale changes update
+      nodes that are no longer on screen and the page looks stuck in one
+      language. Opt out so the in-app switcher always works.
+    -->
+    <meta name="google" content="notranslate" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>NTCSWEB</title>
