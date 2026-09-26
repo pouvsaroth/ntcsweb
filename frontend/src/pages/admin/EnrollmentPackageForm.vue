@@ -291,6 +291,32 @@ async function submitAndPrint() {
   }
 }
 
+// Remembers the last program used on this device, so staff entering several
+// enrollments in a row don't re-pick it every time. Per-browser convenience
+// only — storage can be unavailable (private mode), hence the try/catch.
+const LAST_PROGRAM_KEY = 'enrollment.lastProgramId'
+
+function rememberedProgramId(): number | null {
+  try {
+    const value = Number(localStorage.getItem(LAST_PROGRAM_KEY))
+    return Number.isFinite(value) && value > 0 ? value : null
+  } catch {
+    return null
+  }
+}
+
+watch(
+  () => form.academic_program_id,
+  (id) => {
+    if (id === null) return
+    try {
+      localStorage.setItem(LAST_PROGRAM_KEY, String(id))
+    } catch {
+      // Not important enough to surface.
+    }
+  },
+)
+
 onMounted(async () => {
   loading.value = true
   try {
@@ -299,6 +325,13 @@ onMounted(async () => {
       classesService.listAll(),
       coursePackagesService.listAll(),
     ])
+
+    // Pre-select a program so the form is ready to use on first load: the
+    // one used last time on this device if it's still active, else the first.
+    if (form.academic_program_id === null && programs.value.length > 0) {
+      const remembered = rememberedProgramId()
+      form.academic_program_id = programs.value.some((p) => p.id === remembered) ? remembered : programs.value[0].id
+    }
   } finally {
     loading.value = false
   }
