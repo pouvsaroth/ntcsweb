@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Middleware;
 
 use App\Models\User;
+use App\Services\Academic\StudentAccessService;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -16,6 +17,8 @@ use Symfony\Component\HttpFoundation\Response;
  */
 final class EnsureUserIsActive
 {
+    public function __construct(private readonly StudentAccessService $studentAccess) {}
+
     public function handle(Request $request, Closure $next): Response
     {
         $user = $request->user();
@@ -24,9 +27,14 @@ final class EnsureUserIsActive
             return $next($request);
         }
 
+        // A student whose post-studying grace period has just run out is
+        // switched off here too, not only by the next daily run.
+        $this->studentAccess->expireIfDue($user);
+
         if (! $user->isActive()) {
             return $this->deny(match ($user->status) {
                 User::STATUS_SUSPENDED => 'This account has been suspended.',
+                User::STATUS_INACTIVE => __('auth.inactive_student'),
                 User::STATUS_PENDING_APPROVAL => 'Your registration is still awaiting the school\'s approval.',
                 default => 'This account is not active.',
             });

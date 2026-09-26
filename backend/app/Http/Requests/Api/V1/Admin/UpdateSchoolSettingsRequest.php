@@ -61,6 +61,8 @@ class UpdateSchoolSettingsRequest extends FormRequest
             // date the dashboard/student popup should start alerting — see
             // Tenant::monthlyPaymentAlertDays().
             'monthly_payment_alert_days' => ['nullable', 'integer', 'min:1', 'max:60'],
+            // See Tenant::studentInactiveAfterDays().
+            'student_inactive_after_days' => ['nullable', 'integer', 'min:1', 'max:365'],
         ];
     }
 }

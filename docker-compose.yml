@@ -95,6 +95,32 @@ services:
       - postgres
       - redis
 
+  scheduler:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+
+    container_name: ntscweb_scheduler
+    restart: unless-stopped
+
+    working_dir: /var/www/html
+
+    # Same image/codebase as the `php` service — runs Laravel's scheduler
+    # (routes/console.php), e.g. the daily students:deactivate-idle job.
+    # Without it, scheduled commands never run at all.
+    command: php artisan schedule:work
+
+    volumes:
+      - ./backend:/var/www/html
+      - backend_vendor:/var/www/html/vendor
+
+    networks:
+      - ntscweb
+
+    depends_on:
+      - postgres
+      - redis
+
   nginx:
     image: nginx:alpine
     container_name: ntscweb_nginx

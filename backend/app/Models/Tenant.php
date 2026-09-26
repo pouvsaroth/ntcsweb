@@ -152,6 +152,15 @@ class Tenant extends Model implements TenantWithDatabase
     }
 
     /**
+     * How many days after a student's last Studying enrollment ends their
+     * account is switched to inactive — see StudentAccessService.
+     */
+    public function studentInactiveAfterDays(): int
+    {
+        return (int) ($this->setting('student_inactive_after_days') ?? 15);
+    }
+
+    /**
      * `logo` stores a bare disk path (see SchoolSettingsController) — this is
      * the one place that turns it into something an `<img>` tag can load.
      */

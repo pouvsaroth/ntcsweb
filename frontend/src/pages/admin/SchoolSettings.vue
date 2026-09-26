@@ -33,6 +33,7 @@ const form = reactive({
   default_currency: 'USD' as 'USD' | 'KHR',
   khqr_template: '',
   monthly_payment_alert_days: '',
+  student_inactive_after_days: '',
   exam_fee_amount: '',
 })
 const logoFile = ref<File | null>(null)
@@ -61,6 +62,7 @@ async function load() {
     form.default_currency = settings.default_currency
     form.khqr_template = settings.khqr_template ?? ''
     form.monthly_payment_alert_days = String(settings.monthly_payment_alert_days)
+    form.student_inactive_after_days = String(settings.student_inactive_after_days)
     form.exam_fee_amount = settings.exam_fee_amount ?? ''
     logoPreview.value = settings.logo_url
     stampPreview.value = settings.stamp_url
@@ -104,6 +106,7 @@ async function save() {
     form.default_currency = result.default_currency
     form.khqr_template = result.khqr_template ?? ''
     form.monthly_payment_alert_days = String(result.monthly_payment_alert_days)
+    form.student_inactive_after_days = String(result.student_inactive_after_days)
     form.exam_fee_amount = result.exam_fee_amount ?? ''
     logoPreview.value = result.logo_url
     logoFile.value = null
@@ -210,6 +213,15 @@ onMounted(load)
           :label="t('admin.school.monthlyPaymentAlertDaysLabel')"
           :hint="t('admin.school.monthlyPaymentAlertDaysHint')"
           :error="errors.monthly_payment_alert_days?.[0]"
+        />
+        <BaseInput
+          v-model="form.student_inactive_after_days"
+          type="number"
+          min="1"
+          max="365"
+          :label="t('admin.school.studentInactiveAfterDaysLabel')"
+          :hint="t('admin.school.studentInactiveAfterDaysHint')"
+          :error="errors.student_inactive_after_days?.[0]"
         />
         <BaseInput
           v-model="form.exam_fee_amount"

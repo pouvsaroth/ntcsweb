@@ -20,6 +20,24 @@ import type { User } from '@/types/models'
 import { formatDate } from '@/utils/date'
 
 const { t } = useI18n()
+
+const userStatusVariant: Record<User['status'], 'success' | 'warning' | 'danger' | 'neutral'> = {
+  active: 'success',
+  invited: 'neutral',
+  suspended: 'danger',
+  // Automatic — lifts itself once the student is Studying again (see the
+  // backend's StudentAccessService), so a softer colour than a suspension.
+  inactive: 'warning',
+  pending_approval: 'neutral',
+}
+
+const userStatusLabelKey: Record<User['status'], string> = {
+  active: 'admin.users.statusActive',
+  invited: 'admin.users.statusInvited',
+  suspended: 'admin.users.statusSuspended',
+  inactive: 'admin.users.statusInactive',
+  pending_approval: 'admin.users.statusPendingApproval',
+}
 const auth = useAuthStore()
 
 const { items, meta, loading, error, search, setSearch, setPage, setSort, sort, fetch } =
@@ -105,8 +123,8 @@ onMounted(() => fetch())
       <template #cell-created_at="{ row }">{{ formatDate(row.created_at) }}</template>
       <template #cell-email="{ row }">{{ row.email ?? row.phone ?? '—' }}</template>
       <template #cell-status="{ row }">
-        <BaseBadge :variant="row.status === 'active' ? 'success' : row.status === 'suspended' ? 'danger' : 'neutral'">
-          {{ row.status }}
+        <BaseBadge :variant="userStatusVariant[row.status] ?? 'neutral'">
+          {{ userStatusLabelKey[row.status] ? t(userStatusLabelKey[row.status]) : row.status }}
         </BaseBadge>
       </template>
       <template #cell-roles="{ row }">

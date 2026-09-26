@@ -24,6 +24,7 @@ export interface SchoolSettings {
   khqr_template: string | null
   /** How many days before a monthly-billed student's next payment is due the dashboard/student popup starts alerting. Always a number — the backend defaults it to 3. */
   monthly_payment_alert_days: number
+  student_inactive_after_days: number
   /** The school-wide default exam fee — used to default the Print modal's Fee field, and the exam application self-service flow's own fee snapshot. Null until an admin sets one. */
   exam_fee_amount: string | null
 }
@@ -39,6 +40,7 @@ export interface SchoolSettingsInput {
   khqr_template: string
   /** Empty string means "use the default" — omitted from the request rather than sent as 0/blank. */
   monthly_payment_alert_days: string
+  student_inactive_after_days: string
   /** Empty string means "not set yet" — omitted from the request rather than sent as 0/blank. Required before a student can self-submit an exam application (see ExamApplicationService::applyOnline()). */
   exam_fee_amount: string
   /** Omitted when the admin isn't replacing the logo. */
@@ -65,6 +67,7 @@ function toFormData(input: SchoolSettingsInput): FormData {
   form.append('default_currency', input.default_currency)
   if (input.khqr_template.trim()) form.append('khqr_template', input.khqr_template.trim())
   if (input.monthly_payment_alert_days.trim()) form.append('monthly_payment_alert_days', input.monthly_payment_alert_days.trim())
+  if (input.student_inactive_after_days.trim()) form.append('student_inactive_after_days', input.student_inactive_after_days.trim())
   if (input.exam_fee_amount.trim()) form.append('exam_fee_amount', input.exam_fee_amount.trim())
   if (input.logo) form.append('logo', input.logo)
   if (input.stamp) form.append('stamp', input.stamp)

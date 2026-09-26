@@ -49,7 +49,7 @@ export interface User {
   email: string | null
   phone: string | null
   avatar_url: string | null
-  status: 'active' | 'invited' | 'suspended'
+  status: 'active' | 'invited' | 'suspended' | 'inactive' | 'pending_approval'
   locale: string | null
   email_verified: boolean
   last_login_at: string | null

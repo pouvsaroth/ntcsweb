@@ -65,11 +65,32 @@ class User extends Authenticatable implements MustVerifyEmailContract
      */
     public const STATUS_PENDING_APPROVAL = 'pending_approval';
 
+    /**
+     * Switched off automatically — a student whose last Studying enrollment
+     * ended more than the school's grace period ago (see
+     * StudentAccessService). Distinct from STATUS_SUSPENDED so only this
+     * automatic state is ever automatically lifted again.
+     */
+    public const STATUS_INACTIVE = 'inactive';
+
+    /**
+     * Present on every instance, even one created in memory and never
+     * reloaded — EnsureUserIsActive reads studying_ended_at on every request
+     * (via StudentAccessService), and strict mode throws on a missing
+     * attribute.
+     */
+    protected $attributes = [
+        'studying_ended_at' => null,
+        'auto_deactivated_at' => null,
+    ];
+
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
             'last_login_at' => 'datetime',
+            'studying_ended_at' => 'datetime',
+            'auto_deactivated_at' => 'datetime',
             'password' => 'hashed',
         ];
     }

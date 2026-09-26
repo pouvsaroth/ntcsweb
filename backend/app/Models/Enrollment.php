@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Models\Concerns\Auditable;
+use App\Services\Academic\StudentAccessService;
 use App\Support\Audit\AuditAction;
 use Database\Factories\EnrollmentFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -14,6 +15,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Tenant-owned. Student <-> Class <-> Course Package: which package a
@@ -105,6 +107,33 @@ class Enrollment extends Model
         return [
             'enrolled_at' => 'date',
         ];
+    }
+
+    /**
+     * Keeps the student's login in step with whether they're still studying
+     * — see StudentAccessService. On the model, not in EnrollmentService,
+     * because status changes come from several paths (create, the status
+     * menu, cancel/transfer, imports). Deferred to commit so a rolled-back
+     * change never touches the (central) user row.
+     */
+    protected static function booted(): void
+    {
+        $sync = function (self $enrollment): void {
+            DB::connection('tenant')->afterCommit(function () use ($enrollment) {
+                $student = $enrollment->student()->first();
+
+                if ($student !== null) {
+                    app(StudentAccessService::class)->sync($student);
+                }
+            });
+        };
+
+        static::saved(function (self $enrollment) use ($sync) {
+            if ($enrollment->wasRecentlyCreated || $enrollment->wasChanged('status')) {
+                $sync($enrollment);
+            }
+        });
+        static::deleted($sync);
     }
 
     public function student(): BelongsTo

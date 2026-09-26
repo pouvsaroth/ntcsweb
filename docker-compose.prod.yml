@@ -73,6 +73,30 @@ services:
       - postgres
       - redis
 
+  scheduler:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+
+    container_name: ntcsweb_prod_scheduler
+    restart: unless-stopped
+
+    working_dir: /var/www/html
+
+    # Runs Laravel's scheduler (routes/console.php) — see docker-compose.yml.
+    command: php artisan schedule:work
+
+    volumes:
+      - ./backend:/var/www/html
+      - backend_vendor:/var/www/html/vendor
+
+    networks:
+      - ntcsweb
+
+    depends_on:
+      - postgres
+      - redis
+
   nginx:
     image: nginx:alpine
     container_name: ntcsweb_prod_nginx

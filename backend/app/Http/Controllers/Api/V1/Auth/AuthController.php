@@ -11,6 +11,7 @@ use App\Http\Requests\Api\V1\Auth\UpdateProfileRequest;
 use App\Http\Resources\UserResource;
 use App\Http\Responses\ApiResponse;
 use App\Models\User;
+use App\Services\Academic\StudentAccessService;
 use App\Services\Auth\AuthService;
 use App\Services\Billing\CurrencyConversionService;
 use App\Support\Audit\AuditAction;
@@ -47,6 +48,7 @@ final class AuthController extends Controller
         private readonly TenantContext $context,
         private readonly CurrencyConversionService $currencyConversion,
         private readonly AuditLogger $audit,
+        private readonly StudentAccessService $studentAccess,
     ) {}
 
     public function login(LoginRequest $request): JsonResponse
@@ -309,6 +311,15 @@ final class AuthController extends Controller
     private function finishLogin(Request $request, User $user): JsonResponse
     {
         $deviceName = $request->string('device_name')->trim()->toString();
+
+        // Every login path ends here, with the school resolved — the one
+        // place a student whose grace period ran out since the last daily
+        // run gets caught before a session/token is issued.
+        if ($this->studentAccess->expireIfDue($user)) {
+            throw ValidationException::withMessages([
+                'login' => __('auth.inactive_student'),
+            ]);
+        }
 
         $this->auth->ensureNoOtherActiveDevice($user, $deviceName !== '' ? $deviceName : null);
 
