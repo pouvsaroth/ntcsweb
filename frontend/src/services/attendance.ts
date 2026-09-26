@@ -1,5 +1,6 @@
 import { apiGetWithMeta, apiPost } from '@/services/http'
 import type { PaginatedQuery } from '@/composables/usePaginatedResource'
+import type { EnrollmentStatus } from '@/services/enrollments'
 import type { LengthAwarePaginationMeta, PaginatedResult } from '@/types/api'
 
 export type AttendanceStatusValue = 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED'
@@ -48,7 +49,9 @@ export interface AttendanceEntryInput {
 /** One row of the Attendance Summary tab — one enrolled student's totals over a date range. */
 export interface AttendanceSummaryRow {
   enrollment_id: number
+  status: EnrollmentStatus
   student: AttendanceStudent
+  school_class: { id: number; name: string } | null
   course_package: { id: number; name: string } | null
   present_days: number
   present_hours: number
@@ -84,9 +87,13 @@ export const attendanceService = {
     return { data: result.data, pagination: result.meta?.pagination as LengthAwarePaginationMeta }
   },
 
-  /** The Attendance Summary tab's data source — one row per student enrolled in the class. */
-  summary: (classId: number, params: { date_from: string; date_to: string; student_id?: number | null }) =>
-    apiGetWithMeta<AttendanceSummaryRow[]>(`/classes/${classId}/attendance-summary`, { params }).then((r) => r.data),
+  /**
+   * The Attendance Summary tab's data source — one row per enrollment.
+   * `class_id` omitted = every class. `status`: omitted = Studying only,
+   * 'all' = every status, or one enrollment status.
+   */
+  summary: (params: { class_id?: number; date_from: string; date_to: string; student_id?: number | null; status?: string }) =>
+    apiGetWithMeta<AttendanceSummaryRow[]>('/attendance-summary', { params }).then((r) => r.data),
 
   /** Student self-service — own records only, scoped server-side. */
   async myList(query: PaginatedQuery): Promise<PaginatedResult<AttendanceRecord>> {

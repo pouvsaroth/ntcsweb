@@ -278,6 +278,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('classes/{class}/attendance', [AttendanceController::class, 'roster'])->name('classes.attendance.roster');
         Route::post('classes/{class}/attendance', [AttendanceController::class, 'store'])->name('classes.attendance.store');
         Route::get('classes/{class}/attendance-summary', [AttendanceController::class, 'summary'])->name('classes.attendance.summary');
+        Route::get('attendance-summary', [AttendanceController::class, 'summaryAcrossClasses'])->name('attendance.summary');
 
         // Student-submitted leave/permission requests — approving one syncs
         // into AttendanceRecord (status Excused) via LeaveRequestService.

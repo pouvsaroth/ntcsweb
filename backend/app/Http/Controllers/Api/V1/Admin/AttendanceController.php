@@ -10,11 +10,13 @@ use App\Http\Resources\AttendanceRecordResource;
 use App\Http\Resources\AttendanceRosterEntryResource;
 use App\Http\Responses\ApiResponse;
 use App\Models\AttendanceRecord;
+use App\Models\Enrollment;
 use App\Models\SchoolClass;
 use App\Services\Academic\AttendanceService;
 use App\Support\Query\ApiQuery;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 final class AttendanceController extends Controller
 {
@@ -82,12 +84,33 @@ final class AttendanceController extends Controller
     /**
      * GET /classes/{class}/attendance-summary — per-student present/permission/
      * absent day+hour totals (plus total late minutes) for the class over a
-     * date range, the Attendance Summary tab's data source. Read-only, so it
-     * authorizes off the same ability as the history list rather than
-     * `recordAttendance` — a viewer who can't take attendance can still see
-     * the summary.
+     * date range. Read-only, so it authorizes off the same ability as the
+     * history list rather than `recordAttendance` — a viewer who can't take
+     * attendance can still see the summary.
      */
     public function summary(Request $request, SchoolClass $class): JsonResponse
+    {
+        return $this->respondWithSummary($request, $class->getKey());
+    }
+
+    /**
+     * GET /attendance-summary — the Attendance Summary tab's data source: the
+     * same as summary() above but with an optional `class_id` (absent = every
+     * class). The same viewAny ability already lets its holder list every
+     * class's records through index(), so this exposes nothing new.
+     */
+    public function summaryAcrossClasses(Request $request): JsonResponse
+    {
+        $request->validate(['class_id' => ['nullable', 'integer']]);
+
+        return $this->respondWithSummary($request, $request->filled('class_id') ? $request->integer('class_id') : null);
+    }
+
+    /**
+     * `status`: omitted = Studying only (the long-standing default), `all` =
+     * every status, or a comma-separated list of enrollment statuses.
+     */
+    private function respondWithSummary(Request $request, ?int $classId): JsonResponse
     {
         $this->authorize('viewAny', AttendanceRecord::class);
 
@@ -95,10 +118,27 @@ final class AttendanceController extends Controller
             'date_from' => ['required', 'date'],
             'date_to' => ['required', 'date', 'after_or_equal:date_from'],
             'student_id' => ['nullable', 'integer'],
+            'status' => ['nullable', 'string', 'max:200'],
         ]);
 
-        return ApiResponse::success(
-            $this->attendance->summarizeForClass($class, $data['date_from'], $data['date_to'], isset($data['student_id']) ? (int) $data['student_id'] : null)
-        );
+        $statuses = null;
+        if (($data['status'] ?? '') === 'all') {
+            $statuses = [];
+        } elseif (! empty($data['status'])) {
+            $statuses = array_values(array_filter(array_map('trim', explode(',', $data['status']))));
+            $valid = [...Enrollment::STATUSES_MANAGEABLE, Enrollment::STATUS_DROPPED];
+
+            if (array_diff($statuses, $valid) !== []) {
+                throw ValidationException::withMessages(['status' => 'Unknown enrollment status.']);
+            }
+        }
+
+        return ApiResponse::success($this->attendance->summarize(
+            $classId,
+            $data['date_from'],
+            $data['date_to'],
+            isset($data['student_id']) ? (int) $data['student_id'] : null,
+            $statuses,
+        ));
     }
 }

@@ -17,6 +17,7 @@ import {
   type AttendanceSummaryRow,
 } from '@/services/attendance'
 import { classesService, type SchoolClass } from '@/services/classes'
+import { enrollmentStatusesManageable, type EnrollmentStatus } from '@/services/enrollments'
 import { ApiRequestError } from '@/types/api'
 import { formatDate } from '@/utils/date'
 
@@ -52,12 +53,32 @@ function today(): string {
 
 const classes = ref<SchoolClass[]>([])
 const loadingClasses = ref(true)
-const classId = ref<number | null>(null)
+/** 'all' = every class (see AttendanceController::summaryAcrossClasses()). */
+const classId = ref<number | 'all' | null>(null)
 const studentId = ref<number | null>(null)
 const dateFrom = ref(firstOfThisMonth())
 const dateTo = ref(today())
 
-const classOptions = computed(() => classes.value.map((c) => ({ value: String(c.id), label: c.name })))
+const classOptions = computed(() => [
+  { value: 'all', label: t('admin.attendance.allClasses') },
+  ...classes.value.map((c) => ({ value: String(c.id), label: c.name })),
+])
+
+/** Enrollment status — 'active' (Studying) by default, the summary's long-standing scope. */
+const statusFilter = ref<EnrollmentStatus | 'all'>('active')
+const onlyAbsent = ref(false)
+
+function enrollmentStatusKey(status: EnrollmentStatus): string {
+  return status
+    .split('_')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join('')
+}
+
+const statusOptions = computed(() => [
+  { value: 'all', label: t('admin.attendance.allStudentStatuses') },
+  ...enrollmentStatusesManageable.map((status) => ({ value: status, label: t(`admin.enrollments.status${enrollmentStatusKey(status)}`) })),
+])
 const studentOptions = computed(() => {
   const seen = new Set<number>()
   const options = []
@@ -75,12 +96,58 @@ const rows = ref<AttendanceSummaryRow[]>([])
 const loading = ref(false)
 const loadError = ref<string | null>(null)
 
+/**
+ * Total hours missed: absent + permission (excused) + late minutes as hours
+ * — the figure the "total absence" filter below compares against.
+ */
+function totalAbsenceHours(row: AttendanceSummaryRow): number {
+  return Math.round((row.absent_hours + row.permission_hours + row.late_minutes / 60) * 10) / 10
+}
+
+/** e.g. ">=6", "<6", "= 4.5", or a bare "6" (meaning 6 hours or more). */
+const absenceHoursFilter = ref('')
+
+type Comparison = { op: '<' | '<=' | '>' | '>=' | '='; value: number }
+
+const absenceComparison = computed<Comparison | null | 'invalid'>(() => {
+  const text = absenceHoursFilter.value.trim()
+  if (text === '') return null
+  const match = /^(<=|>=|<|>|=)?\s*(\d+(?:\.\d+)?)$/.exec(text)
+  if (!match) return 'invalid'
+  return { op: (match[1] ?? '>=') as Comparison['op'], value: Number(match[2]) }
+})
+
+function matchesAbsence(row: AttendanceSummaryRow): boolean {
+  const comparison = absenceComparison.value
+  if (comparison === null || comparison === 'invalid') return true
+  const hours = totalAbsenceHours(row)
+  switch (comparison.op) {
+    case '<':
+      return hours < comparison.value
+    case '<=':
+      return hours <= comparison.value
+    case '>':
+      return hours > comparison.value
+    case '=':
+      return hours === comparison.value
+    default:
+      return hours >= comparison.value
+  }
+}
+
 const filteredRows = computed(() =>
-  studentId.value === null ? rows.value : rows.value.filter((row) => row.student.id === studentId.value),
+  rows.value.filter(
+    (row) =>
+      (studentId.value === null || row.student.id === studentId.value) &&
+      (!onlyAbsent.value || row.absent_days > 0) &&
+      matchesAbsence(row),
+  ),
 )
 
-const columns = [
+const columns = computed(() => [
   { key: 'student', label: t('admin.attendance.columnStudent') },
+  // Only needed when rows come from more than one class.
+  ...(classId.value === 'all' ? [{ key: 'school_class', label: t('admin.attendance.columnClass') }] : []),
   { key: 'course', label: t('admin.attendance.columnCourse') },
   { key: 'present_days', label: t('admin.attendance.columnPresentDays'), align: 'text-right' },
   { key: 'present_hours', label: t('admin.attendance.columnPresentHours'), align: 'text-right' },
@@ -89,7 +156,8 @@ const columns = [
   { key: 'absent_days', label: t('admin.attendance.columnAbsentDays'), align: 'text-right' },
   { key: 'absent_hours', label: t('admin.attendance.columnAbsentHours'), align: 'text-right' },
   { key: 'late_minutes', label: t('admin.attendance.columnLateMinutes'), align: 'text-right' },
-]
+  { key: 'total_absence_hours', label: t('admin.attendance.columnTotalAbsenceHours'), align: 'text-right' },
+])
 
 async function loadSummary() {
   if (!classId.value) {
@@ -100,7 +168,12 @@ async function loadSummary() {
   loading.value = true
   loadError.value = null
   try {
-    rows.value = await attendanceService.summary(classId.value, { date_from: dateFrom.value, date_to: dateTo.value })
+    rows.value = await attendanceService.summary({
+      class_id: classId.value === 'all' ? undefined : classId.value,
+      date_from: dateFrom.value,
+      date_to: dateTo.value,
+      status: statusFilter.value,
+    })
   } catch (error) {
     loadError.value = error instanceof ApiRequestError ? error.message : t('admin.attendance.loadFailed')
     rows.value = []
@@ -109,7 +182,7 @@ async function loadSummary() {
   }
 }
 
-watch([classId, dateFrom, dateTo], () => {
+watch([classId, dateFrom, dateTo, statusFilter], () => {
   studentId.value = null
   void loadSummary()
 })
@@ -170,14 +243,20 @@ onMounted(async () => {
     </div>
 
     <div class="mb-6 rounded-[--radius-card] border border-neutral-200 bg-white p-5">
-      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <BaseSelect
           :model-value="classId !== null ? String(classId) : ''"
           :options="classOptions"
           :disabled="loadingClasses"
           :placeholder="t('admin.attendance.selectClass')"
           :label="t('admin.attendance.class')"
-          @update:model-value="classId = $event ? Number($event) : null"
+          @update:model-value="classId = $event === 'all' ? 'all' : $event ? Number($event) : null"
+        />
+        <BaseSelect
+          :model-value="statusFilter"
+          :options="statusOptions"
+          :label="t('admin.attendance.filterStudentStatus')"
+          @update:model-value="statusFilter = ($event || 'active') as EnrollmentStatus | 'all'"
         />
         <BaseSelect
           :model-value="studentId !== null ? String(studentId) : ''"
@@ -188,6 +267,19 @@ onMounted(async () => {
         />
         <BaseInput v-model="dateFrom" type="date" :label="t('admin.attendance.dateFrom')" />
         <BaseInput v-model="dateTo" type="date" :label="t('admin.attendance.dateTo')" />
+      </div>
+      <div class="mt-4 grid grid-cols-1 items-start gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <BaseInput
+          v-model="absenceHoursFilter"
+          :label="t('admin.attendance.totalAbsenceFilter')"
+          :placeholder="t('admin.attendance.totalAbsenceFilterPlaceholder')"
+          :hint="absenceComparison === 'invalid' ? undefined : t('admin.attendance.totalAbsenceFilterHint')"
+          :error="absenceComparison === 'invalid' ? t('admin.attendance.totalAbsenceFilterInvalid') : undefined"
+        />
+        <label class="inline-flex items-center gap-2 text-sm text-neutral-700 sm:mt-8">
+          <input v-model="onlyAbsent" type="checkbox" class="rounded border-neutral-300 text-primary-600 focus:ring-primary-500" />
+          {{ t('admin.attendance.onlyAbsent') }}
+        </label>
       </div>
     </div>
 
@@ -206,6 +298,10 @@ onMounted(async () => {
             {{ row.student.name }}
           </button>
         </template>
+        <template #cell-total_absence_hours="{ row }">
+          <span class="font-medium" :class="totalAbsenceHours(row) > 0 ? 'text-danger-600' : 'text-neutral-700'">{{ totalAbsenceHours(row) }}</span>
+        </template>
+        <template #cell-school_class="{ row }">{{ row.school_class?.name ?? '—' }}</template>
         <template #cell-course="{ row }">{{ row.course_package?.name ?? '—' }}</template>
       </DataTable>
     </template>

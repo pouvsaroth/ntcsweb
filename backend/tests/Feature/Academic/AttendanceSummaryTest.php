@@ -18,7 +18,7 @@ use Tests\TestCase;
 /**
  * The Attendance Summary tab's data source — per-student present/permission/
  * absent day+hour totals over a date range, with LATE folded into "present"
- * and its own total-minutes-late figure. See AttendanceService::summarizeForClass().
+ * and its own total-minutes-late figure. See AttendanceService::summarize().
  */
 class AttendanceSummaryTest extends TestCase
 {
@@ -105,6 +105,56 @@ class AttendanceSummaryTest extends TestCase
         $response->assertOk();
         $response->assertJsonCount(1, 'data');
         $this->assertSame($enrollmentB->id, $response->json('data.0.enrollment_id'));
+    }
+
+    public function test_the_all_classes_summary_spans_every_class_with_each_rows_own_class_and_hours(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::ATTENDANCE_VIEW]);
+        $monday = $this->monday();
+
+        $evening = SchoolClass::factory()->create(['name' => 'A Evening']);
+        ClassSchedule::factory()->forClass($evening)->onDay(ClassSchedule::MONDAY)->at('18:00:00', '20:00:00')->create();
+        $morning = SchoolClass::factory()->create(['name' => 'B Morning']);
+        ClassSchedule::factory()->forClass($morning)->onDay(ClassSchedule::MONDAY)->at('08:00:00', '11:00:00')->create();
+
+        $inEvening = Enrollment::factory()->forClass($evening)->create();
+        $inMorning = Enrollment::factory()->forClass($morning)->create();
+        AttendanceRecord::factory()->forEnrollment($inEvening)->onDate($monday->toDateString())->status(AttendanceStatus::ABSENT)->create();
+        AttendanceRecord::factory()->forEnrollment($inMorning)->onDate($monday->toDateString())->status(AttendanceStatus::ABSENT)->create();
+
+        $response = $this->getJson("/api/v1/attendance-summary?date_from={$monday->toDateString()}&date_to={$monday->toDateString()}")->assertOk();
+
+        $rows = collect($response->json('data'))->keyBy('enrollment_id');
+        $this->assertCount(2, $rows);
+        $this->assertSame('A Evening', $rows[$inEvening->id]['school_class']['name']);
+        // Hours come from each enrollment's own class schedule.
+        $this->assertEquals(2.0, $rows[$inEvening->id]['absent_hours']);
+        $this->assertEquals(3.0, $rows[$inMorning->id]['absent_hours']);
+
+        // class_id narrows it back to one class.
+        $this->getJson("/api/v1/attendance-summary?class_id={$morning->id}&date_from={$monday->toDateString()}&date_to={$monday->toDateString()}")
+            ->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.enrollment_id', $inMorning->id);
+    }
+
+    public function test_the_summary_can_be_filtered_by_enrollment_status(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::ATTENDANCE_VIEW]);
+        $class = SchoolClass::factory()->create();
+        $studying = Enrollment::factory()->forClass($class)->create(['status' => Enrollment::STATUS_ACTIVE]);
+        $completed = Enrollment::factory()->forClass($class)->create(['status' => Enrollment::STATUS_COMPLETED]);
+        $stopped = Enrollment::factory()->forClass($class)->create(['status' => Enrollment::STATUS_STOPPED]);
+
+        $ids = fn (string $query) => collect($this->getJson("/api/v1/attendance-summary?date_from=2026-01-01&date_to=2026-01-31{$query}")->assertOk()->json('data'))
+            ->pluck('enrollment_id')->sort()->values()->all();
+
+        // Default stays Studying only.
+        $this->assertSame([$studying->id], $ids(''));
+        $this->assertSame([$completed->id], $ids('&status=completed'));
+        $this->assertSame(collect([$completed->id, $stopped->id])->sort()->values()->all(), $ids('&status=completed,stopped'));
+        $this->assertSame(collect([$studying->id, $completed->id, $stopped->id])->sort()->values()->all(), $ids('&status=all'));
+
+        $this->getJson('/api/v1/attendance-summary?date_from=2026-01-01&date_to=2026-01-31&status=bogus')
+            ->assertUnprocessable()->assertJsonValidationErrors('status');
     }
 
     public function test_summary_requires_the_attendance_view_permission(): void

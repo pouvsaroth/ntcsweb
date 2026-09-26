@@ -107,36 +107,39 @@ final class AttendanceService
     }
 
     /**
-     * One row per *currently active* enrollment in the class — same scope as
-     * {@see roster()} — not every enrollment ever made in it: a class that
-     * has run for years accumulates hundreds of dropped/completed
-     * enrollments, which would otherwise swamp the summary with all-zero
-     * rows for students no longer in the class. LATE is folded into
-     * "present" days/hours alongside a separate total of late minutes. Hours
-     * per day come from whichever {@see ClassSchedule} row matches that
+     * One row per enrollment, for one class or (classId null) every class.
+     * By default only Studying enrollments — same scope as {@see roster()} —
+     * not every enrollment ever made: a class that has run for years
+     * accumulates hundreds of dropped/completed enrollments, which would
+     * otherwise swamp the summary with all-zero rows. `$statuses` widens or
+     * changes that (the Attendance Summary's status filter); an empty array
+     * means every status. LATE is folded into "present" days/hours alongside
+     * a separate total of late minutes. Hours per day come from whichever
+     * {@see ClassSchedule} row of the enrollment's own class matches that
      * date's weekday, not a single fixed class duration — see
      * ClassSchedule's docblock for why a class can have a different
      * duration on different days.
      *
+     * @param  list<string>|null  $statuses  null = Studying only; [] = all
      * @return list<array{
-     *     enrollment_id:int, student:array, course_package:array|null,
+     *     enrollment_id:int, status:string, student:array, school_class:array|null, course_package:array|null,
      *     present_days:int, present_hours:float,
      *     permission_days:int, permission_hours:float,
      *     absent_days:int, absent_hours:float,
      *     late_minutes:int,
      * }>
      */
-    public function summarizeForClass(SchoolClass $class, string $dateFrom, string $dateTo, ?int $studentId = null): array
+    public function summarize(?int $classId, string $dateFrom, string $dateTo, ?int $studentId = null, ?array $statuses = null): array
     {
-        $minutesByWeekday = $class->schedules()->get()
-            ->groupBy('day_of_week')
-            ->map(fn ($rows) => $rows->sum(fn ($schedule) => abs(Carbon::parse($schedule->end_time)->diffInMinutes(Carbon::parse($schedule->start_time)))));
-
-        $enrollments = $class->enrollments()
-            ->active()
-            ->with(['student', 'coursePackage'])
+        $enrollments = Enrollment::query()
+            ->with(['student', 'coursePackage', 'schoolClass.schedules'])
+            ->when($classId !== null, fn ($query) => $query->where('class_id', $classId))
+            ->when($statuses === null, fn ($query) => $query->active())
+            ->when($statuses !== null && $statuses !== [], fn ($query) => $query->whereIn('status', $statuses))
             ->when($studentId, fn ($query) => $query->where('student_id', $studentId))
-            ->get();
+            ->get()
+            ->sortBy(fn (Enrollment $enrollment) => [$enrollment->schoolClass?->name ?? '', $enrollment->student?->fullName() ?? ''])
+            ->values();
 
         $recordsByEnrollment = AttendanceRecord::query()
             ->whereIn('enrollment_id', $enrollments->pluck('id'))
@@ -144,7 +147,15 @@ final class AttendanceService
             ->get()
             ->groupBy('enrollment_id');
 
-        return $enrollments->map(function (Enrollment $enrollment) use ($recordsByEnrollment, $minutesByWeekday) {
+        /** @var array<int, IlluminateSupportCollection<int, int>> $minutesByClass class id -> weekday -> minutes */
+        $minutesByClass = [];
+
+        return $enrollments->map(function (Enrollment $enrollment) use ($recordsByEnrollment, &$minutesByClass) {
+            $class = $enrollment->schoolClass;
+            $minutesByWeekday = $class === null ? collect() : ($minutesByClass[$class->id] ??= $class->schedules
+                ->groupBy('day_of_week')
+                ->map(fn ($rows) => $rows->sum(fn ($schedule) => abs(Carbon::parse($schedule->end_time)->diffInMinutes(Carbon::parse($schedule->start_time))))));
+
             $presentDays = $permissionDays = $absentDays = 0;
             $presentMinutes = $permissionMinutes = $absentMinutes = $lateMinutes = 0;
 
@@ -170,11 +181,13 @@ final class AttendanceService
 
             return [
                 'enrollment_id' => $enrollment->id,
+                'status' => $enrollment->status,
                 'student' => [
                     'id' => $enrollment->student->id,
                     'student_code' => $enrollment->student->student_code,
                     'name' => $enrollment->student->fullName(),
                 ],
+                'school_class' => $class ? ['id' => $class->id, 'name' => $class->name] : null,
                 'course_package' => $enrollment->coursePackage ? [
                     'id' => $enrollment->coursePackage->id,
                     'name' => $enrollment->coursePackage->name,
