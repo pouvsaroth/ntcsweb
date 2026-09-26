@@ -157,7 +157,9 @@ final class InvoiceService
             return $invoice->status;
         }
 
-        if ($total > 0 && $balance <= 0.004) {
+        // Includes a total of 0 — a fully (100%) discounted invoice owes
+        // nothing, so it's settled, not left sitting in the unpaid list.
+        if ($balance <= 0.004) {
             return InvoiceStatus::PAID;
         }
 

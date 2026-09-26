@@ -79,6 +79,65 @@ class PaymentTest extends TestCase
         $this->assertSame(1, Payment::count());
     }
 
+    public function test_a_discount_given_with_a_payment_reduces_the_invoice_total(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::INVOICES_CREATE, Permissions::PAYMENTS_CREATE, Permissions::INVOICES_VIEW]);
+        $invoiceId = $this->invoiceOf(100);
+
+        $this->postJson("/api/v1/invoices/{$invoiceId}/payments", [
+            'amount' => 90,
+            'payment_method' => PaymentMethod::CASH,
+            'discount' => 10,
+            'discount_reason' => 'SIBLING',
+        ])->assertCreated();
+
+        $invoice = $this->getJson("/api/v1/invoices/{$invoiceId}")->assertOk();
+        $invoice->assertJsonPath('data.status', InvoiceStatus::PAID);
+        $invoice->assertJsonPath('data.discount', 10);
+        $invoice->assertJsonPath('data.discount_reason', 'SIBLING');
+        $invoice->assertJsonPath('data.total', 90);
+        $invoice->assertJsonPath('data.balance', 0);
+    }
+
+    public function test_a_payment_discount_must_be_less_than_the_balance_and_is_rolled_back_on_failure(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::INVOICES_CREATE, Permissions::PAYMENTS_CREATE, Permissions::INVOICES_VIEW]);
+        $invoiceId = $this->invoiceOf(100);
+
+        $this->postJson("/api/v1/invoices/{$invoiceId}/payments", ['amount' => 1, 'payment_method' => PaymentMethod::CASH, 'discount' => 100])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('discount');
+
+        // Valid discount, but the amount overpays what's left after it — the
+        // discount must not survive the failed payment.
+        $this->postJson("/api/v1/invoices/{$invoiceId}/payments", ['amount' => 95, 'payment_method' => PaymentMethod::CASH, 'discount' => 10])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('amount');
+
+        $this->getJson("/api/v1/invoices/{$invoiceId}")
+            ->assertJsonPath('data.discount', 0)
+            ->assertJsonPath('data.total', 100);
+        $this->assertSame(0, Payment::count());
+    }
+
+    public function test_a_fully_discounted_invoice_is_paid_not_left_unpaid(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::INVOICES_CREATE, Permissions::INVOICES_VIEW]);
+        $student = Student::factory()->create();
+        $product = Product::factory()->create(['price' => 100]);
+
+        $invoiceId = $this->postJson('/api/v1/invoices', [
+            'student_id' => $student->id,
+            'discount' => 100,
+            'items' => [['product_id' => $product->id, 'quantity' => 1]],
+        ])->assertCreated()->json('data.id');
+
+        $this->getJson("/api/v1/invoices/{$invoiceId}")
+            ->assertJsonPath('data.total', 0)
+            ->assertJsonPath('data.balance', 0)
+            ->assertJsonPath('data.status', InvoiceStatus::PAID);
+    }
+
     public function test_a_payment_amount_must_be_greater_than_zero(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::INVOICES_CREATE, Permissions::PAYMENTS_CREATE]);

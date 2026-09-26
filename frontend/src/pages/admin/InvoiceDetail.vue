@@ -371,7 +371,7 @@ onMounted(load)
 
       <SendInvoiceModal v-model="sendModalOpen" :invoice-id="invoice.id" />
 
-      <RecordPaymentModal v-model="paymentModalOpen" :invoice-id="invoice.id" :balance="invoice.balance" @recorded="load" />
+      <RecordPaymentModal v-model="paymentModalOpen" :invoice-id="invoice.id" :balance="invoice.balance" :currency="invoice.currency" @recorded="load" />
     </template>
   </div>
 </template>

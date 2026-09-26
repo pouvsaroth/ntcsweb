@@ -39,7 +39,7 @@ final class PaymentService
     ) {}
 
     /**
-     * @param  array{amount:float, payment_method:string, payment_date?:string, reference_number?:string|null, notes?:string|null}  $data
+     * @param  array{amount:float, payment_method:string, payment_date?:string, reference_number?:string|null, notes?:string|null, discount?:float|null, discount_reason?:string|null}  $data
      */
     public function record(Invoice $invoice, array $data, User $actor): Payment
     {
@@ -55,6 +55,13 @@ final class PaymentService
             }
 
             $amount = round((float) $data['amount'], 2);
+            $discount = round((float) ($data['discount'] ?? 0), 2);
+
+            // Must leave something to pay — a discount that settles the
+            // whole balance isn't a payment and has nothing to record here.
+            if ($discount > 0 && round($discount - (float) $invoice->balance, 2) >= 0) {
+                throw ValidationException::withMessages(['discount' => 'The discount must be less than the remaining balance of '.number_format((float) $invoice->balance, 2).'.']);
+            }
 
             if ($amount <= 0) {
                 throw ValidationException::withMessages(['amount' => 'The payment amount must be greater than zero.']);
@@ -65,8 +72,20 @@ final class PaymentService
             // A small epsilon absorbs float/decimal rounding noise without
             // opening the door to a real overpayment — see the class rule
             // "total payments <= invoice total" (no overpayment support yet).
-            if (round($alreadyPaid + $amount - (float) $invoice->total, 2) > 0.01) {
-                throw ValidationException::withMessages(['amount' => 'This payment would exceed the invoice total. Remaining balance: '.number_format((float) $invoice->balance, 2)]);
+            // Measured against the total *after* this payment's discount.
+            // The discount itself is only written once every check has
+            // passed: the invoice lives on the tenant connection, which the
+            // surrounding DB::transaction() doesn't cover, so a later throw
+            // would not roll an earlier invoice write back.
+            if (round($alreadyPaid + $amount - ((float) $invoice->total - $discount), 2) > 0.01) {
+                throw ValidationException::withMessages(['amount' => 'This payment would exceed the invoice total. Remaining balance: '.number_format((float) $invoice->balance - $discount, 2)]);
+            }
+
+            if ($discount > 0) {
+                $invoice->update([
+                    'discount' => round((float) $invoice->discount + $discount, 2),
+                    'discount_reason' => $data['discount_reason'] ?? $invoice->discount_reason,
+                ]);
             }
 
             $tenant = $this->context->getOrFail();
@@ -95,8 +114,11 @@ final class PaymentService
                     'amount' => $amount,
                     'currency' => $invoice->currency,
                     'payment_method' => $payment->payment_method,
+                    'discount' => $discount,
+                    'discount_reason' => $discount > 0 ? ($data['discount_reason'] ?? null) : null,
                 ],
-                description: "Recorded payment {$payment->payment_number} of {$amount} {$invoice->currency} for invoice {$invoice->invoice_number} via {$payment->payment_method}",
+                description: "Recorded payment {$payment->payment_number} of {$amount} {$invoice->currency} for invoice {$invoice->invoice_number} via {$payment->payment_method}"
+                    .($discount > 0 ? " with a {$discount} {$invoice->currency} discount" : ''),
             );
 
             $this->accounting->recognizeIncomeForPayment($payment, $actor);

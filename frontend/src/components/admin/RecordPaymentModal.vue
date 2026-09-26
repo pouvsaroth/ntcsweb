@@ -7,9 +7,11 @@ import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
-import { invoicesService } from '@/services/invoices'
+import LookupSelect from '@/components/ui/LookupSelect.vue'
+import { invoicesService, type Invoice } from '@/services/invoices'
 import { paymentMethods, type PaymentMethodValue } from '@/services/payments'
 import { ApiRequestError } from '@/types/api'
+import { formatMoney } from '@/utils/currency'
 
 /** yyyy-MM-dd in the viewer's local time — matches EnrollmentPackageForm's own helper. */
 function today(): string {
@@ -22,6 +24,7 @@ const props = defineProps<{
   invoiceId: number
   /** Pre-fills the amount field — the common case is a full payment. */
   balance: number
+  currency: Invoice['currency']
 }>()
 
 const emit = defineEmits<{ 'update:modelValue': [value: boolean]; recorded: [] }>()
@@ -34,7 +37,24 @@ const form = reactive({
   payment_date: today(),
   reference_number: '',
   notes: '',
+  discount_reason: '',
+  discount: '',
 })
+
+/** Same "Fee To Pay" line EnrollmentPackageForm shows under its discount fields. */
+const balanceAfterDiscount = computed(() => Math.max(0, props.balance - (Number(form.discount) || 0)))
+
+// Keeps the amount at "pay the rest in full" as the discount changes — the
+// common case — without clobbering an amount the user typed themselves.
+watch(
+  () => form.discount,
+  (_, previous) => {
+    const previousBalance = Math.max(0, props.balance - (Number(previous) || 0))
+    if (form.amount === '' || Number(form.amount) === Number(previousBalance.toFixed(2))) {
+      form.amount = balanceAfterDiscount.value > 0 ? balanceAfterDiscount.value.toFixed(2) : ''
+    }
+  },
+)
 
 const errors = ref<Record<string, string[]>>({})
 const generalError = ref<string | null>(null)
@@ -61,6 +81,8 @@ watch(
     form.payment_date = today()
     form.reference_number = ''
     form.notes = ''
+    form.discount_reason = ''
+    form.discount = ''
     errors.value = {}
     generalError.value = null
   },
@@ -97,12 +119,30 @@ async function submit() {
     <form class="space-y-4" @submit.prevent="submit">
       <BaseAlert v-if="generalError" variant="danger">{{ generalError }}</BaseAlert>
 
+      <LookupSelect
+        v-model="form.discount_reason"
+        category="DISCOUNT_REASON"
+        :label="t('admin.enrollments.discountReason')"
+        :error="errors.discount_reason?.[0]"
+      />
+      <BaseInput
+        v-model="form.discount"
+        type="number"
+        step="0.01"
+        :label="`${t('admin.enrollments.discountPrice')} (${currency})`"
+        :error="errors.discount?.[0]"
+      />
+      <div class="flex items-center justify-between border-t border-neutral-200 pt-3 text-sm">
+        <span class="font-medium text-neutral-700">{{ t('admin.enrollments.feeToPay') }}</span>
+        <span class="font-semibold text-neutral-900">{{ formatMoney(balanceAfterDiscount, currency) }}</span>
+      </div>
+
       <BaseInput
         v-model="form.amount"
         type="number"
         required
         :label="t('admin.invoices.amount')"
-        :hint="t('admin.invoices.amountHint', { balance: balance.toFixed(2) })"
+        :hint="t('admin.invoices.amountHint', { balance: balanceAfterDiscount.toFixed(2) })"
         :error="errors.amount?.[0]"
       />
       <BaseSelect

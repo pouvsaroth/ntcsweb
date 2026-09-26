@@ -31,6 +31,11 @@ class StorePaymentRequest extends FormRequest
             'payment_date' => ['nullable', 'date'],
             'reference_number' => ['nullable', 'string', 'max:100'],
             'notes' => ['nullable', 'string', 'max:1000'],
+            // Same pair EnrollmentPackageForm sends — an extra invoice-level
+            // discount granted at the till. Bounded against the balance in
+            // PaymentService for the same row-lock reason as `amount`.
+            'discount_reason' => ['nullable', 'string', 'max:50'],
+            'discount' => ['nullable', 'numeric', 'min:0', 'max:999999.99'],
         ];
     }
 }
