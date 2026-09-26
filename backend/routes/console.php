@@ -11,3 +11,4 @@ Artisan::command('inspire', function () {
 // Needs a scheduler running (`php artisan schedule:work`, or cron calling
 // `schedule:run` every minute) — see the `scheduler` service in docker-compose.
 Schedule::command('students:deactivate-idle')->timezone('Asia/Phnom_Penh')->dailyAt('01:00')->withoutOverlapping();
+Schedule::command('staff:sync-login-access')->timezone('Asia/Phnom_Penh')->dailyAt('01:05')->withoutOverlapping();

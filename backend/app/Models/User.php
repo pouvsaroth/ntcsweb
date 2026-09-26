@@ -173,6 +173,12 @@ class User extends Authenticatable implements MustVerifyEmailContract
         return $this->status === self::STATUS_ACTIVE;
     }
 
+    /** Why a STATUS_INACTIVE account is locked — the student rule (StudentAccessService) or staff HR status (StaffLoginAccessService). */
+    public function inactiveMessage(): string
+    {
+        return $this->studying_ended_at !== null ? __('auth.inactive_student') : __('auth.inactive');
+    }
+
     public function belongsToTenant(Tenant|int|null $tenant): bool
     {
         $id = $tenant instanceof Tenant ? $tenant->getKey() : $tenant;

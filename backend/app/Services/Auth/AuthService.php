@@ -89,7 +89,7 @@ final readonly class AuthService
             throw ValidationException::withMessages([
                 'login' => match ($user->status) {
                     User::STATUS_SUSPENDED => __('This account has been suspended.'),
-                    User::STATUS_INACTIVE => __('auth.inactive_student'),
+                    User::STATUS_INACTIVE => $user->inactiveMessage(),
                     User::STATUS_PENDING_APPROVAL => __('Your registration is still awaiting the school\'s approval.'),
                     default => __('This account is not yet active. Please check your email for an invitation.'),
                 },

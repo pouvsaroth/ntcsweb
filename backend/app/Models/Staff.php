@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Models\Concerns\Auditable;
+use App\Services\Auth\StaffLoginAccessService;
 use App\Support\Audit\AuditAction;
 use Database\Factories\StaffFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -15,6 +16,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -152,6 +154,17 @@ class Staff extends Model
 
     protected static function booted(): void
     {
+        // Only working staff (Active/Probation/On leave) may log in — see
+        // StaffLoginAccessService::CAN_LOG_IN. On the
+        // model so every path (status menu, quick edit, create, linking a
+        // login later) is covered; deferred to commit so a rolled-back change
+        // never touches the (central) user row.
+        static::saved(function (self $staff) {
+            if ($staff->wasRecentlyCreated || $staff->wasChanged(['status', 'user_id'])) {
+                DB::connection('tenant')->afterCommit(fn () => app(StaffLoginAccessService::class)->sync($staff));
+            }
+        });
+
         // Mirrors Student: a soft-deleted staff member still holds all three
         // files (recoverable); only a real, permanent removal takes them too.
         static::forceDeleted(function (self $staff) {

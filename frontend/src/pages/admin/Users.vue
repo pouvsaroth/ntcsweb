@@ -25,8 +25,9 @@ const userStatusVariant: Record<User['status'], 'success' | 'warning' | 'danger'
   active: 'success',
   invited: 'neutral',
   suspended: 'danger',
-  // Automatic — lifts itself once the student is Studying again (see the
-  // backend's StudentAccessService), so a softer colour than a suspension.
+  // Automatic — lifts itself once the student is Studying again or the staff
+  // member is Active again (see the backend's StudentAccessService and
+  // StaffLoginAccessService), so a softer colour than a suspension.
   inactive: 'warning',
   pending_approval: 'neutral',
 }

@@ -34,7 +34,7 @@ final class EnsureUserIsActive
         if (! $user->isActive()) {
             return $this->deny(match ($user->status) {
                 User::STATUS_SUSPENDED => 'This account has been suspended.',
-                User::STATUS_INACTIVE => __('auth.inactive_student'),
+                User::STATUS_INACTIVE => $user->inactiveMessage(),
                 User::STATUS_PENDING_APPROVAL => 'Your registration is still awaiting the school\'s approval.',
                 default => 'This account is not active.',
             });
