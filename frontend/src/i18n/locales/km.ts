@@ -481,6 +481,7 @@ const km: MessageSchema = {
       attendanceSection: 'វត្តមាន',
       statAbsentToday: 'អវត្តមានថ្ងៃនេះ',
       statAbsentYesterday: 'អវត្តមានម្សិលមិញ',
+      absentEmptyMessage: 'មិនមានសិស្សអវត្តមានទេ។',
       monthlyPaymentAlertsSection: 'ជិតដល់កំណត់ទូទាត់ប្រចាំខែ',
       monthlyPaymentAlertsViewAll: 'មើលទាំងអស់នៅក្នុងវិក្កយបត្រប្រចាំខែ',
     },

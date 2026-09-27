@@ -484,6 +484,7 @@ const en = {
       attendanceSection: 'Attendance',
       statAbsentToday: 'Absent Today',
       statAbsentYesterday: 'Absent Yesterday',
+      absentEmptyMessage: 'No students absent.',
       monthlyPaymentAlertsSection: 'Monthly Payment Due Soon',
       monthlyPaymentAlertsViewAll: 'View all in Monthly Invoice',
     },

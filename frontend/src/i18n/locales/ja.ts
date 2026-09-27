@@ -481,6 +481,7 @@ const ja: MessageSchema = {
       attendanceSection: '出席状況',
       statAbsentToday: '本日の欠席',
       statAbsentYesterday: '昨日の欠席',
+      absentEmptyMessage: '欠席した生徒はいません。',
       monthlyPaymentAlertsSection: 'まもなく月謝支払期日',
       monthlyPaymentAlertsViewAll: '月謝請求書ですべて見る',
     },

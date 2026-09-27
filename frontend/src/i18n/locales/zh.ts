@@ -480,6 +480,7 @@ const zh: MessageSchema = {
       attendanceSection: '考勤',
       statAbsentToday: '今日缺勤',
       statAbsentYesterday: '昨日缺勤',
+      absentEmptyMessage: '没有学生缺勤。',
       monthlyPaymentAlertsSection: '即将到期的月付款',
       monthlyPaymentAlertsViewAll: '在月付账单中查看全部',
     },

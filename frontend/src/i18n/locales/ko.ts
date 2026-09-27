@@ -481,6 +481,7 @@ const ko: MessageSchema = {
       attendanceSection: '출석',
       statAbsentToday: '오늘 결석',
       statAbsentYesterday: '어제 결석',
+      absentEmptyMessage: '결석한 학생이 없습니다.',
       monthlyPaymentAlertsSection: '곧 월별 결제 마감',
       monthlyPaymentAlertsViewAll: '월별 청구서에서 모두 보기',
     },
