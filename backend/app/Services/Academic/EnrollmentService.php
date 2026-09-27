@@ -19,6 +19,7 @@ use App\Support\Audit\AuditLogger;
 use App\Support\Billing\PaymentMethod;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -295,17 +296,28 @@ final class EnrollmentService
     /**
      * `{student_code}-{NN}`, e.g. a student `NTS-000008`'s first enrollment
      * is `NTS-000008-01`, second is `NTS-000008-02` — every new Enrollment
-     * row (including one created by transferClass()) advances the count.
+     * row (including one created by transferClass()) advances the sequence.
      * Locking the student row (not just relying on the caller's own
      * transaction) is what makes two concurrent enrollments for the same
      * student serialize instead of racing to the same sequence number.
+     *
+     * The next number is the highest suffix already used, not a row count —
+     * a student whose enrollment history has a gap (any row created outside
+     * this method, or removed) would otherwise have `count()+1` collide with
+     * a code that already exists, which fails the whole enrollment with a
+     * raw unique-constraint 500 instead of just skipping the taken number.
      */
     private function generateEnrollmentCode(int $studentId): string
     {
         $student = Student::query()->whereKey($studentId)->lockForUpdate()->firstOrFail();
-        $sequence = Enrollment::query()->where('student_id', $studentId)->count() + 1;
 
-        return sprintf('%s-%02d', $student->student_code, $sequence);
+        $lastSequence = Enrollment::query()
+            ->where('student_id', $studentId)
+            ->pluck('enrollments_code')
+            ->map(fn (string $code) => (int) Str::afterLast($code, '-'))
+            ->max() ?? 0;
+
+        return sprintf('%s-%02d', $student->student_code, $lastSequence + 1);
     }
 
     private function assertEnrollable(SchoolClass $class, CoursePackage $package): void

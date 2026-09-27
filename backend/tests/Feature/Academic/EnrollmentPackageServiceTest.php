@@ -374,6 +374,38 @@ class EnrollmentPackageServiceTest extends TestCase
         $this->assertSame('96000.00', (string) Invoice::firstOrFail()->total);
     }
 
+    /**
+     * Regression: the code used to be `count(existing enrollments) + 1`,
+     * which collides the instant a student's enrollment history has a gap
+     * (any row whose code doesn't match its position — here, a single row
+     * already sitting at `-02` with no `-01`) — count() sees 1 row and
+     * proposes `-02` again, which the DB's unique index then turns into a
+     * raw 500 instead of a validation error. The new student_code with the
+     * highest suffix already used, not a count, must be what determines it.
+     */
+    public function test_a_gap_in_a_students_enrollment_codes_does_not_collide_on_the_next_one(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE]);
+        $this->setUpAcademicCatalog();
+        $student = Student::factory()->create();
+
+        Enrollment::factory()->forStudent($student)->forClass($this->computerEveningClass)->dropped()->create([
+            'course_package_id' => $this->msWordPackage->id,
+            'academic_program_id' => $this->computerProgram->id,
+            'enrollments_code' => "{$student->student_code}-02",
+        ]);
+
+        $response = $this->postJson('/api/v1/enrollments/package', [
+            'student_id' => $student->id,
+            'class_id' => $this->computerEveningClass->id,
+            'course_package_id' => $this->msWordPackage->id,
+            'fee_type' => 'term',
+        ]);
+
+        $response->assertCreated();
+        $response->assertJsonPath('data.enrollments_code', "{$student->student_code}-03");
+    }
+
     public function test_it_refuses_to_enroll_when_the_school_has_no_currency_rate_to_convert_with(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE]);
