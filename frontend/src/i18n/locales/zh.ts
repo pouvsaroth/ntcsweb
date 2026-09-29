@@ -99,6 +99,8 @@ const zh: MessageSchema = {
     noResults: '无匹配项',
     selectAll: '全选',
     selectRow: '选择该行',
+    selectedCount: '已选择 {count} 项',
+    clearSelection: '清除选择',
     showingResults: '显示第 {from}–{to} 项，共 {total} 项',
     previousPage: '上一页',
     pageNumber: '第 {n} 页',

@@ -7,6 +7,7 @@ import InvoicesTabs from '@/components/admin/InvoicesTabs.vue'
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
+import BaseMultiSelect from '@/components/ui/BaseMultiSelect.vue'
 import BasePagination from '@/components/ui/BasePagination.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
 import DataTable from '@/components/ui/DataTable.vue'
@@ -28,10 +29,11 @@ const { items, meta, loading, error, setPage, setSort, sort, setSearch, setFilte
   invoicesService.list(query),
 )
 
-// Defaults to Issued (shown to staff as "unpaid" — see the km translation)
-// rather than every invoice, so the list opens on what actually needs
-// action instead of burying it under settled/cancelled ones.
-const selectedStatus = ref('ISSUED')
+// Defaults to Issued + Partially Paid (shown to staff as "unpaid"/"partially
+// paid" — see the km translation) rather than every invoice, so the list
+// opens on what actually needs action instead of burying it under
+// settled/cancelled ones.
+const selectedStatuses = ref<string[]>(['ISSUED', 'PARTIALLY_PAID'])
 
 function statusKey(status: InvoiceStatusValue): string {
   return status
@@ -53,9 +55,9 @@ const statusVariant: Record<InvoiceStatusValue, 'success' | 'warning' | 'danger'
 
 const statusFilterOptions = computed(() => invoiceStatuses.map((status) => ({ value: status, label: t(`admin.invoices.status${statusKey(status)}`) })))
 
-function onStatusFilterChange(value: string) {
-  selectedStatus.value = value
-  setFilter('status', value || undefined)
+function onStatusFilterChange(values: string[]) {
+  selectedStatuses.value = values
+  setFilter('status', values.length > 0 ? values.join(',') : undefined)
 }
 
 function paymentTypeKey(type: PaymentTypeValue): string {
@@ -77,6 +79,7 @@ function onPaymentTypeFilterChange(value: string) {
 }
 
 const columns = [
+  { key: 'actions', label: t('admin.invoices.columnActions') },
   { key: 'invoice_number', label: t('admin.invoices.columnNumber'), sortable: true },
   { key: 'student', label: t('admin.invoices.columnStudent') },
   { key: 'course', label: t('admin.invoices.monthlyColumnCourse') },
@@ -86,10 +89,9 @@ const columns = [
   { key: 'status', label: t('admin.invoices.columnStatus') },
   { key: 'due_date', label: t('admin.invoices.columnDueDate'), sortable: true },
   { key: 'created_at', label: t('admin.invoices.columnCreatedAt'), sortable: true },
-  { key: 'actions', label: t('admin.invoices.columnActions'), align: 'text-right' },
 ]
 
-onMounted(() => setFilter('status', selectedStatus.value || undefined))
+onMounted(() => setFilter('status', selectedStatuses.value.length > 0 ? selectedStatuses.value.join(',') : undefined))
 </script>
 
 <template>
@@ -105,8 +107,8 @@ onMounted(() => setFilter('status', selectedStatus.value || undefined))
         :placeholder="t('admin.invoices.searchPlaceholder')"
         @input="setSearch(($event.target as HTMLInputElement).value)"
       />
-      <BaseSelect
-        :model-value="selectedStatus"
+      <BaseMultiSelect
+        :model-value="selectedStatuses"
         :options="statusFilterOptions"
         :placeholder="t('admin.invoices.filterAllStatuses')"
         @update:model-value="onStatusFilterChange"
@@ -142,11 +144,9 @@ onMounted(() => setFilter('status', selectedStatus.value || undefined))
       <template #cell-due_date="{ row }">{{ formatDate(row.due_date) }}</template>
       <template #cell-created_at="{ row }">{{ formatDate(row.created_at) }}</template>
       <template #cell-actions="{ row }">
-        <div class="flex justify-end">
-          <RouterLink :to="`/admin/invoices/${row.id}`" class="text-sm font-medium text-primary-700 hover:text-primary-800">
-            {{ t('admin.invoices.view') }}
-          </RouterLink>
-        </div>
+        <RouterLink :to="`/admin/invoices/${row.id}`" class="text-sm font-medium text-primary-700 hover:text-primary-800">
+          {{ t('admin.invoices.view') }}
+        </RouterLink>
       </template>
     </DataTable>
 

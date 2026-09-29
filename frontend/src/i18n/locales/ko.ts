@@ -99,6 +99,8 @@ const ko: MessageSchema = {
     noResults: '일치하는 항목이 없습니다',
     selectAll: '전체 선택',
     selectRow: '행 선택',
+    selectedCount: '{count}개 선택됨',
+    clearSelection: '선택 해제',
     showingResults: '전체 {total}건 중 {from}–{to}건 표시',
     previousPage: '이전 페이지',
     pageNumber: '{n} 페이지',

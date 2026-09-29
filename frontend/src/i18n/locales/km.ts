@@ -99,6 +99,8 @@ const km: MessageSchema = {
     noResults: 'រកមិនឃើញ',
     selectAll: 'ជ្រើសរើសទាំងអស់',
     selectRow: 'ជ្រើសរើសជួរ',
+    selectedCount: 'បានជ្រើសរើស {count}',
+    clearSelection: 'សម្អាតការជ្រើសរើស',
     showingResults: 'បង្ហាញ {from}–{to} នៃ {total}',
     previousPage: 'ទំព័រមុន',
     pageNumber: 'ទំព័រ {n}',

@@ -99,6 +99,8 @@ const ja: MessageSchema = {
     noResults: '一致する項目はありません',
     selectAll: 'すべて選択',
     selectRow: '行を選択',
+    selectedCount: '{count}件選択中',
+    clearSelection: '選択を解除',
     showingResults: '{total}件中 {from}–{to}件を表示',
     previousPage: '前のページ',
     pageNumber: '{n} ページ目',

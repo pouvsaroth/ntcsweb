@@ -102,6 +102,8 @@ const en = {
     noResults: 'No matches',
     selectAll: 'Select all',
     selectRow: 'Select row',
+    selectedCount: '{count} selected',
+    clearSelection: 'Clear selection',
     showingResults: 'Showing {from}–{to} of {total}',
     previousPage: 'Previous page',
     nextPage: 'Next page',
