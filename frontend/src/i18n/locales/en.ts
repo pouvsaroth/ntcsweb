@@ -2075,6 +2075,7 @@ const en = {
     },
     myAttendance: {
       title: 'My Attendance',
+      onlyAbsent: 'Show only absent',
       columnDate: 'Date',
       columnClass: 'Class',
       columnFromTime: 'From Time',

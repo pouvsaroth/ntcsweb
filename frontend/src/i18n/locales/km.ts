@@ -2071,6 +2071,7 @@ const km: MessageSchema = {
     },
     myAttendance: {
       title: 'វត្តមានរបស់ខ្ញុំ',
+      onlyAbsent: 'បង្ហាញតែអវត្តមាន',
       columnDate: 'កាលបរិច្ឆេទ',
       columnClass: 'ថ្នាក់',
       columnFromTime: 'ម៉ោងចូល',

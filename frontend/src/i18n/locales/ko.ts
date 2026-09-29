@@ -2071,6 +2071,7 @@ const ko: MessageSchema = {
     },
     myAttendance: {
       title: '나의 출결',
+      onlyAbsent: '결석만 보기',
       columnDate: '날짜',
       columnClass: '학급',
       columnFromTime: '시작 시간',

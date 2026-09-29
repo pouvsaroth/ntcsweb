@@ -2071,6 +2071,7 @@ const ja: MessageSchema = {
     },
     myAttendance: {
       title: '自分の出欠',
+      onlyAbsent: '欠席のみ表示',
       columnDate: '日付',
       columnClass: 'クラス',
       columnFromTime: '開始時間',

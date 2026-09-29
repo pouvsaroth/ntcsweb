@@ -2070,6 +2070,7 @@ const zh: MessageSchema = {
     },
     myAttendance: {
       title: '我的考勤',
+      onlyAbsent: '仅显示缺勤',
       columnDate: '日期',
       columnClass: '班级',
       columnFromTime: '开始时间',
