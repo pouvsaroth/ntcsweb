@@ -5,6 +5,7 @@ import { useRoute } from 'vue-router'
 
 import AttendanceTabs from '@/components/admin/AttendanceTabs.vue'
 import BaseAlert from '@/components/ui/BaseAlert.vue'
+import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
@@ -20,6 +21,7 @@ import { classesService, type SchoolClass } from '@/services/classes'
 import { enrollmentStatusesManageable, type EnrollmentStatus } from '@/services/enrollments'
 import { ApiRequestError } from '@/types/api'
 import { formatDate } from '@/utils/date'
+import { exportTableAsImage } from '@/utils/tableImage'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -133,14 +135,68 @@ function matchesAbsence(row: AttendanceSummaryRow): boolean {
   }
 }
 
+/** Most hours still to make up first; ties by name. */
 const filteredRows = computed(() =>
-  rows.value.filter(
-    (row) =>
-      (studentId.value === null || row.student.id === studentId.value) &&
-      (!onlyAbsent.value || totalAbsenceHours(row) > 0) &&
-      matchesAbsence(row),
-  ),
+  rows.value
+    .filter(
+      (row) =>
+        (studentId.value === null || row.student.id === studentId.value) &&
+        (!onlyAbsent.value || totalAbsenceHours(row) > 0) &&
+        matchesAbsence(row),
+    )
+    .sort((a, b) => remainingHours(b) - remainingHours(a) || a.student.name.localeCompare(b.student.name)),
 )
+
+function enrollmentLabel(row: AttendanceSummaryRow): string {
+  return [row.course_package?.name, row.school_class?.name].filter(Boolean).join(' — ')
+}
+
+// --- Export as image ---------------------------------------------------------
+
+const exporting = ref(false)
+const exportError = ref<string | null>(null)
+
+/** What the image's subtitle says was included — class, student status, dates. */
+function filterSummary(): string {
+  const classLabel = classOptions.value.find((o) => o.value === String(classId.value))?.label ?? ''
+  const statusLabel = statusOptions.value.find((o) => o.value === statusFilter.value)?.label ?? ''
+  const dates =
+    dateFrom.value || dateTo.value
+      ? `${dateFrom.value ? formatDate(dateFrom.value) : '…'} – ${dateTo.value ? formatDate(dateTo.value) : '…'}`
+      : t('admin.attendance.allDays')
+  return [classLabel, statusLabel, dates, `${t('admin.attendance.exportedOn')} ${formatDate(new Date())}`].filter(Boolean).join('  ·  ')
+}
+
+async function exportImage() {
+  exporting.value = true
+  exportError.value = null
+  try {
+    await exportTableAsImage({
+      title: t('admin.attendance.summaryTitle'),
+      subtitle: filterSummary(),
+      columns: [
+        { label: t('admin.attendance.columnStudent'), width: 340 },
+        { label: t('admin.attendance.columnMissedHours'), align: 'right', width: 130 },
+        { label: t('admin.attendance.columnMakeUpHours'), align: 'right', width: 130 },
+        { label: t('admin.attendance.columnRemainingHours'), align: 'right', width: 130 },
+        { label: t('admin.attendance.columnPresentHours'), align: 'right', width: 130 },
+      ],
+      rows: filteredRows.value.map((row) => [
+        { text: row.student.name, subtext: enrollmentLabel(row) || undefined, bold: true },
+        { text: String(totalAbsenceHours(row)) },
+        { text: String(row.make_up_hours) },
+        { text: String(remainingHours(row)), alert: remainingHours(row) > REMAINING_HOURS_ALERT, bold: true },
+        { text: String(row.present_hours) },
+      ]),
+      emptyText: t('admin.attendance.summaryEmptyMessage'),
+      fileName: `attendance-summary-${new Date().toISOString().slice(0, 10)}.png`,
+    })
+  } catch {
+    exportError.value = t('admin.attendance.exportImageFailed')
+  } finally {
+    exporting.value = false
+  }
+}
 
 const columns = computed(() => [
   { key: 'student', label: t('admin.attendance.columnStudent') },
@@ -234,9 +290,14 @@ onMounted(async () => {
   <div>
     <AttendanceTabs />
 
-    <div class="mb-6">
-      <h1 class="text-xl font-semibold text-neutral-900">{{ t('admin.attendance.summaryTitle') }}</h1>
-      <p class="mt-1 text-sm text-neutral-500">{{ t('admin.attendance.summarySubtitle') }}</p>
+    <div class="mb-6 flex flex-wrap items-start justify-between gap-4">
+      <div>
+        <h1 class="text-xl font-semibold text-neutral-900">{{ t('admin.attendance.summaryTitle') }}</h1>
+        <p class="mt-1 text-sm text-neutral-500">{{ t('admin.attendance.summarySubtitle') }}</p>
+      </div>
+      <BaseButton variant="outline" :loading="exporting" :disabled="loading || !classId" @click="exportImage">
+        {{ t('admin.attendance.exportImage') }}
+      </BaseButton>
     </div>
 
     <div class="mb-6 rounded-[--radius-card] border border-neutral-200 bg-white p-5">
@@ -281,6 +342,7 @@ onMounted(async () => {
     </div>
 
     <BaseAlert v-if="loadError" variant="danger" class="mb-4">{{ loadError }}</BaseAlert>
+    <BaseAlert v-if="exportError" variant="danger" class="mb-4">{{ exportError }}</BaseAlert>
 
     <template v-if="classId">
       <DataTable
@@ -295,7 +357,7 @@ onMounted(async () => {
             {{ row.student.name }}
           </button>
           <!-- Which enrollment this row is — one student can be in several classes/courses. -->
-          <p class="text-xs text-neutral-400">{{ [row.course_package?.name, row.school_class?.name].filter(Boolean).join(' — ') || '—' }}</p>
+          <p class="text-xs text-neutral-400">{{ enrollmentLabel(row) || '—' }}</p>
         </template>
         <template #cell-missed_hours="{ row }">{{ totalAbsenceHours(row) }}</template>
         <template #cell-make_up_hours="{ row }">{{ row.make_up_hours }}</template>
