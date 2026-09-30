@@ -498,6 +498,7 @@ const en = {
       totalMakeUpHoursHint: 'Approved make-up class requests',
       totalHoursLeft: 'Total Hours Left',
       totalHoursLeftHint: 'Absent hours − make-up hours',
+      totalHoursLeftNote: '> 6 hours: the school requires a make-up class',
       hoursValue: '{hours} h',
       studentPayment: 'Student Payment',
       studentAttendance: 'Student Attendance',

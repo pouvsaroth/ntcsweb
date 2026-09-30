@@ -302,6 +302,7 @@ onMounted(() => {
             <p class="text-sm font-medium" :class="row.remaining_hours > REMAINING_HOURS_ALERT ? 'text-white/90' : 'text-neutral-500'">{{ t('admin.dashboard.totalHoursLeft') }}</p>
             <p class="mt-1 text-2xl font-semibold" :class="row.remaining_hours > REMAINING_HOURS_ALERT ? 'text-white' : 'text-neutral-900'">{{ formatHours(row.remaining_hours) }}</p>
             <p class="mt-1 text-xs" :class="row.remaining_hours > REMAINING_HOURS_ALERT ? 'text-white/80' : 'text-neutral-400'">{{ t('admin.dashboard.totalHoursLeftHint') }}</p>
+            <p class="mt-1 text-xs font-medium" :class="row.remaining_hours > REMAINING_HOURS_ALERT ? 'text-white' : 'text-danger-600'">{{ t('admin.dashboard.totalHoursLeftNote') }}</p>
           </div>
         </div>
       </div>

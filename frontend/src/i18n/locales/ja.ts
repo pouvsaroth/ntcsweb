@@ -495,6 +495,7 @@ const ja: MessageSchema = {
       totalMakeUpHoursHint: '承認済みの補講申請',
       totalHoursLeft: '残り時間の合計',
       totalHoursLeftHint: '欠席時間 − 補講時間',
+      totalHoursLeftNote: '6時間を超えると補講が必要です',
       hoursValue: '{hours} 時間',
       studentPayment: '生徒の支払い',
       studentAttendance: '生徒の出席',

@@ -494,6 +494,7 @@ const zh: MessageSchema = {
       totalMakeUpHoursHint: '已批准的补课申请',
       totalHoursLeft: '剩余总时数',
       totalHoursLeftHint: '缺勤时数 − 补课时数',
+      totalHoursLeftNote: '超过6小时，学校要求补课',
       hoursValue: '{hours} 小时',
       studentPayment: '学生缴费',
       studentAttendance: '学生考勤',

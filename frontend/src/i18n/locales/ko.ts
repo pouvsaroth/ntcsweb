@@ -495,6 +495,7 @@ const ko: MessageSchema = {
       totalMakeUpHoursHint: '승인된 보강 신청',
       totalHoursLeft: '총 남은 시간',
       totalHoursLeftHint: '결석 시간 − 보강 시간',
+      totalHoursLeftNote: '6시간 초과 시 보강이 필요합니다',
       hoursValue: '{hours}시간',
       studentPayment: '학생 결제',
       studentAttendance: '학생 출석',
