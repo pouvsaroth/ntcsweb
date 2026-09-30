@@ -2116,6 +2116,7 @@ const km: MessageSchema = {
       columnAbsentHours: 'អវត្តមាន (ម៉ោង)',
       columnLateMinutes: 'មកយឺត (នាទី)',
       summaryEmptyMessage: 'គ្មានកំណត់ត្រាវត្តមានសម្រាប់ចន្លោះពេលនេះទេ។',
+      detailAbsentOnly: 'បង្ហាញតែអវត្តមាន (អវត្តមាន សុំច្បាប់ មកយឺត)',
       exportImage: 'នាំចេញជារូបភាព',
       exportImageFailed: 'មិនអាចនាំចេញរូបភាពបានទេ។',
       allDays: 'គ្រប់ថ្ងៃ',

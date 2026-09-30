@@ -242,8 +242,20 @@ const detailRecords = ref<AttendanceRecord[]>([])
 const detailLoading = ref(false)
 const detailError = ref<string | null>(null)
 
+/**
+ * On by default each time the popup opens. "Absent" here means the days
+ * behind the Absent(h) column — absent, permission and late — so the rows
+ * shown add up to that figure.
+ */
+const detailAbsentOnly = ref(true)
+const ABSENCE_STATUSES: AttendanceStatusValue[] = ['ABSENT', 'EXCUSED', 'LATE']
+const visibleDetailRecords = computed(() =>
+  detailAbsentOnly.value ? detailRecords.value.filter((record) => ABSENCE_STATUSES.includes(record.status)) : detailRecords.value,
+)
+
 async function openDetail(row: AttendanceSummaryRow) {
   detailRow.value = row
+  detailAbsentOnly.value = true
   detailOpen.value = true
   detailLoading.value = true
   detailError.value = null
@@ -380,9 +392,14 @@ onMounted(async () => {
     >
       <BaseAlert v-if="detailError" variant="danger" class="mb-4">{{ detailError }}</BaseAlert>
 
+      <label class="mb-3 inline-flex items-center gap-2 text-sm text-neutral-700">
+        <input v-model="detailAbsentOnly" type="checkbox" class="rounded border-neutral-300 text-primary-600 focus:ring-primary-500" />
+        {{ t('admin.attendance.detailAbsentOnly') }}
+      </label>
+
       <div v-if="detailLoading" class="py-8 text-center text-sm text-neutral-400">{{ t('common.loading') }}</div>
 
-      <table v-else-if="detailRecords.length > 0" class="w-full text-left text-sm">
+      <table v-else-if="visibleDetailRecords.length > 0" class="w-full text-left text-sm">
         <thead class="border-b border-neutral-200 text-neutral-500">
           <tr>
             <th class="py-2 pr-3 font-medium">{{ t('admin.attendance.columnDate') }}</th>
@@ -392,7 +409,7 @@ onMounted(async () => {
           </tr>
         </thead>
         <tbody class="divide-y divide-neutral-100">
-          <tr v-for="record in detailRecords" :key="record.id">
+          <tr v-for="record in visibleDetailRecords" :key="record.id">
             <td class="py-2 pr-3 text-neutral-700">{{ formatDate(record.date) }}</td>
             <td class="py-2 pr-3">
               <BaseBadge :variant="statusVariant[record.status]">{{ statusLabel(record.status) }}</BaseBadge>

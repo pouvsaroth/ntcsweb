@@ -2120,6 +2120,7 @@ const en = {
       columnAbsentHours: 'Absent (h)',
       columnLateMinutes: 'Late (m)',
       summaryEmptyMessage: 'No attendance records for this period.',
+      detailAbsentOnly: 'Show absent only (absent, permission, late)',
       exportImage: 'Export as image',
       exportImageFailed: 'Could not export the image.',
       allDays: 'All days',
