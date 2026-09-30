@@ -222,9 +222,10 @@ export const adminNav: AdminNavGroup[] = [
       { labelKey: 'adminNav.items.auditLogs', to: '/admin/audit-logs', permission: 'audit-logs.view' },
       { labelKey: 'adminNav.items.languages', to: '/admin/languages', permission: 'base-data.manage-languages' },
       { labelKey: 'adminNav.items.lookupCategories', to: '/admin/lookup-categories', permission: 'base-data.view' },
-      // Super Admin only — a school's database dump is that school's private
-      // data (see DatabaseBackupController). Opens on the Backup tab.
-      { labelKey: 'adminNav.items.backup', to: '/admin/database-backups', superAdminOnly: true },
+      // Super Admin: any database. database-backups.download (school-admin by
+      // default): only their own school's — see DatabaseBackupController.
+      // Opens on the Backup tab.
+      { labelKey: 'adminNav.items.backup', to: '/admin/database-backups', permission: 'database-backups.download' },
     ],
   },
   {

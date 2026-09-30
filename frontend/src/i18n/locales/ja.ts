@@ -1332,6 +1332,7 @@ const ja: MessageSchema = {
       emptyMessage: 'バックアップ可能なデータベースがありません。',
       download: 'ダウンロード',
       pageSubtitle: '中央データベースまたは各学校のデータベースをファイルにバックアップします。サーバーの認証情報は不要です。',
+      schoolSubtitle: '学校のデータベースをファイルにバックアップします。',
       backupTab: 'バックアップ',
       database: 'データベース',
       selectDatabase: 'データベースを選択',

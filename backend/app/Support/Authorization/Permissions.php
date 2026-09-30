@@ -193,6 +193,11 @@ final class Permissions
 
     public const MAKE_UP_CLASS_REQUESTS_REJECT = 'make-up-class-requests.reject';
 
+    // Settings > Backup for a school's own staff: download a backup of
+    // *their own* school's database only — a Super Admin can back up any
+    // database without it (see DatabaseBackupController).
+    public const DATABASE_BACKUPS_DOWNLOAD = 'database-backups.download';
+
     // Academic Years — a real, tenant-owned school year (e.g. "2026").
     public const ACADEMIC_YEARS_VIEW = 'academic-years.view';
 
@@ -709,6 +714,9 @@ final class Permissions
                 self::MAKE_UP_CLASS_REQUESTS_APPROVE => 'Approve make-up class requests',
                 self::MAKE_UP_CLASS_REQUESTS_REJECT => 'Reject make-up class requests',
             ],
+            'Database Backups' => [
+                self::DATABASE_BACKUPS_DOWNLOAD => "Back up this school's database",
+            ],
             'Academic Years' => [
                 self::ACADEMIC_YEARS_VIEW => 'View academic years',
                 self::ACADEMIC_YEARS_CREATE => 'Create academic years',
@@ -1062,6 +1070,7 @@ final class Permissions
                 self::MAKE_UP_CLASS_REQUESTS_VIEW,
                 self::MAKE_UP_CLASS_REQUESTS_APPROVE,
                 self::MAKE_UP_CLASS_REQUESTS_REJECT,
+                self::DATABASE_BACKUPS_DOWNLOAD,
                 self::STUDENT_FEEDBACK_VIEW,
                 self::STUDENT_FEEDBACK_REPLY,
                 self::EXAM_APPLICATIONS_VIEW,

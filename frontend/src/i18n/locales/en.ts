@@ -1336,6 +1336,7 @@ const en = {
       emptyMessage: 'No databases available to back up.',
       download: 'Download',
       pageSubtitle: 'Back up the central database or any school\'s own database to a file. No server credentials needed — this only ever reaches databases this app already manages.',
+      schoolSubtitle: 'Back up your school\'s database to a file.',
       backupTab: 'Backup',
       database: 'Database',
       selectDatabase: 'Select a database',

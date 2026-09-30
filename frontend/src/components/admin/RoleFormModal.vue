@@ -159,6 +159,7 @@ const MODULES: ModuleEntry[] = [
   // toggling either row flips the same checkbox.
   { name: 'Request Leave', group: 'Staff', actions: { view: 'my-requests.view' } },
   { name: 'Leave requests', group: 'Other', actions: { view: 'leave-requests.view', approve: 'leave-requests.approve', reject: 'leave-requests.reject' } },
+  { name: 'Backup (own school database)', group: 'Settings', actions: { view: 'database-backups.download' } },
   { name: 'Make-up class requests', group: 'Other', actions: { view: 'make-up-class-requests.view', approve: 'make-up-class-requests.approve', reject: 'make-up-class-requests.reject' } },
   { name: 'Resignation requests', group: 'Staff', actions: { view: 'resignation-requests.view', approve: 'resignation-requests.approve', reject: 'resignation-requests.reject' } },
   {

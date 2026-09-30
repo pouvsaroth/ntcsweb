@@ -1331,6 +1331,7 @@ const zh: MessageSchema = {
       emptyMessage: '没有可备份的数据库。',
       download: '下载',
       pageSubtitle: '将中央数据库或任一学校的数据库备份为文件。无需服务器凭据。',
+      schoolSubtitle: '将贵校的数据库备份为文件。',
       backupTab: '备份',
       database: '数据库',
       selectDatabase: '选择数据库',

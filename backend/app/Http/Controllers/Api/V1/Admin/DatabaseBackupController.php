@@ -7,6 +7,8 @@ namespace App\Http\Controllers\Api\V1\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponse;
 use App\Models\Tenant;
+use App\Support\Authorization\Permissions;
+use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Process;
@@ -22,14 +24,37 @@ use Symfony\Component\Process\Process as SymfonyProcess;
  * connection details from the request would turn this into a way to make
  * the server dump an arbitrary third-party Postgres server instead.
  *
- * Restricted to `isSuperAdmin()` directly rather than a permission, matching
- * TenantPolicy's own reasoning: every permission check here would just be
- * bypassed by Gate::before for a super admin anyway, and this must never be
- * grantable to anyone else — a tenant's own database is every other tenant's
- * private data boundary.
+ * Two levels of access. A Super Admin can back up the central database or
+ * any active school's. Anyone else needs Permissions::DATABASE_BACKUPS_DOWNLOAD
+ * (school-admin by default) and can only ever back up the school they are
+ * signed in to — never the central database, never another school's: a
+ * tenant's own database is every other tenant's private data boundary, so
+ * that restriction is enforced here, not just by what the page lists.
  */
 final class DatabaseBackupController extends Controller
 {
+    public function __construct(private readonly TenantContext $context) {}
+
+    /**
+     * Null = every database (Super Admin); otherwise the only school this
+     * user may back up. 403 when they may back up nothing.
+     */
+    private function ownTenantOrAll(Request $request): ?Tenant
+    {
+        $user = $request->user();
+
+        if ($user?->isSuperAdmin()) {
+            return null;
+        }
+
+        abort_unless($user?->hasPermission(Permissions::DATABASE_BACKUPS_DOWNLOAD), 403);
+
+        $tenant = $this->context->get();
+        abort_if($tenant === null || $tenant->status !== Tenant::STATUS_ACTIVE, 403);
+
+        return $tenant;
+    }
+
     /** @return array{host: string, port: int|string, username: string, password: string} */
     private function connectionCredentials(): array
     {
@@ -45,7 +70,16 @@ final class DatabaseBackupController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        abort_unless($request->user()?->isSuperAdmin(), 403);
+        $ownTenant = $this->ownTenantOrAll($request);
+
+        if ($ownTenant !== null) {
+            return ApiResponse::success([[
+                'type' => 'tenant',
+                'tenant_id' => $ownTenant->id,
+                'label' => $ownTenant->name,
+                'database' => $ownTenant->database()->getName(),
+            ]]);
+        }
 
         $databases = collect([[
             'type' => 'central',
@@ -66,7 +100,7 @@ final class DatabaseBackupController extends Controller
 
     public function download(Request $request): BinaryFileResponse
     {
-        abort_unless($request->user()?->isSuperAdmin(), 403);
+        $ownTenant = $this->ownTenantOrAll($request);
 
         $data = $request->validate([
             'type' => ['required', Rule::in(['central', 'tenant'])],
@@ -76,6 +110,12 @@ final class DatabaseBackupController extends Controller
                 Rule::exists('tenants', 'id')->where(fn ($query) => $query->where('status', Tenant::STATUS_ACTIVE)),
             ],
         ]);
+
+        // Only their own school — the central database and every other
+        // school's are Super Admin only.
+        if ($ownTenant !== null) {
+            abort_unless($data['type'] === 'tenant' && (int) $data['tenant_id'] === $ownTenant->id, 403);
+        }
 
         if ($data['type'] === 'central') {
             $databaseName = config('database.connections.pgsql.database');

@@ -414,9 +414,9 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         // why there is deliberately no store/update/destroy route here.
         Route::apiResource('audit-logs', AuditLogController::class)->only(['index', 'show']);
 
-        // Super Admin only (enforced in the controller, not a permission —
-        // see DatabaseBackupController's docblock for why): pg_dump the
-        // central database or any active tenant's, streamed straight back.
+        // Super Admin: the central database or any active school's. With
+        // database-backups.download: only the signed-in user's own school
+        // (enforced in DatabaseBackupController). Streamed straight back.
         Route::get('database-backups', [DatabaseBackupController::class, 'index'])->name('database-backups.index');
         Route::get('database-backups/download', [DatabaseBackupController::class, 'download'])->name('database-backups.download');
 

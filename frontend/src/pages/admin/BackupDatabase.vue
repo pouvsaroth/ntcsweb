@@ -7,6 +7,7 @@ import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
 import BaseSpinner from '@/components/ui/BaseSpinner.vue'
+import { useAuthStore } from '@/stores/auth'
 import { databaseBackupsService, type DatabaseBackupOption } from '@/services/databaseBackups'
 import { ApiRequestError } from '@/types/api'
 
@@ -26,6 +27,7 @@ const showSaveFilePicker = (window as unknown as { showSaveFilePicker?: SaveFile
 const canChooseLocation = typeof showSaveFilePicker === 'function'
 
 const { t } = useI18n()
+const auth = useAuthStore()
 
 const options = ref<DatabaseBackupOption[]>([])
 const loading = ref(true)
@@ -95,6 +97,8 @@ async function backup() {
 onMounted(async () => {
   try {
     options.value = await databaseBackupsService.list()
+    // A school admin only ever gets their own school — nothing to choose.
+    if (options.value.length === 1 && options.value[0]) selectedKey.value = keyFor(options.value[0])
   } catch (e) {
     loadError.value = e instanceof ApiRequestError ? e.message : t('admin.databaseBackups.loadFailed')
   } finally {
@@ -108,7 +112,9 @@ onMounted(async () => {
     <BackupTabs />
 
     <h1 class="text-xl font-semibold text-neutral-900">{{ t('admin.databaseBackups.title') }}</h1>
-    <p class="mt-1 text-sm text-neutral-500">{{ t('admin.databaseBackups.pageSubtitle') }}</p>
+    <p class="mt-1 text-sm text-neutral-500">
+      {{ auth.isSuperAdmin ? t('admin.databaseBackups.pageSubtitle') : t('admin.databaseBackups.schoolSubtitle') }}
+    </p>
 
     <BaseSpinner v-if="loading" class="mx-auto mt-8" />
     <BaseAlert v-else-if="loadError" variant="danger" class="mt-6">{{ loadError }}</BaseAlert>

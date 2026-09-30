@@ -1332,6 +1332,7 @@ const ko: MessageSchema = {
       emptyMessage: '백업할 수 있는 데이터베이스가 없습니다.',
       download: '다운로드',
       pageSubtitle: '중앙 데이터베이스 또는 각 학교의 데이터베이스를 파일로 백업합니다. 서버 자격 증명이 필요하지 않습니다.',
+      schoolSubtitle: '학교 데이터베이스를 파일로 백업합니다.',
       backupTab: '백업',
       database: '데이터베이스',
       selectDatabase: '데이터베이스 선택',
