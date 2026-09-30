@@ -50,6 +50,7 @@ use App\Http\Controllers\Api\V1\Admin\LanguageController;
 use App\Http\Controllers\Api\V1\Admin\LeaveRequestController;
 use App\Http\Controllers\Api\V1\Admin\LookupCategoryController;
 use App\Http\Controllers\Api\V1\Admin\LookupValueController;
+use App\Http\Controllers\Api\V1\Admin\MakeUpClassRequestController;
 use App\Http\Controllers\Api\V1\Admin\MonthlyInvoiceController;
 use App\Http\Controllers\Api\V1\Admin\MonthlyPaymentAlertController;
 use App\Http\Controllers\Api\V1\Admin\PaymentController;
@@ -93,6 +94,7 @@ use App\Http\Controllers\Api\V1\MyAttendanceController;
 use App\Http\Controllers\Api\V1\MyExamApplicationController;
 use App\Http\Controllers\Api\V1\MyInvoiceController;
 use App\Http\Controllers\Api\V1\MyLeaveRequestController;
+use App\Http\Controllers\Api\V1\MyMakeUpClassRequestController;
 use App\Http\Controllers\Api\V1\MyMonthlyPaymentAlertController;
 use App\Http\Controllers\Api\V1\MyResignationRequestController;
 use App\Http\Controllers\Api\V1\MyStudentFeedbackController;
@@ -290,6 +292,11 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::apiResource('resignation-requests', ResignationRequestController::class)->only(['index', 'show']);
         Route::post('resignation-requests/{resignation_request}/approve', [ResignationRequestController::class, 'approve'])->name('resignation-requests.approve');
         Route::post('resignation-requests/{resignation_request}/reject', [ResignationRequestController::class, 'reject'])->name('resignation-requests.reject');
+
+        // Student-submitted make-up class requests — see MakeUpClassRequestService.
+        Route::apiResource('make-up-class-requests', MakeUpClassRequestController::class)->only(['index', 'show']);
+        Route::post('make-up-class-requests/{make_up_class_request}/approve', [MakeUpClassRequestController::class, 'approve'])->name('make-up-class-requests.approve');
+        Route::post('make-up-class-requests/{make_up_class_request}/reject', [MakeUpClassRequestController::class, 'reject'])->name('make-up-class-requests.reject');
 
         // Student-submitted requests/comments about the school or a
         // teacher, with a reply thread. See StudentFeedbackPolicy.
@@ -585,6 +592,11 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('my-resignation-requests/profile', [MyResignationRequestController::class, 'profile'])->name('my-resignation-requests.profile');
         Route::get('my-resignation-requests', [MyResignationRequestController::class, 'index'])->name('my-resignation-requests.index');
         Route::post('my-resignation-requests', [MyResignationRequestController::class, 'store'])->name('my-resignation-requests.store');
+
+        // Student self-service — identity-gated, same pattern as my-leave-requests.
+        Route::get('my-make-up-class-requests/enrollments', [MyMakeUpClassRequestController::class, 'enrollments'])->name('my-make-up-class-requests.enrollments');
+        Route::get('my-make-up-class-requests', [MyMakeUpClassRequestController::class, 'index'])->name('my-make-up-class-requests.index');
+        Route::post('my-make-up-class-requests', [MyMakeUpClassRequestController::class, 'store'])->name('my-make-up-class-requests.store');
 
         // Self-service — identity-gated, same pattern as my-leave-requests.
         Route::get('my-approval-requests', [MyApprovalRequestController::class, 'index'])->name('my-approval-requests.index');

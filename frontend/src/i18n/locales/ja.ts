@@ -89,6 +89,24 @@ const ja: MessageSchema = {
     profileLoadFailed: '職員情報を読み込めませんでした。',
   },
 
+  makeUpClassRequest: {
+    title: '補講申請',
+    course: 'コース',
+    coursePlaceholder: 'コースを選択',
+    fromDate: '開始日',
+    toDate: '終了日',
+    fromTime: '開始時刻',
+    toTime: '終了時刻',
+    dates: '日付',
+    time: '時間',
+    subject: '補講申請（{from} 〜 {to}）',
+    submit: '送信',
+    submitSuccess: '補講申請を送信しました。現在承認待ちです。',
+    submitFailed: '補講申請を送信できませんでした。',
+    coursesLoadFailed: 'コースを読み込めませんでした。',
+    noActiveCourse: '補講を申請できる受講中のコースがありません。',
+  },
+
   common: {
     home: 'ホーム',
     readMore: '続きを読む →',
@@ -165,6 +183,8 @@ const ja: MessageSchema = {
       leave_request_approved: '{student_name}さんの許可申請が承認されました',
       resignation_request_submitted: '{staff_name}さんが退職届を提出しました',
       resignation_request_approved: '{staff_name}さんの退職届が承認されました',
+      make_up_class_request_submitted: '{student_name}さんが補講申請を提出しました',
+      make_up_class_request_approved: '{student_name}さんの補講申請が承認されました',
       student_registration_submitted: '{student_name}さんが登録しました。承認待ちです',
     },
   },

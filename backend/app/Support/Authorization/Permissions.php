@@ -185,6 +185,14 @@ final class Permissions
 
     public const RESIGNATION_REQUESTS_REJECT = 'resignation-requests.reject';
 
+    // Make-Up Class Requests — a student's own self-submitted request to
+    // attend a make-up class (ស្នើសុំរៀនសង), approved or rejected by an admin.
+    public const MAKE_UP_CLASS_REQUESTS_VIEW = 'make-up-class-requests.view';
+
+    public const MAKE_UP_CLASS_REQUESTS_APPROVE = 'make-up-class-requests.approve';
+
+    public const MAKE_UP_CLASS_REQUESTS_REJECT = 'make-up-class-requests.reject';
+
     // Academic Years — a real, tenant-owned school year (e.g. "2026").
     public const ACADEMIC_YEARS_VIEW = 'academic-years.view';
 
@@ -696,6 +704,11 @@ final class Permissions
                 self::RESIGNATION_REQUESTS_APPROVE => 'Approve resignation requests',
                 self::RESIGNATION_REQUESTS_REJECT => 'Reject resignation requests',
             ],
+            'Make-Up Class Requests' => [
+                self::MAKE_UP_CLASS_REQUESTS_VIEW => 'View make-up class requests',
+                self::MAKE_UP_CLASS_REQUESTS_APPROVE => 'Approve make-up class requests',
+                self::MAKE_UP_CLASS_REQUESTS_REJECT => 'Reject make-up class requests',
+            ],
             'Academic Years' => [
                 self::ACADEMIC_YEARS_VIEW => 'View academic years',
                 self::ACADEMIC_YEARS_CREATE => 'Create academic years',
@@ -1046,6 +1059,9 @@ final class Permissions
                 self::RESIGNATION_REQUESTS_VIEW,
                 self::RESIGNATION_REQUESTS_APPROVE,
                 self::RESIGNATION_REQUESTS_REJECT,
+                self::MAKE_UP_CLASS_REQUESTS_VIEW,
+                self::MAKE_UP_CLASS_REQUESTS_APPROVE,
+                self::MAKE_UP_CLASS_REQUESTS_REJECT,
                 self::STUDENT_FEEDBACK_VIEW,
                 self::STUDENT_FEEDBACK_REPLY,
                 self::EXAM_APPLICATIONS_VIEW,

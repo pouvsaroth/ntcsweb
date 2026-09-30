@@ -19,5 +19,9 @@ final class NotificationType
 
     public const RESIGNATION_REQUEST_APPROVED = 'resignation_request_approved';
 
+    public const MAKE_UP_CLASS_REQUEST_SUBMITTED = 'make_up_class_request_submitted';
+
+    public const MAKE_UP_CLASS_REQUEST_APPROVED = 'make_up_class_request_approved';
+
     public const STUDENT_REGISTRATION_SUBMITTED = 'student_registration_submitted';
 }

@@ -89,6 +89,24 @@ const km: MessageSchema = {
     profileLoadFailed: 'មិនអាចផ្ទុកទិន្នន័យបុគ្គលិករបស់អ្នកបានទេ។',
   },
 
+  makeUpClassRequest: {
+    title: 'ស្នើសុំរៀនសង',
+    course: 'វគ្គសិក្សា',
+    coursePlaceholder: 'ជ្រើសរើសវគ្គសិក្សា',
+    fromDate: 'ពីថ្ងៃទី',
+    toDate: 'ដល់ថ្ងៃទី',
+    fromTime: 'ពីម៉ោង',
+    toTime: 'ដល់ម៉ោង',
+    dates: 'កាលបរិច្ឆេទ',
+    time: 'ម៉ោង',
+    subject: 'សំណើសុំរៀនសង ({from} – {to})',
+    submit: 'ដាក់ស្នើ',
+    submitSuccess: 'សំណើសុំរៀនសងរបស់អ្នកត្រូវបានដាក់ស្នើ ហើយកំពុងរង់ចាំការអនុម័ត។',
+    submitFailed: 'មិនអាចដាក់ស្នើសំណើសុំរៀនសងរបស់អ្នកបានទេ។',
+    coursesLoadFailed: 'មិនអាចផ្ទុកវគ្គសិក្សារបស់អ្នកបានទេ។',
+    noActiveCourse: 'អ្នកមិនមានវគ្គសិក្សាសកម្មសម្រាប់ស្នើសុំរៀនសងទេ។',
+  },
+
   common: {
     home: 'ទំព័រដើម',
     readMore: 'អានបន្ថែម →',
@@ -165,6 +183,8 @@ const km: MessageSchema = {
       leave_request_approved: 'សំណើសុំច្បាប់សម្រាប់ {student_name} ត្រូវបានអនុម័ត',
       resignation_request_submitted: '{staff_name} បានដាក់ស្នើសំណើលាឈប់',
       resignation_request_approved: 'សំណើលាឈប់សម្រាប់ {staff_name} ត្រូវបានអនុម័ត',
+      make_up_class_request_submitted: '{student_name} បានដាក់ស្នើសំណើសុំរៀនសង',
+      make_up_class_request_approved: 'សំណើសុំរៀនសងសម្រាប់ {student_name} ត្រូវបានអនុម័ត',
       student_registration_submitted: '{student_name} បានចុះឈ្មោះ ហើយកំពុងរង់ចាំការអនុម័ត',
     },
   },

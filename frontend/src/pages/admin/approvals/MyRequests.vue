@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import AskForPermissionModal from '@/components/layout/AskForPermissionModal.vue'
+import MakeUpClassRequestModal from '@/components/layout/MakeUpClassRequestModal.vue'
 import ResignationFormModal from '@/components/layout/ResignationFormModal.vue'
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
@@ -13,6 +14,7 @@ import DataTable from '@/components/ui/DataTable.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import { myApprovalRequestsService, type ApprovalRequest, type ApprovalRequestStatus } from '@/services/approvalRequests'
 import { myLeaveRequestsService, type LeaveRequest } from '@/services/leaveRequests'
+import { makeUpClassCourseLabel, myMakeUpClassRequestsService, type MakeUpClassRequest } from '@/services/makeUpClassRequests'
 import { myResignationRequestsService, type ResignationRequest } from '@/services/resignationRequests'
 import { useAuthStore } from '@/stores/auth'
 import { ApiRequestError } from '@/types/api'
@@ -20,8 +22,8 @@ import { formatDate } from '@/utils/date'
 
 /**
  * "My Request" under eApprovals — every request the current user has
- * submitted, whether it's a generic ApprovalRequest, a LeaveRequest, or (for
- * staff accounts) a ResignationRequest — each keeps its own dedicated
+ * submitted, whether it's a generic ApprovalRequest, a LeaveRequest, (for
+ * staff accounts) a ResignationRequest, or (for students) a MakeUpClassRequest — each keeps its own dedicated
  * backend flow; see AskForPermissionModal/ResignationFormModal. Every
  * source is fetched at a generous per_page and merged client-side rather
  * than through usePaginatedResource, since combining independently-
@@ -29,7 +31,7 @@ import { formatDate } from '@/utils/date'
  * user's own request list is never large enough to need it.
  */
 type MergedRow = {
-  kind: 'approval' | 'leave' | 'resignation'
+  kind: 'approval' | 'leave' | 'resignation' | 'makeUp'
   id: number
   reference: string
   subject: string
@@ -38,6 +40,7 @@ type MergedRow = {
   approval?: ApprovalRequest
   leave?: LeaveRequest
   resignation?: ResignationRequest
+  makeUp?: MakeUpClassRequest
 }
 
 const { t } = useI18n()
@@ -47,6 +50,9 @@ const auth = useAuthStore()
 // this page (see the router's studentAllowed guard) never has a staff
 // record, so the self-service resignation endpoint would just 422 for them.
 const canResign = computed(() => !auth.hasRole('student'))
+// The inverse: make-up class requests are student-only (the endpoint 422s
+// for an account with no student record).
+const canRequestMakeUp = computed(() => auth.hasRole('student'))
 
 const rows = ref<MergedRow[]>([])
 const loading = ref(false)
@@ -84,9 +90,15 @@ const statusVariant: Record<ApprovalRequestStatus, 'warning' | 'success' | 'dang
 const detail = ref<MergedRow | null>(null)
 const showLeaveModal = ref(false)
 const showResignationModal = ref(false)
+const showMakeUpModal = ref(false)
 
 function onLeaveModalChange(open: boolean) {
   showLeaveModal.value = open
+  if (!open) load()
+}
+
+function onMakeUpModalChange(open: boolean) {
+  showMakeUpModal.value = open
   if (!open) load()
 }
 
@@ -100,12 +112,15 @@ async function load() {
   error.value = null
 
   try {
-    const [approvals, leaves, resignations] = await Promise.all([
+    const [approvals, leaves, resignations, makeUps] = await Promise.all([
       myApprovalRequestsService.list(),
       myLeaveRequestsService.list({ page: 1, per_page: 100, filter: {} }),
       canResign.value
         ? myResignationRequestsService.list({ page: 1, per_page: 100, filter: {} })
         : Promise.resolve({ data: [] as ResignationRequest[], pagination: undefined }),
+      canRequestMakeUp.value
+        ? myMakeUpClassRequestsService.list({ page: 1, per_page: 100, filter: {} })
+        : Promise.resolve({ data: [] as MakeUpClassRequest[], pagination: undefined }),
     ])
 
     const approvalRows: MergedRow[] = approvals.data.map((r) => ({
@@ -138,7 +153,17 @@ async function load() {
       resignation: r,
     }))
 
-    rows.value = [...approvalRows, ...leaveRows, ...resignationRows].sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    const makeUpRows: MergedRow[] = makeUps.data.map((r) => ({
+      kind: 'makeUp',
+      id: r.id,
+      reference: `MU-${String(r.id).padStart(6, '0')}`,
+      subject: t('makeUpClassRequest.subject', { from: formatDate(r.from_date), to: formatDate(r.to_date) }),
+      status: r.status,
+      createdAt: r.created_at,
+      makeUp: r,
+    }))
+
+    rows.value = [...approvalRows, ...leaveRows, ...resignationRows, ...makeUpRows].sort((a, b) => b.createdAt.localeCompare(a.createdAt))
   } catch (e) {
     error.value = e instanceof ApiRequestError ? e.message : t('admin.myRequests.loadFailed')
   } finally {
@@ -158,6 +183,7 @@ onMounted(() => load())
       </div>
       <div class="flex gap-2">
         <BaseButton @click="showLeaveModal = true">{{ t('leaveRequest.title') }}</BaseButton>
+        <BaseButton v-if="canRequestMakeUp" variant="outline" @click="showMakeUpModal = true">{{ t('makeUpClassRequest.title') }}</BaseButton>
         <BaseButton v-if="canResign" variant="outline" @click="showResignationModal = true">{{ t('resignationRequest.title') }}</BaseButton>
       </div>
     </div>
@@ -221,9 +247,18 @@ onMounted(() => load())
           <div v-if="detail.resignation.decision_reason"><dt class="text-neutral-500">{{ t('admin.leaveRequests.decisionReason') }}</dt><dd class="font-medium text-neutral-900">{{ detail.resignation.decision_reason }}</dd></div>
         </dl>
       </template>
+      <template v-else-if="detail?.kind === 'makeUp' && detail.makeUp">
+        <dl class="grid gap-y-2 text-sm">
+          <div><dt class="text-neutral-500">{{ t('makeUpClassRequest.course') }}</dt><dd class="font-medium text-neutral-900">{{ makeUpClassCourseLabel(detail.makeUp) }}</dd></div>
+          <div><dt class="text-neutral-500">{{ t('makeUpClassRequest.dates') }}</dt><dd class="font-medium text-neutral-900">{{ formatDate(detail.makeUp.from_date) }} – {{ formatDate(detail.makeUp.to_date) }}</dd></div>
+          <div><dt class="text-neutral-500">{{ t('makeUpClassRequest.time') }}</dt><dd class="font-medium text-neutral-900">{{ detail.makeUp.from_time }} – {{ detail.makeUp.to_time }}</dd></div>
+          <div v-if="detail.makeUp.decision_reason"><dt class="text-neutral-500">{{ t('admin.leaveRequests.decisionReason') }}</dt><dd class="font-medium text-neutral-900">{{ detail.makeUp.decision_reason }}</dd></div>
+        </dl>
+      </template>
     </BaseModal>
 
     <AskForPermissionModal :model-value="showLeaveModal" @update:model-value="onLeaveModalChange" />
+    <MakeUpClassRequestModal v-if="canRequestMakeUp" :model-value="showMakeUpModal" @update:model-value="onMakeUpModalChange" />
     <ResignationFormModal v-if="canResign" :model-value="showResignationModal" @update:model-value="onResignationModalChange" />
   </div>
 </template>

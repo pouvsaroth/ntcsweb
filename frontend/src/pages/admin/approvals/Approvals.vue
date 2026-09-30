@@ -14,6 +14,7 @@ import EmptyState from '@/components/ui/EmptyState.vue'
 import { approvalRequestsService, type ApprovalRequest, type ApprovalRequestStatus } from '@/services/approvalRequests'
 import { examApplicationsService, type ExamApplication } from '@/services/examApplications'
 import { leaveRequestsService, type LeaveRequest } from '@/services/leaveRequests'
+import { makeUpClassCourseLabel, makeUpClassRequestsService, type MakeUpClassRequest } from '@/services/makeUpClassRequests'
 import { resignationRequestsService, type ResignationRequest } from '@/services/resignationRequests'
 import { useAuthStore } from '@/stores/auth'
 import { useConfirmDialogStore } from '@/stores/confirmDialog'
@@ -23,7 +24,7 @@ import { formatDate } from '@/utils/date'
 /**
  * The approval queue — every pending/decided item across the generic
  * ApprovalRequest catalog, the dedicated LeaveRequest flow, the dedicated
- * ResignationRequest flow, and exam applications (moved here from their own
+ * ResignationRequest flow, the dedicated MakeUpClassRequest flow, and exam applications (moved here from their own
  * "Exam Application Approval" tab under Examination — see ExaminationTabs.vue),
  * merged into one table. See MyRequests.vue's docblock for why merging is
  * done client-side rather than through usePaginatedResource. Each source is
@@ -31,7 +32,7 @@ import { formatDate } from '@/utils/date'
  * gating the sidebar nav already applies.
  */
 type MergedRow = {
-  kind: 'approval' | 'leave' | 'resignation' | 'exam'
+  kind: 'approval' | 'leave' | 'resignation' | 'makeUp' | 'exam'
   id: number
   reference: string
   requestor: string
@@ -41,6 +42,7 @@ type MergedRow = {
   approval?: ApprovalRequest
   leave?: LeaveRequest
   resignation?: ResignationRequest
+  makeUp?: MakeUpClassRequest
   exam?: ExamApplication
 }
 
@@ -58,6 +60,7 @@ const activeTab = ref<ApprovalRequestStatus>('pending')
 const canViewApprovals = computed(() => auth.can('approval-requests.view'))
 const canViewLeave = computed(() => auth.can('leave-requests.view'))
 const canViewResignation = computed(() => auth.can('resignation-requests.view'))
+const canViewMakeUp = computed(() => auth.can('make-up-class-requests.view'))
 const canViewExams = computed(() => auth.can('exam-applications.view'))
 // Only exam applications can be edited from this queue — a reviewer fixing
 // the student's info or the room/table/date assignment before deciding.
@@ -103,6 +106,7 @@ const approvePermission: Record<MergedRow['kind'], string> = {
   approval: 'approval-requests.approve',
   leave: 'leave-requests.approve',
   resignation: 'resignation-requests.approve',
+  makeUp: 'make-up-class-requests.approve',
   exam: 'exam-applications.approve',
 }
 
@@ -110,6 +114,7 @@ const rejectPermission: Record<MergedRow['kind'], string> = {
   approval: 'approval-requests.reject',
   leave: 'leave-requests.reject',
   resignation: 'resignation-requests.reject',
+  makeUp: 'make-up-class-requests.reject',
   exam: 'exam-applications.reject',
 }
 
@@ -139,7 +144,7 @@ async function load() {
   error.value = null
 
   try {
-    const [approvals, leaves, resignations, exams] = await Promise.all([
+    const [approvals, leaves, resignations, makeUps, exams] = await Promise.all([
       canViewApprovals.value ? approvalRequestsService.list() : Promise.resolve({ data: [] as ApprovalRequest[], pagination: undefined }),
       canViewLeave.value
         ? leaveRequestsService.list({ page: 1, per_page: 100, filter: {} })
@@ -147,6 +152,9 @@ async function load() {
       canViewResignation.value
         ? resignationRequestsService.list({ page: 1, per_page: 100, filter: {} })
         : Promise.resolve({ data: [] as ResignationRequest[], pagination: undefined }),
+      canViewMakeUp.value
+        ? makeUpClassRequestsService.list({ page: 1, per_page: 100, filter: {} })
+        : Promise.resolve({ data: [] as MakeUpClassRequest[], pagination: undefined }),
       // draft/not_exam/make_up applications belong to their own Exams tab,
       // not this decision queue — only the three statuses this page's own
       // tabs cover are fetched here.
@@ -188,6 +196,17 @@ async function load() {
       resignation: r,
     }))
 
+    const makeUpRows: MergedRow[] = makeUps.data.map((r) => ({
+      kind: 'makeUp',
+      id: r.id,
+      reference: `MU-${String(r.id).padStart(6, '0')}`,
+      requestor: r.student?.name ?? '—',
+      subject: t('makeUpClassRequest.subject', { from: formatDate(r.from_date), to: formatDate(r.to_date) }),
+      status: r.status,
+      createdAt: r.created_at,
+      makeUp: r,
+    }))
+
     // Narrows ExamApplicationStatus down to the three this queue's own tabs
     // cover — the status filter above should already guarantee this, but a
     // draft/not_exam/make_up row slipping through would otherwise crash
@@ -205,7 +224,7 @@ async function load() {
         exam: r,
       }))
 
-    rows.value = [...approvalRows, ...leaveRows, ...resignationRows, ...examRows].sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    rows.value = [...approvalRows, ...leaveRows, ...resignationRows, ...makeUpRows, ...examRows].sort((a, b) => b.createdAt.localeCompare(a.createdAt))
   } catch (e) {
     error.value = e instanceof ApiRequestError ? e.message : t('admin.approvals.loadFailed')
   } finally {
@@ -232,6 +251,8 @@ async function approve(row: MergedRow) {
       await leaveRequestsService.approve(row.id)
     } else if (row.kind === 'resignation') {
       await resignationRequestsService.approve(row.id)
+    } else if (row.kind === 'makeUp') {
+      await makeUpClassRequestsService.approve(row.id)
     } else {
       await examApplicationsService.approve(row.id)
     }
@@ -258,6 +279,8 @@ async function confirmReject(reason: string) {
       await leaveRequestsService.reject(row.id, reason)
     } else if (row.kind === 'resignation') {
       await resignationRequestsService.reject(row.id, reason)
+    } else if (row.kind === 'makeUp') {
+      await makeUpClassRequestsService.reject(row.id, reason)
     } else {
       await examApplicationsService.reject(row.id, reason)
     }
@@ -361,6 +384,12 @@ onMounted(() => load())
           <div><dt class="text-neutral-500">{{ t('resignationRequest.resignationDate') }}</dt><dd class="font-medium text-neutral-900">{{ formatDate(detail.resignation.resignation_date) }}</dd></div>
           <div><dt class="text-neutral-500">{{ t('resignationRequest.reason') }}</dt><dd class="font-medium text-neutral-900">{{ detail.resignation.reason }}</dd></div>
           <div v-if="detail.resignation.decision_reason"><dt class="text-neutral-500">{{ t('admin.leaveRequests.decisionReason') }}</dt><dd class="font-medium text-neutral-900">{{ detail.resignation.decision_reason }}</dd></div>
+        </dl>
+        <dl v-else-if="detail.kind === 'makeUp' && detail.makeUp" class="grid gap-y-2 text-sm">
+          <div><dt class="text-neutral-500">{{ t('makeUpClassRequest.course') }}</dt><dd class="font-medium text-neutral-900">{{ makeUpClassCourseLabel(detail.makeUp) }}</dd></div>
+          <div><dt class="text-neutral-500">{{ t('makeUpClassRequest.dates') }}</dt><dd class="font-medium text-neutral-900">{{ formatDate(detail.makeUp.from_date) }} – {{ formatDate(detail.makeUp.to_date) }}</dd></div>
+          <div><dt class="text-neutral-500">{{ t('makeUpClassRequest.time') }}</dt><dd class="font-medium text-neutral-900">{{ detail.makeUp.from_time }} – {{ detail.makeUp.to_time }}</dd></div>
+          <div v-if="detail.makeUp.decision_reason"><dt class="text-neutral-500">{{ t('admin.leaveRequests.decisionReason') }}</dt><dd class="font-medium text-neutral-900">{{ detail.makeUp.decision_reason }}</dd></div>
         </dl>
         <dl v-else-if="detail.kind === 'exam' && detail.exam" class="grid gap-y-2 text-sm">
           <div><dt class="text-neutral-500">{{ t('admin.exams.columnBook') }}</dt><dd class="font-medium text-neutral-900">{{ detail.exam.book?.title ?? detail.exam.enrollment.course_package?.name ?? '—' }}</dd></div>

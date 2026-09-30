@@ -92,6 +92,24 @@ const en = {
     profileLoadFailed: 'Could not load your staff profile.',
   },
 
+  makeUpClassRequest: {
+    title: 'Make-up Class Request',
+    course: 'Course',
+    coursePlaceholder: 'Select a course',
+    fromDate: 'From Date',
+    toDate: 'To Date',
+    fromTime: 'From Time',
+    toTime: 'To Time',
+    dates: 'Dates',
+    time: 'Time',
+    subject: 'Make-up class request ({from} – {to})',
+    submit: 'Submit',
+    submitSuccess: 'Your make-up class request has been submitted and is now pending approval.',
+    submitFailed: 'Could not submit your make-up class request.',
+    coursesLoadFailed: 'Could not load your courses.',
+    noActiveCourse: 'You have no active course to request a make-up class for.',
+  },
+
   common: {
     home: 'Home',
     readMore: 'Read more →',
@@ -168,6 +186,8 @@ const en = {
       leave_request_approved: 'The permission request for {student_name} was approved',
       resignation_request_submitted: '{staff_name} submitted a resignation request',
       resignation_request_approved: 'The resignation request for {staff_name} was approved',
+      make_up_class_request_submitted: '{student_name} submitted a make-up class request',
+      make_up_class_request_approved: 'The make-up class request for {student_name} was approved',
       student_registration_submitted: '{student_name} registered and is awaiting approval',
     },
   },

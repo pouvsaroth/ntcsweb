@@ -233,7 +233,7 @@ export const adminNav: AdminNavGroup[] = [
     items: [
       { labelKey: 'adminNav.items.forms', to: '/admin/approvals/forms', permission: 'forms.view' },
       { labelKey: 'adminNav.items.myRequests', to: '/admin/approvals/my-requests', permission: 'my-requests.view' },
-      { labelKey: 'adminNav.items.approvals', to: '/admin/approvals/queue', permission: ['approval-requests.view', 'leave-requests.view'] },
+      { labelKey: 'adminNav.items.approvals', to: '/admin/approvals/queue', permission: ['approval-requests.view', 'leave-requests.view', 'make-up-class-requests.view'] },
       { labelKey: 'adminNav.items.formCategories', to: '/admin/form-categories', permission: 'form-categories.manage' },
       { labelKey: 'adminNav.items.formTemplates', to: '/admin/form-templates', permission: 'form-templates.manage' },
     ],

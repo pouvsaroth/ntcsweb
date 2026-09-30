@@ -89,6 +89,24 @@ const zh: MessageSchema = {
     profileLoadFailed: '无法加载您的员工资料。',
   },
 
+  makeUpClassRequest: {
+    title: '补课申请',
+    course: '课程',
+    coursePlaceholder: '选择课程',
+    fromDate: '开始日期',
+    toDate: '结束日期',
+    fromTime: '开始时间',
+    toTime: '结束时间',
+    dates: '日期',
+    time: '时间',
+    subject: '补课申请（{from} – {to}）',
+    submit: '提交',
+    submitSuccess: '您的补课申请已提交，正在等待审批。',
+    submitFailed: '无法提交您的补课申请。',
+    coursesLoadFailed: '无法加载您的课程。',
+    noActiveCourse: '您没有可申请补课的在读课程。',
+  },
+
   common: {
     home: '首页',
     readMore: '阅读更多 →',
@@ -165,6 +183,8 @@ const zh: MessageSchema = {
       leave_request_approved: '{student_name} 的请假申请已获批准',
       resignation_request_submitted: '{staff_name} 提交了一项辞职申请',
       resignation_request_approved: '{staff_name} 的辞职申请已获批准',
+      make_up_class_request_submitted: '{student_name} 提交了一项补课申请',
+      make_up_class_request_approved: '{student_name} 的补课申请已获批准',
       student_registration_submitted: '{student_name} 已注册，正在等待审批',
     },
   },

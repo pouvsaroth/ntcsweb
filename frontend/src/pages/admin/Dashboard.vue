@@ -3,6 +3,7 @@ import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
 
+import MakeUpClassRequestModal from '@/components/layout/MakeUpClassRequestModal.vue'
 import BaseCard from '@/components/ui/BaseCard.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import { accountingReportsService, type IncomeDetail } from '@/services/accounting'
@@ -146,6 +147,10 @@ const studentQuickAccessItems: QuickAccessItem[] = [
   },
 ]
 
+/** Opens a popup rather than navigating — see MakeUpClassRequestModal. */
+const showMakeUpClassModal = ref(false)
+const makeUpClassIcon = 'M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99'
+
 const studyingCount = ref<string>('—')
 /** Active enrollments right now — same "studying" definition as the Classes list's active-student count/filter, not Student.status. */
 const studyingEnrollmentsCount = ref<string>('—')
@@ -270,7 +275,21 @@ onMounted(() => {
           </span>
           <span class="text-xs font-medium text-neutral-700">{{ t(item.labelKey) }}</span>
         </RouterLink>
+        <button
+          type="button"
+          class="relative flex flex-col items-center gap-2 rounded-[--radius-card] border border-neutral-200 bg-white p-4 text-center shadow-[--shadow-card] transition-shadow hover:shadow-[--shadow-card-hover]"
+          @click="showMakeUpClassModal = true"
+        >
+          <span class="flex h-10 w-10 items-center justify-center rounded-full bg-primary-100 text-primary-700">
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" :d="makeUpClassIcon" />
+            </svg>
+          </span>
+          <span class="text-xs font-medium text-neutral-700">{{ t('makeUpClassRequest.title') }}</span>
+        </button>
       </div>
+
+      <MakeUpClassRequestModal v-model="showMakeUpClassModal" />
     </template>
 
     <template v-else-if="!auth.isSuperAdmin">

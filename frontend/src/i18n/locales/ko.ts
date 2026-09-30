@@ -89,6 +89,24 @@ const ko: MessageSchema = {
     profileLoadFailed: '직원 정보를 불러올 수 없습니다.',
   },
 
+  makeUpClassRequest: {
+    title: '보강 신청',
+    course: '과정',
+    coursePlaceholder: '과정 선택',
+    fromDate: '시작일',
+    toDate: '종료일',
+    fromTime: '시작 시간',
+    toTime: '종료 시간',
+    dates: '날짜',
+    time: '시간',
+    subject: '보강 신청 ({from} – {to})',
+    submit: '제출',
+    submitSuccess: '보강 신청이 제출되었으며 현재 승인 대기 중입니다.',
+    submitFailed: '보강 신청을 제출할 수 없습니다.',
+    coursesLoadFailed: '과정을 불러올 수 없습니다.',
+    noActiveCourse: '보강을 신청할 수 있는 수강 중인 과정이 없습니다.',
+  },
+
   common: {
     home: '홈',
     readMore: '더 보기 →',
@@ -165,6 +183,8 @@ const ko: MessageSchema = {
       leave_request_approved: '{student_name} 님의 허가 요청이 승인되었습니다',
       resignation_request_submitted: '{staff_name} 님이 사직 신청을 제출했습니다',
       resignation_request_approved: '{staff_name} 님의 사직 신청이 승인되었습니다',
+      make_up_class_request_submitted: '{student_name} 님이 보강 신청을 제출했습니다',
+      make_up_class_request_approved: '{student_name} 님의 보강 신청이 승인되었습니다',
       student_registration_submitted: '{student_name} 님이 등록했으며 승인을 기다리고 있습니다',
     },
   },
