@@ -117,7 +117,7 @@ final class SchoolClassController extends Controller
         // live in the same tenant database).
         $takenTableIds = Enrollment::query()
             ->where('class_id', $class->id)
-            ->where('status', '!=', Enrollment::STATUS_DROPPED)
+            ->where('status', Enrollment::TABLE_HOLDING_STATUS)
             ->whereNotNull('table_id')
             ->pluck('table_id');
 

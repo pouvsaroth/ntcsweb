@@ -184,8 +184,27 @@ final class EnrollmentService
                 'changed_by' => $actor->getKey(),
             ]);
 
+            $changes = ['status' => $status];
+
+            // Returning to Studying: their table may have gone to someone
+            // else while they weren't holding it (see
+            // Enrollment::TABLE_HOLDING_STATUS) — clear it rather than seat
+            // two students at one table; staff pick a new one afterwards.
+            if ($status === Enrollment::TABLE_HOLDING_STATUS && $enrollment->table_id !== null) {
+                $tableTaken = Enrollment::query()
+                    ->where('class_id', $enrollment->class_id)
+                    ->where('table_id', $enrollment->table_id)
+                    ->where('status', Enrollment::TABLE_HOLDING_STATUS)
+                    ->whereKeyNot($enrollment->getKey())
+                    ->exists();
+
+                if ($tableTaken) {
+                    $changes['table_id'] = null;
+                }
+            }
+
             $enrollment->auditReason = $reason;
-            $enrollment->update(['status' => $status]);
+            $enrollment->update($changes);
 
             return $enrollment;
         });

@@ -157,7 +157,7 @@ class StoreEnrollmentPackageRequest extends FormRequest
             $taken = DB::connection('tenant')->table('enrollments')
                 ->where('class_id', $this->input('class_id'))
                 ->where('table_id', $tableId)
-                ->where('status', '!=', Enrollment::STATUS_DROPPED)
+                ->where('status', Enrollment::TABLE_HOLDING_STATUS)
                 ->exists();
 
             if ($taken) {

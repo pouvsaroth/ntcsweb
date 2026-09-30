@@ -81,6 +81,16 @@ class Enrollment extends Model
         self::STATUS_ABANDONED, self::STATUS_STOPPED, self::STATUS_SUSPENDED,
     ];
 
+    /**
+     * Only a Studying student keeps their table. Once they're stopped,
+     * suspended, completed etc. the seat is free for someone else — the
+     * available-tables picker, every "table already taken" check, and the
+     * enrollments_class_table_active_unique DB index all use this one rule.
+     * A student returning to Studying whose old table was re-assigned in the
+     * meantime gets it cleared (see EnrollmentService::changeStatus()).
+     */
+    public const TABLE_HOLDING_STATUS = self::STATUS_ACTIVE;
+
     /** Which of STATUSES_MANAGEABLE require a reason + effective date — see EnrollmentService::changeStatus(). */
     public const STATUSES_REQUIRING_REASON = [self::STATUS_ABANDONED, self::STATUS_STOPPED, self::STATUS_SUSPENDED];
 

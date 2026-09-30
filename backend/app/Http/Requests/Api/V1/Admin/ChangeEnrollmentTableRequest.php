@@ -71,7 +71,7 @@ class ChangeEnrollmentTableRequest extends FormRequest
             $taken = DB::connection('tenant')->table('enrollments')
                 ->where('class_id', $enrollment->class_id)
                 ->where('table_id', $tableId)
-                ->where('status', '!=', Enrollment::STATUS_DROPPED)
+                ->where('status', Enrollment::TABLE_HOLDING_STATUS)
                 ->where('id', '!=', $enrollment->id)
                 ->exists();
 
