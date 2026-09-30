@@ -57,6 +57,20 @@ final class InvoicePdfService
      */
     public function render(Invoice $invoice, ?string $locale = null): string
     {
+        return $this->renderer->render($this->html($invoice, $locale), 'A5', marginMm: 10);
+    }
+
+    /**
+     * The same invoice as render(), as an A5 PNG image (148 × 210 mm, same
+     * 10 mm margin) — what "Save and Print" hands staff to print or share.
+     */
+    public function renderImage(Invoice $invoice, ?string $locale = null): string
+    {
+        return $this->renderer->renderImage($this->html($invoice, $locale), 148, 210, marginMm: 10);
+    }
+
+    private function html(Invoice $invoice, ?string $locale): string
+    {
         $invoice->loadMissing([
             'items.product',
             'items.variant',
@@ -79,7 +93,7 @@ final class InvoicePdfService
         }
 
         try {
-            $html = view('pdf.invoice', [
+            return view('pdf.invoice', [
                 'invoice' => $invoice,
                 'tenant' => $tenant,
                 'issuerStaff' => $issuerStaff,
@@ -94,12 +108,15 @@ final class InvoicePdfService
                 App::setLocale($previousLocale);
             }
         }
-
-        return $this->renderer->render($html, 'A5', marginMm: 10);
     }
 
     public function filename(Invoice $invoice): string
     {
         return $invoice->invoice_number.'.pdf';
+    }
+
+    public function imageFilename(Invoice $invoice): string
+    {
+        return $invoice->invoice_number.'.png';
     }
 }

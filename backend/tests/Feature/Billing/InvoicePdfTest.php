@@ -166,6 +166,40 @@ class InvoicePdfTest extends TestCase
     }
 
     /**
+     * "Save and Print" on the Enrollment/Invoice forms — the same invoice as
+     * an A5 PNG (148 × 210 mm at 96 px/inch, captured at 2x = 1118 × 1588).
+     * Same Chromium-availability guard as the PDF test above.
+     */
+    public function test_downloading_the_invoice_image_produces_an_a5_png(): void
+    {
+        if (! file_exists(config('services.browsershot.chrome_path') ?: '/usr/bin/chromium')) {
+            $this->markTestSkipped('Chromium is not available in this environment — see docker/php/Dockerfile.');
+        }
+
+        $this->actingAsAdminWithPermissions([Permissions::INVOICES_VIEW]);
+        $student = Student::factory()->create(['first_name' => 'សុខា', 'last_name' => 'ចាន់']);
+        $invoice = Invoice::factory()->forStudent($student)->create();
+
+        $response = $this->get("/api/v1/invoices/{$invoice->id}/image?locale=km");
+
+        $response->assertOk();
+        $response->assertHeader('Content-Type', 'image/png');
+
+        $size = getimagesizefromstring($response->getContent());
+        $this->assertNotFalse($size);
+        $this->assertSame(1118, $size[0]);
+        $this->assertSame(1588, $size[1]);
+    }
+
+    public function test_downloading_the_invoice_image_requires_the_view_permission(): void
+    {
+        $this->actingAsAdminWithPermissions([]);
+        $invoice = Invoice::factory()->forStudent(Student::factory()->create())->create();
+
+        $this->get("/api/v1/invoices/{$invoice->id}/image")->assertForbidden();
+    }
+
+    /**
      * `?locale=` lets whoever clicks "download" get the invoice in their own
      * admin UI's current language, regardless of the tenant's fixed School
      * Settings language — see InvoicePdfService::render()'s docblock. Runs

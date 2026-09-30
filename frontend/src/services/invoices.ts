@@ -190,4 +190,8 @@ export const invoicesService = {
 
   downloadPdf: (id: number, invoiceNumber: string) =>
     apiDownload(`/invoices/${id}/pdf?locale=${currentInvoiceLocale()}`, `${invoiceNumber}.pdf`),
+
+  /** The same invoice as an A5 PNG image — what "Save and Print" downloads (see InvoiceController::downloadImage()). */
+  downloadImage: (id: number, invoiceNumber: string, onProgress?: (fraction: number) => void) =>
+    apiDownload(`/invoices/${id}/image?locale=${currentInvoiceLocale()}`, `${invoiceNumber}.png`, onProgress),
 }

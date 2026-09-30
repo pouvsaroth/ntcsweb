@@ -158,6 +158,22 @@ final class InvoiceController extends Controller
     }
 
     /**
+     * The same invoice as downloadPdf(), as an A5 PNG image — used by the
+     * Enrollment and Invoice forms' "Save and Print".
+     */
+    public function downloadImage(Request $request, Invoice $invoice, InvoicePdfService $pdf): HttpResponse
+    {
+        $this->authorize('view', $invoice);
+
+        $locale = InvoicePdfService::resolveRequestedLocale($request->query('locale'));
+
+        return response($pdf->renderImage($invoice, $locale), 200, [
+            'Content-Type' => 'image/png',
+            'Content-Disposition' => 'attachment; filename="'.$pdf->imageFilename($invoice).'"',
+        ]);
+    }
+
+    /**
      * Queued (see SendInvoiceNotificationJob) — the request returns as soon
      * as the send is scheduled, not once Telegram/the mail server actually
      * responds. Every call creates a brand-new NotificationLog row, so

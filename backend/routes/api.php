@@ -448,6 +448,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::post('invoices/{invoice}/cancel', [InvoiceController::class, 'cancel'])->name('invoices.cancel');
         Route::post('invoices/{invoice}/void', [InvoiceController::class, 'void'])->name('invoices.void');
         Route::get('invoices/{invoice}/pdf', [InvoiceController::class, 'downloadPdf'])->name('invoices.pdf');
+        Route::get('invoices/{invoice}/image', [InvoiceController::class, 'downloadImage'])->name('invoices.image');
         Route::post('invoices/{invoice}/send', [InvoiceController::class, 'send'])->name('invoices.send');
         Route::get('invoices/{invoice}/notifications', [InvoiceController::class, 'notifications'])->name('invoices.notifications');
         Route::post('invoices/{invoice}/payments', [PaymentController::class, 'store'])->name('invoices.payments.store');

@@ -11,6 +11,8 @@ import type { InvoiceInput, InvoiceItemInput, PaymentTypeValue } from '@/service
 import { invoicesService, paymentTypes } from '@/services/invoices'
 import { productsService, type Product } from '@/services/products'
 import { studentsService, type Student } from '@/services/students'
+import TaskProgressOverlay from '@/components/ui/TaskProgressOverlay.vue'
+import { useTaskProgress } from '@/composables/useTaskProgress'
 import { ApiRequestError } from '@/types/api'
 
 /** yyyy-MM-dd in the viewer's local time — matches EnrollmentPackageForm's own helper. */
@@ -127,18 +129,36 @@ const totalPreview = computed(() => {
 const errors = ref<Record<string, string[]>>({})
 const generalError = ref<string | null>(null)
 const submitting = ref(false)
+const submittingAndPrinting = ref(false)
+const printProgress = useTaskProgress()
 
 const canSubmit = computed(() => selectedStudent.value !== null && form.items.every((item) => item.product_id !== null))
 
-async function submit() {
+/**
+ * `print`: "Save and Print" — also downloads the new invoice as an A5 image
+ * (same as the Enrollment form's) before opening it. A failed download still
+ * opens the saved invoice, where Download PDF is always available.
+ */
+async function submit(print = false) {
   if (!selectedStudent.value) return
 
-  submitting.value = true
+  const busy = print ? submittingAndPrinting : submitting
+  busy.value = true
   errors.value = {}
   generalError.value = null
+  if (print) printProgress.creep(t('admin.invoices.progressSaving'), 25)
 
   try {
     const invoice = await invoicesService.create({ ...form, student_id: selectedStudent.value.id })
+    if (print) {
+      printProgress.creep(t('admin.invoices.progressCreatingImage'), 85)
+      await invoicesService
+        .downloadImage(invoice.id, invoice.invoice_number, (fraction) =>
+          printProgress.set(t('admin.invoices.progressDownloading'), 85 + fraction * 15),
+        )
+        .catch(() => {})
+      await printProgress.done()
+    }
     await router.push(`/admin/invoices/${invoice.id}`)
   } catch (error) {
     if (error instanceof ApiRequestError && error.errors) {
@@ -147,7 +167,8 @@ async function submit() {
       generalError.value = error instanceof ApiRequestError ? error.message : t('admin.invoices.saveFailed')
     }
   } finally {
-    submitting.value = false
+    printProgress.reset()
+    busy.value = false
   }
 }
 
@@ -171,7 +192,7 @@ onMounted(async () => {
       <h1 class="text-xl font-semibold text-neutral-900">{{ t('admin.invoices.createTitle') }}</h1>
     </div>
 
-    <form class="space-y-8" @submit.prevent="submit">
+    <form class="space-y-8" @submit.prevent="submit()">
       <BaseAlert v-if="generalError" variant="danger">{{ generalError }}</BaseAlert>
 
       <section>
@@ -304,9 +325,14 @@ onMounted(async () => {
       </div>
 
       <div class="flex gap-3">
-        <BaseButton type="submit" :loading="submitting" :disabled="!canSubmit">{{ t('common.save') }}</BaseButton>
+        <BaseButton type="submit" :loading="submitting" :disabled="!canSubmit || submittingAndPrinting">{{ t('common.save') }}</BaseButton>
+        <BaseButton type="button" variant="outline" :loading="submittingAndPrinting" :disabled="!canSubmit || submitting" @click="submit(true)">
+          {{ t('admin.invoices.saveAndPrint') }}
+        </BaseButton>
         <BaseButton type="button" variant="outline" @click="router.push('/admin/invoices')">{{ t('common.cancel') }}</BaseButton>
       </div>
     </form>
+
+    <TaskProgressOverlay :percent="printProgress.percent.value" :label="printProgress.label.value" />
   </div>
 </template>

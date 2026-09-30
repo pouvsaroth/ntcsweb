@@ -276,8 +276,8 @@ function toApiRequestError(error: unknown): ApiRequestError {
  * as a Blob (the server doesn't know the client wanted JSON), so it's read
  * back out as text and parsed the same way a normal failure would be.
  */
-export async function apiDownload(url: string, filename: string): Promise<void> {
-  const blob = await apiGetBlob(url)
+export async function apiDownload(url: string, filename: string, onProgress?: (fraction: number) => void): Promise<void> {
+  const blob = await apiGetBlob(url, onProgress)
   const blobUrl = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = blobUrl
@@ -289,9 +289,14 @@ export async function apiDownload(url: string, filename: string): Promise<void> 
 }
 
 /** The raw file behind apiDownload(), for a caller that saves it somewhere itself (see BackupDatabase.vue's Save As). */
-export async function apiGetBlob(url: string): Promise<Blob> {
+export async function apiGetBlob(url: string, onProgress?: (fraction: number) => void): Promise<Blob> {
   try {
-    const response = await http.get<Blob>(url, { responseType: 'blob' })
+    const response = await http.get<Blob>(url, {
+      responseType: 'blob',
+      // Only reports when the server sent a Content-Length — otherwise the
+      // caller simply never hears from it until the download finishes.
+      onDownloadProgress: onProgress ? (event) => event.total && onProgress(Math.min(1, event.loaded / event.total)) : undefined,
+    })
     return response.data
   } catch (error) {
     if (isAxiosError(error) && error.response?.data instanceof Blob) {

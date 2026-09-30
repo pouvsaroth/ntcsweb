@@ -50,6 +50,38 @@ final class BrowsershotRenderer
     }
 
     /**
+     * The same HTML as render(), as a PNG image of one page of the given
+     * paper size — e.g. an A5 invoice to print or share straight from a
+     * phone. The page is laid out at the paper's CSS pixel size (96 px per
+     * inch) with `$marginMm` of padding, then captured at `$scale`x for a
+     * sharp print. Content taller than one page makes the image taller
+     * rather than cutting it off.
+     */
+    public function renderImage(string $html, float $widthMm, float $heightMm, float $marginMm = 0, int $scale = 2): string
+    {
+        $widthPx = (int) round($widthMm / 25.4 * 96);
+        $heightPx = (int) round($heightMm / 25.4 * 96);
+
+        // Screen-only, so the PDF path (print media) is never affected.
+        $pageStyle = '<style>@media screen { html, body { margin: 0; background: #fff; } '
+            ."body { box-sizing: border-box; width: {$widthPx}px; min-height: {$heightPx}px; padding: {$marginMm}mm; } }</style>";
+        $html = str_contains($html, '</head>') ? str_replace('</head>', $pageStyle.'</head>', $html) : $pageStyle.$html;
+
+        $home = $this->freshChromiumHome();
+
+        try {
+            return $this->browser($html, 'A4', $home)
+                ->windowSize($widthPx, $heightPx)
+                ->deviceScaleFactor($scale)
+                ->fullPage()
+                ->setScreenshotType('png')
+                ->screenshot();
+        } finally {
+            @exec('rm -rf '.escapeshellarg($home));
+        }
+    }
+
+    /**
      * A brand-new, never-before-used directory to use as Chromium's HOME
      * for one render — see browser()'s docblock for why a shared one isn't
      * safe. Chromium creates everything under it itself (.config/chromium/
