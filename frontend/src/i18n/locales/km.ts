@@ -2123,6 +2123,22 @@ const km: MessageSchema = {
       allDays: 'គ្រប់ថ្ងៃ',
       exportedOn: 'នាំចេញ',
     },
+    myScores: {
+      title: 'ពិន្ទុរបស់ខ្ញុំ',
+      book: 'សៀវភៅ',
+      examDate: 'ថ្ងៃប្រឡង',
+      score: 'ពិន្ទុ',
+      mention: 'និទ្ទេស',
+      makeUpExam: 'ប្រឡងសង',
+      emptyMessage: 'មិនទាន់មានពិន្ទុនៅឡើយទេ។',
+      loadFailed: 'មិនអាចផ្ទុកពិន្ទុរបស់អ្នកបានទេ។',
+      mentions: {
+        excellent: 'ល្អប្រសើរ',
+        very_good: 'ល្អណាស់',
+        good: 'ល្អ',
+        fail: 'ធ្លាក់',
+      },
+    },
     myAttendance: {
       title: 'វត្តមានរបស់ខ្ញុំ',
       onlyAbsent: 'បង្ហាញតែអវត្តមាន',

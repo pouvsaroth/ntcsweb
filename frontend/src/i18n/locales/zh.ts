@@ -2122,6 +2122,22 @@ const zh: MessageSchema = {
       allDays: '全部日期',
       exportedOn: '导出于',
     },
+    myScores: {
+      title: '我的成绩',
+      book: '教材',
+      examDate: '考试日期',
+      score: '分数',
+      mention: '评级',
+      makeUpExam: '补考',
+      emptyMessage: '暂无成绩。',
+      loadFailed: '无法加载您的成绩。',
+      mentions: {
+        excellent: '优秀',
+        very_good: '很好',
+        good: '良好',
+        fail: '不及格',
+      },
+    },
     myAttendance: {
       title: '我的考勤',
       onlyAbsent: '仅显示缺勤',

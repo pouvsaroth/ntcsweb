@@ -2127,6 +2127,22 @@ const en = {
       allDays: 'All days',
       exportedOn: 'Exported',
     },
+    myScores: {
+      title: 'My Scores',
+      book: 'Book',
+      examDate: 'Exam date',
+      score: 'Score',
+      mention: 'Mention',
+      makeUpExam: 'Make-up exam',
+      emptyMessage: 'No scores yet.',
+      loadFailed: 'Could not load your scores.',
+      mentions: {
+        excellent: 'Excellent',
+        very_good: 'Very good',
+        good: 'Good',
+        fail: 'Fail',
+      },
+    },
     myAttendance: {
       title: 'My Attendance',
       onlyAbsent: 'Show only absent',

@@ -2123,6 +2123,22 @@ const ko: MessageSchema = {
       allDays: '전체 기간',
       exportedOn: '내보낸 날짜',
     },
+    myScores: {
+      title: '내 성적',
+      book: '교재',
+      examDate: '시험일',
+      score: '점수',
+      mention: '등급',
+      makeUpExam: '재시험',
+      emptyMessage: '아직 성적이 없습니다.',
+      loadFailed: '성적을 불러올 수 없습니다.',
+      mentions: {
+        excellent: '최우수',
+        very_good: '우수',
+        good: '양호',
+        fail: '불합격',
+      },
+    },
     myAttendance: {
       title: '나의 출결',
       onlyAbsent: '결석만 보기',

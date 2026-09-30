@@ -2123,6 +2123,22 @@ const ja: MessageSchema = {
       allDays: '全期間',
       exportedOn: '書き出し日',
     },
+    myScores: {
+      title: '私の成績',
+      book: '教材',
+      examDate: '試験日',
+      score: '点数',
+      mention: '評価',
+      makeUpExam: '追試',
+      emptyMessage: 'まだ成績がありません。',
+      loadFailed: '成績を読み込めませんでした。',
+      mentions: {
+        excellent: '秀',
+        very_good: '優',
+        good: '良',
+        fail: '不合格',
+      },
+    },
     myAttendance: {
       title: '自分の出欠',
       onlyAbsent: '欠席のみ表示',

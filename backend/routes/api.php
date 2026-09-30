@@ -92,6 +92,7 @@ use App\Http\Controllers\Api\V1\MyApprovalRequestController;
 use App\Http\Controllers\Api\V1\MyAssetController;
 use App\Http\Controllers\Api\V1\MyAttendanceController;
 use App\Http\Controllers\Api\V1\MyExamApplicationController;
+use App\Http\Controllers\Api\V1\MyExamScoreController;
 use App\Http\Controllers\Api\V1\MyInvoiceController;
 use App\Http\Controllers\Api\V1\MyLeaveRequestController;
 use App\Http\Controllers\Api\V1\MyMakeUpClassRequestController;
@@ -583,6 +584,9 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('my-monthly-payment-alerts', [MyMonthlyPaymentAlertController::class, 'index'])->name('my-monthly-payment-alerts.index');
 
         // Student self-service — identity-gated, same pattern as my-invoices.
+        // Student self-service — identity-gated, same pattern as my-attendance.
+        Route::get('my-scores', [MyExamScoreController::class, 'index'])->name('my-scores.index');
+
         Route::get('my-attendance/hours-summary', [MyAttendanceController::class, 'hoursSummary'])->name('my-attendance.hours-summary');
         Route::get('my-attendance', [MyAttendanceController::class, 'index'])->name('my-attendance.index');
 
