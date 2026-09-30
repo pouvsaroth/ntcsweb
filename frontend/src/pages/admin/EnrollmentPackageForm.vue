@@ -58,6 +58,17 @@ const generalError = ref<string | null>(null)
 const submitting = ref(false)
 const submittingAndPrinting = ref(false)
 
+// "Not paid yet": the enrollment is saved with an unpaid invoice and no
+// payment (Received Money forced to 0 — see EnrollmentService, which only
+// records a payment when it's above 0). Save and Print is disabled since
+// there's no receipt to print yet.
+const notPaidYet = ref(false)
+
+function onNotPaidYetChange(checked: boolean) {
+  notPaidYet.value = checked
+  form.received_amount = checked ? 0 : feeToPay.value
+}
+
 const programOptions = computed(() => programs.value.map((p) => ({ value: String(p.id), label: `${p.code} — ${p.name}` })))
 
 // A class is just a schedule/room/teacher — it doesn't need to "offer" the
@@ -178,7 +189,7 @@ watch(
 // Received Money defaults to the full amount owed — staff lowers it for a
 // partial payment/debt, or raises it to record change owed back.
 watch(feeToPay, (value) => {
-  form.received_amount = value
+  form.received_amount = notPaidYet.value ? 0 : value
 })
 
 function onFeeTypeChange(value: string) {
@@ -485,10 +496,21 @@ onMounted(async () => {
               <span class="font-semibold text-neutral-900">{{ formatMoney(feeToPay, invoiceCurrency) }}</span>
             </div>
 
+            <label class="inline-flex items-center gap-2 text-sm font-medium text-neutral-700">
+              <input
+                :checked="notPaidYet"
+                type="checkbox"
+                class="rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+                @change="onNotPaidYetChange(($event.target as HTMLInputElement).checked)"
+              />
+              {{ t('admin.enrollments.notPaidYet') }}
+            </label>
+
             <BaseInput
               :model-value="String(form.received_amount)"
               type="number"
               step="0.01"
+              :disabled="notPaidYet"
               :label="`${t('admin.enrollments.receivedMoney')} (${invoiceCurrency})`"
               :error="errors.received_amount?.[0]"
               @update:model-value="form.received_amount = Number($event) || 0"
@@ -535,7 +557,7 @@ onMounted(async () => {
           type="button"
           variant="outline"
           :loading="submittingAndPrinting"
-          :disabled="submitting || !selectedStudent || !form.class_id || !form.course_package_id || !form.fee_type || (tableRequired && !form.table_id)"
+          :disabled="notPaidYet || submitting || !selectedStudent || !form.class_id || !form.course_package_id || !form.fee_type || (tableRequired && !form.table_id)"
           @click="submitAndPrint"
         >
           {{ t('admin.enrollments.saveAndPrint') }}

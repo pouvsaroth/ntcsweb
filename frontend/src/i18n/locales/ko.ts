@@ -1790,6 +1790,7 @@ const ko: MessageSchema = {
       discountReason: '할인 사유',
       discountPrice: '할인 금액',
       feeToPay: '납부할 금액',
+      notPaidYet: '미납',
       receivedMoney: '받은 금액',
       paid: '납부 완료',
       debt: '미납',

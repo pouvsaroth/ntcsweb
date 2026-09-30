@@ -1796,6 +1796,7 @@ const en = {
       discountReason: 'Discount Reason',
       discountPrice: 'Discount Price',
       feeToPay: 'Fee To Pay',
+      notPaidYet: 'Not paid yet',
       receivedMoney: 'Received Money',
       paid: 'Paid',
       debt: 'Debt',

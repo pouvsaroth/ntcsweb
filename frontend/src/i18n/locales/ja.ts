@@ -1790,6 +1790,7 @@ const ja: MessageSchema = {
       discountReason: '割引理由',
       discountPrice: '割引額',
       feeToPay: 'お支払い金額',
+      notPaidYet: '未払い',
       receivedMoney: '受領額',
       paid: '支払済み',
       debt: '未払い',

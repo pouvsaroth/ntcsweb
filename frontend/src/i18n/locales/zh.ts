@@ -1789,6 +1789,7 @@ const zh: MessageSchema = {
       discountReason: '折扣原因',
       discountPrice: '折扣金额',
       feeToPay: '应付费用',
+      notPaidYet: '尚未付款',
       receivedMoney: '实收金额',
       paid: '已付',
       debt: '欠款',

@@ -1790,6 +1790,7 @@ const km: MessageSchema = {
       discountReason: 'មូលហេតុបញ្ចុះតម្លៃ',
       discountPrice: 'តម្លៃបញ្ចុះ',
       feeToPay: 'ថ្លៃត្រូវបង់',
+      notPaidYet: 'មិនទាន់បង់ប្រាក់',
       receivedMoney: 'ប្រាក់ទទួលបាន',
       paid: 'បានបង់',
       debt: 'ជំពាក់',
