@@ -66,6 +66,7 @@ const statusVariant: Record<InvoiceStatusValue, 'success' | 'warning' | 'danger'
   OVERDUE: 'danger',
   CANCELLED: 'neutral',
   VOID: 'neutral',
+  STOPPED: 'neutral',
 }
 
 const paymentStatusVariant: Record<PaymentStatusValue, 'success' | 'warning' | 'danger' | 'neutral'> = {
@@ -94,21 +95,23 @@ async function load() {
   }
 }
 
-// --- Cancel / Void -------------------------------------------------------
+// --- Cancel / Void / Stop payment ----------------------------------------
+
+type ReasonMode = 'cancel' | 'void' | 'stop'
 
 const reasonModalOpen = ref(false)
-const reasonModalMode = ref<'cancel' | 'void'>('cancel')
+const reasonModalMode = ref<ReasonMode>('cancel')
 const reasonSubmitting = ref(false)
 const reasonError = ref<string | null>(null)
 
-function openCancel() {
-  reasonModalMode.value = 'cancel'
-  reasonError.value = null
-  reasonModalOpen.value = true
+const reasonModes: Record<ReasonMode, { action: string; label: string; failed: string }> = {
+  cancel: { action: 'admin.invoices.cancelAction', label: 'admin.invoices.cancelReasonLabel', failed: 'admin.invoices.cancelFailed' },
+  void: { action: 'admin.invoices.voidAction', label: 'admin.invoices.voidReasonLabel', failed: 'admin.invoices.voidFailed' },
+  stop: { action: 'admin.invoices.stopAction', label: 'admin.invoices.stopReasonLabel', failed: 'admin.invoices.stopFailed' },
 }
 
-function openVoid() {
-  reasonModalMode.value = 'void'
+function openReason(mode: ReasonMode) {
+  reasonModalMode.value = mode
   reasonError.value = null
   reasonModalOpen.value = true
 }
@@ -118,15 +121,10 @@ async function confirmReason(reason: string) {
   reasonError.value = null
 
   try {
-    if (reasonModalMode.value === 'cancel') {
-      invoice.value = await invoicesService.cancel(invoiceId.value, reason)
-    } else {
-      invoice.value = await invoicesService.void(invoiceId.value, reason)
-    }
+    invoice.value = await invoicesService[reasonModalMode.value](invoiceId.value, reason)
     reasonModalOpen.value = false
   } catch (error) {
-    reasonError.value =
-      error instanceof ApiRequestError ? error.message : t(reasonModalMode.value === 'cancel' ? 'admin.invoices.cancelFailed' : 'admin.invoices.voidFailed')
+    reasonError.value = error instanceof ApiRequestError ? error.message : t(reasonModes[reasonModalMode.value].failed)
   } finally {
     reasonSubmitting.value = false
   }
@@ -203,10 +201,18 @@ onMounted(load)
         >
           {{ t('admin.invoices.recordPaymentAction') }}
         </BaseButton>
-        <BaseButton v-if="!isInvoiceClosed(invoice.status)" size="sm" variant="outline" @click="openVoid">
+        <BaseButton
+          v-if="!isInvoiceClosed(invoice.status) && invoice.paid_amount > 0 && invoice.balance > 0"
+          size="sm"
+          variant="outline"
+          @click="openReason('stop')"
+        >
+          {{ t('admin.invoices.stopAction') }}
+        </BaseButton>
+        <BaseButton v-if="!isInvoiceClosed(invoice.status)" size="sm" variant="outline" @click="openReason('void')">
           {{ t('admin.invoices.voidAction') }}
         </BaseButton>
-        <BaseButton v-if="!isInvoiceClosed(invoice.status)" size="sm" variant="danger" @click="openCancel">
+        <BaseButton v-if="!isInvoiceClosed(invoice.status)" size="sm" variant="danger" @click="openReason('cancel')">
           {{ t('admin.invoices.cancelAction') }}
         </BaseButton>
       </div>
@@ -244,7 +250,7 @@ onMounted(load)
             <p v-if="invoice.notes" class="mt-3 rounded-lg bg-neutral-50 p-3 text-sm text-neutral-700">{{ invoice.notes }}</p>
 
             <div v-if="invoice.cancellation_reason" class="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-700">
-              <p class="font-medium">{{ t('admin.invoices.cancelledReasonLabel') }}</p>
+              <p class="font-medium">{{ t(invoice.status === 'STOPPED' ? 'admin.invoices.stoppedReasonLabel' : 'admin.invoices.cancelledReasonLabel') }}</p>
               <p>{{ invoice.cancellation_reason }}</p>
               <p class="mt-1 text-xs text-red-500">{{ invoice.cancelled_by }} — {{ formatDateTime(invoice.cancelled_at) }}</p>
             </div>
@@ -360,9 +366,9 @@ onMounted(load)
 
       <ConfirmReasonModal
         v-model="reasonModalOpen"
-        :title="reasonModalMode === 'cancel' ? t('admin.invoices.cancelAction') : t('admin.invoices.voidAction')"
-        :label="reasonModalMode === 'cancel' ? t('admin.invoices.cancelReasonLabel') : t('admin.invoices.voidReasonLabel')"
-        :confirm-label="reasonModalMode === 'cancel' ? t('admin.invoices.cancelAction') : t('admin.invoices.voidAction')"
+        :title="t(reasonModes[reasonModalMode].action)"
+        :label="t(reasonModes[reasonModalMode].label)"
+        :confirm-label="t(reasonModes[reasonModalMode].action)"
         danger
         :submitting="reasonSubmitting"
         :error="reasonError"

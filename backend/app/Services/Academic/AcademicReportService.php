@@ -235,7 +235,8 @@ final class AcademicReportService
         $row = DB::connection('tenant')->table('invoices')
             ->where('student_id', $student->getKey())
             ->whereNotIn('status', [InvoiceStatus::CANCELLED, InvoiceStatus::VOID])
-            ->selectRaw('COALESCE(SUM(total), 0) as total_invoiced, COALESCE(SUM(paid_amount), 0) as total_paid, COALESCE(SUM(balance), 0) as balance')
+            // A STOPPED invoice's remaining balance was written off, not owed.
+            ->selectRaw('COALESCE(SUM(total), 0) as total_invoiced, COALESCE(SUM(paid_amount), 0) as total_paid, COALESCE(SUM(CASE WHEN status = ? THEN 0 ELSE balance END), 0) as balance', [InvoiceStatus::STOPPED])
             ->first();
 
         return [

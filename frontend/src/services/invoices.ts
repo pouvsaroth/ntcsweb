@@ -10,7 +10,7 @@ function currentInvoiceLocale(): 'en' | 'km' {
   return i18n.global.locale.value === 'km' ? 'km' : 'en'
 }
 
-export type InvoiceStatusValue = 'DRAFT' | 'ISSUED' | 'PARTIALLY_PAID' | 'PAID' | 'OVERDUE' | 'CANCELLED' | 'VOID'
+export type InvoiceStatusValue = 'DRAFT' | 'ISSUED' | 'PARTIALLY_PAID' | 'PAID' | 'OVERDUE' | 'CANCELLED' | 'VOID' | 'STOPPED'
 
 export const invoiceStatuses: InvoiceStatusValue[] = [
   'DRAFT',
@@ -20,11 +20,12 @@ export const invoiceStatuses: InvoiceStatusValue[] = [
   'OVERDUE',
   'CANCELLED',
   'VOID',
+  'STOPPED',
 ]
 
 /** Terminal states — a payment can never be recorded against one of these (mirrors InvoiceStatus::isClosed() on the backend). */
 export function isInvoiceClosed(status: InvoiceStatusValue): boolean {
-  return status === 'CANCELLED' || status === 'VOID'
+  return status === 'CANCELLED' || status === 'VOID' || status === 'STOPPED'
 }
 
 export type PaymentTypeValue = 'monthly' | 'term' | 'video' | 'monthly_online' | 'term_online'
@@ -171,6 +172,9 @@ export const invoicesService = {
   cancel: (id: number, reason: string) => apiPost<Invoice>(`/invoices/${id}/cancel`, { reason }),
 
   void: (id: number, reason: string) => apiPost<Invoice>(`/invoices/${id}/void`, { reason }),
+
+  /** Student stopped studying: keeps the payments already made, closes the invoice so the rest no longer counts as unpaid. */
+  stop: (id: number, reason: string) => apiPost<Invoice>(`/invoices/${id}/stop`, { reason }),
 
   send: (id: number, input: SendInvoiceInput) => apiPost<void>(`/invoices/${id}/send`, input),
 

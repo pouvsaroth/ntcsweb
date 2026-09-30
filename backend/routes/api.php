@@ -447,6 +447,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('monthly-payment-alerts', [MonthlyPaymentAlertController::class, 'index'])->name('monthly-payment-alerts.index');
         Route::post('invoices/{invoice}/cancel', [InvoiceController::class, 'cancel'])->name('invoices.cancel');
         Route::post('invoices/{invoice}/void', [InvoiceController::class, 'void'])->name('invoices.void');
+        Route::post('invoices/{invoice}/stop', [InvoiceController::class, 'stop'])->name('invoices.stop');
         Route::get('invoices/{invoice}/pdf', [InvoiceController::class, 'downloadPdf'])->name('invoices.pdf');
         Route::get('invoices/{invoice}/image', [InvoiceController::class, 'downloadImage'])->name('invoices.image');
         Route::post('invoices/{invoice}/send', [InvoiceController::class, 'send'])->name('invoices.send');

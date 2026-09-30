@@ -145,6 +145,13 @@ final class InvoiceController extends Controller
         return ApiResponse::success(new InvoiceResource($invoice));
     }
 
+    public function stop(CloseInvoiceRequest $request, Invoice $invoice): JsonResponse
+    {
+        $invoice = $this->invoices->stop($invoice, $request->validated('reason'), $request->user());
+
+        return ApiResponse::success(new InvoiceResource($invoice));
+    }
+
     public function downloadPdf(Request $request, Invoice $invoice, InvoicePdfService $pdf): HttpResponse
     {
         $this->authorize('view', $invoice);

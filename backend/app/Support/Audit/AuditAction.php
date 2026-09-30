@@ -56,6 +56,8 @@ final class AuditAction
 
     public const INVOICE_VOIDED = 'INVOICE_VOIDED';
 
+    public const INVOICE_STOPPED = 'INVOICE_STOPPED';
+
     public const PAYMENT_CREATED = 'PAYMENT_CREATED';
 
     public const PAYMENT_CANCELLED = 'PAYMENT_CANCELLED';

@@ -51,6 +51,7 @@ const statusVariant: Record<InvoiceStatusValue, 'success' | 'warning' | 'danger'
   OVERDUE: 'danger',
   CANCELLED: 'neutral',
   VOID: 'neutral',
+  STOPPED: 'neutral',
 }
 
 const statusFilterOptions = computed(() => invoiceStatuses.map((status) => ({ value: status, label: t(`admin.invoices.status${statusKey(status)}`) })))

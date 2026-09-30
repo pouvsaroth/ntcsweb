@@ -184,6 +184,48 @@ final class InvoiceService
         return $this->close($invoice, InvoiceStatus::VOID, AuditAction::INVOICE_VOIDED, $reason, $actor);
     }
 
+    /**
+     * The student stopped studying with money still owed. Unlike cancel/void
+     * this keeps the payments already recorded (they were real income) and
+     * just closes the invoice so its remaining balance stops counting as
+     * unpaid/partially paid. A fully paid invoice has nothing to stop.
+     */
+    public function stop(Invoice $invoice, string $reason, User $actor): Invoice
+    {
+        return DB::transaction(function () use ($invoice, $reason, $actor) {
+            /** @var Invoice $invoice */
+            $invoice = Invoice::query()->whereKey($invoice->getKey())->lockForUpdate()->firstOrFail();
+
+            if ($invoice->isClosed()) {
+                throw ValidationException::withMessages(['status' => 'This invoice is already cancelled, void or stopped.']);
+            }
+
+            if ($invoice->status === InvoiceStatus::PAID || (float) $invoice->balance <= 0.004) {
+                throw ValidationException::withMessages(['status' => 'This invoice is already fully paid — there is no payment left to stop.']);
+            }
+
+            $oldStatus = $invoice->status;
+
+            $invoice->update([
+                'status' => InvoiceStatus::STOPPED,
+                'cancellation_reason' => $reason,
+                'cancelled_by' => $actor->getKey(),
+                'cancelled_at' => now(),
+            ]);
+
+            $this->audit->log(
+                AuditAction::INVOICE_STOPPED,
+                'Invoices',
+                $invoice,
+                old: ['status' => $oldStatus],
+                new: ['status' => InvoiceStatus::STOPPED, 'reason' => $reason],
+                description: "Stopped payment on invoice {$invoice->invoice_number} (unpaid ".number_format((float) $invoice->balance, 2)."): {$reason}",
+            );
+
+            return $invoice;
+        });
+    }
+
     private function close(Invoice $invoice, string $status, string $action, string $reason, User $actor): Invoice
     {
         return DB::transaction(function () use ($invoice, $status, $action, $reason, $actor) {

@@ -271,4 +271,58 @@ class InvoiceTest extends TestCase
 
         $this->postJson("/api/v1/invoices/{$invoiceId}/cancel", ['reason' => 'test'])->assertUnprocessable();
     }
+
+    public function test_stopping_a_partially_paid_invoice_keeps_the_payment_and_takes_it_out_of_the_unpaid_list(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::INVOICES_CREATE, Permissions::INVOICES_CANCEL, Permissions::PAYMENTS_CREATE, Permissions::INVOICES_VIEW]);
+        $student = Student::factory()->create();
+        $product = Product::factory()->create(['price' => 100]);
+
+        $invoiceId = $this->postJson('/api/v1/invoices', [
+            'student_id' => $student->id,
+            'items' => [['product_id' => $product->id, 'quantity' => 1]],
+        ])->assertCreated()->json('data.id');
+
+        $this->postJson("/api/v1/invoices/{$invoiceId}/payments", [
+            'amount' => 40,
+            'payment_method' => \App\Support\Billing\PaymentMethod::CASH,
+        ])->assertCreated();
+
+        $this->postJson("/api/v1/invoices/{$invoiceId}/stop", [])->assertUnprocessable();
+
+        $this->postJson("/api/v1/invoices/{$invoiceId}/stop", ['reason' => 'Student stopped studying'])
+            ->assertOk()
+            ->assertJsonPath('data.status', InvoiceStatus::STOPPED);
+
+        $invoice = Invoice::findOrFail($invoiceId);
+        $this->assertEquals(40, (float) $invoice->paid_amount);
+        $this->assertFalse(Invoice::query()->outstanding()->whereKey($invoiceId)->exists());
+        $this->assertTrue(AuditLog::where('auditable_id', $invoiceId)->where('action', AuditAction::INVOICE_STOPPED)->exists());
+
+        // Closed: no more payments, and it can't be stopped twice.
+        $this->postJson("/api/v1/invoices/{$invoiceId}/payments", [
+            'amount' => 10,
+            'payment_method' => \App\Support\Billing\PaymentMethod::CASH,
+        ])->assertUnprocessable();
+        $this->postJson("/api/v1/invoices/{$invoiceId}/stop", ['reason' => 'again'])->assertUnprocessable();
+    }
+
+    public function test_a_fully_paid_invoice_cannot_be_stopped(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::INVOICES_CREATE, Permissions::INVOICES_CANCEL, Permissions::PAYMENTS_CREATE]);
+        $student = Student::factory()->create();
+        $product = Product::factory()->create(['price' => 10]);
+
+        $invoiceId = $this->postJson('/api/v1/invoices', [
+            'student_id' => $student->id,
+            'items' => [['product_id' => $product->id, 'quantity' => 1]],
+        ])->assertCreated()->json('data.id');
+
+        $this->postJson("/api/v1/invoices/{$invoiceId}/payments", [
+            'amount' => 10,
+            'payment_method' => \App\Support\Billing\PaymentMethod::CASH,
+        ])->assertCreated();
+
+        $this->postJson("/api/v1/invoices/{$invoiceId}/stop", ['reason' => 'test'])->assertUnprocessable();
+    }
 }
