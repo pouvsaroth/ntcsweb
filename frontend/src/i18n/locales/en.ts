@@ -181,6 +181,11 @@ const en = {
     markAllRead: 'Mark all as read',
     empty: 'No notifications yet.',
     viewAll: 'View all',
+    push: {
+      label: 'Phone notifications',
+      needsInstall: 'To get notifications on iPhone, tap Share → "Add to Home Screen", then open the app from your Home Screen and turn this on.',
+      denied: 'Notifications are blocked for this site. Allow them in your browser or phone settings, then reopen this menu.',
+    },
     types: {
       leave_request_submitted: '{student_name} submitted a permission request',
       leave_request_approved: 'The permission request for {student_name} was approved',

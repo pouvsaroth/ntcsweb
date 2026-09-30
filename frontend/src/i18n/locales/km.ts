@@ -178,6 +178,11 @@ const km: MessageSchema = {
     markAllRead: 'សម្គាល់ថាបានអានទាំងអស់',
     empty: 'មិនទាន់មានការជូនដំណឹងទេ។',
     viewAll: 'មើលទាំងអស់',
+    push: {
+      label: 'ការជូនដំណឹងលើទូរស័ព្ទ',
+      needsInstall: 'ដើម្បីទទួលការជូនដំណឹងលើ iPhone សូមចុច Share → "Add to Home Screen" បន្ទាប់មកបើកកម្មវិធីពី Home Screen ហើយបើកមុខងារនេះ។',
+      denied: 'ការជូនដំណឹងត្រូវបានបិទសម្រាប់គេហទំព័រនេះ។ សូមអនុញ្ញាតនៅក្នុងការកំណត់កម្មវិធីរុករក ឬទូរស័ព្ទ រួចបើកម៉ឺនុយនេះម្តងទៀត។',
+    },
     types: {
       leave_request_submitted: '{student_name} បានដាក់ស្នើសំណើសុំច្បាប់',
       leave_request_approved: 'សំណើសុំច្បាប់សម្រាប់ {student_name} ត្រូវបានអនុម័ត',

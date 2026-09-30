@@ -178,6 +178,11 @@ const zh: MessageSchema = {
     markAllRead: '全部标记为已读',
     empty: '暂无通知。',
     viewAll: '查看全部',
+    push: {
+      label: '手机通知',
+      needsInstall: '要在 iPhone 上接收通知，请点击分享 →“添加到主屏幕”，然后从主屏幕打开应用并开启此功能。',
+      denied: '此网站的通知已被阻止。请在浏览器或手机设置中允许，然后重新打开此菜单。',
+    },
     types: {
       leave_request_submitted: '{student_name} 提交了一项请假申请',
       leave_request_approved: '{student_name} 的请假申请已获批准',

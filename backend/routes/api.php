@@ -96,6 +96,7 @@ use App\Http\Controllers\Api\V1\MyInvoiceController;
 use App\Http\Controllers\Api\V1\MyLeaveRequestController;
 use App\Http\Controllers\Api\V1\MyMakeUpClassRequestController;
 use App\Http\Controllers\Api\V1\MyMonthlyPaymentAlertController;
+use App\Http\Controllers\Api\V1\MyPushSubscriptionController;
 use App\Http\Controllers\Api\V1\MyResignationRequestController;
 use App\Http\Controllers\Api\V1\MyStudentFeedbackController;
 use App\Http\Controllers\Api\V1\MyVideoController;
@@ -626,6 +627,11 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
         Route::post('notifications/mark-all-read', [NotificationController::class, 'markAllRead'])->name('notifications.mark-all-read');
         Route::post('notifications/{notification}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
+
+        // Phone notifications (Web Push) for the current device — identity-gated, see MyPushSubscriptionController.
+        Route::get('my-push-subscriptions/config', [MyPushSubscriptionController::class, 'config'])->name('my-push-subscriptions.config');
+        Route::post('my-push-subscriptions', [MyPushSubscriptionController::class, 'store'])->name('my-push-subscriptions.store');
+        Route::delete('my-push-subscriptions', [MyPushSubscriptionController::class, 'destroy'])->name('my-push-subscriptions.destroy');
 
         // Singleton, not a resource — see AboutPageController.
         Route::get('settings/about', [AboutPageController::class, 'show'])->name('settings.about.show');

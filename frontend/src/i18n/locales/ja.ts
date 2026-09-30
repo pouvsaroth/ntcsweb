@@ -178,6 +178,11 @@ const ja: MessageSchema = {
     markAllRead: 'すべて既読にする',
     empty: 'まだ通知はありません。',
     viewAll: 'すべて表示',
+    push: {
+      label: 'スマートフォン通知',
+      needsInstall: 'iPhoneで通知を受け取るには、共有 →「ホーム画面に追加」をタップし、ホーム画面からアプリを開いてこれをオンにしてください。',
+      denied: 'このサイトの通知はブロックされています。ブラウザまたは端末の設定で許可してから、このメニューを開き直してください。',
+    },
     types: {
       leave_request_submitted: '{student_name}さんが許可申請を提出しました',
       leave_request_approved: '{student_name}さんの許可申請が承認されました',

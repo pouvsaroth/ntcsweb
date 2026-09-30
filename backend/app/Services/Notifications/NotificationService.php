@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services\Notifications;
 
+use App\Jobs\SendPushNotificationJob;
+use App\Models\PushSubscription;
 use App\Models\User;
 use App\Models\UserNotification;
 use App\Support\Tenancy\TenantContext;
@@ -11,7 +13,9 @@ use Illuminate\Support\Collection;
 
 /**
  * The one place a UserNotification is ever created — see that model's own
- * docblock for why `type`/`data` rather than pre-rendered text.
+ * docblock for why `type`/`data` rather than pre-rendered text. Every one
+ * is also pushed to the recipient's phone(s) if they turned that on — see
+ * SendPushNotificationJob.
  */
 final class NotificationService
 {
@@ -22,12 +26,22 @@ final class NotificationService
      */
     public function notify(User $recipient, string $type, array $data, ?string $link = null): UserNotification
     {
-        return UserNotification::query()->create([
+        $notification = UserNotification::query()->create([
             'recipient_id' => $recipient->getKey(),
             'type' => $type,
             'data' => $data,
             'link' => $link,
         ]);
+
+        // Only queued when there's somewhere to deliver it — most users never
+        // turn phone notifications on, and an unconfigured server (no VAPID
+        // keys) can't send at all. afterCommit: never push a notification
+        // whose surrounding transaction then rolls back.
+        if (config('services.webpush.public_key') && PushSubscription::query()->where('user_id', $recipient->getKey())->exists()) {
+            SendPushNotificationJob::dispatch($notification->id, $this->context->idOrFail())->afterCommit();
+        }
+
+        return $notification;
     }
 
     /**

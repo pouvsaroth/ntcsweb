@@ -16,3 +16,42 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(fetch(event.request))
   }
 })
+
+// Phone notifications (Web Push) — the backend's SendPushNotificationJob
+// sends { title, body, url, tag } for every in-app notification to each
+// device the user turned this on for (see services/pushNotifications.ts).
+self.addEventListener('push', (event) => {
+  let payload = {}
+  try {
+    payload = event.data ? event.data.json() : {}
+  } catch {
+    payload = { body: event.data ? event.data.text() : '' }
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(payload.title || 'NTCSWEB', {
+      body: payload.body || '',
+      tag: payload.tag,
+      icon: '/icons/admin-192.png',
+      badge: '/icons/admin-192.png',
+      data: { url: payload.url || '/admin/notifications' },
+    }),
+  )
+})
+
+// Tap → reuse the already-open app window if there is one (same "one
+// reusable window" goal as the manifest's launch_handler), else open one.
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  const url = new URL(event.notification.data?.url || '/admin/notifications', self.location.origin).href
+
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windows) => {
+      const existing = windows.find((client) => new URL(client.url).origin === self.location.origin)
+      if (existing) {
+        return existing.focus().then((client) => (client && 'navigate' in client ? client.navigate(url) : undefined))
+      }
+      return self.clients.openWindow(url)
+    }),
+  )
+})

@@ -3,6 +3,7 @@ import { defineStore } from 'pinia'
 
 import { authService, loginRequiresTenantSelection, type LoginPayload, type LoginResult, type MeResult } from '@/services/auth'
 import { type ActingTenant, getActingTenant, resetDevTenant, setActingTenant, setDevTenant } from '@/services/http'
+import { detachPushOnLogout } from '@/services/pushNotifications'
 import type { User } from '@/types/models'
 import { ApiRequestError } from '@/types/api'
 
@@ -144,6 +145,8 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function logout(): Promise<void> {
     try {
+      // Before the session ends — the unlink call needs to still be signed in.
+      await detachPushOnLogout()
       await authService.logout()
     } finally {
       clearSession()

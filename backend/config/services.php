@@ -14,6 +14,14 @@ return [
     |
     */
 
+    // Phone notifications (Web Push) — generate once with `php artisan
+    // webpush:vapid`. Left unset, push is simply off (see NotificationService).
+    'webpush' => [
+        'public_key' => env('WEBPUSH_PUBLIC_KEY'),
+        'private_key' => env('WEBPUSH_PRIVATE_KEY'),
+        'subject' => env('WEBPUSH_SUBJECT', 'mailto:admin@example.com'),
+    ],
+
     'postmark' => [
         'key' => env('POSTMARK_API_KEY'),
     ],

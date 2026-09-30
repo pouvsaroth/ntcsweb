@@ -178,6 +178,11 @@ const ko: MessageSchema = {
     markAllRead: '모두 읽음으로 표시',
     empty: '아직 알림이 없습니다.',
     viewAll: '모두 보기',
+    push: {
+      label: '휴대폰 알림',
+      needsInstall: 'iPhone에서 알림을 받으려면 공유 → "홈 화면에 추가"를 누른 뒤 홈 화면에서 앱을 열고 이 기능을 켜세요.',
+      denied: '이 사이트의 알림이 차단되어 있습니다. 브라우저 또는 휴대폰 설정에서 허용한 후 이 메뉴를 다시 여세요.',
+    },
     types: {
       leave_request_submitted: '{student_name} 님이 허가 요청을 제출했습니다',
       leave_request_approved: '{student_name} 님의 허가 요청이 승인되었습니다',

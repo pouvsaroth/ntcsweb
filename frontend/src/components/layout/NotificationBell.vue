@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
 import { notificationsService, type AppNotification } from '@/services/notifications'
+import { disablePush, enablePush, pushState, syncPush, type PushState } from '@/services/pushNotifications'
 import { formatDateTime } from '@/utils/date'
 
 const { t } = useI18n()
@@ -13,6 +14,25 @@ const open = ref(false)
 const items = ref<AppNotification[]>([])
 const unreadCount = ref(0)
 const loading = ref(false)
+
+// Phone notifications (Web Push) for this device — see services/pushNotifications.ts.
+const push = ref<PushState>('unsupported')
+const pushBusy = ref(false)
+
+async function refreshPush() {
+  push.value = await pushState().catch(() => 'unsupported' as PushState)
+}
+
+async function togglePush() {
+  pushBusy.value = true
+  try {
+    push.value = push.value === 'on' ? await disablePush() : await enablePush()
+  } catch {
+    await refreshPush()
+  } finally {
+    pushBusy.value = false
+  }
+}
 
 /** The dropdown's own small preview — the full list lives at /admin/notifications (see "View all" below). */
 async function load() {
@@ -36,7 +56,7 @@ function formatWhen(value: string): string {
 
 async function toggle() {
   open.value = !open.value
-  if (open.value) await load()
+  if (open.value) await Promise.all([load(), refreshPush()])
 }
 
 async function select(notification: AppNotification) {
@@ -64,6 +84,7 @@ let pollHandle: ReturnType<typeof setInterval> | undefined
 
 onMounted(() => {
   void load()
+  void syncPush().catch(() => {})
   pollHandle = setInterval(() => void load(), 60_000)
 })
 
@@ -135,6 +156,25 @@ onBeforeUnmount(() => {
             </span>
             <span class="text-xs text-neutral-400">{{ formatWhen(notification.created_at) }}</span>
           </button>
+        </div>
+
+        <div v-if="push !== 'unsupported' && push !== 'unconfigured'" class="border-t border-neutral-100 px-3 py-2.5">
+          <div v-if="push === 'on' || push === 'off'" class="flex items-center justify-between gap-3">
+            <span class="text-sm text-neutral-700">{{ t('notifications.push.label') }}</span>
+            <button
+              type="button"
+              role="switch"
+              :aria-checked="push === 'on'"
+              :disabled="pushBusy"
+              class="relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors disabled:opacity-50"
+              :class="push === 'on' ? 'bg-primary-600' : 'bg-neutral-300'"
+              @click="togglePush"
+            >
+              <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform" :class="push === 'on' ? 'translate-x-5' : 'translate-x-0.5'" />
+            </button>
+          </div>
+          <p v-else-if="push === 'needs-install'" class="text-xs text-neutral-500">{{ t('notifications.push.needsInstall') }}</p>
+          <p v-else-if="push === 'denied'" class="text-xs text-neutral-500">{{ t('notifications.push.denied') }}</p>
         </div>
 
         <RouterLink
