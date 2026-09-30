@@ -458,6 +458,16 @@ onMounted(async () => {
         </div>
 
         <BaseInput v-model="form.enrolled_at" type="date" required :label="t('admin.enrollments.enrolledAt')" :error="errors.enrolled_at?.[0]" />
+
+        <label class="inline-flex items-center gap-2 text-sm font-medium text-neutral-700">
+          <input
+            :checked="notPaidYet"
+            type="checkbox"
+            class="rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+            @change="onNotPaidYetChange(($event.target as HTMLInputElement).checked)"
+          />
+          {{ t('admin.enrollments.notPaidYet') }}
+        </label>
       </div>
 
       <div class="space-y-4 rounded-[--radius-card] border border-neutral-200 bg-neutral-50 p-5">
@@ -508,16 +518,6 @@ onMounted(async () => {
               <span class="font-medium text-neutral-700">{{ t('admin.enrollments.feeToPay') }}</span>
               <span class="font-semibold text-neutral-900">{{ formatMoney(feeToPay, invoiceCurrency) }}</span>
             </div>
-
-            <label class="inline-flex items-center gap-2 text-sm font-medium text-neutral-700">
-              <input
-                :checked="notPaidYet"
-                type="checkbox"
-                class="rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
-                @change="onNotPaidYetChange(($event.target as HTMLInputElement).checked)"
-              />
-              {{ t('admin.enrollments.notPaidYet') }}
-            </label>
 
             <BaseInput
               :model-value="String(form.received_amount)"
