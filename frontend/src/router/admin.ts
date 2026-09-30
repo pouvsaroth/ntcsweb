@@ -633,10 +633,30 @@ const router = createRouter({
     },
   ],
   scrollBehavior(to, _from, savedPosition) {
-    if (savedPosition) return savedPosition
+    if (savedPosition) {
+      // Going back: the list page re-fetches its rows, so it's still short
+      // when this runs — restoring right away would clamp to the top (or,
+      // on phones, leave the page looking stuck). Wait until it's tall
+      // enough, giving up after ~1.5s.
+      return new Promise((resolve) => {
+        const started = Date.now()
+        const check = () => {
+          const fits = document.documentElement.scrollHeight - window.innerHeight >= savedPosition.top
+          if (fits || Date.now() - started > 1500) resolve(savedPosition)
+          else requestAnimationFrame(check)
+        }
+        check()
+      })
+    }
     if (to.hash) return { el: to.hash, behavior: 'smooth' }
     return { top: 0 }
   },
+})
+
+// Safety net: no modal survives a route change, so no page should ever
+// start out with the page scroll still locked by one (see BaseModal).
+router.afterEach(() => {
+  document.body.style.overflow = ''
 })
 
 /** A student has no dashboard.view permission by design, but still lands on the dashboard route as their own home page (see Dashboard.vue's student branch) — this is the one route where "can reach it" isn't just the permission. */

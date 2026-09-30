@@ -33,15 +33,26 @@ function onKeydown(event: KeyboardEvent) {
 }
 
 onMounted(() => window.addEventListener('keydown', onKeydown))
-onUnmounted(() => window.removeEventListener('keydown', onKeydown))
 
 // Prevent the page from scrolling behind an open modal.
 watch(
   () => props.modelValue,
-  (open) => {
-    document.body.style.overflow = open ? 'hidden' : ''
+  (open, wasOpen) => {
+    // On mount (wasOpen undefined) only lock — a closed modal mounting must
+    // not unlock the page behind another modal that's already open.
+    if (open) document.body.style.overflow = 'hidden'
+    else if (wasOpen !== undefined) document.body.style.overflow = ''
   },
+  { immediate: true },
 )
+
+// Leaving the page while the modal is still open (e.g. the phone's back
+// button) unmounts it without modelValue ever turning false — without this
+// the scroll lock above would stay on for every page afterwards.
+onUnmounted(() => {
+  window.removeEventListener('keydown', onKeydown)
+  if (props.modelValue) document.body.style.overflow = ''
+})
 </script>
 
 <template>
