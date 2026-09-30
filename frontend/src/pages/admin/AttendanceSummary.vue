@@ -35,29 +35,19 @@ function statusLabel(status: AttendanceStatusValue): string {
   return t(`admin.attendance.status${status.charAt(0)}${status.slice(1).toLowerCase()}`)
 }
 
-/** yyyy-MM-dd, local time. */
-function toDateInput(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
-
-function firstOfThisMonth(): string {
-  const now = new Date()
-  return toDateInput(new Date(now.getFullYear(), now.getMonth(), 1))
-}
-
-function today(): string {
-  return toDateInput(new Date())
-}
-
 // --- Filters -------------------------------------------------------------
 
 const classes = ref<SchoolClass[]>([])
 const loadingClasses = ref(true)
-/** 'all' = every class (see AttendanceController::summaryAcrossClasses()). */
-const classId = ref<number | 'all' | null>(null)
+/**
+ * Opens on every class, every day, Studying students who have missed time —
+ * 'all' = every class (see AttendanceController::summaryAcrossClasses()); a
+ * blank date means no limit on that side.
+ */
+const classId = ref<number | 'all' | null>('all')
 const studentId = ref<number | null>(null)
-const dateFrom = ref(firstOfThisMonth())
-const dateTo = ref(today())
+const dateFrom = ref('')
+const dateTo = ref('')
 
 const classOptions = computed(() => [
   { value: 'all', label: t('admin.attendance.allClasses') },
@@ -66,7 +56,7 @@ const classOptions = computed(() => [
 
 /** Enrollment status — 'active' (Studying) by default, the summary's long-standing scope. */
 const statusFilter = ref<EnrollmentStatus | 'all'>('active')
-const onlyAbsent = ref(false)
+const onlyAbsent = ref(true)
 
 function enrollmentStatusKey(status: EnrollmentStatus): string {
   return status
@@ -97,12 +87,20 @@ const loading = ref(false)
 const loadError = ref<string | null>(null)
 
 /**
- * Total hours missed: absent + permission (excused) + late minutes as hours
- * — the figure the "total absence" filter below compares against.
+ * Hours missed: absent + permission (excused) + late minutes as hours — the
+ * figure the "total absence" filter below compares against.
  */
 function totalAbsenceHours(row: AttendanceSummaryRow): number {
   return Math.round((row.absent_hours + row.permission_hours + row.late_minutes / 60) * 10) / 10
 }
+
+/** Still to make up: missed hours − approved make-up hours, never below 0. */
+function remainingHours(row: AttendanceSummaryRow): number {
+  return Math.max(0, Math.round((totalAbsenceHours(row) - row.make_up_hours) * 10) / 10)
+}
+
+/** Above this many hours still to make up, the Total cell is highlighted red. */
+const REMAINING_HOURS_ALERT = 6
 
 /** e.g. ">=6", "<6", "= 4.5", or a bare "6" (meaning 6 hours or more). */
 const absenceHoursFilter = ref('')
@@ -139,24 +137,17 @@ const filteredRows = computed(() =>
   rows.value.filter(
     (row) =>
       (studentId.value === null || row.student.id === studentId.value) &&
-      (!onlyAbsent.value || row.absent_days > 0) &&
+      (!onlyAbsent.value || totalAbsenceHours(row) > 0) &&
       matchesAbsence(row),
   ),
 )
 
 const columns = computed(() => [
   { key: 'student', label: t('admin.attendance.columnStudent') },
-  // Only needed when rows come from more than one class.
-  ...(classId.value === 'all' ? [{ key: 'school_class', label: t('admin.attendance.columnClass') }] : []),
-  { key: 'course', label: t('admin.attendance.columnCourse') },
-  { key: 'present_days', label: t('admin.attendance.columnPresentDays'), align: 'text-right' },
+  { key: 'missed_hours', label: t('admin.attendance.columnMissedHours'), align: 'text-right' },
+  { key: 'make_up_hours', label: t('admin.attendance.columnMakeUpHours'), align: 'text-right' },
+  { key: 'remaining_hours', label: t('admin.attendance.columnRemainingHours'), align: 'text-right' },
   { key: 'present_hours', label: t('admin.attendance.columnPresentHours'), align: 'text-right' },
-  { key: 'permission_days', label: t('admin.attendance.columnPermissionDays'), align: 'text-right' },
-  { key: 'permission_hours', label: t('admin.attendance.columnPermissionHours'), align: 'text-right' },
-  { key: 'absent_days', label: t('admin.attendance.columnAbsentDays'), align: 'text-right' },
-  { key: 'absent_hours', label: t('admin.attendance.columnAbsentHours'), align: 'text-right' },
-  { key: 'late_minutes', label: t('admin.attendance.columnLateMinutes'), align: 'text-right' },
-  { key: 'total_absence_hours', label: t('admin.attendance.columnTotalAbsenceHours'), align: 'text-right' },
 ])
 
 async function loadSummary() {
@@ -170,8 +161,8 @@ async function loadSummary() {
   try {
     rows.value = await attendanceService.summary({
       class_id: classId.value === 'all' ? undefined : classId.value,
-      date_from: dateFrom.value,
-      date_to: dateTo.value,
+      date_from: dateFrom.value || undefined,
+      date_to: dateTo.value || undefined,
       status: statusFilter.value,
     })
   } catch (error) {
@@ -206,7 +197,11 @@ async function openDetail(row: AttendanceSummaryRow) {
       page: 1,
       per_page: 200,
       sort: 'date',
-      filter: { enrollment_id: String(row.enrollment_id), date_from: dateFrom.value, date_to: dateTo.value },
+      filter: {
+        enrollment_id: String(row.enrollment_id),
+        ...(dateFrom.value ? { date_from: dateFrom.value } : {}),
+        ...(dateTo.value ? { date_to: dateTo.value } : {}),
+      },
     })
     detailRecords.value = result.data
   } catch (error) {
@@ -227,7 +222,9 @@ onMounted(async () => {
 
   const classIdFromQuery = Number(route.query.class_id)
   if (Number.isInteger(classIdFromQuery) && classes.value.some((c) => c.id === classIdFromQuery)) {
+    // The watcher below reloads on this change.
     classId.value = classIdFromQuery
+  } else {
     await loadSummary()
   }
 })
@@ -294,15 +291,22 @@ onMounted(async () => {
         :empty-message="t('admin.attendance.summaryEmptyMessage')"
       >
         <template #cell-student="{ row }">
-          <button type="button" class="font-medium text-primary-700 hover:underline" @click="openDetail(row)">
+          <button type="button" class="text-left font-medium text-primary-700 hover:underline" @click="openDetail(row)">
             {{ row.student.name }}
           </button>
+          <!-- Which enrollment this row is — one student can be in several classes/courses. -->
+          <p class="text-xs text-neutral-400">{{ [row.course_package?.name, row.school_class?.name].filter(Boolean).join(' — ') || '—' }}</p>
         </template>
-        <template #cell-total_absence_hours="{ row }">
-          <span class="font-medium" :class="totalAbsenceHours(row) > 0 ? 'text-danger-600' : 'text-neutral-700'">{{ totalAbsenceHours(row) }}</span>
+        <template #cell-missed_hours="{ row }">{{ totalAbsenceHours(row) }}</template>
+        <template #cell-make_up_hours="{ row }">{{ row.make_up_hours }}</template>
+        <template #cell-remaining_hours="{ row }">
+          <span
+            class="inline-block rounded px-2 py-0.5 font-semibold"
+            :class="remainingHours(row) > REMAINING_HOURS_ALERT ? 'bg-danger-600 text-white' : 'text-neutral-800'"
+          >
+            {{ remainingHours(row) }}
+          </span>
         </template>
-        <template #cell-school_class="{ row }">{{ row.school_class?.name ?? '—' }}</template>
-        <template #cell-course="{ row }">{{ row.course_package?.name ?? '—' }}</template>
       </DataTable>
     </template>
     <p v-else class="py-8 text-center text-sm text-neutral-400">{{ t('admin.attendance.pickClassPrompt') }}</p>

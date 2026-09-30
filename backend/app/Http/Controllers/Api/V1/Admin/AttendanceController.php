@@ -115,8 +115,9 @@ final class AttendanceController extends Controller
         $this->authorize('viewAny', AttendanceRecord::class);
 
         $data = $request->validate([
-            'date_from' => ['required', 'date'],
-            'date_to' => ['required', 'date', 'after_or_equal:date_from'],
+            // Both optional — left blank means "all days".
+            'date_from' => ['nullable', 'date'],
+            'date_to' => ['nullable', 'date', 'after_or_equal:date_from'],
             'student_id' => ['nullable', 'integer'],
             'status' => ['nullable', 'string', 'max:200'],
         ]);
@@ -135,8 +136,8 @@ final class AttendanceController extends Controller
 
         return ApiResponse::success($this->attendance->summarize(
             $classId,
-            $data['date_from'],
-            $data['date_to'],
+            $data['date_from'] ?? null,
+            $data['date_to'] ?? null,
             isset($data['student_id']) ? (int) $data['student_id'] : null,
             $statuses,
         ));

@@ -9,7 +9,6 @@ use App\Http\Resources\AttendanceRecordResource;
 use App\Http\Responses\ApiResponse;
 use App\Models\AttendanceRecord;
 use App\Services\Academic\AttendanceService;
-use App\Services\Academic\MakeUpClassRequestService;
 use App\Support\Query\ApiQuery;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -45,16 +44,15 @@ final class MyAttendanceController extends Controller
      * AttendanceService::summarize(), so they match the admin Attendance
      * Summary.
      */
-    public function hoursSummary(Request $request, AttendanceService $attendance, MakeUpClassRequestService $makeUpClassRequests): JsonResponse
+    public function hoursSummary(Request $request, AttendanceService $attendance): JsonResponse
     {
         $student = $this->studentOrFail($request);
 
-        $rows = $attendance->summarize(null, '1900-01-01', now()->toDateString(), $student->id);
-        $makeUpHours = $makeUpClassRequests->approvedHoursByEnrollment(array_column($rows, 'enrollment_id'));
+        $rows = $attendance->summarize(null, null, null, $student->id);
 
-        return ApiResponse::success(array_map(function (array $row) use ($makeUpHours) {
+        return ApiResponse::success(array_map(function (array $row) {
             $absent = $row['permission_hours'] + $row['absent_hours'] + $row['late_minutes'] / 60;
-            $madeUp = $makeUpHours[$row['enrollment_id']] ?? 0;
+            $madeUp = $row['make_up_hours'];
 
             return [
                 'enrollment_id' => $row['enrollment_id'],

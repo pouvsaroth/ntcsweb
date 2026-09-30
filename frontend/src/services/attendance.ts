@@ -60,6 +60,8 @@ export interface AttendanceSummaryRow {
   absent_days: number
   absent_hours: number
   late_minutes: number
+  /** Approved make-up class hours inside the same date range. */
+  make_up_hours: number
 }
 
 /** One course the student is studying — see MyAttendanceController::hoursSummary(). */
@@ -101,7 +103,7 @@ export const attendanceService = {
    * `class_id` omitted = every class. `status`: omitted = Studying only,
    * 'all' = every status, or one enrollment status.
    */
-  summary: (params: { class_id?: number; date_from: string; date_to: string; student_id?: number | null; status?: string }) =>
+  summary: (params: { class_id?: number; date_from?: string; date_to?: string; student_id?: number | null; status?: string }) =>
     apiGetWithMeta<AttendanceSummaryRow[]>('/attendance-summary', { params }).then((r) => r.data),
 
   /** Student self-service — own records only, scoped server-side. */

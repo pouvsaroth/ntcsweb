@@ -26,7 +26,10 @@ use Illuminate\Validation\ValidationException;
  */
 final class AttendanceService
 {
-    public function __construct(private readonly AuditLogger $audit) {}
+    public function __construct(
+        private readonly AuditLogger $audit,
+        private readonly MakeUpClassRequestService $makeUpClassRequests,
+    ) {}
 
     /**
      * The roster for a class on a given date: every active enrollment, each
@@ -118,7 +121,9 @@ final class AttendanceService
      * {@see ClassSchedule} row of the enrollment's own class matches that
      * date's weekday, not a single fixed class duration — see
      * ClassSchedule's docblock for why a class can have a different
-     * duration on different days.
+     * duration on different days. `make_up_hours` is approved make-up class
+     * time inside the same range (see MakeUpClassRequestService). A null
+     * date bound means "no limit" — the summary's "all days".
      *
      * @param  list<string>|null  $statuses  null = Studying only; [] = all
      * @return list<array{
@@ -126,10 +131,10 @@ final class AttendanceService
      *     present_days:int, present_hours:float,
      *     permission_days:int, permission_hours:float,
      *     absent_days:int, absent_hours:float,
-     *     late_minutes:int,
+     *     late_minutes:int, make_up_hours:float,
      * }>
      */
-    public function summarize(?int $classId, string $dateFrom, string $dateTo, ?int $studentId = null, ?array $statuses = null): array
+    public function summarize(?int $classId, ?string $dateFrom, ?string $dateTo, ?int $studentId = null, ?array $statuses = null): array
     {
         $enrollments = Enrollment::query()
             ->with(['student', 'coursePackage', 'schoolClass.schedules'])
@@ -143,14 +148,17 @@ final class AttendanceService
 
         $recordsByEnrollment = AttendanceRecord::query()
             ->whereIn('enrollment_id', $enrollments->pluck('id'))
-            ->whereBetween('date', [$dateFrom, $dateTo])
+            ->when($dateFrom !== null, fn ($query) => $query->whereDate('date', '>=', $dateFrom))
+            ->when($dateTo !== null, fn ($query) => $query->whereDate('date', '<=', $dateTo))
             ->get()
             ->groupBy('enrollment_id');
+
+        $makeUpHours = $this->makeUpClassRequests->approvedHoursByEnrollment($enrollments->pluck('id')->all(), $dateFrom, $dateTo);
 
         /** @var array<int, IlluminateSupportCollection<int, int>> $minutesByClass class id -> weekday -> minutes */
         $minutesByClass = [];
 
-        return $enrollments->map(function (Enrollment $enrollment) use ($recordsByEnrollment, &$minutesByClass) {
+        return $enrollments->map(function (Enrollment $enrollment) use ($recordsByEnrollment, $makeUpHours, &$minutesByClass) {
             $class = $enrollment->schoolClass;
             $minutesByWeekday = $class === null ? collect() : ($minutesByClass[$class->id] ??= $class->schedules
                 ->groupBy('day_of_week')
@@ -199,6 +207,7 @@ final class AttendanceService
                 'absent_days' => $absentDays,
                 'absent_hours' => round($absentMinutes / 60, 1),
                 'late_minutes' => $lateMinutes,
+                'make_up_hours' => round($makeUpHours[$enrollment->id] ?? 0, 1),
             ];
         })->values()->all();
     }

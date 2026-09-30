@@ -7,6 +7,7 @@ namespace Tests\Feature\Academic;
 use App\Models\AttendanceRecord;
 use App\Models\ClassSchedule;
 use App\Models\Enrollment;
+use App\Models\MakeUpClassRequest;
 use App\Models\SchoolClass;
 use App\Support\Academic\AttendanceStatus;
 use App\Support\Authorization\Permissions;
@@ -186,5 +187,48 @@ class AttendanceSummaryTest extends TestCase
         ])->assertOk();
 
         $this->assertNull(AttendanceRecord::where('enrollment_id', $enrollment->id)->first()->late_minutes);
+    }
+
+    public function test_summary_without_dates_covers_all_days(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::ATTENDANCE_VIEW]);
+
+        $class = SchoolClass::factory()->create();
+        ClassSchedule::factory()->forClass($class)->onDay(ClassSchedule::MONDAY)->at('18:00:00', '20:00:00')->create();
+        $enrollment = Enrollment::factory()->forClass($class)->create();
+
+        AttendanceRecord::factory()->forEnrollment($enrollment)->onDate('2024-01-01')->status(AttendanceStatus::ABSENT)->create(); // Monday
+        AttendanceRecord::factory()->forEnrollment($enrollment)->onDate($this->monday()->toDateString())->status(AttendanceStatus::ABSENT)->create();
+
+        $response = $this->getJson('/api/v1/attendance-summary')->assertOk();
+
+        $this->assertSame(2, $response->json('data.0.absent_days'));
+        $this->assertEquals(4.0, $response->json('data.0.absent_hours'));
+    }
+
+    public function test_summary_counts_approved_make_up_hours_inside_the_date_range(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::ATTENDANCE_VIEW]);
+
+        $enrollment = Enrollment::factory()->create();
+        $student = $enrollment->student;
+
+        // 3 days x 2h, but only Jan 31 falls inside a January range.
+        MakeUpClassRequest::factory()->forStudent($student)->approved()->create([
+            'enrollment_id' => $enrollment->id,
+            'from_date' => '2026-01-31', 'to_date' => '2026-02-02',
+            'from_time' => '08:00', 'to_time' => '10:00',
+        ]);
+        // Pending never counts.
+        MakeUpClassRequest::factory()->forStudent($student)->create([
+            'enrollment_id' => $enrollment->id,
+            'from_date' => '2026-01-10', 'to_date' => '2026-01-10',
+        ]);
+
+        $this->getJson('/api/v1/attendance-summary?date_from=2026-01-01&date_to=2026-01-31')
+            ->assertOk()->assertJsonPath('data.0.make_up_hours', 2);
+
+        $this->getJson('/api/v1/attendance-summary')
+            ->assertOk()->assertJsonPath('data.0.make_up_hours', 6);
     }
 }

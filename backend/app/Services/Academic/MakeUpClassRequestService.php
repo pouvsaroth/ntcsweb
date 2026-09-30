@@ -57,21 +57,29 @@ final class MakeUpClassRequestService
     /**
      * Approved make-up hours per enrollment — every day from from_date to
      * to_date (inclusive) counts the same from_time–to_time span. Pending or
-     * rejected requests never count.
+     * rejected requests never count. With a date range, only the days of a
+     * request that fall inside it count (same range the Attendance Summary
+     * applies to attendance records).
      *
      * @param  list<int>  $enrollmentIds
      * @return array<int, float> enrollment id -> hours
      */
-    public function approvedHoursByEnrollment(array $enrollmentIds): array
+    public function approvedHoursByEnrollment(array $enrollmentIds, ?string $dateFrom = null, ?string $dateTo = null): array
     {
         $hours = [];
+        $rangeFrom = $dateFrom !== null ? Carbon::parse($dateFrom)->startOfDay() : null;
+        $rangeTo = $dateTo !== null ? Carbon::parse($dateTo)->startOfDay() : null;
 
         MakeUpClassRequest::query()
             ->whereIn('enrollment_id', $enrollmentIds)
             ->where('status', MakeUpClassRequest::STATUS_APPROVED)
+            ->when($dateFrom !== null, fn ($query) => $query->whereDate('to_date', '>=', $dateFrom))
+            ->when($dateTo !== null, fn ($query) => $query->whereDate('from_date', '<=', $dateTo))
             ->get()
-            ->each(function (MakeUpClassRequest $request) use (&$hours) {
-                $days = (int) $request->from_date->diffInDays($request->to_date) + 1;
+            ->each(function (MakeUpClassRequest $request) use (&$hours, $rangeFrom, $rangeTo) {
+                $from = $rangeFrom !== null && $request->from_date->lt($rangeFrom) ? $rangeFrom : $request->from_date;
+                $to = $rangeTo !== null && $request->to_date->gt($rangeTo) ? $rangeTo : $request->to_date;
+                $days = (int) $from->diffInDays($to) + 1;
                 $minutes = abs(Carbon::parse($request->to_time)->diffInMinutes(Carbon::parse($request->from_time)));
 
                 $hours[$request->enrollment_id] = ($hours[$request->enrollment_id] ?? 0) + $days * $minutes / 60;
