@@ -1,0 +1,33 @@
+<script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+import { useRoute } from 'vue-router'
+
+/**
+ * Tab bar for Settings > Backup — only "Backup" today; a future "Restore"
+ * tab slots in here. Same markup as AttendanceTabs.vue.
+ */
+const { t } = useI18n()
+const route = useRoute()
+
+const tabs = [{ to: '/admin/database-backups', labelKey: 'admin.databaseBackups.backupTab' }]
+</script>
+
+<template>
+  <div class="mb-6 border-b border-neutral-200">
+    <nav class="-mb-px flex flex-wrap gap-x-6 gap-y-1">
+      <RouterLink
+        v-for="tab in tabs"
+        :key="tab.to"
+        :to="tab.to"
+        class="whitespace-nowrap border-b-2 px-1 py-3 text-sm font-medium"
+        :class="
+          route.path === tab.to
+            ? 'border-primary-600 text-primary-700'
+            : 'border-transparent text-neutral-500 hover:border-neutral-300 hover:text-neutral-700'
+        "
+      >
+        {{ t(tab.labelKey) }}
+      </RouterLink>
+    </nav>
+  </div>
+</template>

@@ -341,7 +341,7 @@ const adminRoutes: RouteRecordRaw[] = [
     path: 'database-backups',
     name: 'admin.database-backups',
     component: () => import('@/pages/admin/BackupDatabase.vue'),
-    meta: { titleKey: 'adminNav.items.databaseBackups' },
+    meta: { titleKey: 'adminNav.items.backup' },
   },
   {
     path: 'tenants',

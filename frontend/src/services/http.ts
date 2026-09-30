@@ -277,16 +277,22 @@ function toApiRequestError(error: unknown): ApiRequestError {
  * back out as text and parsed the same way a normal failure would be.
  */
 export async function apiDownload(url: string, filename: string): Promise<void> {
+  const blob = await apiGetBlob(url)
+  const blobUrl = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = blobUrl
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  URL.revokeObjectURL(blobUrl)
+}
+
+/** The raw file behind apiDownload(), for a caller that saves it somewhere itself (see BackupDatabase.vue's Save As). */
+export async function apiGetBlob(url: string): Promise<Blob> {
   try {
     const response = await http.get<Blob>(url, { responseType: 'blob' })
-    const blobUrl = URL.createObjectURL(response.data)
-    const link = document.createElement('a')
-    link.href = blobUrl
-    link.download = filename
-    document.body.appendChild(link)
-    link.click()
-    link.remove()
-    URL.revokeObjectURL(blobUrl)
+    return response.data
   } catch (error) {
     if (isAxiosError(error) && error.response?.data instanceof Blob) {
       const status = error.response.status
