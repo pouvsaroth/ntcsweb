@@ -90,7 +90,7 @@ const km: MessageSchema = {
   },
 
   makeUpClassRequest: {
-    title: 'ស្នើសុំរៀនសង',
+    title: 'ស្នើសុំរៀនសង រឺបន្ថែម',
     course: 'វគ្គសិក្សា',
     coursePlaceholder: 'ជ្រើសរើសវគ្គសិក្សា',
     fromDate: 'ពីថ្ងៃទី',
