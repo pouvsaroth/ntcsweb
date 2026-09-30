@@ -582,6 +582,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('my-monthly-payment-alerts', [MyMonthlyPaymentAlertController::class, 'index'])->name('my-monthly-payment-alerts.index');
 
         // Student self-service — identity-gated, same pattern as my-invoices.
+        Route::get('my-attendance/hours-summary', [MyAttendanceController::class, 'hoursSummary'])->name('my-attendance.hours-summary');
         Route::get('my-attendance', [MyAttendanceController::class, 'index'])->name('my-attendance.index');
 
         // Student self-service — identity-gated, same pattern as my-attendance.

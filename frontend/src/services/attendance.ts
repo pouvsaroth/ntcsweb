@@ -62,6 +62,16 @@ export interface AttendanceSummaryRow {
   late_minutes: number
 }
 
+/** One course the student is studying — see MyAttendanceController::hoursSummary(). */
+export interface MyAttendanceHoursRow {
+  enrollment_id: number
+  course_package: { id: number; name: string } | null
+  school_class: { id: number; name: string } | null
+  absent_hours: number
+  make_up_hours: number
+  remaining_hours: number
+}
+
 export const attendanceService = {
   /** Every absent record for a single day — the Dashboard's "Absent Today/Yesterday" lists. */
   async listAbsent(date: string): Promise<AttendanceRecord[]> {
@@ -101,4 +111,7 @@ export const attendanceService = {
     })
     return { data: result.data, pagination: result.meta?.pagination as LengthAwarePaginationMeta }
   },
+
+  /** Student home screen hour cards — absent / made up / left, per course they're studying. */
+  myHoursSummary: () => apiGetWithMeta<MyAttendanceHoursRow[]>('/my-attendance/hours-summary').then((r) => r.data),
 }

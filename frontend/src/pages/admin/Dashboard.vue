@@ -7,8 +7,9 @@ import MakeUpClassRequestModal from '@/components/layout/MakeUpClassRequestModal
 import BaseCard from '@/components/ui/BaseCard.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import { accountingReportsService, type IncomeDetail } from '@/services/accounting'
-import { type AttendanceRecord, attendanceService } from '@/services/attendance'
+import { type AttendanceRecord, attendanceService, type MyAttendanceHoursRow } from '@/services/attendance'
 import { enrollmentsService } from '@/services/enrollments'
+import { makeUpClassCourseLabel } from '@/services/makeUpClassRequests'
 import type { MonthlyInvoice } from '@/services/monthlyInvoices'
 import { monthlyPaymentAlertsService } from '@/services/monthlyPaymentAlerts'
 import { studentsService } from '@/services/students'
@@ -151,6 +152,25 @@ const studentQuickAccessItems: QuickAccessItem[] = [
 const showMakeUpClassModal = ref(false)
 const makeUpClassIcon = 'M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99'
 
+/**
+ * The student's hour cards, one set per course they're studying. Hours left
+ * above this turns that card red — the school's make-up threshold.
+ */
+const REMAINING_HOURS_ALERT = 6
+const myHours = ref<MyAttendanceHoursRow[]>([])
+
+async function loadMyHours() {
+  try {
+    myHours.value = await attendanceService.myHoursSummary()
+  } catch {
+    // Left empty — the cards simply don't render.
+  }
+}
+
+function formatHours(hours: number): string {
+  return t('admin.dashboard.hoursValue', { hours: Number.isInteger(hours) ? hours : hours.toFixed(1) })
+}
+
 const studyingCount = ref<string>('—')
 /** Active enrollments right now — same "studying" definition as the Classes list's active-student count/filter, not Student.status. */
 const studyingEnrollmentsCount = ref<string>('—')
@@ -255,12 +275,37 @@ async function loadStats(): Promise<void> {
 
 onMounted(() => {
   if (!auth.isSuperAdmin && !auth.hasRole('student')) void loadStats()
+  if (auth.hasRole('student')) void loadMyHours()
 })
 </script>
 
 <template>
   <div>
     <template v-if="auth.hasRole('student')">
+      <div v-for="row in myHours" :key="row.enrollment_id" class="mb-6">
+        <p v-if="myHours.length > 1" class="mb-2 text-sm font-semibold text-neutral-700">{{ makeUpClassCourseLabel(row) }}</p>
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div class="rounded-[--radius-card] border border-neutral-200 bg-white p-4 shadow-[--shadow-card]">
+            <p class="text-sm font-medium text-neutral-500">{{ t('admin.dashboard.totalAbsentHours') }}</p>
+            <p class="mt-1 text-2xl font-semibold text-neutral-900">{{ formatHours(row.absent_hours) }}</p>
+            <p class="mt-1 text-xs text-neutral-400">{{ t('admin.dashboard.totalAbsentHoursHint') }}</p>
+          </div>
+          <div class="rounded-[--radius-card] border border-neutral-200 bg-white p-4 shadow-[--shadow-card]">
+            <p class="text-sm font-medium text-neutral-500">{{ t('admin.dashboard.totalMakeUpHours') }}</p>
+            <p class="mt-1 text-2xl font-semibold text-neutral-900">{{ formatHours(row.make_up_hours) }}</p>
+            <p class="mt-1 text-xs text-neutral-400">{{ t('admin.dashboard.totalMakeUpHoursHint') }}</p>
+          </div>
+          <div
+            class="rounded-[--radius-card] border p-4 shadow-[--shadow-card]"
+            :class="row.remaining_hours > REMAINING_HOURS_ALERT ? 'border-danger-600 bg-danger-600 text-white' : 'border-neutral-200 bg-white'"
+          >
+            <p class="text-sm font-medium" :class="row.remaining_hours > REMAINING_HOURS_ALERT ? 'text-white/90' : 'text-neutral-500'">{{ t('admin.dashboard.totalHoursLeft') }}</p>
+            <p class="mt-1 text-2xl font-semibold" :class="row.remaining_hours > REMAINING_HOURS_ALERT ? 'text-white' : 'text-neutral-900'">{{ formatHours(row.remaining_hours) }}</p>
+            <p class="mt-1 text-xs" :class="row.remaining_hours > REMAINING_HOURS_ALERT ? 'text-white/80' : 'text-neutral-400'">{{ t('admin.dashboard.totalHoursLeftHint') }}</p>
+          </div>
+        </div>
+      </div>
+
       <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
         <RouterLink
           v-for="item in studentQuickAccessItems"

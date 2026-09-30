@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Services\Notifications\NotificationService;
 use App\Support\Authorization\Permissions;
 use App\Support\Notifications\NotificationType;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -51,6 +52,32 @@ final class MakeUpClassRequestService
         );
 
         return $request;
+    }
+
+    /**
+     * Approved make-up hours per enrollment — every day from from_date to
+     * to_date (inclusive) counts the same from_time–to_time span. Pending or
+     * rejected requests never count.
+     *
+     * @param  list<int>  $enrollmentIds
+     * @return array<int, float> enrollment id -> hours
+     */
+    public function approvedHoursByEnrollment(array $enrollmentIds): array
+    {
+        $hours = [];
+
+        MakeUpClassRequest::query()
+            ->whereIn('enrollment_id', $enrollmentIds)
+            ->where('status', MakeUpClassRequest::STATUS_APPROVED)
+            ->get()
+            ->each(function (MakeUpClassRequest $request) use (&$hours) {
+                $days = (int) $request->from_date->diffInDays($request->to_date) + 1;
+                $minutes = abs(Carbon::parse($request->to_time)->diffInMinutes(Carbon::parse($request->from_time)));
+
+                $hours[$request->enrollment_id] = ($hours[$request->enrollment_id] ?? 0) + $days * $minutes / 60;
+            });
+
+        return $hours;
     }
 
     public function approve(MakeUpClassRequest $request, User $admin): MakeUpClassRequest

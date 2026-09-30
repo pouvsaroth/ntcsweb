@@ -8,6 +8,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\AttendanceRecordResource;
 use App\Http\Responses\ApiResponse;
 use App\Models\AttendanceRecord;
+use App\Services\Academic\AttendanceService;
+use App\Services\Academic\MakeUpClassRequestService;
 use App\Support\Query\ApiQuery;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -32,6 +34,37 @@ final class MyAttendanceController extends Controller
             ->paginate();
 
         return ApiResponse::success(AttendanceRecordResource::collection($records));
+    }
+
+    /**
+     * The student home screen's hour cards — one row per course (active
+     * enrollment) the student is studying, over the whole enrollment so far:
+     * absent hours (permission + absent sessions, plus the minutes actually
+     * missed on a late day — not the whole late session), approved make-up
+     * hours, and what's left to make up. Session hours come from
+     * AttendanceService::summarize(), so they match the admin Attendance
+     * Summary.
+     */
+    public function hoursSummary(Request $request, AttendanceService $attendance, MakeUpClassRequestService $makeUpClassRequests): JsonResponse
+    {
+        $student = $this->studentOrFail($request);
+
+        $rows = $attendance->summarize(null, '1900-01-01', now()->toDateString(), $student->id);
+        $makeUpHours = $makeUpClassRequests->approvedHoursByEnrollment(array_column($rows, 'enrollment_id'));
+
+        return ApiResponse::success(array_map(function (array $row) use ($makeUpHours) {
+            $absent = $row['permission_hours'] + $row['absent_hours'] + $row['late_minutes'] / 60;
+            $madeUp = $makeUpHours[$row['enrollment_id']] ?? 0;
+
+            return [
+                'enrollment_id' => $row['enrollment_id'],
+                'course_package' => $row['course_package'],
+                'school_class' => $row['school_class'],
+                'absent_hours' => round($absent, 1),
+                'make_up_hours' => round($madeUp, 1),
+                'remaining_hours' => round(max($absent - $madeUp, 0), 1),
+            ];
+        }, $rows));
     }
 
     private function studentOrFail(Request $request)
