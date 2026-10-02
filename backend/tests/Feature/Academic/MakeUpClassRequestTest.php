@@ -230,4 +230,18 @@ class MakeUpClassRequestTest extends TestCase
         );
         $this->assertSame(0, UserNotification::where('recipient_id', $bystander->id)->count());
     }
+
+    public function test_rejecting_a_make_up_class_request_notifies_the_student(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::MAKE_UP_CLASS_REQUESTS_REJECT]);
+        [$student, $studentUser] = $this->studentWithUser();
+        $makeUpClassRequest = MakeUpClassRequest::factory()->forStudent($student)->create();
+
+        $this->postJson("/api/v1/make-up-class-requests/{$makeUpClassRequest->id}/reject", ['reason' => 'No teacher available'])->assertOk();
+
+        $this->assertSame(
+            1,
+            UserNotification::where('recipient_id', $studentUser->id)->where('type', NotificationType::MAKE_UP_CLASS_REQUEST_REJECTED)->count(),
+        );
+    }
 }

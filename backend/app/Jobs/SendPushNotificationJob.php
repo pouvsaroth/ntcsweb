@@ -60,10 +60,12 @@ final class SendPushNotificationJob implements ShouldQueue
     }
 
     /**
-     * What the phone shows — the school's name as the title, the message in
-     * the recipient's own locale, and where a tap opens (see public/sw.js).
+     * What the phone shows — the school's name and logo as the title and
+     * icon, the message in the recipient's own locale, and where a tap opens
+     * (see public/sw.js, which falls back to the app icon when `icon` is
+     * null — a school with no logo uploaded).
      *
-     * @return array{title:string, body:string, url:string, tag:string}
+     * @return array{title:string, body:string, icon:?string, url:string, tag:string}
      */
     public static function payload(UserNotification $notification, Tenant $tenant): array
     {
@@ -75,6 +77,7 @@ final class SendPushNotificationJob implements ShouldQueue
         return [
             'title' => $tenant->name,
             'body' => $body === $key ? __('notifications.fallback', [], $locale) : $body,
+            'icon' => $tenant->logoUrl(),
             'url' => $notification->link ?? '/admin/notifications',
             'tag' => "notification-{$notification->id}",
         ];

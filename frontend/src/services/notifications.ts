@@ -9,7 +9,23 @@ import type { LengthAwarePaginationMeta, PaginatedResult } from '@/types/api'
  * the row itself stores structured `data`, not pre-rendered text — that way
  * it always displays in whichever locale the *reader* is using right now.
  */
-export type NotificationTypeValue = 'leave_request_submitted' | 'leave_request_approved' | 'student_registration_submitted'
+export type NotificationTypeValue =
+  | 'leave_request_submitted'
+  | 'leave_request_approved'
+  | 'leave_request_rejected'
+  | 'resignation_request_submitted'
+  | 'resignation_request_approved'
+  | 'resignation_request_rejected'
+  | 'make_up_class_request_submitted'
+  | 'make_up_class_request_approved'
+  | 'make_up_class_request_rejected'
+  | 'exam_application_submitted'
+  | 'exam_application_approved'
+  | 'exam_application_rejected'
+  | 'approval_request_submitted'
+  | 'approval_request_approved'
+  | 'approval_request_rejected'
+  | 'student_registration_submitted'
 
 export interface AppNotification {
   id: number

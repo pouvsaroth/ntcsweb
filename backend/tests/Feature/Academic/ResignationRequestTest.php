@@ -187,4 +187,18 @@ class ResignationRequestTest extends TestCase
             UserNotification::where('recipient_id', $staffUser->id)->where('type', NotificationType::RESIGNATION_REQUEST_APPROVED)->count(),
         );
     }
+
+    public function test_rejecting_a_resignation_request_notifies_the_staff_member(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::RESIGNATION_REQUESTS_REJECT]);
+        [$staff, $staffUser] = $this->staffWithUser();
+        $resignationRequest = ResignationRequest::factory()->forStaff($staff)->create();
+
+        $this->postJson("/api/v1/resignation-requests/{$resignationRequest->id}/reject", ['reason' => 'Needs more notice'])->assertOk();
+
+        $this->assertSame(
+            1,
+            UserNotification::where('recipient_id', $staffUser->id)->where('type', NotificationType::RESIGNATION_REQUEST_REJECTED)->count(),
+        );
+    }
 }

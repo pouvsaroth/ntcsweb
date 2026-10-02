@@ -9,6 +9,10 @@ use App\Models\FormCategory;
 use App\Models\FormTemplate;
 use App\Models\User;
 use App\Support\Authorization\Permissions;
+use App\Models\Permission;
+use App\Models\Role;
+use App\Models\UserNotification;
+use App\Support\Notifications\NotificationType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\HasAcademicAdmin;
 use Tests\TestCase;
@@ -142,5 +146,45 @@ class ApprovalRequestTest extends TestCase
         $response->assertOk();
         $response->assertJsonPath('data.status', ApprovalRequest::STATUS_REJECTED);
         $response->assertJsonPath('data.decision_reason', 'Incomplete information');
+    }
+
+    public function test_submitting_a_request_notifies_every_holder_of_the_approve_permission(): void
+    {
+        $this->actingAsAdminWithPermissions([]);
+        $template = FormTemplate::factory()->create();
+
+        $approverRole = Role::factory()->forTenant($this->tenant)->create(['slug' => 'test-form-approver', 'level' => 50]);
+        $approverRole->permissions()->attach(Permission::query()->where('slug', Permissions::APPROVAL_REQUESTS_APPROVE)->firstOrFail());
+        $approver = User::factory()->forTenant($this->tenant)->create();
+        $approver->attachRoles($approverRole);
+
+        // No approve permission — must not be notified.
+        $bystander = User::factory()->forTenant($this->tenant)->create();
+
+        $user = User::factory()->forTenant($this->tenant)->create();
+        $this->actingAsTenantUser($user);
+        $this->postJson('/api/v1/my-approval-requests', [
+            'form_template_id' => $template->id,
+            'subject' => 'Requesting office transfer',
+        ])->assertCreated();
+
+        $notification = UserNotification::where('recipient_id', $approver->id)->where('type', NotificationType::APPROVAL_REQUEST_SUBMITTED)->sole();
+        $this->assertSame('Requesting office transfer', $notification->data['subject']);
+        $this->assertSame(0, UserNotification::where('recipient_id', $bystander->id)->count());
+    }
+
+    public function test_approving_and_rejecting_a_request_notifies_the_requester(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::APPROVAL_REQUESTS_APPROVE, Permissions::APPROVAL_REQUESTS_REJECT]);
+        $requester = User::factory()->forTenant($this->tenant)->create();
+        $approved = ApprovalRequest::factory()->create(['requested_by' => $requester->id]);
+        $rejected = ApprovalRequest::factory()->create(['requested_by' => $requester->id]);
+
+        $this->postJson("/api/v1/approval-requests/{$approved->id}/approve")->assertOk();
+        $this->postJson("/api/v1/approval-requests/{$rejected->id}/reject", ['reason' => 'Incomplete information'])->assertOk();
+
+        foreach ([NotificationType::APPROVAL_REQUEST_APPROVED, NotificationType::APPROVAL_REQUEST_REJECTED] as $type) {
+            $this->assertSame(1, UserNotification::where('recipient_id', $requester->id)->where('type', $type)->count(), $type);
+        }
     }
 }

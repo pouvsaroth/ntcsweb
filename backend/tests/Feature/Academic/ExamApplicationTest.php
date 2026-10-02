@@ -15,6 +15,10 @@ use App\Models\Student;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Support\Authorization\Permissions;
+use App\Models\Permission;
+use App\Models\Role;
+use App\Models\UserNotification;
+use App\Support\Notifications\NotificationType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\HasAcademicAdmin;
 use Tests\TestCase;
@@ -393,5 +397,45 @@ class ExamApplicationTest extends TestCase
         $application = ExamApplication::factory()->forStudent($student)->forEnrollment($this->activeEnrollment($student))->create();
 
         $this->postJson("/api/v1/exam-applications/{$application->id}/reject", ['reason' => 'Not allowed'])->assertForbidden();
+    }
+
+    public function test_applying_for_an_exam_notifies_every_holder_of_the_approve_permission(): void
+    {
+        $this->actingAsAdminWithPermissions([]);
+        $this->setExamFee();
+        [$student, $user] = $this->studentWithUser();
+        $enrollment = $this->activeEnrollment($student);
+
+        $approverRole = Role::factory()->forTenant($this->tenant)->create(['slug' => 'test-exam-approver', 'level' => 50]);
+        $approverRole->permissions()->attach(Permission::query()->where('slug', Permissions::EXAM_APPLICATIONS_APPROVE)->firstOrFail());
+        $approver = User::factory()->forTenant($this->tenant)->create();
+        $approver->attachRoles($approverRole);
+
+        // No approve permission — must not be notified.
+        $bystander = User::factory()->forTenant($this->tenant)->create();
+
+        $this->actingAsTenantUser($user);
+        $this->postJson('/api/v1/my-exam-applications', $this->validPayload($enrollment))->assertCreated();
+
+        $this->assertSame(
+            1,
+            UserNotification::where('recipient_id', $approver->id)->where('type', NotificationType::EXAM_APPLICATION_SUBMITTED)->count(),
+        );
+        $this->assertSame(0, UserNotification::where('recipient_id', $bystander->id)->count());
+    }
+
+    public function test_approving_and_rejecting_an_application_notifies_the_student(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::EXAM_APPLICATIONS_APPROVE, Permissions::EXAM_APPLICATIONS_REJECT]);
+        [$student, $studentUser] = $this->studentWithUser();
+        $approved = ExamApplication::factory()->forStudent($student)->forEnrollment($this->activeEnrollment($student))->create();
+        $rejected = ExamApplication::factory()->forStudent($student)->forEnrollment($this->activeEnrollment($student))->create();
+
+        $this->postJson("/api/v1/exam-applications/{$approved->id}/approve")->assertOk();
+        $this->postJson("/api/v1/exam-applications/{$rejected->id}/reject", ['reason' => 'Fee not verified'])->assertOk();
+
+        foreach ([NotificationType::EXAM_APPLICATION_APPROVED, NotificationType::EXAM_APPLICATION_REJECTED] as $type) {
+            $this->assertSame(1, UserNotification::where('recipient_id', $studentUser->id)->where('type', $type)->count(), $type);
+        }
     }
 }

@@ -148,4 +148,24 @@ class PushNotificationTest extends TestCase
         $this->assertSame('You have a new notification', $payload['body']);
         $this->assertSame('/admin/notifications', $payload['url']);
     }
+
+    public function test_the_push_shows_the_schools_logo_or_falls_back_without_one(): void
+    {
+        $this->actingAsAdminWithPermissions([]);
+        $recipient = User::factory()->forTenant($this->tenant)->create(['locale' => 'en']);
+        $notification = UserNotification::query()->create([
+            'recipient_id' => $recipient->id,
+            'type' => NotificationType::APPROVAL_REQUEST_APPROVED,
+            'data' => ['subject' => 'Office transfer'],
+        ])->load('recipient');
+
+        $this->tenant->update(['logo' => null]);
+        $this->assertNull(SendPushNotificationJob::payload($notification, $this->tenant)['icon']);
+
+        $this->tenant->update(['logo' => 'tenants/1/logo.png']);
+        $payload = SendPushNotificationJob::payload($notification, $this->tenant);
+
+        $this->assertStringEndsWith('/storage/tenants/1/logo.png', $payload['icon']);
+        $this->assertSame('Your request "Office transfer" was approved', $payload['body']);
+    }
 }

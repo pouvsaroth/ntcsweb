@@ -254,4 +254,17 @@ class LeaveRequestTest extends TestCase
         }
         $this->assertSame(0, UserNotification::where('recipient_id', $bystander->id)->count());
     }
+
+    public function test_rejecting_a_leave_request_notifies_only_the_requester(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::LEAVE_REQUESTS_REJECT]);
+        [$student, $studentUser] = $this->studentWithUser();
+        $leaveRequest = LeaveRequest::factory()->forStudent($student)->create();
+
+        $this->postJson("/api/v1/leave-requests/{$leaveRequest->id}/reject", ['reason' => 'No reason given'])->assertOk();
+
+        $notification = UserNotification::where('type', NotificationType::LEAVE_REQUEST_REJECTED)->sole();
+        $this->assertSame($studentUser->id, $notification->recipient_id);
+        $this->assertSame('No reason given', $notification->data['reason']);
+    }
 }

@@ -94,7 +94,7 @@ final class ResignationRequestService
 
     public function reject(ResignationRequest $request, string $reason, User $admin): ResignationRequest
     {
-        return DB::transaction(function () use ($request, $reason, $admin) {
+        $request = DB::transaction(function () use ($request, $reason, $admin) {
             /** @var ResignationRequest $request */
             $request = ResignationRequest::query()->whereKey($request->getKey())->lockForUpdate()->firstOrFail();
 
@@ -111,5 +111,17 @@ final class ResignationRequestService
 
             return $request->fresh();
         });
+
+        $staffUser = $request->staff?->user;
+        if ($staffUser !== null) {
+            $this->notifications->notifyMany(collect([$staffUser]), NotificationType::RESIGNATION_REQUEST_REJECTED, [
+                'staff_id' => $request->staff_id,
+                'staff_name' => $request->staff?->fullName(),
+                'resignation_request_id' => $request->id,
+                'reason' => $reason,
+            ], link: '/admin/approvals/my-requests');
+        }
+
+        return $request;
     }
 }

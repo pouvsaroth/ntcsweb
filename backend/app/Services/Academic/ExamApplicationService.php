@@ -12,7 +12,10 @@ use App\Models\Tenant;
 use App\Models\User;
 use App\Services\Billing\InvoiceService;
 use App\Services\Billing\PaymentService;
+use App\Services\Notifications\NotificationService;
+use App\Support\Authorization\Permissions;
 use App\Support\Billing\ProductType;
+use App\Support\Notifications\NotificationType;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
@@ -36,6 +39,7 @@ final class ExamApplicationService
         private readonly TenantContext $context,
         private readonly InvoiceService $invoices,
         private readonly PaymentService $payments,
+        private readonly NotificationService $notifications,
     ) {}
 
     /**
@@ -71,7 +75,7 @@ final class ExamApplicationService
             ]);
         }
 
-        return DB::transaction(function () use ($student, $enrollmentId, $studentFields, $photo, $tenant) {
+        $application = DB::transaction(function () use ($student, $enrollmentId, $studentFields, $photo, $tenant) {
             $previousPhotoPath = $student->photo_path;
             $newPhotoPath = $photo !== null ? $this->storeStudentPhoto($photo, $tenant) : null;
 
@@ -120,6 +124,17 @@ final class ExamApplicationService
                 'status' => ExamApplication::STATUS_PENDING,
             ]);
         });
+
+        // Outside the transaction — a notification that fails to write is
+        // never worth rolling back an already-submitted application over.
+        $this->notifications->notifyMany(
+            $this->notifications->usersWithPermission(Permissions::EXAM_APPLICATIONS_APPROVE),
+            NotificationType::EXAM_APPLICATION_SUBMITTED,
+            ['student_id' => $student->id, 'student_name' => $student->fullName(), 'exam_application_id' => $application->id],
+            link: '/admin/approvals/queue',
+        );
+
+        return $application;
     }
 
     private function storeStudentPhoto(UploadedFile $photo, Tenant $tenant): string
@@ -156,7 +171,7 @@ final class ExamApplicationService
 
     public function approve(ExamApplication $application, User $admin): ExamApplication
     {
-        return DB::transaction(function () use ($application, $admin) {
+        $application = DB::transaction(function () use ($application, $admin) {
             /** @var ExamApplication $application */
             $application = ExamApplication::query()->whereKey($application->getKey())->lockForUpdate()->firstOrFail();
 
@@ -172,11 +187,15 @@ final class ExamApplicationService
 
             return $application->fresh();
         });
+
+        $this->notifyStudent($application, NotificationType::EXAM_APPLICATION_APPROVED);
+
+        return $application;
     }
 
     public function reject(ExamApplication $application, string $reason, User $admin): ExamApplication
     {
-        return DB::transaction(function () use ($application, $reason, $admin) {
+        $application = DB::transaction(function () use ($application, $reason, $admin) {
             /** @var ExamApplication $application */
             $application = ExamApplication::query()->whereKey($application->getKey())->lockForUpdate()->firstOrFail();
 
@@ -193,6 +212,27 @@ final class ExamApplicationService
 
             return $application->fresh();
         });
+
+        $this->notifyStudent($application, NotificationType::EXAM_APPLICATION_REJECTED, ['reason' => $reason]);
+
+        return $application;
+    }
+
+    /** @param  array<string, mixed>  $extra */
+    private function notifyStudent(ExamApplication $application, string $type, array $extra = []): void
+    {
+        $studentUser = $application->student?->user;
+
+        if ($studentUser === null) {
+            return;
+        }
+
+        $this->notifications->notifyMany(collect([$studentUser]), $type, [
+            'student_id' => $application->student_id,
+            'student_name' => $application->student?->fullName(),
+            'exam_application_id' => $application->id,
+            ...$extra,
+        ], link: '/admin/my-exam-applications');
     }
 
     /**

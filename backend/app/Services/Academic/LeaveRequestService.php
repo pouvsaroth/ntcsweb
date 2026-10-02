@@ -160,7 +160,7 @@ final class LeaveRequestService
 
     public function reject(LeaveRequest $request, string $reason, User $admin): LeaveRequest
     {
-        return DB::transaction(function () use ($request, $reason, $admin) {
+        $request = DB::transaction(function () use ($request, $reason, $admin) {
             /** @var LeaveRequest $request */
             $request = LeaveRequest::query()->whereKey($request->getKey())->lockForUpdate()->firstOrFail();
 
@@ -177,6 +177,21 @@ final class LeaveRequestService
 
             return $request->fresh();
         });
+
+        // Only the requester — unlike an approval, a rejection changes
+        // nothing their teachers or the front desk need to act on.
+        $requesterUser = $request->staff_id !== null ? $request->staff?->user : $request->student?->user;
+        if ($requesterUser !== null) {
+            $this->notifications->notifyMany(collect([$requesterUser]), NotificationType::LEAVE_REQUEST_REJECTED, [
+                'student_id' => $request->student_id,
+                'staff_id' => $request->staff_id,
+                'student_name' => $request->requesterName(),
+                'leave_request_id' => $request->id,
+                'reason' => $reason,
+            ], link: '/admin/approvals/my-requests');
+        }
+
+        return $request;
     }
 
     public function destroyAttachment(LeaveRequest $request, int $attachmentId): void

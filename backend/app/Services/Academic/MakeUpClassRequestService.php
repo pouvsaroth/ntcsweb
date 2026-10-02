@@ -129,7 +129,7 @@ final class MakeUpClassRequestService
 
     public function reject(MakeUpClassRequest $request, string $reason, User $admin): MakeUpClassRequest
     {
-        return DB::transaction(function () use ($request, $reason, $admin) {
+        $request = DB::transaction(function () use ($request, $reason, $admin) {
             /** @var MakeUpClassRequest $request */
             $request = MakeUpClassRequest::query()->whereKey($request->getKey())->lockForUpdate()->firstOrFail();
 
@@ -146,5 +146,17 @@ final class MakeUpClassRequestService
 
             return $request->fresh();
         });
+
+        $studentUser = $request->student?->user;
+        if ($studentUser !== null) {
+            $this->notifications->notifyMany(collect([$studentUser]), NotificationType::MAKE_UP_CLASS_REQUEST_REJECTED, [
+                'student_id' => $request->student_id,
+                'student_name' => $request->student?->fullName(),
+                'make_up_class_request_id' => $request->id,
+                'reason' => $reason,
+            ], link: '/admin/approvals/my-requests');
+        }
+
+        return $request;
     }
 }

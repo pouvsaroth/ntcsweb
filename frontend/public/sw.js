@@ -18,8 +18,10 @@ self.addEventListener('fetch', (event) => {
 })
 
 // Phone notifications (Web Push) — the backend's SendPushNotificationJob
-// sends { title, body, url, tag } for every in-app notification to each
-// device the user turned this on for (see services/pushNotifications.ts).
+// sends { title, body, icon, url, tag } for every in-app notification to
+// each device the user turned this on for (see services/pushNotifications.ts).
+// `icon` is the school's own logo; the small status-bar `badge` stays the
+// app icon, since Android only draws a badge as a one-colour silhouette.
 self.addEventListener('push', (event) => {
   let payload = {}
   try {
@@ -32,7 +34,7 @@ self.addEventListener('push', (event) => {
     self.registration.showNotification(payload.title || 'NTCSWEB', {
       body: payload.body || '',
       tag: payload.tag,
-      icon: '/icons/admin-192.png',
+      icon: payload.icon || '/icons/admin-192.png',
       badge: '/icons/admin-192.png',
       data: { url: payload.url || '/admin/notifications' },
     }),
