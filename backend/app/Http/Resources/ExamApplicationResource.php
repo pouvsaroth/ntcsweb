@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Resources;
 
 use App\Models\ExamApplication;
+use App\Support\Academic\ExamMention;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -66,6 +67,13 @@ class ExamApplicationResource extends JsonResource
             'sold_at' => $this->sold_at?->toIso8601String(),
             'received_at' => $this->received_at?->toIso8601String(),
             'paid_back_at' => $this->paid_back_at?->toIso8601String(),
+            // Examination → Certificate only (loaded there) — see ExamApplication::scopePassed().
+            'score' => $this->whenLoaded('score', fn () => $this->score !== null ? [
+                'score' => $this->score->score,
+                'mention' => ExamMention::for((float) $this->score->score),
+            ] : null),
+            'photo_received_date' => $this->photo_received_date?->toDateString(),
+            'photo_received_remark' => $this->photo_received_remark,
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }

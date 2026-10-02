@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Models\Concerns\Auditable;
+use App\Support\Academic\ExamMention;
 use App\Support\Audit\AuditAction;
 use Database\Factories\ExamApplicationFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -42,6 +43,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'student_id', 'enrollment_id', 'book_id', 'retake_of_id', 'file_code', 'exam_date', 'exam_time', 'exam_time_out',
     'table_no', 'classroom_id', 'table_id', 'fee_amount', 'fee_currency', 'student_marked_paid_at',
     'status', 'decision_reason', 'remark', 'decided_by', 'decided_at', 'sold_at', 'received_at', 'paid_back_at',
+    'photo_received_date', 'photo_received_remark', 'photo_received_by',
 ])]
 class ExamApplication extends Model
 {
@@ -91,6 +93,7 @@ class ExamApplication extends Model
             'sold_at' => 'datetime',
             'received_at' => 'datetime',
             'paid_back_at' => 'datetime',
+            'photo_received_date' => 'date',
         ];
     }
 
@@ -168,6 +171,17 @@ class ExamApplication extends Model
     public function scopePending(Builder $query): void
     {
         $query->where('status', self::STATUS_PENDING);
+    }
+
+    /**
+     * Passed the exam — scored at or above ExamMention::PASS_SCORE. These
+     * are the students listed under Examination → Certificate.
+     *
+     * @param  Builder<static>  $query
+     */
+    public function scopePassed(Builder $query): void
+    {
+        $query->whereHas('score', fn (Builder $score) => $score->where('score', '>=', ExamMention::PASS_SCORE));
     }
 
     public function auditModule(): string

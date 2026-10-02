@@ -20,12 +20,15 @@ final class ExamMention
 
     public const FAIL = 'fail';
 
+    /** The lowest passing score — also who gets a certificate (Examination → Certificate). */
+    public const PASS_SCORE = 85;
+
     public static function for(float $score): string
     {
         return match (true) {
             $score > 95 => self::EXCELLENT,
             $score > 90 => self::VERY_GOOD,
-            $score >= 85 => self::GOOD,
+            $score >= self::PASS_SCORE => self::GOOD,
             default => self::FAIL,
         };
     }

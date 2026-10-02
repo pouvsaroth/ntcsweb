@@ -31,6 +31,9 @@ const allTabs = computed(() => [
   // ExamApplication), so this reuses the same permission as Exams/Approvals
   // rather than the Grades tab's exam-scores.* one.
   { to: '/admin/exams/make-up', labelKey: 'adminNav.items.makeUpExam', visible: auth.can('exam-applications.view') },
+  // Passed students (score ≥ 85) and their certificate photo — exam
+  // applications again, so the same permission as Exams.
+  { to: '/admin/exams/certificate', labelKey: 'adminNav.items.certificate', visible: auth.can('exam-applications.view') },
 ])
 
 const tabs = computed(() => allTabs.value.filter((tab) => tab.visible))

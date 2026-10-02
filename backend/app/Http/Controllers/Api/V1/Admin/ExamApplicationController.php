@@ -80,6 +80,19 @@ final class ExamApplicationController extends Controller
             $this->flow->scopeQueue($query, ExamApplication::class, $user, $canViewAll);
         }
 
+        // Examination → Certificate: passed students only, with their score.
+        // `photo_received` = yes / no narrows to whether their certificate
+        // photo has been handed in yet.
+        if ($request->boolean('certificate')) {
+            $query->passed()->with('score');
+
+            match ($request->query('photo_received')) {
+                'yes' => $query->whereNotNull('photo_received_date'),
+                'no' => $query->whereNull('photo_received_date'),
+                default => null,
+            };
+        }
+
         $applications = ApiQuery::for($query, $request)
             ->filterable(['status', 'student_id', 'enrollment_id'])
             ->sortable(['exam_date', 'created_at'], default: '-created_at')
@@ -141,14 +154,14 @@ final class ExamApplicationController extends Controller
 
     public function store(StoreExamApplicationRequest $request): JsonResponse
     {
-        $application = $this->examApplications->createForAdmin($request->validated());
+        $application = $this->examApplications->createForAdmin($request->validated(), $request->user());
 
         return ApiResponse::created(new ExamApplicationResource($application->load(self::WITH)));
     }
 
     public function update(UpdateExamApplicationRequest $request, ExamApplication $examApplication): JsonResponse
     {
-        $application = $this->examApplications->updateForAdmin($examApplication, $request->validated());
+        $application = $this->examApplications->updateForAdmin($examApplication, $request->validated(), $request->user());
 
         return ApiResponse::success(new ExamApplicationResource($application->load(self::WITH)));
     }
@@ -193,6 +206,24 @@ final class ExamApplicationController extends Controller
         $applications = $this->examApplications->markReceived($ids);
 
         return ApiResponse::success(ExamApplicationResource::collection($applications->load(self::WITH)));
+    }
+
+    /**
+     * POST /exam-applications/photo-received — Examination → Certificate's
+     * "Received photo": records the date (and an optional remark) each
+     * selected passed student handed in their certificate photo.
+     */
+    public function photoReceived(Request $request): JsonResponse
+    {
+        $ids = $this->authorizedBulkIds($request);
+        $data = $request->validate([
+            'received_date' => ['required', 'date', 'before_or_equal:today'],
+            'remark' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $applications = $this->examApplications->markPhotoReceived($ids, $data['received_date'], $data['remark'] ?? null, $request->user());
+
+        return ApiResponse::success(ExamApplicationResource::collection($applications->load([...self::WITH, 'score'])));
     }
 
     /** POST /exam-applications/pay-back — "PAY BACK EXAM": stamps paid_back_at on every selected row. */

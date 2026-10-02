@@ -258,6 +258,12 @@ const adminRoutes: RouteRecordRaw[] = [
     meta: { titleKey: 'adminNav.items.grades' },
   },
   {
+    path: 'exams/certificate',
+    name: 'admin.exams.certificate',
+    component: () => import('@/pages/admin/ExamCertificate.vue'),
+    meta: { titleKey: 'adminNav.items.certificate' },
+  },
+  {
     path: 'exams/make-up',
     name: 'admin.exams.make-up',
     component: () => import('@/pages/admin/MakeUpExam.vue'),

@@ -15,6 +15,7 @@ use App\Services\Billing\InvoiceService;
 use App\Services\Billing\PaymentService;
 use App\Services\Notifications\NotificationService;
 use App\Support\Authorization\Permissions;
+use App\Support\Billing\PaymentMethod;
 use App\Support\Billing\ProductType;
 use App\Support\Notifications\NotificationType;
 use App\Support\Tenancy\TenantContext;
@@ -27,13 +28,12 @@ use Illuminate\Validation\ValidationException;
 
 /**
  * A student's own exam application — see ExamApplication's own docblock.
- * Unlike LeaveRequestService::approve(), approve()/reject() here have no
- * side effect beyond the row itself: exam-day logistics stay a manual,
- * offline school process in v1. The self-service fee is never charged
- * automatically (see the migration's docblock: "show the fee, student
- * self-declares paid, staff verifies in Billing") — but the admin-driven
- * "Print" action (see sellAndRecordFee()) does record a real Invoice +
- * Payment, because that's staff actually taking the fee at the counter.
+ * Exam-day logistics stay a manual, offline school process. Applying never
+ * charges anything — but approving does: every way an application becomes
+ * approved records its fee as a paid Cash Invoice + Payment (see
+ * recordFeeOnApproval()), the same records the admin-driven "Print" action
+ * makes (see sellAndRecordFee()), so the fee shows up in Billing and
+ * Accounting like every other payment.
  */
 final class ExamApplicationService
 {
@@ -202,6 +202,8 @@ final class ExamApplicationService
                 'decided_at' => now(),
             ]);
 
+            $this->recordFeeOnApproval($application, $admin);
+
             return $application->fresh();
         });
 
@@ -331,7 +333,7 @@ final class ExamApplicationService
      * a human to confirm which one, but this default is right the vast
      * majority of the time and is always editable afterward.
      */
-    public function createForAdmin(array $data): ExamApplication
+    public function createForAdmin(array $data, ?User $actor = null): ExamApplication
     {
         $enrollment = Enrollment::query()->with(['schoolClass', 'coursePackage.books'])->findOrFail($data['enrollment_id']);
 
@@ -339,20 +341,66 @@ final class ExamApplicationService
         $data['table_id'] ??= $enrollment->table_id;
         $data['book_id'] ??= $enrollment->coursePackage?->books->first()?->id;
 
-        return ExamApplication::query()->create([
-            ...$data,
-            'student_id' => $enrollment->student_id,
-        ]);
+        return DB::transaction(function () use ($data, $enrollment, $actor) {
+            $application = ExamApplication::query()->create([
+                ...$data,
+                'student_id' => $enrollment->student_id,
+            ]);
+
+            if ($actor !== null && $application->status === ExamApplication::STATUS_APPROVED) {
+                $this->recordFeeOnApproval($application, $actor);
+            }
+
+            return $application->fresh();
+        });
     }
 
     /**
      * @param  array{book_id?:int|null, file_code?:string|null, exam_date?:string|null, exam_time?:string|null, exam_time_out?:string|null, table_no?:string|null, classroom_id?:int|null, table_id?:int|null, status:string, remark?:string|null}  $data
      */
-    public function updateForAdmin(ExamApplication $application, array $data): ExamApplication
+    public function updateForAdmin(ExamApplication $application, array $data, ?User $actor = null): ExamApplication
     {
-        $application->update($data);
+        return DB::transaction(function () use ($application, $data, $actor) {
+            $wasApproved = $application->status === ExamApplication::STATUS_APPROVED;
+            $application->update($data);
 
-        return $application->fresh();
+            if ($actor !== null && ! $wasApproved && $application->status === ExamApplication::STATUS_APPROVED) {
+                $this->recordFeeOnApproval($application, $actor);
+            }
+
+            return $application->fresh();
+        });
+    }
+
+    /**
+     * Every way an application becomes approved records its exam fee as a
+     * paid Cash invoice + payment (approval date), the same records "Print"
+     * makes — see sellAndRecordFee(). The amount is the fee saved on the
+     * application when the student applied, else the school's current exam
+     * fee. Skipped when the fee was already taken (`sold_at`), or when no fee
+     * is set anywhere — the approval itself still goes through.
+     */
+    private function recordFeeOnApproval(ExamApplication $application, User $actor): void
+    {
+        if ($application->sold_at !== null) {
+            return;
+        }
+
+        $tenant = $this->context->getOrFail();
+        $fee = $application->fee_amount ?? $tenant->exam_fee_amount;
+
+        if ($fee === null || (float) $fee <= 0) {
+            return;
+        }
+
+        $this->sellAndRecordFee(
+            $application,
+            (float) $fee,
+            $application->fee_currency ?? $tenant->default_currency,
+            PaymentMethod::CASH,
+            now()->toDateString(),
+            $actor,
+        );
     }
 
     /**
@@ -436,6 +484,37 @@ final class ExamApplicationService
     public function markPaidBack(array $ids): Collection
     {
         return $this->stamp($ids, 'paid_back_at');
+    }
+
+    /**
+     * Examination → Certificate's "Received photo": the student brought in
+     * their certificate photo. Only for passed applications (see
+     * ExamApplication::scopePassed()); saving again overwrites the date and
+     * remark. One update per row, so each gets its own audit entry.
+     *
+     * @param  list<int>  $ids
+     * @return Collection<int, ExamApplication>
+     */
+    public function markPhotoReceived(array $ids, string $receivedDate, ?string $remark, User $actor): Collection
+    {
+        $applications = ExamApplication::query()->whereIn('id', $ids)->get();
+        $passedIds = ExamApplication::query()->whereIn('id', $ids)->passed()->pluck('id')->all();
+
+        if (count($passedIds) !== $applications->count()) {
+            throw ValidationException::withMessages(['ids' => 'Only students who passed the exam can have a certificate photo received.']);
+        }
+
+        DB::transaction(function () use ($applications, $receivedDate, $remark, $actor) {
+            foreach ($applications as $application) {
+                $application->update([
+                    'photo_received_date' => $receivedDate,
+                    'photo_received_remark' => $remark,
+                    'photo_received_by' => $actor->getKey(),
+                ]);
+            }
+        });
+
+        return $applications->each->refresh();
     }
 
     /**

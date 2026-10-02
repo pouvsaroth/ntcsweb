@@ -56,6 +56,11 @@ export interface ExamApplication {
   sold_at: string | null
   received_at: string | null
   paid_back_at: string | null
+  /** Examination → Certificate only — the score and its mention key (see admin.myScores.mentions). */
+  score?: { score: string; mention: 'excellent' | 'very_good' | 'good' | 'fail' } | null
+  /** Examination → Certificate: the day the student handed in their certificate photo. */
+  photo_received_date?: string | null
+  photo_received_remark?: string | null
   created_at: string
 }
 
@@ -99,7 +104,7 @@ export const examApplicationsService = {
    * by Exams.vue's default "Awaiting action" view, mutually exclusive with
    * `query.filter.status`.
    */
-  async list(query: PaginatedQuery, opts: { awaitingAction?: boolean; approvalQueue?: boolean } = {}): Promise<PaginatedResult<ExamApplication>> {
+  async list(query: PaginatedQuery, opts: { awaitingAction?: boolean; approvalQueue?: boolean; certificate?: boolean; photoReceived?: 'yes' | 'no' } = {}): Promise<PaginatedResult<ExamApplication>> {
     const result = await apiGetWithMeta<ExamApplication[]>('/exam-applications', {
       params: {
         page: query.page,
@@ -109,6 +114,9 @@ export const examApplicationsService = {
         ...(opts.awaitingAction ? { awaiting_action: '1' } : {}),
         // The Approvals queue's view — see ApprovalFlowProgress.
         ...(opts.approvalQueue ? { approval_queue: '1' } : {}),
+        // Examination → Certificate: passed students only (score ≥ 85), with their score.
+        ...(opts.certificate ? { certificate: '1' } : {}),
+        ...(opts.photoReceived ? { photo_received: opts.photoReceived } : {}),
       },
     })
     return { data: result.data, pagination: result.meta?.pagination as LengthAwarePaginationMeta }
@@ -142,6 +150,9 @@ export const examApplicationsService = {
 
   receive: (ids: number[]) => apiPost<ExamApplication[]>('/exam-applications/receive', { ids }),
   payBack: (ids: number[]) => apiPost<ExamApplication[]>('/exam-applications/pay-back', { ids }),
+  /** Examination → Certificate's "Received photo" — passed students only. */
+  markPhotoReceived: (ids: number[], receivedDate: string, remark: string | null) =>
+    apiPost<ExamApplication[]>('/exam-applications/photo-received', { ids, received_date: receivedDate, remark }),
 
   approve: (id: number) => apiPost<ExamApplication>(`/exam-applications/${id}/approve`),
   reject: (id: number, reason: string) => apiPost<ExamApplication>(`/exam-applications/${id}/reject`, { reason }),
