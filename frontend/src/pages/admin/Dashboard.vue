@@ -7,11 +7,15 @@ import MakeUpClassRequestModal from '@/components/layout/MakeUpClassRequestModal
 import BaseCard from '@/components/ui/BaseCard.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import { accountingReportsService, type IncomeDetail } from '@/services/accounting'
+import { approvalRequestsService } from '@/services/approvalRequests'
 import { type AttendanceRecord, attendanceService, type MyAttendanceHoursRow } from '@/services/attendance'
 import { enrollmentsService } from '@/services/enrollments'
-import { makeUpClassCourseLabel } from '@/services/makeUpClassRequests'
+import { examApplicationsService } from '@/services/examApplications'
+import { leaveRequestsService } from '@/services/leaveRequests'
+import { makeUpClassCourseLabel, makeUpClassRequestsService } from '@/services/makeUpClassRequests'
 import type { MonthlyInvoice } from '@/services/monthlyInvoices'
 import { monthlyPaymentAlertsService } from '@/services/monthlyPaymentAlerts'
+import { resignationRequestsService } from '@/services/resignationRequests'
 import { studentsService } from '@/services/students'
 import { useAuthStore } from '@/stores/auth'
 import { formatMoney } from '@/utils/currency'
@@ -23,8 +27,14 @@ const { t } = useI18n()
 interface QuickAccessItem {
   labelKey: string
   to: string
-  permission?: string
+  /** Shown when the user holds any one of these. */
+  permission?: string | string[]
   icon: string
+}
+
+function canSee(item: QuickAccessItem): boolean {
+  if (!item.permission) return true
+  return (Array.isArray(item.permission) ? item.permission : [item.permission]).some((p) => auth.can(p))
 }
 
 /**
@@ -99,6 +109,15 @@ const quickAccessItems: QuickAccessItem[] = [
     to: '/admin/roles',
     permission: 'dashboard.cards.roles',
     icon: 'M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z',
+  },
+  {
+    // Unlike the tiles above, gated on the queue's own permissions (the same
+    // list as adminNav.ts's Approvals entry): only someone who can actually
+    // decide requests has a use for it.
+    labelKey: 'adminNav.items.approvals',
+    to: '/admin/approvals/queue',
+    permission: ['approval-requests.view', 'leave-requests.view', 'resignation-requests.view', 'make-up-class-requests.view', 'exam-applications.view'],
+    icon: 'M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
   },
 ]
 
@@ -227,7 +246,25 @@ async function openIncomeDetail(): Promise<void> {
   }
 }
 
+/** New (pending) requests across every queue the Approvals page shows that this user can see. */
+const pendingApprovalsCount = ref(0)
+
+async function loadPendingApprovals(): Promise<void> {
+  const pending = { page: 1, per_page: 1, filter: { status: 'pending' } }
+  const sources: [string, () => Promise<{ pagination?: { type?: string; total?: number } }>][] = [
+    ['approval-requests.view', () => approvalRequestsService.list(pending)],
+    ['leave-requests.view', () => leaveRequestsService.list(pending)],
+    ['resignation-requests.view', () => resignationRequestsService.list(pending)],
+    ['make-up-class-requests.view', () => makeUpClassRequestsService.list(pending)],
+    ['exam-applications.view', () => examApplicationsService.list(pending)],
+  ]
+  const results = await Promise.allSettled(sources.filter(([permission]) => auth.can(permission)).map(([, fetch]) => fetch()))
+  pendingApprovalsCount.value = results.reduce((sum, r) => sum + (r.status === 'fulfilled' ? (r.value.pagination?.total ?? 0) : 0), 0)
+}
+
 async function loadStats(): Promise<void> {
+  void loadPendingApprovals()
+
   if (auth.can('dashboard.finance.view')) {
     try {
       const result = await studentsService.list({ per_page: 1, filter: { status: 'active' } })
@@ -343,7 +380,7 @@ onMounted(() => {
       <div class="mt-3 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
         <RouterLink
           v-for="item in quickAccessItems"
-          v-show="!item.permission || auth.can(item.permission)"
+          v-show="canSee(item)"
           :key="item.to"
           :to="item.to"
           class="relative flex flex-col items-center gap-2 rounded-[--radius-card] border border-neutral-200 bg-white p-4 text-center shadow-[--shadow-card] transition-shadow hover:shadow-[--shadow-card-hover]"
@@ -354,6 +391,13 @@ onMounted(() => {
             :title="t('admin.dashboard.classesStudyingTooltip')"
           >
             {{ studyingEnrollmentsCount }}
+          </span>
+          <span
+            v-if="item.to === '/admin/approvals/queue' && pendingApprovalsCount > 0"
+            class="absolute right-2 top-2 rounded-full bg-danger-600 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white"
+            :title="t('admin.approvals.tabNew')"
+          >
+            {{ pendingApprovalsCount }}
           </span>
           <span class="flex h-10 w-10 items-center justify-center rounded-full bg-primary-100 text-primary-700">
             <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
