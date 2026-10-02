@@ -1830,7 +1830,7 @@ const ko: MessageSchema = {
       tableClearedOnReturn: '저장되었습니다. 이 학생이 쉬는 동안 테이블 {table}이(가) 다른 학생에게 배정되어 지금은 테이블이 없습니다. 테이블 변경에서 새 테이블을 선택하세요.',
       statusSaveFailed: '이 등록의 상태를 변경하지 못했습니다.',
       statusHistory: '이력',
-      statusHistoryEmpty: '아직 상태 변경 이력이 없습니다.',
+      statusHistoryEmpty: '아직 상태, 반 또는 좌석 변경 이력이 없습니다.',
       statusHistoryLoadFailed: '상태 이력을 불러오지 못했습니다.',
       changeClass: '학급 및 좌석 변경',
       coursePaidHint: '이 등록은 이미 결제되었습니다 — 과정은 변경할 수 없지만 학급은 변경할 수 있습니다.',

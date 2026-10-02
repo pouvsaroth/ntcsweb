@@ -1830,7 +1830,7 @@ const ja: MessageSchema = {
       tableClearedOnReturn: '保存しました。この学生が不在の間にテーブル {table} は別の学生に割り当てられたため、現在テーブルがありません。「テーブル変更」で新しいテーブルを選んでください。',
       statusSaveFailed: 'この登録のステータスを変更できませんでした。',
       statusHistory: '履歴',
-      statusHistoryEmpty: 'まだステータスの変更履歴はありません。',
+      statusHistoryEmpty: 'まだステータス・クラス・席の変更履歴はありません。',
       statusHistoryLoadFailed: 'ステータス履歴を読み込めませんでした。',
       changeClass: 'クラスと席を変更',
       coursePaidHint: 'この登録はすでに支払い済みです — コースは変更できませんが、クラスは変更できます。',

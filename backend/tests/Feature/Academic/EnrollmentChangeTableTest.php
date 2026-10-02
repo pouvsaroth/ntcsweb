@@ -7,6 +7,7 @@ namespace Tests\Feature\Academic;
 use App\Models\Classroom;
 use App\Models\ClassroomTable;
 use App\Models\Enrollment;
+use App\Models\EnrollmentTransferHistory;
 use App\Models\SchoolClass;
 use App\Models\Student;
 use App\Support\Authorization\Permissions;
@@ -65,6 +66,12 @@ class EnrollmentChangeTableTest extends TestCase
         $this->assertSame($before->class_id, $after->class_id);
         $this->assertSame($before->course_package_id, $after->course_package_id);
         $this->assertSame($tableB->id, $after->table_id);
+
+        $history = EnrollmentTransferHistory::where('enrollment_id', $enrollmentId)->sole();
+        $this->assertSame($tableA->id, $history->from_table_id);
+        $this->assertSame($tableB->id, $history->to_table_id);
+        $this->assertSame($class->id, $history->from_class_id);
+        $this->assertSame($class->id, $history->to_class_id);
     }
 
     public function test_it_has_no_field_to_change_class_or_course(): void

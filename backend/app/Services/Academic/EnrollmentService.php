@@ -7,6 +7,7 @@ namespace App\Services\Academic;
 use App\Models\CoursePackage;
 use App\Models\Enrollment;
 use App\Models\EnrollmentStatusHistory;
+use App\Models\EnrollmentTransferHistory;
 use App\Models\SchoolClass;
 use App\Models\Student;
 use App\Models\Tenant;
@@ -161,9 +162,10 @@ final class EnrollmentService
      * The "manage status and history" menu — every transition writes an
      * EnrollmentStatusHistory row, and the reason/date (when required — see
      * Enrollment::STATUSES_REQUIRING_REASON) is also denormalized onto the
-     * enrollment itself for quick display. Distinct from cancel()/
-     * transferClass() below, which both still collapse to STATUS_DROPPED —
-     * that stays internal bookkeeping, never a choice made through here.
+     * enrollment itself for quick display. Distinct from cancel() below,
+     * which collapses to STATUS_DROPPED — that stays internal bookkeeping,
+     * never a choice made through here. (Rows transferred before transfers
+     * became in-place updates are also STATUS_DROPPED.)
      */
     public function changeStatus(Enrollment $enrollment, string $status, ?string $reason, ?string $effectiveDate, User $actor): Enrollment
     {
@@ -228,9 +230,10 @@ final class EnrollmentService
     }
 
     /**
-     * Moves an active enrollment to a different class, closing the old row
-     * (status=dropped) and opening a fresh one in the target class — no
-     * re-billing, full history preserved on both rows. A package-based
+     * Moves an active enrollment to a different class/table, updating the
+     * same row in place (see recordTransfer()) — no re-billing, no new
+     * enrollment code; the before/after goes to EnrollmentTransferHistory.
+     * A package-based
      * enrollment may only transfer to a class in the same program (a class
      * is just a schedule/room/teacher — it doesn't need to "offer" the
      * package); the legacy book path has no program concept to validate
@@ -251,7 +254,7 @@ final class EnrollmentService
         ?CoursePackage $newPackage = null,
         ?string $feeType = null,
     ): Enrollment {
-        return DB::connection('tenant')->transaction(function () use ($enrollment, $newClass, $tableId, $newPackage, $feeType) {
+        return DB::connection('tenant')->transaction(function () use ($enrollment, $newClass, $actor, $tableId, $newPackage, $feeType) {
             /** @var Enrollment $enrollment */
             $enrollment = Enrollment::query()->whereKey($enrollment->getKey())->lockForUpdate()->firstOrFail();
 
@@ -291,31 +294,70 @@ final class EnrollmentService
             }
 
             $enrollment->auditTransferToClass = $newClass->name;
-            $enrollment->update(['status' => Enrollment::STATUS_DROPPED]);
 
-            $new = Enrollment::query()->create([
-                'student_id' => $enrollment->student_id,
+            $this->recordTransfer($enrollment, [
                 'class_id' => $newClass->getKey(),
                 'table_id' => $tableId,
                 'course_package_id' => $packageId,
                 'academic_program_id' => $programId,
-                // The student's original enrollment date, not today — a
-                // transfer moves them to a different class/table/course, it
-                // isn't a new enrollment. See EnrollmentEditModal.vue for the
-                // one deliberate, manual way to actually change this date.
-                'enrolled_at' => $enrollment->enrolled_at,
-                'enrollments_code' => $this->generateEnrollmentCode($enrollment->student_id),
-                'status' => Enrollment::STATUS_ACTIVE,
-            ]);
+            ], $actor);
 
-            return $new->load(['student', 'schoolClass', 'table', 'coursePackage']);
+            return $enrollment->load(['student', 'schoolClass', 'table', 'coursePackage']);
         });
+    }
+
+    /**
+     * Reseats a student within their current class — see
+     * EnrollmentController::changeTable(). Same in-place update + history
+     * row as transferClass(), just without the class/course checks.
+     */
+    public function changeTable(Enrollment $enrollment, ?int $tableId, User $actor): Enrollment
+    {
+        return DB::connection('tenant')->transaction(function () use ($enrollment, $tableId, $actor) {
+            /** @var Enrollment $enrollment */
+            $enrollment = Enrollment::query()->whereKey($enrollment->getKey())->lockForUpdate()->firstOrFail();
+
+            $this->recordTransfer($enrollment, ['table_id' => $tableId], $actor);
+
+            return $enrollment;
+        });
+    }
+
+    /**
+     * Applies a class/table/course change to the enrollment itself and logs
+     * the before/after in EnrollmentTransferHistory. The enrollment keeps its
+     * id, code, enrolled_at, invoices and attendance — only these columns
+     * move. A no-op (nothing actually different) writes no history row.
+     *
+     * @param  array{class_id?:int, table_id?:int|null, course_package_id?:int|null, academic_program_id?:int|null}  $changes
+     */
+    private function recordTransfer(Enrollment $enrollment, array $changes, User $actor): void
+    {
+        $enrollment->fill($changes);
+
+        if (! $enrollment->isDirty(['class_id', 'table_id', 'course_package_id'])) {
+            return;
+        }
+
+        EnrollmentTransferHistory::query()->create([
+            'enrollment_id' => $enrollment->getKey(),
+            'from_class_id' => $enrollment->getOriginal('class_id'),
+            'to_class_id' => $enrollment->class_id,
+            'from_table_id' => $enrollment->getOriginal('table_id'),
+            'to_table_id' => $enrollment->table_id,
+            'from_course_package_id' => $enrollment->getOriginal('course_package_id'),
+            'to_course_package_id' => $enrollment->course_package_id,
+            'changed_by' => $actor->getKey(),
+        ]);
+
+        $enrollment->save();
     }
 
     /**
      * `{student_code}-{NN}`, e.g. a student `NTS-000008`'s first enrollment
      * is `NTS-000008-01`, second is `NTS-000008-02` — every new Enrollment
-     * row (including one created by transferClass()) advances the sequence.
+     * row advances the sequence (a transfer keeps its code — see
+     * transferClass()).
      * Locking the student row (not just relying on the caller's own
      * transaction) is what makes two concurrent enrollments for the same
      * student serialize instead of racing to the same sequence number.

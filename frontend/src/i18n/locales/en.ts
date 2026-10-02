@@ -1834,7 +1834,7 @@ const en = {
       tableClearedOnReturn: 'Saved. Table {table} was given to another student while this student was away, so they now have no table — please choose a new one with Change table.',
       statusSaveFailed: 'Could not change this enrollment’s status.',
       statusHistory: 'History',
-      statusHistoryEmpty: 'No status changes recorded yet.',
+      statusHistoryEmpty: 'No status, class or table changes recorded yet.',
       statusHistoryLoadFailed: 'Could not load this enrollment’s status history.',
       changeClass: 'Change Class and Table',
       coursePaidHint: 'This enrollment has already been paid — the course cannot be changed, but the class can.',

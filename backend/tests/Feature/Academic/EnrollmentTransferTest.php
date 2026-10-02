@@ -9,6 +9,7 @@ use App\Models\Classroom;
 use App\Models\ClassroomTable;
 use App\Models\CoursePackage;
 use App\Models\Enrollment;
+use App\Models\EnrollmentTransferHistory;
 use App\Models\Product;
 use App\Models\SchoolClass;
 use App\Models\Student;
@@ -24,9 +25,9 @@ class EnrollmentTransferTest extends TestCase
 {
     use HasAcademicAdmin, HasAcademicCatalog, RefreshDatabase;
 
-    public function test_transferring_an_enrollment_drops_the_old_row_and_opens_a_new_one_at_the_same_fee(): void
+    public function test_transferring_an_enrollment_updates_the_same_row_and_logs_the_change(): void
     {
-        $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE, Permissions::ENROLLMENTS_TRANSFER]);
+        $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE, Permissions::ENROLLMENTS_TRANSFER, Permissions::ENROLLMENTS_VIEW]);
         $this->setUpAcademicCatalog();
         $student = Student::factory()->create();
 
@@ -39,14 +40,26 @@ class EnrollmentTransferTest extends TestCase
 
         $newClass = SchoolClass::factory()->forProgram($this->computerProgram)->create(['name' => 'Computer Evening B']);
 
+        $before = Enrollment::findOrFail($originalId);
         $response = $this->postJson("/api/v1/enrollments/{$originalId}/transfer", ['class_id' => $newClass->id]);
 
         $response->assertOk();
+        $response->assertJsonPath('data.id', $originalId);
         $response->assertJsonPath('data.class.id', $newClass->id);
         $response->assertJsonPath('data.status', 'active');
 
-        $this->assertSame('dropped', Enrollment::findOrFail($originalId)->status);
-        $this->assertSame(2, Enrollment::where('student_id', $student->id)->count());
+        $after = Enrollment::findOrFail($originalId);
+        $this->assertSame($newClass->id, $after->class_id);
+        $this->assertSame($before->enrollments_code, $after->enrollments_code);
+        $this->assertSame(1, Enrollment::where('student_id', $student->id)->count());
+
+        $history = EnrollmentTransferHistory::where('enrollment_id', $originalId)->sole();
+        $this->assertSame($this->computerEveningClass->id, $history->from_class_id);
+        $this->assertSame($newClass->id, $history->to_class_id);
+
+        $this->getJson("/api/v1/enrollments/{$originalId}/transfer-history")
+            ->assertOk()
+            ->assertJsonPath('data.0.to_class', 'Computer Evening B');
 
         $log = AuditLog::where('action', AuditAction::ENROLLMENT_TRANSFERRED)->firstOrFail();
         $this->assertStringContainsString('Computer Evening B', (string) $log->description);
@@ -76,8 +89,8 @@ class EnrollmentTransferTest extends TestCase
         $response = $this->postJson("/api/v1/enrollments/{$originalId}/transfer", ['class_id' => $unrelatedClass->id]);
 
         $response->assertOk();
-        $this->assertSame('dropped', Enrollment::findOrFail($originalId)->status);
-        $this->assertSame(2, Enrollment::count());
+        $this->assertSame($unrelatedClass->id, Enrollment::findOrFail($originalId)->class_id);
+        $this->assertSame(1, Enrollment::count());
     }
 
     public function test_transferring_to_a_class_in_a_different_program_is_rejected(): void
@@ -169,7 +182,8 @@ class EnrollmentTransferTest extends TestCase
         $response->assertOk();
         $response->assertJsonPath('data.course_package.id', $excel->id);
         $response->assertJsonPath('data.class.id', $newClass->id);
-        $this->assertSame('dropped', Enrollment::findOrFail($originalId)->status);
+        $this->assertSame($excel->id, Enrollment::findOrFail($originalId)->course_package_id);
+        $this->assertSame($excel->id, EnrollmentTransferHistory::where('enrollment_id', $originalId)->sole()->to_course_package_id);
     }
 
     public function test_transferring_to_a_different_course_is_rejected_once_the_enrollment_is_paid(): void
@@ -250,5 +264,43 @@ class EnrollmentTransferTest extends TestCase
         $response->assertOk();
         $response->assertJsonPath('data.class.id', $newClass->id);
         $response->assertJsonPath('data.course_package.id', $this->msWordPackage->id);
+    }
+
+    /**
+     * Opening "Change Class" and only switching tables (or keeping the same
+     * table) used to fail validation, since the student's own seat counted
+     * as taken.
+     */
+    public function test_keeping_the_same_class_and_table_does_not_count_as_taken(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE, Permissions::ENROLLMENTS_TRANSFER]);
+        $this->setUpAcademicCatalog();
+        $student = Student::factory()->create();
+
+        $room = Classroom::factory()->create();
+        $tableA = ClassroomTable::factory()->create(['classroom_id' => $room->id]);
+        $tableB = ClassroomTable::factory()->create(['classroom_id' => $room->id]);
+        $class = SchoolClass::factory()->forProgram($this->computerProgram)->inRoom($room)->create();
+
+        $enrollmentId = $this->postJson('/api/v1/enrollments/package', [
+            'student_id' => $student->id,
+            'class_id' => $class->id,
+            'table_id' => $tableA->id,
+            'course_package_id' => $this->msWordPackage->id,
+            'fee_type' => 'term',
+        ])->assertCreated()->json('data.id');
+
+        $this->postJson("/api/v1/enrollments/{$enrollmentId}/transfer", ['class_id' => $class->id, 'table_id' => $tableA->id])->assertOk();
+        $this->assertSame(0, EnrollmentTransferHistory::count());
+
+        $this->postJson("/api/v1/enrollments/{$enrollmentId}/transfer", ['class_id' => $class->id, 'table_id' => $tableB->id])
+            ->assertOk()
+            ->assertJsonPath('data.id', $enrollmentId)
+            ->assertJsonPath('data.table.id', $tableB->id);
+
+        $history = EnrollmentTransferHistory::sole();
+        $this->assertSame($tableA->id, $history->from_table_id);
+        $this->assertSame($tableB->id, $history->to_table_id);
+        $this->assertSame(1, Enrollment::count());
     }
 }

@@ -1829,7 +1829,7 @@ const zh: MessageSchema = {
       tableClearedOnReturn: '已保存。该学生离开期间，桌位 {table} 已分配给其他学生，因此现在没有桌位——请通过“更换桌位”选择新桌位。',
       statusSaveFailed: '无法更改该报名的状态。',
       statusHistory: '历史记录',
-      statusHistoryEmpty: '暂无状态变更记录。',
+      statusHistoryEmpty: '暂无状态、班级或座位变更记录。',
       statusHistoryLoadFailed: '无法加载状态历史记录。',
       changeClass: '更改班级和座位',
       coursePaidHint: '该报名已缴费——无法更改课程，但可以更改班级。',

@@ -65,8 +65,9 @@ class Enrollment extends Model
 
     /**
      * Not a status an admin ever picks from the status-management menu —
-     * purely internal bookkeeping for a row superseded by
-     * EnrollmentService::cancel()/transferClass(). See STATUSES_MANAGEABLE
+     * purely internal bookkeeping for a row closed by
+     * EnrollmentService::cancel() (or, historically, a row superseded by a
+     * transfer — transfers now update in place). See STATUSES_MANAGEABLE
      * for the set that actually appears in that menu.
      */
     public const STATUS_DROPPED = 'dropped';
@@ -74,7 +75,7 @@ class Enrollment extends Model
     /**
      * The statuses selectable from the "manage status" menu — everything
      * except STATUS_DROPPED, which only ever happens as a side effect of
-     * cancelling or transferring, never a direct choice.
+     * cancelling, never a direct choice.
      */
     public const STATUSES_MANAGEABLE = [
         self::STATUS_NOT_STARTED, self::STATUS_ACTIVE, self::STATUS_EXAM_READY, self::STATUS_COMPLETED,
@@ -96,12 +97,10 @@ class Enrollment extends Model
 
     /**
      * Set by EnrollmentService::cancel()/transferClass() immediately before
-     * calling update(), purely to let auditActionForDirty()/
-     * auditDescriptionForChange() below tell "cancelled" apart from
-     * "transferred" — both just set status=dropped, and a plain column-diff
-     * can't otherwise know which one happened. Real PHP properties, not
-     * Eloquent attributes — never persisted, never touch the `enrollments`
-     * table.
+     * saving, purely to let auditActionForDirty()/auditDescriptionForChange()
+     * below log "cancelled"/"transferred" instead of a plain STATUS_CHANGE/
+     * UPDATE column-diff. Real PHP properties, not Eloquent attributes —
+     * never persisted, never touch the `enrollments` table.
      */
     public ?string $auditReason = null;
 
@@ -181,6 +180,11 @@ class Enrollment extends Model
         return $this->hasMany(EnrollmentStatusHistory::class);
     }
 
+    public function transferHistories(): HasMany
+    {
+        return $this->hasMany(EnrollmentTransferHistory::class);
+    }
+
     /** The InvoiceItem(s) billed for this enrollment — see InvoiceItem::reference(). */
     public function invoiceItems(): MorphMany
     {
@@ -228,8 +232,12 @@ class Enrollment extends Model
      */
     protected function auditActionForDirty(array $dirty): string
     {
+        if ($this->auditTransferToClass !== null) {
+            return AuditAction::ENROLLMENT_TRANSFERRED;
+        }
+
         if (array_key_exists('status', $dirty) && $dirty['status'] === self::STATUS_DROPPED) {
-            return $this->auditTransferToClass !== null ? AuditAction::ENROLLMENT_TRANSFERRED : AuditAction::ENROLLMENT_CANCELLED;
+            return AuditAction::ENROLLMENT_CANCELLED;
         }
 
         return array_key_exists('status', $dirty) ? AuditAction::STATUS_CHANGE : AuditAction::UPDATE;

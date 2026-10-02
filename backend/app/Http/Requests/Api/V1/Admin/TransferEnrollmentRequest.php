@@ -26,7 +26,8 @@ class TransferEnrollmentRequest extends FormRequest
             'class_id' => ['required', Rule::exists('tenant.classes', 'id')],
             // Scoped to the TARGET class's room — the old table belonged to
             // a different class/room and is never carried forward, see
-            // EnrollmentService::transferClass().
+            // EnrollmentService::transferClass(). The student's own current
+            // seat doesn't count as taken, so keeping it is allowed.
             'table_id' => ['nullable', Rule::exists('tenant.classroom_tables', 'id')],
             // Omitted (or equal to the enrollment's current package) means
             // "just move the room/schedule" — always allowed. Set to a
@@ -74,6 +75,7 @@ class TransferEnrollmentRequest extends FormRequest
                 ->where('class_id', $this->input('class_id'))
                 ->where('table_id', $tableId)
                 ->where('status', Enrollment::TABLE_HOLDING_STATUS)
+                ->where('id', '!=', $this->route('enrollment')->id)
                 ->exists();
 
             if ($taken) {

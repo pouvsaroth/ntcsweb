@@ -248,6 +248,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::patch('enrollments/{enrollment}/table', [EnrollmentController::class, 'changeTable'])->name('enrollments.change-table');
         Route::post('enrollments/{enrollment}/status', [EnrollmentController::class, 'changeStatus'])->name('enrollments.status.update');
         Route::get('enrollments/{enrollment}/status-history', [EnrollmentController::class, 'statusHistory'])->name('enrollments.status-history');
+        Route::get('enrollments/{enrollment}/transfer-history', [EnrollmentController::class, 'transferHistory'])->name('enrollments.transfer-history');
 
         /*
         |----------------------------------------------------------------------

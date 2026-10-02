@@ -32,6 +32,19 @@ export interface EnrollmentStatusHistoryEntry {
   created_at: string
 }
 
+/** One class/table/course change — see EnrollmentService::recordTransfer() on the backend. Names, not ids: purely for display. */
+export interface EnrollmentTransferHistoryEntry {
+  id: number
+  from_class: string | null
+  to_class: string | null
+  from_table: string | null
+  to_table: string | null
+  from_course_package: string | null
+  to_course_package: string | null
+  changed_by: string | null
+  created_at: string
+}
+
 export interface EnrollmentStudent {
   id: number
   full_name: string
@@ -123,4 +136,7 @@ export const enrollmentsService = {
 
   statusHistory: (id: number) =>
     apiGetWithMeta<EnrollmentStatusHistoryEntry[]>(`/enrollments/${id}/status-history`).then((r) => r.data),
+
+  transferHistory: (id: number) =>
+    apiGetWithMeta<EnrollmentTransferHistoryEntry[]>(`/enrollments/${id}/transfer-history`).then((r) => r.data),
 }

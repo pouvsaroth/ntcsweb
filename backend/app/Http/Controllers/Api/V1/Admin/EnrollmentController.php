@@ -12,6 +12,7 @@ use App\Http\Requests\Api\V1\Admin\TransferEnrollmentRequest;
 use App\Http\Requests\Api\V1\Admin\UpdateEnrollmentRequest;
 use App\Http\Resources\EnrollmentResource;
 use App\Http\Resources\EnrollmentStatusHistoryResource;
+use App\Http\Resources\EnrollmentTransferHistoryResource;
 use App\Http\Responses\ApiResponse;
 use App\Models\CoursePackage;
 use App\Models\Enrollment;
@@ -93,15 +94,12 @@ final class EnrollmentController extends Controller
     /**
      * Reseats a student within their current class only — no class/course
      * change is possible through this action, see ChangeEnrollmentTableRequest
-     * and EnrollmentPolicy::changeTable(). A plain in-place update (unlike
-     * transfer(), which drops and recreates the row): the enrollment's own
-     * identity, code, and history stay untouched — Enrollment's Auditable
-     * trait logs this as a routine UPDATE on its own, so there's nothing
-     * further to do here.
+     * and EnrollmentPolicy::changeTable(). Updates in place and logs an
+     * EnrollmentTransferHistory row, same as transfer().
      */
     public function changeTable(ChangeEnrollmentTableRequest $request, Enrollment $enrollment): JsonResponse
     {
-        $enrollment->update(['table_id' => $request->validated('table_id')]);
+        $enrollment = $this->enrollments->changeTable($enrollment, $request->validated('table_id'), $request->user());
 
         return ApiResponse::success(new EnrollmentResource($enrollment->load(self::WITH)));
     }
@@ -126,5 +124,17 @@ final class EnrollmentController extends Controller
         $history = $enrollment->statusHistories()->with('changedBy')->latest('id')->get();
 
         return ApiResponse::success(EnrollmentStatusHistoryResource::collection($history));
+    }
+
+    public function transferHistory(Enrollment $enrollment): JsonResponse
+    {
+        $this->authorize('view', $enrollment);
+
+        $history = $enrollment->transferHistories()
+            ->with(['changedBy', 'fromClass', 'toClass', 'fromTable', 'toTable', 'fromCoursePackage', 'toCoursePackage'])
+            ->latest('id')
+            ->get();
+
+        return ApiResponse::success(EnrollmentTransferHistoryResource::collection($history));
     }
 }
