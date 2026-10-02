@@ -30,6 +30,27 @@ class ApprovalGroup extends Model
 
     protected $connection = 'tenant';
 
+    /** Staff who can be added as members — still working here (suspended or departed staff can't approve anything). */
+    public const MEMBER_STAFF_STATUSES = [Staff::STATUS_ACTIVE, Staff::STATUS_PROBATION, Staff::STATUS_ON_LEAVE];
+
+    /**
+     * Users who can be added to a group: only accounts linked to a staff
+     * record with one of MEMBER_STAFF_STATUSES — never students or
+     * accounts with no staff record.
+     *
+     * @return Collection<int, int>
+     */
+    public static function eligibleUserIds(): Collection
+    {
+        return Staff::query()
+            ->whereIn('status', self::MEMBER_STAFF_STATUSES)
+            ->whereNotNull('user_id')
+            ->pluck('user_id')
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values();
+    }
+
     public function members(): HasMany
     {
         return $this->hasMany(ApprovalGroupMember::class)->orderBy('id');

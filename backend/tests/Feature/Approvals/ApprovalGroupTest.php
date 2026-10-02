@@ -6,6 +6,8 @@ namespace Tests\Feature\Approvals;
 
 use App\Models\ApprovalGroup;
 use App\Models\ApprovalGroupMember;
+use App\Models\Staff;
+use App\Models\Student;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Support\Authorization\Permissions;
@@ -19,6 +21,15 @@ use Tests\TestCase;
 class ApprovalGroupTest extends TestCase
 {
     use HasAcademicAdmin, RefreshDatabase;
+
+    /** Only staff accounts can be group members — see ApprovalGroup::eligibleUserIds(). */
+    private function staffUser(array $attributes = [], string $staffStatus = Staff::STATUS_ACTIVE): User
+    {
+        $user = User::factory()->forTenant($this->tenant)->create($attributes);
+        Staff::factory()->withUser($user)->create(['status' => $staffStatus]);
+
+        return $user;
+    }
 
     public function test_managing_groups_requires_the_manage_permission(): void
     {
@@ -35,8 +46,8 @@ class ApprovalGroupTest extends TestCase
     public function test_a_group_can_be_created_with_members(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::APPROVAL_GROUPS_MANAGE]);
-        $sokha = User::factory()->forTenant($this->tenant)->create(['name' => 'Sokha']);
-        $dara = User::factory()->forTenant($this->tenant)->create(['name' => 'Dara']);
+        $sokha = $this->staffUser(['name' => 'Sokha']);
+        $dara = $this->staffUser(['name' => 'Dara']);
 
         $response = $this->postJson('/api/v1/approval-groups', [
             'name' => 'Academic Managers',
@@ -54,7 +65,7 @@ class ApprovalGroupTest extends TestCase
     public function test_updating_a_group_replaces_its_member_list(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::APPROVAL_GROUPS_MANAGE]);
-        [$kept, $removed, $added] = User::factory()->forTenant($this->tenant)->count(3)->create()->all();
+        [$kept, $removed, $added] = [$this->staffUser(), $this->staffUser(), $this->staffUser()];
         $group = ApprovalGroup::factory()->create(['name' => 'Finance']);
         $group->members()->create(['user_id' => $kept->id]);
         $group->members()->create(['user_id' => $removed->id]);
@@ -72,7 +83,7 @@ class ApprovalGroupTest extends TestCase
     public function test_the_list_shows_each_groups_members(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::APPROVAL_GROUPS_MANAGE]);
-        $user = User::factory()->forTenant($this->tenant)->create(['name' => 'Sokha']);
+        $user = $this->staffUser(['name' => 'Sokha']);
         $group = ApprovalGroup::factory()->create(['name' => 'Finance']);
         $group->members()->create(['user_id' => $user->id]);
         ApprovalGroup::factory()->create(['name' => 'Academic']);
@@ -115,18 +126,48 @@ class ApprovalGroupTest extends TestCase
         $this->assertSoftDeleted($group);
     }
 
-    public function test_the_member_picker_lists_only_active_users_of_this_school(): void
+    public function test_the_member_picker_lists_only_working_staff_of_this_school(): void
     {
         $admin = $this->actingAsAdminWithPermissions([Permissions::APPROVAL_GROUPS_MANAGE]);
-        $active = User::factory()->forTenant($this->tenant)->create(['name' => 'Active User']);
-        $inactive = User::factory()->forTenant($this->tenant)->create(['status' => User::STATUS_INACTIVE]);
-        $outsider = User::factory()->forTenant(Tenant::factory()->create())->create();
+        $staff = $this->staffUser();
+        $onLeave = $this->staffUser([], Staff::STATUS_ON_LEAVE);
+        $resigned = $this->staffUser([], Staff::STATUS_RESIGNED);
+        // Set after the staff record, which syncs the account's status from HR status.
+        $inactiveAccount = $this->staffUser();
+        $inactiveAccount->forceFill(['status' => User::STATUS_INACTIVE])->save();
+        $student = User::factory()->forTenant($this->tenant)->create();
+        Student::factory()->create(['user_id' => $student->id]);
 
         $ids = collect($this->getJson('/api/v1/approval-groups/users')->assertOk()->json('data'))->pluck('id');
 
-        $this->assertTrue($ids->contains($active->id));
-        $this->assertTrue($ids->contains($admin->id));
-        $this->assertFalse($ids->contains($inactive->id));
-        $this->assertFalse($ids->contains($outsider->id));
+        $this->assertTrue($ids->contains($staff->id));
+        $this->assertTrue($ids->contains($onLeave->id));
+        $this->assertFalse($ids->contains($resigned->id));
+        $this->assertFalse($ids->contains($inactiveAccount->id));
+        $this->assertFalse($ids->contains($student->id));
+        // The admin account itself has no staff record.
+        $this->assertFalse($ids->contains($admin->id));
+    }
+
+    public function test_a_user_without_a_working_staff_record_cannot_be_added(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::APPROVAL_GROUPS_MANAGE]);
+        $noStaffRecord = User::factory()->forTenant($this->tenant)->create();
+        $resigned = $this->staffUser([], Staff::STATUS_RESIGNED);
+
+        $this->postJson('/api/v1/approval-groups', ['name' => 'Finance', 'user_ids' => [$noStaffRecord->id, $resigned->id]])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['user_ids.0', 'user_ids.1']);
+    }
+
+    public function test_a_member_who_has_since_left_can_stay_until_removed(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::APPROVAL_GROUPS_MANAGE]);
+        $leaver = $this->staffUser();
+        $group = ApprovalGroup::factory()->create();
+        $group->members()->create(['user_id' => $leaver->id]);
+        Staff::query()->where('user_id', $leaver->id)->update(['status' => Staff::STATUS_RESIGNED]);
+
+        $this->putJson("/api/v1/approval-groups/{$group->id}", ['name' => 'Renamed', 'user_ids' => [$leaver->id]])->assertOk();
     }
 }

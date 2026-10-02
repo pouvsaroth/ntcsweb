@@ -1035,6 +1035,7 @@ const ko: MessageSchema = {
       name: '그룹 이름',
       description: '설명',
       members: '구성원',
+      membersHint: '현재 근무 중인 직원만 추가할 수 있습니다.',
       searchUsers: '이름 또는 이메일로 사용자 검색',
       noUsersFound: '사용자를 찾을 수 없습니다.',
       removeMember: '{name} 제거',

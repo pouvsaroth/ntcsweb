@@ -1034,6 +1034,7 @@ const zh: MessageSchema = {
       name: '群组名称',
       description: '说明',
       members: '成员',
+      membersHint: '只能添加在职员工。',
       searchUsers: '按姓名或邮箱搜索用户',
       noUsersFound: '未找到用户。',
       removeMember: '移除 {name}',

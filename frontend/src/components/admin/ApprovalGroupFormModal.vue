@@ -134,10 +134,11 @@ async function submit() {
       </div>
 
       <div>
-        <p class="mb-1 text-sm font-medium text-neutral-700">
+        <p class="text-sm font-medium text-neutral-700">
           {{ t('admin.approvalGroups.members') }}
           <span class="font-normal text-neutral-500">({{ form.userIds.length }})</span>
         </p>
+        <p class="mb-2 text-xs text-neutral-500">{{ t('admin.approvalGroups.membersHint') }}</p>
 
         <div v-if="selectedMembers.length" class="mb-2 flex flex-wrap gap-1.5">
           <span

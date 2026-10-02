@@ -1035,6 +1035,7 @@ const ja: MessageSchema = {
       name: 'グループ名',
       description: '説明',
       members: 'メンバー',
+      membersHint: '追加できるのは在職中の職員のみです。',
       searchUsers: '名前またはメールでユーザーを検索',
       noUsersFound: 'ユーザーが見つかりません。',
       removeMember: '{name}さんを外す',

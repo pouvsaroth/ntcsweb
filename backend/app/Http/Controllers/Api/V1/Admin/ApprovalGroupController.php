@@ -87,7 +87,7 @@ final class ApprovalGroupController extends Controller
         return ApiResponse::noContent();
     }
 
-    /** Every active user of this school, for the member picker. */
+    /** The member picker: active accounts of this school's working staff only (see ApprovalGroup::eligibleUserIds()). */
     public function users(): JsonResponse
     {
         $this->authorize('viewAny', ApprovalGroup::class);
@@ -95,6 +95,7 @@ final class ApprovalGroupController extends Controller
         $users = User::query()
             ->inTenant($this->context->id())
             ->active()
+            ->whereIn('id', ApprovalGroup::eligibleUserIds())
             ->orderBy('name')
             ->get(['id', 'name', 'email'])
             ->map(fn (User $user) => ['id' => $user->id, 'name' => $user->name, 'email' => $user->email]);

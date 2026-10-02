@@ -1035,6 +1035,7 @@ const km: MessageSchema = {
       name: 'ឈ្មោះក្រុម',
       description: 'ការពិពណ៌នា',
       members: 'សមាជិក',
+      membersHint: 'អាចបន្ថែមបានតែបុគ្គលិកដែលកំពុងបម្រើការងារប៉ុណ្ណោះ។',
       searchUsers: 'ស្វែងរកអ្នកប្រើតាមឈ្មោះ ឬអ៊ីមែល',
       noUsersFound: 'រកមិនឃើញអ្នកប្រើទេ។',
       removeMember: 'ដក {name} ចេញ',

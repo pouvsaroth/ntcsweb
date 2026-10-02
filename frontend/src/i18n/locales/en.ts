@@ -1039,6 +1039,7 @@ const en = {
       name: 'Group name',
       description: 'Description',
       members: 'Members',
+      membersHint: 'Only staff who are currently working can be added.',
       searchUsers: 'Search users by name or email',
       noUsersFound: 'No users found.',
       removeMember: 'Remove {name}',
