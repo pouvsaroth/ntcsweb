@@ -280,6 +280,51 @@ async function openDetail(row: AttendanceSummaryRow) {
   }
 }
 
+const detailExporting = ref(false)
+
+/** The popup's records as an image — same rows as on screen (honours "absent only"). */
+async function exportDetailImage() {
+  const row = detailRow.value
+  if (!row) return
+  detailExporting.value = true
+  detailError.value = null
+  try {
+    const dates =
+      dateFrom.value || dateTo.value
+        ? `${dateFrom.value ? formatDate(dateFrom.value) : '…'} – ${dateTo.value ? formatDate(dateTo.value) : '…'}`
+        : t('admin.attendance.allDays')
+    await exportTableAsImage({
+      title: `${t('admin.attendance.historyTitle')} — ${row.student.name}`,
+      subtitle: [
+        enrollmentLabel(row),
+        dates,
+        detailAbsentOnly.value ? t('admin.attendance.detailAbsentOnly') : '',
+        `${t('admin.attendance.exportedOn')} ${formatDate(new Date())}`,
+      ]
+        .filter(Boolean)
+        .join('  ·  '),
+      columns: [
+        { label: t('admin.attendance.columnDate'), width: 130 },
+        { label: t('admin.attendance.columnStatus'), width: 130 },
+        { label: t('admin.attendance.columnLateMinutes'), width: 110 },
+        { label: t('admin.attendance.columnRemarks'), width: 240, maxWidth: 420 },
+      ],
+      rows: visibleDetailRecords.value.map((record) => [
+        { text: formatDate(record.date) },
+        { text: statusLabel(record.status), badge: statusVariant[record.status] },
+        { text: record.late_minutes != null ? String(record.late_minutes) : '—' },
+        { text: record.remarks ?? '—' },
+      ]),
+      emptyText: t('admin.attendance.summaryEmptyMessage'),
+      fileName: `attendance-${row.student.name.replace(/[\\/:*?"<>|\s]+/g, '-')}-${new Date().toISOString().slice(0, 10)}.png`,
+    })
+  } catch {
+    detailError.value = t('admin.attendance.exportImageFailed')
+  } finally {
+    detailExporting.value = false
+  }
+}
+
 onMounted(async () => {
   loadingClasses.value = true
   try {
@@ -392,10 +437,15 @@ onMounted(async () => {
     >
       <BaseAlert v-if="detailError" variant="danger" class="mb-4">{{ detailError }}</BaseAlert>
 
-      <label class="mb-3 inline-flex items-center gap-2 text-sm text-neutral-700">
-        <input v-model="detailAbsentOnly" type="checkbox" class="rounded border-neutral-300 text-primary-600 focus:ring-primary-500" />
-        {{ t('admin.attendance.detailAbsentOnly') }}
-      </label>
+      <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
+        <label class="inline-flex items-center gap-2 text-sm text-neutral-700">
+          <input v-model="detailAbsentOnly" type="checkbox" class="rounded border-neutral-300 text-primary-600 focus:ring-primary-500" />
+          {{ t('admin.attendance.detailAbsentOnly') }}
+        </label>
+        <BaseButton variant="outline" size="sm" :loading="detailExporting" :disabled="detailLoading" @click="exportDetailImage">
+          {{ t('admin.attendance.exportImage') }}
+        </BaseButton>
+      </div>
 
       <div v-if="detailLoading" class="py-8 text-center text-sm text-neutral-400">{{ t('common.loading') }}</div>
 
