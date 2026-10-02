@@ -73,6 +73,7 @@ const GROUPS = [
   'Communication',
   'Settings',
   'E-Approvals',
+  'Approval Flow',
   'Other',
 ] as const;
 
@@ -307,6 +308,7 @@ const MODULES: ModuleEntry[] = [
   { name: 'Approvals', group: 'E-Approvals', actions: { view: 'approval-requests.view', approve: 'approval-requests.approve', reject: 'approval-requests.reject' } },
   { name: 'Form categories', group: 'E-Approvals', actions: { manage: 'form-categories.manage' } },
   { name: 'Form templates', group: 'E-Approvals', actions: { manage: 'form-templates.manage' } },
+  { name: 'Approval groups', group: 'Approval Flow', actions: { manage: 'approval-groups.manage' } },
   { name: 'Student feedback', group: 'Communication', actions: { view: 'student-feedback.view', reply: 'student-feedback.reply' } },
   { name: 'Exam applications', group: 'Academic', actions: { view: 'exam-applications.view', create: 'exam-applications.create', update: 'exam-applications.update', delete: 'exam-applications.delete', approve: 'exam-applications.approve', reject: 'exam-applications.reject' } },
   // The Examination tab bar has four tabs (Exams, Approvals, Grades,
@@ -467,6 +469,7 @@ const GROUP_I18N_KEYS: Partial<Record<(typeof GROUPS)[number], string>> = {
   Communication: 'communication',
   Settings: 'settings',
   'E-Approvals': 'eApprovals',
+  'Approval Flow': 'approvalFlow',
 }
 
 function groupLabel(group: (typeof GROUPS)[number]): string {

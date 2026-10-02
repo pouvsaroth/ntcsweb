@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Api\V1\Admin;
 
 use App\Models\ResignationRequest;
+use App\Services\Approvals\ApprovalFlow;
 use Illuminate\Foundation\Http\FormRequest;
 
 class RejectResignationRequestRequest extends FormRequest
@@ -14,7 +15,8 @@ class RejectResignationRequestRequest extends FormRequest
         /** @var ResignationRequest $resignationRequest */
         $resignationRequest = $this->route('resignation_request');
 
-        return $this->user()?->can('reject', $resignationRequest) ?? false;
+        // An approval-flow item: the current step's group; otherwise the reject permission.
+        return $this->user() !== null && app(ApprovalFlow::class)->mayDecide($resignationRequest, $this->user(), 'reject');
     }
 
     public function rules(): array

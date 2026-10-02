@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Resources;
 
 use App\Models\User;
+use App\Services\Approvals\ApprovalFlow;
+use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -42,6 +44,16 @@ class UserResource extends JsonResource
             'permissions' => $this->when(
                 $request->user()?->is($this->resource) === true,
                 fn () => $this->isSuperAdmin() ? ['*'] : $this->permissionSlugs(),
+            ),
+
+            // Approval Flow items this user approves a step of — being in the
+            // group is enough to open the Approvals queue for them, no
+            // permission needed (see ApprovalFlow). Same visibility as above.
+            'approval_flow_types' => $this->when(
+                $request->user()?->is($this->resource) === true,
+                fn () => $this->tenant_id !== null && app(TenantContext::class)->is($this->tenant_id)
+                    ? app(ApprovalFlow::class)->typesFor($this->resource)
+                    : [],
             ),
         ];
     }

@@ -460,6 +460,10 @@ final class Permissions
 
     public const APPROVAL_REQUESTS_REJECT = 'approval-requests.reject';
 
+    // Approval Flow — groups of users (and, later, the flows built from
+    // them) that decide who approves what.
+    public const APPROVAL_GROUPS_MANAGE = 'approval-groups.manage';
+
     // Projects — a Kanban-style project management module. Any staff/admin
     // can use it (see ProjectPolicy's docblock); columns and tasks ride on
     // the parent project's own permission (a column/task is only ever
@@ -884,6 +888,9 @@ final class Permissions
                 self::APPROVAL_REQUESTS_APPROVE => 'Approve requests',
                 self::APPROVAL_REQUESTS_REJECT => 'Reject requests',
             ],
+            'Approval Flow' => [
+                self::APPROVAL_GROUPS_MANAGE => 'Manage approval groups',
+            ],
             'Student Feedback' => [
                 self::STUDENT_FEEDBACK_VIEW => "View students' requests and comments",
                 self::STUDENT_FEEDBACK_REPLY => 'Reply to requests and comments',
@@ -1000,6 +1007,7 @@ final class Permissions
         $eApprovals = [
             self::FORM_CATEGORIES_MANAGE, self::FORM_TEMPLATES_MANAGE,
             self::APPROVAL_REQUESTS_VIEW, self::APPROVAL_REQUESTS_APPROVE, self::APPROVAL_REQUESTS_REJECT,
+            self::APPROVAL_GROUPS_MANAGE,
         ];
 
         // Unlike billing/accounting/assets above, Projects is meant to be a

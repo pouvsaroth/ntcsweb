@@ -7,9 +7,11 @@ namespace App\Services\Academic;
 use App\Models\ResignationRequest;
 use App\Models\Staff;
 use App\Models\User;
+use App\Services\Approvals\ApprovalFlow;
 use App\Services\Notifications\NotificationService;
 use App\Support\Authorization\Permissions;
 use App\Support\Notifications\NotificationType;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -25,6 +27,7 @@ final class ResignationRequestService
 {
     public function __construct(
         private readonly NotificationService $notifications,
+        private readonly ApprovalFlow $flow,
     ) {}
 
     /**
@@ -43,14 +46,28 @@ final class ResignationRequestService
 
         // Outside the transaction — a notification that fails to write is
         // never worth rolling back an already-submitted request over.
-        $this->notifications->notifyMany(
-            $this->notifications->usersWithPermission(Permissions::RESIGNATION_REQUESTS_APPROVE),
-            NotificationType::RESIGNATION_REQUEST_SUBMITTED,
-            ['staff_id' => $staff->id, 'staff_name' => $staff->fullName(), 'resignation_request_id' => $request->id],
-            link: '/admin/approvals/queue',
-        );
+        $this->notifyApprovers($request, $this->flow->submitRecipients(
+            $request,
+            fn () => $this->notifications->usersWithPermission(Permissions::RESIGNATION_REQUESTS_APPROVE),
+        ));
 
         return $request;
+    }
+
+    /**
+     * "Waiting for your approval" — on submit, and again for each next
+     * step's group of an approval flow (see ApprovalFlow::approve()).
+     *
+     * @param  Collection<int, User>  $recipients
+     */
+    public function notifyApprovers(ResignationRequest $request, Collection $recipients): void
+    {
+        $this->notifications->notifyMany(
+            $recipients,
+            NotificationType::RESIGNATION_REQUEST_SUBMITTED,
+            ['staff_id' => $request->staff_id, 'staff_name' => $request->staff?->fullName(), 'resignation_request_id' => $request->id],
+            link: '/admin/approvals/queue',
+        );
     }
 
     public function approve(ResignationRequest $request, User $admin): ResignationRequest

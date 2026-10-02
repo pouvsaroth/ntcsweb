@@ -29,6 +29,7 @@ use App\Models\ExamApplication;
 use App\Models\ExamScore;
 use App\Models\Expense;
 use App\Models\FinancialTransaction;
+use App\Models\ApprovalGroup;
 use App\Models\FormCategory;
 use App\Models\FormTemplate;
 use App\Models\GalleryImage;
@@ -82,6 +83,7 @@ use App\Policies\ExamApplicationPolicy;
 use App\Policies\ExamScorePolicy;
 use App\Policies\ExpensePolicy;
 use App\Policies\FinancialTransactionPolicy;
+use App\Policies\ApprovalGroupPolicy;
 use App\Policies\FormCategoryPolicy;
 use App\Policies\FormTemplatePolicy;
 use App\Policies\GalleryImagePolicy;
@@ -167,6 +169,7 @@ class AuthServiceProvider extends ServiceProvider
         AssetIssue::class => AssetIssuePolicy::class,
         AssetRepair::class => AssetRepairPolicy::class,
         AssetMaintenance::class => AssetMaintenancePolicy::class,
+        ApprovalGroup::class => ApprovalGroupPolicy::class,
         FormCategory::class => FormCategoryPolicy::class,
         FormTemplate::class => FormTemplatePolicy::class,
         ApprovalRequest::class => ApprovalRequestPolicy::class,

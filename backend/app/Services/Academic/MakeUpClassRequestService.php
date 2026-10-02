@@ -7,10 +7,12 @@ namespace App\Services\Academic;
 use App\Models\MakeUpClassRequest;
 use App\Models\Student;
 use App\Models\User;
+use App\Services\Approvals\ApprovalFlow;
 use App\Services\Notifications\NotificationService;
 use App\Support\Authorization\Permissions;
 use App\Support\Notifications\NotificationType;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -23,6 +25,7 @@ final class MakeUpClassRequestService
 {
     public function __construct(
         private readonly NotificationService $notifications,
+        private readonly ApprovalFlow $flow,
     ) {}
 
     /**
@@ -44,14 +47,28 @@ final class MakeUpClassRequestService
 
         // Outside the transaction — a notification that fails to write is
         // never worth rolling back an already-submitted request over.
-        $this->notifications->notifyMany(
-            $this->notifications->usersWithPermission(Permissions::MAKE_UP_CLASS_REQUESTS_APPROVE),
-            NotificationType::MAKE_UP_CLASS_REQUEST_SUBMITTED,
-            ['student_id' => $student->id, 'student_name' => $student->fullName(), 'make_up_class_request_id' => $request->id],
-            link: '/admin/approvals/queue',
-        );
+        $this->notifyApprovers($request, $this->flow->submitRecipients(
+            $request,
+            fn () => $this->notifications->usersWithPermission(Permissions::MAKE_UP_CLASS_REQUESTS_APPROVE),
+        ));
 
         return $request;
+    }
+
+    /**
+     * "Waiting for your approval" — on submit, and again for each next
+     * step's group of an approval flow (see ApprovalFlow::approve()).
+     *
+     * @param  Collection<int, User>  $recipients
+     */
+    public function notifyApprovers(MakeUpClassRequest $request, Collection $recipients): void
+    {
+        $this->notifications->notifyMany(
+            $recipients,
+            NotificationType::MAKE_UP_CLASS_REQUEST_SUBMITTED,
+            ['student_id' => $request->student_id, 'student_name' => $request->student?->fullName(), 'make_up_class_request_id' => $request->id],
+            link: '/admin/approvals/queue',
+        );
     }
 
     /**

@@ -25,6 +25,8 @@ class ApprovalRequestResource extends JsonResource
             'subject' => $this->subject,
             'details' => $this->details,
             'status' => $this->status,
+            // Approvals queue only — see ApprovalFlow::progress().
+            'approval_flow' => $this->whenLoaded('approvalFlow'),
             'decision_reason' => $this->decision_reason,
             'decided_by' => $this->whenLoaded('decidedBy', fn () => $this->decidedBy?->name),
             'decided_at' => $this->decided_at?->toIso8601String(),

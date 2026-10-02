@@ -14,6 +14,8 @@ use App\Http\Responses\ApiResponse;
 use App\Models\ExamApplication;
 use App\Models\Tenant;
 use App\Services\Academic\ExamApplicationService;
+use App\Services\Approvals\ApprovalFlow;
+use App\Support\Approvals\DocumentType;
 use App\Support\Query\ApiQuery;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Database\Eloquent\Builder;
@@ -30,6 +32,7 @@ final class ExamApplicationController extends Controller
     public function __construct(
         private readonly ExamApplicationService $examApplications,
         private readonly TenantContext $context,
+        private readonly ApprovalFlow $flow,
     ) {}
 
     /**
@@ -40,7 +43,11 @@ final class ExamApplicationController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $this->authorize('viewAny', ExamApplication::class);
+        // An approval-flow group member may open the queue without the
+        // view permission — they then only see the requests involving them.
+        $user = $request->user();
+        $canViewAll = $user->can('viewAny', ExamApplication::class);
+        abort_unless($canViewAll || $this->flow->isApproverFor($user, DocumentType::forModelClass(ExamApplication::class)), 403);
 
         $query = ExamApplication::query()->with(self::WITH);
 
@@ -67,10 +74,18 @@ final class ExamApplicationController extends Controller
             });
         }
 
+        // The Approvals queue lists a pending request of an item with an
+        // approval flow only to the group it's waiting on (see ApprovalFlow).
+        if ($request->boolean('approval_queue') || ! $canViewAll) {
+            $this->flow->scopeQueue($query, ExamApplication::class, $user, $canViewAll);
+        }
+
         $applications = ApiQuery::for($query, $request)
             ->filterable(['status', 'student_id', 'enrollment_id'])
             ->sortable(['exam_date', 'created_at'], default: '-created_at')
             ->paginate();
+
+        $this->flow->attachProgress($applications->getCollection(), $user);
 
         return ApiResponse::success(ExamApplicationResource::collection($applications));
     }
@@ -192,9 +207,16 @@ final class ExamApplicationController extends Controller
 
     public function approve(ExamApplication $examApplication, Request $request): JsonResponse
     {
-        $this->authorize('approve', $examApplication);
+        $this->flow->authorizeDecision($examApplication, $request->user(), 'approve');
 
-        $examApplication = $this->examApplications->approve($examApplication, $request->user());
+        // With an approval flow this approves just the current step (and
+        // tells the next step's group); the last step approves the request.
+        $examApplication = $this->flow->approve(
+            $examApplication,
+            $request->user(),
+            fn ($doc) => $this->examApplications->approve($doc, $request->user()),
+            fn ($doc, $nextApprovers) => $this->examApplications->notifyApprovers($doc, $nextApprovers),
+        );
 
         return ApiResponse::success(new ExamApplicationResource($examApplication->load(self::WITH)));
     }

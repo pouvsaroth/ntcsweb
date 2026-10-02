@@ -28,6 +28,12 @@ export interface AdminNavItem {
    * for.
    */
   studentOnly?: boolean
+  /**
+   * Also shown to a member of any Approval Flow group, even without
+   * `permission` — being in a flow's group is enough to approve its step
+   * (see backend ApprovalFlow).
+   */
+  flowApprover?: boolean
 }
 
 export interface AdminNavGroup {
@@ -236,9 +242,17 @@ export const adminNav: AdminNavGroup[] = [
     items: [
       { labelKey: 'adminNav.items.forms', to: '/admin/approvals/forms', permission: 'forms.view' },
       { labelKey: 'adminNav.items.myRequests', to: '/admin/approvals/my-requests', permission: 'my-requests.view' },
-      { labelKey: 'adminNav.items.approvals', to: '/admin/approvals/queue', permission: ['approval-requests.view', 'leave-requests.view', 'make-up-class-requests.view'] },
+      { labelKey: 'adminNav.items.approvals', to: '/admin/approvals/queue', permission: ['approval-requests.view', 'leave-requests.view', 'make-up-class-requests.view'], flowApprover: true },
       { labelKey: 'adminNav.items.formCategories', to: '/admin/form-categories', permission: 'form-categories.manage' },
       { labelKey: 'adminNav.items.formTemplates', to: '/admin/form-templates', permission: 'form-templates.manage' },
+    ],
+  },
+  {
+    // Who approves what: groups of users now, the flows built from them next.
+    labelKey: 'adminNav.groups.approvalFlow',
+    items: [
+      { labelKey: 'adminNav.items.approvalGroups', to: '/admin/approval-flow/groups', permission: 'approval-groups.manage' },
+      { labelKey: 'adminNav.items.flowSetting', to: '/admin/approval-flow/settings', permission: 'approval-groups.manage' },
     ],
   },
 ]
@@ -247,6 +261,7 @@ export interface AdminNavAccess {
   isSuperAdmin: boolean
   can: (permission: string) => boolean
   hasRole: (...slugs: string[]) => boolean
+  isFlowApprover?: () => boolean
 }
 
 /** The same visibility rule AdminSidebar.vue applies per item — shared so the router guard's "can this account even reach this page" check can't drift from what the sidebar actually shows. */
@@ -255,7 +270,8 @@ export function isNavItemVisible(item: AdminNavItem, access: AdminNavAccess): bo
   if (item.studentOnly && !access.hasRole('student')) return false
   if (item.permission) {
     const required = Array.isArray(item.permission) ? item.permission : [item.permission]
-    if (!required.some((permission) => access.can(permission))) return false
+    const viaFlow = item.flowApprover === true && access.isFlowApprover?.() === true
+    if (!viaFlow && !required.some((permission) => access.can(permission))) return false
   }
   return true
 }

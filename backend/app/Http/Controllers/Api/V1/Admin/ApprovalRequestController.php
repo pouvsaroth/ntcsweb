@@ -10,6 +10,8 @@ use App\Http\Resources\ApprovalRequestResource;
 use App\Http\Responses\ApiResponse;
 use App\Models\ApprovalRequest;
 use App\Services\Approvals\ApprovalRequestService;
+use App\Services\Approvals\ApprovalFlow;
+use App\Support\Approvals\DocumentType;
 use App\Support\Query\ApiQuery;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -23,18 +25,31 @@ final class ApprovalRequestController extends Controller
 {
     public function __construct(
         private readonly ApprovalRequestService $approvals,
+        private readonly ApprovalFlow $flow,
     ) {}
 
     public function index(Request $request): JsonResponse
     {
-        $this->authorize('viewAny', ApprovalRequest::class);
+        // An approval-flow group member may open the queue without the
+        // view permission — they then only see the requests involving them.
+        $user = $request->user();
+        $canViewAll = $user->can('viewAny', ApprovalRequest::class);
+        abort_unless($canViewAll || $this->flow->isApproverFor($user, DocumentType::forModelClass(ApprovalRequest::class)), 403);
 
         $query = ApprovalRequest::query()->with(['template', 'requester', 'decidedBy']);
+
+        // The Approvals queue lists a pending request of an item with an
+        // approval flow only to the group it's waiting on (see ApprovalFlow).
+        if ($request->boolean('approval_queue') || ! $canViewAll) {
+            $this->flow->scopeQueue($query, ApprovalRequest::class, $user, $canViewAll);
+        }
 
         $requests = ApiQuery::for($query, $request)
             ->filterable(['status', 'form_template_id'])
             ->sortable(['created_at'], default: '-created_at')
             ->paginate();
+
+        $this->flow->attachProgress($requests->getCollection(), $user);
 
         return ApiResponse::success(ApprovalRequestResource::collection($requests));
     }
@@ -50,9 +65,16 @@ final class ApprovalRequestController extends Controller
 
     public function approve(ApprovalRequest $approvalRequest, Request $request): JsonResponse
     {
-        $this->authorize('approve', $approvalRequest);
+        $this->flow->authorizeDecision($approvalRequest, $request->user(), 'approve');
 
-        $approvalRequest = $this->approvals->approve($approvalRequest, $request->user());
+        // With an approval flow this approves just the current step (and
+        // tells the next step's group); the last step approves the request.
+        $approvalRequest = $this->flow->approve(
+            $approvalRequest,
+            $request->user(),
+            fn ($doc) => $this->approvals->approve($doc, $request->user()),
+            fn ($doc, $nextApprovers) => $this->approvals->notifyApprovers($doc, $nextApprovers),
+        );
 
         return ApiResponse::success(new ApprovalRequestResource($approvalRequest->load(['template', 'requester', 'decidedBy'])));
     }

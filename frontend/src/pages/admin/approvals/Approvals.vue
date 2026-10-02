@@ -18,6 +18,7 @@ import { makeUpClassCourseLabel, makeUpClassRequestsService, type MakeUpClassReq
 import { resignationRequestsService, type ResignationRequest } from '@/services/resignationRequests'
 import { useAuthStore } from '@/stores/auth'
 import { useConfirmDialogStore } from '@/stores/confirmDialog'
+import type { ApprovalFlowProgress } from '@/services/approvalFlows'
 import { ApiRequestError } from '@/types/api'
 import { formatDate } from '@/utils/date'
 
@@ -39,6 +40,8 @@ type MergedRow = {
   subject: string
   status: ApprovalRequestStatus
   createdAt: string
+  /** Pending + the item has an approval flow: the step it waits on. */
+  flow: ApprovalFlowProgress | null
   approval?: ApprovalRequest
   leave?: LeaveRequest
   resignation?: ResignationRequest
@@ -57,11 +60,13 @@ const actionError = ref<string | null>(null)
 const approving = ref(false)
 const activeTab = ref<ApprovalRequestStatus>('pending')
 
-const canViewApprovals = computed(() => auth.can('approval-requests.view'))
-const canViewLeave = computed(() => auth.can('leave-requests.view'))
-const canViewResignation = computed(() => auth.can('resignation-requests.view'))
-const canViewMakeUp = computed(() => auth.can('make-up-class-requests.view'))
-const canViewExams = computed(() => auth.can('exam-applications.view'))
+// A member of an Approval Flow group sees that item's queue even without its
+// view permission — only the requests involving them (see backend ApprovalFlow).
+const canViewApprovals = computed(() => auth.can('approval-requests.view') || auth.isFlowApprover(['form_request']))
+const canViewLeave = computed(() => auth.can('leave-requests.view') || auth.isFlowApprover(['student_leave', 'staff_leave']))
+const canViewResignation = computed(() => auth.can('resignation-requests.view') || auth.isFlowApprover(['resignation']))
+const canViewMakeUp = computed(() => auth.can('make-up-class-requests.view') || auth.isFlowApprover(['make_up_class']))
+const canViewExams = computed(() => auth.can('exam-applications.view') || auth.isFlowApprover(['exam_application']))
 // Only exam applications can be edited from this queue — a reviewer fixing
 // the student's info or the room/table/date assignment before deciding.
 // Leave/resignation requests have no equivalent "amend before deciding" step.
@@ -118,12 +123,14 @@ const rejectPermission: Record<MergedRow['kind'], string> = {
   exam: 'exam-applications.reject',
 }
 
+// With an approval flow, only the group the request waits on decides it —
+// the backend says whether that's this user (`can_act`).
 function canApprove(row: MergedRow): boolean {
-  return auth.can(approvePermission[row.kind])
+  return row.flow ? row.flow.can_act : auth.can(approvePermission[row.kind])
 }
 
 function canReject(row: MergedRow): boolean {
-  return auth.can(rejectPermission[row.kind])
+  return row.flow ? row.flow.can_act : auth.can(rejectPermission[row.kind])
 }
 
 // --- Exam application edit (see ExamApplicationFormModal — the same
@@ -145,21 +152,21 @@ async function load() {
 
   try {
     const [approvals, leaves, resignations, makeUps, exams] = await Promise.all([
-      canViewApprovals.value ? approvalRequestsService.list() : Promise.resolve({ data: [] as ApprovalRequest[], pagination: undefined }),
+      canViewApprovals.value ? approvalRequestsService.list({}, { approvalQueue: true }) : Promise.resolve({ data: [] as ApprovalRequest[], pagination: undefined }),
       canViewLeave.value
-        ? leaveRequestsService.list({ page: 1, per_page: 100, filter: {} })
+        ? leaveRequestsService.list({ page: 1, per_page: 100, filter: {} }, { approvalQueue: true })
         : Promise.resolve({ data: [] as LeaveRequest[], pagination: undefined }),
       canViewResignation.value
-        ? resignationRequestsService.list({ page: 1, per_page: 100, filter: {} })
+        ? resignationRequestsService.list({ page: 1, per_page: 100, filter: {} }, { approvalQueue: true })
         : Promise.resolve({ data: [] as ResignationRequest[], pagination: undefined }),
       canViewMakeUp.value
-        ? makeUpClassRequestsService.list({ page: 1, per_page: 100, filter: {} })
+        ? makeUpClassRequestsService.list({ page: 1, per_page: 100, filter: {} }, { approvalQueue: true })
         : Promise.resolve({ data: [] as MakeUpClassRequest[], pagination: undefined }),
       // draft/not_exam/make_up applications belong to their own Exams tab,
       // not this decision queue — only the three statuses this page's own
       // tabs cover are fetched here.
       canViewExams.value
-        ? examApplicationsService.list({ page: 1, per_page: 100, filter: { status: 'pending,approved,rejected' } })
+        ? examApplicationsService.list({ page: 1, per_page: 100, filter: { status: 'pending,approved,rejected' } }, { approvalQueue: true })
         : Promise.resolve({ data: [] as ExamApplication[], pagination: undefined }),
     ])
 
@@ -171,6 +178,7 @@ async function load() {
       subject: r.subject,
       status: r.status,
       createdAt: r.created_at,
+      flow: r.approval_flow ?? null,
       approval: r,
     }))
 
@@ -182,6 +190,7 @@ async function load() {
       subject: t('admin.myRequests.leaveSubject', { from: formatDate(r.from_date), to: formatDate(r.to_date) }),
       status: r.status,
       createdAt: r.created_at,
+      flow: r.approval_flow ?? null,
       leave: r,
     }))
 
@@ -193,6 +202,7 @@ async function load() {
       subject: t('admin.myRequests.resignationSubject', { date: formatDate(r.resignation_date) }),
       status: r.status,
       createdAt: r.created_at,
+      flow: r.approval_flow ?? null,
       resignation: r,
     }))
 
@@ -204,6 +214,7 @@ async function load() {
       subject: t('makeUpClassRequest.subject', { from: formatDate(r.from_date), to: formatDate(r.to_date) }),
       status: r.status,
       createdAt: r.created_at,
+      flow: r.approval_flow ?? null,
       makeUp: r,
     }))
 
@@ -221,6 +232,7 @@ async function load() {
         subject: t('admin.approvals.examSubject', { date: formatDate(r.exam_date) }),
         status: r.status,
         createdAt: r.created_at,
+        flow: r.approval_flow ?? null,
         exam: r,
       }))
 
@@ -338,6 +350,9 @@ onMounted(() => load())
       <template #cell-reference="{ row }">{{ row.reference }}</template>
       <template #cell-status="{ row }">
         <BaseBadge :variant="statusVariant[row.status]">{{ t(`admin.myRequests.status${row.status.charAt(0).toUpperCase()}${row.status.slice(1)}`) }}</BaseBadge>
+        <p v-if="row.flow" class="mt-1 text-xs text-neutral-500">
+          {{ t('admin.approvals.flowStep', { step: row.flow.step, total: row.flow.total, group: row.flow.group ?? '—' }) }}
+        </p>
       </template>
       <template #cell-actions="{ row }">
         <div v-if="row.status === 'pending'" class="flex gap-2">

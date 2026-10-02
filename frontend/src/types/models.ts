@@ -62,4 +62,6 @@ export interface User {
   student_id?: number | null
   /** Only present on /auth/me, or when viewing your own account. */
   permissions?: string[] | ['*']
+  /** Approval Flow items this user approves a step of (see backend ApprovalFlow) — only on /auth/me. */
+  approval_flow_types?: string[]
 }

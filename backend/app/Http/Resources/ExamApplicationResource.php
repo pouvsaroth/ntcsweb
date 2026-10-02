@@ -57,6 +57,8 @@ class ExamApplicationResource extends JsonResource
             'fee_currency' => $this->fee_currency,
             'student_marked_paid_at' => $this->student_marked_paid_at?->toIso8601String(),
             'status' => $this->status,
+            // Approvals queue only — see ApprovalFlow::progress().
+            'approval_flow' => $this->whenLoaded('approvalFlow'),
             'decision_reason' => $this->decision_reason,
             'decided_by' => $this->whenLoaded('decidedBy', fn () => $this->decidedBy?->name),
             'decided_at' => $this->decided_at?->toIso8601String(),

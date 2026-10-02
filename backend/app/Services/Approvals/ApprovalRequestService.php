@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Services\Notifications\NotificationService;
 use App\Support\Authorization\Permissions;
 use App\Support\Notifications\NotificationType;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -22,6 +23,7 @@ final class ApprovalRequestService
 {
     public function __construct(
         private readonly NotificationService $notifications,
+        private readonly ApprovalFlow $flow,
     ) {}
 
     /**
@@ -37,14 +39,28 @@ final class ApprovalRequestService
             'status' => ApprovalRequest::STATUS_PENDING,
         ]);
 
-        $this->notifications->notifyMany(
-            $this->notifications->usersWithPermission(Permissions::APPROVAL_REQUESTS_APPROVE),
-            NotificationType::APPROVAL_REQUEST_SUBMITTED,
-            ['requester_name' => $user->name, 'subject' => $request->subject, 'approval_request_id' => $request->id],
-            link: '/admin/approvals/queue',
-        );
+        $this->notifyApprovers($request, $this->flow->submitRecipients(
+            $request,
+            fn () => $this->notifications->usersWithPermission(Permissions::APPROVAL_REQUESTS_APPROVE),
+        ));
 
         return $request;
+    }
+
+    /**
+     * "Waiting for your approval" — on submit, and again for each next
+     * step's group of an approval flow (see ApprovalFlow::approve()).
+     *
+     * @param  Collection<int, User>  $recipients
+     */
+    public function notifyApprovers(ApprovalRequest $request, Collection $recipients): void
+    {
+        $this->notifications->notifyMany(
+            $recipients,
+            NotificationType::APPROVAL_REQUEST_SUBMITTED,
+            ['requester_name' => $request->requester?->name, 'subject' => $request->subject, 'approval_request_id' => $request->id],
+            link: '/admin/approvals/queue',
+        );
     }
 
     public function approve(ApprovalRequest $request, User $approver): ApprovalRequest

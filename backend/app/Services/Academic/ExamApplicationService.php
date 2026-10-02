@@ -10,6 +10,7 @@ use App\Models\Product;
 use App\Models\Student;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Services\Approvals\ApprovalFlow;
 use App\Services\Billing\InvoiceService;
 use App\Services\Billing\PaymentService;
 use App\Services\Notifications\NotificationService;
@@ -18,6 +19,7 @@ use App\Support\Billing\ProductType;
 use App\Support\Notifications\NotificationType;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Collection as BaseCollection;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -40,6 +42,7 @@ final class ExamApplicationService
         private readonly InvoiceService $invoices,
         private readonly PaymentService $payments,
         private readonly NotificationService $notifications,
+        private readonly ApprovalFlow $flow,
     ) {}
 
     /**
@@ -127,14 +130,28 @@ final class ExamApplicationService
 
         // Outside the transaction — a notification that fails to write is
         // never worth rolling back an already-submitted application over.
-        $this->notifications->notifyMany(
-            $this->notifications->usersWithPermission(Permissions::EXAM_APPLICATIONS_APPROVE),
-            NotificationType::EXAM_APPLICATION_SUBMITTED,
-            ['student_id' => $student->id, 'student_name' => $student->fullName(), 'exam_application_id' => $application->id],
-            link: '/admin/approvals/queue',
-        );
+        $this->notifyApprovers($application, $this->flow->submitRecipients(
+            $application,
+            fn () => $this->notifications->usersWithPermission(Permissions::EXAM_APPLICATIONS_APPROVE),
+        ));
 
         return $application;
+    }
+
+    /**
+     * "Waiting for your approval" — on submit, and again for each next
+     * step's group of an approval flow (see ApprovalFlow::approve()).
+     *
+     * @param  BaseCollection<int, User>  $recipients
+     */
+    public function notifyApprovers(ExamApplication $application, BaseCollection $recipients): void
+    {
+        $this->notifications->notifyMany(
+            $recipients,
+            NotificationType::EXAM_APPLICATION_SUBMITTED,
+            ['student_id' => $application->student_id, 'student_name' => $application->student?->fullName(), 'exam_application_id' => $application->id],
+            link: '/admin/approvals/queue',
+        );
     }
 
     private function storeStudentPhoto(UploadedFile $photo, Tenant $tenant): string

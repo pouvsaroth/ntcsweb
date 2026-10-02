@@ -32,6 +32,18 @@ export const useAuthStore = defineStore('auth', () => {
     return (permissions.value as string[]).includes(permission)
   }
 
+  /**
+   * Approval Flow items this user approves a step of — being in a flow's
+   * group opens the Approvals queue for that item even without its view
+   * permission (see backend ApprovalFlow).
+   */
+  const approvalFlowTypes = computed(() => user.value?.approval_flow_types ?? [])
+
+  /** In a step's group of any of these items (or of any item, with no argument)? */
+  function isFlowApprover(types?: readonly string[]): boolean {
+    return types ? approvalFlowTypes.value.some((type) => types.includes(type)) : approvalFlowTypes.value.length > 0
+  }
+
   function hasRole(...slugs: string[]): boolean {
     return user.value?.roles?.some((role) => slugs.includes(role.slug)) ?? false
   }
@@ -191,6 +203,8 @@ export const useAuthStore = defineStore('auth', () => {
     isAuthenticated,
     can,
     hasRole,
+    approvalFlowTypes,
+    isFlowApprover,
     initialize,
     login,
     selectTenant,

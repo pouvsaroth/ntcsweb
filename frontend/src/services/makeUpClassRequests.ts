@@ -1,6 +1,7 @@
 import { apiGet, apiGetWithMeta, apiPost } from '@/services/http'
 import type { PaginatedQuery } from '@/composables/usePaginatedResource'
 import type { LengthAwarePaginationMeta, PaginatedResult } from '@/types/api'
+import type { ApprovalFlowProgress } from '@/services/approvalFlows'
 
 export type MakeUpClassRequestStatus = 'pending' | 'approved' | 'rejected'
 
@@ -21,6 +22,8 @@ export interface MakeUpClassRequest {
   from_time: string
   to_time: string
   status: MakeUpClassRequestStatus
+  /** Approvals queue only — see ApprovalFlowProgress. */
+  approval_flow?: ApprovalFlowProgress | null
   decision_reason: string | null
   decided_by?: string | null
   decided_at: string | null
@@ -58,9 +61,10 @@ export const myMakeUpClassRequestsService = {
 
 /** Admin approve/reject queue — see the eApprovals "Approvals" page. */
 export const makeUpClassRequestsService = {
-  async list(query: PaginatedQuery): Promise<PaginatedResult<MakeUpClassRequest>> {
+  /** `approvalQueue`: the Approvals queue's view — a pending request of an item with an approval flow is only listed to the group it waits on. */
+  async list(query: PaginatedQuery, opts: { approvalQueue?: boolean } = {}): Promise<PaginatedResult<MakeUpClassRequest>> {
     const result = await apiGetWithMeta<MakeUpClassRequest[]>('/make-up-class-requests', {
-      params: { page: query.page, per_page: query.per_page, sort: query.sort, filter: query.filter },
+      params: { page: query.page, per_page: query.per_page, sort: query.sort, filter: query.filter, ...(opts.approvalQueue ? { approval_queue: '1' } : {}) },
     })
     return { data: result.data, pagination: result.meta?.pagination as LengthAwarePaginationMeta }
   },

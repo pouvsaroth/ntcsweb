@@ -9,12 +9,14 @@ use App\Models\Role;
 use App\Models\Staff;
 use App\Models\Student;
 use App\Models\User;
+use App\Services\Approvals\ApprovalFlow;
 use App\Services\Notifications\NotificationService;
 use App\Support\Academic\AttendanceStatus;
 use App\Support\Authorization\Permissions;
 use App\Support\Notifications\NotificationType;
 use App\Support\Tenancy\TenantContext;
 use Carbon\CarbonPeriod;
+use Illuminate\Support\Collection;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -35,6 +37,7 @@ final class LeaveRequestService
         private readonly TenantContext $context,
         private readonly AttendanceService $attendance,
         private readonly NotificationService $notifications,
+        private readonly ApprovalFlow $flow,
     ) {}
 
     /**
@@ -78,15 +81,28 @@ final class LeaveRequestService
 
         // Outside the transaction — a notification that fails to write is
         // never worth rolling back an already-submitted request over.
-        $requesterName = $student?->fullName() ?? $staff?->fullName();
-        $this->notifications->notifyMany(
-            $this->notifications->usersWithPermission(Permissions::LEAVE_REQUESTS_APPROVE),
-            NotificationType::LEAVE_REQUEST_SUBMITTED,
-            ['student_id' => $student?->id, 'staff_id' => $staff?->id, 'student_name' => $requesterName, 'leave_request_id' => $request->id],
-            link: '/admin/approvals/queue',
-        );
+        $this->notifyApprovers($request, $this->flow->submitRecipients(
+            $request,
+            fn () => $this->notifications->usersWithPermission(Permissions::LEAVE_REQUESTS_APPROVE),
+        ));
 
         return $request;
+    }
+
+    /**
+     * "Waiting for your approval" — on submit, and again for each next
+     * step's group of an approval flow (see ApprovalFlow::approve()).
+     *
+     * @param  Collection<int, User>  $recipients
+     */
+    public function notifyApprovers(LeaveRequest $request, Collection $recipients): void
+    {
+        $this->notifications->notifyMany(
+            $recipients,
+            NotificationType::LEAVE_REQUEST_SUBMITTED,
+            ['student_id' => $request->student_id, 'staff_id' => $request->staff_id, 'student_name' => $request->requesterName(), 'leave_request_id' => $request->id],
+            link: '/admin/approvals/queue',
+        );
     }
 
     public function approve(LeaveRequest $request, User $admin): LeaveRequest

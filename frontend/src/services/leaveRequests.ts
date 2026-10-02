@@ -1,6 +1,7 @@
 import { apiGetWithMeta, apiPost } from '@/services/http'
 import type { PaginatedQuery } from '@/composables/usePaginatedResource'
 import type { LengthAwarePaginationMeta, PaginatedResult } from '@/types/api'
+import type { ApprovalFlowProgress } from '@/services/approvalFlows'
 
 export type LeaveRequestStatus = 'pending' | 'approved' | 'rejected'
 
@@ -27,6 +28,8 @@ export interface LeaveRequest {
   to_time: string | null
   reason: string
   status: LeaveRequestStatus
+  /** Approvals queue only — see ApprovalFlowProgress. */
+  approval_flow?: ApprovalFlowProgress | null
   decision_reason: string | null
   decided_by?: string | null
   decided_at: string | null
@@ -68,9 +71,10 @@ export const myLeaveRequestsService = {
 
 /** Admin approve/reject queue — see the "Leave Requests" page under Settings. */
 export const leaveRequestsService = {
-  async list(query: PaginatedQuery): Promise<PaginatedResult<LeaveRequest>> {
+  /** `approvalQueue`: the Approvals queue's view — a pending request of an item with an approval flow is only listed to the group it waits on. */
+  async list(query: PaginatedQuery, opts: { approvalQueue?: boolean } = {}): Promise<PaginatedResult<LeaveRequest>> {
     const result = await apiGetWithMeta<LeaveRequest[]>('/leave-requests', {
-      params: { page: query.page, per_page: query.per_page, sort: query.sort, filter: query.filter },
+      params: { page: query.page, per_page: query.per_page, sort: query.sort, filter: query.filter, ...(opts.approvalQueue ? { approval_queue: '1' } : {}) },
     })
     return { data: result.data, pagination: result.meta?.pagination as LengthAwarePaginationMeta }
   },

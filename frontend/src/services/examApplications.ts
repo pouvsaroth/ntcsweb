@@ -1,6 +1,7 @@
 import { apiDelete, apiGetWithMeta, apiPost, apiPut } from '@/services/http'
 import type { PaginatedQuery } from '@/composables/usePaginatedResource'
 import type { LengthAwarePaginationMeta, PaginatedResult } from '@/types/api'
+import type { ApprovalFlowProgress } from '@/services/approvalFlows'
 
 export type ExamApplicationStatus = 'draft' | 'pending' | 'approved' | 'rejected' | 'not_exam' | 'make_up'
 
@@ -46,6 +47,8 @@ export interface ExamApplication {
   fee_currency: string | null
   student_marked_paid_at: string | null
   status: ExamApplicationStatus
+  /** Approvals queue only — see ApprovalFlowProgress. */
+  approval_flow?: ApprovalFlowProgress | null
   decision_reason: string | null
   decided_by: string | null
   decided_at: string | null
@@ -96,7 +99,7 @@ export const examApplicationsService = {
    * by Exams.vue's default "Awaiting action" view, mutually exclusive with
    * `query.filter.status`.
    */
-  async list(query: PaginatedQuery, opts: { awaitingAction?: boolean } = {}): Promise<PaginatedResult<ExamApplication>> {
+  async list(query: PaginatedQuery, opts: { awaitingAction?: boolean; approvalQueue?: boolean } = {}): Promise<PaginatedResult<ExamApplication>> {
     const result = await apiGetWithMeta<ExamApplication[]>('/exam-applications', {
       params: {
         page: query.page,
@@ -104,6 +107,8 @@ export const examApplicationsService = {
         sort: query.sort,
         filter: query.filter,
         ...(opts.awaitingAction ? { awaiting_action: '1' } : {}),
+        // The Approvals queue's view — see ApprovalFlowProgress.
+        ...(opts.approvalQueue ? { approval_queue: '1' } : {}),
       },
     })
     return { data: result.data, pagination: result.meta?.pagination as LengthAwarePaginationMeta }

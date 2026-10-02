@@ -1,6 +1,7 @@
 import { apiGetWithMeta, apiPost } from '@/services/http'
 import type { PaginatedQuery } from '@/composables/usePaginatedResource'
 import type { LengthAwarePaginationMeta, PaginatedResult } from '@/types/api'
+import type { ApprovalFlowProgress } from '@/services/approvalFlows'
 
 export type ApprovalRequestStatus = 'pending' | 'approved' | 'rejected'
 
@@ -14,6 +15,8 @@ export interface ApprovalRequest {
   subject: string
   details: string | null
   status: ApprovalRequestStatus
+  /** Approvals queue only — see ApprovalFlowProgress. */
+  approval_flow?: ApprovalFlowProgress | null
   decision_reason: string | null
   decided_by?: string | null
   decided_at: string | null
@@ -40,9 +43,10 @@ export const myApprovalRequestsService = {
 
 /** Admin/approver queue — see Approvals.vue under eApprovals. */
 export const approvalRequestsService = {
-  async list(query: Partial<PaginatedQuery> = {}): Promise<PaginatedResult<ApprovalRequest>> {
+  /** `approvalQueue`: the Approvals queue's view — a pending request of an item with an approval flow is only listed to the group it waits on. */
+  async list(query: Partial<PaginatedQuery> = {}, opts: { approvalQueue?: boolean } = {}): Promise<PaginatedResult<ApprovalRequest>> {
     const result = await apiGetWithMeta<ApprovalRequest[]>('/approval-requests', {
-      params: { page: query.page ?? 1, per_page: query.per_page ?? 100, sort: query.sort ?? '-created_at', filter: query.filter },
+      params: { page: query.page ?? 1, per_page: query.per_page ?? 100, sort: query.sort ?? '-created_at', filter: query.filter, ...(opts.approvalQueue ? { approval_queue: '1' } : {}) },
     })
     return { data: result.data, pagination: result.meta?.pagination as LengthAwarePaginationMeta }
   },

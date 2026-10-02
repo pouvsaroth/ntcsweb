@@ -372,6 +372,18 @@ const adminRoutes: RouteRecordRaw[] = [
     meta: { titleKey: 'adminNav.items.lookupCategories' },
   },
   {
+    path: 'approval-flow/groups',
+    name: 'admin.approval-flow.groups',
+    component: () => import('@/pages/admin/approvalFlow/ApprovalGroups.vue'),
+    meta: { titleKey: 'adminNav.items.approvalGroups' },
+  },
+  {
+    path: 'approval-flow/settings',
+    name: 'admin.approval-flow.settings',
+    component: () => import('@/pages/admin/approvalFlow/FlowSettings.vue'),
+    meta: { titleKey: 'adminNav.items.flowSetting' },
+  },
+  {
     path: 'form-categories',
     name: 'admin.form-categories',
     component: () => import('@/pages/admin/FormCategories.vue'),
