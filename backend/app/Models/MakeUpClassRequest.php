@@ -15,11 +15,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
- * A student's own self-submitted make-up class request (ស្នើសុំរៀនសង) — same
- * pending/approved/rejected workflow as LeaveRequest, but always
- * student-owned (see the migration's docblock). Approving one is purely a
- * status change; scheduling the actual make-up session is still done by
- * the school.
+ * A student's own self-submitted make-up class request (ស្នើសុំរៀនសង) —
+ * always student-owned (see the migration's docblock). Decided in two
+ * stages: pending → approved_to_study ("you may come and study" — a status
+ * change only) → approved, once the approver saw the student come at the
+ * set time; only approved requests count as make-up hours. Either stage can
+ * be rejected instead. Scheduling the actual make-up session is still done
+ * by the school.
  *
  * @property int $student_id
  * @property int $enrollment_id
@@ -32,6 +34,8 @@ class MakeUpClassRequest extends Model
 
     /** @use HasFactory<MakeUpClassRequestFactory> */
     public const STATUS_PENDING = 'pending';
+
+    public const STATUS_APPROVED_TO_STUDY = 'approved_to_study';
 
     public const STATUS_APPROVED = 'approved';
 

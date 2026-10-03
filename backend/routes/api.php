@@ -300,6 +300,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
 
         // Student-submitted make-up class requests — see MakeUpClassRequestService.
         Route::apiResource('make-up-class-requests', MakeUpClassRequestController::class)->only(['index', 'show']);
+        Route::post('make-up-class-requests/{make_up_class_request}/approve-to-study', [MakeUpClassRequestController::class, 'approveToStudy'])->name('make-up-class-requests.approve-to-study');
         Route::post('make-up-class-requests/{make_up_class_request}/approve', [MakeUpClassRequestController::class, 'approve'])->name('make-up-class-requests.approve');
         Route::post('make-up-class-requests/{make_up_class_request}/reject', [MakeUpClassRequestController::class, 'reject'])->name('make-up-class-requests.reject');
 

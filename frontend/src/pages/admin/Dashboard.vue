@@ -246,7 +246,11 @@ async function openIncomeDetail(): Promise<void> {
   }
 }
 
-/** New (pending) requests across every queue the Approvals page shows that this user can see. */
+/**
+ * New (pending) requests across every queue the Approvals page shows that this
+ * user can see — plus make-up classes approved to study, which still wait on
+ * the approver to see the student come.
+ */
 const pendingApprovalsCount = ref(0)
 
 async function loadPendingApprovals(): Promise<void> {
@@ -255,7 +259,7 @@ async function loadPendingApprovals(): Promise<void> {
     ['approval-requests.view', () => approvalRequestsService.list(pending)],
     ['leave-requests.view', () => leaveRequestsService.list(pending)],
     ['resignation-requests.view', () => resignationRequestsService.list(pending)],
-    ['make-up-class-requests.view', () => makeUpClassRequestsService.list(pending)],
+    ['make-up-class-requests.view', () => makeUpClassRequestsService.list({ ...pending, filter: { status: 'pending,approved_to_study' } })],
     ['exam-applications.view', () => examApplicationsService.list(pending)],
   ]
   const results = await Promise.allSettled(sources.filter(([permission]) => auth.can(permission)).map(([, fetch]) => fetch()))

@@ -3,7 +3,12 @@ import type { PaginatedQuery } from '@/composables/usePaginatedResource'
 import type { LengthAwarePaginationMeta, PaginatedResult } from '@/types/api'
 import type { ApprovalFlowProgress } from '@/services/approvalFlows'
 
-export type MakeUpClassRequestStatus = 'pending' | 'approved' | 'rejected'
+/**
+ * Two approval stages: pending → approved_to_study (the student may come;
+ * a status change only) → approved, once the approver saw them come at the
+ * set time — only then do the hours count. See backend MakeUpClassRequest.
+ */
+export type MakeUpClassRequestStatus = 'pending' | 'approved_to_study' | 'approved' | 'rejected'
 
 export interface MakeUpClassRequestStudent {
   id: number
@@ -69,6 +74,8 @@ export const makeUpClassRequestsService = {
     return { data: result.data, pagination: result.meta?.pagination as LengthAwarePaginationMeta }
   },
 
+  approveToStudy: (id: number) => apiPost<MakeUpClassRequest>(`/make-up-class-requests/${id}/approve-to-study`),
+  /** Only once approved to study — the student came. */
   approve: (id: number) => apiPost<MakeUpClassRequest>(`/make-up-class-requests/${id}/approve`),
   reject: (id: number, reason: string) => apiPost<MakeUpClassRequest>(`/make-up-class-requests/${id}/reject`, { reason }),
 }

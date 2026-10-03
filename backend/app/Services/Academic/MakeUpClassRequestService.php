@@ -18,8 +18,9 @@ use Illuminate\Validation\ValidationException;
 
 /**
  * A student's own make-up class request — see MakeUpClassRequest's own
- * docblock. Approving one is purely a status change, same shape as
- * ResignationRequestService.
+ * docblock for its two approval stages. Both are purely status changes,
+ * same shape as ResignationRequestService; only the second (approve())
+ * makes the hours count.
  */
 final class MakeUpClassRequestService
 {
@@ -105,31 +106,55 @@ final class MakeUpClassRequestService
         return $hours;
     }
 
+    /**
+     * Stage one — the student may come and study on the requested days. A
+     * status change only; nothing counts until approve().
+     */
+    public function approveToStudy(MakeUpClassRequest $request, User $admin): MakeUpClassRequest
+    {
+        $request = $this->moveStatus($request, MakeUpClassRequest::STATUS_PENDING, MakeUpClassRequest::STATUS_APPROVED_TO_STUDY, $admin);
+
+        $this->notifyStudent($request, NotificationType::MAKE_UP_CLASS_REQUEST_APPROVED_TO_STUDY);
+
+        return $request;
+    }
+
+    /**
+     * Stage two — the student came at the set time, so the make-up hours
+     * now count (see approvedHoursByEnrollment()).
+     */
     public function approve(MakeUpClassRequest $request, User $admin): MakeUpClassRequest
     {
-        $request = DB::transaction(function () use ($request, $admin) {
+        $request = $this->moveStatus($request, MakeUpClassRequest::STATUS_APPROVED_TO_STUDY, MakeUpClassRequest::STATUS_APPROVED, $admin);
+
+        $this->notifyStudent($request, NotificationType::MAKE_UP_CLASS_REQUEST_APPROVED);
+
+        return $request;
+    }
+
+    private function moveStatus(MakeUpClassRequest $request, string $from, string $to, User $admin): MakeUpClassRequest
+    {
+        return DB::transaction(function () use ($request, $from, $to, $admin) {
             /** @var MakeUpClassRequest $request */
             $request = MakeUpClassRequest::query()->whereKey($request->getKey())->lockForUpdate()->firstOrFail();
 
-            if ($request->status !== MakeUpClassRequest::STATUS_PENDING) {
-                throw ValidationException::withMessages(['status' => 'This make-up class request has already been decided.']);
+            if ($request->status !== $from) {
+                throw ValidationException::withMessages(['status' => $request->status === MakeUpClassRequest::STATUS_PENDING
+                    ? 'This make-up class request has not been approved to study yet.'
+                    : 'This make-up class request has already been decided.']);
             }
 
             $request->update([
-                'status' => MakeUpClassRequest::STATUS_APPROVED,
+                'status' => $to,
                 'decided_by' => $admin->getKey(),
                 'decided_at' => now(),
             ]);
 
             return $request->fresh();
         });
-
-        $this->notifyOnApproval($request);
-
-        return $request;
     }
 
-    private function notifyOnApproval(MakeUpClassRequest $request): void
+    private function notifyStudent(MakeUpClassRequest $request, string $type): void
     {
         $studentUser = $request->student?->user;
 
@@ -137,7 +162,7 @@ final class MakeUpClassRequestService
             return;
         }
 
-        $this->notifications->notifyMany(collect([$studentUser]), NotificationType::MAKE_UP_CLASS_REQUEST_APPROVED, [
+        $this->notifications->notifyMany(collect([$studentUser]), $type, [
             'student_id' => $request->student_id,
             'student_name' => $request->student?->fullName(),
             'make_up_class_request_id' => $request->id,
@@ -150,7 +175,8 @@ final class MakeUpClassRequestService
             /** @var MakeUpClassRequest $request */
             $request = MakeUpClassRequest::query()->whereKey($request->getKey())->lockForUpdate()->firstOrFail();
 
-            if ($request->status !== MakeUpClassRequest::STATUS_PENDING) {
+            // Either stage — e.g. the student never came on the day.
+            if (! in_array($request->status, [MakeUpClassRequest::STATUS_PENDING, MakeUpClassRequest::STATUS_APPROVED_TO_STUDY], true)) {
                 throw ValidationException::withMessages(['status' => 'This make-up class request has already been decided.']);
             }
 

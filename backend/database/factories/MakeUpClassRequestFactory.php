@@ -36,6 +36,11 @@ class MakeUpClassRequestFactory extends Factory
         return $this->state(['student_id' => $student->getKey()]);
     }
 
+    public function approvedToStudy(): static
+    {
+        return $this->state(['status' => MakeUpClassRequest::STATUS_APPROVED_TO_STUDY]);
+    }
+
     public function approved(): static
     {
         return $this->state(['status' => MakeUpClassRequest::STATUS_APPROVED]);

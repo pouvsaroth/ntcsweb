@@ -39,6 +39,14 @@ use Illuminate\Validation\ValidationException;
 final class ApprovalFlow
 {
     /**
+     * Statuses still waiting on someone in the flow: `pending`, plus a make-up
+     * class request's `approved_to_study` — every step is approved, and the
+     * last step's group still confirms the student came (see
+     * MakeUpClassRequest's docblock).
+     */
+    private const AWAITING_STATUSES = ['pending', 'approved_to_study'];
+
+    /**
      * Bumped whenever a flow step or group membership changes (see
      * invalidate()) — this service's caches below are only reused while it
      * hasn't moved, so a long-lived instance (a cached controller, a queue
@@ -158,13 +166,13 @@ final class ApprovalFlow
     /**
      * For the Approvals queue: where a pending request is in its flow, and
      * whether this user can act on it now. Null when the item has no flow
-     * or the request is no longer pending.
+     * or the request no longer waits on anyone (see AWAITING_STATUSES).
      *
      * @return array{step:int, total:int, group:string|null, can_act:bool}|null
      */
     public function progress(Model $document, ?User $user): ?array
     {
-        if ($document->getAttribute('status') !== 'pending') {
+        if (! in_array($document->getAttribute('status'), self::AWAITING_STATUSES, true)) {
             return null;
         }
 
@@ -323,7 +331,7 @@ final class ApprovalFlow
             }
 
             $flowTypes[] = $type;
-            $pendingQuery = $modelClass::query()->where('status', 'pending');
+            $pendingQuery = $modelClass::query()->whereIn('status', self::AWAITING_STATUSES);
             DocumentType::constrain($pendingQuery, $type);
             $pending = $pendingQuery->get();
             $this->preloadApprovals($pending);

@@ -12,6 +12,7 @@ use App\Models\Staff;
 use App\Models\Student;
 use App\Models\User;
 use App\Models\UserNotification;
+use App\Services\Academic\MakeUpClassRequestService;
 use App\Support\Authorization\Permissions;
 use App\Support\Notifications\NotificationType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -133,11 +134,34 @@ class MakeUpClassRequestTest extends TestCase
         $response->assertJsonPath('data.1.id', $older->id);
     }
 
-    public function test_approving_a_make_up_class_request_marks_it_decided_and_notifies_the_student(): void
+    public function test_approving_to_study_only_changes_the_status_and_notifies_the_student(): void
     {
         $admin = $this->actingAsAdminWithPermissions([Permissions::MAKE_UP_CLASS_REQUESTS_APPROVE]);
         [$student, $studentUser] = $this->studentWithUser();
         $makeUpClassRequest = MakeUpClassRequest::factory()->forStudent($student)->create();
+
+        $response = $this->postJson("/api/v1/make-up-class-requests/{$makeUpClassRequest->id}/approve-to-study");
+
+        $response->assertOk();
+        $response->assertJsonPath('data.status', MakeUpClassRequest::STATUS_APPROVED_TO_STUDY);
+        $this->assertSame($admin->id, $makeUpClassRequest->fresh()->decided_by);
+        $this->assertSame(
+            1,
+            UserNotification::where('recipient_id', $studentUser->id)->where('type', NotificationType::MAKE_UP_CLASS_REQUEST_APPROVED_TO_STUDY)->count(),
+        );
+        // Not counted until the student actually came.
+        $this->assertSame([], app(MakeUpClassRequestService::class)->approvedHoursByEnrollment([$makeUpClassRequest->enrollment_id]));
+
+        // The student sees the new status on their own requests.
+        $this->actingAsTenantUser($studentUser);
+        $this->getJson('/api/v1/my-make-up-class-requests')->assertJsonPath('data.0.status', MakeUpClassRequest::STATUS_APPROVED_TO_STUDY);
+    }
+
+    public function test_approving_after_the_student_came_counts_the_hours_and_notifies_the_student(): void
+    {
+        $admin = $this->actingAsAdminWithPermissions([Permissions::MAKE_UP_CLASS_REQUESTS_APPROVE]);
+        [$student, $studentUser] = $this->studentWithUser();
+        $makeUpClassRequest = MakeUpClassRequest::factory()->forStudent($student)->approvedToStudy()->create();
 
         $response = $this->postJson("/api/v1/make-up-class-requests/{$makeUpClassRequest->id}/approve");
 
@@ -148,24 +172,63 @@ class MakeUpClassRequestTest extends TestCase
             1,
             UserNotification::where('recipient_id', $studentUser->id)->where('type', NotificationType::MAKE_UP_CLASS_REQUEST_APPROVED)->count(),
         );
+        // One day, 08:00–10:00.
+        $this->assertEquals(
+            [$makeUpClassRequest->enrollment_id => 2.0],
+            app(MakeUpClassRequestService::class)->approvedHoursByEnrollment([$makeUpClassRequest->enrollment_id]),
+        );
     }
 
-    public function test_approving_requires_the_approve_permission(): void
+    public function test_a_pending_request_must_be_approved_to_study_before_it_can_be_approved(): void
     {
-        $this->actingAsAdminWithPermissions([]);
+        $this->actingAsAdminWithPermissions([Permissions::MAKE_UP_CLASS_REQUESTS_APPROVE]);
         [$student] = $this->studentWithUser();
         $makeUpClassRequest = MakeUpClassRequest::factory()->forStudent($student)->create();
 
-        $this->postJson("/api/v1/make-up-class-requests/{$makeUpClassRequest->id}/approve")->assertForbidden();
+        $this->postJson("/api/v1/make-up-class-requests/{$makeUpClassRequest->id}/approve")->assertUnprocessable();
+        $this->assertSame(MakeUpClassRequest::STATUS_PENDING, $makeUpClassRequest->fresh()->status);
+    }
+
+    public function test_both_approvals_require_the_approve_permission(): void
+    {
+        $this->actingAsAdminWithPermissions([]);
+        [$student] = $this->studentWithUser();
+        $pending = MakeUpClassRequest::factory()->forStudent($student)->create();
+        $approvedToStudy = MakeUpClassRequest::factory()->forStudent($student)->approvedToStudy()->create();
+
+        $this->postJson("/api/v1/make-up-class-requests/{$pending->id}/approve-to-study")->assertForbidden();
+        $this->postJson("/api/v1/make-up-class-requests/{$approvedToStudy->id}/approve")->assertForbidden();
     }
 
     public function test_approving_an_already_decided_request_fails(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::MAKE_UP_CLASS_REQUESTS_APPROVE]);
         [$student] = $this->studentWithUser();
-        $makeUpClassRequest = MakeUpClassRequest::factory()->forStudent($student)->approved()->create();
+        $approved = MakeUpClassRequest::factory()->forStudent($student)->approved()->create();
+        $approvedToStudy = MakeUpClassRequest::factory()->forStudent($student)->approvedToStudy()->create();
 
-        $this->postJson("/api/v1/make-up-class-requests/{$makeUpClassRequest->id}/approve")->assertUnprocessable();
+        $this->postJson("/api/v1/make-up-class-requests/{$approved->id}/approve")->assertUnprocessable();
+        $this->postJson("/api/v1/make-up-class-requests/{$approved->id}/approve-to-study")->assertUnprocessable();
+        $this->postJson("/api/v1/make-up-class-requests/{$approvedToStudy->id}/approve-to-study")->assertUnprocessable();
+    }
+
+    public function test_a_request_approved_to_study_can_still_be_rejected_when_the_student_did_not_come(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::MAKE_UP_CLASS_REQUESTS_REJECT]);
+        [$student, $studentUser] = $this->studentWithUser();
+        $makeUpClassRequest = MakeUpClassRequest::factory()->forStudent($student)->approvedToStudy()->create();
+
+        $this->postJson("/api/v1/make-up-class-requests/{$makeUpClassRequest->id}/reject", ['reason' => 'Did not come'])
+            ->assertOk()
+            ->assertJsonPath('data.status', MakeUpClassRequest::STATUS_REJECTED)
+            ->assertJsonPath('data.decision_reason', 'Did not come');
+        $this->assertSame(
+            1,
+            UserNotification::where('recipient_id', $studentUser->id)->where('type', NotificationType::MAKE_UP_CLASS_REQUEST_REJECTED)->count(),
+        );
+
+        // Already rejected — no second rejection.
+        $this->postJson("/api/v1/make-up-class-requests/{$makeUpClassRequest->id}/reject", ['reason' => 'Again'])->assertUnprocessable();
     }
 
     public function test_rejecting_a_make_up_class_request_records_a_reason(): void

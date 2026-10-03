@@ -6,6 +6,7 @@ namespace Tests\Feature\Approvals;
 
 use App\Models\ApprovalGroup;
 use App\Models\LeaveRequest;
+use App\Models\MakeUpClassRequest;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\Staff;
@@ -138,6 +139,35 @@ class ApprovalFlowTest extends TestCase
             ->assertJsonPath('data.status', LeaveRequest::STATUS_APPROVED);
         $this->assertSame($this->c->id, $request->fresh()->decided_by);
         $this->assertSame(1, UserNotification::where('recipient_id', $studentUser->id)->where('type', NotificationType::LEAVE_REQUEST_APPROVED)->count());
+    }
+
+    public function test_a_make_up_class_is_approved_to_study_by_the_flow_then_approved_by_its_last_group(): void
+    {
+        $this->actingAsTenantUser($this->manager);
+        $this->putJson('/api/v1/approval-flows/'.DocumentType::MAKE_UP_CLASS, ['group_ids' => [$this->group1->id, $this->group2->id]])->assertOk();
+        $request = MakeUpClassRequest::factory()->create();
+
+        $this->actingAsTenantUser($this->a);
+        $this->postJson("/api/v1/make-up-class-requests/{$request->id}/approve-to-study")
+            ->assertOk()
+            ->assertJsonPath('data.status', MakeUpClassRequest::STATUS_PENDING);
+
+        $this->actingAsTenantUser($this->c);
+        $this->postJson("/api/v1/make-up-class-requests/{$request->id}/approve-to-study")
+            ->assertOk()
+            ->assertJsonPath('data.status', MakeUpClassRequest::STATUS_APPROVED_TO_STUDY);
+
+        // The last step's group still decides it once the student came — and sees it waiting on them.
+        $queue = collect($this->getJson('/api/v1/make-up-class-requests?approval_queue=1')->assertOk()->json('data'));
+        $this->assertSame(['step' => 2, 'total' => 2, 'group' => 'Group 2', 'can_act' => true], $queue->firstWhere('id', $request->id)['approval_flow']);
+
+        $this->actingAsTenantUser($this->a);
+        $this->postJson("/api/v1/make-up-class-requests/{$request->id}/approve")->assertForbidden();
+
+        $this->actingAsTenantUser($this->c);
+        $this->postJson("/api/v1/make-up-class-requests/{$request->id}/approve")
+            ->assertOk()
+            ->assertJsonPath('data.status', MakeUpClassRequest::STATUS_APPROVED);
     }
 
     public function test_only_the_current_steps_group_can_reject(): void

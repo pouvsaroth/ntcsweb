@@ -58,18 +58,33 @@ final class MakeUpClassRequestController extends Controller
         ));
     }
 
-    public function approve(MakeUpClassRequest $makeUpClassRequest, Request $request): JsonResponse
+    /** Stage one, on a pending request — see MakeUpClassRequest's docblock. */
+    public function approveToStudy(MakeUpClassRequest $makeUpClassRequest, Request $request): JsonResponse
     {
         $this->flow->authorizeDecision($makeUpClassRequest, $request->user(), 'approve');
 
         // With an approval flow this approves just the current step (and
-        // tells the next step's group); the last step approves the request.
+        // tells the next step's group); the last step approves it to study.
         $makeUpClassRequest = $this->flow->approve(
             $makeUpClassRequest,
             $request->user(),
-            fn ($doc) => $this->makeUpClassRequests->approve($doc, $request->user()),
+            fn ($doc) => $this->makeUpClassRequests->approveToStudy($doc, $request->user()),
             fn ($doc, $nextApprovers) => $this->makeUpClassRequests->notifyApprovers($doc, $nextApprovers),
         );
+
+        return ApiResponse::success(new MakeUpClassRequestResource($makeUpClassRequest->load(['student', 'enrollment.coursePackage', 'enrollment.schoolClass', 'decidedBy'])));
+    }
+
+    /**
+     * Stage two, once the student came — decided by whoever could approve
+     * it: the flow's last step's group (every step is approved by now, so
+     * that's ApprovalFlow's "current" step), else the approve permission.
+     */
+    public function approve(MakeUpClassRequest $makeUpClassRequest, Request $request): JsonResponse
+    {
+        $this->flow->authorizeDecision($makeUpClassRequest, $request->user(), 'approve');
+
+        $makeUpClassRequest = $this->makeUpClassRequests->approve($makeUpClassRequest, $request->user());
 
         return ApiResponse::success(new MakeUpClassRequestResource($makeUpClassRequest->load(['student', 'enrollment.coursePackage', 'enrollment.schoolClass', 'decidedBy'])));
     }

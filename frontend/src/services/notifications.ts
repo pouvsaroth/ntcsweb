@@ -17,6 +17,7 @@ export type NotificationTypeValue =
   | 'resignation_request_approved'
   | 'resignation_request_rejected'
   | 'make_up_class_request_submitted'
+  | 'make_up_class_request_approved_to_study'
   | 'make_up_class_request_approved'
   | 'make_up_class_request_rejected'
   | 'exam_application_submitted'

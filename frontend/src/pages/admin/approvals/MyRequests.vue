@@ -14,7 +14,7 @@ import DataTable from '@/components/ui/DataTable.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import { myApprovalRequestsService, type ApprovalRequest, type ApprovalRequestStatus } from '@/services/approvalRequests'
 import { myLeaveRequestsService, type LeaveRequest } from '@/services/leaveRequests'
-import { makeUpClassCourseLabel, myMakeUpClassRequestsService, type MakeUpClassRequest } from '@/services/makeUpClassRequests'
+import { makeUpClassCourseLabel, myMakeUpClassRequestsService, type MakeUpClassRequest, type MakeUpClassRequestStatus } from '@/services/makeUpClassRequests'
 import { myResignationRequestsService, type ResignationRequest } from '@/services/resignationRequests'
 import { useAuthStore } from '@/stores/auth'
 import { ApiRequestError } from '@/types/api'
@@ -30,12 +30,14 @@ import { formatDate } from '@/utils/date'
  * paginated sources behind one page control isn't meaningful here — a
  * user's own request list is never large enough to need it.
  */
+type RowStatus = ApprovalRequestStatus | MakeUpClassRequestStatus
+
 type MergedRow = {
   kind: 'approval' | 'leave' | 'resignation' | 'makeUp'
   id: number
   reference: string
   subject: string
-  status: ApprovalRequestStatus
+  status: RowStatus
   createdAt: string
   approval?: ApprovalRequest
   leave?: LeaveRequest
@@ -57,16 +59,20 @@ const canRequestMakeUp = computed(() => auth.hasRole('student'))
 const rows = ref<MergedRow[]>([])
 const loading = ref(false)
 const error = ref<string | null>(null)
-const activeTab = ref<ApprovalRequestStatus>('pending')
+const activeTab = ref<RowStatus>('pending')
 
-const tabs: { key: ApprovalRequestStatus; labelKey: string }[] = [
+// "Approved to study" — the student's make-up classes they may now come to
+// (see MakeUpClassRequestStatus).
+const tabs = computed<{ key: RowStatus; labelKey: string }[]>(() => [
   { key: 'pending', labelKey: 'admin.myRequests.tabPending' },
+  ...(canRequestMakeUp.value ? [{ key: 'approved_to_study' as const, labelKey: 'admin.myRequests.tabApprovedToStudy' }] : []),
   { key: 'approved', labelKey: 'admin.myRequests.tabApproved' },
   { key: 'rejected', labelKey: 'admin.myRequests.tabRejected' },
-]
+])
 
 const counts = computed(() => ({
   pending: rows.value.filter((r) => r.status === 'pending').length,
+  approved_to_study: rows.value.filter((r) => r.status === 'approved_to_study').length,
   approved: rows.value.filter((r) => r.status === 'approved').length,
   rejected: rows.value.filter((r) => r.status === 'rejected').length,
 }))
@@ -81,10 +87,18 @@ const columns = [
   { key: 'reference', label: t('admin.myRequests.columnReference') },
 ]
 
-const statusVariant: Record<ApprovalRequestStatus, 'warning' | 'success' | 'danger'> = {
+const statusVariant: Record<RowStatus, 'warning' | 'primary' | 'success' | 'danger'> = {
   pending: 'warning',
+  approved_to_study: 'primary',
   approved: 'success',
   rejected: 'danger',
+}
+
+const statusLabelKey: Record<RowStatus, string> = {
+  pending: 'admin.myRequests.statusPending',
+  approved_to_study: 'admin.myRequests.statusApprovedToStudy',
+  approved: 'admin.myRequests.statusApproved',
+  rejected: 'admin.myRequests.statusRejected',
 }
 
 const detail = ref<MergedRow | null>(null)
@@ -221,7 +235,7 @@ onMounted(() => load())
       </template>
       <template #cell-reference="{ row }">{{ row.reference }}</template>
       <template #cell-status="{ row }">
-        <BaseBadge :variant="statusVariant[row.status]">{{ t(`admin.myRequests.status${row.status.charAt(0).toUpperCase()}${row.status.slice(1)}`) }}</BaseBadge>
+        <BaseBadge :variant="statusVariant[row.status]">{{ t(statusLabelKey[row.status]) }}</BaseBadge>
       </template>
     </DataTable>
 

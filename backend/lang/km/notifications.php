@@ -10,6 +10,7 @@ return [
     'resignation_request_approved' => 'សំណើលាឈប់សម្រាប់ :staff_name ត្រូវបានអនុម័ត',
     'resignation_request_rejected' => 'សំណើលាឈប់សម្រាប់ :staff_name ត្រូវបានបដិសេធ៖ :reason',
     'make_up_class_request_submitted' => ':student_name បានដាក់ស្នើសំណើសុំរៀនសង',
+    'make_up_class_request_approved_to_study' => 'សំណើសុំរៀនសងសម្រាប់ :student_name ត្រូវបានអនុញ្ញាតឱ្យមករៀន',
     'make_up_class_request_approved' => 'សំណើសុំរៀនសងសម្រាប់ :student_name ត្រូវបានអនុម័ត',
     'make_up_class_request_rejected' => 'សំណើសុំរៀនសងសម្រាប់ :student_name ត្រូវបានបដិសេធ៖ :reason',
     'exam_application_submitted' => ':student_name បានដាក់ពាក្យប្រឡង',

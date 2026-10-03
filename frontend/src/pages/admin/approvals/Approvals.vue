@@ -14,7 +14,7 @@ import EmptyState from '@/components/ui/EmptyState.vue'
 import { approvalRequestsService, type ApprovalRequest, type ApprovalRequestStatus } from '@/services/approvalRequests'
 import { examApplicationsService, type ExamApplication } from '@/services/examApplications'
 import { leaveRequestsService, type LeaveRequest } from '@/services/leaveRequests'
-import { makeUpClassCourseLabel, makeUpClassRequestsService, type MakeUpClassRequest } from '@/services/makeUpClassRequests'
+import { makeUpClassCourseLabel, makeUpClassRequestsService, type MakeUpClassRequest, type MakeUpClassRequestStatus } from '@/services/makeUpClassRequests'
 import { resignationRequestsService, type ResignationRequest } from '@/services/resignationRequests'
 import { useAuthStore } from '@/stores/auth'
 import { useConfirmDialogStore } from '@/stores/confirmDialog'
@@ -32,13 +32,15 @@ import { formatDate } from '@/utils/date'
  * only fetched if the current user actually holds its view permission, same
  * gating the sidebar nav already applies.
  */
+type RowStatus = ApprovalRequestStatus | MakeUpClassRequestStatus
+
 type MergedRow = {
   kind: 'approval' | 'leave' | 'resignation' | 'makeUp' | 'exam'
   id: number
   reference: string
   requestor: string
   subject: string
-  status: ApprovalRequestStatus
+  status: RowStatus
   createdAt: string
   /** Pending + the item has an approval flow: the step it waits on. */
   flow: ApprovalFlowProgress | null
@@ -58,7 +60,7 @@ const loading = ref(false)
 const error = ref<string | null>(null)
 const actionError = ref<string | null>(null)
 const approving = ref(false)
-const activeTab = ref<ApprovalRequestStatus>('pending')
+const activeTab = ref<RowStatus>('pending')
 
 // A member of an Approval Flow group sees that item's queue even without its
 // view permission — only the requests involving them (see backend ApprovalFlow).
@@ -72,14 +74,18 @@ const canViewExams = computed(() => auth.can('exam-applications.view') || auth.i
 // Leave/resignation requests have no equivalent "amend before deciding" step.
 const canUpdateExam = computed(() => auth.can('exam-applications.update'))
 
-const tabs: { key: ApprovalRequestStatus; labelKey: string }[] = [
+// "Approved to study" — make-up classes waiting for the approver to see the
+// student come on the day (see MakeUpClassRequestStatus).
+const tabs = computed<{ key: RowStatus; labelKey: string }[]>(() => [
   { key: 'pending', labelKey: 'admin.approvals.tabNew' },
+  ...(canViewMakeUp.value ? [{ key: 'approved_to_study' as const, labelKey: 'admin.approvals.tabApprovedToStudy' }] : []),
   { key: 'approved', labelKey: 'admin.approvals.tabApproved' },
   { key: 'rejected', labelKey: 'admin.approvals.tabRejected' },
-]
+])
 
 const counts = computed(() => ({
   pending: rows.value.filter((r) => r.status === 'pending').length,
+  approved_to_study: rows.value.filter((r) => r.status === 'approved_to_study').length,
   approved: rows.value.filter((r) => r.status === 'approved').length,
   rejected: rows.value.filter((r) => r.status === 'rejected').length,
 }))
@@ -95,10 +101,32 @@ const columns = [
   { key: 'status', label: t('admin.approvals.columnStatus') },
 ]
 
-const statusVariant: Record<ApprovalRequestStatus, 'warning' | 'success' | 'danger'> = {
+const statusVariant: Record<RowStatus, 'warning' | 'primary' | 'success' | 'danger'> = {
   pending: 'warning',
+  approved_to_study: 'primary',
   approved: 'success',
   rejected: 'danger',
+}
+
+const statusLabelKey: Record<RowStatus, string> = {
+  pending: 'admin.myRequests.statusPending',
+  approved_to_study: 'admin.myRequests.statusApprovedToStudy',
+  approved: 'admin.myRequests.statusApproved',
+  rejected: 'admin.myRequests.statusRejected',
+}
+
+/** Still waiting on a decision — a make-up class approved to study waits on its second Approve. */
+function isOpen(row: MergedRow): boolean {
+  return row.status === 'pending' || row.status === 'approved_to_study'
+}
+
+/** A pending make-up class is first only approved to study. */
+function approvesToStudy(row: MergedRow): boolean {
+  return row.kind === 'makeUp' && row.status === 'pending'
+}
+
+function approveLabel(row: MergedRow): string {
+  return approvesToStudy(row) ? t('admin.approvals.approveToStudy') : t('admin.approvals.approve')
 }
 
 const detail = ref<MergedRow | null>(null)
@@ -251,7 +279,12 @@ function openReject(row: MergedRow) {
 }
 
 async function approve(row: MergedRow) {
-  if (!(await confirmDialog.confirm(t('admin.approvals.approveConfirm')))) return
+  const confirmKey = approvesToStudy(row)
+    ? 'admin.approvals.approveToStudyConfirm'
+    : row.kind === 'makeUp'
+      ? 'admin.approvals.approveMakeUpCameConfirm'
+      : 'admin.approvals.approveConfirm'
+  if (!(await confirmDialog.confirm(t(confirmKey)))) return
 
   approving.value = true
   actionError.value = null
@@ -264,7 +297,7 @@ async function approve(row: MergedRow) {
     } else if (row.kind === 'resignation') {
       await resignationRequestsService.approve(row.id)
     } else if (row.kind === 'makeUp') {
-      await makeUpClassRequestsService.approve(row.id)
+      await (approvesToStudy(row) ? makeUpClassRequestsService.approveToStudy(row.id) : makeUpClassRequestsService.approve(row.id))
     } else {
       await examApplicationsService.approve(row.id)
     }
@@ -349,15 +382,15 @@ onMounted(() => load())
       </template>
       <template #cell-reference="{ row }">{{ row.reference }}</template>
       <template #cell-status="{ row }">
-        <BaseBadge :variant="statusVariant[row.status]">{{ t(`admin.myRequests.status${row.status.charAt(0).toUpperCase()}${row.status.slice(1)}`) }}</BaseBadge>
+        <BaseBadge :variant="statusVariant[row.status]">{{ t(statusLabelKey[row.status]) }}</BaseBadge>
         <p v-if="row.flow" class="mt-1 text-xs text-neutral-500">
           {{ t('admin.approvals.flowStep', { step: row.flow.step, total: row.flow.total, group: row.flow.group ?? '—' }) }}
         </p>
       </template>
       <template #cell-actions="{ row }">
-        <div v-if="row.status === 'pending'" class="flex gap-2">
+        <div v-if="isOpen(row)" class="flex gap-2">
           <BaseButton v-if="row.kind === 'exam' && canUpdateExam" size="sm" variant="outline" @click="openEditExam(row)">{{ t('common.edit') }}</BaseButton>
-          <BaseButton v-if="canApprove(row)" size="sm" :loading="approving" @click="approve(row)">{{ t('admin.approvals.approve') }}</BaseButton>
+          <BaseButton v-if="canApprove(row)" size="sm" :loading="approving" @click="approve(row)">{{ approveLabel(row) }}</BaseButton>
           <BaseButton v-if="canReject(row)" size="sm" variant="danger" @click="openReject(row)">{{ t('admin.approvals.reject') }}</BaseButton>
         </div>
         <span v-else class="text-xs text-neutral-400">—</span>
@@ -417,10 +450,10 @@ onMounted(() => load())
 
       <template #footer>
         <BaseButton variant="outline" @click="detail = null">{{ t('common.close') }}</BaseButton>
-        <template v-if="detail?.status === 'pending'">
+        <template v-if="detail && isOpen(detail)">
           <BaseButton v-if="detail.kind === 'exam' && canUpdateExam" variant="outline" @click="openEditExam(detail)">{{ t('common.edit') }}</BaseButton>
           <BaseButton v-if="canReject(detail)" variant="danger" @click="openReject(detail)">{{ t('admin.approvals.reject') }}</BaseButton>
-          <BaseButton v-if="canApprove(detail)" :loading="approving" @click="approve(detail)">{{ t('admin.approvals.approve') }}</BaseButton>
+          <BaseButton v-if="canApprove(detail)" :loading="approving" @click="approve(detail)">{{ approveLabel(detail) }}</BaseButton>
         </template>
       </template>
     </BaseModal>

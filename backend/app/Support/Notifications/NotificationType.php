@@ -25,6 +25,8 @@ final class NotificationType
 
     public const MAKE_UP_CLASS_REQUEST_SUBMITTED = 'make_up_class_request_submitted';
 
+    public const MAKE_UP_CLASS_REQUEST_APPROVED_TO_STUDY = 'make_up_class_request_approved_to_study';
+
     public const MAKE_UP_CLASS_REQUEST_APPROVED = 'make_up_class_request_approved';
 
     public const MAKE_UP_CLASS_REQUEST_REJECTED = 'make_up_class_request_rejected';

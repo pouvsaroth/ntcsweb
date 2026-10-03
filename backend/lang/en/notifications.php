@@ -12,6 +12,7 @@ return [
     'resignation_request_approved' => 'The resignation request for :staff_name was approved',
     'resignation_request_rejected' => 'The resignation request for :staff_name was rejected: :reason',
     'make_up_class_request_submitted' => ':student_name submitted a make-up class request',
+    'make_up_class_request_approved_to_study' => 'The make-up class request for :student_name was approved to study',
     'make_up_class_request_approved' => 'The make-up class request for :student_name was approved',
     'make_up_class_request_rejected' => 'The make-up class request for :student_name was rejected: :reason',
     'exam_application_submitted' => ':student_name applied for the exam',
