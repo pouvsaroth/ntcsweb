@@ -81,6 +81,12 @@ const adminRoutes: RouteRecordRaw[] = [
     meta: { titleKey: 'adminNav.items.gallery' },
   },
   {
+    path: 'uploads',
+    name: 'admin.uploads',
+    component: () => import('@/pages/admin/Uploads.vue'),
+    meta: { titleKey: 'adminNav.items.uploads' },
+  },
+  {
     path: 'promotions',
     name: 'admin.promotions',
     component: () => import('@/pages/admin/Promotions.vue'),

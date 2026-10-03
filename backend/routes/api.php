@@ -43,6 +43,8 @@ use App\Http\Controllers\Api\V1\Admin\ExpenseController;
 use App\Http\Controllers\Api\V1\Admin\FinancialTransactionController;
 use App\Http\Controllers\Api\V1\Admin\FormCategoryController;
 use App\Http\Controllers\Api\V1\Admin\FormTemplateController;
+use App\Http\Controllers\Api\V1\Admin\DownloadFileController;
+use App\Http\Controllers\Api\V1\Admin\DownloadFolderController;
 use App\Http\Controllers\Api\V1\Admin\GalleryController as AdminGalleryController;
 use App\Http\Controllers\Api\V1\Admin\GeneralSettingsController;
 use App\Http\Controllers\Api\V1\Admin\HomeSlideController as AdminHomeSlideController;
@@ -106,6 +108,7 @@ use App\Http\Controllers\Api\V1\MyVideoController;
 use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\Public\CoursePackageController as PublicCoursePackageController;
 use App\Http\Controllers\Api\V1\Public\EnrollmentInquiryController;
+use App\Http\Controllers\Api\V1\Public\DownloadController as PublicDownloadController;
 use App\Http\Controllers\Api\V1\Public\GalleryController as PublicGalleryController;
 use App\Http\Controllers\Api\V1\Public\HomeSlideController as PublicHomeSlideController;
 use App\Http\Controllers\Api\V1\Public\KhqrController as PublicKhqrController;
@@ -395,6 +398,12 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
 
         Route::apiResource('home-slides', AdminHomeSlideController::class);
         Route::apiResource('gallery', AdminGalleryController::class);
+        // The Upload menu — folders (two levels) of files for the public Download page.
+        Route::apiResource('download-folders', DownloadFolderController::class);
+        Route::get('download-folders/{download_folder}/files', [DownloadFileController::class, 'index'])->name('download-folders.files.index');
+        Route::post('download-folders/{download_folder}/files', [DownloadFileController::class, 'store'])->name('download-folders.files.store');
+        Route::put('download-files/{download_file}', [DownloadFileController::class, 'update'])->name('download-files.update');
+        Route::delete('download-files/{download_file}', [DownloadFileController::class, 'destroy'])->name('download-files.destroy');
         Route::apiResource('promotions', AdminPromotionController::class);
         Route::apiResource('programs', AdminProgramController::class);
 
@@ -723,6 +732,9 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('gallery/{id}/download', [PublicGalleryController::class, 'download'])
             ->whereNumber('id')
             ->name('gallery.download');
+        Route::get('downloads', [PublicDownloadController::class, 'index'])->name('downloads.index');
+        Route::get('downloads/folders/{id}', [PublicDownloadController::class, 'show'])->whereNumber('id')->name('downloads.folders.show');
+        Route::get('downloads/files/{id}', [PublicDownloadController::class, 'download'])->whereNumber('id')->name('downloads.files.download');
         Route::get('promotions', [PublicPromotionController::class, 'index'])->name('promotions.index');
         Route::get('visits', [WebsiteVisitController::class, 'stats'])->name('visits.stats');
         Route::post('visits', [WebsiteVisitController::class, 'record'])->name('visits.record');

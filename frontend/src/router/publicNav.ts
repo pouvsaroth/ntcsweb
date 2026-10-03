@@ -29,6 +29,8 @@ export const programNavItem: NavItem = { labelKey: 'nav.program', to: '/programs
 export const publicNavAfterProgram: NavItem[] = [
   { labelKey: 'nav.gallery', to: '/gallery' },
   { labelKey: 'nav.promotion', to: '/promotion' },
+  // Files the school shares for anyone to download — see admin/Uploads.vue.
+  { labelKey: 'nav.download', to: '/downloads' },
   { labelKey: 'nav.contact', to: '/contact' },
 ]
 

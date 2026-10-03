@@ -32,6 +32,7 @@ use App\Models\FinancialTransaction;
 use App\Models\ApprovalGroup;
 use App\Models\FormCategory;
 use App\Models\FormTemplate;
+use App\Models\DownloadFolder;
 use App\Models\GalleryImage;
 use App\Models\HomeSlide;
 use App\Models\Invoice;
@@ -86,6 +87,7 @@ use App\Policies\FinancialTransactionPolicy;
 use App\Policies\ApprovalGroupPolicy;
 use App\Policies\FormCategoryPolicy;
 use App\Policies\FormTemplatePolicy;
+use App\Policies\DownloadFolderPolicy;
 use App\Policies\GalleryImagePolicy;
 use App\Policies\HomeSlidePolicy;
 use App\Policies\InvoicePolicy;
@@ -145,6 +147,7 @@ class AuthServiceProvider extends ServiceProvider
         LookupValue::class => LookupValuePolicy::class,
         HomeSlide::class => HomeSlidePolicy::class,
         GalleryImage::class => GalleryImagePolicy::class,
+        DownloadFolder::class => DownloadFolderPolicy::class,
         Promotion::class => PromotionPolicy::class,
         ResignationRequest::class => ResignationRequestPolicy::class,
         MakeUpClassRequest::class => MakeUpClassRequestPolicy::class,

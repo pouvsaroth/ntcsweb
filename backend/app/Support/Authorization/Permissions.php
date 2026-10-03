@@ -248,6 +248,15 @@ final class Permissions
 
     public const GALLERY_DELETE = 'gallery.delete';
 
+    // Downloads — folders of files on the public site's Download page (the admin Upload menu).
+    public const DOWNLOADS_VIEW = 'downloads.view';
+
+    public const DOWNLOADS_CREATE = 'downloads.create';
+
+    public const DOWNLOADS_UPDATE = 'downloads.update';
+
+    public const DOWNLOADS_DELETE = 'downloads.delete';
+
     // Promotions — banner images on the public site's Promotion page.
     public const PROMOTIONS_VIEW = 'promotions.view';
 
@@ -751,6 +760,12 @@ final class Permissions
                 self::GALLERY_UPDATE => 'Update gallery photos',
                 self::GALLERY_DELETE => 'Delete gallery photos',
             ],
+            'Downloads' => [
+                self::DOWNLOADS_VIEW => 'View download folders and files',
+                self::DOWNLOADS_CREATE => 'Create download folders and upload files',
+                self::DOWNLOADS_UPDATE => 'Update download folders and files',
+                self::DOWNLOADS_DELETE => 'Delete download folders and files',
+            ],
             'Promotions' => [
                 self::PROMOTIONS_VIEW => 'View promotion images',
                 self::PROMOTIONS_CREATE => 'Upload promotion images',
@@ -950,6 +965,7 @@ final class Permissions
             self::ACADEMIC_REPORTS_VIEW, self::ACADEMIC_REPORTS_EXPORT,
             self::HOME_SLIDES_VIEW, self::HOME_SLIDES_CREATE, self::HOME_SLIDES_UPDATE, self::HOME_SLIDES_DELETE,
             self::GALLERY_VIEW, self::GALLERY_CREATE, self::GALLERY_UPDATE, self::GALLERY_DELETE,
+            self::DOWNLOADS_VIEW, self::DOWNLOADS_CREATE, self::DOWNLOADS_UPDATE, self::DOWNLOADS_DELETE,
             self::PROMOTIONS_VIEW, self::PROMOTIONS_CREATE, self::PROMOTIONS_UPDATE, self::PROMOTIONS_DELETE,
             self::PROGRAMS_VIEW, self::PROGRAMS_CREATE, self::PROGRAMS_UPDATE, self::PROGRAMS_DELETE,
             self::POSITIONS_VIEW, self::POSITIONS_CREATE, self::POSITIONS_UPDATE, self::POSITIONS_DELETE,

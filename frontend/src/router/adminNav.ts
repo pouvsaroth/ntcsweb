@@ -202,6 +202,8 @@ export const adminNav: AdminNavGroup[] = [
       { labelKey: 'adminNav.items.events', to: '/admin/events', permission: 'events.view' },
       { labelKey: 'adminNav.items.announcements', to: '/admin/announcements', permission: 'announcements.view' },
       { labelKey: 'adminNav.items.gallery', to: '/admin/gallery', permission: 'gallery.view' },
+      // Folders of files for the public site's Download page.
+      { labelKey: 'adminNav.items.uploads', to: '/admin/uploads', permission: 'downloads.view' },
       { labelKey: 'adminNav.items.promotions', to: '/admin/promotions', permission: 'promotions.view' },
       { labelKey: 'adminNav.items.documents', to: '/admin/documents', permission: 'documents.view' },
     ],
