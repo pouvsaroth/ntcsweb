@@ -704,6 +704,9 @@ const en = {
     },
     makeUpExam: {
       title: 'Make-up Exam',
+      exportImage: 'Export as image',
+      exportImageFailed: 'Could not export the image.',
+      exportedOn: 'Exported',
       subtitle: 'Retake applications generated from the Grades tab — schedule an exam date, room and table for each.',
       columnCreatedAt: 'Requested',
       confirmDelete: 'Delete this make-up exam application?',

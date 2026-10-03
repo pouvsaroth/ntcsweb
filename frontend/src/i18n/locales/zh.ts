@@ -699,6 +699,9 @@ const zh: MessageSchema = {
     },
     makeUpExam: {
       title: '补考',
+      exportImage: '导出为图片',
+      exportImageFailed: '无法导出图片。',
+      exportedOn: '导出于',
       subtitle: '从成绩标签页生成的补考申请 — 为每一项安排考试日期、教室和座位。',
       columnCreatedAt: '申请时间',
       confirmDelete: '删除此补考申请？',

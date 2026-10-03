@@ -700,6 +700,9 @@ const km: MessageSchema = {
     },
     makeUpExam: {
       title: 'ប្រឡងសង',
+      exportImage: 'នាំចេញជារូបភាព',
+      exportImageFailed: 'មិនអាចនាំចេញរូបភាពបានទេ។',
+      exportedOn: 'នាំចេញ',
       subtitle: 'ពាក្យសុំប្រឡងសងដែលបានបង្កើតពីផ្ទាំងពិន្ទុប្រឡង — កំណត់ថ្ងៃ បន្ទប់ និងតុប្រឡងសម្រាប់នីមួយៗ។',
       columnCreatedAt: 'បានស្នើសុំ',
       confirmDelete: 'លុបពាក្យសុំប្រឡងសងនេះ?',

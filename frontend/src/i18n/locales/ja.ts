@@ -700,6 +700,9 @@ const ja: MessageSchema = {
     },
     makeUpExam: {
       title: '追試',
+      exportImage: '画像として書き出す',
+      exportImageFailed: '画像を書き出せませんでした。',
+      exportedOn: '書き出し日',
       subtitle: '成績タブから生成された追試申請 — それぞれに試験日・教室・座席を設定します。',
       columnCreatedAt: '申請日時',
       confirmDelete: 'この追試申請を削除しますか?',

@@ -700,6 +700,9 @@ const ko: MessageSchema = {
     },
     makeUpExam: {
       title: '추가 시험',
+      exportImage: '이미지로 내보내기',
+      exportImageFailed: '이미지를 내보낼 수 없습니다.',
+      exportedOn: '내보낸 날짜',
       subtitle: '성적 탭에서 생성된 추가 시험 신청 — 각 신청의 시험 날짜, 교실, 좌석을 배정하세요.',
       columnCreatedAt: '신청 일시',
       confirmDelete: '이 추가 시험 신청을 삭제하시겠습니까?',

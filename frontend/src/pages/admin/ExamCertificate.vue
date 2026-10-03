@@ -14,6 +14,7 @@ import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { examApplicationsService, type ExamApplication } from '@/services/examApplications'
 import { useAuthStore } from '@/stores/auth'
 import { formatDate } from '@/utils/date'
+import { exportTableAsImage } from '@/utils/tableImage'
 
 /**
  * Examination → Certificate: every student who passed the exam (score ≥ 85,
@@ -64,6 +65,62 @@ const mentionVariant: Record<string, 'success' | 'warning' | 'neutral'> = {
 
 const modalOpen = ref(false)
 
+// --- Export as image -----------------------------------------------------------
+// Every passed student under the current filter, not just the page on screen.
+
+const exporting = ref(false)
+const exportError = ref<string | null>(null)
+
+async function fetchAllForExport(): Promise<ExamApplication[]> {
+  const all: ExamApplication[] = []
+  for (let page = 1; ; page++) {
+    const result = await examApplicationsService.list({ page, per_page: 100 }, { certificate: true, photoReceived: photoFilter.value || undefined })
+    all.push(...result.data)
+    if (result.pagination?.type !== 'length_aware' || page >= result.pagination.last_page) return all
+  }
+}
+
+async function exportImage() {
+  exporting.value = true
+  exportError.value = null
+  try {
+    const rows = await fetchAllForExport()
+    const filterLabel = photoFilterOptions.value.find((o) => o.value === photoFilter.value)?.label ?? ''
+    await exportTableAsImage({
+      title: t('admin.examCertificate.title'),
+      subtitle: [filterLabel, `${t('admin.examCertificate.exportedOn')} ${formatDate(new Date())}`].filter(Boolean).join('  ·  '),
+      columns: [
+        { label: t('admin.exams.columnStudentCode'), width: 110 },
+        { label: t('admin.exams.columnFullName'), width: 200 },
+        { label: t('admin.exams.columnBook'), width: 160, maxWidth: 260 },
+        { label: t('admin.exams.columnExamDate'), width: 110 },
+        { label: t('admin.examCertificate.columnScore'), align: 'right', width: 80 },
+        { label: t('admin.examCertificate.columnMention'), width: 110 },
+        { label: t('admin.examCertificate.columnPhotoReceived'), width: 150, maxWidth: 260 },
+      ],
+      rows: rows.map((row) => [
+        { text: row.student.student_code || '—' },
+        { text: row.student.name, bold: true },
+        { text: row.book?.title ?? row.enrollment.course_package?.name ?? '—' },
+        { text: formatDate(row.exam_date) },
+        { text: row.score ? String(row.score.score) : '—', bold: true },
+        row.score
+          ? { text: t(`admin.myScores.mentions.${row.score.mention}`), badge: mentionVariant[row.score.mention] ?? 'neutral' }
+          : { text: '—' },
+        row.photo_received_date
+          ? { text: `✓ ${formatDate(row.photo_received_date)}`, badge: 'success' as const, subtext: row.photo_received_remark || undefined }
+          : { text: t('admin.examCertificate.notReceived') },
+      ]),
+      emptyText: t('admin.examCertificate.emptyMessage'),
+      fileName: `certificate-${new Date().toISOString().slice(0, 10)}.png`,
+    })
+  } catch {
+    exportError.value = t('admin.examCertificate.exportImageFailed')
+  } finally {
+    exporting.value = false
+  }
+}
+
 async function onSaved() {
   selectedIds.value = []
   await fetch()
@@ -81,9 +138,12 @@ onMounted(() => void fetch())
         <h1 class="text-xl font-semibold text-neutral-900">{{ t('admin.examCertificate.title') }}</h1>
         <p class="mt-1 max-w-3xl text-sm text-neutral-500">{{ t('admin.examCertificate.subtitle') }}</p>
       </div>
-      <BaseButton v-if="canUpdate" :disabled="selectedIds.length === 0" @click="modalOpen = true">
-        {{ t('admin.examCertificate.receivedPhoto') }}<template v-if="selectedIds.length"> ({{ selectedIds.length }})</template>
-      </BaseButton>
+      <div class="flex flex-wrap gap-2">
+        <BaseButton variant="outline" :loading="exporting" @click="exportImage">{{ t('admin.examCertificate.exportImage') }}</BaseButton>
+        <BaseButton v-if="canUpdate" :disabled="selectedIds.length === 0" @click="modalOpen = true">
+          {{ t('admin.examCertificate.receivedPhoto') }}<template v-if="selectedIds.length"> ({{ selectedIds.length }})</template>
+        </BaseButton>
+      </div>
     </div>
 
     <div class="mb-4 max-w-xs">
@@ -91,6 +151,7 @@ onMounted(() => void fetch())
     </div>
 
     <BaseAlert v-if="error" variant="danger" class="mb-4">{{ error }}</BaseAlert>
+    <BaseAlert v-if="exportError" variant="danger" class="mb-4">{{ exportError }}</BaseAlert>
 
     <DataTable
       :columns="columns"
