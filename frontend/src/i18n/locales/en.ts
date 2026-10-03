@@ -178,7 +178,6 @@ const en = {
 
   notifications: {
     bell: 'Notifications',
-    markAllRead: 'Mark all as read',
     empty: 'No notifications yet.',
     viewAll: 'View all',
     push: {

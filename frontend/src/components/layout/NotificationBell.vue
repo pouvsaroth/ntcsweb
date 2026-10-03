@@ -3,7 +3,7 @@ import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
-import { notificationsService, type AppNotification } from '@/services/notifications'
+import { notificationsService, unreadNotificationCount as unreadCount, type AppNotification } from '@/services/notifications'
 import { disablePush, enablePush, pushState, syncPush, type PushState } from '@/services/pushNotifications'
 import { formatDateTime } from '@/utils/date'
 
@@ -12,7 +12,6 @@ const router = useRouter()
 
 const open = ref(false)
 const items = ref<AppNotification[]>([])
-const unreadCount = ref(0)
 const loading = ref(false)
 
 // Phone notifications (Web Push) for this device — see services/pushNotifications.ts.
@@ -40,7 +39,6 @@ async function load() {
   try {
     const result = await notificationsService.list({ page: 1, per_page: 8 })
     items.value = result.data
-    unreadCount.value = result.unreadCount
   } finally {
     loading.value = false
   }
@@ -56,25 +54,15 @@ function formatWhen(value: string): string {
 
 async function toggle() {
   open.value = !open.value
-  if (open.value) await Promise.all([load(), refreshPush()])
+  if (open.value) {
+    await Promise.all([load(), refreshPush()])
+    await notificationsService.markAllSeen()
+  }
 }
 
 async function select(notification: AppNotification) {
   open.value = false
-
-  if (notification.read_at === null) {
-    notification.read_at = new Date().toISOString()
-    unreadCount.value = Math.max(0, unreadCount.value - 1)
-    notificationsService.markRead(notification.id).catch(() => {})
-  }
-
   if (notification.link) await router.push(notification.link)
-}
-
-async function markAllRead() {
-  items.value.forEach((n) => (n.read_at = n.read_at ?? new Date().toISOString()))
-  unreadCount.value = 0
-  await notificationsService.markAllRead().catch(() => {})
 }
 
 // A lightweight poll for the badge count — no websocket infra in this app
@@ -125,16 +113,8 @@ onBeforeUnmount(() => {
       enter-to-class="opacity-100 scale-100"
     >
       <div v-if="open" class="absolute right-0 z-50 mt-2 w-80 rounded-lg border border-neutral-200 bg-white shadow-lg">
-        <div class="flex items-center justify-between border-b border-neutral-100 px-3 py-2">
+        <div class="border-b border-neutral-100 px-3 py-2">
           <span class="text-sm font-semibold text-neutral-800">{{ t('notifications.bell') }}</span>
-          <button
-            v-if="unreadCount > 0"
-            type="button"
-            class="text-xs font-medium text-secondary-600 hover:text-secondary-700"
-            @click="markAllRead"
-          >
-            {{ t('notifications.markAllRead') }}
-          </button>
         </div>
 
         <div class="max-h-96 overflow-y-auto">

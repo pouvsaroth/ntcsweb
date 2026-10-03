@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
-import BaseButton from '@/components/ui/BaseButton.vue'
 import BasePagination from '@/components/ui/BasePagination.vue'
 import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
@@ -13,11 +12,10 @@ import { formatDateTime } from '@/utils/date'
 const { t } = useI18n()
 const router = useRouter()
 
-const unreadCount = ref(0)
-
+// Opening this page counts as reading them — see notificationsService.markAllSeen().
 const { items, meta, loading, setPage, fetch } = usePaginatedResource<AppNotification>(async (query) => {
   const result = await notificationsService.list(query)
-  unreadCount.value = result.unreadCount
+  void notificationsService.markAllSeen()
   return result
 })
 
@@ -30,19 +28,7 @@ function formatWhen(value: string): string {
 }
 
 async function select(notification: AppNotification) {
-  if (notification.read_at === null) {
-    notification.read_at = new Date().toISOString()
-    unreadCount.value = Math.max(0, unreadCount.value - 1)
-    notificationsService.markRead(notification.id).catch(() => {})
-  }
-
   if (notification.link) await router.push(notification.link)
-}
-
-async function markAllRead() {
-  items.value.forEach((n) => (n.read_at = n.read_at ?? new Date().toISOString()))
-  unreadCount.value = 0
-  await notificationsService.markAllRead().catch(() => {})
 }
 
 onMounted(() => fetch())
@@ -50,11 +36,8 @@ onMounted(() => fetch())
 
 <template>
   <div>
-    <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+    <div class="mb-6">
       <h1 class="text-xl font-semibold text-neutral-900">{{ t('notifications.bell') }}</h1>
-      <BaseButton v-if="unreadCount > 0" variant="outline" size="sm" @click="markAllRead">
-        {{ t('notifications.markAllRead') }}
-      </BaseButton>
     </div>
 
     <BaseSpinner v-if="loading && items.length === 0" class="mx-auto mt-8" />

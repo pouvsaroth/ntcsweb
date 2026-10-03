@@ -175,7 +175,6 @@ const km: MessageSchema = {
 
   notifications: {
     bell: 'ការជូនដំណឹង',
-    markAllRead: 'សម្គាល់ថាបានអានទាំងអស់',
     empty: 'មិនទាន់មានការជូនដំណឹងទេ។',
     viewAll: 'មើលទាំងអស់',
     push: {

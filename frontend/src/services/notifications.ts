@@ -1,3 +1,5 @@
+import { ref } from 'vue'
+
 import { apiGetWithMeta, apiPost } from '@/services/http'
 import type { PaginatedQuery } from '@/composables/usePaginatedResource'
 import type { LengthAwarePaginationMeta, PaginatedResult } from '@/types/api'
@@ -39,19 +41,31 @@ export interface AppNotification {
   created_at: string
 }
 
+/** The bell's red number — shared, so the Notifications page clearing it updates the bell at once. */
+export const unreadNotificationCount = ref(0)
+
 export const notificationsService = {
-  async list(query: PaginatedQuery): Promise<PaginatedResult<AppNotification> & { unreadCount: number }> {
+  async list(query: PaginatedQuery): Promise<PaginatedResult<AppNotification>> {
     const result = await apiGetWithMeta<AppNotification[]>('/notifications', {
       params: { page: query.page, per_page: query.per_page },
     })
+    unreadNotificationCount.value = (result.meta?.unread_count as number) ?? 0
 
     return {
       data: result.data,
       pagination: result.meta?.pagination as LengthAwarePaginationMeta,
-      unreadCount: (result.meta?.unread_count as number) ?? 0,
     }
   },
 
-  markRead: (id: number) => apiPost<AppNotification>(`/notifications/${id}/read`),
-  markAllRead: () => apiPost<void>('/notifications/mark-all-read'),
+  /**
+   * Seeing the list counts as reading it: opening the bell or the
+   * Notifications page clears the red number. The rows already on screen
+   * keep their unread highlight until the next load, so new ones still
+   * stand out while being looked at.
+   */
+  async markAllSeen(): Promise<void> {
+    if (unreadNotificationCount.value === 0) return
+    unreadNotificationCount.value = 0
+    await apiPost<void>('/notifications/mark-all-read').catch(() => {})
+  },
 }

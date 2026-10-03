@@ -175,7 +175,6 @@ const ja: MessageSchema = {
 
   notifications: {
     bell: '通知',
-    markAllRead: 'すべて既読にする',
     empty: 'まだ通知はありません。',
     viewAll: 'すべて表示',
     push: {

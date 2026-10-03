@@ -175,7 +175,6 @@ const ko: MessageSchema = {
 
   notifications: {
     bell: '알림',
-    markAllRead: '모두 읽음으로 표시',
     empty: '아직 알림이 없습니다.',
     viewAll: '모두 보기',
     push: {

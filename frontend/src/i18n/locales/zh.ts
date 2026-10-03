@@ -175,7 +175,6 @@ const zh: MessageSchema = {
 
   notifications: {
     bell: '通知',
-    markAllRead: '全部标记为已读',
     empty: '暂无通知。',
     viewAll: '查看全部',
     push: {
