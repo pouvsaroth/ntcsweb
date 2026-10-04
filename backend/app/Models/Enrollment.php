@@ -198,14 +198,34 @@ class Enrollment extends Model
      * from the loaded relation when available (EnrollmentController eager
      * loads `invoiceItems.invoice` for exactly this reason) so listing a
      * page of enrollments doesn't fire one extra query per row.
+     *
+     * Also counts money received on this student's DROPPED enrollments for
+     * the same course package. The old transferClass() dropped the original
+     * enrollment and created a new one instead of updating in place, so the
+     * payment for those students still sits on the dropped row, and only
+     * looking at this row's own invoices let a paid (or partly paid) student's
+     * course be changed.
      */
     public function isPaid(): bool
     {
-        if ($this->relationLoaded('invoiceItems')) {
-            return $this->invoiceItems->contains(fn (InvoiceItem $item) => (float) $item->invoice?->paid_amount > 0);
+        $paidOwn = $this->relationLoaded('invoiceItems')
+            ? $this->invoiceItems->contains(fn (InvoiceItem $item) => (float) $item->invoice?->paid_amount > 0)
+            : $this->invoiceItems()->whereHas('invoice', fn (Builder $query) => $query->where('paid_amount', '>', 0))->exists();
+
+        if ($paidOwn || $this->course_package_id === null) {
+            return $paidOwn;
         }
 
-        return $this->invoiceItems()->whereHas('invoice', fn (Builder $query) => $query->where('paid_amount', '>', 0))->exists();
+        return InvoiceItem::query()
+            ->where('reference_type', $this->getMorphClass())
+            ->whereIn('reference_id', static::query()
+                ->select('id')
+                ->where('student_id', $this->student_id)
+                ->where('course_package_id', $this->course_package_id)
+                ->where('status', self::STATUS_DROPPED)
+                ->whereKeyNot($this->getKey()))
+            ->whereHas('invoice', fn (Builder $query) => $query->where('paid_amount', '>', 0))
+            ->exists();
     }
 
     /**

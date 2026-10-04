@@ -71,6 +71,7 @@ final class EnrollmentService
             $package = CoursePackage::query()->with('product')->findOrFail($data['course_package_id']);
 
             $this->assertEnrollable($class, $package);
+            $this->assertNotAlreadyEnrolled((int) $data['student_id'], $package);
 
             $feeType = $data['fee_type'];
             $feeColumn = 'fee_'.$feeType;
@@ -379,6 +380,37 @@ final class EnrollmentService
             ->max() ?? 0;
 
         return sprintf('%s-%02d', $student->student_code, $lastSequence + 1);
+    }
+
+    /**
+     * One student, one open enrollment per course — a second row for the same
+     * course is how duplicate enrollments (and payments landing on the wrong
+     * row) happened before. Moving class/table/course goes through
+     * transferClass(), and a stopped/suspended student coming back goes
+     * through changeStatus(); only a finished one (completed, abandoned,
+     * dropped) may be enrolled into the same course again, e.g. a retake.
+     *
+     * Locks the student row first so two simultaneous submits of the same
+     * enrollment form serialize instead of both passing this check.
+     */
+    private function assertNotAlreadyEnrolled(int $studentId, CoursePackage $package): void
+    {
+        Student::query()->whereKey($studentId)->lockForUpdate()->firstOrFail();
+
+        $existing = Enrollment::query()
+            ->where('student_id', $studentId)
+            ->where('course_package_id', $package->getKey())
+            ->whereIn('status', [
+                Enrollment::STATUS_NOT_STARTED, Enrollment::STATUS_ACTIVE, Enrollment::STATUS_EXAM_READY,
+                Enrollment::STATUS_SUSPENDED, Enrollment::STATUS_STOPPED,
+            ])
+            ->first();
+
+        if ($existing !== null) {
+            throw ValidationException::withMessages([
+                'course_package_id' => "This student is already enrolled in {$package->name} ({$existing->enrollments_code}, status: {$existing->status}). Use Change Class to move them, or Change Status to bring them back, instead of enrolling again.",
+            ]);
+        }
     }
 
     private function assertEnrollable(SchoolClass $class, CoursePackage $package): void

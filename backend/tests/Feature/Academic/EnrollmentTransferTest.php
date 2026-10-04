@@ -215,6 +215,48 @@ class EnrollmentTransferTest extends TestCase
     }
 
     /**
+     * Students moved by the old transferClass() have their payment on a
+     * dropped enrollment and a fresh active one for the same course with no
+     * invoice of its own — that payment must still lock the course.
+     */
+    public function test_transferring_to_a_different_course_is_rejected_when_paid_on_a_dropped_enrollment_for_the_same_course(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE, Permissions::ENROLLMENTS_TRANSFER, Permissions::ENROLLMENTS_VIEW]);
+        $this->setUpAcademicCatalog();
+        $student = Student::factory()->create();
+        $excel = $this->excelPackage();
+
+        $droppedId = $this->postJson('/api/v1/enrollments/package', [
+            'student_id' => $student->id,
+            'class_id' => $this->computerEveningClass->id,
+            'course_package_id' => $this->msWordPackage->id,
+            'fee_type' => 'term',
+            'received_amount' => 10,
+            'payment_method' => 'CASH',
+        ])->assertCreated()->json('data.id');
+
+        $dropped = Enrollment::findOrFail($droppedId);
+        $dropped->update(['status' => Enrollment::STATUS_DROPPED]);
+
+        $active = Enrollment::factory()->create([
+            'student_id' => $student->id,
+            'class_id' => $dropped->class_id,
+            'course_package_id' => $dropped->course_package_id,
+            'academic_program_id' => $dropped->academic_program_id,
+            'enrollments_code' => $dropped->enrollments_code.'-B',
+        ]);
+
+        $this->getJson("/api/v1/enrollments/{$active->id}")->assertOk()->assertJsonPath('data.is_paid', true);
+
+        $this->postJson("/api/v1/enrollments/{$active->id}/transfer", [
+            'class_id' => $active->class_id,
+            'course_package_id' => $excel->id,
+        ])->assertUnprocessable()->assertJsonValidationErrors('course_package_id');
+
+        $this->assertSame($this->msWordPackage->id, $active->fresh()->course_package_id);
+    }
+
+    /**
      * A transfer moves a student to a different class/table/course — it is
      * not a new enrollment, so the new row must keep the student's original
      * enrolled_at rather than stamping the transfer date. Regression test
