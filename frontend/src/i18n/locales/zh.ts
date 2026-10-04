@@ -2264,6 +2264,7 @@ const zh: MessageSchema = {
       columnAbsentDays: '缺席(天)',
       columnAbsentHours: '缺席(小时)',
       columnLateMinutes: '迟到(分钟)',
+      columnHours: '小时',
       summaryEmptyMessage: '该时间段内没有考勤记录。',
       detailAbsentOnly: '仅显示缺勤（缺勤、请假、迟到）',
       exportImage: '导出为图片',

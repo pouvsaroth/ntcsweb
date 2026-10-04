@@ -2265,6 +2265,7 @@ const ja: MessageSchema = {
       columnAbsentDays: '欠席(日)',
       columnAbsentHours: '欠席(時間)',
       columnLateMinutes: '遅刻(分)',
+      columnHours: '時間',
       summaryEmptyMessage: 'この期間の出欠記録はありません。',
       detailAbsentOnly: '欠席のみ表示（欠席・許可・遅刻）',
       exportImage: '画像として書き出す',

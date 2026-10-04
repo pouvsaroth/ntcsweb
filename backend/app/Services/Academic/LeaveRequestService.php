@@ -6,6 +6,7 @@ namespace App\Services\Academic;
 
 use App\Models\LeaveRequest;
 use App\Models\Role;
+use App\Models\SchoolClass;
 use App\Models\Staff;
 use App\Models\Student;
 use App\Models\User;
@@ -229,22 +230,23 @@ final class LeaveRequestService
     {
         $enrollments = $request->student->enrollments()
             ->active()
-            ->with('schoolClass.schedules')
+            ->with('transferHistories')
             ->get();
 
+        /** @var array<int, SchoolClass|null> $classes */
+        $classes = [];
+
         foreach ($enrollments as $enrollment) {
-            $class = $enrollment->schoolClass;
-            if ($class === null) {
-                continue;
-            }
-
-            $meetingDays = $class->schedules->pluck('day_of_week')->all();
-            if ($meetingDays === []) {
-                continue;
-            }
-
             foreach (CarbonPeriod::create($request->from_date, $request->to_date) as $date) {
-                if (! in_array($date->isoWeekday(), $meetingDays, true)) {
+                // The class the student was in on that day — a leave for an
+                // earlier date still lands in the class they had back then.
+                $classId = $enrollment->placementOn($date->toDateString())['class_id'];
+                if ($classId === null) {
+                    continue;
+                }
+
+                $class = $classes[$classId] ??= SchoolClass::query()->with('schedules')->find($classId);
+                if ($class === null || ! in_array($date->isoWeekday(), $class->schedules->pluck('day_of_week')->all(), true)) {
                     continue;
                 }
 

@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 
 /**
  * Tenant-owned. A scheduled teaching group — a section students enroll into,
@@ -107,6 +108,28 @@ class SchoolClass extends Model
     public function enrollments(): HasMany
     {
         return $this->hasMany(Enrollment::class, 'class_id');
+    }
+
+    /**
+     * How many minutes one attendance day in this class is worth on a given
+     * ISO weekday (1 = Monday … 7 = Sunday): that weekday's scheduled
+     * session(s). Attendance taken on a day the class doesn't normally meet
+     * (e.g. a Sunday for a Mon–Fri class) still counts — as the class's usual
+     * session length, the most common daily total (ties: the longer one) —
+     * rather than silently counting 0 hours. 0 only for a class with no
+     * schedule at all. Uses the loaded `schedules` relation when present.
+     */
+    public function minutesOn(int $isoWeekday): int
+    {
+        $byWeekday = $this->schedules
+            ->groupBy('day_of_week')
+            ->map(fn ($rows) => (int) $rows->sum(fn (ClassSchedule $schedule) => abs(Carbon::parse($schedule->end_time)->diffInMinutes(Carbon::parse($schedule->start_time)))));
+
+        if ($byWeekday->has($isoWeekday)) {
+            return $byWeekday->get($isoWeekday);
+        }
+
+        return (int) ($byWeekday->countBy()->sortKeysDesc()->sortDesc()->keys()->first() ?? 0);
     }
 
     /**

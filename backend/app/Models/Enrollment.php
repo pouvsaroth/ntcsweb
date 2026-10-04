@@ -160,6 +160,29 @@ class Enrollment extends Model
         return $this->belongsTo(ClassroomTable::class, 'table_id');
     }
 
+    /**
+     * The class and table this enrollment was in on $date (Y-m-d) — what
+     * attendance for that day belongs to. Change Class updates the
+     * enrollment in place and logs each move in EnrollmentTransferHistory,
+     * so the first move made AFTER $date tells where the student was before
+     * it (its `from_*`); with no later move it's the current class/table. A
+     * move made on $date itself already counts as moved. Uses the loaded
+     * `transferHistories` relation when present.
+     *
+     * @return array{class_id: int|null, table_id: int|null}
+     */
+    public function placementOn(string $date): array
+    {
+        $nextMove = $this->transferHistories
+            ->filter(fn (EnrollmentTransferHistory $history) => $history->created_at !== null && $history->created_at->toDateString() > $date)
+            ->sortBy(fn (EnrollmentTransferHistory $history) => [$history->created_at->getTimestamp(), $history->id])
+            ->first();
+
+        return $nextMove !== null
+            ? ['class_id' => $nextMove->from_class_id, 'table_id' => $nextMove->from_table_id]
+            : ['class_id' => $this->class_id, 'table_id' => $this->table_id];
+    }
+
     public function coursePackage(): BelongsTo
     {
         return $this->belongsTo(CoursePackage::class);

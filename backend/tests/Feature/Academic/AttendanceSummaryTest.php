@@ -137,6 +137,58 @@ class AttendanceSummaryTest extends TestCase
             ->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.enrollment_id', $inMorning->id);
     }
 
+    public function test_hours_come_from_the_class_each_record_was_taken_in_after_a_class_change(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::ATTENDANCE_VIEW]);
+        $monday = $this->monday();
+        $saturday = $monday->copy()->next(Carbon::SATURDAY);
+
+        $weekday = SchoolClass::factory()->create(['name' => 'Mon-Fri 1h']);
+        ClassSchedule::factory()->forClass($weekday)->onDay(ClassSchedule::MONDAY)->at('18:00:00', '19:00:00')->create();
+        $weekend = SchoolClass::factory()->create(['name' => 'Sat-Sun 2h']);
+        ClassSchedule::factory()->forClass($weekend)->onDay(ClassSchedule::SATURDAY)->at('15:00:00', '17:00:00')->create();
+
+        $enrollment = Enrollment::factory()->forClass($weekday)->create();
+        AttendanceRecord::factory()->forEnrollment($enrollment)->onDate($monday->toDateString())->status(AttendanceStatus::ABSENT)->create();
+
+        // The student moves to the weekend class (Change Class updates the
+        // enrollment in place); Saturday is then taken in the new class.
+        $enrollment->update(['class_id' => $weekend->id]);
+        AttendanceRecord::factory()->forEnrollment($enrollment->fresh())->onDate($saturday->toDateString())->status(AttendanceStatus::ABSENT)->create();
+
+        $row = collect($this->getJson("/api/v1/attendance-summary?date_from={$monday->toDateString()}&date_to={$saturday->toDateString()}")->assertOk()->json('data'))
+            ->firstWhere('enrollment_id', $enrollment->id);
+
+        $this->assertSame('Sat-Sun 2h', $row['school_class']['name']);
+        $this->assertSame(2, $row['absent_days']);
+        // Monday counts the old class's 1 hour, Saturday the new class's 2.
+        $this->assertEquals(3.0, $row['absent_hours']);
+    }
+
+    public function test_a_day_the_class_does_not_normally_meet_counts_its_usual_session_length(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::ATTENDANCE_VIEW]);
+        $monday = $this->monday();
+        $sunday = $monday->copy()->next(Carbon::SUNDAY);
+
+        $weekday = SchoolClass::factory()->create(['name' => 'Mon-Fri 1h']);
+        foreach ([ClassSchedule::MONDAY, ClassSchedule::TUESDAY, ClassSchedule::WEDNESDAY] as $day) {
+            ClassSchedule::factory()->forClass($weekday)->onDay($day)->at('17:30:00', '18:30:00')->create();
+        }
+
+        $enrollment = Enrollment::factory()->forClass($weekday)->create();
+        AttendanceRecord::factory()->forEnrollment($enrollment)->onDate($sunday->toDateString())->status(AttendanceStatus::ABSENT)->create();
+
+        $row = collect($this->getJson("/api/v1/attendance-summary?date_from={$monday->toDateString()}&date_to={$sunday->toDateString()}")->assertOk()->json('data'))
+            ->firstWhere('enrollment_id', $enrollment->id);
+        $this->assertEquals(1.0, $row['absent_hours']);
+
+        $this->getJson("/api/v1/attendance?filter[enrollment_id]={$enrollment->id}")
+            ->assertOk()
+            ->assertJsonPath('data.0.class.name', 'Mon-Fri 1h')
+            ->assertJsonPath('data.0.class.hours', 1);
+    }
+
     public function test_the_summary_can_be_filtered_by_enrollment_status(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::ATTENDANCE_VIEW]);

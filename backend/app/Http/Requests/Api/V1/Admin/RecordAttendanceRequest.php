@@ -28,8 +28,6 @@ class RecordAttendanceRequest extends FormRequest
     public function rules(): array
     {
         $tenantId = app(TenantContext::class)->idOrFail();
-        /** @var SchoolClass $class */
-        $class = $this->route('class');
 
         return [
             'date' => ['required', 'date', 'before_or_equal:today'],
@@ -38,7 +36,10 @@ class RecordAttendanceRequest extends FormRequest
             'entries.*.enrollment_id' => [
                 'required',
                 'distinct',
-                Rule::exists('tenant.enrollments', 'id')->where('class_id', $class->getKey()),
+                // Only that it exists — whether the student was in THIS class
+                // on `date` (they may have changed class since) is checked by
+                // AttendanceService::recordForClass(), see placementOn().
+                Rule::exists('tenant.enrollments', 'id'),
             ],
             'entries.*.status' => ['required', Rule::in(AttendanceStatus::all())],
             // Only meaningful when status is LATE, but validated unconditionally rather than

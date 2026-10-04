@@ -2265,6 +2265,7 @@ const ko: MessageSchema = {
       columnAbsentDays: '결석(일)',
       columnAbsentHours: '결석(시간)',
       columnLateMinutes: '지각(분)',
+      columnHours: '시간',
       summaryEmptyMessage: '이 기간에 대한 출결 기록이 없습니다.',
       detailAbsentOnly: '결석만 표시 (결석, 허가, 지각)',
       exportImage: '이미지로 내보내기',

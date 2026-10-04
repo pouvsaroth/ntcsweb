@@ -34,7 +34,8 @@ export interface AttendanceRecord {
   late_minutes: number | null
   remarks: string | null
   student?: AttendanceStudent
-  class?: { id: number; name: string; start_time: string | null; end_time: string | null }
+  /** The class this day was taken in; `hours` is what it counts in the Attendance Summary. */
+  class?: { id: number; name: string; start_time: string | null; end_time: string | null; hours: number | null }
   recorded_by?: string | null
   recorded_at?: string | null
 }

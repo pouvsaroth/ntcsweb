@@ -9,6 +9,7 @@ use App\Models\AuditLog;
 use App\Models\ClassroomTable;
 use App\Models\ClassSchedule;
 use App\Models\Enrollment;
+use App\Models\EnrollmentTransferHistory;
 use App\Models\Position;
 use App\Models\SchoolClass;
 use App\Models\Staff;
@@ -46,6 +47,51 @@ class AttendanceTest extends TestCase
         $response->assertOk();
         $response->assertJsonCount(3, 'data');
         $this->assertNull($response->json('data.0.status'));
+    }
+
+    /**
+     * Attendance for an earlier day belongs to the class the student was in
+     * that day: after moving A → B today, yesterday's roster/record is in A
+     * (at their old seat), today's in B.
+     */
+    public function test_attendance_for_a_day_before_a_class_change_uses_the_class_from_that_day(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::ATTENDANCE_CREATE]);
+        $classA = SchoolClass::factory()->create(['name' => 'Mon-Fri']);
+        $classB = SchoolClass::factory()->create(['name' => 'Sat-Sun']);
+        $oldTable = ClassroomTable::factory()->create(['name' => 'Table 7']);
+        $enrollment = Enrollment::factory()->forClass($classA)->create(['table_id' => $oldTable->id]);
+
+        // Change Class A → B today (in place, with a history row).
+        EnrollmentTransferHistory::query()->create([
+            'enrollment_id' => $enrollment->id,
+            'from_class_id' => $classA->id,
+            'to_class_id' => $classB->id,
+            'from_table_id' => $oldTable->id,
+            'to_table_id' => null,
+        ]);
+        $enrollment->update(['class_id' => $classB->id, 'table_id' => null]);
+
+        $yesterday = now()->subDay()->toDateString();
+        $today = now()->toDateString();
+        $rosterIds = fn (SchoolClass $class, string $date) => collect($this->getJson("/api/v1/classes/{$class->id}/attendance?date={$date}")->assertOk()->json('data'))->pluck('enrollment_id')->all();
+
+        $this->assertSame([$enrollment->id], $rosterIds($classA, $yesterday));
+        $this->assertSame([], $rosterIds($classB, $yesterday));
+        $this->assertSame([], $rosterIds($classA, $today));
+        $this->assertSame([$enrollment->id], $rosterIds($classB, $today));
+        $this->assertSame('Table 7', $this->getJson("/api/v1/classes/{$classA->id}/attendance?date={$yesterday}")->json('data.0.table_no'));
+
+        $this->postJson("/api/v1/classes/{$classA->id}/attendance", [
+            'date' => $yesterday,
+            'entries' => [['enrollment_id' => $enrollment->id, 'status' => AttendanceStatus::ABSENT]],
+        ])->assertSuccessful();
+        $this->assertSame($classA->id, AttendanceRecord::where('enrollment_id', $enrollment->id)->sole()->class_id);
+
+        $this->postJson("/api/v1/classes/{$classB->id}/attendance", [
+            'date' => $yesterday,
+            'entries' => [['enrollment_id' => $enrollment->id, 'status' => AttendanceStatus::PRESENT]],
+        ])->assertUnprocessable();
     }
 
     /**

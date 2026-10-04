@@ -40,6 +40,10 @@ class AttendanceRecordResource extends JsonResource
                     'name' => $this->schoolClass->name,
                     'start_time' => $schedule ? substr((string) $schedule->start_time, 0, 5) : null,
                     'end_time' => $schedule ? substr((string) $schedule->end_time, 0, 5) : null,
+                    // Hours this day counts in the Attendance Summary — see SchoolClass::minutesOn().
+                    'hours' => $this->schoolClass->relationLoaded('schedules') && $this->date
+                        ? round($this->schoolClass->minutesOn($this->date->dayOfWeekIso) / 60, 1)
+                        : null,
                 ];
             }),
             'recorded_by' => $this->whenLoaded('recordedBy', fn () => $this->recordedBy?->name),

@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Support\Academic\AttendanceStatus;
 use App\Support\Audit\AuditAction;
 use App\Support\Audit\AuditLogger;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -32,20 +33,59 @@ final class AttendanceService
     ) {}
 
     /**
-     * The roster for a class on a given date: every active enrollment, each
-     * paired with its existing attendance record for that date if one was
-     * already taken (null otherwise — nothing is created just by viewing).
+     * The roster for a class on a given date: every active enrollment that
+     * was in this class ON THAT DATE (Enrollment::placementOn()) — so taking
+     * attendance for an earlier day still lists a student who has since moved
+     * to another class, and doesn't list one who only joined afterwards —
+     * each paired with its existing attendance record for that date if one
+     * was already taken (null otherwise — nothing is created just by
+     * viewing). The `table` shown is the seat they had on that date.
      *
      * @return Collection<int, Enrollment>
      */
     public function roster(SchoolClass $class, string $date): Collection
     {
-        return $class->enrollments()
-            ->active()
-            ->with(['student', 'table', 'attendanceRecords' => fn ($query) => $query->onDate($date)])
-            ->orderBy(ClassroomTable::query()->select('sort_order')->whereColumn('classroom_tables.id', 'enrollments.table_id'))
-            ->orderBy(ClassroomTable::query()->select('name')->whereColumn('classroom_tables.id', 'enrollments.table_id'))
-            ->get();
+        $enrollments = $this->enrollmentsInClassOn($class, $date, Enrollment::query()->active())
+            ->load(['student', 'attendanceRecords' => fn ($query) => $query->onDate($date)]);
+
+        $tables = ClassroomTable::query()
+            ->whereIn('id', $enrollments->map(fn (Enrollment $enrollment) => $enrollment->placementOn($date)['table_id'])->filter()->unique()->values())
+            ->get()
+            ->keyBy('id');
+
+        foreach ($enrollments as $enrollment) {
+            $enrollment->setRelation('table', $tables->get($enrollment->placementOn($date)['table_id']));
+        }
+
+        return $enrollments
+            ->sortBy(fn (Enrollment $enrollment) => [
+                $enrollment->table === null ? 1 : 0,
+                $enrollment->table->sort_order ?? 0,
+                $enrollment->table->name ?? '',
+            ])
+            ->values();
+    }
+
+    /**
+     * Enrollments (from $query) that were in $class on $date: anyone in it
+     * now, plus anyone who has moved out of it since — then narrowed by each
+     * one's actual class on that date.
+     *
+     * @param  Builder<Enrollment>  $query
+     * @return Collection<int, Enrollment>
+     */
+    private function enrollmentsInClassOn(SchoolClass $class, string $date, Builder $query): Collection
+    {
+        return $query
+            ->where(fn (Builder $query) => $query
+                ->where('class_id', $class->getKey())
+                ->orWhereHas('transferHistories', fn (Builder $history) => $history
+                    ->where('from_class_id', $class->getKey())
+                    ->whereDate('created_at', '>', $date)))
+            ->with('transferHistories')
+            ->get()
+            ->filter(fn (Enrollment $enrollment) => (int) $enrollment->placementOn($date)['class_id'] === (int) $class->getKey())
+            ->values();
     }
 
     /**
@@ -57,10 +97,9 @@ final class AttendanceService
         return DB::transaction(function () use ($class, $date, $entries, $actor) {
             $enrollmentIds = collect($entries)->pluck('enrollment_id')->all();
 
-            $enrollments = Enrollment::query()
-                ->where('class_id', $class->getKey())
-                ->whereIn('id', $enrollmentIds)
-                ->get()
+            // In this class on THIS date — attendance for an earlier day is
+            // still taken in the class the student was in back then.
+            $enrollments = $this->enrollmentsInClassOn($class, $date, Enrollment::query()->whereIn('id', $enrollmentIds))
                 ->keyBy('id');
 
             if ($enrollments->count() !== count(array_unique($enrollmentIds))) {
@@ -76,7 +115,7 @@ final class AttendanceService
                 $record = AttendanceRecord::query()->updateOrCreate(
                     ['enrollment_id' => $enrollment->id, 'date' => $date],
                     [
-                        'class_id' => $enrollment->class_id,
+                        'class_id' => $class->getKey(),
                         'student_id' => $enrollment->student_id,
                         'status' => $entry['status'],
                         // Cleared whenever the status isn't LATE, so switching a student off
@@ -118,10 +157,14 @@ final class AttendanceService
      * changes that (the Attendance Summary's status filter); an empty array
      * means every status. LATE is folded into "present" days/hours alongside
      * a separate total of late minutes. Hours per day come from whichever
-     * {@see ClassSchedule} row of the enrollment's own class matches that
-     * date's weekday, not a single fixed class duration — see
+     * {@see ClassSchedule} row of the class the record was TAKEN in (the
+     * record's own class_id) matches that date's weekday — not the
+     * enrollment's current class, which changes when a student moves from,
+     * say, a Mon–Fri 1-hour class to a Sat–Sun 2-hour one; their earlier
+     * days must keep counting 1 hour each. Not a single fixed duration — see
      * ClassSchedule's docblock for why a class can have a different
-     * duration on different days. `make_up_hours` is approved make-up class
+     * duration on different days; a day the class doesn't normally meet
+     * counts its usual session length (SchoolClass::minutesOn()). `make_up_hours` is approved make-up class
      * time inside the same range (see MakeUpClassRequestService). A null
      * date bound means "no limit" — the summary's "all days".
      *
@@ -137,7 +180,7 @@ final class AttendanceService
     public function summarize(?int $classId, ?string $dateFrom, ?string $dateTo, ?int $studentId = null, ?array $statuses = null): array
     {
         $enrollments = Enrollment::query()
-            ->with(['student', 'coursePackage', 'schoolClass.schedules'])
+            ->with(['student', 'coursePackage', 'schoolClass'])
             ->when($classId !== null, fn ($query) => $query->where('class_id', $classId))
             ->when($statuses === null, fn ($query) => $query->active())
             ->when($statuses !== null && $statuses !== [], fn ($query) => $query->whereIn('status', $statuses))
@@ -155,20 +198,22 @@ final class AttendanceService
 
         $makeUpHours = $this->makeUpClassRequests->approvedHoursByEnrollment($enrollments->pluck('id')->all(), $dateFrom, $dateTo);
 
-        /** @var array<int, IlluminateSupportCollection<int, int>> $minutesByClass class id -> weekday -> minutes */
-        $minutesByClass = [];
+        // Every class any of these records was taken in (current or past
+        // class alike), with its schedule — see SchoolClass::minutesOn().
+        $classesById = SchoolClass::query()
+            ->with('schedules')
+            ->whereIn('id', $recordsByEnrollment->flatten()->pluck('class_id')->filter()->unique()->values())
+            ->get()
+            ->keyBy('id');
 
-        return $enrollments->map(function (Enrollment $enrollment) use ($recordsByEnrollment, $makeUpHours, &$minutesByClass) {
+        return $enrollments->map(function (Enrollment $enrollment) use ($recordsByEnrollment, $makeUpHours, $classesById) {
             $class = $enrollment->schoolClass;
-            $minutesByWeekday = $class === null ? collect() : ($minutesByClass[$class->id] ??= $class->schedules
-                ->groupBy('day_of_week')
-                ->map(fn ($rows) => $rows->sum(fn ($schedule) => abs(Carbon::parse($schedule->end_time)->diffInMinutes(Carbon::parse($schedule->start_time))))));
 
             $presentDays = $permissionDays = $absentDays = 0;
             $presentMinutes = $permissionMinutes = $absentMinutes = $lateMinutes = 0;
 
             foreach ($recordsByEnrollment->get($enrollment->id, collect()) as $record) {
-                $minutes = $minutesByWeekday[$record->date->dayOfWeekIso] ?? 0;
+                $minutes = $classesById->get($record->class_id)?->minutesOn($record->date->dayOfWeekIso) ?? 0;
 
                 if ($record->status === AttendanceStatus::EXCUSED) {
                     $permissionDays++;

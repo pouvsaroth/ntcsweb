@@ -9,6 +9,7 @@ import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
+import SearchableSelect from '@/components/ui/SearchableSelect.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import DataTable from '@/components/ui/DataTable.vue'
 import {
@@ -77,9 +78,10 @@ const studentOptions = computed(() => {
   for (const row of rows.value) {
     if (seen.has(row.student.id)) continue
     seen.add(row.student.id)
-    options.push({ value: String(row.student.id), label: row.student.name })
+    options.push({ value: String(row.student.id), label: row.student.name, hint: row.student.student_code ?? undefined })
   }
-  return [{ value: '', label: t('admin.attendance.allStudents') }, ...options]
+  // "All students" is SearchableSelect's placeholder (its × clears back to it).
+  return options
 })
 
 // --- Summary rows ----------------------------------------------------------
@@ -312,12 +314,16 @@ async function exportDetailImage() {
         .join('  ·  '),
       columns: [
         { label: t('admin.attendance.columnDate'), width: 130 },
+        { label: t('admin.attendance.columnClass'), width: 220, maxWidth: 320 },
+        { label: t('admin.attendance.columnHours'), align: 'right', width: 80 },
         { label: t('admin.attendance.columnStatus'), width: 130 },
         { label: t('admin.attendance.columnLateMinutes'), width: 110 },
         { label: t('admin.attendance.columnRemarks'), width: 240, maxWidth: 420 },
       ],
       rows: visibleDetailRecords.value.map((record) => [
         { text: formatDate(record.date) },
+        { text: record.class?.name ?? '—' },
+        { text: record.class?.hours != null ? String(record.class.hours) : '—' },
         { text: statusLabel(record.status), badge: statusVariant[record.status] },
         { text: record.late_minutes != null ? String(record.late_minutes) : '—' },
         { text: record.remarks ?? '—' },
@@ -380,10 +386,11 @@ onMounted(async () => {
           :label="t('admin.attendance.filterStudentStatus')"
           @update:model-value="statusFilter = ($event || 'active') as EnrollmentStatus | 'all'"
         />
-        <BaseSelect
+        <SearchableSelect
           :model-value="studentId !== null ? String(studentId) : ''"
           :options="studentOptions"
           :disabled="!classId"
+          :placeholder="t('admin.attendance.allStudents')"
           :label="t('admin.attendance.filterStudent')"
           @update:model-value="studentId = $event ? Number($event) : null"
         />
@@ -463,6 +470,8 @@ onMounted(async () => {
         <thead class="border-b border-neutral-200 text-neutral-500">
           <tr>
             <th class="py-2 pr-3 font-medium">{{ t('admin.attendance.columnDate') }}</th>
+            <th class="py-2 pr-3 font-medium">{{ t('admin.attendance.columnClass') }}</th>
+            <th class="py-2 pr-3 text-right font-medium">{{ t('admin.attendance.columnHours') }}</th>
             <th class="py-2 pr-3 font-medium">{{ t('admin.attendance.columnStatus') }}</th>
             <th class="py-2 pr-3 font-medium">{{ t('admin.attendance.columnLateMinutes') }}</th>
             <th class="py-2 font-medium">{{ t('admin.attendance.columnRemarks') }}</th>
@@ -471,6 +480,8 @@ onMounted(async () => {
         <tbody class="divide-y divide-neutral-100">
           <tr v-for="record in visibleDetailRecords" :key="record.id">
             <td class="py-2 pr-3 text-neutral-700">{{ formatDate(record.date) }}</td>
+            <td class="py-2 pr-3 text-neutral-700">{{ record.class?.name ?? '—' }}</td>
+            <td class="py-2 pr-3 text-right tabular-nums text-neutral-700">{{ record.class?.hours ?? '—' }}</td>
             <td class="py-2 pr-3">
               <BaseBadge :variant="statusVariant[record.status]">{{ statusLabel(record.status) }}</BaseBadge>
             </td>
