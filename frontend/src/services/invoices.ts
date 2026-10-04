@@ -1,4 +1,4 @@
-import { apiDownload, apiGetWithMeta, apiPost } from '@/services/http'
+import { apiDownload, apiGetBlob, apiGetWithMeta, apiPost } from '@/services/http'
 import type { PaginatedQuery } from '@/composables/usePaginatedResource'
 import { i18n } from '@/i18n'
 import type { Payment } from '@/services/payments'
@@ -195,7 +195,7 @@ export const invoicesService = {
   downloadPdf: (id: number, invoiceNumber: string) =>
     apiDownload(`/invoices/${id}/pdf?locale=${currentInvoiceLocale()}`, `${invoiceNumber}.pdf`),
 
-  /** The same invoice as an A5 PNG image — what "Save and Print" downloads (see InvoiceController::downloadImage()). */
-  downloadImage: (id: number, invoiceNumber: string, onProgress?: (fraction: number) => void) =>
-    apiDownload(`/invoices/${id}/image?locale=${currentInvoiceLocale()}`, `${invoiceNumber}.png`, onProgress),
+  /** The invoice as an A5 PNG image (see InvoiceController::downloadImage()) — what "Save and Print" and "Download Invoice" show in print preview (see useInvoicePrint). */
+  getImage: (id: number, onProgress?: (fraction: number) => void) =>
+    apiGetBlob(`/invoices/${id}/image?locale=${currentInvoiceLocale()}`, onProgress),
 }

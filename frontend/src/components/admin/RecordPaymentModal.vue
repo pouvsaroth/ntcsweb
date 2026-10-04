@@ -8,6 +8,8 @@ import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
 import LookupSelect from '@/components/ui/LookupSelect.vue'
+import TaskProgressOverlay from '@/components/ui/TaskProgressOverlay.vue'
+import { useInvoicePrint } from '@/composables/useInvoicePrint'
 import { invoicesService, type Invoice } from '@/services/invoices'
 import { paymentMethods, type PaymentMethodValue } from '@/services/payments'
 import { ApiRequestError } from '@/types/api'
@@ -22,6 +24,8 @@ function today(): string {
 const props = defineProps<{
   modelValue: boolean
   invoiceId: number
+  /** The print dialog's title for "Save and Print". */
+  invoiceNumber: string
   /** Pre-fills the amount field — the common case is a full payment. */
   balance: number
   currency: Invoice['currency']
@@ -61,6 +65,8 @@ watch(
 const errors = ref<Record<string, string[]>>({})
 const generalError = ref<string | null>(null)
 const submitting = ref(false)
+const submittingAndPrinting = ref(false)
+const { progress: printProgress, printInvoice } = useInvoicePrint()
 
 const methodOptions = computed(() =>
   paymentMethods.map((method) => ({ value: method, label: t(`admin.payments.method${methodKey(method)}`) })),
@@ -90,14 +96,29 @@ watch(
   },
 )
 
-async function submit() {
-  submitting.value = true
+/**
+ * `print`: "Save and Print" — after recording the payment, opens print
+ * preview with the updated invoice image (now showing this payment). The
+ * payment is already saved by then, so a failed print only shows an error
+ * and leaves the modal open; the invoice page's Download Invoice retries it.
+ */
+async function submit(print = false) {
+  const busy = print ? submittingAndPrinting : submitting
+  busy.value = true
   errors.value = {}
   generalError.value = null
 
   try {
     await invoicesService.recordPayment(props.invoiceId, form)
     emit('recorded')
+    if (print) {
+      try {
+        await printInvoice(props.invoiceId, props.invoiceNumber)
+      } catch (error) {
+        generalError.value = error instanceof ApiRequestError ? error.message : t('admin.invoices.downloadFailed')
+        return
+      }
+    }
     emit('update:modelValue', false)
   } catch (error) {
     if (error instanceof ApiRequestError && error.errors) {
@@ -106,7 +127,7 @@ async function submit() {
       generalError.value = error instanceof ApiRequestError ? error.message : t('admin.invoices.recordPaymentFailed')
     }
   } finally {
-    submitting.value = false
+    busy.value = false
   }
 }
 </script>
@@ -118,7 +139,7 @@ async function submit() {
     size="sm"
     @update:model-value="emit('update:modelValue', $event)"
   >
-    <form class="space-y-4" @submit.prevent="submit">
+    <form class="space-y-4" @submit.prevent="submit()">
       <BaseAlert v-if="generalError" variant="danger">{{ generalError }}</BaseAlert>
 
       <LookupSelect
@@ -170,7 +191,10 @@ async function submit() {
 
     <template #footer>
       <BaseButton variant="outline" @click="emit('update:modelValue', false)">{{ t('common.cancel') }}</BaseButton>
-      <BaseButton :loading="submitting" @click="submit">{{ t('admin.invoices.recordPaymentAction') }}</BaseButton>
+      <BaseButton variant="outline" :loading="submittingAndPrinting" :disabled="submitting" @click="submit(true)">{{ t('admin.invoices.saveAndPrint') }}</BaseButton>
+      <BaseButton :loading="submitting" :disabled="submittingAndPrinting" @click="submit()">{{ t('admin.invoices.recordPaymentAction') }}</BaseButton>
     </template>
   </BaseModal>
+
+  <TaskProgressOverlay :percent="printProgress.percent.value" :label="printProgress.label.value" />
 </template>

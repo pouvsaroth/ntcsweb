@@ -2422,7 +2422,7 @@ const km: MessageSchema = {
       totalPreviewHint: 'ជាការប៉ាន់ស្មានតែប៉ុណ្ណោះ — ចំនួនសរុបចុងក្រោយត្រូវបានគណនានៅលើម៉ាស៊ីនមេនៅពេលរក្សាទុកជានិច្ច។',
       detailsTitle: 'ព័ត៌មានលម្អិត',
       createdBy: 'បង្កើតដោយ',
-      downloadPdf: 'ទាញយក PDF',
+      downloadInvoice: 'ទាញយកវិក្កយបត្រ',
       progressSaving: 'កំពុងរក្សាទុក…',
       progressCreatingImage: 'កំពុងបង្កើតរូបភាពវិក្កយបត្រ…',
       progressDownloading: 'កំពុងទាញយករូបភាព…',

@@ -12,6 +12,7 @@ import { invoicesService, paymentTypes } from '@/services/invoices'
 import { productsService, type Product } from '@/services/products'
 import { studentsService, type Student } from '@/services/students'
 import TaskProgressOverlay from '@/components/ui/TaskProgressOverlay.vue'
+import { useInvoicePrint } from '@/composables/useInvoicePrint'
 import { useTaskProgress } from '@/composables/useTaskProgress'
 import { ApiRequestError } from '@/types/api'
 
@@ -131,13 +132,14 @@ const generalError = ref<string | null>(null)
 const submitting = ref(false)
 const submittingAndPrinting = ref(false)
 const printProgress = useTaskProgress()
+const { progress: imageProgress, printInvoice } = useInvoicePrint()
 
 const canSubmit = computed(() => selectedStudent.value !== null && form.items.every((item) => item.product_id !== null))
 
 /**
- * `print`: "Save and Print" — also downloads the new invoice as an A5 image
- * (same as the Enrollment form's) before opening it. A failed download still
- * opens the saved invoice, where Download PDF is always available.
+ * `print`: "Save and Print" — also opens print preview with the new invoice
+ * as an A5 image (same as the Enrollment form's) before opening it. A failed
+ * print still opens the saved invoice, where Download Invoice retries it.
  */
 async function submit(print = false) {
   if (!selectedStudent.value) return
@@ -151,13 +153,8 @@ async function submit(print = false) {
   try {
     const invoice = await invoicesService.create({ ...form, student_id: selectedStudent.value.id })
     if (print) {
-      printProgress.creep(t('admin.invoices.progressCreatingImage'), 85)
-      await invoicesService
-        .downloadImage(invoice.id, invoice.invoice_number, (fraction) =>
-          printProgress.set(t('admin.invoices.progressDownloading'), 85 + fraction * 15),
-        )
-        .catch(() => {})
-      await printProgress.done()
+      printProgress.reset()
+      await printInvoice(invoice.id, invoice.invoice_number).catch(() => {})
     }
     await router.push(`/admin/invoices/${invoice.id}`)
   } catch (error) {
@@ -334,5 +331,6 @@ onMounted(async () => {
     </form>
 
     <TaskProgressOverlay :percent="printProgress.percent.value" :label="printProgress.label.value" />
+    <TaskProgressOverlay :percent="imageProgress.percent.value" :label="imageProgress.label.value" />
   </div>
 </template>

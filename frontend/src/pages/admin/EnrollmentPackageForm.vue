@@ -12,10 +12,10 @@ import { academicProgramsService, type AcademicProgram } from '@/services/academ
 import { classesService, type SchoolClass } from '@/services/classes'
 import { coursePackagesService, type CoursePackage } from '@/services/coursePackages'
 import { enrollmentsService, type FeeType } from '@/services/enrollments'
-import { invoicesService } from '@/services/invoices'
 import { paymentMethods, type PaymentMethodValue } from '@/services/payments'
 import { studentsService, type Student } from '@/services/students'
 import TaskProgressOverlay from '@/components/ui/TaskProgressOverlay.vue'
+import { useInvoicePrint } from '@/composables/useInvoicePrint'
 import { useTaskProgress } from '@/composables/useTaskProgress'
 import { useAuthStore } from '@/stores/auth'
 import { ApiRequestError } from '@/types/api'
@@ -277,14 +277,16 @@ async function submit() {
 }
 
 /**
- * Downloads the new invoice as an A5 image (not the PDF the Invoice detail
- * page's "Download PDF" gives) — jumped straight to from here instead of
- * navigating to the invoice first. enrollInPackage() already hands back the new invoice's id *and*
+ * Opens the browser's print preview with the new invoice as an A5 image (not
+ * the PDF the Invoice detail page's "Download PDF" gives) — jumped straight
+ * to from here instead of navigating to the invoice first, and without
+ * saving a file (see utils/printImage). enrollInPackage() already hands back the new invoice's id *and*
  * number (see EnrollmentResource), so this skips fetching the invoice
  * itself just to learn its own number — one less round trip on the button
  * click that was previously the slowest part of "Save and Print".
  */
 const printProgress = useTaskProgress()
+const { progress: imageProgress, printInvoice } = useInvoicePrint()
 
 async function submitAndPrint() {
   submittingAndPrinting.value = true
@@ -297,17 +299,16 @@ async function submitAndPrint() {
     }
 
     if (enrollment.invoice_id && enrollment.invoice_number) {
-      printProgress.creep(t('admin.invoices.progressCreatingImage'), 85)
+      printProgress.reset()
       try {
-        await invoicesService.downloadImage(enrollment.invoice_id, enrollment.invoice_number, (fraction) =>
-          printProgress.set(t('admin.invoices.progressDownloading'), 85 + fraction * 15),
-        )
+        await printInvoice(enrollment.invoice_id, enrollment.invoice_number)
       } catch (error) {
         generalError.value = error instanceof ApiRequestError ? error.message : t('admin.invoices.downloadFailed')
       }
+    } else {
+      await printProgress.done()
     }
 
-    await printProgress.done()
     await router.push('/admin/enrollments')
   } finally {
     printProgress.reset()
@@ -580,5 +581,6 @@ onMounted(async () => {
     </form>
 
     <TaskProgressOverlay :percent="printProgress.percent.value" :label="printProgress.label.value" />
+    <TaskProgressOverlay :percent="imageProgress.percent.value" :label="imageProgress.label.value" />
   </div>
 </template>

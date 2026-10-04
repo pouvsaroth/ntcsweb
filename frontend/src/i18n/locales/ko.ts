@@ -2422,7 +2422,7 @@ const ko: MessageSchema = {
       totalPreviewHint: '이는 예상치일 뿐입니다 — 최종 합계는 저장 시 항상 서버에서 계산됩니다.',
       detailsTitle: '상세 정보',
       createdBy: '작성자',
-      downloadPdf: 'PDF 다운로드',
+      downloadInvoice: '청구서 다운로드',
       progressSaving: '저장 중…',
       progressCreatingImage: '청구서 이미지 생성 중…',
       progressDownloading: '이미지 다운로드 중…',

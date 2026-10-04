@@ -10,6 +10,8 @@ import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseSpinner from '@/components/ui/BaseSpinner.vue'
+import TaskProgressOverlay from '@/components/ui/TaskProgressOverlay.vue'
+import { useInvoicePrint } from '@/composables/useInvoicePrint'
 import {
   invoicesService,
   isInvoiceClosed,
@@ -135,11 +137,15 @@ async function confirmReason(reason: string) {
 const sendModalOpen = ref(false)
 const paymentModalOpen = ref(false)
 
-async function downloadPdf() {
+// "Download Invoice" opens the invoice image in the browser's print preview,
+// where it can be printed or saved as PDF (see useInvoicePrint).
+const { progress: printProgress, printInvoice } = useInvoicePrint()
+
+async function downloadInvoice() {
   if (!invoice.value) return
   actionError.value = null
   try {
-    await invoicesService.downloadPdf(invoice.value.id, invoice.value.invoice_number)
+    await printInvoice(invoice.value.id, invoice.value.invoice_number)
   } catch (error) {
     actionError.value = error instanceof ApiRequestError ? error.message : t('admin.invoices.downloadFailed')
   }
@@ -192,7 +198,7 @@ onMounted(load)
       <BaseAlert v-if="actionError" variant="danger" class="mb-4">{{ actionError }}</BaseAlert>
 
       <div class="mb-6 flex flex-wrap gap-2">
-        <BaseButton size="sm" variant="outline" @click="downloadPdf">{{ t('admin.invoices.downloadPdf') }}</BaseButton>
+        <BaseButton size="sm" variant="outline" @click="downloadInvoice">{{ t('admin.invoices.downloadInvoice') }}</BaseButton>
         <BaseButton size="sm" variant="outline" @click="sendModalOpen = true">{{ t('admin.invoices.sendAction') }}</BaseButton>
         <BaseButton
           v-if="!isInvoiceClosed(invoice.status) && invoice.balance > 0"
@@ -377,7 +383,9 @@ onMounted(load)
 
       <SendInvoiceModal v-model="sendModalOpen" :invoice-id="invoice.id" />
 
-      <RecordPaymentModal v-model="paymentModalOpen" :invoice-id="invoice.id" :balance="invoice.balance" :currency="invoice.currency" @recorded="load" />
+      <RecordPaymentModal v-model="paymentModalOpen" :invoice-id="invoice.id" :invoice-number="invoice.invoice_number" :balance="invoice.balance" :currency="invoice.currency" @recorded="load" />
     </template>
+
+    <TaskProgressOverlay :percent="printProgress.percent.value" :label="printProgress.label.value" />
   </div>
 </template>

@@ -2422,7 +2422,7 @@ const ja: MessageSchema = {
       totalPreviewHint: 'これは見積もりです — 最終的な合計は保存時に必ずサーバー側で計算されます。',
       detailsTitle: '詳細',
       createdBy: '作成者',
-      downloadPdf: 'PDFをダウンロード',
+      downloadInvoice: '請求書をダウンロード',
       progressSaving: '保存中…',
       progressCreatingImage: '請求書の画像を作成中…',
       progressDownloading: '画像をダウンロード中…',

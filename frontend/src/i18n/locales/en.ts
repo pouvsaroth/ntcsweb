@@ -2426,7 +2426,7 @@ const en = {
       totalPreviewHint: 'An estimate only — the final total is always computed on the server when you save.',
       detailsTitle: 'Details',
       createdBy: 'Created by',
-      downloadPdf: 'Download PDF',
+      downloadInvoice: 'Download Invoice',
       progressSaving: 'Saving…',
       progressCreatingImage: 'Creating invoice image…',
       progressDownloading: 'Downloading image…',

@@ -2421,7 +2421,7 @@ const zh: MessageSchema = {
       totalPreviewHint: '仅为估算——最终总额始终在保存时由服务器计算。',
       detailsTitle: '详情',
       createdBy: '创建人',
-      downloadPdf: '下载PDF',
+      downloadInvoice: '下载账单',
       progressSaving: '正在保存…',
       progressCreatingImage: '正在生成发票图片…',
       progressDownloading: '正在下载图片…',
