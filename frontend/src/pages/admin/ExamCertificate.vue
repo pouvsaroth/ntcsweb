@@ -48,13 +48,12 @@ function onPhotoFilterChange(value: string) {
 const selectedIds = ref<number[]>([])
 
 const columns = computed(() => [
-  { key: 'student_code', label: t('admin.exams.columnStudentCode') },
+  { key: 'photo_received', label: t('admin.examCertificate.columnPhotoReceived') },
   { key: 'full_name', label: t('admin.exams.columnFullName') },
   { key: 'book', label: t('admin.exams.columnBook') },
   { key: 'exam_date', label: t('admin.exams.columnExamDate') },
   { key: 'score', label: t('admin.examCertificate.columnScore'), align: 'text-right' },
   { key: 'mention', label: t('admin.examCertificate.columnMention') },
-  { key: 'photo_received', label: t('admin.examCertificate.columnPhotoReceived') },
 ])
 
 const mentionVariant: Record<string, 'success' | 'warning' | 'neutral'> = {
@@ -90,16 +89,17 @@ async function exportImage() {
       title: t('admin.examCertificate.title'),
       subtitle: [filterLabel, `${t('admin.examCertificate.exportedOn')} ${formatDate(new Date())}`].filter(Boolean).join('  ·  '),
       columns: [
-        { label: t('admin.exams.columnStudentCode'), width: 110 },
+        { label: t('admin.examCertificate.columnPhotoReceived'), width: 150, maxWidth: 260 },
         { label: t('admin.exams.columnFullName'), width: 200 },
         { label: t('admin.exams.columnBook'), width: 160, maxWidth: 260 },
         { label: t('admin.exams.columnExamDate'), width: 110 },
         { label: t('admin.examCertificate.columnScore'), align: 'right', width: 80 },
         { label: t('admin.examCertificate.columnMention'), width: 110 },
-        { label: t('admin.examCertificate.columnPhotoReceived'), width: 150, maxWidth: 260 },
       ],
       rows: rows.map((row) => [
-        { text: row.student.student_code || '—' },
+        row.photo_received_date
+          ? { text: `✓ ${formatDate(row.photo_received_date)}`, badge: 'success' as const, subtext: row.photo_received_remark || undefined }
+          : { text: t('admin.examCertificate.notReceived') },
         { text: row.student.name, bold: true },
         { text: row.book?.title ?? row.enrollment.course_package?.name ?? '—' },
         { text: formatDate(row.exam_date) },
@@ -107,9 +107,6 @@ async function exportImage() {
         row.score
           ? { text: t(`admin.myScores.mentions.${row.score.mention}`), badge: mentionVariant[row.score.mention] ?? 'neutral' }
           : { text: '—' },
-        row.photo_received_date
-          ? { text: `✓ ${formatDate(row.photo_received_date)}`, badge: 'success' as const, subtext: row.photo_received_remark || undefined }
-          : { text: t('admin.examCertificate.notReceived') },
       ]),
       emptyText: t('admin.examCertificate.emptyMessage'),
       fileName: `certificate-${new Date().toISOString().slice(0, 10)}.png`,
@@ -163,7 +160,6 @@ onMounted(() => void fetch())
       :empty-message="t('admin.examCertificate.emptyMessage')"
       @update:selected="selectedIds = $event as number[]"
     >
-      <template #cell-student_code="{ row }">{{ (row as ExamApplication).student.student_code }}</template>
       <template #cell-full_name="{ row }">{{ (row as ExamApplication).student.name }}</template>
       <template #cell-book="{ row }">{{ (row as ExamApplication).book?.title ?? (row as ExamApplication).enrollment.course_package?.name ?? '—' }}</template>
       <template #cell-exam_date="{ row }">{{ formatDate((row as ExamApplication).exam_date) }}</template>
