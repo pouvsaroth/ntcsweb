@@ -105,6 +105,30 @@ class LeaveRequestTest extends TestCase
         );
     }
 
+    public function test_approving_a_leave_request_after_attendance_was_taken_changes_absent_to_excused(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::LEAVE_REQUESTS_APPROVE, Permissions::ATTENDANCE_CREATE, Permissions::ATTENDANCE_UPDATE]);
+        [$student] = $this->studentWithUser();
+
+        $class = SchoolClass::factory()->create();
+        ClassSchedule::factory()->forClass($class)->onDay(ClassSchedule::MONDAY)->create();
+        $enrollment = Enrollment::factory()->forClass($class)->forStudent($student)->create();
+        $lastMonday = Carbon::now()->previous(Carbon::MONDAY)->toDateString();
+
+        $this->postJson("/api/v1/classes/{$class->id}/attendance", [
+            'date' => $lastMonday,
+            'entries' => [['enrollment_id' => $enrollment->id, 'status' => AttendanceStatus::ABSENT]],
+        ])->assertSuccessful();
+
+        $leaveRequest = LeaveRequest::factory()->forStudent($student)->create(['from_date' => $lastMonday, 'to_date' => $lastMonday]);
+
+        $this->postJson("/api/v1/leave-requests/{$leaveRequest->id}/approve")->assertOk();
+
+        $record = AttendanceRecord::where('enrollment_id', $enrollment->id)->sole();
+        $this->assertSame(AttendanceStatus::EXCUSED, $record->status);
+        $this->assertSame($lastMonday, $record->date->toDateString());
+    }
+
     public function test_approving_a_leave_request_requires_the_approve_permission(): void
     {
         $this->actingAsAdminWithPermissions([]);
