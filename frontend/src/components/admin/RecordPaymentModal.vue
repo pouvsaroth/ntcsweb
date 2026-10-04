@@ -31,7 +31,7 @@ const props = defineProps<{
   currency: Invoice['currency']
 }>()
 
-const emit = defineEmits<{ 'update:modelValue': [value: boolean]; recorded: [] }>()
+const emit = defineEmits<{ 'update:modelValue': [value: boolean]; recorded: []; printFailed: [message: string] }>()
 
 const { t } = useI18n()
 
@@ -97,10 +97,16 @@ watch(
 )
 
 /**
- * `print`: "Save and Print" — after recording the payment, opens print
- * preview with the updated invoice image (now showing this payment). The
- * payment is already saved by then, so a failed print only shows an error
- * and leaves the modal open; the invoice page's Download Invoice retries it.
+ * `print`: "Save and Print" — the progress bar shows from the click on; once
+ * the payment is saved the popup closes and the bar carries on until print
+ * preview opens with the updated invoice image (now showing this payment).
+ * A failed save keeps the popup open with its errors, as Record Payment
+ * does. A failed print happens after the popup closed, so it goes to the
+ * page as `printFailed`; the payment is saved regardless, and the page's
+ * Download Invoice retries the print.
+ *
+ * `recorded` (which makes the page reload the invoice) is only emitted once
+ * printing is over, so nothing changes underneath the print preview.
  */
 async function submit(print = false) {
   const busy = print ? submittingAndPrinting : submitting
@@ -108,19 +114,21 @@ async function submit(print = false) {
   errors.value = {}
   generalError.value = null
 
+  if (print) printProgress.creep(t('admin.invoices.progressSaving'), 25)
+
   try {
     await invoicesService.recordPayment(props.invoiceId, form)
-    emit('recorded')
+    emit('update:modelValue', false)
     if (print) {
       try {
         await printInvoice(props.invoiceId, props.invoiceNumber)
       } catch (error) {
-        generalError.value = error instanceof ApiRequestError ? error.message : t('admin.invoices.downloadFailed')
-        return
+        emit('printFailed', error instanceof ApiRequestError ? error.message : t('admin.invoices.downloadFailed'))
       }
     }
-    emit('update:modelValue', false)
+    emit('recorded')
   } catch (error) {
+    printProgress.reset()
     if (error instanceof ApiRequestError && error.errors) {
       errors.value = error.errors
     } else {
@@ -136,7 +144,7 @@ async function submit(print = false) {
   <BaseModal
     :model-value="modelValue"
     :title="t('admin.invoices.recordPaymentTitle')"
-    size="sm"
+    size="md"
     @update:model-value="emit('update:modelValue', $event)"
   >
     <form class="space-y-4" @submit.prevent="submit()">

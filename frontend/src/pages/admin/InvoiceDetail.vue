@@ -88,12 +88,30 @@ async function load() {
   loadError.value = null
 
   try {
-    invoice.value = await invoicesService.get(invoiceId.value)
-    notifications.value = await invoicesService.notifications(invoiceId.value)
+    await refresh()
   } catch (error) {
     loadError.value = error instanceof ApiRequestError ? error.message : t('admin.invoices.loadFailed')
   } finally {
     loading.value = false
+  }
+}
+
+/**
+ * Reloads the invoice without the full-page spinner — after a payment is
+ * recorded. The spinner unmounts everything under `v-else-if="invoice"`,
+ * including the Record Payment modal itself, which broke its "Save and
+ * Print" mid-way (the modal came back empty and stuck open).
+ */
+async function refresh() {
+  invoice.value = await invoicesService.get(invoiceId.value)
+  notifications.value = await invoicesService.notifications(invoiceId.value)
+}
+
+async function refreshAfterPayment() {
+  try {
+    await refresh()
+  } catch (error) {
+    actionError.value = error instanceof ApiRequestError ? error.message : t('admin.invoices.loadFailed')
   }
 }
 
@@ -383,7 +401,15 @@ onMounted(load)
 
       <SendInvoiceModal v-model="sendModalOpen" :invoice-id="invoice.id" />
 
-      <RecordPaymentModal v-model="paymentModalOpen" :invoice-id="invoice.id" :invoice-number="invoice.invoice_number" :balance="invoice.balance" :currency="invoice.currency" @recorded="load" />
+      <RecordPaymentModal
+        v-model="paymentModalOpen"
+        :invoice-id="invoice.id"
+        :invoice-number="invoice.invoice_number"
+        :balance="invoice.balance"
+        :currency="invoice.currency"
+        @recorded="refreshAfterPayment"
+        @print-failed="actionError = $event"
+      />
     </template>
 
     <TaskProgressOverlay :percent="printProgress.percent.value" :label="printProgress.label.value" />
