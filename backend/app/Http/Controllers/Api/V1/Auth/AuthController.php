@@ -26,6 +26,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\TransientToken;
+use Stancl\Tenancy\Database\DatabaseManager;
 
 /**
  * Sign-in and sign-out for both supported transports.
@@ -49,6 +50,7 @@ final class AuthController extends Controller
         private readonly CurrencyConversionService $currencyConversion,
         private readonly AuditLogger $audit,
         private readonly StudentAccessService $studentAccess,
+        private readonly DatabaseManager $tenantDatabases,
     ) {}
 
     public function login(LoginRequest $request): JsonResponse
@@ -105,7 +107,7 @@ final class AuthController extends Controller
         $user = $verified->first();
 
         if ($user->tenant_id !== null) {
-            $this->context->set($user->tenant);
+            $this->enterTenant($user);
         }
 
         return $this->finishLogin($request, $user);
@@ -166,9 +168,35 @@ final class AuthController extends Controller
             throw ValidationException::withMessages(['tenant_id' => __('auth.failed')]);
         }
 
-        $this->context->set($user->tenant);
+        $this->enterTenant($user);
 
         return $this->finishLogin($request, $user);
+    }
+
+    /**
+     * The shared ERP domain only learns the school mid-request, after the
+     * password checks out — ResolveTenant already ran with no school and
+     * dropped the `tenant` connection. So everything ResolveTenant would have
+     * done for a school's own domain happens here instead: without the
+     * connection, the first login on the ERP domain 500'd the moment anything
+     * (e.g. UserResource's approval-flow fields) read a per-school table,
+     * after the session was already signed in — which is why clicking Login
+     * a second time "worked".
+     */
+    private function enterTenant(User $user): void
+    {
+        $tenant = $user->tenant;
+        $this->context->set($tenant);
+
+        // Same test-runner exception as ResolveTenant: feature tests use the
+        // static `tenant` connection against the shared test database.
+        if (! app()->environment('testing')) {
+            $this->tenantDatabases->createTenantConnection($tenant);
+        }
+
+        config(['app.timezone' => $tenant->timezone]);
+        date_default_timezone_set($tenant->timezone);
+        app()->setLocale($tenant->locale);
     }
 
     /**
