@@ -153,6 +153,13 @@ function enrollmentLabel(row: AttendanceSummaryRow): string {
 
 // --- Export as image ---------------------------------------------------------
 
+// Ticked students (by enrollment). Exporting with any ticked exports just
+// those — still in the table's order, and only ones the current filters show;
+// with none ticked it exports every row on screen, as before.
+const selectedIds = ref<number[]>([])
+const selectedRows = computed(() => filteredRows.value.filter((row) => selectedIds.value.includes(row.enrollment_id)))
+const exportRows = computed(() => (selectedRows.value.length ? selectedRows.value : filteredRows.value))
+
 const exporting = ref(false)
 const exportError = ref<string | null>(null)
 
@@ -181,7 +188,7 @@ async function exportImage() {
         { label: t('admin.attendance.columnRemainingHours'), align: 'right', width: 130 },
         { label: t('admin.attendance.columnPresentHours'), align: 'right', width: 130 },
       ],
-      rows: filteredRows.value.map((row) => [
+      rows: exportRows.value.map((row) => [
         { text: row.student.name, subtext: enrollmentLabel(row) || undefined, bold: true },
         { text: String(totalAbsenceHours(row)) },
         { text: String(row.make_up_hours) },
@@ -353,7 +360,7 @@ onMounted(async () => {
         <p class="mt-1 text-sm text-neutral-500">{{ t('admin.attendance.summarySubtitle') }}</p>
       </div>
       <BaseButton variant="outline" :loading="exporting" :disabled="loading || !classId" @click="exportImage">
-        {{ t('admin.attendance.exportImage') }}
+        {{ t('admin.attendance.exportImage') }}<template v-if="selectedRows.length"> ({{ selectedRows.length }})</template>
       </BaseButton>
     </div>
 
@@ -406,7 +413,10 @@ onMounted(async () => {
         :columns="columns"
         :rows="filteredRows"
         row-key="enrollment_id"
+        selectable
+        :selected="selectedIds"
         :loading="loading"
+        @update:selected="selectedIds = $event as number[]"
         :empty-message="t('admin.attendance.summaryEmptyMessage')"
       >
         <template #cell-student="{ row }">
