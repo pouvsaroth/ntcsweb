@@ -1218,6 +1218,7 @@ const ja: MessageSchema = {
       emptyMessage: 'ここにはまだ何もありません。',
     },
     approvals: {
+      registrationSubject: '生徒登録 — {course}',
       title: '承認',
       flowStep: 'ステップ {step}/{total} · {group}',
       subtitle: 'あなたの判断を待っている、または既に判断済みのすべての申請です。',

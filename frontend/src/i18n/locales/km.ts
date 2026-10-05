@@ -1218,6 +1218,7 @@ const km: MessageSchema = {
       emptyMessage: 'មិនទាន់មានអ្វីនៅទីនេះទេ។',
     },
     approvals: {
+      registrationSubject: 'ការចុះឈ្មោះសិស្ស — {course}',
       title: 'ការអនុម័ត',
       flowStep: 'ជំហាន {step}/{total} · {group}',
       subtitle: 'រាល់សំណើដែលកំពុងរង់ចាំការសម្រេចរបស់អ្នក ឬបានសម្រេចរួច។',

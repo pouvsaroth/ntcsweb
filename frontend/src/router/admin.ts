@@ -129,10 +129,10 @@ const adminRoutes: RouteRecordRaw[] = [
     meta: { titleKey: 'adminNav.items.studentsList', pageTitleKey: 'admin.students.editTitle' },
   },
   {
+    // Pending registrations now live in E-Approvals > Approvals; this keeps
+    // bookmarks and notifications sent before the move working.
     path: 'student-registrations',
-    name: 'admin.student-registrations',
-    component: () => import('@/pages/admin/StudentRegistrationsPending.vue'),
-    meta: { titleKey: 'adminNav.items.studentRegistrations' },
+    redirect: { name: 'admin.approvals.queue' },
   },
   {
     path: 'academic-programs',

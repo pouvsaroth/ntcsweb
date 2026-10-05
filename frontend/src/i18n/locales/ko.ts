@@ -1218,6 +1218,7 @@ const ko: MessageSchema = {
       emptyMessage: '아직 아무것도 없습니다.',
     },
     approvals: {
+      registrationSubject: '학생 등록 — {course}',
       title: '승인',
       flowStep: '{step}/{total}단계 · {group}',
       subtitle: '회원님의 결정을 기다리고 있거나 이미 처리된 모든 신청입니다.',

@@ -130,7 +130,6 @@ export const adminNav: AdminNavGroup[] = [
     labelKey: 'adminNav.groups.students',
     items: [
       { labelKey: 'adminNav.items.studentsList', to: '/admin/students', permission: 'students.view' },
-      { labelKey: 'adminNav.items.studentRegistrations', to: '/admin/student-registrations', permission: 'students.approve-registration' },
       { labelKey: 'adminNav.items.studentImports', to: '/admin/student-imports', permission: 'students.create' },
       { labelKey: 'adminNav.items.enrollments', to: '/admin/enrollments', permission: 'enrollments.view' },
     ],
@@ -255,7 +254,9 @@ export const adminNav: AdminNavGroup[] = [
     items: [
       { labelKey: 'adminNav.items.forms', to: '/admin/approvals/forms', permission: 'forms.view' },
       { labelKey: 'adminNav.items.myRequests', to: '/admin/approvals/my-requests', permission: 'my-requests.view' },
-      { labelKey: 'adminNav.items.approvals', to: '/admin/approvals/queue', permission: ['approval-requests.view', 'leave-requests.view', 'make-up-class-requests.view'], flowApprover: true },
+      // Pending student self-registrations are decided here too (they used
+      // to have their own Students > Registrations page).
+      { labelKey: 'adminNav.items.approvals', to: '/admin/approvals/queue', permission: ['approval-requests.view', 'leave-requests.view', 'make-up-class-requests.view', 'students.approve-registration'], flowApprover: true },
       { labelKey: 'adminNav.items.formCategories', to: '/admin/form-categories', permission: 'form-categories.manage' },
       { labelKey: 'adminNav.items.formTemplates', to: '/admin/form-templates', permission: 'form-templates.manage' },
     ],

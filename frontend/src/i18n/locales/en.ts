@@ -1222,6 +1222,7 @@ const en = {
       emptyMessage: 'Nothing here yet.',
     },
     approvals: {
+      registrationSubject: 'Student registration — {course}',
       title: 'Approvals',
       flowStep: 'Step {step}/{total} · {group}',
       subtitle: 'Every request awaiting your decision, or already decided.',

@@ -1217,6 +1217,7 @@ const zh: MessageSchema = {
       emptyMessage: '这里还没有任何内容。',
     },
     approvals: {
+      registrationSubject: '学生注册 — {course}',
       title: '审批',
       flowStep: '第 {step}/{total} 步 · {group}',
       subtitle: '所有等待您处理或已处理的申请。',

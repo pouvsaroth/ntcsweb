@@ -5,7 +5,7 @@ import { apiPost } from '@/services/http'
  * App\Http\Requests\Api\V1\Public\StoreStudentRegistrationRequest and
  * StudentRegistrationService. Nothing here creates an active account: the
  * result is always a pending registration awaiting a school admin's
- * approval (see admin/StudentRegistrationsPending.vue).
+ * approval (see admin/approvals/Approvals.vue).
  */
 export interface StudentSelfRegistrationInput {
   first_name: string

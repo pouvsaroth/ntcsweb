@@ -16,6 +16,7 @@ import { examApplicationsService, type ExamApplication } from '@/services/examAp
 import { leaveRequestsService, type LeaveRequest } from '@/services/leaveRequests'
 import { makeUpClassCourseLabel, makeUpClassRequestsService, type MakeUpClassRequest, type MakeUpClassRequestStatus } from '@/services/makeUpClassRequests'
 import { resignationRequestsService, type ResignationRequest } from '@/services/resignationRequests'
+import { studentRegistrationsService, type StudentRegistration } from '@/services/studentRegistrations'
 import { useAuthStore } from '@/stores/auth'
 import { useConfirmDialogStore } from '@/stores/confirmDialog'
 import type { ApprovalFlowProgress } from '@/services/approvalFlows'
@@ -27,7 +28,8 @@ import { formatDate } from '@/utils/date'
  * ApprovalRequest catalog, the dedicated LeaveRequest flow, the dedicated
  * ResignationRequest flow, the dedicated MakeUpClassRequest flow, and exam applications (moved here from their own
  * "Exam Application Approval" tab under Examination — see ExaminationTabs.vue),
- * merged into one table. See MyRequests.vue's docblock for why merging is
+ * and pending student self-registrations (moved here from their own
+ * Students > Registrations page), merged into one table. See MyRequests.vue's docblock for why merging is
  * done client-side rather than through usePaginatedResource. Each source is
  * only fetched if the current user actually holds its view permission, same
  * gating the sidebar nav already applies.
@@ -35,7 +37,7 @@ import { formatDate } from '@/utils/date'
 type RowStatus = ApprovalRequestStatus | MakeUpClassRequestStatus
 
 type MergedRow = {
-  kind: 'approval' | 'leave' | 'resignation' | 'makeUp' | 'exam'
+  kind: 'approval' | 'leave' | 'resignation' | 'makeUp' | 'exam' | 'registration'
   id: number
   reference: string
   requestor: string
@@ -49,6 +51,7 @@ type MergedRow = {
   resignation?: ResignationRequest
   makeUp?: MakeUpClassRequest
   exam?: ExamApplication
+  registration?: StudentRegistration
 }
 
 const { t } = useI18n()
@@ -69,6 +72,8 @@ const canViewLeave = computed(() => auth.can('leave-requests.view') || auth.isFl
 const canViewResignation = computed(() => auth.can('resignation-requests.view') || auth.isFlowApprover(['resignation']))
 const canViewMakeUp = computed(() => auth.can('make-up-class-requests.view') || auth.isFlowApprover(['make_up_class']))
 const canViewExams = computed(() => auth.can('exam-applications.view') || auth.isFlowApprover(['exam_application']))
+// No approval flow for registrations — only whoever may approve them.
+const canViewRegistrations = computed(() => auth.can('students.approve-registration'))
 // Only exam applications can be edited from this queue — a reviewer fixing
 // the student's info or the room/table/date assignment before deciding.
 // Leave/resignation requests have no equivalent "amend before deciding" step.
@@ -141,6 +146,7 @@ const approvePermission: Record<MergedRow['kind'], string> = {
   resignation: 'resignation-requests.approve',
   makeUp: 'make-up-class-requests.approve',
   exam: 'exam-applications.approve',
+  registration: 'students.approve-registration',
 }
 
 const rejectPermission: Record<MergedRow['kind'], string> = {
@@ -149,6 +155,7 @@ const rejectPermission: Record<MergedRow['kind'], string> = {
   resignation: 'resignation-requests.reject',
   makeUp: 'make-up-class-requests.reject',
   exam: 'exam-applications.reject',
+  registration: 'students.approve-registration',
 }
 
 // With an approval flow, only the group the request waits on decides it —
@@ -179,7 +186,7 @@ async function load() {
   error.value = null
 
   try {
-    const [approvals, leaves, resignations, makeUps, exams] = await Promise.all([
+    const [approvals, leaves, resignations, makeUps, exams, registrations] = await Promise.all([
       canViewApprovals.value ? approvalRequestsService.list({}, { approvalQueue: true }) : Promise.resolve({ data: [] as ApprovalRequest[], pagination: undefined }),
       canViewLeave.value
         ? leaveRequestsService.list({ page: 1, per_page: 100, filter: {} }, { approvalQueue: true })
@@ -196,6 +203,12 @@ async function load() {
       canViewExams.value
         ? examApplicationsService.list({ page: 1, per_page: 100, filter: { status: 'pending,approved,rejected' } }, { approvalQueue: true })
         : Promise.resolve({ data: [] as ExamApplication[], pagination: undefined }),
+      // Pending only — a decided registration just becomes an active or
+      // inactive Student, with nothing marking it as a past registration,
+      // so these never appear under Approved/Rejected.
+      canViewRegistrations.value
+        ? studentRegistrationsService.list({ page: 1, per_page: 100 })
+        : Promise.resolve({ data: [] as StudentRegistration[], pagination: undefined }),
     ])
 
     const approvalRows: MergedRow[] = approvals.data.map((r) => ({
@@ -264,7 +277,21 @@ async function load() {
         exam: r,
       }))
 
-    rows.value = [...approvalRows, ...leaveRows, ...resignationRows, ...makeUpRows, ...examRows].sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    const registrationRows: MergedRow[] = registrations.data.map((r) => ({
+      kind: 'registration',
+      id: r.id,
+      reference: r.student_code,
+      requestor: r.full_name,
+      subject: t('admin.approvals.registrationSubject', { course: r.enrollment?.course_package?.name ?? '—' }),
+      status: 'pending',
+      createdAt: r.created_at,
+      flow: null,
+      registration: r,
+    }))
+
+    rows.value = [...approvalRows, ...leaveRows, ...resignationRows, ...makeUpRows, ...examRows, ...registrationRows].sort((a, b) =>
+      b.createdAt.localeCompare(a.createdAt),
+    )
   } catch (e) {
     error.value = e instanceof ApiRequestError ? e.message : t('admin.approvals.loadFailed')
   } finally {
@@ -279,12 +306,20 @@ function openReject(row: MergedRow) {
 }
 
 async function approve(row: MergedRow) {
-  const confirmKey = approvesToStudy(row)
-    ? 'admin.approvals.approveToStudyConfirm'
-    : row.kind === 'makeUp'
-      ? 'admin.approvals.approveMakeUpCameConfirm'
-      : 'admin.approvals.approveConfirm'
-  if (!(await confirmDialog.confirm(t(confirmKey)))) return
+  // Approving a registration also records the payment of its invoice
+  // balance (see StudentRegistrationService::approve()), so it keeps its own
+  // confirm text naming the student.
+  const message =
+    row.kind === 'registration'
+      ? t('admin.studentRegistrations.approveConfirm', { name: row.requestor })
+      : t(
+          approvesToStudy(row)
+            ? 'admin.approvals.approveToStudyConfirm'
+            : row.kind === 'makeUp'
+              ? 'admin.approvals.approveMakeUpCameConfirm'
+              : 'admin.approvals.approveConfirm',
+        )
+  if (!(await confirmDialog.confirm(message))) return
 
   approving.value = true
   actionError.value = null
@@ -298,6 +333,8 @@ async function approve(row: MergedRow) {
       await resignationRequestsService.approve(row.id)
     } else if (row.kind === 'makeUp') {
       await (approvesToStudy(row) ? makeUpClassRequestsService.approveToStudy(row.id) : makeUpClassRequestsService.approve(row.id))
+    } else if (row.kind === 'registration') {
+      await studentRegistrationsService.approve(row.id)
     } else {
       await examApplicationsService.approve(row.id)
     }
@@ -326,6 +363,8 @@ async function confirmReject(reason: string) {
       await resignationRequestsService.reject(row.id, reason)
     } else if (row.kind === 'makeUp') {
       await makeUpClassRequestsService.reject(row.id, reason)
+    } else if (row.kind === 'registration') {
+      await studentRegistrationsService.reject(row.id, reason)
     } else {
       await examApplicationsService.reject(row.id, reason)
     }
@@ -446,6 +485,42 @@ onMounted(() => load())
           <div><dt class="text-neutral-500">{{ t('admin.exams.columnTableNumber') }}</dt><dd class="font-medium text-neutral-900">{{ detail.exam.table?.name ?? detail.exam.table_no ?? '—' }}</dd></div>
           <div v-if="detail.exam.decision_reason"><dt class="text-neutral-500">{{ t('admin.leaveRequests.decisionReason') }}</dt><dd class="font-medium text-neutral-900">{{ detail.exam.decision_reason }}</dd></div>
         </dl>
+        <div v-else-if="detail.kind === 'registration' && detail.registration">
+          <div class="flex gap-4">
+            <div class="h-24 w-24 shrink-0 overflow-hidden rounded-lg bg-neutral-100">
+              <img v-if="detail.registration.photo_url" :src="detail.registration.photo_url" alt="" class="h-full w-full object-cover" />
+            </div>
+            <dl class="grid flex-1 grid-cols-2 gap-x-4 gap-y-2 text-sm">
+              <div><dt class="text-neutral-500">{{ t('admin.studentRegistrations.columnPhone') }}</dt><dd class="font-medium text-neutral-900">{{ detail.registration.phone }}</dd></div>
+              <div><dt class="text-neutral-500">{{ t('admin.studentRegistrations.email') }}</dt><dd class="font-medium text-neutral-900">{{ detail.registration.email ?? '—' }}</dd></div>
+              <div><dt class="text-neutral-500">{{ t('admin.studentRegistrations.gender') }}</dt><dd class="font-medium text-neutral-900">{{ detail.registration.gender ?? '—' }}</dd></div>
+              <div><dt class="text-neutral-500">{{ t('admin.studentRegistrations.dateOfBirth') }}</dt><dd class="font-medium text-neutral-900">{{ formatDate(detail.registration.date_of_birth) }}</dd></div>
+              <div class="col-span-2">
+                <dt class="text-neutral-500">{{ t('admin.studentRegistrations.address') }}</dt>
+                <dd class="font-medium text-neutral-900">{{ [detail.registration.house_no, detail.registration.street_no, detail.registration.other_address].filter(Boolean).join(', ') || '—' }}</dd>
+              </div>
+            </dl>
+          </div>
+
+          <div v-if="detail.registration.enrollment" class="mt-4 rounded-lg border border-neutral-200 p-3 text-sm">
+            <p class="font-medium text-neutral-900">{{ detail.registration.enrollment.course_package?.name }}</p>
+            <p class="text-neutral-500">{{ detail.registration.enrollment.academic_program?.name }} — {{ detail.registration.enrollment.class?.name }}</p>
+            <p v-if="detail.registration.invoice" class="mt-1 text-neutral-700">{{ detail.registration.invoice.currency }} {{ detail.registration.invoice.total.toFixed(2) }}</p>
+          </div>
+
+          <div v-if="detail.registration.invoice" class="mt-3 flex items-center justify-between rounded-lg bg-warning-50 px-3 py-2 text-sm">
+            <div>
+              <span class="text-neutral-700">{{ t('admin.studentRegistrations.balanceDue') }}</span>
+              <BaseBadge :variant="detail.registration.invoice.intended_payment_method === 'QR' ? 'primary' : 'neutral'" class="ml-2">
+                {{ t(detail.registration.invoice.intended_payment_method === 'QR' ? 'admin.studentRegistrations.paymentQr' : 'admin.studentRegistrations.paymentCash') }}
+              </BaseBadge>
+            </div>
+            <span class="font-semibold text-neutral-900">{{ detail.registration.invoice.currency }} {{ detail.registration.invoice.balance.toFixed(2) }}</span>
+          </div>
+          <p v-if="detail.registration.invoice?.intended_payment_method === 'QR'" class="mt-1.5 text-xs text-neutral-500">
+            {{ t('admin.studentRegistrations.qrVerifyHint') }}
+          </p>
+        </div>
       </template>
 
       <template #footer>

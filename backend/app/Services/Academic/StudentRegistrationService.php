@@ -111,7 +111,7 @@ final class StudentRegistrationService
             $this->notifications->usersWithPermission(Permissions::STUDENTS_APPROVE_REGISTRATION),
             NotificationType::STUDENT_REGISTRATION_SUBMITTED,
             ['student_id' => $student->id, 'student_name' => $student->fullName()],
-            link: '/admin/student-registrations',
+            link: '/admin/approvals/queue',
         );
 
         return $student;
