@@ -9,21 +9,27 @@ import BaseModal from '@/components/ui/BaseModal.vue'
 import BasePagination from '@/components/ui/BasePagination.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
 import DataTable from '@/components/ui/DataTable.vue'
+import BaseInput from '@/components/ui/BaseInput.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { adminUsersService } from '@/services/adminUsers'
 import { auditLogsService, type AuditLogEntry } from '@/services/auditLogs'
+import { useAdminUiStore } from '@/stores/adminUi'
+import { useAuthStore } from '@/stores/auth'
+import { ApiRequestError } from '@/types/api'
 import { formatDateTime } from '@/utils/date'
 
 const { t } = useI18n()
+const adminUi = useAdminUiStore()
+const auth = useAuthStore()
 
 const ACTIONS = [
   'CREATE', 'UPDATE', 'DELETE', 'RESTORE',
   'LOGIN', 'LOGIN_FAILED', 'LOGIN_BLOCKED', 'LOGOUT', 'FORCE_LOGOUT',
   'PASSWORD_CHANGE', 'PASSWORD_RESET_REQUESTED', 'EMAIL_VERIFIED',
-  'ROLE_CHANGE', 'STATUS_CHANGE', 'POSITION_CHANGE',
+  'ROLE_CHANGE', 'STATUS_CHANGE', 'POSITION_CHANGE', 'AUDIT_LOGS_CLEARED',
 ] as const
 
-const MODULES = ['Auth', 'Users', 'Students', 'Staff', 'Positions', 'Roles', 'Programs', 'Enrollments'] as const
+const MODULES = ['Auth', 'Users', 'Students', 'Staff', 'Positions', 'Roles', 'Programs', 'Enrollments', 'Audit Logs'] as const
 
 const actionBadgeVariant: Record<string, 'success' | 'warning' | 'danger' | 'neutral' | 'primary'> = {
   CREATE: 'success',
@@ -41,6 +47,7 @@ const actionBadgeVariant: Record<string, 'success' | 'warning' | 'danger' | 'neu
   ROLE_CHANGE: 'warning',
   STATUS_CHANGE: 'warning',
   POSITION_CHANGE: 'warning',
+  AUDIT_LOGS_CLEARED: 'danger',
 }
 
 const userOptions = ref<{ value: string; label: string }[]>([])
@@ -50,8 +57,10 @@ const selectedUserId = ref('')
 const selectedAction = ref('')
 const selectedModule = ref('')
 
-const { items, meta, loading, error, setPage, setSort, sort, setSearch, setFilter, fetch } =
+const { items, meta, loading, error, perPage, setPage, setSort, sort, setSearch, setFilter, fetch } =
   usePaginatedResource<AuditLogEntry>((query) => auditLogsService.list({ ...query, date_from: dateFrom.value || undefined, date_to: dateTo.value || undefined }))
+
+const perPageOptions = [10, 25, 50, 100]
 
 function onUserFilterChange(value: string) {
   selectedUserId.value = value
@@ -114,6 +123,47 @@ function resetFilters() {
   void fetch()
 }
 
+// Clear logs — a date range picked in its own dialog (pre-filled from the
+// filter's dates when set), not the filter itself, so narrowing the list
+// can never accidentally become the range that gets deleted.
+const canClear = computed(() => auth.can('audit-logs.delete'))
+const clearOpen = ref(false)
+const clearFrom = ref('')
+const clearTo = ref('')
+const clearing = ref(false)
+const clearErrors = ref<Record<string, string[]>>({})
+const clearError = ref<string | null>(null)
+const clearSuccess = ref<string | null>(null)
+
+function openClear() {
+  clearFrom.value = dateFrom.value
+  clearTo.value = dateTo.value
+  clearErrors.value = {}
+  clearError.value = null
+  clearOpen.value = true
+}
+
+async function submitClear() {
+  clearing.value = true
+  clearErrors.value = {}
+  clearError.value = null
+
+  try {
+    const { deleted } = await auditLogsService.clear(clearFrom.value, clearTo.value)
+    clearOpen.value = false
+    clearSuccess.value = t('admin.auditLogs.clearSuccess', { count: deleted })
+    void fetch()
+  } catch (err) {
+    if (err instanceof ApiRequestError && err.errors) {
+      clearErrors.value = err.errors
+    } else {
+      clearError.value = err instanceof ApiRequestError ? err.message : t('admin.auditLogs.clearFailed')
+    }
+  } finally {
+    clearing.value = false
+  }
+}
+
 onMounted(async () => {
   void fetch()
 
@@ -124,11 +174,13 @@ onMounted(async () => {
 
 <template>
   <div>
-    <div class="mb-6">
+    <div class="mb-6 flex items-center justify-between gap-3">
       <h1 class="text-xl font-semibold text-neutral-900">{{ t('admin.auditLogs.title') }}</h1>
+      <BaseButton v-if="canClear" variant="danger" size="sm" @click="openClear">{{ t('admin.auditLogs.clearLogs') }}</BaseButton>
     </div>
 
     <BaseAlert v-if="error" variant="danger" class="mb-4">{{ error }}</BaseAlert>
+    <BaseAlert v-if="clearSuccess" variant="success" class="mb-4">{{ clearSuccess }}</BaseAlert>
 
     <div class="mb-4 grid gap-3 rounded-[--radius-card] border border-neutral-200 bg-white p-4 sm:grid-cols-2 lg:grid-cols-6">
       <input
@@ -194,7 +246,43 @@ onMounted(async () => {
       </template>
     </DataTable>
 
-    <BasePagination v-if="meta" :meta="meta" sticky class="mt-4" @update:page="setPage" />
+    <!-- Same per-page selector + pager bar as Students.vue — see its
+         comment for why the whole bar is `fixed`, not just the pager. -->
+    <div
+      v-if="meta"
+      class="fixed inset-x-0 bottom-0 z-10 mt-4 flex flex-col items-center gap-3 border-t border-neutral-200 bg-white/95 px-4 py-3 backdrop-blur sm:flex-row sm:justify-between sm:px-6"
+      :class="adminUi.sidebarCollapsed ? 'lg:left-16' : 'lg:left-64'"
+    >
+      <label class="flex items-center gap-2 text-sm text-neutral-500">
+        {{ t('admin.auditLogs.perPage') }}
+        <select
+          v-model.number="perPage"
+          class="rounded-lg border border-neutral-300 py-1.5 pl-2 pr-7 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+        >
+          <option v-for="option in perPageOptions" :key="option" :value="option">{{ option }}</option>
+        </select>
+      </label>
+
+      <BasePagination :meta="meta" @update:page="setPage" />
+    </div>
+
+    <BaseModal v-model="clearOpen" :title="t('admin.auditLogs.clearTitle')">
+      <form class="space-y-4" @submit.prevent="submitClear">
+        <BaseAlert variant="warning">{{ t('admin.auditLogs.clearWarning') }}</BaseAlert>
+        <BaseAlert v-if="clearError" variant="danger">{{ clearError }}</BaseAlert>
+        <div class="grid gap-4 sm:grid-cols-2">
+          <BaseInput v-model="clearFrom" type="date" required :label="t('admin.auditLogs.dateFrom')" :error="clearErrors.date_from?.[0]" />
+          <BaseInput v-model="clearTo" type="date" required :label="t('admin.auditLogs.dateTo')" :error="clearErrors.date_to?.[0]" />
+        </div>
+      </form>
+
+      <template #footer>
+        <BaseButton variant="outline" @click="clearOpen = false">{{ t('common.close') }}</BaseButton>
+        <BaseButton variant="danger" :loading="clearing" :disabled="!clearFrom || !clearTo" @click="submitClear">
+          {{ t('admin.auditLogs.clearConfirm') }}
+        </BaseButton>
+      </template>
+    </BaseModal>
 
     <BaseModal :model-value="detailLog !== null" :title="t('admin.auditLogs.detailTitle')" size="lg" @update:model-value="detailLog = null">
       <div v-if="detailLog" class="space-y-6">

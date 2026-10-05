@@ -1,4 +1,4 @@
-import { apiGet, apiGetWithMeta } from '@/services/http'
+import { apiGet, apiGetWithMeta, apiPost } from '@/services/http'
 import type { PaginatedQuery } from '@/composables/usePaginatedResource'
 import type { LengthAwarePaginationMeta, PaginatedResult } from '@/types/api'
 
@@ -32,9 +32,9 @@ export interface AuditLogQuery extends PaginatedQuery {
 }
 
 /**
- * Read-only, deliberately — see AuditLogPolicy/AuditLogController's own
- * docblocks. There is no create/update/delete here because there is no such
- * route on the backend: audit logs are written only by AuditLogger.
+ * No create/update/delete of a single entry — audit logs are written only by
+ * AuditLogger (see AuditLogPolicy/AuditLogController's docblocks). `clear`
+ * is the one write: permanently deleting a whole date range.
  */
 export const auditLogsService = {
   async list(query: AuditLogQuery): Promise<PaginatedResult<AuditLogEntry>> {
@@ -54,4 +54,8 @@ export const auditLogsService = {
   },
 
   get: (id: number) => apiGet<AuditLogEntry>(`/audit-logs/${id}`),
+
+  /** Both dates inclusive (YYYY-MM-DD). Resolves to how many logs were deleted. */
+  clear: (dateFrom: string, dateTo: string) =>
+    apiPost<{ deleted: number }>('/audit-logs/clear', { date_from: dateFrom, date_to: dateTo }),
 }

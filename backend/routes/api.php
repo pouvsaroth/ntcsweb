@@ -431,8 +431,9 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::post('users/{user}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset-password');
         Route::post('users/{user}/force-logout', [UserController::class, 'forceLogout'])->name('users.force-logout');
 
-        // Read-only — see AuditLogPolicy/AuditLogController's docblocks for
-        // why there is deliberately no store/update/destroy route here.
+        // No store/update/destroy of a single entry — see AuditLogPolicy/
+        // AuditLogController's docblocks. `clear` bulk-deletes a date range.
+        Route::post('audit-logs/clear', [AuditLogController::class, 'clear'])->name('audit-logs.clear');
         Route::apiResource('audit-logs', AuditLogController::class)->only(['index', 'show']);
 
         // Super Admin: the central database or any active school's. With

@@ -324,7 +324,7 @@ const MODULES: ModuleEntry[] = [
     group: 'Academic',
     actions: { view: 'exam-scores.view', update: 'exam-scores.update', manageAll: 'exam-scores.manage-all' },
   },
-  { name: 'System', group: 'Settings', actions: { view: 'audit-logs.view' } },
+  { name: 'System', group: 'Settings', actions: { view: 'audit-logs.view', delete: 'audit-logs.delete' } },
 ]
 
 const COLUMNS: Action[] = [

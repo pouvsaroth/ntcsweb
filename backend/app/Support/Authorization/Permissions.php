@@ -527,6 +527,11 @@ final class Permissions
     // System.
     public const AUDIT_LOGS_VIEW = 'audit-logs.view';
 
+    // Permanently deletes every log in a chosen date range (see
+    // AuditLogController::clear) — the one exception to audit logs being
+    // append-only, so it's its own permission rather than riding on view.
+    public const AUDIT_LOGS_DELETE = 'audit-logs.delete';
+
     // Nav-visibility-only permissions: Dashboard, News, Events,
     // Announcements, Documents, Contact Messages, admin Notifications, and
     // Examination (Exams/Grades) have no real API to protect yet — each is
@@ -925,6 +930,7 @@ final class Permissions
             ],
             'System' => [
                 self::AUDIT_LOGS_VIEW => 'View audit logs',
+                self::AUDIT_LOGS_DELETE => 'Clear audit logs by date range',
             ],
         ];
     }
@@ -1076,6 +1082,7 @@ final class Permissions
                 self::ROLES_DELETE,
                 self::ROLES_ASSIGN,
                 self::AUDIT_LOGS_VIEW,
+                self::AUDIT_LOGS_DELETE,
                 self::BASE_DATA_VIEW,
                 self::BASE_DATA_CREATE,
                 self::BASE_DATA_UPDATE,

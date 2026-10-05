@@ -170,4 +170,8 @@ final class AuditAction
     // to them never shows up in LookupValue's own dirty-diff; this fires
     // explicitly from LookupValueService::syncTranslations() instead.
     public const TRANSLATION_UPDATED = 'TRANSLATION_UPDATED';
+
+    // Written right after a date-range clear (AuditLogController::clear), so
+    // the deletion itself always leaves a trace that survives it.
+    public const AUDIT_LOGS_CLEARED = 'AUDIT_LOGS_CLEARED';
 }
