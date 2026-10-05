@@ -28,6 +28,17 @@ const error = ref<string | null>(null)
 const starting = ref(false)
 
 /**
+ * Phones/tablets pick by direction (Front/Back) — their device list also
+ * holds ultra-wide/telephoto lenses with cryptic labels, so a raw device
+ * picker would be confusing there. Computers have no "facing", so they get
+ * a dropdown of the actual webcams instead (built-in + any USB camera).
+ */
+const isTouchDevice = typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches
+const facing = ref<'user' | 'environment'>('user')
+const cameras = ref<MediaDeviceInfo[]>([])
+const selectedDeviceId = ref('')
+
+/**
  * `facingMode: 'user'` is a hint most laptop webcams and phone front
  * cameras satisfy, but some external/virtual desktop webcams reject it
  * outright with OverconstrainedError rather than just ignoring it — falling
@@ -35,14 +46,43 @@ const starting = ref(false)
  * connect to the computer's camera too" actually true for those devices.
  */
 async function requestCameraStream(): Promise<MediaStream> {
+  const video: MediaTrackConstraints =
+    !isTouchDevice && selectedDeviceId.value
+      ? { deviceId: { exact: selectedDeviceId.value } }
+      : { facingMode: facing.value }
+
   try {
-    return await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
+    return await navigator.mediaDevices.getUserMedia({ video })
   } catch (err) {
     if (err instanceof DOMException && err.name === 'OverconstrainedError') {
       return await navigator.mediaDevices.getUserMedia({ video: true })
     }
     throw err
   }
+}
+
+/** Device labels are only filled in once permission is granted, so this runs after the first stream starts. */
+async function loadCameras() {
+  try {
+    const devices = await navigator.mediaDevices.enumerateDevices()
+    cameras.value = devices.filter((device) => device.kind === 'videoinput')
+    const activeId = stream?.getVideoTracks()[0]?.getSettings().deviceId
+    if (activeId) selectedDeviceId.value = activeId
+  } catch {
+    cameras.value = []
+  }
+}
+
+function switchFacing(next: 'user' | 'environment') {
+  if (facing.value === next) return
+  facing.value = next
+  stopCamera()
+  void startCamera()
+}
+
+function switchDevice() {
+  stopCamera()
+  void startCamera()
 }
 
 /**
@@ -91,6 +131,7 @@ async function startCamera() {
       videoEl.value.srcObject = stream
       await videoEl.value.play()
     }
+    await loadCameras()
   } catch (err) {
     error.value = describeCameraError(err)
   } finally {
@@ -156,6 +197,39 @@ watch(
   <BaseModal :model-value="modelValue" :title="t('common.webcam.title')" @update:model-value="close">
     <div class="space-y-3">
       <BaseAlert v-if="error" variant="danger">{{ error }}</BaseAlert>
+
+      <!-- Only offered when there's actually a second camera to switch to,
+           and hidden on the captured preview (Retake restarts the camera). -->
+      <template v-if="cameras.length > 1 && !capturedPreview && !error">
+        <div v-if="isTouchDevice" class="flex justify-center">
+          <div class="inline-flex rounded-lg bg-neutral-100 p-1">
+            <button
+              v-for="option in (['user', 'environment'] as const)"
+              :key="option"
+              type="button"
+              class="rounded-md px-4 py-1.5 text-sm font-medium transition-colors"
+              :class="facing === option ? 'bg-white text-primary-800 shadow' : 'text-neutral-600 hover:text-neutral-900'"
+              :disabled="starting"
+              @click="switchFacing(option)"
+            >
+              {{ t(option === 'user' ? 'common.webcam.frontCamera' : 'common.webcam.backCamera') }}
+            </button>
+          </div>
+        </div>
+        <label v-else class="flex items-center gap-2 text-sm text-neutral-700">
+          <span class="shrink-0 font-medium">{{ t('common.webcam.chooseCamera') }}</span>
+          <select
+            v-model="selectedDeviceId"
+            class="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+            :disabled="starting"
+            @change="switchDevice"
+          >
+            <option v-for="(camera, index) in cameras" :key="camera.deviceId" :value="camera.deviceId">
+              {{ camera.label || `${t('common.webcam.chooseCamera')} ${index + 1}` }}
+            </option>
+          </select>
+        </label>
+      </template>
 
       <div class="flex aspect-video items-center justify-center overflow-hidden rounded-lg bg-neutral-900">
         <video v-show="!capturedPreview && !error" ref="videoEl" class="h-full w-full object-cover" autoplay playsinline muted />

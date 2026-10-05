@@ -94,9 +94,9 @@ async function submit() {
         </div>
 
         <!-- Two sources: a gallery pick, plus one Camera button that opens a
-             live getUserMedia stream (WebcamCaptureModal) — works the same
-             way on a computer's webcam or a phone's camera, no separate
-             back/front picker needed. -->
+             live getUserMedia stream (WebcamCaptureModal) — it offers
+             Front/Back on a phone or tablet and a webcam picker on a
+             computer with more than one camera. -->
         <div class="flex flex-wrap gap-2">
           <button
             type="button"
