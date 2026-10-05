@@ -599,6 +599,10 @@ const ja: MessageSchema = {
       message: 'このセクションはナビゲーションに組み込み済みで準備は整っています。バックエンドの対応する機能は今後のフェーズで提供されます。',
     },
     exams: {
+      exportImage: '画像として書き出す',
+      exportedOn: '書き出し日',
+      exportImageFailed: '画像を書き出せませんでした。',
+      perPage: '表示件数',
       title: '受験申込',
       subtitle: '受験する生徒を登録・管理します。',
       applicationForm: '申込フォーム',

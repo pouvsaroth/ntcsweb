@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, shallowReactive, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ExamApplicationFormModal from '@/components/admin/ExamApplicationFormModal.vue'
@@ -14,12 +14,15 @@ import DataTable from '@/components/ui/DataTable.vue'
 import EditIconButton from '@/components/ui/EditIconButton.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { examApplicationStatuses, examApplicationsService, type ExamApplication, type ExamApplicationStatus } from '@/services/examApplications'
+import { useAdminUiStore } from '@/stores/adminUi'
 import { useAuthStore } from '@/stores/auth'
 import { useConfirmDialogStore } from '@/stores/confirmDialog'
 import { ApiRequestError } from '@/types/api'
 import { formatDate } from '@/utils/date'
+import { exportTableAsImage, type TableImageTone } from '@/utils/tableImage'
 
 const { t } = useI18n()
+const adminUi = useAdminUiStore()
 const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
 
@@ -32,7 +35,9 @@ const AWAITING_ACTION = 'awaiting_action'
 
 const statusFilter = ref<ExamApplicationStatus | '' | typeof AWAITING_ACTION>(AWAITING_ACTION)
 
-const { items, meta, loading, error, setPage, setFilter, fetch } = usePaginatedResource<ExamApplication>((query) =>
+const perPageOptions = [10, 25, 50, 100]
+
+const { items, meta, loading, error, perPage, setPage, setFilter, fetch } = usePaginatedResource<ExamApplication>((query) =>
   examApplicationsService.list(query, { awaitingAction: statusFilter.value === AWAITING_ACTION }),
 )
 
@@ -98,6 +103,66 @@ function timeRange(a: ExamApplication): string {
 const selectedIds = ref<number[]>([])
 const actionError = ref<string | null>(null)
 const acting = ref(false)
+
+// --- Export as image ------------------------------------------------------
+//
+// Same convention as Attendance Summary: ticked rows export alone; with
+// nothing ticked, every row on screen does. Ticks survive paging, so every
+// row seen so far is remembered by id — otherwise a row ticked on page 1
+// would silently drop out of the export once you moved to page 2.
+
+// shallowReactive so a reload (e.g. after Approve) refreshes what a ticked
+// row exports, not just what the table shows.
+const seenRows = shallowReactive(new Map<number, ExamApplication>())
+watch(items, (rows) => rows.forEach((row) => seenRows.set(row.id, row)), { immediate: true })
+
+const selectedRows = computed(() =>
+  selectedIds.value.map((id) => seenRows.get(id)).filter((row): row is ExamApplication => row !== undefined),
+)
+
+const exporting = ref(false)
+
+/** BaseBadge has a 'primary' tone the image drawer doesn't — Make-up shows as amber there instead. */
+function imageTone(status: ExamApplicationStatus): TableImageTone {
+  const variant = statusVariant[status]
+  return variant === 'primary' ? 'warning' : variant
+}
+
+async function exportImage() {
+  exporting.value = true
+  actionError.value = null
+  try {
+    const rows = selectedRows.value.length ? selectedRows.value : items.value
+    await exportTableAsImage({
+      title: t('admin.exams.title'),
+      subtitle: `${t('admin.exams.exportedOn')} ${formatDate(new Date())}`,
+      columns: [
+        { label: t('admin.exams.columnStatus'), width: 110 },
+        { label: t('admin.exams.columnEnrollmentCode'), width: 140 },
+        { label: t('admin.exams.columnFullName'), width: 200, maxWidth: 320 },
+        { label: t('admin.exams.columnSex'), width: 60 },
+        { label: t('admin.exams.columnBook'), width: 160, maxWidth: 280 },
+        { label: t('admin.exams.columnExamDate'), width: 120 },
+        { label: t('admin.exams.columnTimeExam'), width: 130 },
+      ],
+      rows: rows.map((row) => [
+        { text: statusLabel(row.status), badge: imageTone(row.status) },
+        { text: row.enrollment_code ?? '—' },
+        { text: row.student.name, bold: true },
+        { text: row.student.gender ?? '—' },
+        { text: row.book?.title ?? row.enrollment.course_package?.name ?? '—' },
+        { text: fmtDate(row.exam_date) },
+        { text: timeRange(row) },
+      ]),
+      emptyText: t('admin.exams.emptyMessage'),
+      fileName: `exams-${new Date().toISOString().slice(0, 10)}.png`,
+    })
+  } catch {
+    actionError.value = t('admin.exams.exportImageFailed')
+  } finally {
+    exporting.value = false
+  }
+}
 
 /**
  * "Not Exam" — a student was sent to exam (still draft) but doesn't want
@@ -190,6 +255,9 @@ function openApplicationForm(enrollmentCode: string | null = null) {
     <div class="mb-4 flex flex-wrap items-center gap-2">
       <BaseButton v-if="canCreate" @click="openApplicationForm()">{{ t('admin.exams.applicationForm') }}</BaseButton>
       <BaseButton variant="outline" @click="printList">{{ t('admin.exams.printList') }}</BaseButton>
+      <BaseButton variant="outline" :loading="exporting" :disabled="loading" @click="exportImage">
+        {{ t('admin.exams.exportImage') }}<template v-if="selectedRows.length"> ({{ selectedRows.length }})</template>
+      </BaseButton>
       <BaseButton v-if="canDelete" variant="danger" :disabled="selectedIds.length === 0 || acting" @click="deleteSelected">
         {{ t('common.remove') }}
       </BaseButton>
@@ -269,7 +337,25 @@ function openApplicationForm(enrollmentCode: string | null = null) {
       <template #cell-table_no="{ row }">{{ (row as ExamApplication).table?.name ?? (row as ExamApplication).table_no ?? '—' }}</template>
     </DataTable>
 
-    <BasePagination v-if="meta" :meta="meta" sticky class="mt-4" @update:page="setPage" />
+    <!-- Same per-page selector + pager bar as Students.vue — see its
+         comment for why the whole bar is `fixed`, not just the pager. -->
+    <div
+      v-if="meta"
+      class="fixed inset-x-0 bottom-0 z-10 mt-4 flex flex-col items-center gap-3 border-t border-neutral-200 bg-white/95 px-4 py-3 backdrop-blur sm:flex-row sm:justify-between sm:px-6"
+      :class="adminUi.sidebarCollapsed ? 'lg:left-16' : 'lg:left-64'"
+    >
+      <label class="flex items-center gap-2 text-sm text-neutral-500">
+        {{ t('admin.exams.perPage') }}
+        <select
+          v-model.number="perPage"
+          class="rounded-lg border border-neutral-300 py-1.5 pl-2 pr-7 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+        >
+          <option v-for="option in perPageOptions" :key="option" :value="option">{{ option }}</option>
+        </select>
+      </label>
+
+      <BasePagination :meta="meta" @update:page="setPage" />
+    </div>
 
     <ExamApplicationFormModal v-model="formModalOpen" :initial-enrollment-code="editingEnrollmentCode" @saved="fetch" />
   </div>

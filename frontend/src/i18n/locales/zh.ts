@@ -598,6 +598,10 @@ const zh: MessageSchema = {
       message: '该部分已在导航中接入并就绪——其后端接口将在后续阶段完成。',
     },
     exams: {
+      exportImage: '导出为图片',
+      exportedOn: '导出于',
+      exportImageFailed: '无法导出图片。',
+      perPage: '显示',
       title: '考试申请',
       subtitle: '登记并跟踪参加考试的学生。',
       applicationForm: '申请表',

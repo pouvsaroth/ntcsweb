@@ -599,6 +599,10 @@ const ko: MessageSchema = {
       message: '이 섹션은 내비게이션에 이미 연결되어 있으며, 해당 백엔드 기능은 이후 단계에서 제공될 예정입니다.',
     },
     exams: {
+      exportImage: '이미지로 내보내기',
+      exportedOn: '내보낸 날짜',
+      exportImageFailed: '이미지를 내보낼 수 없습니다.',
+      perPage: '표시',
       title: '시험 신청',
       subtitle: '시험에 응시하는 학생을 등록하고 관리합니다.',
       applicationForm: '신청서',
