@@ -104,6 +104,15 @@ function persist(): void {
   }
 }
 
+/**
+ * Dashboard ('/admin') only on its own page — every admin route starts with
+ * '/admin', so a prefix match would light it up everywhere. Anything else
+ * also stays lit on its sub-pages (e.g. a project's board under Projects).
+ */
+function isStandaloneActive(to: string): boolean {
+  return to === '/admin' ? route.path === to : route.path === to || route.path.startsWith(`${to}/`)
+}
+
 function toggleGroup(labelKey: string): void {
   expanded[labelKey] = !expanded[labelKey]
   persist()
@@ -230,16 +239,17 @@ watch(
     <div class="flex-1 overflow-y-auto">
       <nav class="space-y-1 px-3 py-5" :class="adminUi.sidebarCollapsed ? 'lg:hidden' : ''">
         <div v-for="group in visibleGroups" :key="group.labelKey" class="border-b border-neutral-100 pb-1 last:border-0">
-          <!-- A standalone group (Dashboard) skips the collapsible heading —
-               its items sit at the top level, styled like a group heading.
-               exact-active-class, since '/admin' prefixes every admin route. -->
+          <!-- A standalone group (Dashboard, Project Management) skips the
+               collapsible heading — its items sit at the top level, styled
+               like a group heading. See isStandaloneActive for the
+               highlight rule. -->
           <template v-if="group.standalone">
             <RouterLink
               v-for="item in group.items"
               :key="item.to"
               :to="item.to!"
               class="block rounded-lg px-3 py-2 text-base font-bold text-primary-800 hover:bg-primary-50"
-              exact-active-class="bg-primary-50"
+              :class="isStandaloneActive(item.to!) ? 'bg-primary-50' : ''"
               @click="emit('close')"
             >
               {{ t(item.labelKey) }}

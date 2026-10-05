@@ -41,7 +41,7 @@ export interface AdminNavGroup {
   items: AdminNavItem[]
   /**
    * Rendered by AdminSidebar as plain top-level links with no collapsible
-   * group heading (Dashboard). The group itself stays in this list so
+   * group heading (Dashboard, Project Management). The group itself stays in this list so
    * firstAccessibleAdminPath() and AdminHeader's breadcrumb lookup still
    * find its items.
    */
@@ -86,8 +86,11 @@ export const adminNav: AdminNavGroup[] = [
     ],
   },
   {
+    // One top-level link; Projects is a tab on the page itself (see
+    // ProjectsTabs.vue), ready for more Project Management tabs later.
     labelKey: 'adminNav.groups.projectManagement',
-    items: [{ labelKey: 'adminNav.items.projects', to: '/admin/projects', permission: 'projects.view' }],
+    standalone: true,
+    items: [{ labelKey: 'adminNav.groups.projectManagement', to: '/admin/projects', permission: 'projects.view' }],
   },
   {
     labelKey: 'adminNav.groups.platform',

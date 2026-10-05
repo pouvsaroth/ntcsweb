@@ -54,13 +54,13 @@ const adminRoutes: RouteRecordRaw[] = [
     path: 'projects',
     name: 'admin.projects',
     component: () => import('@/pages/admin/Projects.vue'),
-    meta: { titleKey: 'adminNav.items.projects' },
+    meta: { titleKey: 'adminNav.groups.projectManagement' },
   },
   {
     path: 'projects/:id',
     name: 'admin.projects.board',
     component: () => import('@/pages/admin/ProjectBoard.vue'),
-    meta: { titleKey: 'adminNav.items.projects' },
+    meta: { titleKey: 'adminNav.groups.projectManagement' },
   },
   {
     path: 'users',

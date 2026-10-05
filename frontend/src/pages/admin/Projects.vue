@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
 import ProjectFormModal from '@/components/admin/ProjectFormModal.vue'
+import ProjectsTabs from '@/components/admin/ProjectsTabs.vue'
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseSpinner from '@/components/ui/BaseSpinner.vue'
@@ -49,6 +50,8 @@ onMounted(() => load())
 
 <template>
   <div>
+    <ProjectsTabs />
+
     <div class="mb-6 flex items-center justify-between">
       <div>
         <h1 class="text-xl font-semibold text-neutral-900">{{ t('admin.projects.title') }}</h1>
