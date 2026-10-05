@@ -64,3 +64,88 @@ export function printImage(blob: Blob, title: string, pageSize = 'A5'): Promise<
     img.src = blobUrl
   })
 }
+
+/**
+ * Same as printImage(), but one page per image in a single print preview —
+ * e.g. Examination → Certificate's "Print Certificate" for every ticked
+ * student at once.
+ */
+export function printImages(blobs: Blob[], title: string, pageSize = 'A5'): Promise<void> {
+  const blobUrls = blobs.map((blob) => URL.createObjectURL(blob))
+  const iframe = document.createElement('iframe')
+  iframe.setAttribute('aria-hidden', 'true')
+  iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden'
+  document.body.appendChild(iframe)
+
+  const cleanup = () => {
+    iframe.remove()
+    blobUrls.forEach((url) => URL.revokeObjectURL(url))
+  }
+
+  return new Promise<void>((resolve, reject) => {
+    const doc = iframe.contentDocument
+    const win = iframe.contentWindow
+    if (!doc || !win) {
+      cleanup()
+      reject(new Error('Print preview is not available in this browser.'))
+      return
+    }
+
+    doc.open()
+    doc.write(`<!doctype html><html><head><meta charset="utf-8"><title></title>
+<style>
+  @page { size: ${pageSize}; margin: 0; }
+  html, body { margin: 0; padding: 0; }
+  /* Each image gets exactly one page: scaled to fit inside the page box
+     rather than filling its width — an image of the page's own proportions
+     at full width rounds a fraction past the bottom edge and spills a blank
+     extra page. */
+  .page { width: 100vw; height: 100vh; overflow: hidden; break-after: page; }
+  .page:last-child { break-after: auto; }
+  img { display: block; width: 100%; height: 100%; object-fit: contain; object-position: top center; break-inside: avoid; }
+</style></head><body></body></html>`)
+    doc.close()
+    // Set via the DOM rather than the template so a title can't inject markup.
+    doc.title = title
+
+    let pending = blobUrls.length
+    let failed = false
+
+    const startPrint = () => {
+      let finished = false
+      const finish = () => {
+        if (finished) return
+        finished = true
+        // Let the dialog fully release the iframe before removing it.
+        setTimeout(cleanup, 500)
+        resolve()
+      }
+      win.addEventListener('afterprint', finish, { once: true })
+      win.focus()
+      win.print()
+      // Browsers that open the dialog without blocking and never fire
+      // afterprint still resolve, just later.
+      setTimeout(finish, 60_000)
+    }
+
+    for (const url of blobUrls) {
+      const page = doc.createElement('div')
+      page.className = 'page'
+      const img = doc.createElement('img')
+      img.alt = ''
+      img.onerror = () => {
+        if (failed) return
+        failed = true
+        cleanup()
+        reject(new Error('The image could not be loaded for printing.'))
+      }
+      img.onload = () => {
+        pending--
+        if (pending === 0 && !failed) startPrint()
+      }
+      page.appendChild(img)
+      doc.body.appendChild(page)
+      img.src = url
+    }
+  })
+}

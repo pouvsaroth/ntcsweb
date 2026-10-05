@@ -518,6 +518,36 @@ final class ExamApplicationService
     }
 
     /**
+     * Examination → Certificate's "Issued": the certificate was handed to
+     * the student. Same rules as markPhotoReceived() — passed applications
+     * only, saving again overwrites, one audited update per row.
+     *
+     * @param  list<int>  $ids
+     * @return Collection<int, ExamApplication>
+     */
+    public function markCertificateIssued(array $ids, string $issuedDate, ?string $remark, User $actor): Collection
+    {
+        $applications = ExamApplication::query()->whereIn('id', $ids)->get();
+        $passedIds = ExamApplication::query()->whereIn('id', $ids)->passed()->pluck('id')->all();
+
+        if (count($passedIds) !== $applications->count()) {
+            throw ValidationException::withMessages(['ids' => 'Only students who passed the exam can be issued a certificate.']);
+        }
+
+        DB::transaction(function () use ($applications, $issuedDate, $remark, $actor) {
+            foreach ($applications as $application) {
+                $application->update([
+                    'certificate_issued_date' => $issuedDate,
+                    'certificate_issued_remark' => $remark,
+                    'certificate_issued_by' => $actor->getKey(),
+                ]);
+            }
+        });
+
+        return $applications->each->refresh();
+    }
+
+    /**
      * @param  list<int>  $ids
      * @return Collection<int, ExamApplication>
      */

@@ -15,9 +15,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * per save instead of one per student.
  *
  * @property int $exam_application_id
+ * @property int|null $academic_year_id
  * @property string $score
  */
-#[Fillable(['exam_application_id', 'score', 'remark', 'recorded_by', 'recorded_at'])]
+#[Fillable(['exam_application_id', 'academic_year_id', 'score', 'remark', 'recorded_by', 'recorded_at'])]
 class ExamScore extends Model
 {
     protected $connection = 'tenant';
@@ -33,6 +34,12 @@ class ExamScore extends Model
     public function examApplication(): BelongsTo
     {
         return $this->belongsTo(ExamApplication::class);
+    }
+
+    /** The academic year the score was first entered in — see ExamScoreService::record(). */
+    public function academicYear(): BelongsTo
+    {
+        return $this->belongsTo(AcademicYear::class);
     }
 
     public function recordedBy(): BelongsTo

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Academic;
 
+use App\Models\AcademicYear;
 use App\Models\Enrollment;
 use App\Models\ExamApplication;
 use App\Models\ExamScore;
@@ -143,6 +144,11 @@ final class ExamScoreService
 
             $saved = $cleared = $retakesCreated = 0;
 
+            // Stamped on a score when it's first added (and on an older
+            // score that has none yet) — editing a score later never moves
+            // it into a different year. NULL if no year is marked current.
+            $currentYearId = AcademicYear::query()->current()->value('id');
+
             foreach ($entries as $entry) {
                 $applicationId = (int) $entry['exam_application_id'];
 
@@ -152,15 +158,15 @@ final class ExamScoreService
                     continue;
                 }
 
-                ExamScore::query()->updateOrCreate(
-                    ['exam_application_id' => $applicationId],
-                    [
-                        'score' => $entry['score'],
-                        'remark' => $entry['remark'] ?? null,
-                        'recorded_by' => $actor->getKey(),
-                        'recorded_at' => now(),
-                    ],
-                );
+                $score = ExamScore::query()->firstOrNew(['exam_application_id' => $applicationId]);
+                $score->fill([
+                    'score' => $entry['score'],
+                    'remark' => $entry['remark'] ?? null,
+                    'recorded_by' => $actor->getKey(),
+                    'recorded_at' => now(),
+                ]);
+                $score->academic_year_id ??= $currentYearId;
+                $score->save();
                 $saved++;
 
                 $application = $applications[$applicationId];

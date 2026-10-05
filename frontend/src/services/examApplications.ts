@@ -57,10 +57,18 @@ export interface ExamApplication {
   received_at: string | null
   paid_back_at: string | null
   /** Examination → Certificate only — the score and its mention key (see admin.myScores.mentions). */
-  score?: { score: string; mention: 'excellent' | 'very_good' | 'good' | 'fail' } | null
+  score?: {
+    score: string
+    mention: 'excellent' | 'very_good' | 'good' | 'fail'
+    /** The academic year the score was entered in (null for an older score outside every year). */
+    academic_year: { id: number; name: string } | null
+  } | null
   /** Examination → Certificate: the day the student handed in their certificate photo. */
   photo_received_date?: string | null
   photo_received_remark?: string | null
+  /** Examination → Certificate: the day the certificate was handed to the student. */
+  certificate_issued_date?: string | null
+  certificate_issued_remark?: string | null
   created_at: string
 }
 
@@ -104,7 +112,17 @@ export const examApplicationsService = {
    * by Exams.vue's default "Awaiting action" view, mutually exclusive with
    * `query.filter.status`.
    */
-  async list(query: PaginatedQuery, opts: { awaitingAction?: boolean; approvalQueue?: boolean; certificate?: boolean; photoReceived?: 'yes' | 'no' } = {}): Promise<PaginatedResult<ExamApplication>> {
+  async list(
+    query: PaginatedQuery,
+    opts: {
+      awaitingAction?: boolean
+      approvalQueue?: boolean
+      certificate?: boolean
+      photoReceived?: 'yes' | 'no'
+      certificateIssued?: 'yes' | 'no'
+      academicYearId?: number
+    } = {},
+  ): Promise<PaginatedResult<ExamApplication>> {
     const result = await apiGetWithMeta<ExamApplication[]>('/exam-applications', {
       params: {
         page: query.page,
@@ -117,6 +135,8 @@ export const examApplicationsService = {
         // Examination → Certificate: passed students only (score ≥ 85), with their score.
         ...(opts.certificate ? { certificate: '1' } : {}),
         ...(opts.photoReceived ? { photo_received: opts.photoReceived } : {}),
+        ...(opts.certificateIssued ? { certificate_issued: opts.certificateIssued } : {}),
+        ...(opts.academicYearId ? { academic_year_id: opts.academicYearId } : {}),
       },
     })
     return { data: result.data, pagination: result.meta?.pagination as LengthAwarePaginationMeta }
@@ -153,6 +173,9 @@ export const examApplicationsService = {
   /** Examination → Certificate's "Received photo" — passed students only. */
   markPhotoReceived: (ids: number[], receivedDate: string, remark: string | null) =>
     apiPost<ExamApplication[]>('/exam-applications/photo-received', { ids, received_date: receivedDate, remark }),
+
+  markCertificateIssued: (ids: number[], issuedDate: string, remark: string | null) =>
+    apiPost<ExamApplication[]>('/exam-applications/certificate-issued', { ids, issued_date: issuedDate, remark }),
 
   approve: (id: number) => apiPost<ExamApplication>(`/exam-applications/${id}/approve`),
   reject: (id: number, reason: string) => apiPost<ExamApplication>(`/exam-applications/${id}/reject`, { reason }),

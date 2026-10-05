@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Academic;
 
+use App\Models\AcademicYear;
 use App\Models\AuditLog;
 use App\Models\Book;
 use App\Models\CoursePackage;
@@ -94,6 +95,46 @@ class ExamScoreTest extends TestCase
         $this->getJson("/api/v1/exam-scores?student_id={$first->student_id}")
             ->assertJsonPath('data.0.score', '87.50')
             ->assertJsonPath('data.0.remark', 'Good');
+    }
+
+    public function test_a_new_score_gets_the_current_academic_year_and_keeps_it_when_edited(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::EXAM_SCORES_MANAGE_ALL]);
+        $last = AcademicYear::factory()->create(['name' => '2025-2026', 'is_current' => true]);
+        $app = $this->application();
+
+        $this->postJson('/api/v1/exam-scores', ['entries' => [
+            ['exam_application_id' => $app->id, 'score' => 70],
+        ]])->assertOk();
+
+        $this->assertSame($last->id, ExamScore::query()->where('exam_application_id', $app->id)->value('academic_year_id'));
+
+        // A new year becomes current; correcting the old score later must
+        // not move it into the new year.
+        $last->update(['is_current' => false]);
+        AcademicYear::factory()->create(['name' => '2026-2027', 'is_current' => true]);
+
+        $this->postJson('/api/v1/exam-scores', ['entries' => [
+            ['exam_application_id' => $app->id, 'score' => 75],
+        ]])->assertOk();
+
+        $score = ExamScore::query()->where('exam_application_id', $app->id)->sole();
+        $this->assertSame('75.00', $score->score);
+        $this->assertSame($last->id, $score->academic_year_id);
+    }
+
+    public function test_an_older_score_without_a_year_gets_the_current_one_when_edited(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::EXAM_SCORES_MANAGE_ALL]);
+        $current = AcademicYear::factory()->create(['is_current' => true]);
+        $app = $this->application();
+        ExamScore::query()->create(['exam_application_id' => $app->id, 'score' => 60]);
+
+        $this->postJson('/api/v1/exam-scores', ['entries' => [
+            ['exam_application_id' => $app->id, 'score' => 65],
+        ]])->assertOk();
+
+        $this->assertSame($current->id, ExamScore::query()->where('exam_application_id', $app->id)->value('academic_year_id'));
     }
 
     public function test_saving_a_score_without_make_up_completes_the_enrollment(): void

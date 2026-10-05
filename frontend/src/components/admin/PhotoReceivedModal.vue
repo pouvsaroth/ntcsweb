@@ -9,8 +9,12 @@ import BaseModal from '@/components/ui/BaseModal.vue'
 import { examApplicationsService } from '@/services/examApplications'
 import { ApiRequestError } from '@/types/api'
 
-/** Examination → Certificate's "Received Photo": the date (today by default) and a remark for every selected student. */
-const props = defineProps<{ modelValue: boolean; ids: number[] }>()
+/**
+ * Examination → Certificate's "Received Photo" and "Issued" (the certificate
+ * handed to the student) — both are just a date (today by default) and a
+ * remark for every selected student, so one dialog serves both via `mode`.
+ */
+const props = withDefaults(defineProps<{ modelValue: boolean; ids: number[]; mode?: 'photo' | 'issued' }>(), { mode: 'photo' })
 const emit = defineEmits<{ 'update:modelValue': [value: boolean]; saved: [] }>()
 
 const { t } = useI18n()
@@ -42,7 +46,8 @@ async function submit() {
   errors.value = {}
   generalError.value = null
   try {
-    await examApplicationsService.markPhotoReceived(props.ids, receivedDate.value, remark.value.trim() || null)
+    const save = props.mode === 'issued' ? examApplicationsService.markCertificateIssued : examApplicationsService.markPhotoReceived
+    await save(props.ids, receivedDate.value, remark.value.trim() || null)
     emit('saved')
     emit('update:modelValue', false)
   } catch (error) {
@@ -50,7 +55,10 @@ async function submit() {
       errors.value = error.errors
       if (error.errors.ids) generalError.value = error.errors.ids[0] ?? null
     } else {
-      generalError.value = error instanceof ApiRequestError ? error.message : t('admin.examCertificate.saveFailed')
+      generalError.value =
+        error instanceof ApiRequestError
+          ? error.message
+          : t(props.mode === 'issued' ? 'admin.examCertificate.issuedSaveFailed' : 'admin.examCertificate.saveFailed')
     }
   } finally {
     submitting.value = false
@@ -59,7 +67,11 @@ async function submit() {
 </script>
 
 <template>
-  <BaseModal :model-value="modelValue" :title="t('admin.examCertificate.modalTitle')" @update:model-value="emit('update:modelValue', $event)">
+  <BaseModal
+    :model-value="modelValue"
+    :title="t(mode === 'issued' ? 'admin.examCertificate.issuedModalTitle' : 'admin.examCertificate.modalTitle')"
+    @update:model-value="emit('update:modelValue', $event)"
+  >
     <form class="space-y-4" @submit.prevent="submit">
       <BaseAlert v-if="generalError" variant="danger">{{ generalError }}</BaseAlert>
 
@@ -69,8 +81,8 @@ async function submit() {
         v-model="receivedDate"
         type="date"
         required
-        :label="t('admin.examCertificate.receivedDate')"
-        :error="errors.received_date?.[0]"
+        :label="t(mode === 'issued' ? 'admin.examCertificate.issuedDate' : 'admin.examCertificate.receivedDate')"
+        :error="(mode === 'issued' ? errors.issued_date : errors.received_date)?.[0]"
       />
 
       <div>

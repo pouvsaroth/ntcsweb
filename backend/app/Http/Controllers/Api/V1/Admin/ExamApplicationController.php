@@ -80,17 +80,29 @@ final class ExamApplicationController extends Controller
             $this->flow->scopeQueue($query, ExamApplication::class, $user, $canViewAll);
         }
 
-        // Examination → Certificate: passed students only, with their score.
-        // `photo_received` = yes / no narrows to whether their certificate
-        // photo has been handed in yet.
+        // Examination → Certificate: passed students only, with their score
+        // (and the academic year it was entered in). `photo_received` /
+        // `certificate_issued` = yes / no narrow to whether the photo has
+        // been handed in / the certificate handed over yet;
+        // `academic_year_id` to scores entered in that year.
         if ($request->boolean('certificate')) {
-            $query->passed()->with('score');
+            $query->passed()->with('score.academicYear');
 
             match ($request->query('photo_received')) {
                 'yes' => $query->whereNotNull('photo_received_date'),
                 'no' => $query->whereNull('photo_received_date'),
                 default => null,
             };
+
+            match ($request->query('certificate_issued')) {
+                'yes' => $query->whereNotNull('certificate_issued_date'),
+                'no' => $query->whereNull('certificate_issued_date'),
+                default => null,
+            };
+
+            if ($request->filled('academic_year_id')) {
+                $query->whereHas('score', fn (Builder $score) => $score->where('academic_year_id', $request->integer('academic_year_id')));
+            }
         }
 
         $applications = ApiQuery::for($query, $request)
@@ -224,6 +236,24 @@ final class ExamApplicationController extends Controller
         $applications = $this->examApplications->markPhotoReceived($ids, $data['received_date'], $data['remark'] ?? null, $request->user());
 
         return ApiResponse::success(ExamApplicationResource::collection($applications->load([...self::WITH, 'score'])));
+    }
+
+    /**
+     * POST /exam-applications/certificate-issued — Examination →
+     * Certificate's "Issued": records the date (and an optional remark) each
+     * selected passed student was handed their certificate.
+     */
+    public function certificateIssued(Request $request): JsonResponse
+    {
+        $ids = $this->authorizedBulkIds($request);
+        $data = $request->validate([
+            'issued_date' => ['required', 'date', 'before_or_equal:today'],
+            'remark' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $applications = $this->examApplications->markCertificateIssued($ids, $data['issued_date'], $data['remark'] ?? null, $request->user());
+
+        return ApiResponse::success(ExamApplicationResource::collection($applications->load([...self::WITH, 'score.academicYear'])));
     }
 
     /** POST /exam-applications/pay-back — "PAY BACK EXAM": stamps paid_back_at on every selected row. */

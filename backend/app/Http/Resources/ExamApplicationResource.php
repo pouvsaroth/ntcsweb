@@ -71,9 +71,14 @@ class ExamApplicationResource extends JsonResource
             'score' => $this->whenLoaded('score', fn () => $this->score !== null ? [
                 'score' => $this->score->score,
                 'mention' => ExamMention::for((float) $this->score->score),
+                'academic_year' => $this->score->relationLoaded('academicYear') && $this->score->academicYear !== null
+                    ? ['id' => $this->score->academicYear->id, 'name' => $this->score->academicYear->name]
+                    : null,
             ] : null),
             'photo_received_date' => $this->photo_received_date?->toDateString(),
             'photo_received_remark' => $this->photo_received_remark,
+            'certificate_issued_date' => $this->certificate_issued_date?->toDateString(),
+            'certificate_issued_remark' => $this->certificate_issued_remark,
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }
