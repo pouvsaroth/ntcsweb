@@ -39,6 +39,13 @@ export interface AdminNavItem {
 export interface AdminNavGroup {
   labelKey: string
   items: AdminNavItem[]
+  /**
+   * Rendered by AdminSidebar as plain top-level links with no collapsible
+   * group heading (Dashboard). The group itself stays in this list so
+   * firstAccessibleAdminPath() and AdminHeader's breadcrumb lookup still
+   * find its items.
+   */
+  standalone?: boolean
 }
 
 /**
@@ -54,6 +61,7 @@ export interface AdminNavGroup {
 export const adminNav: AdminNavGroup[] = [
   {
     labelKey: 'adminNav.groups.overview',
+    standalone: true,
     items: [{ labelKey: 'adminNav.items.dashboard', to: '/admin', permission: 'dashboard.view' }],
   },
   {
