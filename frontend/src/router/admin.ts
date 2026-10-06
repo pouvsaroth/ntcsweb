@@ -368,10 +368,14 @@ const adminRoutes: RouteRecordRaw[] = [
     meta: { titleKey: 'adminNav.items.notifications', studentAllowed: true },
   },
   {
+    // Settings > Language: tabs as child routes (see LanguageSettings.vue).
     path: 'languages',
-    name: 'admin.languages',
-    component: () => import('@/pages/admin/Languages.vue'),
+    component: () => import('@/pages/admin/LanguageSettings.vue'),
     meta: { titleKey: 'adminNav.items.languages' },
+    children: [
+      { path: '', name: 'admin.languages', component: () => import('@/pages/admin/Languages.vue') },
+      { path: 'translations', name: 'admin.translations', component: () => import('@/pages/admin/Translations.vue') },
+    ],
   },
   {
     path: 'lookup-categories',

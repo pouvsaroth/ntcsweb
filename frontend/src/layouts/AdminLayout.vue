@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import AdminHeader from '@/components/layout/AdminHeader.vue'
@@ -9,6 +9,8 @@ import MonthlyPaymentAlertModal from '@/components/admin/MonthlyPaymentAlertModa
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 import { useAdminUiStore } from '@/stores/adminUi'
 import { useAuthStore } from '@/stores/auth'
+import { applyTranslationOverrides } from '@/i18n'
+import { loadTranslationOverrides } from '@/services/translationOverrides'
 import { useSiteStore } from '@/stores/site'
 
 const sidebarOpen = ref(false)
@@ -24,6 +26,13 @@ const { t } = useI18n()
 // A no-op if PublicLayout/AuthLayout already loaded it (see site.ts's
 // `loaded` guard).
 onMounted(() => site.load())
+
+// This school's own wording of the app's text (Settings > Language >
+// Translation) — reloaded when a Super Admin switches school, and dropped
+// again on leaving the admin app (sign-out), so the next person to sign in
+// on this browser never sees another school's words.
+watch(() => auth.actingTenant?.id, () => void loadTranslationOverrides(), { immediate: true })
+onBeforeUnmount(() => applyTranslationOverrides({}))
 </script>
 
 <template>

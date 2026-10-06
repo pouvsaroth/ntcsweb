@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
-import { useRoute } from 'vue-router'
 
+import RouteTabBar from '@/components/ui/RouteTabBar.vue'
 import { canOpenOrganizationTab, organizationTabs } from '@/router/organizationTabs'
 import { useAuthStore } from '@/stores/auth'
 
@@ -13,8 +12,6 @@ import { useAuthStore } from '@/stores/auth'
  * themselves (SchoolSettings, Departments, Positions, OrganizationUnits) know nothing about
  * this bar, so Departments can still open on its own from the Assets menu.
  */
-const { t } = useI18n()
-const route = useRoute()
 const auth = useAuthStore()
 
 const tabs = computed(() => organizationTabs.filter((tab) => canOpenOrganizationTab(tab, auth.can)))
@@ -22,23 +19,7 @@ const tabs = computed(() => organizationTabs.filter((tab) => canOpenOrganization
 
 <template>
   <div>
-    <div class="mb-6 border-b border-neutral-200">
-      <nav class="-mb-px flex flex-wrap gap-x-6 gap-y-1">
-        <RouterLink
-          v-for="tab in tabs"
-          :key="tab.to"
-          :to="tab.to"
-          class="whitespace-nowrap border-b-2 px-1 py-3 text-sm font-medium"
-          :class="
-            route.path === tab.to
-              ? 'border-primary-600 text-primary-700'
-              : 'border-transparent text-neutral-500 hover:border-neutral-300 hover:text-neutral-700'
-          "
-        >
-          {{ t(tab.labelKey) }}
-        </RouterLink>
-      </nav>
-    </div>
+    <RouteTabBar :tabs="tabs" />
 
     <RouterView />
   </div>

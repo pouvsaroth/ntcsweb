@@ -111,6 +111,7 @@ use App\Http\Controllers\Api\V1\MyResignationRequestController;
 use App\Http\Controllers\Api\V1\MyStudentFeedbackController;
 use App\Http\Controllers\Api\V1\MyVideoController;
 use App\Http\Controllers\Api\V1\NotificationController;
+use App\Http\Controllers\Api\V1\TranslationOverrideController;
 use App\Http\Controllers\Api\V1\Public\CoursePackageController as PublicCoursePackageController;
 use App\Http\Controllers\Api\V1\Public\EnrollmentInquiryController;
 use App\Http\Controllers\Api\V1\Public\DownloadController as PublicDownloadController;
@@ -672,6 +673,12 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
         Route::post('notifications/mark-all-read', [NotificationController::class, 'markAllRead'])->name('notifications.mark-all-read');
         Route::post('notifications/{notification}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
+
+        // The school's own wording of the app's text — anyone signed in reads it
+        // (the admin app applies it for everyone); saving needs
+        // base-data.manage-translations. See TranslationOverrideController.
+        Route::get('translation-overrides', [TranslationOverrideController::class, 'index'])->name('translation-overrides.index');
+        Route::put('translation-overrides', [TranslationOverrideController::class, 'update'])->name('translation-overrides.update');
 
         // Phone notifications (Web Push) for the current device — identity-gated, see MyPushSubscriptionController.
         Route::get('my-push-subscriptions/config', [MyPushSubscriptionController::class, 'config'])->name('my-push-subscriptions.config');

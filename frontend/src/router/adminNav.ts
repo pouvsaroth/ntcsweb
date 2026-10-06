@@ -240,7 +240,7 @@ export const adminNav: AdminNavGroup[] = [
       { labelKey: 'adminNav.items.users', to: '/admin/users', permission: 'users.view' },
       { labelKey: 'adminNav.items.roles', to: '/admin/roles', permission: 'roles.view' },
       { labelKey: 'adminNav.items.auditLogs', to: '/admin/audit-logs', permission: 'audit-logs.view' },
-      { labelKey: 'adminNav.items.languages', to: '/admin/languages', permission: 'base-data.manage-languages' },
+      { labelKey: 'adminNav.items.languages', to: '/admin/languages', permission: ['base-data.manage-languages', 'base-data.manage-translations'] },
       { labelKey: 'adminNav.items.lookupCategories', to: '/admin/lookup-categories', permission: 'base-data.view' },
       // Super Admin: any database. database-backups.download (school-admin by
       // default): only their own school's — see DatabaseBackupController.

@@ -761,7 +761,7 @@ final class Permissions
                 self::BASE_DATA_CREATE => 'Create lookup categories & values',
                 self::BASE_DATA_UPDATE => 'Update lookup categories & values',
                 self::BASE_DATA_DELETE => 'Delete lookup categories & values',
-                self::BASE_DATA_MANAGE_TRANSLATIONS => 'Manage lookup value translations',
+                self::BASE_DATA_MANAGE_TRANSLATIONS => 'Manage translations (lookup values and the app\'s own words)',
                 self::BASE_DATA_MANAGE_LANGUAGES => 'Manage supported languages',
             ],
             'Home slides' => [
