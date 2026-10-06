@@ -9,7 +9,6 @@ import BaseBadge from '@/components/ui/BaseBadge.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import BaseSpinner from '@/components/ui/BaseSpinner.vue'
-import DataTable from '@/components/ui/DataTable.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import { approvalRequestsService, type ApprovalRequest, type ApprovalRequestStatus } from '@/services/approvalRequests'
 import { examApplicationsService, type ExamApplication } from '@/services/examApplications'
@@ -97,15 +96,6 @@ const counts = computed(() => ({
 }))
 
 const visibleRows = computed(() => rows.value.filter((r) => r.status === activeTab.value))
-
-const columns = [
-  { key: 'actions', label: t('admin.approvals.columnActions') },
-  { key: 'date', label: t('admin.approvals.columnDate') },
-  { key: 'requestor', label: t('admin.approvals.columnRequestor') },
-  { key: 'subject', label: t('admin.approvals.columnSubject') },
-  { key: 'reference', label: t('admin.approvals.columnReference') },
-  { key: 'status', label: t('admin.approvals.columnStatus') },
-]
 
 const statusVariant: Record<RowStatus, 'warning' | 'primary' | 'success' | 'danger'> = {
   pending: 'warning',
@@ -412,30 +402,44 @@ onMounted(() => load())
       :message="t('admin.approvals.emptyMessage')"
     />
 
-    <DataTable v-else :columns="columns" :rows="visibleRows" row-key="id">
-      <template #cell-date="{ row }">{{ formatDate(row.createdAt) }}</template>
-      <template #cell-requestor="{ row }">{{ row.requestor }}</template>
-      <template #cell-subject="{ row }">
-        <button type="button" class="text-left font-medium text-primary-700 hover:underline" @click="detail = row">
-          {{ row.subject }}
-        </button>
-      </template>
-      <template #cell-reference="{ row }">{{ row.reference }}</template>
-      <template #cell-status="{ row }">
-        <BaseBadge :variant="statusVariant[row.status]">{{ t(statusLabelKey[row.status]) }}</BaseBadge>
-        <p v-if="row.flow" class="mt-1 text-xs text-neutral-500">
+    <!-- Every tab's list as cards, at every screen size: one column on a
+         phone, more as the screen widens. Tapping the subject opens the
+         request's details. -->
+    <div v-else class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+      <div
+        v-for="row in visibleRows"
+        :key="row.id"
+        class="flex flex-col rounded-[--radius-card] border border-neutral-200 bg-white p-4 shadow-[--shadow-card]"
+      >
+        <div class="flex items-start justify-between gap-3">
+          <button type="button" class="min-w-0 text-left text-sm font-semibold text-primary-700 hover:underline" @click="detail = row">
+            {{ row.subject }}
+          </button>
+          <BaseBadge :variant="statusVariant[row.status]" class="shrink-0">{{ t(statusLabelKey[row.status]) }}</BaseBadge>
+        </div>
+
+        <dl class="mt-3 grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 text-sm">
+          <dt class="text-neutral-500">{{ t('admin.approvals.columnRequestor') }}</dt>
+          <dd class="truncate font-medium text-neutral-800">{{ row.requestor }}</dd>
+          <dt class="text-neutral-500">{{ t('admin.approvals.columnDate') }}</dt>
+          <dd class="text-neutral-800">{{ formatDate(row.createdAt) }}</dd>
+          <dt class="text-neutral-500">{{ t('admin.approvals.columnReference') }}</dt>
+          <dd class="truncate text-neutral-800">{{ row.reference }}</dd>
+        </dl>
+
+        <p v-if="row.flow" class="mt-2 text-xs text-neutral-500">
           {{ t('admin.approvals.flowStep', { step: row.flow.step, total: row.flow.total, group: row.flow.group ?? '—' }) }}
         </p>
-      </template>
-      <template #cell-actions="{ row }">
-        <div v-if="isOpen(row)" class="flex gap-2">
+
+        <!-- Pushes the buttons to the card's bottom, so a row of cards lines them up. -->
+        <div class="min-h-3 flex-1" />
+        <div v-if="isOpen(row) && (canApprove(row) || canReject(row) || (row.kind === 'exam' && canUpdateExam))" class="flex flex-wrap justify-end gap-2 border-t border-neutral-100 pt-3">
           <BaseButton v-if="row.kind === 'exam' && canUpdateExam" size="sm" variant="outline" @click="openEditExam(row)">{{ t('common.edit') }}</BaseButton>
           <BaseButton v-if="canApprove(row)" size="sm" :loading="approving" @click="approve(row)">{{ approveLabel(row) }}</BaseButton>
           <BaseButton v-if="canReject(row)" size="sm" variant="danger" @click="openReject(row)">{{ t('admin.approvals.reject') }}</BaseButton>
         </div>
-        <span v-else class="text-xs text-neutral-400">—</span>
-      </template>
-    </DataTable>
+      </div>
+    </div>
 
     <BaseModal :model-value="detail !== null" :title="detail?.subject" size="lg" @update:model-value="detail = null">
       <template v-if="detail">
