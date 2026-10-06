@@ -3,6 +3,7 @@ import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import { firstAccessibleAdminPath } from '@/router/adminNav'
 import { canOpenOrganizationTab, organizationTabs } from '@/router/organizationTabs'
 import { attendanceTabs } from '@/router/attendanceTabs'
+import { leaveTabs } from '@/router/leaveTabs'
 import { recruitmentTabs } from '@/router/recruitmentTabs'
 import { useAuthStore } from '@/stores/auth'
 
@@ -511,6 +512,30 @@ const adminRoutes: RouteRecordRaw[] = [
       { path: 'holidays', name: 'admin.time-attendance.holidays', component: () => import('@/pages/admin/timeAttendance/Holidays.vue') },
       { path: 'corrections', name: 'admin.time-attendance.corrections', component: () => import('@/pages/admin/timeAttendance/Corrections.vue') },
       { path: 'approval', name: 'admin.time-attendance.approval', component: () => import('@/pages/admin/timeAttendance/AttendanceApproval.vue') },
+    ],
+  },
+  {
+    // HRM > Leave Management: tabs as child routes (see LeaveLayout.vue / leaveTabs.ts).
+    path: 'leave-management',
+    component: () => import('@/pages/admin/leaveManagement/LeaveLayout.vue'),
+    meta: { titleKey: 'adminNav.items.leaveManagement' },
+    children: [
+      {
+        path: '',
+        name: 'admin.leave-management',
+        redirect: () => {
+          const auth = useAuthStore()
+          return (leaveTabs.find((tab) => auth.can(tab.permission)) ?? leaveTabs[0]!).to
+        },
+      },
+      { path: 'types', name: 'admin.leave-management.types', component: () => import('@/pages/admin/leaveManagement/LeaveTypes.vue') },
+      { path: 'policies', name: 'admin.leave-management.policies', component: () => import('@/pages/admin/leaveManagement/LeavePolicies.vue') },
+      { path: 'balances', name: 'admin.leave-management.balances', component: () => import('@/pages/admin/leaveManagement/LeaveBalances.vue') },
+      { path: 'requests', name: 'admin.leave-management.requests', component: () => import('@/pages/admin/leaveManagement/LeaveRequests.vue') },
+      { path: 'carry-forward', name: 'admin.leave-management.carry-forward', component: () => import('@/pages/admin/leaveManagement/CarryForward.vue') },
+      { path: 'workflow', name: 'admin.leave-management.workflow', component: () => import('@/pages/admin/leaveManagement/LeaveWorkflow.vue') },
+      { path: 'calendar', name: 'admin.leave-management.calendar', component: () => import('@/pages/admin/leaveManagement/LeaveCalendar.vue') },
+      { path: 'reports', name: 'admin.leave-management.reports', component: () => import('@/pages/admin/leaveManagement/LeaveReports.vue') },
     ],
   },
   {

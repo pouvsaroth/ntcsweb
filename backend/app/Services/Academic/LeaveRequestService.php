@@ -11,6 +11,7 @@ use App\Models\Staff;
 use App\Models\Student;
 use App\Models\User;
 use App\Services\Approvals\ApprovalFlow;
+use App\Services\Leave\LeaveBalanceService;
 use App\Services\Notifications\NotificationService;
 use App\Support\Academic\AttendanceStatus;
 use App\Support\Authorization\Permissions;
@@ -39,24 +40,38 @@ final class LeaveRequestService
         private readonly AttendanceService $attendance,
         private readonly NotificationService $notifications,
         private readonly ApprovalFlow $flow,
+        private readonly LeaveBalanceService $balances,
     ) {}
 
     /**
      * `$student` xor `$staff` — whichever the signed-in account is linked
      * to; see MyLeaveRequestController::requesterOrFail().
      *
-     * @param  array{from_date:string, to_date:string, from_time?:string|null, to_time?:string|null, reason:string, attachments?:list<UploadedFile>}  $data
+     * A staff member's request is checked against its leave type and policy
+     * (see LeaveBalanceService::check()) with their staff row locked, so two
+     * requests sent at once can't both spend the same balance. `$byHr`: HR
+     * filing it on their behalf (HRM > Leave Management > Leave request).
+     *
+     * @param  array{leave_type_id?:int|null, day_part?:string|null, from_date:string, to_date:string, from_time?:string|null, to_time?:string|null, reason:string, attachments?:list<UploadedFile>}  $data
      */
-    public function submit(?Student $student, ?Staff $staff, array $data): LeaveRequest
+    public function submit(?Student $student, ?Staff $staff, array $data, bool $byHr = false): LeaveRequest
     {
-        $request = DB::transaction(function () use ($student, $staff, $data) {
+        $request = DB::transaction(function () use ($student, $staff, $data, $byHr) {
+            $leave = ['leave_type_id' => null, 'day_part' => null, 'days' => null];
+            if ($staff !== null) {
+                $staff = Staff::query()->whereKey($staff->id)->lockForUpdate()->firstOrFail();
+                $leave = $this->balances->check($staff, [...$data, 'has_attachment' => ($data['attachments'] ?? []) !== []], $byHr);
+            }
+
             $request = LeaveRequest::query()->create([
                 'student_id' => $student?->id,
                 'staff_id' => $staff?->id,
+                ...$leave,
                 'from_date' => $data['from_date'],
                 'to_date' => $data['to_date'],
-                'from_time' => $data['from_time'] ?? null,
-                'to_time' => $data['to_time'] ?? null,
+                // A half day is the day part, not clock times.
+                'from_time' => $leave['day_part'] !== null && $leave['day_part'] !== LeaveRequest::DAY_FULL ? null : ($data['from_time'] ?? null),
+                'to_time' => $leave['day_part'] !== null && $leave['day_part'] !== LeaveRequest::DAY_FULL ? null : ($data['to_time'] ?? null),
                 'reason' => $data['reason'],
                 'status' => LeaveRequest::STATUS_PENDING,
             ]);
@@ -77,7 +92,7 @@ final class LeaveRequestService
                 ]);
             }
 
-            return $request->load('attachments');
+            return $request->load(['attachments', 'leaveType']);
         });
 
         // Outside the transaction — a notification that fails to write is

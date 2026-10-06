@@ -6,12 +6,15 @@ namespace App\Http\Controllers\Api\V1\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Admin\RejectLeaveRequestRequest;
+use App\Http\Requests\Api\V1\Admin\StoreStaffLeaveRequestRequest;
 use App\Http\Resources\LeaveRequestResource;
 use App\Http\Responses\ApiResponse;
 use App\Models\LeaveRequest;
+use App\Models\Staff;
 use App\Services\Academic\LeaveRequestService;
 use App\Services\Approvals\ApprovalFlow;
 use App\Support\Approvals\DocumentType;
+use App\Support\Authorization\Permissions;
 use App\Support\Query\ApiQuery;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -36,7 +39,16 @@ final class LeaveRequestController extends Controller
         // resolve for every row in the list, so the Approval queue's detail
         // view (which reads straight off this list, not a per-row show()
         // call) never has anything to show.
-        $query = LeaveRequest::query()->with(['student', 'staff', 'decidedBy', 'attachments']);
+        $query = LeaveRequest::query()->with(['student', 'staff', 'decidedBy', 'attachments', 'leaveType']);
+
+        // HRM > Leave Management > Leave request lists staff requests only;
+        // `year` narrows it to requests starting that year.
+        if ($request->query('requester') === 'staff') {
+            $query->whereNotNull('staff_id');
+        }
+        if ($request->filled('year')) {
+            $query->whereYear('from_date', $request->integer('year'));
+        }
 
         // The Approvals queue lists a pending request of an item with an
         // approval flow only to the group it's waiting on (see ApprovalFlow).
@@ -45,7 +57,7 @@ final class LeaveRequestController extends Controller
         }
 
         $requests = ApiQuery::for($query, $request)
-            ->filterable(['status', 'student_id', 'staff_id'])
+            ->filterable(['status', 'student_id', 'staff_id', 'leave_type_id'])
             ->sortable(['from_date', 'created_at'], default: '-created_at')
             ->paginate();
 
@@ -59,8 +71,27 @@ final class LeaveRequestController extends Controller
         $this->authorize('view', $leaveRequest);
 
         return ApiResponse::success(new LeaveRequestResource(
-            $leaveRequest->load(['student', 'staff', 'decidedBy', 'attachments'])
+            $leaveRequest->load(['student', 'staff', 'decidedBy', 'attachments', 'leaveType'])
         ));
+    }
+
+    /**
+     * HR files a leave request for a staff member (HRM > Leave Management >
+     * Leave request). It is checked like their own — type, policy and
+     * balance, except the notice period — and waits in Approvals like any
+     * other.
+     */
+    public function store(StoreStaffLeaveRequestRequest $request): JsonResponse
+    {
+        abort_unless($request->user()->hasPermission(Permissions::LEAVE_MANAGEMENT_MANAGE), 403);
+
+        $staff = Staff::query()->findOrFail($request->integer('staff_id'));
+        $leaveRequest = $this->leaveRequests->submit(null, $staff, [
+            ...collect($request->validated())->except('staff_id')->all(),
+            'attachments' => $request->file('attachments', []),
+        ], byHr: true);
+
+        return ApiResponse::created(new LeaveRequestResource($leaveRequest->load(['staff', 'leaveType'])));
     }
 
     public function approve(LeaveRequest $leaveRequest, Request $request): JsonResponse
@@ -76,7 +107,7 @@ final class LeaveRequestController extends Controller
             fn ($doc, $nextApprovers) => $this->leaveRequests->notifyApprovers($doc, $nextApprovers),
         );
 
-        return ApiResponse::success(new LeaveRequestResource($leaveRequest->load(['student', 'staff', 'decidedBy'])));
+        return ApiResponse::success(new LeaveRequestResource($leaveRequest->load(['student', 'staff', 'decidedBy', 'leaveType'])));
     }
 
     public function reject(RejectLeaveRequestRequest $request, LeaveRequest $leaveRequest): JsonResponse

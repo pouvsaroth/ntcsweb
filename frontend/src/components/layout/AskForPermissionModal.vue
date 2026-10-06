@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { reactive, ref, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
-import { myLeaveRequestsService } from '@/services/leaveRequests'
+import BaseSelect from '@/components/ui/BaseSelect.vue'
+import { formatDays } from '@/services/leaveManagement'
+import { myLeaveRequestsService, type LeaveDayPart, type MyLeaveType } from '@/services/leaveRequests'
 import { ApiRequestError } from '@/types/api'
 
 /**
@@ -18,13 +20,61 @@ import { ApiRequestError } from '@/types/api'
  * queue (see admin/approvals/Approvals.vue), and approving syncs matching
  * class days into the student's attendance as Excused
  * (LeaveRequestService::approve()).
+ *
+ * A staff member (once HRM > Leave Management has leave types) also picks
+ * the leave type — seeing what's left of it this year — and, for one date, a
+ * full day or a morning/afternoon half; the working days it takes are shown
+ * as they pick. A student's form never has these (their type list is empty).
  */
 const props = defineProps<{ modelValue: boolean }>()
 const emit = defineEmits<{ 'update:modelValue': [value: boolean] }>()
 
 const { t } = useI18n()
 
-const form = reactive({ from_date: '', to_date: '', from_time: '', to_time: '', reason: '' })
+const form = reactive({ leave_type_id: '', day_part: 'full' as LeaveDayPart, from_date: '', to_date: '', from_time: '', to_time: '', reason: '' })
+
+// --- Staff: leave type, half days, days taken -------------------------------------
+
+const leaveTypes = ref<MyLeaveType[]>([])
+const staffMode = computed(() => leaveTypes.value.length > 0)
+const selectedType = computed(() => leaveTypes.value.find((type) => String(type.id) === form.leave_type_id) ?? null)
+const typeOptions = computed(() => leaveTypes.value.map((type) => ({ value: String(type.id), label: type.name })))
+const oneDay = computed(() => form.from_date !== '' && (form.to_date === '' || form.to_date === form.from_date))
+const canHalfDay = computed(() => oneDay.value && (selectedType.value?.allow_half_day ?? false))
+const dayPartOptions = computed(() => [
+  { value: 'full', label: t('leaveRequest.dayFull') },
+  { value: 'morning', label: t('leaveRequest.dayMorning') },
+  { value: 'afternoon', label: t('leaveRequest.dayAfternoon') },
+])
+
+const days = ref<number | null>(null)
+let quoteTimer: ReturnType<typeof setTimeout> | undefined
+
+watch(canHalfDay, (allowed) => {
+  if (!allowed) form.day_part = 'full'
+})
+
+watch(
+  () => [staffMode.value, form.from_date, form.to_date, form.day_part] as const,
+  ([staff, from, to, dayPart]) => {
+    clearTimeout(quoteTimer)
+    days.value = null
+    const end = to || from
+    if (!staff || !from || end < from) return
+    quoteTimer = setTimeout(async () => {
+      try {
+        days.value = await myLeaveRequestsService.quote({ from_date: from, to_date: end, day_part: dayPart })
+      } catch {
+        days.value = null
+      }
+    }, 300)
+  },
+)
+
+const overBalance = computed(() => {
+  const balance = selectedType.value?.balance
+  return balance != null && days.value != null && days.value > balance.available
+})
 const attachments = ref<File[]>([])
 const errors = ref<Record<string, string[]>>({})
 const generalError = ref<string | null>(null)
@@ -36,6 +86,8 @@ watch(
   (open) => {
     if (!open) return
 
+    form.leave_type_id = ''
+    form.day_part = 'full'
     form.from_date = ''
     form.to_date = ''
     form.from_time = ''
@@ -45,6 +97,12 @@ watch(
     errors.value = {}
     generalError.value = null
     submitted.value = false
+    days.value = null
+
+    myLeaveRequestsService
+      .types()
+      .then((types) => (leaveTypes.value = types))
+      .catch(() => (leaveTypes.value = []))
   },
 )
 
@@ -67,10 +125,13 @@ async function submit() {
 
   try {
     await myLeaveRequestsService.submit({
+      leave_type_id: staffMode.value && form.leave_type_id ? Number(form.leave_type_id) : null,
+      day_part: staffMode.value ? form.day_part : null,
       from_date: form.from_date,
-      to_date: form.to_date,
-      from_time: form.from_time || null,
-      to_time: form.to_time || null,
+      // One date for a staff member's day: the To date may be left empty.
+      to_date: staffMode.value && !form.to_date ? form.from_date : form.to_date,
+      from_time: staffMode.value ? null : form.from_time || null,
+      to_time: staffMode.value ? null : form.to_time || null,
       reason: form.reason,
       attachments: attachments.value,
     })
@@ -98,12 +159,52 @@ async function submit() {
     <form v-else class="space-y-4" @submit.prevent="submit">
       <BaseAlert v-if="generalError" variant="danger">{{ generalError }}</BaseAlert>
 
-      <div class="grid grid-cols-2 gap-3">
-        <BaseInput v-model="form.from_date" type="date" required :label="t('leaveRequest.fromDate')" :error="errors.from_date?.[0]" />
-        <BaseInput v-model="form.to_date" type="date" required :label="t('leaveRequest.toDate')" :error="errors.to_date?.[0]" />
-      </div>
+      <template v-if="staffMode">
+        <BaseSelect
+          v-model="form.leave_type_id"
+          required
+          :options="typeOptions"
+          :placeholder="t('leaveRequest.pickType')"
+          :label="t('leaveRequest.leaveType')"
+          :error="errors.leave_type_id?.[0]"
+        />
+        <p v-if="selectedType" class="-mt-2 text-sm text-neutral-600">
+          <template v-if="selectedType.balance">
+            {{ t('leaveRequest.balanceLine', { available: formatDays(selectedType.balance.available), total: formatDays(selectedType.balance.total) }) }}
+            <span v-if="selectedType.balance.pending > 0" class="text-neutral-500">· {{ t('leaveRequest.pendingLine', { days: formatDays(selectedType.balance.pending) }) }}</span>
+          </template>
+          <template v-else>{{ t('leaveRequest.noBalanceLimit') }}</template>
+        </p>
+      </template>
 
       <div class="grid grid-cols-2 gap-3">
+        <BaseInput v-model="form.from_date" type="date" required :label="t('leaveRequest.fromDate')" :error="errors.from_date?.[0]" />
+        <BaseInput
+          v-model="form.to_date"
+          type="date"
+          :required="!staffMode"
+          :label="t('leaveRequest.toDate')"
+          :hint="staffMode ? t('leaveRequest.toDateHint') : undefined"
+          :error="errors.to_date?.[0]"
+        />
+      </div>
+
+      <template v-if="staffMode">
+        <BaseSelect
+          v-if="canHalfDay"
+          :model-value="form.day_part"
+          :options="dayPartOptions"
+          :label="t('leaveRequest.dayPart')"
+          :error="errors.day_part?.[0]"
+          @update:model-value="form.day_part = $event as LeaveDayPart"
+        />
+        <p v-if="days !== null" class="rounded-lg px-3 py-2 text-sm" :class="overBalance ? 'bg-red-50 text-red-700' : 'bg-neutral-50 text-neutral-700'">
+          {{ t('leaveRequest.daysTaken', { days: formatDays(days) }) }}
+          <template v-if="overBalance"> — {{ t('leaveRequest.overBalance') }}</template>
+        </p>
+      </template>
+
+      <div v-else class="grid grid-cols-2 gap-3">
         <BaseInput v-model="form.from_time" type="time" :label="t('leaveRequest.fromTime')" :error="errors.from_time?.[0]" />
         <BaseInput v-model="form.to_time" type="time" :label="t('leaveRequest.toTime')" :error="errors.to_time?.[0]" />
       </div>
@@ -123,7 +224,9 @@ async function submit() {
       </div>
 
       <div>
-        <label class="mb-1.5 block text-sm font-medium text-neutral-700">{{ t('leaveRequest.attachments') }}</label>
+        <label class="mb-1.5 block text-sm font-medium text-neutral-700">
+          {{ t('leaveRequest.attachments') }} <span v-if="selectedType?.requires_attachment" class="text-danger-600">*</span>
+        </label>
         <input
           type="file"
           multiple
@@ -144,7 +247,7 @@ async function submit() {
             </button>
           </li>
         </ul>
-        <p v-if="errors['attachments.0']?.[0]" class="mt-1.5 text-sm text-danger-600">{{ errors['attachments.0'][0] }}</p>
+        <p v-if="errors['attachments.0']?.[0] || errors.attachments?.[0]" class="mt-1.5 text-sm text-danger-600">{{ errors['attachments.0']?.[0] ?? errors.attachments?.[0] }}</p>
       </div>
     </form>
 

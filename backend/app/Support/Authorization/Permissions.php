@@ -330,6 +330,12 @@ final class Permissions
     // Signing off (and unlocking) a month of staff attendance.
     public const STAFF_ATTENDANCE_APPROVE = 'staff-attendance.approve';
 
+    // HRM > Leave Management: view reads leave types, policies, balances and
+    // reports; manage sets up types/policies and adjusts balances.
+    public const LEAVE_MANAGEMENT_VIEW = 'leave-management.view';
+
+    public const LEAVE_MANAGEMENT_MANAGE = 'leave-management.manage';
+
     // Staff — non-teaching personnel (Accountant, HR, Librarian, ...).
     public const STAFF_VIEW = 'staff.view';
 
@@ -857,6 +863,10 @@ final class Permissions
                 self::ATTENDANCE_CORRECTIONS_REJECT => 'Reject attendance corrections',
                 self::STAFF_ATTENDANCE_APPROVE => 'Sign off (and unlock) a month of staff attendance',
             ],
+            'Leave management' => [
+                self::LEAVE_MANAGEMENT_VIEW => 'View leave types, policies, balances and reports',
+                self::LEAVE_MANAGEMENT_MANAGE => 'Manage leave types and policies, and adjust leave balances',
+            ],
             'Staff' => [
                 self::STAFF_VIEW => 'View staff',
                 self::STAFF_CREATE => 'Create staff',
@@ -1180,6 +1190,8 @@ final class Permissions
                 self::ATTENDANCE_CORRECTIONS_APPROVE,
                 self::ATTENDANCE_CORRECTIONS_REJECT,
                 self::STAFF_ATTENDANCE_APPROVE,
+                self::LEAVE_MANAGEMENT_VIEW,
+                self::LEAVE_MANAGEMENT_MANAGE,
                 self::MAKE_UP_CLASS_REQUESTS_VIEW,
                 self::MAKE_UP_CLASS_REQUESTS_APPROVE,
                 self::MAKE_UP_CLASS_REQUESTS_REJECT,

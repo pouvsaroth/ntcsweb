@@ -30,7 +30,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int|null $staff_id
  * @property string $status
  */
-#[Fillable(['student_id', 'staff_id', 'from_date', 'to_date', 'from_time', 'to_time', 'reason', 'status', 'decision_reason', 'decided_by', 'decided_at'])]
+#[Fillable(['student_id', 'staff_id', 'leave_type_id', 'from_date', 'to_date', 'from_time', 'to_time', 'day_part', 'days', 'reason', 'status', 'decision_reason', 'decided_by', 'decided_at'])]
 class LeaveRequest extends Model
 {
     use Auditable, HasFactory, SoftDeletes;
@@ -41,6 +41,15 @@ class LeaveRequest extends Model
     public const STATUS_APPROVED = 'approved';
 
     public const STATUS_REJECTED = 'rejected';
+
+    /** `day_part` of a staff request — a half day is only ever a one-day request. */
+    public const DAY_FULL = 'full';
+
+    public const DAY_MORNING = 'morning';
+
+    public const DAY_AFTERNOON = 'afternoon';
+
+    public const DAY_PARTS = [self::DAY_FULL, self::DAY_MORNING, self::DAY_AFTERNOON];
 
     protected $connection = 'tenant';
 
@@ -54,6 +63,7 @@ class LeaveRequest extends Model
             'from_date' => 'date',
             'to_date' => 'date',
             'decided_at' => 'datetime',
+            'days' => 'float',
         ];
     }
 
@@ -65,6 +75,12 @@ class LeaveRequest extends Model
     public function staff(): BelongsTo
     {
         return $this->belongsTo(Staff::class);
+    }
+
+    /** Staff requests only (HRM > Leave Management) — null on a student's. */
+    public function leaveType(): BelongsTo
+    {
+        return $this->belongsTo(LeaveType::class);
     }
 
     /** Whoever actually owns this request — a student, a staff member, but always exactly one. */

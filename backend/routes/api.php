@@ -64,7 +64,11 @@ use App\Http\Controllers\Api\V1\Admin\JobLevelController;
 use App\Http\Controllers\Api\V1\Admin\JobPositionController;
 use App\Http\Controllers\Api\V1\Admin\JobPostingController;
 use App\Http\Controllers\Api\V1\Admin\LanguageController;
+use App\Http\Controllers\Api\V1\Admin\LeaveBalanceController;
+use App\Http\Controllers\Api\V1\Admin\LeavePolicyController;
+use App\Http\Controllers\Api\V1\Admin\LeaveReportController;
 use App\Http\Controllers\Api\V1\Admin\LeaveRequestController;
+use App\Http\Controllers\Api\V1\Admin\LeaveTypeController;
 use App\Http\Controllers\Api\V1\Admin\LookupCategoryController;
 use App\Http\Controllers\Api\V1\Admin\LookupValueController;
 use App\Http\Controllers\Api\V1\Admin\MakeUpClassRequestController;
@@ -318,7 +322,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
 
         // Student-submitted leave/permission requests — approving one syncs
         // into AttendanceRecord (status Excused) via LeaveRequestService.
-        Route::apiResource('leave-requests', LeaveRequestController::class)->only(['index', 'show']);
+        Route::apiResource('leave-requests', LeaveRequestController::class)->only(['index', 'show', 'store']);
         Route::post('leave-requests/{leave_request}/approve', [LeaveRequestController::class, 'approve'])->name('leave-requests.approve');
         Route::post('leave-requests/{leave_request}/reject', [LeaveRequestController::class, 'reject'])->name('leave-requests.reject');
 
@@ -342,6 +346,19 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('candidate-selection', CandidateSelectionController::class)->name('candidate-selection');
         Route::apiResource('offer-letters', OfferLetterController::class);
         Route::post('offer-letters/{offer_letter}/hire', [OfferLetterController::class, 'hire'])->name('offer-letters.hire');
+
+        // HRM > Leave Management — leave set-up.
+        Route::apiResource('leave-types', LeaveTypeController::class);
+        Route::apiResource('leave-policies', LeavePolicyController::class);
+        Route::get('leave-balances', [LeaveBalanceController::class, 'index'])->name('leave-balances.index');
+        Route::get('leave-balances/carry-forward', [LeaveBalanceController::class, 'carried'])->name('leave-balances.carried');
+        Route::post('leave-balances/carry-forward', [LeaveBalanceController::class, 'carryForward'])->name('leave-balances.carry-forward');
+        Route::post('leave-balances/adjustments', [LeaveBalanceController::class, 'adjust'])->name('leave-balances.adjust');
+        Route::get('leave-balances/{staff}', [LeaveBalanceController::class, 'show'])->name('leave-balances.show');
+        Route::delete('leave-balance-entries/{leave_balance_entry}', [LeaveBalanceController::class, 'destroyEntry'])->name('leave-balance-entries.destroy');
+        Route::get('leave-calendar', [LeaveReportController::class, 'calendar'])->name('leave-calendar');
+        Route::get('leave-reports', [LeaveReportController::class, 'report'])->name('leave-reports');
+        Route::get('leave-workflow', [LeaveReportController::class, 'workflow'])->name('leave-workflow');
 
         // HRM > Attendance & Time — staff attendance set-up.
         Route::apiResource('shifts', ShiftController::class);
@@ -686,6 +703,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('my-attendance', [MyAttendanceController::class, 'index'])->name('my-attendance.index');
 
         // Student self-service — identity-gated, same pattern as my-attendance.
+        Route::get('my-leave-requests/types', [MyLeaveRequestController::class, 'types'])->name('my-leave-requests.types');
+        Route::get('my-leave-requests/quote', [MyLeaveRequestController::class, 'quote'])->name('my-leave-requests.quote');
         Route::get('my-leave-requests', [MyLeaveRequestController::class, 'index'])->name('my-leave-requests.index');
         Route::post('my-leave-requests', [MyLeaveRequestController::class, 'store'])->name('my-leave-requests.store');
 

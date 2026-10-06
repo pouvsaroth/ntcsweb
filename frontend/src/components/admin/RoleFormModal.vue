@@ -155,6 +155,7 @@ const MODULES: ModuleEntry[] = [
   { name: 'Overtime requests', group: 'Staff', actions: { approve: 'overtime-requests.approve', reject: 'overtime-requests.reject' } },
   { name: 'Attendance corrections', group: 'Staff', actions: { approve: 'attendance-corrections.approve', reject: 'attendance-corrections.reject' } },
   { name: 'Attendance sign-off (lock a month)', group: 'Staff', actions: { approve: 'staff-attendance.approve' } },
+  { name: 'Leave management (types, policies, balances)', group: 'Staff', actions: { view: 'leave-management.view', manage: 'leave-management.manage' } },
   // HRM > Organization Management's Branch/Department/Team/Job grade/Job level tabs share one set.
   {
     name: 'Organization (branches, departments, teams, job grades, job levels)',

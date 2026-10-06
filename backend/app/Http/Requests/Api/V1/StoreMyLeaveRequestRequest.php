@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Api\V1;
 
+use App\Models\LeaveRequest;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
 /**
@@ -21,7 +23,13 @@ class StoreMyLeaveRequestRequest extends FormRequest
 
     public function rules(): array
     {
+        // Leave type and day part are a staff member's (HRM > Leave
+        // Management); a student's request never has them.
+        $student = $this->user()?->student !== null;
+
         return [
+            'leave_type_id' => $student ? ['prohibited'] : ['nullable', 'integer'],
+            'day_part' => $student ? ['prohibited'] : ['nullable', Rule::in(LeaveRequest::DAY_PARTS)],
             'from_date' => ['required', 'date'],
             'to_date' => ['required', 'date', 'after_or_equal:from_date'],
             'from_time' => ['nullable', 'date_format:H:i'],

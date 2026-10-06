@@ -39,6 +39,9 @@ use App\Models\FormTemplate;
 use App\Models\DownloadFolder;
 use App\Models\GalleryImage;
 use App\Models\Holiday;
+use App\Models\LeaveBalanceEntry;
+use App\Models\LeavePolicy;
+use App\Models\LeaveType;
 use App\Models\HomeSlide;
 use App\Models\Interview;
 use App\Models\InterviewEvaluation;
@@ -103,6 +106,7 @@ use App\Policies\AttendanceCorrectionPolicy;
 use App\Policies\OvertimeRequestPolicy;
 use App\Policies\RecruitmentPolicy;
 use App\Policies\StaffAttendancePolicy;
+use App\Policies\LeaveManagementPolicy;
 use App\Policies\EnrollmentPolicy;
 use App\Policies\ExamApplicationPolicy;
 use App\Policies\ExamScorePolicy;
@@ -210,6 +214,9 @@ class AuthServiceProvider extends ServiceProvider
         StaffAttendance::class => StaffAttendancePolicy::class,
         OvertimeRequest::class => OvertimeRequestPolicy::class,
         AttendanceCorrection::class => AttendanceCorrectionPolicy::class,
+        LeaveType::class => LeaveManagementPolicy::class,
+        LeavePolicy::class => LeaveManagementPolicy::class,
+        LeaveBalanceEntry::class => LeaveManagementPolicy::class,
         Supplier::class => SupplierPolicy::class,
         RepairShop::class => RepairShopPolicy::class,
         AssetIssue::class => AssetIssuePolicy::class,

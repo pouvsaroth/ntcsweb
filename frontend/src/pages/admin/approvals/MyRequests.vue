@@ -14,6 +14,7 @@ import DataTable from '@/components/ui/DataTable.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import { myApprovalRequestsService, type ApprovalRequest, type ApprovalRequestStatus } from '@/services/approvalRequests'
 import { myLeaveRequestsService, type LeaveRequest } from '@/services/leaveRequests'
+import { formatDays } from '@/services/leaveManagement'
 import { makeUpClassCourseLabel, myMakeUpClassRequestsService, type MakeUpClassRequest, type MakeUpClassRequestStatus } from '@/services/makeUpClassRequests'
 import { myResignationRequestsService, type ResignationRequest } from '@/services/resignationRequests'
 import { useAuthStore } from '@/stores/auth'
@@ -151,7 +152,7 @@ async function load() {
       kind: 'leave',
       id: r.id,
       reference: `LR-${String(r.id).padStart(6, '0')}`,
-      subject: t('admin.myRequests.leaveSubject', { from: formatDate(r.from_date), to: formatDate(r.to_date) }),
+      subject: leaveSubject(r),
       status: r.status,
       createdAt: r.created_at,
       leave: r,
@@ -186,6 +187,12 @@ async function load() {
 }
 
 onMounted(() => load())
+
+/** "Annual leave: 12-10-2026 – 16-10-2026" for a staff request with a leave type, else the plain dates line. */
+function leaveSubject(r: LeaveRequest): string {
+  const dates = t('admin.myRequests.leaveSubject', { from: formatDate(r.from_date), to: formatDate(r.to_date) })
+  return r.leave_type ? `${r.leave_type.name}: ${dates}` : dates
+}
 </script>
 
 <template>
@@ -249,7 +256,9 @@ onMounted(() => load())
       </template>
       <template v-else-if="detail?.kind === 'leave' && detail.leave">
         <dl class="grid gap-y-2 text-sm">
-          <div><dt class="text-neutral-500">{{ t('admin.leaveRequests.columnDates') }}</dt><dd class="font-medium text-neutral-900">{{ formatDate(detail.leave.from_date) }} – {{ formatDate(detail.leave.to_date) }}</dd></div>
+          <div v-if="detail.leave.leave_type"><dt class="text-neutral-500">{{ t('admin.leaveManagement.policies.leaveType') }}</dt><dd class="font-medium text-neutral-900">{{ detail.leave.leave_type.name }}</dd></div>
+          <div><dt class="text-neutral-500">{{ t('admin.leaveRequests.columnDates') }}</dt><dd class="font-medium text-neutral-900">{{ formatDate(detail.leave.from_date) }} – {{ formatDate(detail.leave.to_date) }}<template v-if="detail.leave.day_part === 'morning' || detail.leave.day_part === 'afternoon'"> ({{ t(detail.leave.day_part === 'morning' ? 'leaveRequest.dayMorning' : 'leaveRequest.dayAfternoon') }})</template></dd></div>
+          <div v-if="detail.leave.days != null"><dt class="text-neutral-500">{{ t('admin.leaveManagement.requests.days') }}</dt><dd class="font-medium text-neutral-900">{{ formatDays(detail.leave.days) }}</dd></div>
           <div><dt class="text-neutral-500">{{ t('admin.leaveRequests.columnReason') }}</dt><dd class="font-medium text-neutral-900">{{ detail.leave.reason }}</dd></div>
           <div v-if="detail.leave.decision_reason"><dt class="text-neutral-500">{{ t('admin.leaveRequests.decisionReason') }}</dt><dd class="font-medium text-neutral-900">{{ detail.leave.decision_reason }}</dd></div>
         </dl>

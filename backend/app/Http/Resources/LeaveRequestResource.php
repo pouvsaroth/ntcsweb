@@ -29,7 +29,17 @@ class LeaveRequestResource extends JsonResource
             'staff' => $this->whenLoaded('staff', fn () => $this->staff !== null ? [
                 'id' => $this->staff->id,
                 'name' => $this->staff->fullName(),
+                'employee_code' => $this->staff->employee_code,
             ] : null),
+            // Staff requests only (HRM > Leave Management).
+            'leave_type' => $this->whenLoaded('leaveType', fn () => $this->leaveType !== null ? [
+                'id' => $this->leaveType->id,
+                'code' => $this->leaveType->code,
+                'name' => $this->leaveType->name,
+                'color' => $this->leaveType->color,
+            ] : null),
+            'day_part' => $this->day_part,
+            'days' => $this->days,
             'from_date' => $this->from_date?->toDateString(),
             'to_date' => $this->to_date?->toDateString(),
             'from_time' => $this->from_time,
