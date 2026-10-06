@@ -438,4 +438,16 @@ class ExamApplicationTest extends TestCase
             $this->assertSame(1, UserNotification::where('recipient_id', $studentUser->id)->where('type', $type)->count(), $type);
         }
     }
+
+    public function test_newest_exam_date_first_puts_undated_applications_last(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::EXAM_APPLICATIONS_VIEW]);
+        $older = ExamApplication::factory()->create(['exam_date' => '2026-09-01']);
+        $undated = ExamApplication::factory()->create(['exam_date' => null]);
+        $newer = ExamApplication::factory()->create(['exam_date' => '2026-10-01']);
+
+        $ids = collect($this->getJson('/api/v1/exam-applications?sort=-exam_date')->assertOk()->json('data'))->pluck('id')->all();
+
+        $this->assertSame([$newer->id, $older->id, $undated->id], $ids);
+    }
 }

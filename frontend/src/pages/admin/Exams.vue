@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, shallowReactive, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, shallowReactive, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ExamApplicationFormModal from '@/components/admin/ExamApplicationFormModal.vue'
@@ -10,6 +10,7 @@ import BaseBadge from '@/components/ui/BaseBadge.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BasePagination from '@/components/ui/BasePagination.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
+import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import DataTable from '@/components/ui/DataTable.vue'
 import EditIconButton from '@/components/ui/EditIconButton.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
@@ -37,11 +38,33 @@ const statusFilter = ref<ExamApplicationStatus | '' | typeof AWAITING_ACTION>(AW
 
 const perPageOptions = [10, 25, 50, 100]
 
-const { items, meta, loading, error, perPage, setPage, setFilter, fetch } = usePaginatedResource<ExamApplication>((query) =>
+const { items, meta, loading, error, perPage, sort, setPage, setSort, setFilter, fetch } = usePaginatedResource<ExamApplication>((query) =>
   examApplicationsService.list(query, { awaitingAction: statusFilter.value === AWAITING_ACTION }),
 )
 
-onMounted(() => void fetch())
+// On a phone the list shows as cards (below the `sm` breakpoint, same as
+// Students.vue), newest exam date first; the desktop table keeps its usual
+// newest-application-first order.
+const PHONE_SORT = '-exam_date'
+const phoneQuery = window.matchMedia('(max-width: 639px)')
+const isPhone = ref(phoneQuery.matches)
+
+function onScreenChange(event: MediaQueryListEvent) {
+  isPhone.value = event.matches
+  setSort(event.matches ? PHONE_SORT : undefined)
+}
+
+onMounted(() => {
+  phoneQuery.addEventListener('change', onScreenChange)
+  sort.value = isPhone.value ? PHONE_SORT : undefined
+  void fetch()
+})
+
+onBeforeUnmount(() => phoneQuery.removeEventListener('change', onScreenChange))
+
+function toggleSelected(id: number) {
+  selectedIds.value = selectedIds.value.includes(id) ? selectedIds.value.filter((selected) => selected !== id) : [...selectedIds.value, id]
+}
 
 function onStatusFilterChange(value: string) {
   statusFilter.value = value as ExamApplicationStatus | '' | typeof AWAITING_ACTION
@@ -273,7 +296,74 @@ function openApplicationForm(enrollmentCode: string | null = null) {
     <BaseAlert v-if="error" variant="danger" class="mb-4">{{ error }}</BaseAlert>
     <BaseAlert v-if="actionError" variant="danger" class="mb-4">{{ actionError }}</BaseAlert>
 
+    <!-- Cards on a phone — the table's 13 columns have no room there. Newest
+         exam date first (see PHONE_SORT). -->
+    <div v-if="isPhone" class="pb-28">
+      <div v-if="loading" class="flex justify-center py-10"><BaseSpinner /></div>
+      <p v-else-if="items.length === 0" class="rounded-[--radius-card] border border-dashed border-neutral-300 py-10 text-center text-sm text-neutral-500">
+        {{ t('admin.exams.emptyMessage') }}
+      </p>
+      <div v-else class="space-y-2">
+        <div
+          v-for="row in items"
+          :key="row.id"
+          class="rounded-[--radius-card] border bg-white p-3 shadow-[--shadow-card]"
+          :class="selectedIds.includes(row.id) ? 'border-primary-300 ring-1 ring-primary-200' : 'border-neutral-200'"
+        >
+          <div class="flex items-start gap-3">
+            <input
+              type="checkbox"
+              class="mt-1 h-4 w-4 shrink-0 rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+              :checked="selectedIds.includes(row.id)"
+              :aria-label="row.student.name"
+              @change="toggleSelected(row.id)"
+            />
+            <div class="min-w-0 flex-1">
+              <div class="flex items-start justify-between gap-2">
+                <div class="min-w-0">
+                  <p class="truncate text-sm font-semibold text-neutral-800">{{ row.student.name }}</p>
+                  <button type="button" class="text-xs font-medium text-primary-700 hover:underline" @click="openApplicationForm(row.enrollment_code)">
+                    {{ row.enrollment_code ?? '—' }}
+                  </button>
+                </div>
+                <BaseBadge :variant="statusVariant[row.status]" class="shrink-0">{{ statusLabel(row.status) }}</BaseBadge>
+              </div>
+
+              <p class="mt-2 text-sm font-medium text-neutral-800">
+                {{ fmtDate(row.exam_date) }} <span class="font-normal text-neutral-500">· {{ timeRange(row) }}</span>
+              </p>
+              <p class="truncate text-xs text-neutral-500">{{ row.book?.title ?? row.enrollment.course_package?.name ?? '—' }}</p>
+              <p class="text-xs text-neutral-500">
+                {{ t('admin.exams.columnRoomNumber') }}: {{ row.classroom?.name ?? '—' }} · {{ t('admin.exams.columnTableNumber') }}:
+                {{ row.table?.name ?? row.table_no ?? '—' }}
+              </p>
+
+              <div v-if="canUpdate" class="mt-2 flex justify-end gap-1">
+                <EditIconButton :title="t('admin.exams.update')" @click="openApplicationForm(row.enrollment_code)" />
+                <ActionIconButton v-if="row.status === 'draft'" :title="t('admin.exams.approveAuto')" @click="approveAuto(row)">
+                  <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </ActionIconButton>
+                <ActionIconButton
+                  v-if="row.status === 'draft' || row.status === 'make_up'"
+                  variant="danger"
+                  :title="row.status === 'draft' ? t('admin.exams.notExam') : t('admin.exams.giveUpExam')"
+                  @click="markNotExam(row)"
+                >
+                  <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </ActionIconButton>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <DataTable
+      v-else
       :columns="columns"
       :rows="items"
       row-key="id"
