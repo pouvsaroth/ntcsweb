@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Api\V1\Admin;
 
+use App\Http\Requests\Api\V1\Admin\Concerns\ValidatesStaffOrganization;
 use App\Models\Staff;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 /**
  * Same "no role field" rule as StoreStaffRequest — changing `position_id` is
@@ -17,6 +19,8 @@ use Illuminate\Validation\Rule;
  */
 class UpdateStaffRequest extends FormRequest
 {
+    use ValidatesStaffOrganization;
+
     public function authorize(): bool
     {
         /** @var Staff $staff */
@@ -58,6 +62,13 @@ class UpdateStaffRequest extends FormRequest
 
             'hire_date' => ['nullable', 'date'],
             'status' => ['sometimes', Rule::in(Staff::STATUSES_MANAGEABLE)],
+
+            ...$this->organizationRules(),
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $this->validateOrganization($validator, $this->route('staff'));
     }
 }

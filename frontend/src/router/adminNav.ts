@@ -1,3 +1,4 @@
+import { organizationTabs } from '@/router/organizationTabs'
 import { documentLinks, documentsAndFormLinks } from '@/router/publicNav'
 
 export interface AdminNavItem {
@@ -138,8 +139,10 @@ export const adminNav: AdminNavGroup[] = [
     labelKey: 'adminNav.groups.staff',
     items: [
       { labelKey: 'adminNav.items.staffList', to: '/admin/staff', permission: 'staff.view' },
-      { labelKey: 'adminNav.items.positions', to: '/admin/positions', permission: 'positions.view' },
       { labelKey: 'adminNav.items.staffStatusHistory', to: '/admin/staff-status-history', permission: 'staff.view' },
+      // One link; School, Branch, Department, ... are tabs on the page itself
+      // (see organizationTabs.ts). Shown to anyone who can open any one tab.
+      { labelKey: 'adminNav.items.organizationManagement', to: '/admin/organization', permission: organizationTabs.flatMap((tab) => tab.permission) },
       // Self-service, same page used by the public site's "Document and
       // Form" menu for students — MyRequests.vue's backend auto-detects
       // whether the signed-in account is a student or staff (see
@@ -232,7 +235,6 @@ export const adminNav: AdminNavGroup[] = [
   {
     labelKey: 'adminNav.groups.settings',
     items: [
-      { labelKey: 'adminNav.items.school', to: '/admin/school-settings', permission: 'tenant-settings.view' },
       { labelKey: 'adminNav.items.schoolDocuments', to: '/admin/school-documents', permission: 'tenant-settings.view' },
       { labelKey: 'adminNav.items.settings', to: '/admin/settings', permission: 'tenant-settings.view' },
       { labelKey: 'adminNav.items.users', to: '/admin/users', permission: 'users.view' },

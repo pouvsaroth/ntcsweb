@@ -4,6 +4,9 @@ import type { LengthAwarePaginationMeta, PaginatedResult } from '@/types/api'
 
 export interface Department {
   id: number
+  /** The Branch it sits in (HRM > Organization Management) — optional. */
+  branch_id: number | null
+  branch?: { id: number; name: string } | null
   code: string
   name: string
   description: string | null
@@ -12,6 +15,7 @@ export interface Department {
 }
 
 export interface DepartmentInput {
+  branch_id: number | null
   code: string
   name: string
   description: string

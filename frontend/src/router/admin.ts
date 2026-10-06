@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 
 import { firstAccessibleAdminPath } from '@/router/adminNav'
+import { canOpenOrganizationTab, organizationTabs } from '@/router/organizationTabs'
 import { useAuthStore } from '@/stores/auth'
 
 const authRoutes: RouteRecordRaw[] = [
@@ -25,6 +26,7 @@ const authRoutes: RouteRecordRaw[] = [
 ]
 
 const comingSoon = () => import('@/pages/admin/ComingSoon.vue')
+const organizationUnits = () => import('@/pages/admin/OrganizationUnits.vue')
 
 /**
  * path -> adminNav.items translation key, so ComingSoon.vue's title always
@@ -330,12 +332,6 @@ const adminRoutes: RouteRecordRaw[] = [
     meta: { titleKey: 'adminNav.items.staffList' },
   },
   {
-    path: 'positions',
-    name: 'admin.positions',
-    component: () => import('@/pages/admin/Positions.vue'),
-    meta: { titleKey: 'adminNav.items.positions' },
-  },
-  {
     path: 'staff-status-history',
     name: 'admin.staff-status-history',
     component: () => import('@/pages/admin/StaffStatusHistory.vue'),
@@ -432,11 +428,35 @@ const adminRoutes: RouteRecordRaw[] = [
     meta: { titleKey: 'adminNav.items.lookupCategories' },
   },
   {
-    path: 'school-settings',
-    name: 'admin.school-settings',
-    component: () => import('@/pages/admin/SchoolSettings.vue'),
-    meta: { titleKey: 'adminNav.items.school' },
+    // HRM > Organization Management: one page whose tabs are these children
+    // (see OrganizationManagement.vue / organizationTabs.ts). Nested, so the
+    // sidebar link to '/admin/organization' stays highlighted on every tab.
+    path: 'organization',
+    component: () => import('@/pages/admin/OrganizationManagement.vue'),
+    meta: { titleKey: 'adminNav.items.organizationManagement' },
+    children: [
+      {
+        path: '',
+        name: 'admin.organization',
+        redirect: () => {
+          const auth = useAuthStore()
+          return (organizationTabs.find((tab) => canOpenOrganizationTab(tab, auth.can)) ?? organizationTabs[0]).to
+        },
+      },
+      { path: 'school', name: 'admin.school-settings', component: () => import('@/pages/admin/SchoolSettings.vue') },
+      { path: 'branches', name: 'admin.organization.branches', component: organizationUnits, props: { kind: 'branches' } },
+      { path: 'departments', name: 'admin.organization.departments', component: () => import('@/pages/admin/Departments.vue') },
+      { path: 'teams', name: 'admin.organization.teams', component: organizationUnits, props: { kind: 'teams' } },
+      { path: 'positions', name: 'admin.positions', component: () => import('@/pages/admin/Positions.vue') },
+      { path: 'job-grades', name: 'admin.organization.job-grades', component: organizationUnits, props: { kind: 'job-grades' } },
+      { path: 'job-levels', name: 'admin.organization.job-levels', component: organizationUnits, props: { kind: 'job-levels' } },
+      { path: 'reporting', name: 'admin.organization.reporting', component: () => import('@/pages/admin/ReportingManagers.vue') },
+      { path: 'hierarchy', name: 'admin.organization.hierarchy', component: () => import('@/pages/admin/OrganizationHierarchy.vue') },
+    ],
   },
+  // Old homes under Settings / HRM — kept so existing bookmarks still land.
+  { path: 'school-settings', redirect: '/admin/organization/school' },
+  { path: 'positions', redirect: '/admin/organization/positions' },
   {
     path: 'school-documents',
     name: 'admin.school-documents',

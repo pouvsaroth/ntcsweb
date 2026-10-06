@@ -20,6 +20,7 @@ const { items, meta, loading, error, setPage, setSearch, fetch } = usePaginatedR
 const columns = computed(() => [
   { key: 'code', label: t('admin.departments.columnCode') },
   { key: 'name', label: t('admin.departments.columnName') },
+  { key: 'branch', label: t('admin.organization.tabs.branch') },
   { key: 'is_active', label: t('admin.departments.columnStatus') },
   { key: 'actions', label: t('admin.departments.columnActions'), align: 'text-right' },
 ])
@@ -68,6 +69,7 @@ onMounted(() => fetch())
     <BaseAlert v-if="error || deleteError" variant="danger" class="mb-4">{{ error || deleteError }}</BaseAlert>
 
     <DataTable :columns="columns" :rows="items" row-key="id" :loading="loading" :empty-message="t('admin.departments.emptyMessage')">
+      <template #cell-branch="{ row }">{{ row.branch?.name ?? '—' }}</template>
       <template #cell-is_active="{ row }">
         <BaseBadge :variant="row.is_active ? 'success' : 'neutral'">
           {{ row.is_active ? t('admin.departments.statusActive') : t('admin.departments.statusInactive') }}

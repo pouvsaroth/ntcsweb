@@ -34,6 +34,19 @@ export interface Staff {
   hire_date: string | null
   status: StaffStatus
   position: Position | null
+  /** Where they sit in HRM > Organization Management — all optional. */
+  branch_id: number | null
+  department_id: number | null
+  team_id: number | null
+  job_grade_id: number | null
+  job_level_id: number | null
+  reports_to_staff_id: number | null
+  branch?: { id: number; name: string } | null
+  department?: { id: number; name: string } | null
+  team?: { id: number; name: string } | null
+  job_grade?: { id: number; name: string } | null
+  job_level?: { id: number; name: string } | null
+  reports_to?: { id: number; full_name: string; employee_code: string } | null
   user: { id: number; email: string | null; phone: string | null; status: string } | null
   created_at: string
 }
@@ -61,7 +74,16 @@ export interface StaffInput {
   position_id: number | null
   hire_date: string
   status: StaffStatus
+  branch_id: number | null
+  department_id: number | null
+  team_id: number | null
+  job_grade_id: number | null
+  job_level_id: number | null
+  reports_to_staff_id: number | null
 }
+
+/** Always sent, empty when unset — so clearing one on edit really clears it (the backend turns '' into null). */
+const ORGANIZATION_FIELDS = ['branch_id', 'department_id', 'team_id', 'job_grade_id', 'job_level_id', 'reports_to_staff_id'] as const
 
 export interface StaffCreated {
   staff: Staff
@@ -99,6 +121,7 @@ function toFormData(input: StaffInput, methodOverride?: 'PUT'): FormData {
   if (input.position_id) form.append('position_id', String(input.position_id))
   if (input.hire_date) form.append('hire_date', input.hire_date)
   form.append('status', input.status)
+  for (const field of ORGANIZATION_FIELDS) form.append(field, input[field] ? String(input[field]) : '')
 
   if (methodOverride) form.append('_method', methodOverride)
 

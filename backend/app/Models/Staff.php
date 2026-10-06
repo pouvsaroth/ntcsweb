@@ -55,6 +55,7 @@ use Illuminate\Support\Facades\Storage;
     'gender', 'date_of_birth', 'birth_place', 'national_id',
     'email', 'phone', 'house_no', 'street_no', 'village_code',
     'facebook', 'telegram', 'other_contact', 'hire_date', 'status',
+    'branch_id', 'department_id', 'team_id', 'job_grade_id', 'job_level_id', 'reports_to_staff_id',
 ])]
 class Staff extends Model
 {
@@ -80,6 +81,9 @@ class Staff extends Model
         self::STATUS_ACTIVE, self::STATUS_PROBATION, self::STATUS_ON_LEAVE, self::STATUS_SUSPENDED,
         self::STATUS_RESIGNED, self::STATUS_TERMINATED, self::STATUS_RETIRED,
     ];
+
+    /** Still working here — the ones an org chart shows (same set StaffLoginAccessService lets sign in). */
+    public const STATUSES_WORKING = [self::STATUS_ACTIVE, self::STATUS_PROBATION, self::STATUS_ON_LEAVE];
 
     protected $connection = 'tenant';
 
@@ -115,6 +119,12 @@ class Staff extends Model
             // closure — PDO pgsql returns integer columns as strings, which
             // trips under strict_types without this.
             'position_id' => 'integer',
+            'branch_id' => 'integer',
+            'department_id' => 'integer',
+            'team_id' => 'integer',
+            'job_grade_id' => 'integer',
+            'job_level_id' => 'integer',
+            'reports_to_staff_id' => 'integer',
             'hire_date' => 'date',
             'date_of_birth' => 'date',
         ];
@@ -192,6 +202,44 @@ class Staff extends Model
         return $this->belongsTo(Position::class);
     }
 
+    /** Where this person sits in HRM > Organization Management — all optional. */
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
+    }
+
+    public function department(): BelongsTo
+    {
+        return $this->belongsTo(Department::class);
+    }
+
+    public function team(): BelongsTo
+    {
+        return $this->belongsTo(Team::class);
+    }
+
+    public function jobGrade(): BelongsTo
+    {
+        return $this->belongsTo(JobGrade::class);
+    }
+
+    public function jobLevel(): BelongsTo
+    {
+        return $this->belongsTo(JobLevel::class);
+    }
+
+    /** Their reporting manager — another staff member. */
+    public function reportsTo(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'reports_to_staff_id');
+    }
+
+    /** Everyone who reports to this person. */
+    public function directReports(): HasMany
+    {
+        return $this->hasMany(self::class, 'reports_to_staff_id');
+    }
+
     public function statusHistories(): HasMany
     {
         return $this->hasMany(StaffStatusHistory::class);
@@ -240,6 +288,12 @@ class Staff extends Model
     {
         return [
             'position_id' => fn (?int $id) => $id !== null ? Position::query()->find($id)?->name : null,
+            'branch_id' => fn (?int $id) => $id !== null ? Branch::query()->find($id)?->name : null,
+            'department_id' => fn (?int $id) => $id !== null ? Department::query()->find($id)?->name : null,
+            'team_id' => fn (?int $id) => $id !== null ? Team::query()->find($id)?->name : null,
+            'job_grade_id' => fn (?int $id) => $id !== null ? JobGrade::query()->find($id)?->name : null,
+            'job_level_id' => fn (?int $id) => $id !== null ? JobLevel::query()->find($id)?->name : null,
+            'reports_to_staff_id' => fn (?int $id) => $id !== null ? self::query()->find($id)?->fullName() : null,
         ];
     }
 

@@ -18,6 +18,7 @@ use App\Models\AttendanceRecord;
 use App\Models\AuditLog;
 use App\Models\Book;
 use App\Models\BookCategory;
+use App\Models\Branch;
 use App\Models\Building;
 use App\Models\Classroom;
 use App\Models\ClassroomTable;
@@ -36,6 +37,8 @@ use App\Models\DownloadFolder;
 use App\Models\GalleryImage;
 use App\Models\HomeSlide;
 use App\Models\Invoice;
+use App\Models\JobGrade;
+use App\Models\JobLevel;
 use App\Models\Language;
 use App\Models\LeaveRequest;
 use App\Models\LookupCategory;
@@ -56,6 +59,7 @@ use App\Models\Staff;
 use App\Models\Student;
 use App\Models\StudentFeedback;
 use App\Models\Supplier;
+use App\Models\Team;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Models\Video;
@@ -79,6 +83,7 @@ use App\Policies\ClassroomTablePolicy;
 use App\Policies\CoursePackagePolicy;
 use App\Policies\CurrencyRatePolicy;
 use App\Policies\DepartmentPolicy;
+use App\Policies\OrganizationUnitPolicy;
 use App\Policies\EnrollmentPolicy;
 use App\Policies\ExamApplicationPolicy;
 use App\Policies\ExamScorePolicy;
@@ -167,6 +172,11 @@ class AuthServiceProvider extends ServiceProvider
         AssetCategory::class => AssetCategoryPolicy::class,
         AssetLocation::class => AssetLocationPolicy::class,
         Department::class => DepartmentPolicy::class,
+        // HRM > Organization Management's lists — one shared policy.
+        Branch::class => OrganizationUnitPolicy::class,
+        Team::class => OrganizationUnitPolicy::class,
+        JobGrade::class => OrganizationUnitPolicy::class,
+        JobLevel::class => OrganizationUnitPolicy::class,
         Supplier::class => SupplierPolicy::class,
         RepairShop::class => RepairShopPolicy::class,
         AssetIssue::class => AssetIssuePolicy::class,

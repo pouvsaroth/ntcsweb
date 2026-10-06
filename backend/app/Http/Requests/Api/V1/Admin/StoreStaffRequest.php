@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Api\V1\Admin;
 
+use App\Http\Requests\Api\V1\Admin\Concerns\ValidatesStaffOrganization;
 use App\Models\Staff;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 /**
  * Deliberately has no `role`/`role_id` field. The role is always derived
@@ -21,6 +23,8 @@ use Illuminate\Validation\Rule;
  */
 class StoreStaffRequest extends FormRequest
 {
+    use ValidatesStaffOrganization;
+
     public function authorize(): bool
     {
         return $this->user()?->can('create', Staff::class) ?? false;
@@ -70,6 +74,13 @@ class StoreStaffRequest extends FormRequest
 
             'hire_date' => ['nullable', 'date'],
             'status' => ['sometimes', Rule::in(Staff::STATUSES_MANAGEABLE)],
+
+            ...$this->organizationRules(),
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $this->validateOrganization($validator, null);
     }
 }

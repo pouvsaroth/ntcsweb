@@ -285,6 +285,17 @@ final class Permissions
 
     public const POSITIONS_DELETE = 'positions.delete';
 
+    // Organization — HRM > Organization Management's lists (Branch, Team,
+    // Job grade, Job level; also Department, alongside assets.*). One set
+    // for all of them — see OrganizationUnitPolicy.
+    public const ORGANIZATION_VIEW = 'organization.view';
+
+    public const ORGANIZATION_CREATE = 'organization.create';
+
+    public const ORGANIZATION_UPDATE = 'organization.update';
+
+    public const ORGANIZATION_DELETE = 'organization.delete';
+
     // Staff — non-teaching personnel (Accountant, HR, Librarian, ...).
     public const STAFF_VIEW = 'staff.view';
 
@@ -789,6 +800,12 @@ final class Permissions
                 self::POSITIONS_UPDATE => 'Update positions',
                 self::POSITIONS_DELETE => 'Delete positions',
             ],
+            'Organization' => [
+                self::ORGANIZATION_VIEW => 'View branches, departments, teams, job grades and job levels',
+                self::ORGANIZATION_CREATE => 'Create branches, departments, teams, job grades and job levels',
+                self::ORGANIZATION_UPDATE => 'Update branches, departments, teams, job grades and job levels',
+                self::ORGANIZATION_DELETE => 'Delete branches, departments, teams, job grades and job levels',
+            ],
             'Staff' => [
                 self::STAFF_VIEW => 'View staff',
                 self::STAFF_CREATE => 'Create staff',
@@ -975,6 +992,7 @@ final class Permissions
             self::PROMOTIONS_VIEW, self::PROMOTIONS_CREATE, self::PROMOTIONS_UPDATE, self::PROMOTIONS_DELETE,
             self::PROGRAMS_VIEW, self::PROGRAMS_CREATE, self::PROGRAMS_UPDATE, self::PROGRAMS_DELETE,
             self::POSITIONS_VIEW, self::POSITIONS_CREATE, self::POSITIONS_UPDATE, self::POSITIONS_DELETE,
+            self::ORGANIZATION_VIEW, self::ORGANIZATION_CREATE, self::ORGANIZATION_UPDATE, self::ORGANIZATION_DELETE,
             self::STAFF_VIEW, self::STAFF_CREATE, self::STAFF_UPDATE, self::STAFF_DELETE, self::STAFF_CHANGE_STATUS,
         ];
 
@@ -1158,6 +1176,7 @@ final class Permissions
                 self::VIDEOS_VIEW,
                 self::ACADEMIC_YEARS_VIEW,
                 self::POSITIONS_VIEW,
+                self::ORGANIZATION_VIEW,
                 self::STAFF_VIEW,
                 self::ATTENDANCE_VIEW,
                 self::ATTENDANCE_CREATE,
@@ -1189,6 +1208,7 @@ final class Permissions
                 self::DASHBOARD_CARDS_USERS,
                 self::USERS_VIEW,
                 self::POSITIONS_VIEW,
+                self::ORGANIZATION_VIEW,
                 self::STAFF_VIEW,
                 self::STUDENTS_VIEW,
                 self::STUDENTS_CREATE,

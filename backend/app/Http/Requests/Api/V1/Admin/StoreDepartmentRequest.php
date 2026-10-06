@@ -22,6 +22,7 @@ class StoreDepartmentRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
             'is_active' => ['sometimes', 'boolean'],
+            'branch_id' => ['nullable', 'integer', Rule::exists('tenant.branches', 'id')],
         ];
     }
 }

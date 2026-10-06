@@ -33,6 +33,9 @@ final class StaffController extends Controller
      * deterministically (see profileColorFor()) rather than randomly, so the
      * same name always lands on the same color.
      */
+    /** Loaded for every StaffResource this controller returns. */
+    private const RELATIONS = ['position.role', 'user', 'branch', 'department', 'team', 'jobGrade', 'jobLevel', 'reportsTo'];
+
     private const PROFILE_COLORS = [
         '#F87171', '#FB923C', '#FBBF24', '#4ADE80',
         '#2DD4BF', '#60A5FA', '#818CF8', '#F472B6',
@@ -49,9 +52,9 @@ final class StaffController extends Controller
     {
         $this->authorize('viewAny', Staff::class);
 
-        $staff = ApiQuery::for(Staff::query()->with(['position.role', 'user']), $request)
+        $staff = ApiQuery::for(Staff::query()->with(self::RELATIONS), $request)
             ->searchable('first_name', 'last_name', 'employee_code', 'email')
-            ->filterable(['status', 'position_id'])
+            ->filterable(['status', 'position_id', 'branch_id', 'department_id', 'team_id', 'reports_to_staff_id'])
             ->sortable(['first_name', 'last_name', 'employee_code', 'hire_date', 'created_at'], default: '-created_at')
             ->paginate();
 
@@ -99,7 +102,7 @@ final class StaffController extends Controller
         });
 
         return ApiResponse::success(
-            new StaffResource($staff->load(['position.role', 'user'])),
+            new StaffResource($staff->load(self::RELATIONS)),
             'Staff member created successfully.',
             ['temporary_password' => $temporaryPassword],
             Response::HTTP_CREATED,
@@ -110,7 +113,7 @@ final class StaffController extends Controller
     {
         $this->authorize('view', $staff);
 
-        return ApiResponse::success(new StaffResource($staff->load(['position.role', 'user'])));
+        return ApiResponse::success(new StaffResource($staff->load(self::RELATIONS)));
     }
 
     /**
@@ -186,7 +189,7 @@ final class StaffController extends Controller
             Storage::disk('public')->delete($previousSignaturePath);
         }
 
-        return ApiResponse::success(new StaffResource($staff->fresh(['position.role', 'user'])));
+        return ApiResponse::success(new StaffResource($staff->fresh(self::RELATIONS)));
     }
 
     /**
@@ -219,7 +222,7 @@ final class StaffController extends Controller
             return $staff;
         });
 
-        return ApiResponse::success(new StaffResource($staff->load(['position.role', 'user'])));
+        return ApiResponse::success(new StaffResource($staff->load(self::RELATIONS)));
     }
 
     /**

@@ -17,6 +17,8 @@ class DepartmentResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'branch_id' => $this->branch_id,
+            'branch' => $this->whenLoaded('branch', fn () => $this->branch ? ['id' => $this->branch->id, 'name' => $this->branch->name] : null),
             'code' => $this->code,
             'name' => $this->name,
             'description' => $this->description,

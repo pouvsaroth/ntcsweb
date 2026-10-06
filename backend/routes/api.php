@@ -28,6 +28,7 @@ use App\Http\Controllers\Api\V1\Admin\AuditLogController;
 use App\Http\Controllers\Api\V1\Admin\BillingDashboardController;
 use App\Http\Controllers\Api\V1\Admin\BookCategoryController;
 use App\Http\Controllers\Api\V1\Admin\BookController;
+use App\Http\Controllers\Api\V1\Admin\BranchController;
 use App\Http\Controllers\Api\V1\Admin\BuildingController;
 use App\Http\Controllers\Api\V1\Admin\ClassroomController;
 use App\Http\Controllers\Api\V1\Admin\ClassroomTableController;
@@ -50,6 +51,8 @@ use App\Http\Controllers\Api\V1\Admin\GeneralSettingsController;
 use App\Http\Controllers\Api\V1\Admin\HomeSlideController as AdminHomeSlideController;
 use App\Http\Controllers\Api\V1\Admin\IncomeController;
 use App\Http\Controllers\Api\V1\Admin\InvoiceController;
+use App\Http\Controllers\Api\V1\Admin\JobGradeController;
+use App\Http\Controllers\Api\V1\Admin\JobLevelController;
 use App\Http\Controllers\Api\V1\Admin\LanguageController;
 use App\Http\Controllers\Api\V1\Admin\LeaveRequestController;
 use App\Http\Controllers\Api\V1\Admin\LookupCategoryController;
@@ -57,6 +60,7 @@ use App\Http\Controllers\Api\V1\Admin\LookupValueController;
 use App\Http\Controllers\Api\V1\Admin\MakeUpClassRequestController;
 use App\Http\Controllers\Api\V1\Admin\MonthlyInvoiceController;
 use App\Http\Controllers\Api\V1\Admin\MonthlyPaymentAlertController;
+use App\Http\Controllers\Api\V1\Admin\OrganizationChartController;
 use App\Http\Controllers\Api\V1\Admin\PaymentController;
 use App\Http\Controllers\Api\V1\Admin\PositionController;
 use App\Http\Controllers\Api\V1\Admin\ProductController;
@@ -85,6 +89,7 @@ use App\Http\Controllers\Api\V1\Admin\StudentFeedbackController;
 use App\Http\Controllers\Api\V1\Admin\StudentImportController;
 use App\Http\Controllers\Api\V1\Admin\StudentRegistrationController;
 use App\Http\Controllers\Api\V1\Admin\SupplierController;
+use App\Http\Controllers\Api\V1\Admin\TeamController;
 use App\Http\Controllers\Api\V1\Admin\UserController;
 use App\Http\Controllers\Api\V1\Admin\VideoController;
 use App\Http\Controllers\Api\V1\Auth\AuthController;
@@ -412,6 +417,17 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         // a Position carries a Role — see UserProvisioningService and
         // StaffController::store()/update() for how the three tie together.
         Route::apiResource('positions', PositionController::class);
+
+        // HRM > Organization Management's lists — one shared controller
+        // (OrganizationUnitController), so each binds a plain {id} rather
+        // than a per-model route-model-binding parameter.
+        Route::apiResource('branches', BranchController::class)->parameters(['branches' => 'id']);
+        Route::apiResource('teams', TeamController::class)->parameters(['teams' => 'id']);
+        Route::apiResource('job-grades', JobGradeController::class)->parameters(['job-grades' => 'id']);
+        Route::apiResource('job-levels', JobLevelController::class)->parameters(['job-levels' => 'id']);
+        // The Reporting manager / Organization hierarchy tabs' one read.
+        Route::get('organization/chart', OrganizationChartController::class)->name('organization.chart');
+
         Route::apiResource('staff', StaffController::class);
         Route::post('staff/{staff}/status', [StaffController::class, 'changeStatus'])->name('staff.status.update');
 

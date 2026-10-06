@@ -20,9 +20,9 @@ final class DepartmentController extends Controller
     {
         $this->authorize('viewAny', Department::class);
 
-        $departments = ApiQuery::for(Department::query(), $request)
+        $departments = ApiQuery::for(Department::query()->with('branch'), $request)
             ->searchable('code', 'name')
-            ->filterable(['is_active'])
+            ->filterable(['is_active', 'branch_id'])
             ->sortable(['name', 'code', 'created_at'], default: 'name')
             ->paginate();
 
@@ -33,28 +33,28 @@ final class DepartmentController extends Controller
     {
         $department = Department::query()->create($request->validated());
 
-        return ApiResponse::created(new DepartmentResource($department));
+        return ApiResponse::created(new DepartmentResource($department->load('branch')));
     }
 
     public function show(Department $department): JsonResponse
     {
         $this->authorize('view', $department);
 
-        return ApiResponse::success(new DepartmentResource($department));
+        return ApiResponse::success(new DepartmentResource($department->load('branch')));
     }
 
     public function update(UpdateDepartmentRequest $request, Department $department): JsonResponse
     {
         $department->update($request->validated());
 
-        return ApiResponse::success(new DepartmentResource($department));
+        return ApiResponse::success(new DepartmentResource($department->load('branch')));
     }
 
     public function destroy(Department $department): JsonResponse
     {
         $this->authorize('delete', $department);
 
-        if ($department->assets()->exists()) {
+        if ($department->assets()->exists() || $department->staff()->exists() || $department->teams()->exists()) {
             return ApiResponse::error('This department is in use and cannot be deleted. Deactivate it instead.', 422);
         }
 

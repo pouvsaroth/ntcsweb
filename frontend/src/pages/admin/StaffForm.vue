@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -10,10 +10,13 @@ import BaseSelect from '@/components/ui/BaseSelect.vue'
 import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import LookupSelect from '@/components/ui/LookupSelect.vue'
+import { departmentsService, type Department } from '@/services/departments'
 import { geographyService, type GeographyOption } from '@/services/geography'
+import { organizationUnitsService, type OrganizationUnit } from '@/services/organizationUnits'
 import { positionsService, type Position } from '@/services/positions'
-import { staffService, type StaffInput } from '@/services/staff'
+import { staffService, type Staff, type StaffInput } from '@/services/staff'
 import { ApiRequestError } from '@/types/api'
+import { optionalOptions } from '@/utils/organizationOptions'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -71,6 +74,12 @@ const form = reactive<Omit<StaffInput, 'photo' | 'national_id_photo' | 'signatur
   position_id: null,
   hire_date: isoDate(today),
   status: 'active',
+  branch_id: null,
+  department_id: null,
+  team_id: null,
+  job_grade_id: null,
+  job_level_id: null,
+  reports_to_staff_id: null,
 })
 
 const photoFile = ref<File | null>(null)
@@ -99,6 +108,74 @@ const genderOptions = computed(() => [
 ])
 
 const positionOptions = computed(() => positions.value.map((position) => ({ value: String(position.id), label: position.name })))
+
+// HRM > Organization Management placement. Each list loads on its own and
+// falls back to empty — an account allowed to edit staff but not to read
+// those lists still gets a working form, just without those choices.
+const branches = ref<OrganizationUnit[]>([])
+const departments = ref<Department[]>([])
+const teams = ref<OrganizationUnit[]>([])
+const jobGrades = ref<OrganizationUnit[]>([])
+const jobLevels = ref<OrganizationUnit[]>([])
+const colleagues = ref<Staff[]>([])
+
+const noneLabel = computed(() => t('admin.organization.none'))
+const branchOptions = computed(() => optionalOptions(branches.value, noneLabel.value))
+// A department/team with no parent set fits anywhere; otherwise only those
+// inside the chosen branch/department are offered (the backend checks it too).
+const departmentOptions = computed(() =>
+  optionalOptions(departments.value.filter((d) => !form.branch_id || !d.branch_id || d.branch_id === form.branch_id), noneLabel.value),
+)
+const teamOptions = computed(() =>
+  optionalOptions(teams.value.filter((team) => !form.department_id || !team.department_id || team.department_id === form.department_id), noneLabel.value),
+)
+const jobGradeOptions = computed(() => optionalOptions(jobGrades.value, noneLabel.value))
+const jobLevelOptions = computed(() => optionalOptions(jobLevels.value, noneLabel.value))
+const managerOptions = computed(() =>
+  optionalOptions(
+    colleagues.value.filter((staff) => staff.id !== staffId.value).map((staff) => ({ id: staff.id, name: `${staff.full_name} (${staff.employee_code})` })),
+    noneLabel.value,
+  ),
+)
+
+// Changing the branch/department drops a now-mismatched department/team pick.
+watch(
+  () => form.branch_id,
+  () => {
+    if (form.department_id && !departmentOptions.value.some((option) => option.value === String(form.department_id))) form.department_id = null
+  },
+)
+watch(
+  () => form.department_id,
+  () => {
+    if (form.team_id && !teamOptions.value.some((option) => option.value === String(form.team_id))) form.team_id = null
+  },
+)
+
+function idValue(value: number | null): string {
+  return value ? String(value) : ''
+}
+
+function toId(value: string): number | null {
+  return value ? Number(value) : null
+}
+
+async function loadOrganization() {
+  const [branchRows, departmentRows, teamRows, gradeRows, levelRows, staffRows] = await Promise.all([
+    organizationUnitsService('branches').listAll().catch(() => []),
+    departmentsService.listAll().catch(() => []),
+    organizationUnitsService('teams').listAll().catch(() => []),
+    organizationUnitsService('job-grades').listAll().catch(() => []),
+    organizationUnitsService('job-levels').listAll().catch(() => []),
+    staffService.listAll().catch(() => []),
+  ])
+  branches.value = branchRows
+  departments.value = departmentRows
+  teams.value = teamRows
+  jobGrades.value = gradeRows
+  jobLevels.value = levelRows
+  colleagues.value = staffRows
+}
 
 // Cambodia's official Province > District > Commune > Village hierarchy —
 // selecting a village is what actually sets form.village_code. Copied
@@ -205,7 +282,11 @@ async function load() {
   loadError.value = null
 
   try {
-    const [allPositions] = await Promise.all([positionsService.listAll(), geographyService.provinces().then((rows) => (provinces.value = rows))])
+    const [allPositions] = await Promise.all([
+      positionsService.listAll(),
+      geographyService.provinces().then((rows) => (provinces.value = rows)),
+      loadOrganization(),
+    ])
     positions.value = allPositions
 
     if (!staffId.value) return
@@ -230,6 +311,12 @@ async function load() {
     form.position_id = staff.position?.id ?? null
     form.hire_date = staff.hire_date ?? ''
     form.status = staff.status
+    form.branch_id = staff.branch_id
+    form.department_id = staff.department_id
+    form.team_id = staff.team_id
+    form.job_grade_id = staff.job_grade_id
+    form.job_level_id = staff.job_level_id
+    form.reports_to_staff_id = staff.reports_to_staff_id
     photoPreview.value = staff.photo_url
     nationalIdPhotoPreview.value = staff.national_id_photo_url
     signaturePreview.value = staff.signature_url
@@ -359,6 +446,55 @@ onMounted(load)
               />
               <BaseInput v-model="form.hire_date" type="date" :label="t('admin.staff.hireDate')" :error="errors.hire_date?.[0]" />
               <LookupSelect v-model="form.status" category="STAFF_STATUS" :label="t('admin.staff.status')" />
+            </div>
+          </section>
+
+          <!-- Organization: where they sit in HRM > Organization Management -->
+          <section>
+            <h2 class="mb-1 text-sm font-semibold text-neutral-800">{{ t('admin.staff.organizationSection') }}</h2>
+            <div class="mt-4 grid gap-4 sm:grid-cols-2">
+              <BaseSelect
+                :model-value="idValue(form.branch_id)"
+                :options="branchOptions"
+                :label="t('admin.organization.tabs.branch')"
+                :error="errors.branch_id?.[0]"
+                @update:model-value="(value: string) => (form.branch_id = toId(value))"
+              />
+              <BaseSelect
+                :model-value="idValue(form.department_id)"
+                :options="departmentOptions"
+                :label="t('admin.organization.tabs.department')"
+                :error="errors.department_id?.[0]"
+                @update:model-value="(value: string) => (form.department_id = toId(value))"
+              />
+              <BaseSelect
+                :model-value="idValue(form.team_id)"
+                :options="teamOptions"
+                :label="t('admin.organization.tabs.team')"
+                :error="errors.team_id?.[0]"
+                @update:model-value="(value: string) => (form.team_id = toId(value))"
+              />
+              <BaseSelect
+                :model-value="idValue(form.reports_to_staff_id)"
+                :options="managerOptions"
+                :label="t('admin.organization.reportingManager')"
+                :error="errors.reports_to_staff_id?.[0]"
+                @update:model-value="(value: string) => (form.reports_to_staff_id = toId(value))"
+              />
+              <BaseSelect
+                :model-value="idValue(form.job_grade_id)"
+                :options="jobGradeOptions"
+                :label="t('admin.organization.tabs.jobGrade')"
+                :error="errors.job_grade_id?.[0]"
+                @update:model-value="(value: string) => (form.job_grade_id = toId(value))"
+              />
+              <BaseSelect
+                :model-value="idValue(form.job_level_id)"
+                :options="jobLevelOptions"
+                :label="t('admin.organization.tabs.jobLevel')"
+                :error="errors.job_level_id?.[0]"
+                @update:model-value="(value: string) => (form.job_level_id = toId(value))"
+              />
             </div>
           </section>
 
