@@ -110,6 +110,9 @@ const zh: MessageSchema = {
   },
 
   common: {
+    genderMale: '男',
+    genderFemale: '女',
+    genderOther: '其他',
     home: '首页',
     readMore: '阅读更多 →',
     loading: '加载中…',

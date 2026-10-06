@@ -14,6 +14,7 @@ import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { lookupsService } from '@/services/lookups'
 import { studentsService, type Student, type StudentStatus } from '@/services/students'
 import { useAdminUiStore } from '@/stores/adminUi'
+import { genderLabel as builtInGenderLabel } from '@/utils/gender'
 
 const { t, locale } = useI18n()
 const adminUi = useAdminUiStore()
@@ -28,7 +29,7 @@ async function loadGenderLabels() {
 
 function genderLabel(gender: string | null): string {
   if (!gender) return '—'
-  return genderLabels.value[gender] ?? gender
+  return genderLabels.value[gender] ?? builtInGenderLabel(gender)
 }
 
 watch(locale, loadGenderLabels)

@@ -9,6 +9,7 @@ import BaseModal from '@/components/ui/BaseModal.vue'
 import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import { myResignationRequestsService, type MyStaffProfile } from '@/services/resignationRequests'
 import { ApiRequestError } from '@/types/api'
+import { genderLabel } from '@/utils/gender'
 
 /**
  * A staff member's own resignation request — launched from the admin
@@ -99,7 +100,7 @@ async function submit() {
         <dl v-if="profile" class="grid grid-cols-2 gap-3 rounded-lg bg-neutral-50 p-3 text-sm">
           <div><dt class="text-neutral-500">{{ t('resignationRequest.firstName') }}</dt><dd class="font-medium text-neutral-900">{{ profile.first_name || '—' }}</dd></div>
           <div><dt class="text-neutral-500">{{ t('resignationRequest.lastName') }}</dt><dd class="font-medium text-neutral-900">{{ profile.last_name || '—' }}</dd></div>
-          <div><dt class="text-neutral-500">{{ t('resignationRequest.gender') }}</dt><dd class="font-medium text-neutral-900">{{ profile.gender || '—' }}</dd></div>
+          <div><dt class="text-neutral-500">{{ t('resignationRequest.gender') }}</dt><dd class="font-medium text-neutral-900">{{ genderLabel(profile.gender) }}</dd></div>
           <div><dt class="text-neutral-500">{{ t('resignationRequest.position') }}</dt><dd class="font-medium text-neutral-900">{{ profile.position || '—' }}</dd></div>
         </dl>
 

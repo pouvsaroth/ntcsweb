@@ -20,6 +20,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useConfirmDialogStore } from '@/stores/confirmDialog'
 import { ApiRequestError } from '@/types/api'
 import { formatDate } from '@/utils/date'
+import { genderLabel } from '@/utils/gender'
 import { exportTableAsImage, type TableImageTone } from '@/utils/tableImage'
 
 const { t } = useI18n()
@@ -173,7 +174,7 @@ async function exportImage() {
         { text: statusLabel(row.status), badge: imageTone(row.status) },
         { text: row.enrollment_code ?? '—' },
         { text: row.student.name, bold: true },
-        { text: row.student.gender ?? '—' },
+        { text: genderLabel(row.student.gender) },
         { text: row.book?.title ?? row.enrollment.course_package?.name ?? '—' },
         { text: fmtDate(row.exam_date) },
         { text: timeRange(row) },
@@ -418,7 +419,7 @@ function openApplicationForm(enrollmentCode: string | null = null) {
       </template>
       <template #cell-full_name="{ row }">{{ (row as ExamApplication).student.name }}</template>
       <template #cell-other_name="{ row }">{{ (row as ExamApplication).student.english_name ?? '—' }}</template>
-      <template #cell-sex="{ row }">{{ (row as ExamApplication).student.gender ?? '—' }}</template>
+      <template #cell-sex="{ row }">{{ genderLabel((row as ExamApplication).student.gender) }}</template>
       <template #cell-book="{ row }">{{ (row as ExamApplication).book?.title ?? (row as ExamApplication).enrollment.course_package?.name ?? '—' }}</template>
       <template #cell-exam_date="{ row }">{{ fmtDate((row as ExamApplication).exam_date) }}</template>
       <template #cell-time_exam="{ row }">{{ timeRange(row as ExamApplication) }}</template>

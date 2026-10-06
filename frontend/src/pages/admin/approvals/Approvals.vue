@@ -22,6 +22,7 @@ import { useConfirmDialogStore } from '@/stores/confirmDialog'
 import type { ApprovalFlowProgress } from '@/services/approvalFlows'
 import { ApiRequestError } from '@/types/api'
 import { formatDate } from '@/utils/date'
+import { genderLabel } from '@/utils/gender'
 
 /**
  * The approval queue — every pending/decided item across the generic
@@ -466,7 +467,7 @@ onMounted(() => load())
           <div v-if="detail.leave.decision_reason"><dt class="text-neutral-500">{{ t('admin.leaveRequests.decisionReason') }}</dt><dd class="font-medium text-neutral-900">{{ detail.leave.decision_reason }}</dd></div>
         </dl>
         <dl v-else-if="detail.kind === 'resignation' && detail.resignation" class="grid gap-y-2 text-sm">
-          <div><dt class="text-neutral-500">{{ t('resignationRequest.gender') }}</dt><dd class="font-medium text-neutral-900">{{ detail.resignation.staff?.gender || '—' }}</dd></div>
+          <div><dt class="text-neutral-500">{{ t('resignationRequest.gender') }}</dt><dd class="font-medium text-neutral-900">{{ genderLabel(detail.resignation.staff?.gender) }}</dd></div>
           <div><dt class="text-neutral-500">{{ t('resignationRequest.position') }}</dt><dd class="font-medium text-neutral-900">{{ detail.resignation.staff?.position || '—' }}</dd></div>
           <div><dt class="text-neutral-500">{{ t('resignationRequest.resignationDate') }}</dt><dd class="font-medium text-neutral-900">{{ formatDate(detail.resignation.resignation_date) }}</dd></div>
           <div><dt class="text-neutral-500">{{ t('resignationRequest.reason') }}</dt><dd class="font-medium text-neutral-900">{{ detail.resignation.reason }}</dd></div>
@@ -493,7 +494,7 @@ onMounted(() => load())
             <dl class="grid flex-1 grid-cols-2 gap-x-4 gap-y-2 text-sm">
               <div><dt class="text-neutral-500">{{ t('admin.studentRegistrations.columnPhone') }}</dt><dd class="font-medium text-neutral-900">{{ detail.registration.phone }}</dd></div>
               <div><dt class="text-neutral-500">{{ t('admin.studentRegistrations.email') }}</dt><dd class="font-medium text-neutral-900">{{ detail.registration.email ?? '—' }}</dd></div>
-              <div><dt class="text-neutral-500">{{ t('admin.studentRegistrations.gender') }}</dt><dd class="font-medium text-neutral-900">{{ detail.registration.gender ?? '—' }}</dd></div>
+              <div><dt class="text-neutral-500">{{ t('admin.studentRegistrations.gender') }}</dt><dd class="font-medium text-neutral-900">{{ genderLabel(detail.registration.gender) }}</dd></div>
               <div><dt class="text-neutral-500">{{ t('admin.studentRegistrations.dateOfBirth') }}</dt><dd class="font-medium text-neutral-900">{{ formatDate(detail.registration.date_of_birth) }}</dd></div>
               <div class="col-span-2">
                 <dt class="text-neutral-500">{{ t('admin.studentRegistrations.address') }}</dt>

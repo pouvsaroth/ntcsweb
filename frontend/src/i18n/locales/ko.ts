@@ -110,6 +110,9 @@ const ko: MessageSchema = {
   },
 
   common: {
+    genderMale: '남성',
+    genderFemale: '여성',
+    genderOther: '기타',
     home: '홈',
     readMore: '더 보기 →',
     loading: '불러오는 중…',

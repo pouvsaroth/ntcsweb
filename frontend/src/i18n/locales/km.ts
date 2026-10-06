@@ -110,6 +110,9 @@ const km: MessageSchema = {
   },
 
   common: {
+    genderMale: 'ប្រុស',
+    genderFemale: 'ស្រី',
+    genderOther: 'ផ្សេងៗ',
     home: 'ទំព័រដើម',
     readMore: 'អានបន្ថែម →',
     loading: 'កំពុងផ្ទុក…',

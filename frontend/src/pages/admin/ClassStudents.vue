@@ -18,6 +18,7 @@ import { enrollmentsService, type Enrollment, type EnrollmentStatus } from '@/se
 import { type LookupOption, lookupsService } from '@/services/lookups'
 import { useAuthStore } from '@/stores/auth'
 import { ApiRequestError } from '@/types/api'
+import { genderLabel } from '@/utils/gender'
 
 const { t, locale } = useI18n()
 const route = useRoute()
@@ -293,7 +294,7 @@ onMounted(() => {
         <template #cell-index="{ row }">{{ sortedRoster.indexOf(row) + 1 }}</template>
         <template #cell-table="{ row }">{{ row.table?.name ?? '—' }}</template>
         <template #cell-student="{ row }">{{ row.student.full_name }}</template>
-        <template #cell-gender="{ row }">{{ row.student.gender ?? '—' }}</template>
+        <template #cell-gender="{ row }">{{ genderLabel(row.student.gender) }}</template>
         <template #cell-class="{ row }">{{ row.class?.name ?? '—' }}</template>
         <template #cell-book="{ row }">{{ row.course_package?.name ?? '—' }}</template>
         <template #cell-actions="{ row }">

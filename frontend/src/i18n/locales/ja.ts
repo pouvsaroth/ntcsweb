@@ -110,6 +110,9 @@ const ja: MessageSchema = {
   },
 
   common: {
+    genderMale: '男性',
+    genderFemale: '女性',
+    genderOther: 'その他',
     home: 'ホーム',
     readMore: '続きを読む →',
     loading: '読み込み中…',

@@ -113,6 +113,9 @@ const en = {
   },
 
   common: {
+    genderMale: 'Male',
+    genderFemale: 'Female',
+    genderOther: 'Other',
     home: 'Home',
     readMore: 'Read more →',
     loading: 'Loading…',
