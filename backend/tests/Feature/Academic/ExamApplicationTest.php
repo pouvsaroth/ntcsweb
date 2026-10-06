@@ -450,4 +450,16 @@ class ExamApplicationTest extends TestCase
 
         $this->assertSame([$newer->id, $older->id, $undated->id], $ids);
     }
+
+    public function test_earliest_exam_date_first_also_puts_undated_applications_last(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::EXAM_APPLICATIONS_VIEW]);
+        $newer = ExamApplication::factory()->create(['exam_date' => '2026-10-01']);
+        $undated = ExamApplication::factory()->create(['exam_date' => null]);
+        $older = ExamApplication::factory()->create(['exam_date' => '2026-09-01']);
+
+        $ids = collect($this->getJson('/api/v1/exam-applications?sort=exam_date')->assertOk()->json('data'))->pluck('id')->all();
+
+        $this->assertSame([$older->id, $newer->id, $undated->id], $ids);
+    }
 }

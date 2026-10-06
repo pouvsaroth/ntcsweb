@@ -105,9 +105,10 @@ final class ExamApplicationController extends Controller
             }
         }
 
-        // Newest exam date first (the Exams tab's phone cards) — Postgres
-        // would put rows with no date yet first on a descending sort; they
-        // go last instead. Ordered ahead of ApiQuery's own sort below.
+        // Rows with no exam date yet always go last when sorting by exam
+        // date — Postgres would put them first on a descending sort (an
+        // ascending one, the Exams tab's own, already puts them last).
+        // Ordered ahead of ApiQuery's own sort below.
         if ($request->query('sort') === '-exam_date') {
             $query->orderByRaw('exam_date IS NULL');
         }

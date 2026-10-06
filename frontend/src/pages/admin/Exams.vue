@@ -38,25 +38,26 @@ const statusFilter = ref<ExamApplicationStatus | '' | typeof AWAITING_ACTION>(AW
 
 const perPageOptions = [10, 25, 50, 100]
 
-const { items, meta, loading, error, perPage, sort, setPage, setSort, setFilter, fetch } = usePaginatedResource<ExamApplication>((query) =>
+const { items, meta, loading, error, perPage, sort, setPage, setFilter, fetch } = usePaginatedResource<ExamApplication>((query) =>
   examApplicationsService.list(query, { awaitingAction: statusFilter.value === AWAITING_ACTION }),
 )
 
+// Earliest exam date first, on the phone cards and the desktop table alike;
+// applications with no exam date yet come last.
+const EXAM_DATE_SORT = 'exam_date'
+
 // On a phone the list shows as cards (below the `sm` breakpoint, same as
-// Students.vue), newest exam date first; the desktop table keeps its usual
-// newest-application-first order.
-const PHONE_SORT = '-exam_date'
+// Students.vue).
 const phoneQuery = window.matchMedia('(max-width: 639px)')
 const isPhone = ref(phoneQuery.matches)
 
 function onScreenChange(event: MediaQueryListEvent) {
   isPhone.value = event.matches
-  setSort(event.matches ? PHONE_SORT : undefined)
 }
 
 onMounted(() => {
   phoneQuery.addEventListener('change', onScreenChange)
-  sort.value = isPhone.value ? PHONE_SORT : undefined
+  sort.value = EXAM_DATE_SORT
   void fetch()
 })
 
@@ -296,8 +297,8 @@ function openApplicationForm(enrollmentCode: string | null = null) {
     <BaseAlert v-if="error" variant="danger" class="mb-4">{{ error }}</BaseAlert>
     <BaseAlert v-if="actionError" variant="danger" class="mb-4">{{ actionError }}</BaseAlert>
 
-    <!-- Cards on a phone — the table's 13 columns have no room there. Newest
-         exam date first (see PHONE_SORT). -->
+    <!-- Cards on a phone — the table's 13 columns have no room there. Same
+         order as the table (see EXAM_DATE_SORT). -->
     <div v-if="isPhone" class="pb-28">
       <div v-if="loading" class="flex justify-center py-10"><BaseSpinner /></div>
       <p v-else-if="items.length === 0" class="rounded-[--radius-card] border border-dashed border-neutral-300 py-10 text-center text-sm text-neutral-500">
