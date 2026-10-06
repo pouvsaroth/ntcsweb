@@ -9,6 +9,7 @@ use App\Models\Interview;
 use App\Models\User;
 use App\Services\Notifications\NotificationService;
 use App\Support\Notifications\NotificationType;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -21,13 +22,6 @@ final class InterviewService
     /** Stages before the interview — scheduling one moves the applicant on from these. */
     private const BEFORE_INTERVIEW = ['new', 'screening', 'shortlisted'];
 
-    /**
-     * The server keeps times in UTC; notification text is written once, on
-     * the server, so it's put in the schools' own (Cambodian) time — the
-     * screens themselves show each viewer's browser time.
-     */
-    private const NOTIFICATION_TIMEZONE = 'Asia/Phnom_Penh';
-
     public function __construct(private readonly NotificationService $notifications) {}
 
     /**
@@ -36,6 +30,8 @@ final class InterviewService
      */
     public function schedule(array $data, array $interviewerIds, User $by): Interview
     {
+        $data = $this->onSchoolClock($data);
+
         $interview = DB::connection('tenant')->transaction(function () use ($data, $interviewerIds, $by) {
             $interview = Interview::query()->create([...$data, 'created_by' => $by->getKey()]);
             $this->syncInterviewers($interview, $interviewerIds);
@@ -59,6 +55,7 @@ final class InterviewService
      */
     public function update(Interview $interview, array $data, ?array $interviewerIds): Interview
     {
+        $data = $this->onSchoolClock($data);
         $added = [];
 
         DB::connection('tenant')->transaction(function () use ($interview, $data, $interviewerIds, &$added) {
@@ -74,6 +71,24 @@ final class InterviewService
         $this->notifyInterviewers($interview, $added);
 
         return $interview;
+    }
+
+    /**
+     * The form sends an exact moment ("…Z"); the database keeps the school's
+     * wall-clock time (each request runs on the tenant's timezone — see
+     * ResolveTenant), so convert it before saving rather than storing the
+     * UTC hour as if it were local.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function onSchoolClock(array $data): array
+    {
+        if (! empty($data['scheduled_at'])) {
+            $data['scheduled_at'] = Carbon::parse($data['scheduled_at'])->setTimezone(date_default_timezone_get());
+        }
+
+        return $data;
     }
 
     /** @param  list<int>  $userIds */
@@ -106,7 +121,7 @@ final class InterviewService
                 'interview_id' => $interview->id,
                 'applicant_name' => $applicant?->fullName(),
                 'job_title' => $applicant?->jobPosition?->title,
-                'date' => $interview->scheduled_at?->copy()->timezone(self::NOTIFICATION_TIMEZONE)->format('d-m-Y H:i'),
+                'date' => $interview->scheduled_at?->format('d-m-Y H:i'),
             ],
             link: '/admin/recruitment/interviews',
         );

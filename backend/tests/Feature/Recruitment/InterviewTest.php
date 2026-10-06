@@ -127,4 +127,21 @@ class InterviewTest extends TestCase
         $this->postJson('/api/v1/interview-evaluations', ['interview_id' => $interview->id, 'scores' => $this->scores(), 'recommendation' => 'hire'])
             ->assertUnprocessable();
     }
+
+    public function test_a_time_sent_in_utc_is_kept_on_the_schools_clock(): void
+    {
+        $this->actingAsAdminWithPermissions(self::ALL);
+        $interviewer = $this->interviewer();
+        $applicant = Applicant::factory()->create();
+
+        // 03:00 UTC is 10:00 in Phnom Penh, the test school's timezone.
+        $this->postJson('/api/v1/interviews', [
+            'applicant_id' => $applicant->id, 'scheduled_at' => '2026-11-02T03:00:00.000Z', 'mode' => 'in_person', 'interviewer_ids' => [$interviewer->id],
+        ])
+            ->assertCreated()
+            ->assertJsonPath('data.scheduled_at', '2026-11-02T10:00:00+07:00');
+
+        $this->assertSame('2026-11-02 10:00:00', Interview::query()->sole()->getRawOriginal('scheduled_at'));
+        $this->assertSame('02-11-2026 10:00', UserNotification::query()->where('recipient_id', $interviewer->id)->sole()->data['date']);
+    }
 }
