@@ -31,6 +31,8 @@ export const publicNavAfterProgram: NavItem[] = [
   { labelKey: 'nav.promotion', to: '/promotion' },
   // Files the school shares for anyone to download — see admin/Uploads.vue.
   { labelKey: 'nav.download', to: '/downloads' },
+  // Open jobs from HRM > Recruitment — see Careers.vue.
+  { labelKey: 'nav.careers', to: '/careers' },
   { labelKey: 'nav.contact', to: '/contact' },
 ]
 

@@ -1,7 +1,7 @@
 import { apiGet, apiPut } from '@/services/http'
 
 /** Every item that can have an approval flow — mirrors backend App\Support\Approvals\DocumentType. */
-export const APPROVAL_DOCUMENT_TYPES = ['student_leave', 'staff_leave', 'resignation', 'make_up_class', 'exam_application', 'form_request'] as const
+export const APPROVAL_DOCUMENT_TYPES = ['student_leave', 'staff_leave', 'resignation', 'make_up_class', 'exam_application', 'form_request', 'manpower_request'] as const
 
 export type ApprovalDocumentType = (typeof APPROVAL_DOCUMENT_TYPES)[number]
 

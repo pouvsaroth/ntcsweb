@@ -20,4 +20,9 @@ return [
     'approval_request_approved' => 'សំណើ «:subject» របស់អ្នកត្រូវបានអនុម័ត',
     'approval_request_rejected' => 'សំណើ «:subject» របស់អ្នកត្រូវបានបដិសេធ៖ :reason',
     'student_registration_submitted' => ':student_name បានចុះឈ្មោះ ហើយកំពុងរង់ចាំការអនុម័ត',
+    'manpower_request_submitted' => ':requester_name ស្នើសុំជ្រើសរើស :job_title ចំនួន :headcount នាក់ (:reference)',
+    'manpower_request_approved' => 'សំណើបុគ្គលិក :reference (:job_title) ត្រូវបានអនុម័ត',
+    'manpower_request_rejected' => 'សំណើបុគ្គលិក :reference (:job_title) ត្រូវបានបដិសេធ៖ :reason',
+    'job_application_received' => ':applicant_name បានដាក់ពាក្យសម្រាប់ :job_title',
+    'interview_scheduled' => 'អ្នកនឹងសម្ភាសន៍ :applicant_name (:job_title) នៅ :date',
 ];

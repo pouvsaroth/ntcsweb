@@ -145,6 +145,12 @@ const MODULES: ModuleEntry[] = [
   },
   { name: 'Projects', group: 'Project Management', actions: { view: 'projects.view', create: 'projects.create', update: 'projects.update', delete: 'projects.delete' } },
   { name: 'Positions', group: 'Staff', actions: { view: 'positions.view', create: 'positions.create', update: 'positions.update', delete: 'positions.delete' } },
+  {
+    name: 'Recruitment',
+    group: 'Staff',
+    actions: { view: 'recruitment.view', create: 'recruitment.create', update: 'recruitment.update', delete: 'recruitment.delete' },
+  },
+  { name: 'Manpower requests', group: 'Staff', actions: { approve: 'manpower-requests.approve', reject: 'manpower-requests.reject' } },
   // HRM > Organization Management's Branch/Department/Team/Job grade/Job level tabs share one set.
   {
     name: 'Organization (branches, departments, teams, job grades, job levels)',

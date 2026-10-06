@@ -8,6 +8,7 @@ use App\Models\ApprovalRequest;
 use App\Models\ExamApplication;
 use App\Models\LeaveRequest;
 use App\Models\MakeUpClassRequest;
+use App\Models\ManpowerRequest;
 use App\Models\ResignationRequest;
 use App\Support\Authorization\Permissions;
 use Illuminate\Database\Eloquent\Builder;
@@ -34,6 +35,8 @@ final class DocumentType
 
     public const FORM_REQUEST = 'form_request';
 
+    public const MANPOWER_REQUEST = 'manpower_request';
+
     /** @var array<string, class-string<Model>> */
     private const MODELS = [
         self::STUDENT_LEAVE => LeaveRequest::class,
@@ -42,6 +45,7 @@ final class DocumentType
         self::MAKE_UP_CLASS => MakeUpClassRequest::class,
         self::EXAM_APPLICATION => ExamApplication::class,
         self::FORM_REQUEST => ApprovalRequest::class,
+        self::MANPOWER_REQUEST => ManpowerRequest::class,
     ];
 
     /** @return list<string> */
@@ -95,6 +99,7 @@ final class DocumentType
             self::MAKE_UP_CLASS => Permissions::MAKE_UP_CLASS_REQUESTS_APPROVE,
             self::EXAM_APPLICATION => Permissions::EXAM_APPLICATIONS_APPROVE,
             self::FORM_REQUEST => Permissions::APPROVAL_REQUESTS_APPROVE,
+            self::MANPOWER_REQUEST => Permissions::MANPOWER_REQUESTS_APPROVE,
         };
     }
 }

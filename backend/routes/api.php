@@ -11,6 +11,8 @@ use App\Http\Controllers\Api\V1\Admin\AccountingDashboardController;
 use App\Http\Controllers\Api\V1\Admin\AccountingPeriodController;
 use App\Http\Controllers\Api\V1\Admin\AccountingReportController;
 use App\Http\Controllers\Api\V1\Admin\AccountingSettingsController;
+use App\Http\Controllers\Api\V1\Admin\ApplicantController;
+use App\Http\Controllers\Api\V1\Admin\ApplicantDocumentController;
 use App\Http\Controllers\Api\V1\Admin\ApprovalFlowController;
 use App\Http\Controllers\Api\V1\Admin\ApprovalGroupController;
 use App\Http\Controllers\Api\V1\Admin\ApprovalRequestController;
@@ -30,6 +32,7 @@ use App\Http\Controllers\Api\V1\Admin\BookCategoryController;
 use App\Http\Controllers\Api\V1\Admin\BookController;
 use App\Http\Controllers\Api\V1\Admin\BranchController;
 use App\Http\Controllers\Api\V1\Admin\BuildingController;
+use App\Http\Controllers\Api\V1\Admin\CandidateSelectionController;
 use App\Http\Controllers\Api\V1\Admin\ClassroomController;
 use App\Http\Controllers\Api\V1\Admin\ClassroomTableController;
 use App\Http\Controllers\Api\V1\Admin\CoursePackageController;
@@ -50,16 +53,22 @@ use App\Http\Controllers\Api\V1\Admin\GalleryController as AdminGalleryControlle
 use App\Http\Controllers\Api\V1\Admin\GeneralSettingsController;
 use App\Http\Controllers\Api\V1\Admin\HomeSlideController as AdminHomeSlideController;
 use App\Http\Controllers\Api\V1\Admin\IncomeController;
+use App\Http\Controllers\Api\V1\Admin\InterviewController;
+use App\Http\Controllers\Api\V1\Admin\InterviewEvaluationController;
 use App\Http\Controllers\Api\V1\Admin\InvoiceController;
 use App\Http\Controllers\Api\V1\Admin\JobGradeController;
 use App\Http\Controllers\Api\V1\Admin\JobLevelController;
+use App\Http\Controllers\Api\V1\Admin\JobPositionController;
+use App\Http\Controllers\Api\V1\Admin\JobPostingController;
 use App\Http\Controllers\Api\V1\Admin\LanguageController;
 use App\Http\Controllers\Api\V1\Admin\LeaveRequestController;
 use App\Http\Controllers\Api\V1\Admin\LookupCategoryController;
 use App\Http\Controllers\Api\V1\Admin\LookupValueController;
 use App\Http\Controllers\Api\V1\Admin\MakeUpClassRequestController;
+use App\Http\Controllers\Api\V1\Admin\ManpowerRequestController;
 use App\Http\Controllers\Api\V1\Admin\MonthlyInvoiceController;
 use App\Http\Controllers\Api\V1\Admin\MonthlyPaymentAlertController;
+use App\Http\Controllers\Api\V1\Admin\OfferLetterController;
 use App\Http\Controllers\Api\V1\Admin\OrganizationChartController;
 use App\Http\Controllers\Api\V1\Admin\PaymentController;
 use App\Http\Controllers\Api\V1\Admin\PositionController;
@@ -114,6 +123,7 @@ use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\TranslationOverrideController;
 use App\Http\Controllers\Api\V1\Public\CoursePackageController as PublicCoursePackageController;
 use App\Http\Controllers\Api\V1\Public\EnrollmentInquiryController;
+use App\Http\Controllers\Api\V1\Public\CareerController;
 use App\Http\Controllers\Api\V1\Public\DownloadController as PublicDownloadController;
 use App\Http\Controllers\Api\V1\Public\GalleryController as PublicGalleryController;
 use App\Http\Controllers\Api\V1\Public\HomeSlideController as PublicHomeSlideController;
@@ -306,6 +316,22 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::apiResource('resignation-requests', ResignationRequestController::class)->only(['index', 'show']);
         Route::post('resignation-requests/{resignation_request}/approve', [ResignationRequestController::class, 'approve'])->name('resignation-requests.approve');
         Route::post('resignation-requests/{resignation_request}/reject', [ResignationRequestController::class, 'reject'])->name('resignation-requests.reject');
+
+        // HRM > Recruitment > Manpower request — decided in E-Approvals like the above.
+        Route::apiResource('manpower-requests', ManpowerRequestController::class);
+        Route::post('manpower-requests/{manpower_request}/approve', [ManpowerRequestController::class, 'approve'])->name('manpower-requests.approve');
+        Route::post('manpower-requests/{manpower_request}/reject', [ManpowerRequestController::class, 'reject'])->name('manpower-requests.reject');
+        Route::apiResource('job-positions', JobPositionController::class);
+        Route::apiResource('job-postings', JobPostingController::class);
+        Route::apiResource('applicants', ApplicantController::class);
+        Route::get('applicant-documents/{applicant_document}/download', [ApplicantDocumentController::class, 'download'])->name('applicant-documents.download');
+        Route::apiResource('applicant-documents', ApplicantDocumentController::class)->only(['index', 'store', 'destroy']);
+        Route::get('interviews/interviewers', [InterviewController::class, 'interviewers'])->name('interviews.interviewers');
+        Route::apiResource('interviews', InterviewController::class);
+        Route::apiResource('interview-evaluations', InterviewEvaluationController::class)->only(['index', 'store', 'destroy']);
+        Route::get('candidate-selection', CandidateSelectionController::class)->name('candidate-selection');
+        Route::apiResource('offer-letters', OfferLetterController::class);
+        Route::post('offer-letters/{offer_letter}/hire', [OfferLetterController::class, 'hire'])->name('offer-letters.hire');
 
         // Student-submitted make-up class requests — see MakeUpClassRequestService.
         Route::apiResource('make-up-class-requests', MakeUpClassRequestController::class)->only(['index', 'show']);
@@ -761,6 +787,10 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('downloads/folders/{id}', [PublicDownloadController::class, 'show'])->whereNumber('id')->name('downloads.folders.show');
         Route::get('downloads/files/{id}', [PublicDownloadController::class, 'download'])->whereNumber('id')->name('downloads.files.download');
         Route::get('promotions', [PublicPromotionController::class, 'index'])->name('promotions.index');
+        // Careers: open jobs with an active Website posting (see JobPosition::scopeOnCareersPage()).
+        Route::get('careers', [CareerController::class, 'index'])->name('careers.index');
+        Route::get('careers/{id}', [CareerController::class, 'show'])->whereNumber('id')->name('careers.show');
+        Route::post('careers/{id}/apply', [CareerController::class, 'apply'])->whereNumber('id')->middleware('throttle:job-applications')->name('careers.apply');
         Route::get('visits', [WebsiteVisitController::class, 'stats'])->name('visits.stats');
         Route::post('visits', [WebsiteVisitController::class, 'record'])->name('visits.record');
         Route::get('programs', [PublicProgramController::class, 'index'])->name('programs.index');

@@ -9,11 +9,13 @@ import BaseBadge from '@/components/ui/BaseBadge.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import BaseSpinner from '@/components/ui/BaseSpinner.vue'
+import DataTable from '@/components/ui/DataTable.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import { approvalRequestsService, type ApprovalRequest, type ApprovalRequestStatus } from '@/services/approvalRequests'
 import { examApplicationsService, type ExamApplication } from '@/services/examApplications'
 import { leaveRequestsService, type LeaveRequest } from '@/services/leaveRequests'
 import { makeUpClassCourseLabel, makeUpClassRequestsService, type MakeUpClassRequest, type MakeUpClassRequestStatus } from '@/services/makeUpClassRequests'
+import { manpowerRequestsService, type ManpowerRequest } from '@/services/manpowerRequests'
 import { resignationRequestsService, type ResignationRequest } from '@/services/resignationRequests'
 import { studentRegistrationsService, type StudentRegistration } from '@/services/studentRegistrations'
 import { useAuthStore } from '@/stores/auth'
@@ -37,7 +39,7 @@ import { genderLabel } from '@/utils/gender'
 type RowStatus = ApprovalRequestStatus | MakeUpClassRequestStatus
 
 type MergedRow = {
-  kind: 'approval' | 'leave' | 'resignation' | 'makeUp' | 'exam' | 'registration'
+  kind: 'approval' | 'leave' | 'resignation' | 'makeUp' | 'exam' | 'registration' | 'manpower'
   id: number
   reference: string
   requestor: string
@@ -52,6 +54,7 @@ type MergedRow = {
   makeUp?: MakeUpClassRequest
   exam?: ExamApplication
   registration?: StudentRegistration
+  manpower?: ManpowerRequest
 }
 
 const { t } = useI18n()
@@ -74,6 +77,8 @@ const canViewMakeUp = computed(() => auth.can('make-up-class-requests.view') || 
 const canViewExams = computed(() => auth.can('exam-applications.view') || auth.isFlowApprover(['exam_application']))
 // No approval flow for registrations — only whoever may approve them.
 const canViewRegistrations = computed(() => auth.can('students.approve-registration'))
+// HRM > Recruitment's manpower requests.
+const canViewManpower = computed(() => auth.can('recruitment.view') || auth.isFlowApprover(['manpower_request']))
 // Only exam applications can be edited from this queue — a reviewer fixing
 // the student's info or the room/table/date assignment before deciding.
 // Leave/resignation requests have no equivalent "amend before deciding" step.
@@ -96,6 +101,15 @@ const counts = computed(() => ({
 }))
 
 const visibleRows = computed(() => rows.value.filter((r) => r.status === activeTab.value))
+
+const columns = [
+  { key: 'actions', label: t('admin.approvals.columnActions') },
+  { key: 'date', label: t('admin.approvals.columnDate') },
+  { key: 'requestor', label: t('admin.approvals.columnRequestor') },
+  { key: 'subject', label: t('admin.approvals.columnSubject') },
+  { key: 'reference', label: t('admin.approvals.columnReference') },
+  { key: 'status', label: t('admin.approvals.columnStatus') },
+]
 
 const statusVariant: Record<RowStatus, 'warning' | 'primary' | 'success' | 'danger'> = {
   pending: 'warning',
@@ -138,6 +152,7 @@ const approvePermission: Record<MergedRow['kind'], string> = {
   makeUp: 'make-up-class-requests.approve',
   exam: 'exam-applications.approve',
   registration: 'students.approve-registration',
+  manpower: 'manpower-requests.approve',
 }
 
 const rejectPermission: Record<MergedRow['kind'], string> = {
@@ -147,6 +162,7 @@ const rejectPermission: Record<MergedRow['kind'], string> = {
   makeUp: 'make-up-class-requests.reject',
   exam: 'exam-applications.reject',
   registration: 'students.approve-registration',
+  manpower: 'manpower-requests.reject',
 }
 
 // With an approval flow, only the group the request waits on decides it —
@@ -177,7 +193,7 @@ async function load() {
   error.value = null
 
   try {
-    const [approvals, leaves, resignations, makeUps, exams, registrations] = await Promise.all([
+    const [approvals, leaves, resignations, makeUps, exams, registrations, manpowers] = await Promise.all([
       canViewApprovals.value ? approvalRequestsService.list({}, { approvalQueue: true }) : Promise.resolve({ data: [] as ApprovalRequest[], pagination: undefined }),
       canViewLeave.value
         ? leaveRequestsService.list({ page: 1, per_page: 100, filter: {} }, { approvalQueue: true })
@@ -200,6 +216,9 @@ async function load() {
       canViewRegistrations.value
         ? studentRegistrationsService.list({ page: 1, per_page: 100 })
         : Promise.resolve({ data: [] as StudentRegistration[], pagination: undefined }),
+      canViewManpower.value
+        ? manpowerRequestsService.list({ page: 1, per_page: 100, filter: {} }, { approvalQueue: true })
+        : Promise.resolve({ data: [] as ManpowerRequest[], pagination: undefined }),
     ])
 
     const approvalRows: MergedRow[] = approvals.data.map((r) => ({
@@ -280,7 +299,19 @@ async function load() {
       registration: r,
     }))
 
-    rows.value = [...approvalRows, ...leaveRows, ...resignationRows, ...makeUpRows, ...examRows, ...registrationRows].sort((a, b) =>
+    const manpowerRows: MergedRow[] = manpowers.data.map((r) => ({
+      kind: 'manpower',
+      id: r.id,
+      reference: r.reference,
+      requestor: r.requested_by ?? '—',
+      subject: t('admin.approvals.manpowerSubject', { job: r.job_title, count: r.headcount }),
+      status: r.status,
+      createdAt: r.created_at,
+      flow: r.approval_flow ?? null,
+      manpower: r,
+    }))
+
+    rows.value = [...approvalRows, ...leaveRows, ...resignationRows, ...makeUpRows, ...examRows, ...registrationRows, ...manpowerRows].sort((a, b) =>
       b.createdAt.localeCompare(a.createdAt),
     )
   } catch (e) {
@@ -326,6 +357,8 @@ async function approve(row: MergedRow) {
       await (approvesToStudy(row) ? makeUpClassRequestsService.approveToStudy(row.id) : makeUpClassRequestsService.approve(row.id))
     } else if (row.kind === 'registration') {
       await studentRegistrationsService.approve(row.id)
+    } else if (row.kind === 'manpower') {
+      await manpowerRequestsService.approve(row.id)
     } else {
       await examApplicationsService.approve(row.id)
     }
@@ -356,6 +389,8 @@ async function confirmReject(reason: string) {
       await makeUpClassRequestsService.reject(row.id, reason)
     } else if (row.kind === 'registration') {
       await studentRegistrationsService.reject(row.id, reason)
+    } else if (row.kind === 'manpower') {
+      await manpowerRequestsService.reject(row.id, reason)
     } else {
       await examApplicationsService.reject(row.id, reason)
     }
@@ -402,10 +437,9 @@ onMounted(() => load())
       :message="t('admin.approvals.emptyMessage')"
     />
 
-    <!-- Every tab's list as cards, at every screen size: one column on a
-         phone, more as the screen widens. Tapping the subject opens the
-         request's details. -->
-    <div v-else class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+    <!-- On a phone (below sm, same as Students.vue) each request is a card;
+         tapping the subject opens its details. Wider screens keep the table. -->
+    <div v-else-if="visibleRows.length > 0" class="space-y-3 sm:hidden">
       <div
         v-for="row in visibleRows"
         :key="row.id"
@@ -431,14 +465,39 @@ onMounted(() => load())
           {{ t('admin.approvals.flowStep', { step: row.flow.step, total: row.flow.total, group: row.flow.group ?? '—' }) }}
         </p>
 
-        <!-- Pushes the buttons to the card's bottom, so a row of cards lines them up. -->
-        <div class="min-h-3 flex-1" />
-        <div v-if="isOpen(row) && (canApprove(row) || canReject(row) || (row.kind === 'exam' && canUpdateExam))" class="flex flex-wrap justify-end gap-2 border-t border-neutral-100 pt-3">
+        <div v-if="isOpen(row) && (canApprove(row) || canReject(row) || (row.kind === 'exam' && canUpdateExam))" class="mt-3 flex flex-wrap justify-end gap-2 border-t border-neutral-100 pt-3">
           <BaseButton v-if="row.kind === 'exam' && canUpdateExam" size="sm" variant="outline" @click="openEditExam(row)">{{ t('common.edit') }}</BaseButton>
           <BaseButton v-if="canApprove(row)" size="sm" :loading="approving" @click="approve(row)">{{ approveLabel(row) }}</BaseButton>
           <BaseButton v-if="canReject(row)" size="sm" variant="danger" @click="openReject(row)">{{ t('admin.approvals.reject') }}</BaseButton>
         </div>
       </div>
+    </div>
+
+    <div v-if="!loading && visibleRows.length > 0" class="hidden sm:block">
+      <DataTable :columns="columns" :rows="visibleRows" row-key="id">
+        <template #cell-date="{ row }">{{ formatDate(row.createdAt) }}</template>
+        <template #cell-requestor="{ row }">{{ row.requestor }}</template>
+        <template #cell-subject="{ row }">
+          <button type="button" class="text-left font-medium text-primary-700 hover:underline" @click="detail = row">
+            {{ row.subject }}
+          </button>
+        </template>
+        <template #cell-reference="{ row }">{{ row.reference }}</template>
+        <template #cell-status="{ row }">
+          <BaseBadge :variant="statusVariant[row.status]">{{ t(statusLabelKey[row.status]) }}</BaseBadge>
+          <p v-if="row.flow" class="mt-1 text-xs text-neutral-500">
+            {{ t('admin.approvals.flowStep', { step: row.flow.step, total: row.flow.total, group: row.flow.group ?? '—' }) }}
+          </p>
+        </template>
+        <template #cell-actions="{ row }">
+          <div v-if="isOpen(row)" class="flex gap-2">
+            <BaseButton v-if="row.kind === 'exam' && canUpdateExam" size="sm" variant="outline" @click="openEditExam(row)">{{ t('common.edit') }}</BaseButton>
+            <BaseButton v-if="canApprove(row)" size="sm" :loading="approving" @click="approve(row)">{{ approveLabel(row) }}</BaseButton>
+            <BaseButton v-if="canReject(row)" size="sm" variant="danger" @click="openReject(row)">{{ t('admin.approvals.reject') }}</BaseButton>
+          </div>
+          <span v-else class="text-xs text-neutral-400">—</span>
+        </template>
+      </DataTable>
     </div>
 
     <BaseModal :model-value="detail !== null" :title="detail?.subject" size="lg" @update:model-value="detail = null">
@@ -489,6 +548,15 @@ onMounted(() => load())
           <div><dt class="text-neutral-500">{{ t('admin.exams.columnTimeExam') }}</dt><dd class="font-medium text-neutral-900">{{ detail.exam.exam_time?.slice(0, 5) ?? '—' }} – {{ detail.exam.exam_time_out?.slice(0, 5) ?? '—' }}</dd></div>
           <div><dt class="text-neutral-500">{{ t('admin.exams.columnTableNumber') }}</dt><dd class="font-medium text-neutral-900">{{ detail.exam.table?.name ?? detail.exam.table_no ?? '—' }}</dd></div>
           <div v-if="detail.exam.decision_reason"><dt class="text-neutral-500">{{ t('admin.leaveRequests.decisionReason') }}</dt><dd class="font-medium text-neutral-900">{{ detail.exam.decision_reason }}</dd></div>
+        </dl>
+        <dl v-else-if="detail.kind === 'manpower' && detail.manpower" class="grid gap-y-2 text-sm">
+          <div><dt class="text-neutral-500">{{ t('admin.recruitment.manpower.jobTitle') }}</dt><dd class="font-medium text-neutral-900">{{ detail.manpower.job_title }}<template v-if="detail.manpower.position"> ({{ detail.manpower.position }})</template></dd></div>
+          <div><dt class="text-neutral-500">{{ t('admin.recruitment.manpower.department') }}</dt><dd class="font-medium text-neutral-900">{{ detail.manpower.department ?? '—' }}</dd></div>
+          <div><dt class="text-neutral-500">{{ t('admin.recruitment.manpower.headcount') }}</dt><dd class="font-medium text-neutral-900">{{ detail.manpower.headcount }} · {{ t(`admin.recruitment.employmentTypes.${detail.manpower.employment_type}`) }}</dd></div>
+          <div><dt class="text-neutral-500">{{ t('admin.recruitment.manpower.neededBy') }}</dt><dd class="font-medium text-neutral-900">{{ formatDate(detail.manpower.needed_by) }}</dd></div>
+          <div><dt class="text-neutral-500">{{ t('admin.recruitment.manpower.reason') }}</dt><dd class="whitespace-pre-line font-medium text-neutral-900">{{ detail.manpower.reason }}</dd></div>
+          <div v-if="detail.manpower.requirements"><dt class="text-neutral-500">{{ t('admin.recruitment.manpower.requirements') }}</dt><dd class="whitespace-pre-line font-medium text-neutral-900">{{ detail.manpower.requirements }}</dd></div>
+          <div v-if="detail.manpower.decision_reason"><dt class="text-neutral-500">{{ t('admin.leaveRequests.decisionReason') }}</dt><dd class="font-medium text-neutral-900">{{ detail.manpower.decision_reason }}</dd></div>
         </dl>
         <div v-else-if="detail.kind === 'registration' && detail.registration">
           <div class="flex gap-4">

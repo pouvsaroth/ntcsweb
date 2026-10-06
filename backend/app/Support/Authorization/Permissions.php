@@ -296,6 +296,20 @@ final class Permissions
 
     public const ORGANIZATION_DELETE = 'organization.delete';
 
+    // Recruitment — HRM > Recruitment's tabs. MANPOWER_REQUESTS_APPROVE/
+    // REJECT decide a manpower request in E-Approvals when it has no flow.
+    public const RECRUITMENT_VIEW = 'recruitment.view';
+
+    public const RECRUITMENT_CREATE = 'recruitment.create';
+
+    public const RECRUITMENT_UPDATE = 'recruitment.update';
+
+    public const RECRUITMENT_DELETE = 'recruitment.delete';
+
+    public const MANPOWER_REQUESTS_APPROVE = 'manpower-requests.approve';
+
+    public const MANPOWER_REQUESTS_REJECT = 'manpower-requests.reject';
+
     // Staff — non-teaching personnel (Accountant, HR, Librarian, ...).
     public const STAFF_VIEW = 'staff.view';
 
@@ -806,6 +820,14 @@ final class Permissions
                 self::ORGANIZATION_UPDATE => 'Update branches, departments, teams, job grades and job levels',
                 self::ORGANIZATION_DELETE => 'Delete branches, departments, teams, job grades and job levels',
             ],
+            'Recruitment' => [
+                self::RECRUITMENT_VIEW => 'View recruitment',
+                self::RECRUITMENT_CREATE => 'Create recruitment records',
+                self::RECRUITMENT_UPDATE => 'Update recruitment records',
+                self::RECRUITMENT_DELETE => 'Delete recruitment records',
+                self::MANPOWER_REQUESTS_APPROVE => 'Approve manpower requests',
+                self::MANPOWER_REQUESTS_REJECT => 'Reject manpower requests',
+            ],
             'Staff' => [
                 self::STAFF_VIEW => 'View staff',
                 self::STAFF_CREATE => 'Create staff',
@@ -1116,6 +1138,12 @@ final class Permissions
                 self::RESIGNATION_REQUESTS_VIEW,
                 self::RESIGNATION_REQUESTS_APPROVE,
                 self::RESIGNATION_REQUESTS_REJECT,
+                self::RECRUITMENT_VIEW,
+                self::RECRUITMENT_CREATE,
+                self::RECRUITMENT_UPDATE,
+                self::RECRUITMENT_DELETE,
+                self::MANPOWER_REQUESTS_APPROVE,
+                self::MANPOWER_REQUESTS_REJECT,
                 self::MAKE_UP_CLASS_REQUESTS_VIEW,
                 self::MAKE_UP_CLASS_REQUESTS_APPROVE,
                 self::MAKE_UP_CLASS_REQUESTS_REJECT,

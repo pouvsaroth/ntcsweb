@@ -1,5 +1,6 @@
 import { organizationTabs } from '@/router/organizationTabs'
 import { documentLinks, documentsAndFormLinks } from '@/router/publicNav'
+import { recruitmentTabs } from '@/router/recruitmentTabs'
 
 export interface AdminNavItem {
   labelKey: string
@@ -143,6 +144,8 @@ export const adminNav: AdminNavGroup[] = [
       // One link; School, Branch, Department, ... are tabs on the page itself
       // (see organizationTabs.ts). Shown to anyone who can open any one tab.
       { labelKey: 'adminNav.items.organizationManagement', to: '/admin/organization', permission: organizationTabs.flatMap((tab) => tab.permission) },
+      // One link; Manpower request, Job positions, ... are tabs on the page itself (see recruitmentTabs.ts).
+      { labelKey: 'adminNav.items.recruitment', to: '/admin/recruitment', permission: recruitmentTabs.map((tab) => tab.permission) },
       // Self-service, same page used by the public site's "Document and
       // Form" menu for students — MyRequests.vue's backend auto-detects
       // whether the signed-in account is a student or staff (see

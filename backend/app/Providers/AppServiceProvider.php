@@ -124,6 +124,14 @@ class AppServiceProvider extends ServiceProvider
             );
         });
 
+        // The public Careers page's Apply form — anyone can send it, with a
+        // file, so a handful per IP per school is plenty.
+        RateLimiter::for('job-applications', function (Request $request) {
+            $tenantId = app(TenantContext::class)->id() ?? 'platform';
+
+            return Limit::perMinutes(10, 5)->by("job-applications:{$tenantId}:{$request->ip()}");
+        });
+
         RateLimiter::for('api', function (Request $request) {
             return Limit::perMinute(120)->by(
                 $request->user()?->getKey() ?? $request->ip()

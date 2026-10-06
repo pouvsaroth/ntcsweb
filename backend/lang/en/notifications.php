@@ -22,4 +22,9 @@ return [
     'approval_request_approved' => 'Your request ":subject" was approved',
     'approval_request_rejected' => 'Your request ":subject" was rejected: :reason',
     'student_registration_submitted' => ':student_name registered and is waiting for approval',
+    'manpower_request_submitted' => ':requester_name asked to hire :headcount × :job_title (:reference)',
+    'manpower_request_approved' => 'Manpower request :reference (:job_title) was approved',
+    'manpower_request_rejected' => 'Manpower request :reference (:job_title) was rejected: :reason',
+    'job_application_received' => ':applicant_name applied for :job_title',
+    'interview_scheduled' => 'You are interviewing :applicant_name (:job_title) on :date',
 ];

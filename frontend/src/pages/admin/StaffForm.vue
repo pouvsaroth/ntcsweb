@@ -12,6 +12,7 @@ import EmptyState from '@/components/ui/EmptyState.vue'
 import LookupSelect from '@/components/ui/LookupSelect.vue'
 import { departmentsService, type Department } from '@/services/departments'
 import { geographyService, type GeographyOption } from '@/services/geography'
+import { offerLettersService, type OfferLetter } from '@/services/offerLetters'
 import { organizationUnitsService, type OrganizationUnit } from '@/services/organizationUnits'
 import { positionsService, type Position } from '@/services/positions'
 import { staffService, type Staff, type StaffInput } from '@/services/staff'
@@ -277,6 +278,41 @@ function onSignatureChange(event: Event) {
   signaturePreview.value = URL.createObjectURL(file)
 }
 
+// --- Hire from Recruitment ---------------------------------------------------
+//
+// `?from_offer=<id>` (Offer letter's "Hire"): a new staff member pre-filled
+// from the accepted offer and its applicant; once saved, the offer is linked
+// to them and the applicant marked Hired (see OfferLetterService::hire()).
+
+const fromOffer = ref<OfferLetter | null>(null)
+const hireWarning = ref<string | null>(null)
+
+async function prefillFromOffer() {
+  const id = Number(route.query.from_offer)
+  if (!Number.isInteger(id) || id <= 0) return
+
+  try {
+    const offer = await offerLettersService.get(id)
+    if (offer.status !== 'accepted' || offer.hired_staff_id) return
+    fromOffer.value = offer
+
+    const a = offer.applicant
+    form.first_name = a?.first_name ?? ''
+    form.last_name = a?.last_name ?? ''
+    if (a?.gender) form.gender = a.gender
+    if (a?.date_of_birth) form.date_of_birth = a.date_of_birth
+    form.phone = a?.phone ?? ''
+    form.email = a?.email ?? ''
+    form.position_id = offer.job_position?.position_id ?? null
+    form.department_id = offer.department_id
+    form.branch_id = offer.job_position?.branch_id ?? null
+    form.hire_date = offer.start_date
+    form.status = offer.probation_months ? 'probation' : 'active'
+  } catch {
+    // Not found / not allowed: just an empty New staff form.
+  }
+}
+
 async function load() {
   loading.value = true
   loadError.value = null
@@ -289,7 +325,10 @@ async function load() {
     ])
     positions.value = allPositions
 
-    if (!staffId.value) return
+    if (!staffId.value) {
+      await prefillFromOffer()
+      return
+    }
 
     const staff = await staffService.get(staffId.value)
     employeeCode.value = staff.employee_code
@@ -346,7 +385,14 @@ async function submit() {
       await staffService.update(staffId.value!, payload)
       await router.push('/admin/staff')
     } else {
-      const { temporaryPassword: password } = await staffService.create(payload)
+      const { staff, temporaryPassword: password } = await staffService.create(payload)
+      if (fromOffer.value) {
+        // The staff member exists either way — a failure here only means the
+        // offer isn't linked yet, which HR can see and fix on Recruitment.
+        await offerLettersService.hire(fromOffer.value.id, staff.id).catch(() => {
+          hireWarning.value = t('admin.recruitment.offers.hireLinkFailed')
+        })
+      }
       // The one-time password takes over this page instead of navigating
       // away — there is no other channel (no SMS, email is optional) to
       // relay it, same as the old StaffFormModal's behavior.
@@ -375,6 +421,7 @@ onMounted(load)
     </div>
 
     <div v-if="temporaryPassword" class="max-w-lg space-y-4">
+      <BaseAlert v-if="hireWarning" variant="warning">{{ hireWarning }}</BaseAlert>
       <BaseAlert variant="success">{{ t('admin.staff.temporaryPasswordMessage') }}</BaseAlert>
       <div>
         <label class="mb-1.5 block text-sm font-medium text-neutral-700">{{ t('admin.staff.temporaryPasswordLabel') }}</label>
@@ -417,6 +464,9 @@ onMounted(load)
 
         <form v-else class="space-y-10" @submit.prevent="submit">
           <BaseAlert v-if="generalError" variant="danger">{{ generalError }}</BaseAlert>
+          <BaseAlert v-if="fromOffer" variant="info">
+            {{ t('admin.recruitment.offers.hiringFrom', { name: fromOffer.applicant?.name ?? '', reference: fromOffer.reference }) }}
+          </BaseAlert>
 
           <!-- Basic / employment information -->
           <section>

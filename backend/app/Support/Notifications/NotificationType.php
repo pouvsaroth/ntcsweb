@@ -44,4 +44,14 @@ final class NotificationType
     public const APPROVAL_REQUEST_REJECTED = 'approval_request_rejected';
 
     public const STUDENT_REGISTRATION_SUBMITTED = 'student_registration_submitted';
+
+    public const MANPOWER_REQUEST_SUBMITTED = 'manpower_request_submitted';
+
+    public const MANPOWER_REQUEST_APPROVED = 'manpower_request_approved';
+
+    public const MANPOWER_REQUEST_REJECTED = 'manpower_request_rejected';
+
+    public const JOB_APPLICATION_RECEIVED = 'job_application_received';
+
+    public const INTERVIEW_SCHEDULED = 'interview_scheduled';
 }

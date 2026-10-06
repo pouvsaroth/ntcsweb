@@ -2,6 +2,7 @@ import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 
 import { firstAccessibleAdminPath } from '@/router/adminNav'
 import { canOpenOrganizationTab, organizationTabs } from '@/router/organizationTabs'
+import { recruitmentTabs } from '@/router/recruitmentTabs'
 import { useAuthStore } from '@/stores/auth'
 
 const authRoutes: RouteRecordRaw[] = [
@@ -456,6 +457,32 @@ const adminRoutes: RouteRecordRaw[] = [
       { path: 'job-levels', name: 'admin.organization.job-levels', component: organizationUnits, props: { kind: 'job-levels' } },
       { path: 'reporting', name: 'admin.organization.reporting', component: () => import('@/pages/admin/ReportingManagers.vue') },
       { path: 'hierarchy', name: 'admin.organization.hierarchy', component: () => import('@/pages/admin/OrganizationHierarchy.vue') },
+    ],
+  },
+  {
+    // HRM > Recruitment: tabs as child routes (see RecruitmentLayout.vue / recruitmentTabs.ts).
+    path: 'recruitment',
+    component: () => import('@/pages/admin/recruitment/RecruitmentLayout.vue'),
+    meta: { titleKey: 'adminNav.items.recruitment' },
+    children: [
+      {
+        path: '',
+        name: 'admin.recruitment',
+        redirect: () => {
+          const auth = useAuthStore()
+          return (recruitmentTabs.find((tab) => auth.can(tab.permission)) ?? recruitmentTabs[0]!).to
+        },
+      },
+      { path: 'manpower-requests', name: 'admin.recruitment.manpower-requests', component: () => import('@/pages/admin/recruitment/ManpowerRequests.vue') },
+      { path: 'job-positions', name: 'admin.recruitment.job-positions', component: () => import('@/pages/admin/recruitment/JobPositions.vue') },
+      { path: 'job-postings', name: 'admin.recruitment.job-postings', component: () => import('@/pages/admin/recruitment/JobPostings.vue') },
+      { path: 'applicants', name: 'admin.recruitment.applicants', component: () => import('@/pages/admin/recruitment/Applicants.vue') },
+      { path: 'cvs', name: 'admin.recruitment.cvs', component: () => import('@/pages/admin/recruitment/CvResumes.vue') },
+      { path: 'interviews', name: 'admin.recruitment.interviews', component: () => import('@/pages/admin/recruitment/Interviews.vue') },
+      { path: 'evaluations', name: 'admin.recruitment.evaluations', component: () => import('@/pages/admin/recruitment/InterviewEvaluations.vue') },
+      { path: 'selection', name: 'admin.recruitment.selection', component: () => import('@/pages/admin/recruitment/CandidateSelection.vue') },
+      { path: 'offers', name: 'admin.recruitment.offers', component: () => import('@/pages/admin/recruitment/OfferLetters.vue') },
+      { path: 'pipeline', name: 'admin.recruitment.pipeline', component: () => import('@/pages/admin/recruitment/Pipeline.vue') },
     ],
   },
   // Old homes under Settings / HRM — kept so existing bookmarks still land.

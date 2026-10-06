@@ -12,6 +12,8 @@ use App\Models\AssetCategory;
 use App\Models\AssetIssue;
 use App\Models\AssetLocation;
 use App\Models\AssetMaintenance;
+use App\Models\Applicant;
+use App\Models\ApplicantDocument;
 use App\Models\ApprovalRequest;
 use App\Models\AssetRepair;
 use App\Models\AttendanceRecord;
@@ -36,8 +38,12 @@ use App\Models\FormTemplate;
 use App\Models\DownloadFolder;
 use App\Models\GalleryImage;
 use App\Models\HomeSlide;
+use App\Models\Interview;
+use App\Models\InterviewEvaluation;
 use App\Models\Invoice;
 use App\Models\JobGrade;
+use App\Models\JobPosition;
+use App\Models\JobPosting;
 use App\Models\JobLevel;
 use App\Models\Language;
 use App\Models\LeaveRequest;
@@ -52,6 +58,8 @@ use App\Models\ProjectTaskComment;
 use App\Models\Promotion;
 use App\Models\RepairShop;
 use App\Models\MakeUpClassRequest;
+use App\Models\OfferLetter;
+use App\Models\ManpowerRequest;
 use App\Models\ResignationRequest;
 use App\Models\Role;
 use App\Models\SchoolClass;
@@ -83,7 +91,9 @@ use App\Policies\ClassroomTablePolicy;
 use App\Policies\CoursePackagePolicy;
 use App\Policies\CurrencyRatePolicy;
 use App\Policies\DepartmentPolicy;
+use App\Policies\ManpowerRequestPolicy;
 use App\Policies\OrganizationUnitPolicy;
+use App\Policies\RecruitmentPolicy;
 use App\Policies\EnrollmentPolicy;
 use App\Policies\ExamApplicationPolicy;
 use App\Policies\ExamScorePolicy;
@@ -177,6 +187,14 @@ class AuthServiceProvider extends ServiceProvider
         Team::class => OrganizationUnitPolicy::class,
         JobGrade::class => OrganizationUnitPolicy::class,
         JobLevel::class => OrganizationUnitPolicy::class,
+        ManpowerRequest::class => ManpowerRequestPolicy::class,
+        JobPosition::class => RecruitmentPolicy::class,
+        JobPosting::class => RecruitmentPolicy::class,
+        Applicant::class => RecruitmentPolicy::class,
+        ApplicantDocument::class => RecruitmentPolicy::class,
+        Interview::class => RecruitmentPolicy::class,
+        InterviewEvaluation::class => RecruitmentPolicy::class,
+        OfferLetter::class => RecruitmentPolicy::class,
         Supplier::class => SupplierPolicy::class,
         RepairShop::class => RepairShopPolicy::class,
         AssetIssue::class => AssetIssuePolicy::class,

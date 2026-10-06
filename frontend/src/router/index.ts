@@ -16,6 +16,7 @@ const publicRoutes: RouteRecordRaw[] = [
   { path: 'gallery', name: 'gallery', component: () => import('@/pages/public/Gallery.vue') },
   { path: 'promotion', name: 'promotion', component: () => import('@/pages/public/Promotion.vue') },
   { path: 'downloads', name: 'downloads', component: () => import('@/pages/public/Downloads.vue') },
+  { path: 'careers', name: 'careers', component: () => import('@/pages/public/Careers.vue') },
   { path: 'documents', name: 'documents', component: () => import('@/pages/public/Documents.vue') },
   { path: 'contact', name: 'contact', component: () => import('@/pages/public/Contact.vue') },
   { path: ':pathMatch(.*)*', name: 'not-found', component: () => import('@/pages/public/NotFound.vue') },

@@ -29,6 +29,11 @@ export type NotificationTypeValue =
   | 'approval_request_approved'
   | 'approval_request_rejected'
   | 'student_registration_submitted'
+  | 'manpower_request_submitted'
+  | 'manpower_request_approved'
+  | 'manpower_request_rejected'
+  | 'job_application_received'
+  | 'interview_scheduled'
 
 export interface AppNotification {
   id: number
