@@ -416,7 +416,69 @@ onMounted(async () => {
     <BaseAlert v-if="exportError" variant="danger" class="mb-4">{{ exportError }}</BaseAlert>
 
     <template v-if="classId">
+      <!-- On a phone (below sm) each student is a card; tapping the name opens
+           their history, the tick picks them for Export. Wider screens keep the table. -->
+      <div class="sm:hidden">
+        <div v-if="loading" class="py-8 text-center text-sm text-neutral-400">{{ t('common.loading') }}</div>
+        <p v-else-if="filteredRows.length === 0" class="py-8 text-center text-sm text-neutral-400">
+          {{ t('admin.attendance.summaryEmptyMessage') }}
+        </p>
+        <div v-else class="space-y-3">
+          <div
+            v-for="row in filteredRows"
+            :key="row.enrollment_id"
+            class="rounded-[--radius-card] border border-neutral-200 bg-white p-4 shadow-[--shadow-card]"
+          >
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex min-w-0 items-start gap-2">
+                <input
+                  type="checkbox"
+                  class="mt-1 rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+                  :checked="selectedIds.includes(row.enrollment_id)"
+                  @change="
+                    selectedIds = selectedIds.includes(row.enrollment_id)
+                      ? selectedIds.filter((id) => id !== row.enrollment_id)
+                      : [...selectedIds, row.enrollment_id]
+                  "
+                />
+                <div class="min-w-0">
+                  <button type="button" class="text-left text-sm font-semibold text-primary-700 hover:underline" @click="openDetail(row)">
+                    {{ row.student.name }}
+                  </button>
+                  <p class="text-xs text-neutral-400">{{ enrollmentLabel(row) || '—' }}</p>
+                </div>
+              </div>
+              <div class="shrink-0 text-right">
+                <p class="text-xs text-neutral-500">{{ t('admin.attendance.columnRemainingHours') }}</p>
+                <span
+                  class="inline-block rounded px-2 py-0.5 text-sm font-semibold tabular-nums"
+                  :class="remainingHours(row) > REMAINING_HOURS_ALERT ? 'bg-danger-600 text-white' : 'text-neutral-800'"
+                >
+                  {{ remainingHours(row) }}
+                </span>
+              </div>
+            </div>
+
+            <dl class="mt-3 grid grid-cols-3 gap-2 border-t border-neutral-100 pt-3 text-center text-sm">
+              <div>
+                <dt class="text-xs text-neutral-500">{{ t('admin.attendance.columnMissedHours') }}</dt>
+                <dd class="font-medium tabular-nums text-neutral-800">{{ totalAbsenceHours(row) }}</dd>
+              </div>
+              <div>
+                <dt class="text-xs text-neutral-500">{{ t('admin.attendance.columnMakeUpHours') }}</dt>
+                <dd class="font-medium tabular-nums text-neutral-800">{{ row.make_up_hours }}</dd>
+              </div>
+              <div>
+                <dt class="text-xs text-neutral-500">{{ t('admin.attendance.columnPresentHours') }}</dt>
+                <dd class="font-medium tabular-nums text-neutral-800">{{ row.present_hours }}</dd>
+              </div>
+            </dl>
+          </div>
+        </div>
+      </div>
+
       <DataTable
+        class="hidden sm:block"
         :columns="columns"
         :rows="filteredRows"
         row-key="enrollment_id"
@@ -466,7 +528,32 @@ onMounted(async () => {
 
       <div v-if="detailLoading" class="py-8 text-center text-sm text-neutral-400">{{ t('common.loading') }}</div>
 
-      <table v-else-if="visibleDetailRecords.length > 0" class="w-full text-left text-sm">
+      <!-- On a phone each day is a card; wider screens keep the table. -->
+      <div v-else-if="visibleDetailRecords.length > 0" class="space-y-2 sm:hidden">
+        <div v-for="record in visibleDetailRecords" :key="record.id" class="rounded-[--radius-card] border border-neutral-200 p-3">
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <p class="text-sm font-semibold text-neutral-800">{{ formatDate(record.date) }}</p>
+              <p class="truncate text-xs text-neutral-500">{{ record.class?.name ?? '—' }}</p>
+            </div>
+            <BaseBadge :variant="statusVariant[record.status]" class="shrink-0">{{ statusLabel(record.status) }}</BaseBadge>
+          </div>
+          <dl class="mt-2 grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 text-sm">
+            <dt class="text-neutral-500">{{ t('admin.attendance.columnHours') }}</dt>
+            <dd class="tabular-nums text-neutral-800">{{ record.class?.hours ?? '—' }}</dd>
+            <template v-if="record.late_minutes != null">
+              <dt class="text-neutral-500">{{ t('admin.attendance.columnLateMinutes') }}</dt>
+              <dd class="tabular-nums text-neutral-800">{{ record.late_minutes }}</dd>
+            </template>
+            <template v-if="record.remarks">
+              <dt class="text-neutral-500">{{ t('admin.attendance.columnRemarks') }}</dt>
+              <dd class="break-words text-neutral-800">{{ record.remarks }}</dd>
+            </template>
+          </dl>
+        </div>
+      </div>
+
+      <table v-if="!detailLoading && visibleDetailRecords.length > 0" class="hidden w-full text-left text-sm sm:table">
         <thead class="border-b border-neutral-200 text-neutral-500">
           <tr>
             <th class="py-2 pr-3 font-medium">{{ t('admin.attendance.columnDate') }}</th>
@@ -491,7 +578,9 @@ onMounted(async () => {
         </tbody>
       </table>
 
-      <p v-else class="py-8 text-center text-sm text-neutral-400">{{ t('admin.attendance.summaryEmptyMessage') }}</p>
+      <p v-if="!detailLoading && visibleDetailRecords.length === 0" class="py-8 text-center text-sm text-neutral-400">
+        {{ t('admin.attendance.summaryEmptyMessage') }}
+      </p>
     </BaseModal>
   </div>
 </template>
