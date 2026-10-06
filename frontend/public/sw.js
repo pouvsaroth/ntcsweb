@@ -22,6 +22,9 @@ self.addEventListener('fetch', (event) => {
 // device the user turned this on for (see services/pushNotifications.ts).
 // No `icon` on purpose: Android shows it as a picture after the message, and
 // the spot before the message only ever takes the one-colour `badge`.
+// Android keeps only the badge's transparency and paints it white, so it has
+// to be a cut-out shape — the full-colour logo there is just a white circle.
+// notification-badge.png is the logo's 12-segment wheel with an "S" cut out.
 self.addEventListener('push', (event) => {
   let payload = {}
   try {
@@ -34,7 +37,7 @@ self.addEventListener('push', (event) => {
     self.registration.showNotification(payload.title || 'NTCSWEB', {
       body: payload.body || '',
       tag: payload.tag,
-      badge: '/icons/admin-192.png',
+      badge: '/icons/notification-badge.png',
       data: { url: payload.url || '/admin/notifications' },
     }),
   )
