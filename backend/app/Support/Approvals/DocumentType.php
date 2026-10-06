@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Support\Approvals;
 
 use App\Models\ApprovalRequest;
+use App\Models\AttendanceCorrection;
 use App\Models\ExamApplication;
 use App\Models\LeaveRequest;
 use App\Models\MakeUpClassRequest;
 use App\Models\ManpowerRequest;
+use App\Models\OvertimeRequest;
 use App\Models\ResignationRequest;
 use App\Support\Authorization\Permissions;
 use Illuminate\Database\Eloquent\Builder;
@@ -37,6 +39,10 @@ final class DocumentType
 
     public const MANPOWER_REQUEST = 'manpower_request';
 
+    public const OVERTIME_REQUEST = 'overtime_request';
+
+    public const ATTENDANCE_CORRECTION = 'attendance_correction';
+
     /** @var array<string, class-string<Model>> */
     private const MODELS = [
         self::STUDENT_LEAVE => LeaveRequest::class,
@@ -46,6 +52,8 @@ final class DocumentType
         self::EXAM_APPLICATION => ExamApplication::class,
         self::FORM_REQUEST => ApprovalRequest::class,
         self::MANPOWER_REQUEST => ManpowerRequest::class,
+        self::OVERTIME_REQUEST => OvertimeRequest::class,
+        self::ATTENDANCE_CORRECTION => AttendanceCorrection::class,
     ];
 
     /** @return list<string> */
@@ -100,6 +108,8 @@ final class DocumentType
             self::EXAM_APPLICATION => Permissions::EXAM_APPLICATIONS_APPROVE,
             self::FORM_REQUEST => Permissions::APPROVAL_REQUESTS_APPROVE,
             self::MANPOWER_REQUEST => Permissions::MANPOWER_REQUESTS_APPROVE,
+            self::OVERTIME_REQUEST => Permissions::OVERTIME_REQUESTS_APPROVE,
+            self::ATTENDANCE_CORRECTION => Permissions::ATTENDANCE_CORRECTIONS_APPROVE,
         };
     }
 }

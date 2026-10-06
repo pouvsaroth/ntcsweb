@@ -27,4 +27,10 @@ return [
     'manpower_request_rejected' => 'Manpower request :reference (:job_title) was rejected: :reason',
     'job_application_received' => ':applicant_name applied for :job_title',
     'interview_scheduled' => 'You are interviewing :applicant_name (:job_title) on :date',
+    'overtime_request_submitted' => ':staff_name claimed :hours h overtime on :date',
+    'overtime_request_approved' => 'Your :hours h overtime on :date was approved',
+    'overtime_request_rejected' => 'Your :hours h overtime on :date was rejected: :reason',
+    'attendance_correction_submitted' => ':staff_name asked to correct their attendance on :date',
+    'attendance_correction_approved' => 'Your attendance correction for :date was approved',
+    'attendance_correction_rejected' => 'Your attendance correction for :date was rejected: :reason',
 ];

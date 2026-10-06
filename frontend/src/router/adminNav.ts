@@ -1,4 +1,5 @@
 import { organizationTabs } from '@/router/organizationTabs'
+import { attendanceTabs } from '@/router/attendanceTabs'
 import { documentLinks, documentsAndFormLinks } from '@/router/publicNav'
 import { recruitmentTabs } from '@/router/recruitmentTabs'
 
@@ -146,6 +147,11 @@ export const adminNav: AdminNavGroup[] = [
       { labelKey: 'adminNav.items.organizationManagement', to: '/admin/organization', permission: organizationTabs.flatMap((tab) => tab.permission) },
       // One link; Manpower request, Job positions, ... are tabs on the page itself (see recruitmentTabs.ts).
       { labelKey: 'adminNav.items.recruitment', to: '/admin/recruitment', permission: recruitmentTabs.map((tab) => tab.permission) },
+      // One link; Shift, Work schedule, Holidays, ... are tabs on the page itself (see attendanceTabs.ts).
+      { labelKey: 'adminNav.items.timeAttendance', to: '/admin/time-attendance', permission: attendanceTabs.map((tab) => tab.permission) },
+      // Self-service for every staff account — the same slug as Request Leave
+      // below, so students (who hold none) never see it. See MyCheckIn.vue.
+      { labelKey: 'adminNav.items.myCheckIn', to: '/admin/my-check-in', permission: 'my-requests.view' },
       // Self-service, same page used by the public site's "Document and
       // Form" menu for students — MyRequests.vue's backend auto-detects
       // whether the signed-in account is a student or staff (see

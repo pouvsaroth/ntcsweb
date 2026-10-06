@@ -16,6 +16,7 @@ use App\Models\Applicant;
 use App\Models\ApplicantDocument;
 use App\Models\ApprovalRequest;
 use App\Models\AssetRepair;
+use App\Models\AttendanceCorrection;
 use App\Models\AttendanceRecord;
 use App\Models\AuditLog;
 use App\Models\Book;
@@ -37,6 +38,7 @@ use App\Models\FormCategory;
 use App\Models\FormTemplate;
 use App\Models\DownloadFolder;
 use App\Models\GalleryImage;
+use App\Models\Holiday;
 use App\Models\HomeSlide;
 use App\Models\Interview;
 use App\Models\InterviewEvaluation;
@@ -59,11 +61,14 @@ use App\Models\Promotion;
 use App\Models\RepairShop;
 use App\Models\MakeUpClassRequest;
 use App\Models\OfferLetter;
+use App\Models\OvertimeRequest;
 use App\Models\ManpowerRequest;
 use App\Models\ResignationRequest;
 use App\Models\Role;
 use App\Models\SchoolClass;
+use App\Models\Shift;
 use App\Models\Staff;
+use App\Models\StaffAttendance;
 use App\Models\Student;
 use App\Models\StudentFeedback;
 use App\Models\Supplier;
@@ -71,6 +76,7 @@ use App\Models\Team;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Models\Video;
+use App\Models\WorkSchedule;
 use App\Policies\AcademicProgramPolicy;
 use App\Policies\AcademicYearPolicy;
 use App\Policies\AccountPolicy;
@@ -93,7 +99,10 @@ use App\Policies\CurrencyRatePolicy;
 use App\Policies\DepartmentPolicy;
 use App\Policies\ManpowerRequestPolicy;
 use App\Policies\OrganizationUnitPolicy;
+use App\Policies\AttendanceCorrectionPolicy;
+use App\Policies\OvertimeRequestPolicy;
 use App\Policies\RecruitmentPolicy;
+use App\Policies\StaffAttendancePolicy;
 use App\Policies\EnrollmentPolicy;
 use App\Policies\ExamApplicationPolicy;
 use App\Policies\ExamScorePolicy;
@@ -195,6 +204,12 @@ class AuthServiceProvider extends ServiceProvider
         Interview::class => RecruitmentPolicy::class,
         InterviewEvaluation::class => RecruitmentPolicy::class,
         OfferLetter::class => RecruitmentPolicy::class,
+        Shift::class => StaffAttendancePolicy::class,
+        WorkSchedule::class => StaffAttendancePolicy::class,
+        Holiday::class => StaffAttendancePolicy::class,
+        StaffAttendance::class => StaffAttendancePolicy::class,
+        OvertimeRequest::class => OvertimeRequestPolicy::class,
+        AttendanceCorrection::class => AttendanceCorrectionPolicy::class,
         Supplier::class => SupplierPolicy::class,
         RepairShop::class => RepairShopPolicy::class,
         AssetIssue::class => AssetIssuePolicy::class,

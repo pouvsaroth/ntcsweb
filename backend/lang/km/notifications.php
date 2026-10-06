@@ -25,4 +25,10 @@ return [
     'manpower_request_rejected' => 'សំណើបុគ្គលិក :reference (:job_title) ត្រូវបានបដិសេធ៖ :reason',
     'job_application_received' => ':applicant_name បានដាក់ពាក្យសម្រាប់ :job_title',
     'interview_scheduled' => 'អ្នកនឹងសម្ភាសន៍ :applicant_name (:job_title) នៅ :date',
+    'overtime_request_submitted' => ':staff_name ស្នើម៉ោងបន្ថែម :hours ម៉ោង នៅថ្ងៃ :date',
+    'overtime_request_approved' => 'ម៉ោងបន្ថែម :hours ម៉ោង ថ្ងៃ :date របស់អ្នកត្រូវបានអនុម័ត',
+    'overtime_request_rejected' => 'ម៉ោងបន្ថែម :hours ម៉ោង ថ្ងៃ :date របស់អ្នកត្រូវបានបដិសេធ៖ :reason',
+    'attendance_correction_submitted' => ':staff_name ស្នើកែវត្តមានថ្ងៃ :date',
+    'attendance_correction_approved' => 'ការកែវត្តមានថ្ងៃ :date របស់អ្នកត្រូវបានអនុម័ត',
+    'attendance_correction_rejected' => 'ការកែវត្តមានថ្ងៃ :date របស់អ្នកត្រូវបានបដិសេធ៖ :reason',
 ];

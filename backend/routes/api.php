@@ -25,7 +25,9 @@ use App\Http\Controllers\Api\V1\Admin\AssetLocationController;
 use App\Http\Controllers\Api\V1\Admin\AssetMaintenanceController;
 use App\Http\Controllers\Api\V1\Admin\AssetRepairController;
 use App\Http\Controllers\Api\V1\Admin\AssetReportController;
+use App\Http\Controllers\Api\V1\Admin\AttendanceApprovalController;
 use App\Http\Controllers\Api\V1\Admin\AttendanceController;
+use App\Http\Controllers\Api\V1\Admin\AttendanceCorrectionController;
 use App\Http\Controllers\Api\V1\Admin\AuditLogController;
 use App\Http\Controllers\Api\V1\Admin\BillingDashboardController;
 use App\Http\Controllers\Api\V1\Admin\BookCategoryController;
@@ -51,6 +53,7 @@ use App\Http\Controllers\Api\V1\Admin\DownloadFileController;
 use App\Http\Controllers\Api\V1\Admin\DownloadFolderController;
 use App\Http\Controllers\Api\V1\Admin\GalleryController as AdminGalleryController;
 use App\Http\Controllers\Api\V1\Admin\GeneralSettingsController;
+use App\Http\Controllers\Api\V1\Admin\HolidayController;
 use App\Http\Controllers\Api\V1\Admin\HomeSlideController as AdminHomeSlideController;
 use App\Http\Controllers\Api\V1\Admin\IncomeController;
 use App\Http\Controllers\Api\V1\Admin\InterviewController;
@@ -69,6 +72,7 @@ use App\Http\Controllers\Api\V1\Admin\ManpowerRequestController;
 use App\Http\Controllers\Api\V1\Admin\MonthlyInvoiceController;
 use App\Http\Controllers\Api\V1\Admin\MonthlyPaymentAlertController;
 use App\Http\Controllers\Api\V1\Admin\OfferLetterController;
+use App\Http\Controllers\Api\V1\Admin\OvertimeRequestController;
 use App\Http\Controllers\Api\V1\Admin\OrganizationChartController;
 use App\Http\Controllers\Api\V1\Admin\PaymentController;
 use App\Http\Controllers\Api\V1\Admin\PositionController;
@@ -91,6 +95,8 @@ use App\Http\Controllers\Api\V1\Admin\RoleController;
 use App\Http\Controllers\Api\V1\Admin\SchoolClassController;
 use App\Http\Controllers\Api\V1\Admin\SchoolDocumentsController;
 use App\Http\Controllers\Api\V1\Admin\SchoolSettingsController;
+use App\Http\Controllers\Api\V1\Admin\ShiftController;
+use App\Http\Controllers\Api\V1\Admin\StaffAttendanceController;
 use App\Http\Controllers\Api\V1\Admin\StaffController;
 use App\Http\Controllers\Api\V1\Admin\StaffStatusHistoryController;
 use App\Http\Controllers\Api\V1\Admin\StudentController;
@@ -101,6 +107,7 @@ use App\Http\Controllers\Api\V1\Admin\SupplierController;
 use App\Http\Controllers\Api\V1\Admin\TeamController;
 use App\Http\Controllers\Api\V1\Admin\UserController;
 use App\Http\Controllers\Api\V1\Admin\VideoController;
+use App\Http\Controllers\Api\V1\Admin\WorkScheduleController;
 use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\V1\Auth\EmailVerificationController;
 use App\Http\Controllers\Api\V1\Auth\PasswordController;
@@ -117,6 +124,9 @@ use App\Http\Controllers\Api\V1\MyMakeUpClassRequestController;
 use App\Http\Controllers\Api\V1\MyMonthlyPaymentAlertController;
 use App\Http\Controllers\Api\V1\MyPushSubscriptionController;
 use App\Http\Controllers\Api\V1\MyResignationRequestController;
+use App\Http\Controllers\Api\V1\MyAttendanceCorrectionController;
+use App\Http\Controllers\Api\V1\MyOvertimeRequestController;
+use App\Http\Controllers\Api\V1\MyStaffAttendanceController;
 use App\Http\Controllers\Api\V1\MyStudentFeedbackController;
 use App\Http\Controllers\Api\V1\MyVideoController;
 use App\Http\Controllers\Api\V1\NotificationController;
@@ -332,6 +342,23 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('candidate-selection', CandidateSelectionController::class)->name('candidate-selection');
         Route::apiResource('offer-letters', OfferLetterController::class);
         Route::post('offer-letters/{offer_letter}/hire', [OfferLetterController::class, 'hire'])->name('offer-letters.hire');
+
+        // HRM > Attendance & Time — staff attendance set-up.
+        Route::apiResource('shifts', ShiftController::class);
+        Route::apiResource('work-schedules', WorkScheduleController::class);
+        Route::apiResource('holidays', HolidayController::class);
+        Route::get('staff-attendance/sheet', [StaffAttendanceController::class, 'sheet'])->name('staff-attendance.sheet');
+        Route::get('staff-attendance/report', [StaffAttendanceController::class, 'report'])->name('staff-attendance.report');
+        Route::apiResource('overtime-requests', OvertimeRequestController::class)->only(['index', 'store', 'show', 'destroy']);
+        Route::post('overtime-requests/{overtime_request}/approve', [OvertimeRequestController::class, 'approve'])->name('overtime-requests.approve');
+        Route::post('overtime-requests/{overtime_request}/reject', [OvertimeRequestController::class, 'reject'])->name('overtime-requests.reject');
+        Route::apiResource('attendance-corrections', AttendanceCorrectionController::class)->only(['index', 'store', 'show', 'destroy']);
+        Route::post('attendance-corrections/{attendance_correction}/approve', [AttendanceCorrectionController::class, 'approve'])->name('attendance-corrections.approve');
+        Route::post('attendance-corrections/{attendance_correction}/reject', [AttendanceCorrectionController::class, 'reject'])->name('attendance-corrections.reject');
+        Route::apiResource('attendance-approvals', AttendanceApprovalController::class)->only(['index', 'store', 'destroy']);
+        Route::post('staff-attendance/import', [StaffAttendanceController::class, 'import'])->name('staff-attendance.import');
+        Route::apiResource('staff-attendance', StaffAttendanceController::class)->only(['index', 'store', 'update', 'destroy'])
+            ->parameters(['staff-attendance' => 'staff_attendance']);
 
         // Student-submitted make-up class requests — see MakeUpClassRequestService.
         Route::apiResource('make-up-class-requests', MakeUpClassRequestController::class)->only(['index', 'show']);
@@ -705,6 +732,17 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         // base-data.manage-translations. See TranslationOverrideController.
         Route::get('translation-overrides', [TranslationOverrideController::class, 'index'])->name('translation-overrides.index');
         Route::put('translation-overrides', [TranslationOverrideController::class, 'update'])->name('translation-overrides.update');
+
+        // A staff member's own check-in / check-out — identity-gated, see
+        // MyStaffAttendanceController (not the students' my-attendance above).
+        Route::get('my-staff-attendance/today', [MyStaffAttendanceController::class, 'today'])->name('my-staff-attendance.today');
+        Route::get('my-staff-attendance', [MyStaffAttendanceController::class, 'index'])->name('my-staff-attendance.index');
+        Route::post('my-staff-attendance/check-in', [MyStaffAttendanceController::class, 'checkIn'])->name('my-staff-attendance.check-in');
+        Route::post('my-staff-attendance/check-out', [MyStaffAttendanceController::class, 'checkOut'])->name('my-staff-attendance.check-out');
+        Route::get('my-overtime-requests', [MyOvertimeRequestController::class, 'index'])->name('my-overtime-requests.index');
+        Route::post('my-overtime-requests', [MyOvertimeRequestController::class, 'store'])->name('my-overtime-requests.store');
+        Route::get('my-attendance-corrections', [MyAttendanceCorrectionController::class, 'index'])->name('my-attendance-corrections.index');
+        Route::post('my-attendance-corrections', [MyAttendanceCorrectionController::class, 'store'])->name('my-attendance-corrections.store');
 
         // Phone notifications (Web Push) for the current device — identity-gated, see MyPushSubscriptionController.
         Route::get('my-push-subscriptions/config', [MyPushSubscriptionController::class, 'config'])->name('my-push-subscriptions.config');

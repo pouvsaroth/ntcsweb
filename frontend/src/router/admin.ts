@@ -2,6 +2,7 @@ import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 
 import { firstAccessibleAdminPath } from '@/router/adminNav'
 import { canOpenOrganizationTab, organizationTabs } from '@/router/organizationTabs'
+import { attendanceTabs } from '@/router/attendanceTabs'
 import { recruitmentTabs } from '@/router/recruitmentTabs'
 import { useAuthStore } from '@/stores/auth'
 
@@ -484,6 +485,40 @@ const adminRoutes: RouteRecordRaw[] = [
       { path: 'offers', name: 'admin.recruitment.offers', component: () => import('@/pages/admin/recruitment/OfferLetters.vue') },
       { path: 'pipeline', name: 'admin.recruitment.pipeline', component: () => import('@/pages/admin/recruitment/Pipeline.vue') },
     ],
+  },
+  {
+    // HRM > Attendance & Time: tabs as child routes (see AttendanceLayout.vue / attendanceTabs.ts).
+    path: 'time-attendance',
+    component: () => import('@/pages/admin/timeAttendance/AttendanceLayout.vue'),
+    meta: { titleKey: 'adminNav.items.timeAttendance' },
+    children: [
+      {
+        path: '',
+        name: 'admin.time-attendance',
+        redirect: () => {
+          const auth = useAuthStore()
+          return (attendanceTabs.find((tab) => auth.can(tab.permission)) ?? attendanceTabs[0]!).to
+        },
+      },
+      { path: 'employees', name: 'admin.time-attendance.employees', component: () => import('@/pages/admin/timeAttendance/EmployeeAttendance.vue') },
+      { path: 'check-ins', name: 'admin.time-attendance.check-ins', component: () => import('@/pages/admin/timeAttendance/CheckInOut.vue') },
+      { path: 'late', name: 'admin.time-attendance.late', component: () => import('@/pages/admin/timeAttendance/AttendanceReport.vue'), props: { type: 'late' } },
+      { path: 'early-leave', name: 'admin.time-attendance.early-leave', component: () => import('@/pages/admin/timeAttendance/AttendanceReport.vue'), props: { type: 'early_leave' } },
+      { path: 'absence', name: 'admin.time-attendance.absence', component: () => import('@/pages/admin/timeAttendance/AttendanceReport.vue'), props: { type: 'absence' } },
+      { path: 'overtime', name: 'admin.time-attendance.overtime', component: () => import('@/pages/admin/timeAttendance/Overtime.vue') },
+      { path: 'shifts', name: 'admin.time-attendance.shifts', component: () => import('@/pages/admin/timeAttendance/Shifts.vue') },
+      { path: 'work-schedules', name: 'admin.time-attendance.work-schedules', component: () => import('@/pages/admin/timeAttendance/WorkSchedules.vue') },
+      { path: 'holidays', name: 'admin.time-attendance.holidays', component: () => import('@/pages/admin/timeAttendance/Holidays.vue') },
+      { path: 'corrections', name: 'admin.time-attendance.corrections', component: () => import('@/pages/admin/timeAttendance/Corrections.vue') },
+      { path: 'approval', name: 'admin.time-attendance.approval', component: () => import('@/pages/admin/timeAttendance/AttendanceApproval.vue') },
+    ],
+  },
+  {
+    // A staff member's own check-in / check-out — see MyStaffAttendanceController.
+    path: 'my-check-in',
+    name: 'admin.my-check-in',
+    component: () => import('@/pages/admin/MyCheckIn.vue'),
+    meta: { titleKey: 'adminNav.items.myCheckIn' },
   },
   // Old homes under Settings / HRM — kept so existing bookmarks still land.
   { path: 'school-settings', redirect: '/admin/organization/school' },

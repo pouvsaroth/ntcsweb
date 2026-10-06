@@ -54,4 +54,16 @@ final class NotificationType
     public const JOB_APPLICATION_RECEIVED = 'job_application_received';
 
     public const INTERVIEW_SCHEDULED = 'interview_scheduled';
+
+    public const OVERTIME_REQUEST_SUBMITTED = 'overtime_request_submitted';
+
+    public const OVERTIME_REQUEST_APPROVED = 'overtime_request_approved';
+
+    public const OVERTIME_REQUEST_REJECTED = 'overtime_request_rejected';
+
+    public const ATTENDANCE_CORRECTION_SUBMITTED = 'attendance_correction_submitted';
+
+    public const ATTENDANCE_CORRECTION_APPROVED = 'attendance_correction_approved';
+
+    public const ATTENDANCE_CORRECTION_REJECTED = 'attendance_correction_rejected';
 }

@@ -34,6 +34,12 @@ export type NotificationTypeValue =
   | 'manpower_request_rejected'
   | 'job_application_received'
   | 'interview_scheduled'
+  | 'overtime_request_submitted'
+  | 'overtime_request_approved'
+  | 'overtime_request_rejected'
+  | 'attendance_correction_submitted'
+  | 'attendance_correction_approved'
+  | 'attendance_correction_rejected'
 
 export interface AppNotification {
   id: number

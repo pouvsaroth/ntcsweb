@@ -310,6 +310,26 @@ final class Permissions
 
     public const MANPOWER_REQUESTS_REJECT = 'manpower-requests.reject';
 
+    // Staff attendance — HRM > Attendance & Time (not the students' class
+    // attendance above): view reads it, manage sets up shifts/schedules/
+    // holidays and edits records.
+    public const STAFF_ATTENDANCE_VIEW = 'staff-attendance.view';
+
+    public const STAFF_ATTENDANCE_MANAGE = 'staff-attendance.manage';
+
+    // Deciding overtime requests in E-Approvals when they have no flow.
+    public const OVERTIME_REQUESTS_APPROVE = 'overtime-requests.approve';
+
+    public const OVERTIME_REQUESTS_REJECT = 'overtime-requests.reject';
+
+    // Deciding attendance corrections in E-Approvals when they have no flow.
+    public const ATTENDANCE_CORRECTIONS_APPROVE = 'attendance-corrections.approve';
+
+    public const ATTENDANCE_CORRECTIONS_REJECT = 'attendance-corrections.reject';
+
+    // Signing off (and unlocking) a month of staff attendance.
+    public const STAFF_ATTENDANCE_APPROVE = 'staff-attendance.approve';
+
     // Staff — non-teaching personnel (Accountant, HR, Librarian, ...).
     public const STAFF_VIEW = 'staff.view';
 
@@ -828,6 +848,15 @@ final class Permissions
                 self::MANPOWER_REQUESTS_APPROVE => 'Approve manpower requests',
                 self::MANPOWER_REQUESTS_REJECT => 'Reject manpower requests',
             ],
+            'Staff attendance' => [
+                self::STAFF_ATTENDANCE_VIEW => 'View staff attendance, shifts, schedules and holidays',
+                self::STAFF_ATTENDANCE_MANAGE => 'Manage staff attendance, shifts, schedules and holidays',
+                self::OVERTIME_REQUESTS_APPROVE => 'Approve overtime requests',
+                self::OVERTIME_REQUESTS_REJECT => 'Reject overtime requests',
+                self::ATTENDANCE_CORRECTIONS_APPROVE => 'Approve attendance corrections',
+                self::ATTENDANCE_CORRECTIONS_REJECT => 'Reject attendance corrections',
+                self::STAFF_ATTENDANCE_APPROVE => 'Sign off (and unlock) a month of staff attendance',
+            ],
             'Staff' => [
                 self::STAFF_VIEW => 'View staff',
                 self::STAFF_CREATE => 'Create staff',
@@ -1144,6 +1173,13 @@ final class Permissions
                 self::RECRUITMENT_DELETE,
                 self::MANPOWER_REQUESTS_APPROVE,
                 self::MANPOWER_REQUESTS_REJECT,
+                self::STAFF_ATTENDANCE_VIEW,
+                self::STAFF_ATTENDANCE_MANAGE,
+                self::OVERTIME_REQUESTS_APPROVE,
+                self::OVERTIME_REQUESTS_REJECT,
+                self::ATTENDANCE_CORRECTIONS_APPROVE,
+                self::ATTENDANCE_CORRECTIONS_REJECT,
+                self::STAFF_ATTENDANCE_APPROVE,
                 self::MAKE_UP_CLASS_REQUESTS_VIEW,
                 self::MAKE_UP_CLASS_REQUESTS_APPROVE,
                 self::MAKE_UP_CLASS_REQUESTS_REJECT,

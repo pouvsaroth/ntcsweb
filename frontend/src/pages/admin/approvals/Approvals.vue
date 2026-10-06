@@ -16,6 +16,8 @@ import { examApplicationsService, type ExamApplication } from '@/services/examAp
 import { leaveRequestsService, type LeaveRequest } from '@/services/leaveRequests'
 import { makeUpClassCourseLabel, makeUpClassRequestsService, type MakeUpClassRequest, type MakeUpClassRequestStatus } from '@/services/makeUpClassRequests'
 import { manpowerRequestsService, type ManpowerRequest } from '@/services/manpowerRequests'
+import { attendanceCorrectionsService, clock, overtimeRequestsService, type AttendanceCorrection, type OvertimeRequest } from '@/services/staffAttendance'
+import { formatMinutes } from '@/services/timeAttendance'
 import { resignationRequestsService, type ResignationRequest } from '@/services/resignationRequests'
 import { studentRegistrationsService, type StudentRegistration } from '@/services/studentRegistrations'
 import { useAuthStore } from '@/stores/auth'
@@ -39,7 +41,7 @@ import { genderLabel } from '@/utils/gender'
 type RowStatus = ApprovalRequestStatus | MakeUpClassRequestStatus
 
 type MergedRow = {
-  kind: 'approval' | 'leave' | 'resignation' | 'makeUp' | 'exam' | 'registration' | 'manpower'
+  kind: 'approval' | 'leave' | 'resignation' | 'makeUp' | 'exam' | 'registration' | 'manpower' | 'overtime' | 'correction'
   id: number
   reference: string
   requestor: string
@@ -55,6 +57,8 @@ type MergedRow = {
   exam?: ExamApplication
   registration?: StudentRegistration
   manpower?: ManpowerRequest
+  overtime?: OvertimeRequest
+  correction?: AttendanceCorrection
 }
 
 const { t } = useI18n()
@@ -79,6 +83,9 @@ const canViewExams = computed(() => auth.can('exam-applications.view') || auth.i
 const canViewRegistrations = computed(() => auth.can('students.approve-registration'))
 // HRM > Recruitment's manpower requests.
 const canViewManpower = computed(() => auth.can('recruitment.view') || auth.isFlowApprover(['manpower_request']))
+// HRM > Attendance & Time's overtime claims.
+const canViewOvertime = computed(() => auth.can('staff-attendance.view') || auth.isFlowApprover(['overtime_request']))
+const canViewCorrections = computed(() => auth.can('staff-attendance.view') || auth.isFlowApprover(['attendance_correction']))
 // Only exam applications can be edited from this queue — a reviewer fixing
 // the student's info or the room/table/date assignment before deciding.
 // Leave/resignation requests have no equivalent "amend before deciding" step.
@@ -153,6 +160,8 @@ const approvePermission: Record<MergedRow['kind'], string> = {
   exam: 'exam-applications.approve',
   registration: 'students.approve-registration',
   manpower: 'manpower-requests.approve',
+  overtime: 'overtime-requests.approve',
+  correction: 'attendance-corrections.approve',
 }
 
 const rejectPermission: Record<MergedRow['kind'], string> = {
@@ -163,6 +172,8 @@ const rejectPermission: Record<MergedRow['kind'], string> = {
   exam: 'exam-applications.reject',
   registration: 'students.approve-registration',
   manpower: 'manpower-requests.reject',
+  overtime: 'overtime-requests.reject',
+  correction: 'attendance-corrections.reject',
 }
 
 // With an approval flow, only the group the request waits on decides it —
@@ -193,7 +204,7 @@ async function load() {
   error.value = null
 
   try {
-    const [approvals, leaves, resignations, makeUps, exams, registrations, manpowers] = await Promise.all([
+    const [approvals, leaves, resignations, makeUps, exams, registrations, manpowers, overtimes, corrections] = await Promise.all([
       canViewApprovals.value ? approvalRequestsService.list({}, { approvalQueue: true }) : Promise.resolve({ data: [] as ApprovalRequest[], pagination: undefined }),
       canViewLeave.value
         ? leaveRequestsService.list({ page: 1, per_page: 100, filter: {} }, { approvalQueue: true })
@@ -219,6 +230,12 @@ async function load() {
       canViewManpower.value
         ? manpowerRequestsService.list({ page: 1, per_page: 100, filter: {} }, { approvalQueue: true })
         : Promise.resolve({ data: [] as ManpowerRequest[], pagination: undefined }),
+      canViewOvertime.value
+        ? overtimeRequestsService.list({ page: 1, per_page: 100, filter: {} }, { approvalQueue: true })
+        : Promise.resolve({ data: [] as OvertimeRequest[], pagination: undefined }),
+      canViewCorrections.value
+        ? attendanceCorrectionsService.list({ page: 1, per_page: 100, filter: {} }, { approvalQueue: true })
+        : Promise.resolve({ data: [] as AttendanceCorrection[], pagination: undefined }),
     ])
 
     const approvalRows: MergedRow[] = approvals.data.map((r) => ({
@@ -311,7 +328,31 @@ async function load() {
       manpower: r,
     }))
 
-    rows.value = [...approvalRows, ...leaveRows, ...resignationRows, ...makeUpRows, ...examRows, ...registrationRows, ...manpowerRows].sort((a, b) =>
+    const overtimeRows: MergedRow[] = overtimes.data.map((r) => ({
+      kind: 'overtime',
+      id: r.id,
+      reference: r.reference,
+      requestor: r.staff?.name ?? '—',
+      subject: t('admin.approvals.overtimeSubject', { time: formatMinutes(r.minutes), date: formatDate(r.date) }),
+      status: r.status,
+      createdAt: r.created_at,
+      flow: r.approval_flow ?? null,
+      overtime: r,
+    }))
+
+    const correctionRows: MergedRow[] = corrections.data.map((r) => ({
+      kind: 'correction',
+      id: r.id,
+      reference: r.reference,
+      requestor: r.staff?.name ?? '—',
+      subject: t('admin.approvals.correctionSubject', { date: formatDate(r.date) }),
+      status: r.status,
+      createdAt: r.created_at,
+      flow: r.approval_flow ?? null,
+      correction: r,
+    }))
+
+    rows.value = [...approvalRows, ...leaveRows, ...resignationRows, ...makeUpRows, ...examRows, ...registrationRows, ...manpowerRows, ...overtimeRows, ...correctionRows].sort((a, b) =>
       b.createdAt.localeCompare(a.createdAt),
     )
   } catch (e) {
@@ -359,6 +400,10 @@ async function approve(row: MergedRow) {
       await studentRegistrationsService.approve(row.id)
     } else if (row.kind === 'manpower') {
       await manpowerRequestsService.approve(row.id)
+    } else if (row.kind === 'overtime') {
+      await overtimeRequestsService.approve(row.id)
+    } else if (row.kind === 'correction') {
+      await attendanceCorrectionsService.approve(row.id)
     } else {
       await examApplicationsService.approve(row.id)
     }
@@ -391,6 +436,10 @@ async function confirmReject(reason: string) {
       await studentRegistrationsService.reject(row.id, reason)
     } else if (row.kind === 'manpower') {
       await manpowerRequestsService.reject(row.id, reason)
+    } else if (row.kind === 'overtime') {
+      await overtimeRequestsService.reject(row.id, reason)
+    } else if (row.kind === 'correction') {
+      await attendanceCorrectionsService.reject(row.id, reason)
     } else {
       await examApplicationsService.reject(row.id, reason)
     }
@@ -557,6 +606,19 @@ onMounted(() => load())
           <div><dt class="text-neutral-500">{{ t('admin.recruitment.manpower.reason') }}</dt><dd class="whitespace-pre-line font-medium text-neutral-900">{{ detail.manpower.reason }}</dd></div>
           <div v-if="detail.manpower.requirements"><dt class="text-neutral-500">{{ t('admin.recruitment.manpower.requirements') }}</dt><dd class="whitespace-pre-line font-medium text-neutral-900">{{ detail.manpower.requirements }}</dd></div>
           <div v-if="detail.manpower.decision_reason"><dt class="text-neutral-500">{{ t('admin.leaveRequests.decisionReason') }}</dt><dd class="font-medium text-neutral-900">{{ detail.manpower.decision_reason }}</dd></div>
+        </dl>
+        <dl v-else-if="detail.kind === 'correction' && detail.correction" class="grid gap-y-2 text-sm">
+          <div><dt class="text-neutral-500">{{ t('admin.timeAttendance.holidays.date') }}</dt><dd class="font-medium text-neutral-900">{{ formatDate(detail.correction.date) }}</dd></div>
+          <div><dt class="text-neutral-500">{{ t('admin.timeAttendance.corrections.recorded') }}</dt><dd class="font-medium tabular-nums text-neutral-900">{{ clock(detail.correction.recorded.check_in_at) }} – {{ clock(detail.correction.recorded.check_out_at) }}</dd></div>
+          <div><dt class="text-neutral-500">{{ t('admin.timeAttendance.corrections.requested') }}</dt><dd class="font-medium tabular-nums text-primary-700">{{ detail.correction.check_in ?? clock(detail.correction.recorded.check_in_at) }} – {{ detail.correction.check_out ?? clock(detail.correction.recorded.check_out_at) }}</dd></div>
+          <div><dt class="text-neutral-500">{{ t('admin.timeAttendance.overtime.reason') }}</dt><dd class="whitespace-pre-line font-medium text-neutral-900">{{ detail.correction.reason }}</dd></div>
+          <div v-if="detail.correction.decision_reason"><dt class="text-neutral-500">{{ t('admin.leaveRequests.decisionReason') }}</dt><dd class="font-medium text-neutral-900">{{ detail.correction.decision_reason }}</dd></div>
+        </dl>
+        <dl v-else-if="detail.kind === 'overtime' && detail.overtime" class="grid gap-y-2 text-sm">
+          <div><dt class="text-neutral-500">{{ t('admin.timeAttendance.holidays.date') }}</dt><dd class="font-medium text-neutral-900">{{ formatDate(detail.overtime.date) }}</dd></div>
+          <div><dt class="text-neutral-500">{{ t('admin.timeAttendance.overtime.minutes') }}</dt><dd class="font-medium text-neutral-900">{{ formatMinutes(detail.overtime.minutes) }}</dd></div>
+          <div><dt class="text-neutral-500">{{ t('admin.timeAttendance.overtime.reason') }}</dt><dd class="whitespace-pre-line font-medium text-neutral-900">{{ detail.overtime.reason }}</dd></div>
+          <div v-if="detail.overtime.decision_reason"><dt class="text-neutral-500">{{ t('admin.leaveRequests.decisionReason') }}</dt><dd class="font-medium text-neutral-900">{{ detail.overtime.decision_reason }}</dd></div>
         </dl>
         <div v-else-if="detail.kind === 'registration' && detail.registration">
           <div class="flex gap-4">
