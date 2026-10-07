@@ -21,6 +21,7 @@ return [
     'approval_request_submitted' => ':requester_name submitted ":subject" for approval',
     'approval_request_approved' => 'Your request ":subject" was approved',
     'approval_request_rejected' => 'Your request ":subject" was rejected: :reason',
+    'approval_step_approved' => 'Your request was approved by :approver_name (step :step of :total) and is waiting for the next approval',
     'student_registration_submitted' => ':student_name registered and is waiting for approval',
     'manpower_request_submitted' => ':requester_name asked to hire :headcount × :job_title (:reference)',
     'manpower_request_approved' => 'Manpower request :reference (:job_title) was approved',

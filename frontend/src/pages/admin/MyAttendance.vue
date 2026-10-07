@@ -8,7 +8,7 @@ import BasePagination from '@/components/ui/BasePagination.vue'
 import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import DataTable from '@/components/ui/DataTable.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
-import { attendanceService, type AttendanceRecord, type AttendanceStatusValue } from '@/services/attendance'
+import { ABSENCE_STATUSES, attendanceService, type AttendanceRecord, type AttendanceStatusValue } from '@/services/attendance'
 import { formatDate } from '@/utils/date'
 
 const { t } = useI18n()
@@ -21,7 +21,7 @@ const onlyAbsent = ref(false)
 
 function onOnlyAbsentChange(checked: boolean) {
   onlyAbsent.value = checked
-  setFilter('status', checked ? 'ABSENT' : undefined)
+  setFilter('status', checked ? ABSENCE_STATUSES.join(',') : undefined)
 }
 
 const columns = [

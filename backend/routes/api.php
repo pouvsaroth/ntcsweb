@@ -707,6 +707,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('my-leave-requests/quote', [MyLeaveRequestController::class, 'quote'])->name('my-leave-requests.quote');
         Route::get('my-leave-requests', [MyLeaveRequestController::class, 'index'])->name('my-leave-requests.index');
         Route::post('my-leave-requests', [MyLeaveRequestController::class, 'store'])->name('my-leave-requests.store');
+        Route::delete('my-leave-requests/{leaveRequest}', [MyLeaveRequestController::class, 'destroy'])->whereNumber('leaveRequest')->name('my-leave-requests.destroy');
 
         // Staff self-service — identity-gated, same pattern as my-leave-requests.
         Route::get('my-resignation-requests/profile', [MyResignationRequestController::class, 'profile'])->name('my-resignation-requests.profile');
@@ -717,10 +718,12 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('my-make-up-class-requests/enrollments', [MyMakeUpClassRequestController::class, 'enrollments'])->name('my-make-up-class-requests.enrollments');
         Route::get('my-make-up-class-requests', [MyMakeUpClassRequestController::class, 'index'])->name('my-make-up-class-requests.index');
         Route::post('my-make-up-class-requests', [MyMakeUpClassRequestController::class, 'store'])->name('my-make-up-class-requests.store');
+        Route::delete('my-make-up-class-requests/{makeUpClassRequest}', [MyMakeUpClassRequestController::class, 'destroy'])->whereNumber('makeUpClassRequest')->name('my-make-up-class-requests.destroy');
 
         // Self-service — identity-gated, same pattern as my-leave-requests.
         Route::get('my-approval-requests', [MyApprovalRequestController::class, 'index'])->name('my-approval-requests.index');
         Route::post('my-approval-requests', [MyApprovalRequestController::class, 'store'])->name('my-approval-requests.store');
+        Route::delete('my-approval-requests/{approvalRequest}', [MyApprovalRequestController::class, 'destroy'])->whereNumber('approvalRequest')->name('my-approval-requests.destroy');
 
         // Self-service — identity-gated, same pattern as my-leave-requests.
         Route::get('my-feedback/teachers', [MyStudentFeedbackController::class, 'teachers'])->name('my-feedback.teachers');

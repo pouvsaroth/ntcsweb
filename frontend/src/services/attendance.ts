@@ -75,11 +75,18 @@ export interface MyAttendanceHoursRow {
   remaining_hours: number
 }
 
+/** What counts as "absent" everywhere — absent, permission (excused) and late. */
+export const ABSENCE_STATUSES: AttendanceStatusValue[] = ['ABSENT', 'EXCUSED', 'LATE']
+
 export const attendanceService = {
-  /** Every absent record for a single day — the Dashboard's "Absent Today/Yesterday" lists. */
+  /**
+   * Every absent record for a single day — the Dashboard's "Absent
+   * Today/Yesterday" lists. "Absent" means absent, permission and late,
+   * same as the Absent(h) column on the Attendance Summary.
+   */
   async listAbsent(date: string): Promise<AttendanceRecord[]> {
     const result = await apiGetWithMeta<AttendanceRecord[]>('/attendance', {
-      params: { date_from: date, date_to: date, per_page: 200, filter: { status: 'ABSENT' } },
+      params: { date_from: date, date_to: date, per_page: 200, filter: { status: ABSENCE_STATUSES.join(',') } },
     })
     return result.data
   },

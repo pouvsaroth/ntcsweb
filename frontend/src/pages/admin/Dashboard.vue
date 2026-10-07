@@ -1,14 +1,17 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 
+import AskForPermissionModal from '@/components/layout/AskForPermissionModal.vue'
 import MakeUpClassRequestModal from '@/components/layout/MakeUpClassRequestModal.vue'
+import BaseButton from '@/components/ui/BaseButton.vue'
+import BaseBadge from '@/components/ui/BaseBadge.vue'
 import BaseCard from '@/components/ui/BaseCard.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import { accountingReportsService, type IncomeDetail } from '@/services/accounting'
 import { approvalRequestsService } from '@/services/approvalRequests'
-import { type AttendanceRecord, attendanceService, type MyAttendanceHoursRow } from '@/services/attendance'
+import { type AttendanceRecord, attendanceService, type AttendanceStatusValue, type MyAttendanceHoursRow } from '@/services/attendance'
 import { enrollmentsService } from '@/services/enrollments'
 import { examApplicationsService } from '@/services/examApplications'
 import { leaveRequestsService } from '@/services/leaveRequests'
@@ -30,6 +33,8 @@ interface QuickAccessItem {
   /** Shown when the user holds any one of these. */
   permission?: string | string[]
   icon: string
+  /** Opens the student's "My Request" popup instead of navigating to `to`. */
+  opensRequestMenu?: boolean
 }
 
 function canSee(item: QuickAccessItem): boolean {
@@ -159,14 +164,10 @@ const studentQuickAccessItems: QuickAccessItem[] = [
     icon: 'M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z',
   },
   {
-    labelKey: 'adminNav.items.requestLeave',
+    labelKey: 'adminNav.items.myRequests',
     to: '/admin/approvals/my-requests',
     icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z',
-  },
-  {
-    labelKey: 'admin.myExamApplications.title',
-    to: '/admin/my-exam-applications',
-    icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V4a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V20a2 2 0 01-2 2z',
+    opensRequestMenu: true,
   },
   {
     labelKey: 'adminNav.items.notifications',
@@ -175,9 +176,20 @@ const studentQuickAccessItems: QuickAccessItem[] = [
   },
 ]
 
-/** Opens a popup rather than navigating — see MakeUpClassRequestModal. */
+/**
+ * The "My Request" card's popup — one place for every request a student can
+ * make: leave and make-up class open their own form popups, exam
+ * application goes to its page.
+ */
+const router = useRouter()
+const showRequestMenu = ref(false)
+const showLeaveModal = ref(false)
 const showMakeUpClassModal = ref(false)
-const makeUpClassIcon = 'M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99'
+
+function openFromRequestMenu(open: () => void) {
+  showRequestMenu.value = false
+  open()
+}
 
 /**
  * The student's hour cards, one set per course they're studying. Hours left
@@ -206,6 +218,15 @@ const dailyIncome = ref<string>('—')
 const monthlyExpense = ref<string>('—')
 const dailyExpense = ref<string>('—')
 const absentToday = ref<AttendanceRecord[]>([])
+const absenceStatusVariant: Record<AttendanceStatusValue, 'success' | 'danger' | 'warning' | 'neutral'> = {
+  PRESENT: 'success',
+  ABSENT: 'danger',
+  LATE: 'warning',
+  EXCUSED: 'neutral',
+}
+function absenceStatusLabel(status: AttendanceStatusValue): string {
+  return t(`admin.attendance.status${status.charAt(0)}${status.slice(1).toLowerCase()}`)
+}
 const absentYesterday = ref<AttendanceRecord[]>([])
 const monthlyPaymentAlerts = ref<MonthlyInvoice[]>([])
 
@@ -334,12 +355,12 @@ onMounted(() => {
       <div v-for="row in myHours" :key="row.enrollment_id" class="mb-6">
         <p v-if="myHours.length > 1" class="mb-2 text-sm font-semibold text-neutral-700">{{ makeUpClassCourseLabel(row) }}</p>
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <div class="rounded-[--radius-card] border border-neutral-200 bg-white p-4 shadow-[--shadow-card]">
+          <div class="hidden rounded-[--radius-card] border border-neutral-200 bg-white p-4 shadow-[--shadow-card] sm:block">
             <p class="text-sm font-medium text-neutral-500">{{ t('admin.dashboard.totalAbsentHours') }}</p>
             <p class="mt-1 text-2xl font-semibold text-neutral-900">{{ formatHours(row.absent_hours) }}</p>
             <p class="mt-1 text-xs text-neutral-400">{{ t('admin.dashboard.totalAbsentHoursHint') }}</p>
           </div>
-          <div class="rounded-[--radius-card] border border-neutral-200 bg-white p-4 shadow-[--shadow-card]">
+          <div class="hidden rounded-[--radius-card] border border-neutral-200 bg-white p-4 shadow-[--shadow-card] sm:block">
             <p class="text-sm font-medium text-neutral-500">{{ t('admin.dashboard.totalMakeUpHours') }}</p>
             <p class="mt-1 text-2xl font-semibold text-neutral-900">{{ formatHours(row.make_up_hours) }}</p>
             <p class="mt-1 text-xs text-neutral-400">{{ t('admin.dashboard.totalMakeUpHoursHint') }}</p>
@@ -352,15 +373,31 @@ onMounted(() => {
             <p class="mt-1 text-2xl font-semibold" :class="row.remaining_hours > REMAINING_HOURS_ALERT ? 'text-white' : 'text-neutral-900'">{{ formatHours(row.remaining_hours) }}</p>
             <p class="mt-1 text-xs" :class="row.remaining_hours > REMAINING_HOURS_ALERT ? 'text-white/80' : 'text-neutral-400'">{{ t('admin.dashboard.totalHoursLeftHint') }}</p>
             <p class="mt-1 text-xs font-medium" :class="row.remaining_hours > REMAINING_HOURS_ALERT ? 'text-white' : 'text-danger-600'">{{ t('admin.dashboard.totalHoursLeftNote') }}</p>
+            <!-- Phones only: the two cards hidden above, as this card's detail. -->
+            <dl
+              class="mt-3 grid grid-cols-2 gap-3 border-t pt-3 sm:hidden"
+              :class="row.remaining_hours > REMAINING_HOURS_ALERT ? 'border-white/30' : 'border-neutral-100'"
+            >
+              <div>
+                <dt class="text-xs" :class="row.remaining_hours > REMAINING_HOURS_ALERT ? 'text-white/80' : 'text-neutral-500'">{{ t('admin.dashboard.totalAbsentHours') }}</dt>
+                <dd class="mt-0.5 text-lg font-semibold" :class="row.remaining_hours > REMAINING_HOURS_ALERT ? 'text-white' : 'text-neutral-900'">{{ formatHours(row.absent_hours) }}</dd>
+              </div>
+              <div>
+                <dt class="text-xs" :class="row.remaining_hours > REMAINING_HOURS_ALERT ? 'text-white/80' : 'text-neutral-500'">{{ t('admin.dashboard.totalMakeUpHours') }}</dt>
+                <dd class="mt-0.5 text-lg font-semibold" :class="row.remaining_hours > REMAINING_HOURS_ALERT ? 'text-white' : 'text-neutral-900'">{{ formatHours(row.make_up_hours) }}</dd>
+              </div>
+            </dl>
           </div>
         </div>
       </div>
 
       <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-        <RouterLink
+        <component
+          :is="item.opensRequestMenu ? 'button' : RouterLink"
           v-for="item in studentQuickAccessItems"
           :key="item.to"
-          :to="item.to"
+          v-bind="item.opensRequestMenu ? { type: 'button' } : { to: item.to }"
+          @click="item.opensRequestMenu && (showRequestMenu = true)"
           class="relative flex flex-col items-center gap-2 rounded-[--radius-card] border border-neutral-200 bg-white p-4 text-center shadow-[--shadow-card] transition-shadow hover:shadow-[--shadow-card-hover]"
         >
           <span class="flex h-10 w-10 items-center justify-center rounded-full bg-primary-100 text-primary-700">
@@ -369,21 +406,21 @@ onMounted(() => {
             </svg>
           </span>
           <span class="text-xs font-medium text-neutral-700">{{ t(item.labelKey) }}</span>
-        </RouterLink>
-        <button
-          type="button"
-          class="relative flex flex-col items-center gap-2 rounded-[--radius-card] border border-neutral-200 bg-white p-4 text-center shadow-[--shadow-card] transition-shadow hover:shadow-[--shadow-card-hover]"
-          @click="showMakeUpClassModal = true"
-        >
-          <span class="flex h-10 w-10 items-center justify-center rounded-full bg-primary-100 text-primary-700">
-            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-              <path stroke-linecap="round" stroke-linejoin="round" :d="makeUpClassIcon" />
-            </svg>
-          </span>
-          <span class="text-xs font-medium text-neutral-700">{{ t('makeUpClassRequest.title') }}</span>
-        </button>
+        </component>
       </div>
 
+      <BaseModal v-model="showRequestMenu" :title="t('adminNav.items.myRequests')" size="sm">
+        <div class="grid gap-3">
+          <BaseButton @click="openFromRequestMenu(() => (showLeaveModal = true))">{{ t('adminNav.items.requestLeave') }}</BaseButton>
+          <BaseButton @click="openFromRequestMenu(() => (showMakeUpClassModal = true))">{{ t('makeUpClassRequest.title') }}</BaseButton>
+          <BaseButton @click="openFromRequestMenu(() => router.push('/admin/my-exam-applications'))">{{ t('admin.myExamApplications.title') }}</BaseButton>
+          <RouterLink to="/admin/approvals/my-requests" class="mt-1 text-center text-sm font-medium text-primary-700 hover:underline">
+            {{ t('admin.dashboard.viewMyRequests') }}
+          </RouterLink>
+        </div>
+      </BaseModal>
+
+      <AskForPermissionModal v-model="showLeaveModal" />
       <MakeUpClassRequestModal v-model="showMakeUpClassModal" />
     </template>
 
@@ -432,6 +469,7 @@ onMounted(() => {
                   <tr>
                     <th class="py-1.5 pr-4 font-medium">{{ t('admin.attendance.columnStudent') }}</th>
                     <th class="py-1.5 pr-4 font-medium">{{ t('admin.attendance.columnClass') }}</th>
+                    <th class="py-1.5 pr-4 font-medium">{{ t('admin.attendance.columnStatus') }}</th>
                     <th class="py-1.5 pr-4 font-medium">{{ t('admin.attendance.columnRemarks') }}</th>
                   </tr>
                 </thead>
@@ -439,6 +477,9 @@ onMounted(() => {
                   <tr v-for="record in absentToday" :key="record.id">
                     <td class="py-1.5 pr-4 text-neutral-800">{{ record.student?.name ?? '—' }}</td>
                     <td class="py-1.5 pr-4 text-neutral-700">{{ record.class?.name ?? '—' }}</td>
+                    <td class="py-1.5 pr-4">
+                      <BaseBadge :variant="absenceStatusVariant[record.status]">{{ absenceStatusLabel(record.status) }}</BaseBadge>
+                    </td>
                     <td class="py-1.5 pr-4 text-neutral-700">{{ record.remarks ?? '—' }}</td>
                   </tr>
                 </tbody>
@@ -454,6 +495,7 @@ onMounted(() => {
                   <tr>
                     <th class="py-1.5 pr-4 font-medium">{{ t('admin.attendance.columnStudent') }}</th>
                     <th class="py-1.5 pr-4 font-medium">{{ t('admin.attendance.columnClass') }}</th>
+                    <th class="py-1.5 pr-4 font-medium">{{ t('admin.attendance.columnStatus') }}</th>
                     <th class="py-1.5 pr-4 font-medium">{{ t('admin.attendance.columnRemarks') }}</th>
                   </tr>
                 </thead>
@@ -461,6 +503,9 @@ onMounted(() => {
                   <tr v-for="record in absentYesterday" :key="record.id">
                     <td class="py-1.5 pr-4 text-neutral-800">{{ record.student?.name ?? '—' }}</td>
                     <td class="py-1.5 pr-4 text-neutral-700">{{ record.class?.name ?? '—' }}</td>
+                    <td class="py-1.5 pr-4">
+                      <BaseBadge :variant="absenceStatusVariant[record.status]">{{ absenceStatusLabel(record.status) }}</BaseBadge>
+                    </td>
                     <td class="py-1.5 pr-4 text-neutral-700">{{ record.remarks ?? '—' }}</td>
                   </tr>
                 </tbody>

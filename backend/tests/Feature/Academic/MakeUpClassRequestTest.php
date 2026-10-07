@@ -96,6 +96,57 @@ class MakeUpClassRequestTest extends TestCase
             ->assertJsonValidationErrors(['enrollment_id', 'from_date', 'to_date', 'from_time', 'to_time']);
     }
 
+    public function test_the_same_date_and_an_overlapping_time_is_rejected_but_a_different_time_is_allowed(): void
+    {
+        $this->actingAsAdminWithPermissions([]);
+        [$student, $user] = $this->studentWithUser();
+        $payload = $this->payload($student);
+        $this->actingAsTenantUser($user);
+
+        $this->postJson('/api/v1/my-make-up-class-requests', $payload)->assertCreated();
+
+        // Same date, same time.
+        $this->postJson('/api/v1/my-make-up-class-requests', $payload)
+            ->assertUnprocessable()->assertJsonValidationErrors(['from_time']);
+
+        // Same date, partly overlapping time.
+        $this->postJson('/api/v1/my-make-up-class-requests', $this->withOverrides($payload, ['from_time' => '09:00', 'to_time' => '11:00']))
+            ->assertUnprocessable()->assertJsonValidationErrors(['from_time']);
+
+        // A range of days that includes the booked day, same time.
+        $this->postJson('/api/v1/my-make-up-class-requests', $this->withOverrides($payload, [
+            'from_date' => now()->subDay()->toDateString(),
+            'to_date' => now()->addDay()->toDateString(),
+        ]))->assertUnprocessable()->assertJsonValidationErrors(['from_time']);
+
+        // Same date, different (back-to-back) time.
+        $this->postJson('/api/v1/my-make-up-class-requests', $this->withOverrides($payload, ['from_time' => '10:00', 'to_time' => '12:00']))
+            ->assertCreated();
+
+        // Different date, same time.
+        $this->postJson('/api/v1/my-make-up-class-requests', $this->withOverrides($payload, [
+            'from_date' => now()->addDays(2)->toDateString(),
+            'to_date' => now()->addDays(2)->toDateString(),
+        ]))->assertCreated();
+
+        $this->assertSame(3, MakeUpClassRequest::where('student_id', $student->id)->count());
+    }
+
+    public function test_a_rejected_request_does_not_block_the_same_date_and_time(): void
+    {
+        $this->actingAsAdminWithPermissions([]);
+        [$student, $user] = $this->studentWithUser();
+        $payload = $this->payload($student);
+        MakeUpClassRequest::query()->create([
+            ...$payload,
+            'student_id' => $student->id,
+            'status' => MakeUpClassRequest::STATUS_REJECTED,
+        ]);
+        $this->actingAsTenantUser($user);
+
+        $this->postJson('/api/v1/my-make-up-class-requests', $payload)->assertCreated();
+    }
+
     private function withOverrides(array $payload, array $overrides): array
     {
         return [...$payload, ...$overrides];

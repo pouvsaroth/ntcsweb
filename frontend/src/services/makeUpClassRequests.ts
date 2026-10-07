@@ -1,4 +1,4 @@
-import { apiGet, apiGetWithMeta, apiPost } from '@/services/http'
+import { apiDelete, apiGet, apiGetWithMeta, apiPost } from '@/services/http'
 import type { PaginatedQuery } from '@/composables/usePaginatedResource'
 import type { LengthAwarePaginationMeta, PaginatedResult } from '@/types/api'
 import type { ApprovalFlowProgress } from '@/services/approvalFlows'
@@ -52,6 +52,9 @@ export interface MakeUpClassEnrollmentOption {
 
 /** Student self-service — own requests only, scoped server-side. See MakeUpClassRequestModal.vue. */
 export const myMakeUpClassRequestsService = {
+  /** Withdraw one of my own requests while it is still pending. */
+  remove: (id: number) => apiDelete(`/my-make-up-class-requests/${id}`),
+
   async list(query: PaginatedQuery): Promise<PaginatedResult<MakeUpClassRequest>> {
     const result = await apiGetWithMeta<MakeUpClassRequest[]>('/my-make-up-class-requests', {
       params: { page: query.page, per_page: query.per_page, sort: query.sort, filter: query.filter },

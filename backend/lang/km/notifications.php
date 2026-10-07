@@ -19,6 +19,7 @@ return [
     'approval_request_submitted' => ':requester_name បានដាក់ស្នើ «:subject» ដើម្បីអនុម័ត',
     'approval_request_approved' => 'សំណើ «:subject» របស់អ្នកត្រូវបានអនុម័ត',
     'approval_request_rejected' => 'សំណើ «:subject» របស់អ្នកត្រូវបានបដិសេធ៖ :reason',
+    'approval_step_approved' => 'សំណើរបស់អ្នកត្រូវបានអនុម័តដោយ :approver_name (ជំហាន :step នៃ :total) ហើយកំពុងរង់ចាំការអនុម័តបន្ទាប់',
     'student_registration_submitted' => ':student_name បានចុះឈ្មោះ ហើយកំពុងរង់ចាំការអនុម័ត',
     'manpower_request_submitted' => ':requester_name ស្នើសុំជ្រើសរើស :job_title ចំនួន :headcount នាក់ (:reference)',
     'manpower_request_approved' => 'សំណើបុគ្គលិក :reference (:job_title) ត្រូវបានអនុម័ត',

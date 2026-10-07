@@ -55,16 +55,16 @@ onMounted(async () => {
     />
 
     <!-- Step 1: studying courses -->
-    <div v-else-if="!selectedCourse" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div v-else-if="!selectedCourse" class="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
       <button
         v-for="course in courses"
         :key="course.id"
         type="button"
-        class="flex flex-col items-center gap-3 rounded-[--radius-card] border border-neutral-200 bg-white p-5 text-center transition-colors hover:border-primary-300 hover:bg-primary-50"
+        class="flex flex-col items-center gap-3 rounded-[--radius-card] border border-neutral-200 bg-white p-3 text-center sm:p-5 transition-colors hover:border-primary-300 hover:bg-primary-50"
         @click="selectedCourse = course"
       >
         <div class="flex h-24 w-full items-center justify-center overflow-hidden rounded-lg bg-neutral-100">
-          <img v-if="course.thumbnail_url" :src="course.thumbnail_url" alt="" class="h-full w-full object-cover" />
+          <img v-if="course.thumbnail_url" :src="course.thumbnail_url" alt="" class="h-full w-full object-contain p-2" />
           <svg v-else class="h-10 w-10 text-neutral-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
           </svg>
@@ -91,7 +91,7 @@ onMounted(async () => {
 
       <h2 class="mb-4 text-lg font-semibold text-neutral-900">{{ selectedCourse.name }}</h2>
 
-      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div class="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
         <button
           v-for="video in selectedCourse.videos"
           :key="video.id"

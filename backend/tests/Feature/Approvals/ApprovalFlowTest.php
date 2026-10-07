@@ -141,6 +141,43 @@ class ApprovalFlowTest extends TestCase
         $this->assertSame(1, UserNotification::where('recipient_id', $studentUser->id)->where('type', NotificationType::LEAVE_REQUEST_APPROVED)->count());
     }
 
+    public function test_the_requester_is_told_each_time_a_step_is_approved(): void
+    {
+        $this->setStudentLeaveFlow([$this->group1->id, $this->group2->id]);
+        $studentUser = User::factory()->forTenant($this->tenant)->create();
+        $request = LeaveRequest::factory()->forStudent(Student::factory()->create(['user_id' => $studentUser->id]))->create();
+
+        $this->actingAsTenantUser($this->a);
+        $this->postJson("/api/v1/leave-requests/{$request->id}/approve")->assertOk();
+
+        $stepNotice = UserNotification::where('recipient_id', $studentUser->id)->where('type', NotificationType::APPROVAL_STEP_APPROVED)->sole();
+        $this->assertSame(1, $stepNotice->data['step']);
+        $this->assertSame(2, $stepNotice->data['total']);
+        $this->assertSame($this->a->name, $stepNotice->data['approver_name']);
+
+        // The last step sends the item's own "approved", not another step notice.
+        $this->actingAsTenantUser($this->c);
+        $this->postJson("/api/v1/leave-requests/{$request->id}/approve")->assertOk();
+
+        $this->assertSame(1, UserNotification::where('recipient_id', $studentUser->id)->where('type', NotificationType::APPROVAL_STEP_APPROVED)->count());
+        $this->assertSame(1, UserNotification::where('recipient_id', $studentUser->id)->where('type', NotificationType::LEAVE_REQUEST_APPROVED)->count());
+    }
+
+    public function test_the_requester_is_told_when_a_step_rejects(): void
+    {
+        $this->setStudentLeaveFlow([$this->group1->id, $this->group2->id]);
+        $studentUser = User::factory()->forTenant($this->tenant)->create();
+        $request = LeaveRequest::factory()->forStudent(Student::factory()->create(['user_id' => $studentUser->id]))->create();
+
+        $this->actingAsTenantUser($this->a);
+        $this->postJson("/api/v1/leave-requests/{$request->id}/approve")->assertOk();
+        $this->actingAsTenantUser($this->c);
+        $this->postJson("/api/v1/leave-requests/{$request->id}/reject", ['reason' => 'No seats that day'])->assertOk();
+
+        $notice = UserNotification::where('recipient_id', $studentUser->id)->where('type', NotificationType::LEAVE_REQUEST_REJECTED)->sole();
+        $this->assertSame('No seats that day', $notice->data['reason']);
+    }
+
     public function test_a_make_up_class_is_approved_to_study_by_the_flow_then_approved_by_its_last_group(): void
     {
         $this->actingAsTenantUser($this->manager);

@@ -14,6 +14,7 @@ use App\Services\Academic\MakeUpClassRequestService;
 use App\Support\Query\ApiQuery;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -50,6 +51,32 @@ final class MyMakeUpClassRequestController extends Controller
         $makeUpClassRequest = $this->makeUpClassRequests->submit($student, $request->validated());
 
         return ApiResponse::created(new MakeUpClassRequestResource($makeUpClassRequest->load(['student', 'enrollment.coursePackage', 'enrollment.schoolClass'])));
+    }
+
+    /**
+     * The requester withdraws their own request while it is still waiting
+     * (pending) — once any decision is made it can no longer be deleted.
+     * Someone else's request 404s, same as if it didn't exist.
+     */
+    public function destroy(Request $request, int $makeUpClassRequest): JsonResponse
+    {
+        $student = $this->studentOrFail($request);
+
+        DB::transaction(function () use ($student, $makeUpClassRequest) {
+            $row = MakeUpClassRequest::query()
+                ->where('student_id', $student->id)
+                ->whereKey($makeUpClassRequest)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ($row->status !== MakeUpClassRequest::STATUS_PENDING) {
+                throw ValidationException::withMessages(['status' => 'Only a request that is still waiting can be deleted.']);
+            }
+
+            $row->delete();
+        });
+
+        return ApiResponse::noContent();
     }
 
     /**

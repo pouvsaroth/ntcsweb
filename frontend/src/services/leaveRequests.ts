@@ -1,4 +1,4 @@
-import { apiGetWithMeta, apiPost } from '@/services/http'
+import { apiDelete, apiGetWithMeta, apiPost } from '@/services/http'
 import type { PaginatedQuery } from '@/composables/usePaginatedResource'
 import type { LengthAwarePaginationMeta, PaginatedResult } from '@/types/api'
 import type { ApprovalFlowProgress } from '@/services/approvalFlows'
@@ -88,6 +88,9 @@ export const myLeaveRequestsService = {
   },
 
   submit: (input: LeaveRequestInput) => apiPost<LeaveRequest>('/my-leave-requests', toFormData(input)),
+
+  /** Withdraw one of my own requests while it is still pending. */
+  remove: (id: number) => apiDelete(`/my-leave-requests/${id}`),
 
   /** A staff member's leave types with this year's balance — empty for a student, or before any types are set up. */
   types: (year?: number) => apiGetWithMeta<MyLeaveType[]>('/my-leave-requests/types', { params: year ? { year } : {} }).then((r) => r.data),

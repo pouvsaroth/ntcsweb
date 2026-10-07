@@ -17,6 +17,7 @@ use App\Support\Query\ApiQuery;
 use Illuminate\Http\JsonResponse;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -60,6 +61,33 @@ final class MyLeaveRequestController extends Controller
         ]);
 
         return ApiResponse::created(new LeaveRequestResource($leaveRequest));
+    }
+
+    /**
+     * The requester withdraws their own request while it is still waiting
+     * (pending) — once any decision is made it can no longer be deleted.
+     * Someone else's request 404s, same as if it didn't exist.
+     */
+    public function destroy(Request $request, int $leaveRequest): JsonResponse
+    {
+        [$student, $staff] = $this->requesterOrFail($request);
+
+        DB::transaction(function () use ($student, $staff, $leaveRequest) {
+            $row = LeaveRequest::query()
+                ->when($student !== null, fn ($q) => $q->where('student_id', $student->id))
+                ->when($staff !== null, fn ($q) => $q->where('staff_id', $staff->id))
+                ->whereKey($leaveRequest)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ($row->status !== LeaveRequest::STATUS_PENDING) {
+                throw ValidationException::withMessages(['status' => 'Only a request that is still waiting can be deleted.']);
+            }
+
+            $row->delete();
+        });
+
+        return ApiResponse::noContent();
     }
 
     /**

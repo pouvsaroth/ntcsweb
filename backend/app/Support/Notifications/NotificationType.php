@@ -43,6 +43,9 @@ final class NotificationType
 
     public const APPROVAL_REQUEST_REJECTED = 'approval_request_rejected';
 
+    /** One step of an approval flow approved — sent to the requester; see ApprovalFlow::approve(). */
+    public const APPROVAL_STEP_APPROVED = 'approval_step_approved';
+
     public const STUDENT_REGISTRATION_SUBMITTED = 'student_registration_submitted';
 
     public const MANPOWER_REQUEST_SUBMITTED = 'manpower_request_submitted';

@@ -1,4 +1,4 @@
-import { apiGetWithMeta, apiPost } from '@/services/http'
+import { apiDelete, apiGetWithMeta, apiPost } from '@/services/http'
 import type { PaginatedQuery } from '@/composables/usePaginatedResource'
 import type { LengthAwarePaginationMeta, PaginatedResult } from '@/types/api'
 import type { ApprovalFlowProgress } from '@/services/approvalFlows'
@@ -39,6 +39,9 @@ export const myApprovalRequestsService = {
   },
 
   submit: (input: ApprovalRequestInput) => apiPost<ApprovalRequest>('/my-approval-requests', input),
+
+  /** Withdraw one of my own requests while it is still pending. */
+  remove: (id: number) => apiDelete(`/my-approval-requests/${id}`),
 }
 
 /** Admin/approver queue — see Approvals.vue under eApprovals. */

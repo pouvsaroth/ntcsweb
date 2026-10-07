@@ -18,6 +18,7 @@ import { formatDays } from '@/services/leaveManagement'
 import { makeUpClassCourseLabel, myMakeUpClassRequestsService, type MakeUpClassRequest, type MakeUpClassRequestStatus } from '@/services/makeUpClassRequests'
 import { myResignationRequestsService, type ResignationRequest } from '@/services/resignationRequests'
 import { useAuthStore } from '@/stores/auth'
+import { useConfirmDialogStore } from '@/stores/confirmDialog'
 import { ApiRequestError } from '@/types/api'
 import { formatDate } from '@/utils/date'
 
@@ -40,6 +41,8 @@ type MergedRow = {
   subject: string
   status: RowStatus
   createdAt: string
+  /** The approver's reason, when rejected. */
+  reason: string | null
   approval?: ApprovalRequest
   leave?: LeaveRequest
   resignation?: ResignationRequest
@@ -48,6 +51,7 @@ type MergedRow = {
 
 const { t } = useI18n()
 const auth = useAuthStore()
+const confirmDialog = useConfirmDialogStore()
 
 // Resignation only makes sense for a staff account — a student reaching
 // this page (see the router's studentAllowed guard) never has a staff
@@ -80,13 +84,18 @@ const counts = computed(() => ({
 
 const visibleRows = computed(() => rows.value.filter((r) => r.status === activeTab.value))
 
-const columns = [
+// A student may withdraw their own request while it is still waiting —
+// resignation is staff-only, so it never shows here.
+const canDelete = computed(() => auth.hasRole('student') && activeTab.value === 'pending')
+
+const columns = computed(() => [
+  ...(canDelete.value ? [{ key: 'actions', label: t('admin.myRequests.columnAction') }] : []),
   { key: 'status', label: t('admin.myRequests.columnStatus') },
   { key: 'date', label: t('admin.myRequests.columnDate') },
   { key: 'requestor', label: t('admin.myRequests.columnRequestor') },
   { key: 'subject', label: t('admin.myRequests.columnSubject') },
   { key: 'reference', label: t('admin.myRequests.columnReference') },
-]
+])
 
 const statusVariant: Record<RowStatus, 'warning' | 'primary' | 'success' | 'danger'> = {
   pending: 'warning',
@@ -122,6 +131,25 @@ function onResignationModalChange(open: boolean) {
   if (!open) load()
 }
 
+const deleting = ref(false)
+
+async function remove(row: MergedRow) {
+  if (!(await confirmDialog.confirm({ message: t('admin.myRequests.deleteConfirm', { subject: row.subject }), danger: true }))) return
+
+  deleting.value = true
+  error.value = null
+  try {
+    if (row.kind === 'approval') await myApprovalRequestsService.remove(row.id)
+    else if (row.kind === 'leave') await myLeaveRequestsService.remove(row.id)
+    else if (row.kind === 'makeUp') await myMakeUpClassRequestsService.remove(row.id)
+    await load()
+  } catch (e) {
+    error.value = e instanceof ApiRequestError ? e.message : t('admin.myRequests.deleteFailed')
+  } finally {
+    deleting.value = false
+  }
+}
+
 async function load() {
   loading.value = true
   error.value = null
@@ -145,6 +173,7 @@ async function load() {
       subject: r.subject,
       status: r.status,
       createdAt: r.created_at,
+      reason: r.decision_reason ?? null,
       approval: r,
     }))
 
@@ -155,6 +184,7 @@ async function load() {
       subject: leaveSubject(r),
       status: r.status,
       createdAt: r.created_at,
+      reason: r.decision_reason ?? null,
       leave: r,
     }))
 
@@ -165,6 +195,7 @@ async function load() {
       subject: t('admin.myRequests.resignationSubject', { date: formatDate(r.resignation_date) }),
       status: r.status,
       createdAt: r.created_at,
+      reason: r.decision_reason ?? null,
       resignation: r,
     }))
 
@@ -175,6 +206,7 @@ async function load() {
       subject: t('makeUpClassRequest.subject', { from: formatDate(r.from_date), to: formatDate(r.to_date) }),
       status: r.status,
       createdAt: r.created_at,
+      reason: r.decision_reason ?? null,
       makeUp: r,
     }))
 
@@ -232,19 +264,67 @@ function leaveSubject(r: LeaveRequest): string {
       :message="t('admin.myRequests.emptyMessage')"
     />
 
-    <DataTable v-else :columns="columns" :rows="visibleRows" row-key="id">
-      <template #cell-date="{ row }">{{ formatDate(row.createdAt) }}</template>
-      <template #cell-requestor>{{ auth.user?.name }}</template>
-      <template #cell-subject="{ row }">
-        <button type="button" class="text-left font-medium text-primary-700 hover:underline" @click="detail = row">
-          {{ row.subject }}
-        </button>
-      </template>
-      <template #cell-reference="{ row }">{{ row.reference }}</template>
-      <template #cell-status="{ row }">
-        <BaseBadge :variant="statusVariant[row.status]">{{ t(statusLabelKey[row.status]) }}</BaseBadge>
-      </template>
-    </DataTable>
+    <template v-else>
+      <!-- Phones: one card per request; the table below from sm up. -->
+      <div class="space-y-3 sm:hidden">
+        <div
+          v-for="row in visibleRows"
+          :key="`${row.kind}-${row.id}`"
+          class="flex flex-col rounded-[--radius-card] border border-neutral-200 bg-white p-4 shadow-[--shadow-card]"
+        >
+          <div class="flex items-start justify-between gap-3">
+            <button type="button" class="min-w-0 text-left text-sm font-semibold text-primary-700 hover:underline" @click="detail = row">
+              {{ row.subject }}
+            </button>
+            <BaseBadge :variant="statusVariant[row.status]" class="shrink-0">{{ t(statusLabelKey[row.status]) }}</BaseBadge>
+          </div>
+
+          <dl class="mt-3 grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 text-sm">
+            <dt class="text-neutral-500">{{ t('admin.myRequests.columnDate') }}</dt>
+            <dd class="text-neutral-800">{{ formatDate(row.createdAt) }}</dd>
+            <dt class="text-neutral-500">{{ t('admin.myRequests.columnRequestor') }}</dt>
+            <dd class="truncate font-medium text-neutral-800">{{ auth.user?.name }}</dd>
+            <dt class="text-neutral-500">{{ t('admin.myRequests.columnReference') }}</dt>
+            <dd class="truncate text-neutral-800">{{ row.reference }}</dd>
+          </dl>
+
+          <p v-if="row.status === 'rejected' && row.reason" class="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+            <span class="font-medium">{{ t('admin.leaveRequests.decisionReason') }}:</span> {{ row.reason }}
+          </p>
+
+          <div v-if="canDelete && row.kind !== 'resignation'" class="mt-3 flex justify-end border-t border-neutral-100 pt-3">
+            <BaseButton size="sm" variant="danger" :disabled="deleting" @click="remove(row)">{{ t('admin.myRequests.delete') }}</BaseButton>
+          </div>
+        </div>
+      </div>
+
+      <div class="hidden sm:block">
+        <DataTable :columns="columns" :rows="visibleRows" row-key="id">
+          <template #cell-date="{ row }">{{ formatDate(row.createdAt) }}</template>
+          <template #cell-requestor>{{ auth.user?.name }}</template>
+          <template #cell-subject="{ row }">
+            <button type="button" class="text-left font-medium text-primary-700 hover:underline" @click="detail = row">
+              {{ row.subject }}
+            </button>
+          </template>
+          <template #cell-reference="{ row }">{{ row.reference }}</template>
+          <template #cell-actions="{ row }">
+            <button
+              v-if="row.kind !== 'resignation'"
+              type="button"
+              class="text-sm font-medium text-danger-600 hover:text-red-700 disabled:opacity-50"
+              :disabled="deleting"
+              @click="remove(row)"
+            >
+              {{ t('admin.myRequests.delete') }}
+            </button>
+          </template>
+          <template #cell-status="{ row }">
+            <BaseBadge :variant="statusVariant[row.status]">{{ t(statusLabelKey[row.status]) }}</BaseBadge>
+          </template>
+        </DataTable>
+      </div>
+    </template>
 
     <BaseModal :model-value="detail !== null" :title="detail?.subject" @update:model-value="detail = null">
       <template v-if="detail?.kind === 'approval' && detail.approval">

@@ -8,7 +8,9 @@ use App\Models\ApprovalFlowStep;
 use App\Models\ApprovalGroupMember;
 use App\Models\ApprovalStepApproval;
 use App\Models\User;
+use App\Services\Notifications\NotificationService;
 use App\Support\Approvals\DocumentType;
+use App\Support\Notifications\NotificationType;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
@@ -26,8 +28,9 @@ use Illuminate\Validation\ValidationException;
  * - An item with a flow: it waits on one step at a time. Any one member of
  *   the current step's group may approve that step (being in the group is
  *   enough — no permission needed) and it moves on to the next step's
- *   group, who are notified. Approving the last step runs the item's own
- *   approve(). Any member of the current step's group may reject it
+ *   group, who are notified — and so is the requester, so they can follow
+ *   their request step by step. Approving the last step runs the item's own
+ *   approve() (which tells the requester it's approved). Any member of the current step's group may reject it
  *   outright. Nobody else — not even a holder of the approve permission —
  *   can decide it, and a pending item is only listed in the Approvals queue
  *   to the group it's waiting on.
@@ -67,6 +70,7 @@ final class ApprovalFlow
 
     public function __construct(
         private readonly TenantContext $context,
+        private readonly NotificationService $notifications,
     ) {}
 
     public static function invalidate(): void
@@ -286,8 +290,51 @@ final class ApprovalFlow
         }
 
         $notifyNext($locked, $this->usersIn($remaining->approval_group_id));
+        $this->notifyRequesterOfStep($locked, $user, $type);
 
         return $locked;
+    }
+
+    /**
+     * "Step 1 of 3 approved" — only for a step that isn't the last; the last
+     * one is the item's own approve(), which sends its own "approved".
+     */
+    private function notifyRequesterOfStep(Model $document, User $approver, string $type): void
+    {
+        $requester = $this->requesterOf($document);
+
+        if ($requester === null || $requester->is($approver)) {
+            return;
+        }
+
+        $steps = $this->steps($type);
+        $approved = $this->approvedSteps($document);
+
+        $this->notifications->notifyMany(collect([$requester]), NotificationType::APPROVAL_STEP_APPROVED, [
+            'step' => $steps->filter(fn (ApprovalFlowStep $s) => in_array($s->step_order, $approved, true))->count(),
+            'total' => $steps->count(),
+            'approver_name' => $approver->name,
+        ], link: '/admin/approvals/my-requests');
+    }
+
+    /**
+     * Whose request this is — the student or staff member it's for, else
+     * whoever filed it (a form request or a manpower request).
+     */
+    private function requesterOf(Model $document): ?User
+    {
+        foreach (['student', 'staff'] as $relation) {
+            if ($document->hasAttribute("{$relation}_id") && $document->getAttribute("{$relation}_id") !== null && method_exists($document, $relation)) {
+                $user = $document->{$relation}?->user;
+                if ($user instanceof User) {
+                    return $user;
+                }
+            }
+        }
+
+        $requestedBy = $document->hasAttribute('requested_by') ? $document->getAttribute('requested_by') : null;
+
+        return $requestedBy !== null ? User::query()->find($requestedBy) : null;
     }
 
     /**

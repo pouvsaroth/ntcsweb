@@ -35,6 +35,28 @@ final class MakeUpClassRequestService
     public function submit(Student $student, array $data): MakeUpClassRequest
     {
         $request = DB::transaction(function () use ($student, $data) {
+            // Serialises two submits from the same student so both can't
+            // pass the overlap check below at once.
+            Student::query()->whereKey($student->getKey())->lockForUpdate()->first();
+
+            // The same day may hold several make-up classes, but never two
+            // whose times overlap — back-to-back (08:00–10:00 then
+            // 10:00–12:00) is fine. Rejected requests don't count.
+            $overlaps = MakeUpClassRequest::query()
+                ->where('student_id', $student->id)
+                ->where('status', '!=', MakeUpClassRequest::STATUS_REJECTED)
+                ->whereDate('from_date', '<=', $data['to_date'])
+                ->whereDate('to_date', '>=', $data['from_date'])
+                ->where('from_time', '<', $data['to_time'])
+                ->where('to_time', '>', $data['from_time'])
+                ->exists();
+
+            if ($overlaps) {
+                throw ValidationException::withMessages([
+                    'from_time' => 'You already have a make-up class request on this date at this time.',
+                ]);
+            }
+
             return MakeUpClassRequest::query()->create([
                 'student_id' => $student->id,
                 'enrollment_id' => $data['enrollment_id'],

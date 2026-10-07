@@ -13,6 +13,7 @@ import SearchableSelect from '@/components/ui/SearchableSelect.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import DataTable from '@/components/ui/DataTable.vue'
 import {
+  ABSENCE_STATUSES,
   attendanceService,
   type AttendanceRecord,
   type AttendanceStatusValue,
@@ -257,7 +258,6 @@ const detailError = ref<string | null>(null)
  * shown add up to that figure.
  */
 const detailAbsentOnly = ref(true)
-const ABSENCE_STATUSES: AttendanceStatusValue[] = ['ABSENT', 'EXCUSED', 'LATE']
 const visibleDetailRecords = computed(() =>
   detailAbsentOnly.value ? detailRecords.value.filter((record) => ABSENCE_STATUSES.includes(record.status)) : detailRecords.value,
 )
