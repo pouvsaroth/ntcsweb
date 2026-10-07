@@ -46,25 +46,18 @@ final class ExamApplicationService
     ) {}
 
     /**
-     * The student self-service "Apply" flow. The student never *picks*
-     * exam-day logistics (book/room/table/date) themselves — that stays a
-     * teacher/admin decision, confirmed or corrected via the Examination
-     * tab (see createForAdmin()/updateForAdmin()) — but this still seeds
-     * them with the same enrollment-derived defaults createForAdmin() uses,
-     * rather than leaving them blank. What this does:
+     * The student self-service "Apply" flow — only for an enrollment a
+     * teacher has already sent to exam (its application is a draft; see
+     * StoreMyExamApplicationRequest). The student never *picks* exam-day
+     * logistics (book/room/table/date) — that stays the teacher's draft,
+     * confirmed or corrected via the Examination tab. What this does:
      *
      *   1. Saves the student's own personal-info edits back to their real
      *      Student record — same fields the admin's Application Form edits,
      *      just self-service (no `students.update` permission needed).
-     *   2. Either creates a fresh application (status pending) for this
-     *      enrollment, defaulting classroom/table/book the same way
-     *      createForAdmin() does, or — if a teacher already sent this
-     *      enrollment to exam (see the migration's docblock on "at most one
-     *      application per enrollment, ever") — leaves that existing row's
-     *      logistics untouched (it already has its own defaults, or a
-     *      teacher's deliberate override) and simply stamps the fee
-     *      snapshot + payment declaration onto it, since the student is
-     *      only now getting around to confirming/paying.
+     *   2. Moves the teacher's draft to pending, leaving its logistics
+     *      untouched, and stamps the fee snapshot + payment declaration
+     *      onto it, since the student is only now confirming/paying.
      *
      * @param  array{first_name:string, last_name:string, english_name:?string, gender:?string, date_of_birth:?string, phone:?string, village_code:?string}  $studentFields
      */
@@ -79,6 +72,20 @@ final class ExamApplicationService
         }
 
         $application = DB::transaction(function () use ($student, $enrollmentId, $studentFields, $photo, $tenant) {
+            $existing = ExamApplication::query()
+                ->where('enrollment_id', $enrollmentId)
+                ->lockForUpdate()
+                ->first();
+
+            // Re-checked under the lock (the request validated it a moment
+            // ago), and before anything is saved: only a teacher's draft can
+            // be applied for.
+            if ($existing?->status !== ExamApplication::STATUS_DRAFT) {
+                throw ValidationException::withMessages([
+                    'enrollment_id' => 'Your teacher has not sent this course to exam.',
+                ]);
+            }
+
             $previousPhotoPath = $student->photo_path;
             $newPhotoPath = $photo !== null ? $this->storeStudentPhoto($photo, $tenant) : null;
 
@@ -91,41 +98,16 @@ final class ExamApplicationService
                 Storage::disk('public')->delete($previousPhotoPath);
             }
 
-            $existing = ExamApplication::query()->where('enrollment_id', $enrollmentId)->first();
-
-            if ($existing !== null) {
-                // Whatever it was (draft, from "Send to Exam", or already
-                // pending from an earlier submission), applying always
-                // lands it on pending — this *is* the "student actually
-                // applied" moment the Approval tab is waiting for.
-                $existing->update([
-                    'fee_amount' => $tenant->exam_fee_amount,
-                    'fee_currency' => $tenant->default_currency,
-                    'student_marked_paid_at' => now(),
-                    'status' => ExamApplication::STATUS_PENDING,
-                ]);
-
-                return $existing->fresh();
-            }
-
-            // Same enrollment-derived defaults createForAdmin() applies —
-            // without them, a student applying with no teacher-created draft
-            // ahead of them would land in the Approval queue with an empty
-            // room/table/book that a reviewer has to look up and fill in by
-            // hand before they can even consider approving it.
-            $enrollment = Enrollment::query()->with(['schoolClass', 'coursePackage.books'])->findOrFail($enrollmentId);
-
-            return ExamApplication::query()->create([
-                'student_id' => $student->id,
-                'enrollment_id' => $enrollmentId,
-                'classroom_id' => $enrollment->schoolClass?->classroom_id,
-                'table_id' => $enrollment->table_id,
-                'book_id' => $enrollment->coursePackage?->books->first()?->id,
+            // Applying lands it on pending — this *is* the "student actually
+            // applied" moment the Approval tab is waiting for.
+            $existing->update([
                 'fee_amount' => $tenant->exam_fee_amount,
                 'fee_currency' => $tenant->default_currency,
                 'student_marked_paid_at' => now(),
                 'status' => ExamApplication::STATUS_PENDING,
             ]);
+
+            return $existing->fresh();
         });
 
         // Outside the transaction — a notification that fails to write is

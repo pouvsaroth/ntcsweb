@@ -74,24 +74,24 @@ final class MyExamApplicationController extends Controller
     /**
      * The student's own active enrollments, each carrying the course/class
      * that an ExamApplication's `enrollment_id` picker needs — one selection
-     * instead of two independent dropdowns. Excludes an enrollment whose
-     * application has already been decided (approved/rejected) or marked
-     * Not Exam — nothing left to apply for there; a still-draft or -pending
-     * one (even if a teacher created it first via "Send to Exam") stays
-     * selectable, since the student still needs to review/confirm it —
-     * see lookup() below.
+     * instead of two independent dropdowns. Only an enrollment a teacher
+     * has sent to exam (its application is still a draft) — a student can't
+     * apply for a course nobody sent them to exam for, and once they've
+     * applied (pending) or it's decided there's nothing left to apply for.
+     * See lookup() below.
      */
     public function enrollments(Request $request): JsonResponse
     {
         $student = $this->studentOrFail($request);
 
-        $decidedEnrollmentIds = ExamApplication::query()
-            ->whereIn('status', [ExamApplication::STATUS_APPROVED, ExamApplication::STATUS_REJECTED, ExamApplication::STATUS_NOT_EXAM])
+        $sentToExamEnrollmentIds = ExamApplication::query()
+            ->where('student_id', $student->id)
+            ->where('status', ExamApplication::STATUS_DRAFT)
             ->pluck('enrollment_id');
 
         $enrollments = $student->enrollments()
             ->active()
-            ->whereNotIn('id', $decidedEnrollmentIds)
+            ->whereIn('id', $sentToExamEnrollmentIds)
             ->with('coursePackage', 'schoolClass')
             ->get()
             ->map(fn ($enrollment) => [
@@ -130,9 +130,9 @@ final class MyExamApplicationController extends Controller
 
         $existing = $enrollmentModel->getRelation('latestExamApplication');
 
-        if ($existing !== null && in_array($existing->status, [ExamApplication::STATUS_APPROVED, ExamApplication::STATUS_REJECTED, ExamApplication::STATUS_NOT_EXAM], true)) {
+        if ($existing?->status !== ExamApplication::STATUS_DRAFT) {
             throw ValidationException::withMessages([
-                'enrollment_id' => 'This enrollment already has a decided exam application.',
+                'enrollment_id' => 'Your teacher has not sent this course to exam.',
             ]);
         }
 

@@ -1361,6 +1361,7 @@ const ko: MessageSchema = {
       enrollmentLabel: '과정 / 반',
       selectEnrollment: '등록 정보 선택',
       selectCoursePrompt: '위에서 과정을 선택하면 내 정보를 불러옵니다.',
+      noCourseSentToExam: '선생님이 아직 어떤 과정도 시험에 보내지 않았습니다.',
       lookupFailed: '이 과정에 대한 정보를 불러올 수 없습니다.',
       notScheduledYet: '학교에서 아직 일정을 정하지 않았습니다',
       feeLabel: '시험료',

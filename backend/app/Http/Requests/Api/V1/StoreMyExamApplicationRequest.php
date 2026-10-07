@@ -63,19 +63,19 @@ class StoreMyExamApplicationRequest extends FormRequest
                 return;
             }
 
-            // Mirrors StoreExamApplicationRequest's own rule: at most one
-            // exam application per enrollment, ever — but unlike a fresh
-            // create, resubmitting against an existing *draft* or *pending*
-            // one (a teacher already sent this enrollment to exam) is
-            // exactly the point of this endpoint, so only a *decided* one
-            // (or Not Exam) blocks it.
+            // Only a course a teacher has sent to exam: its application
+            // must exist and still be a draft. No application means nobody
+            // sent them; pending means they already applied; anything else
+            // is decided (or Not Exam / make-up).
             $existingStatus = ExamApplication::query()
                 ->where('enrollment_id', $enrollmentId)
                 ->whereNull('deleted_at')
                 ->value('status');
 
-            if (in_array($existingStatus, [ExamApplication::STATUS_APPROVED, ExamApplication::STATUS_REJECTED, ExamApplication::STATUS_NOT_EXAM], true)) {
-                $validator->errors()->add('enrollment_id', __('This enrollment already has a decided exam application.'));
+            if ($existingStatus !== ExamApplication::STATUS_DRAFT) {
+                $validator->errors()->add('enrollment_id', $existingStatus === null
+                    ? __('Your teacher has not sent this course to exam.')
+                    : __('This course is no longer open to apply for.'));
             }
         });
     }

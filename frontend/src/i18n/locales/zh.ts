@@ -1360,6 +1360,7 @@ const zh: MessageSchema = {
       enrollmentLabel: '课程 / 班级',
       selectEnrollment: '选择注册信息',
       selectCoursePrompt: '请先在上方选择课程以加载您的信息。',
+      noCourseSentToExam: '您的老师还没有将您的任何课程送考。',
       lookupFailed: '无法加载该课程的信息。',
       notScheduledYet: '学校尚未安排',
       feeLabel: '考试费',

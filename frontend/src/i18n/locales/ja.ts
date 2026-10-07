@@ -1361,6 +1361,7 @@ const ja: MessageSchema = {
       enrollmentLabel: 'コース・クラス',
       selectEnrollment: '在籍情報を選択',
       selectCoursePrompt: '上のコースを選択すると、あなたの情報が表示されます。',
+      noCourseSentToExam: '先生はまだあなたのコースを試験に送っていません。',
       lookupFailed: 'このコースの情報を読み込めませんでした。',
       notScheduledYet: '学校からまだ日程が設定されていません',
       feeLabel: '試験料',

@@ -1365,6 +1365,7 @@ const en = {
       enrollmentLabel: 'Course / Class',
       selectEnrollment: 'Select an enrollment',
       selectCoursePrompt: 'Select a course above to load your information.',
+      noCourseSentToExam: 'Your teacher has not sent any of your courses to exam yet.',
       lookupFailed: 'Could not load your information for this course.',
       notScheduledYet: 'Not yet scheduled by the school',
       feeLabel: 'Exam fee',

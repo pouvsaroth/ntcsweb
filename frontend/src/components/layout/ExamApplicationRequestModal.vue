@@ -240,6 +240,9 @@ watch(
         :error="createErrors.enrollment_id?.[0]"
         @update:model-value="pickEnrollment"
       />
+      <p v-if="!enrollmentsLoading && !enrollmentsError && enrollments.length === 0" class="-mt-2 text-sm text-neutral-500">
+        {{ t('admin.myExamApplications.noCourseSentToExam') }}
+      </p>
 
       <div v-if="lookupLoading" class="flex justify-center py-8"><BaseSpinner /></div>
 

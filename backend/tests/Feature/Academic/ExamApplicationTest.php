@@ -4,10 +4,6 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Academic;
 
-use App\Models\Book;
-use App\Models\Classroom;
-use App\Models\ClassroomTable;
-use App\Models\CoursePackage;
 use App\Models\Enrollment;
 use App\Models\ExamApplication;
 use App\Models\SchoolClass;
@@ -42,6 +38,16 @@ class ExamApplicationTest extends TestCase
         return Enrollment::factory()->forClass($class)->forStudent($student)->create();
     }
 
+    /** What a teacher's "Send to Exam" leaves behind — the only thing a student can apply for. */
+    private function sentToExam(Student $student, Enrollment $enrollment, array $attributes = []): ExamApplication
+    {
+        return ExamApplication::factory()->forStudent($student)->forEnrollment($enrollment)->create([
+            'exam_date' => null,
+            'status' => ExamApplication::STATUS_DRAFT,
+            ...$attributes,
+        ]);
+    }
+
     private function setExamFee(float $amount = 25.00): void
     {
         $this->tenant->update(['exam_fee_amount' => $amount]);
@@ -63,6 +69,7 @@ class ExamApplicationTest extends TestCase
         $this->setExamFee(25.00);
         [$student, $user] = $this->studentWithUser();
         $enrollment = $this->activeEnrollment($student);
+        $this->sentToExam($student, $enrollment);
         $this->actingAsTenantUser($user);
 
         $payload = $this->validPayload($enrollment);
@@ -74,13 +81,9 @@ class ExamApplicationTest extends TestCase
         $response->assertJsonPath('data.status', ExamApplication::STATUS_PENDING);
         $response->assertJsonPath('data.fee_amount', '25.00');
         $response->assertJsonPath('data.fee_currency', Tenant::CURRENCY_USD);
-        // The student never picks exam-day logistics — this enrollment has
-        // no course package/classroom/table of its own for applyOnline() to
-        // default from (see the next test for when it does), so exam_date
-        // (never defaulted, always a teacher's own call) and book both stay
-        // unset here too.
+        // The student never picks exam-day logistics — the teacher's draft
+        // had no exam date yet, so it stays unset.
         $response->assertJsonPath('data.exam_date', null);
-        $response->assertJsonPath('data.book', null);
         $this->assertSame(1, ExamApplication::where('student_id', $student->id)->count());
 
         // Personal-info edits are saved back to the real Student record.
@@ -89,41 +92,48 @@ class ExamApplicationTest extends TestCase
         $this->assertSame('Tester', $student->fresh()->english_name);
     }
 
-    /**
-     * The gap this fixes: a student applying with no teacher-created draft
-     * ahead of them used to land in the Approval queue with an empty room/
-     * table/book that a reviewer had to look up and fill in by hand before
-     * they could even consider approving it — see
-     * ExamApplicationService::applyOnline()'s docblock and createForAdmin(),
-     * which this now mirrors.
-     */
-    public function test_applying_defaults_classroom_table_and_book_from_the_enrollment(): void
+    public function test_a_student_cannot_apply_for_a_course_nobody_sent_them_to_exam_for(): void
     {
         $this->actingAsAdminWithPermissions([]);
         $this->setExamFee(25.00);
         [$student, $user] = $this->studentWithUser();
-
-        $classroom = Classroom::factory()->create();
-        $table = ClassroomTable::factory()->create(['classroom_id' => $classroom->id]);
-        $class = SchoolClass::factory()->create(['classroom_id' => $classroom->id]);
-        $book = Book::factory()->create();
-        $coursePackage = CoursePackage::factory()->create();
-        $coursePackage->books()->attach($book->id, ['sort_order' => 1]);
-
-        $enrollment = Enrollment::factory()->forClass($class)->forStudent($student)->create([
-            'table_id' => $table->id,
-            'course_package_id' => $coursePackage->id,
-        ]);
+        $enrollment = $this->activeEnrollment($student);
         $this->actingAsTenantUser($user);
 
-        $response = $this->postJson('/api/v1/my-exam-applications', $this->validPayload($enrollment));
+        $this->postJson('/api/v1/my-exam-applications', $this->validPayload($enrollment))
+            ->assertUnprocessable()->assertJsonValidationErrors(['enrollment_id']);
+        $this->getJson("/api/v1/my-exam-applications/lookup/{$enrollment->id}")->assertUnprocessable();
+        $this->assertSame(0, ExamApplication::where('student_id', $student->id)->count());
+    }
 
-        $response->assertCreated();
-        $response->assertJsonPath('data.classroom.id', $classroom->id);
-        $response->assertJsonPath('data.table.id', $table->id);
-        $response->assertJsonPath('data.book.id', $book->id);
-        // Still never defaulted — exam day itself stays a teacher's own call.
-        $response->assertJsonPath('data.exam_date', null);
+    public function test_a_pending_application_cannot_be_applied_for_again(): void
+    {
+        $this->actingAsAdminWithPermissions([]);
+        $this->setExamFee(25.00);
+        [$student, $user] = $this->studentWithUser();
+        $enrollment = $this->activeEnrollment($student);
+        $this->sentToExam($student, $enrollment, ['status' => ExamApplication::STATUS_PENDING]);
+        $this->actingAsTenantUser($user);
+
+        $this->postJson('/api/v1/my-exam-applications', $this->validPayload($enrollment))
+            ->assertUnprocessable()->assertJsonValidationErrors(['enrollment_id']);
+    }
+
+    public function test_the_enrollments_endpoint_lists_only_courses_sent_to_exam(): void
+    {
+        $this->actingAsAdminWithPermissions([]);
+        [$student, $user] = $this->studentWithUser();
+        $sent = $this->activeEnrollment($student);
+        $this->sentToExam($student, $sent);
+        $notSent = $this->activeEnrollment($student);
+        $alreadyApplied = $this->activeEnrollment($student);
+        $this->sentToExam($student, $alreadyApplied, ['status' => ExamApplication::STATUS_PENDING]);
+        $this->actingAsTenantUser($user);
+
+        $ids = collect($this->getJson('/api/v1/my-exam-applications/enrollments')->assertOk()->json('data'))->pluck('id')->all();
+
+        $this->assertSame([$sent->id], $ids);
+        $this->assertNotContains($notSent->id, $ids);
     }
 
     public function test_applying_against_an_enrollment_a_teacher_already_sent_to_exam_keeps_the_exam_logistics(): void
@@ -222,6 +232,7 @@ class ExamApplicationTest extends TestCase
         $this->setExamFee();
         [$student, $user] = $this->studentWithUser();
         $enrollment = $this->activeEnrollment($student);
+        $this->sentToExam($student, $enrollment);
         $this->actingAsTenantUser($user);
 
         $payload = $this->validPayload($enrollment);
@@ -247,6 +258,7 @@ class ExamApplicationTest extends TestCase
         $this->setExamFee(25.00);
         [$student, $user] = $this->studentWithUser();
         $enrollment = $this->activeEnrollment($student);
+        $this->sentToExam($student, $enrollment);
         $this->actingAsTenantUser($user);
 
         $this->postJson('/api/v1/my-exam-applications', $this->validPayload($enrollment))->assertCreated();
@@ -266,7 +278,7 @@ class ExamApplicationTest extends TestCase
         ExamApplication::factory()->forStudent($student)->forEnrollment($enrollment)->create([
             'exam_date' => now()->addWeek()->toDateString(),
             'table_no' => 'A1',
-            'status' => ExamApplication::STATUS_PENDING,
+            'status' => ExamApplication::STATUS_DRAFT,
         ]);
 
         $this->actingAsTenantUser($user);
@@ -275,18 +287,6 @@ class ExamApplicationTest extends TestCase
 
         $response->assertJsonPath('data.student.first_name', $student->first_name);
         $response->assertJsonPath('data.exam_application.table_no', 'A1');
-    }
-
-    public function test_the_lookup_endpoint_returns_a_null_application_when_none_exists_yet(): void
-    {
-        $this->actingAsAdminWithPermissions([]);
-        [$student, $user] = $this->studentWithUser();
-        $enrollment = $this->activeEnrollment($student);
-        $this->actingAsTenantUser($user);
-
-        $response = $this->getJson("/api/v1/my-exam-applications/lookup/{$enrollment->id}")->assertOk();
-
-        $response->assertJsonPath('data.exam_application', null);
     }
 
     public function test_the_lookup_endpoint_rejects_another_students_enrollment(): void
@@ -405,6 +405,7 @@ class ExamApplicationTest extends TestCase
         $this->setExamFee();
         [$student, $user] = $this->studentWithUser();
         $enrollment = $this->activeEnrollment($student);
+        $this->sentToExam($student, $enrollment);
 
         $approverRole = Role::factory()->forTenant($this->tenant)->create(['slug' => 'test-exam-approver', 'level' => 50]);
         $approverRole->permissions()->attach(Permission::query()->where('slug', Permissions::EXAM_APPLICATIONS_APPROVE)->firstOrFail());
