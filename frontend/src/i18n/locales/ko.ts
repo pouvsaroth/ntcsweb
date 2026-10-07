@@ -581,7 +581,6 @@ const ko: MessageSchema = {
       enrollment: '수강 등록',
       classes: '학급',
       classesStudyingTooltip: '현재 수강 중인 학생 수',
-      viewMyRequests: '내 신청 모두 보기',
       totalAbsentHours: '총 결석 시간',
       totalAbsentHoursHint: '허가 + 결석 + 지각',
       totalMakeUpHours: '총 보강 시간',

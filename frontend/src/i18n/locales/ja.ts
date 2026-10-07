@@ -581,7 +581,6 @@ const ja: MessageSchema = {
       enrollment: '履修登録',
       classes: 'クラス',
       classesStudyingTooltip: '現在受講中の生徒数',
-      viewMyRequests: 'すべてのリクエストを見る',
       totalAbsentHours: '欠席時間の合計',
       totalAbsentHoursHint: '許可 + 欠席 + 遅刻',
       totalMakeUpHours: '補講時間の合計',

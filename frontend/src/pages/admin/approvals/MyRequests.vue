@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 
 import AskForPermissionModal from '@/components/layout/AskForPermissionModal.vue'
 import MakeUpClassRequestModal from '@/components/layout/MakeUpClassRequestModal.vue'
@@ -52,6 +53,7 @@ type MergedRow = {
 const { t } = useI18n()
 const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
+const router = useRouter()
 
 // Resignation only makes sense for a staff account — a student reaching
 // this page (see the router's studentAllowed guard) never has a staff
@@ -60,6 +62,9 @@ const canResign = computed(() => !auth.hasRole('student'))
 // The inverse: make-up class requests are student-only (the endpoint 422s
 // for an account with no student record).
 const canRequestMakeUp = computed(() => auth.hasRole('student'))
+// Exam applications have their own page (My Exam Application) — this is
+// just a shortcut to it, so every student request starts from here.
+const canApplyForExam = computed(() => auth.hasRole('student'))
 
 const rows = ref<MergedRow[]>([])
 const loading = ref(false)
@@ -229,14 +234,12 @@ function leaveSubject(r: LeaveRequest): string {
 
 <template>
   <div>
-    <div class="mb-6 flex items-start justify-between gap-4">
-      <div>
-        <h1 class="text-xl font-semibold text-neutral-900">{{ t('admin.myRequests.title') }}</h1>
-        <p class="mt-1 text-sm text-neutral-500">{{ t('admin.myRequests.subtitle') }}</p>
-      </div>
-      <div class="flex gap-2">
+    <div class="mb-6">
+      <h1 class="text-xl font-semibold text-neutral-900">{{ t('admin.myRequests.title') }}</h1>
+      <div class="mt-3 flex flex-wrap gap-2">
         <BaseButton @click="showLeaveModal = true">{{ t('leaveRequest.title') }}</BaseButton>
         <BaseButton v-if="canRequestMakeUp" variant="outline" @click="showMakeUpModal = true">{{ t('makeUpClassRequest.title') }}</BaseButton>
+        <BaseButton v-if="canApplyForExam" variant="outline" @click="router.push('/admin/my-exam-applications')">{{ t('admin.myExamApplications.title') }}</BaseButton>
         <BaseButton v-if="canResign" variant="outline" @click="showResignationModal = true">{{ t('resignationRequest.title') }}</BaseButton>
       </div>
     </div>

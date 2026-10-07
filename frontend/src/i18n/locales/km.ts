@@ -581,7 +581,6 @@ const km: MessageSchema = {
       enrollment: 'ចុះឈ្មោះចូលរៀន',
       classes: 'ថ្នាក់រៀន',
       classesStudyingTooltip: 'សិស្សដែលកំពុងសិក្សា',
-      viewMyRequests: 'មើលសំណើរបស់ខ្ញុំទាំងអស់',
       totalAbsentHours: 'ចំនួនម៉ោងអវត្តមានសរុប',
       totalAbsentHoursHint: 'សុំច្បាប់ + អវត្តមាន + មកយឺត',
       totalMakeUpHours: 'ចំនួនម៉ោងរៀនសងសរុប',

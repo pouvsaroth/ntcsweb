@@ -1,7 +1,7 @@
 import { organizationTabs } from '@/router/organizationTabs'
 import { attendanceTabs } from '@/router/attendanceTabs'
 import { leaveTabs } from '@/router/leaveTabs'
-import { documentLinks, documentsAndFormLinks } from '@/router/publicNav'
+import { documentLinks } from '@/router/publicNav'
 import { recruitmentTabs } from '@/router/recruitmentTabs'
 
 export interface AdminNavItem {
@@ -32,6 +32,8 @@ export interface AdminNavItem {
    * for.
    */
   studentOnly?: boolean
+  /** Hidden from the Student role — e.g. an item their own flat menu already has. */
+  hiddenForStudent?: boolean
   /**
    * Also shown to a member of any Approval Flow group, even without
    * `permission` — being in a flow's group is enough to approve its step
@@ -50,6 +52,11 @@ export interface AdminNavGroup {
    * find its items.
    */
   standalone?: boolean
+  /**
+   * Rendered as a plain list of links with no group heading at all — the
+   * Student role's own menu (see the first student group below).
+   */
+  flat?: boolean
 }
 
 /**
@@ -69,12 +76,12 @@ export const adminNav: AdminNavGroup[] = [
     items: [{ labelKey: 'adminNav.items.dashboard', to: '/admin', permission: 'dashboard.view' }],
   },
   {
-    // A student's own sidebar — same pages that used to live only in
-    // PublicUserMenu.vue's dropdown (and, before Dashboard.vue grew its own
-    // student card grid, MobileBottomNav's mobile tab bar). Reusing
-    // publicNav.ts's documentsAndFormLinks for the last three keeps that one
-    // array as the single source for their labels/routes.
+    // A student's own sidebar — no heading, and the same menu, in the same
+    // order, as the student card grid on Dashboard.vue
+    // (studentQuickAccessItems), then the school's uploaded documents. Exam
+    // Application is reached from the My Request page's buttons.
     labelKey: 'adminNav.groups.myProfile',
+    flat: true,
     items: [
       // No `permission` here on purpose: the Overview group's own Dashboard
       // item above requires dashboard.view, which the Student role
@@ -85,7 +92,9 @@ export const adminNav: AdminNavGroup[] = [
       { labelKey: 'studentNav.score', to: '/admin/my-scores', studentOnly: true },
       { labelKey: 'studentNav.attendant', to: '/admin/my-attendance', studentOnly: true },
       { labelKey: 'studentNav.video', to: '/admin/my-videos', studentOnly: true },
-      ...documentsAndFormLinks.map((item) => ({ ...item, studentOnly: true })),
+      { labelKey: 'studentNav.myRequest', to: '/admin/my-feedback', studentOnly: true },
+      { labelKey: 'adminNav.items.myRequests', to: '/admin/approvals/my-requests', studentOnly: true },
+      { labelKey: 'adminNav.items.notifications', to: '/admin/notifications', studentOnly: true },
       ...documentLinks.map((item) => ({ ...item, studentOnly: true })),
     ],
   },
@@ -240,7 +249,9 @@ export const adminNav: AdminNavGroup[] = [
       { labelKey: 'adminNav.items.contactMessages', to: '/admin/contact-messages', permission: 'contact-messages.view' },
       // Self-service — every signed-in account has its own notifications
       // (see the bell in AdminHeader.vue), not gated behind a permission.
-      { labelKey: 'adminNav.items.notifications', to: '/admin/notifications' },
+      // (A student has it in their own flat menu instead, so this whole
+      // Communication group disappears for them.)
+      { labelKey: 'adminNav.items.notifications', to: '/admin/notifications', hiddenForStudent: true },
       { labelKey: 'adminNav.items.studentFeedback', to: '/admin/student-feedback', permission: 'student-feedback.view' },
     ],
   },
@@ -296,6 +307,7 @@ export interface AdminNavAccess {
 export function isNavItemVisible(item: AdminNavItem, access: AdminNavAccess): boolean {
   if (item.superAdminOnly && !access.isSuperAdmin) return false
   if (item.studentOnly && !access.hasRole('student')) return false
+  if (item.hiddenForStudent && access.hasRole('student')) return false
   if (item.permission) {
     const required = Array.isArray(item.permission) ? item.permission : [item.permission]
     const viaFlow = item.flowApprover === true && access.isFlowApprover?.() === true

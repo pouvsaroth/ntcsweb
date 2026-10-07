@@ -580,7 +580,6 @@ const zh: MessageSchema = {
       enrollment: '注册课程',
       classes: '班级',
       classesStudyingTooltip: '当前在读学生人数',
-      viewMyRequests: '查看我的全部申请',
       totalAbsentHours: '缺勤总时数',
       totalAbsentHoursHint: '请假 + 缺勤 + 迟到',
       totalMakeUpHours: '补课总时数',

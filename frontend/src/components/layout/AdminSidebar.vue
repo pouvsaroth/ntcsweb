@@ -243,7 +243,31 @@ watch(
                collapsible heading — its items sit at the top level, styled
                like a group heading. See isStandaloneActive for the
                highlight rule. -->
-          <template v-if="group.standalone">
+          <!-- A flat group (the Student role's menu) is plain links with no
+               heading at all. -->
+          <div v-if="group.flat" class="space-y-0.5">
+            <template v-for="item in group.items" :key="item.to ?? item.urlKey">
+              <a
+                v-if="item.urlKey"
+                :href="site.info.documents[item.urlKey] ?? undefined"
+                target="_blank"
+                rel="noopener"
+                class="block rounded-lg px-3 py-2 text-sm font-medium text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
+              >
+                {{ t(item.labelKey) }}
+              </a>
+              <RouterLink
+                v-else
+                :to="item.to!"
+                class="block rounded-lg px-3 py-2 text-sm font-medium text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
+                :class="isStandaloneActive(item.to!) ? 'bg-primary-50 text-primary-800' : ''"
+                @click="emit('close')"
+              >
+                {{ t(item.labelKey) }}
+              </RouterLink>
+            </template>
+          </div>
+          <template v-else-if="group.standalone">
             <RouterLink
               v-for="item in group.items"
               :key="item.to"

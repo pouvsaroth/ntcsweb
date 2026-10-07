@@ -1,11 +1,8 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { RouterLink, useRouter } from 'vue-router'
+import { RouterLink } from 'vue-router'
 
-import AskForPermissionModal from '@/components/layout/AskForPermissionModal.vue'
-import MakeUpClassRequestModal from '@/components/layout/MakeUpClassRequestModal.vue'
-import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
 import BaseCard from '@/components/ui/BaseCard.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
@@ -33,8 +30,6 @@ interface QuickAccessItem {
   /** Shown when the user holds any one of these. */
   permission?: string | string[]
   icon: string
-  /** Opens the student's "My Request" popup instead of navigating to `to`. */
-  opensRequestMenu?: boolean
 }
 
 function canSee(item: QuickAccessItem): boolean {
@@ -167,7 +162,6 @@ const studentQuickAccessItems: QuickAccessItem[] = [
     labelKey: 'adminNav.items.myRequests',
     to: '/admin/approvals/my-requests',
     icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z',
-    opensRequestMenu: true,
   },
   {
     labelKey: 'adminNav.items.notifications',
@@ -175,21 +169,6 @@ const studentQuickAccessItems: QuickAccessItem[] = [
     icon: 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9',
   },
 ]
-
-/**
- * The "My Request" card's popup — one place for every request a student can
- * make: leave and make-up class open their own form popups, exam
- * application goes to its page.
- */
-const router = useRouter()
-const showRequestMenu = ref(false)
-const showLeaveModal = ref(false)
-const showMakeUpClassModal = ref(false)
-
-function openFromRequestMenu(open: () => void) {
-  showRequestMenu.value = false
-  open()
-}
 
 /**
  * The student's hour cards, one set per course they're studying. Hours left
@@ -392,12 +371,10 @@ onMounted(() => {
       </div>
 
       <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-        <component
-          :is="item.opensRequestMenu ? 'button' : RouterLink"
+        <RouterLink
           v-for="item in studentQuickAccessItems"
           :key="item.to"
-          v-bind="item.opensRequestMenu ? { type: 'button' } : { to: item.to }"
-          @click="item.opensRequestMenu && (showRequestMenu = true)"
+          :to="item.to"
           class="relative flex flex-col items-center gap-2 rounded-[--radius-card] border border-neutral-200 bg-white p-4 text-center shadow-[--shadow-card] transition-shadow hover:shadow-[--shadow-card-hover]"
         >
           <span class="flex h-10 w-10 items-center justify-center rounded-full bg-primary-100 text-primary-700">
@@ -406,22 +383,8 @@ onMounted(() => {
             </svg>
           </span>
           <span class="text-xs font-medium text-neutral-700">{{ t(item.labelKey) }}</span>
-        </component>
+        </RouterLink>
       </div>
-
-      <BaseModal v-model="showRequestMenu" :title="t('adminNav.items.myRequests')" size="sm">
-        <div class="grid gap-3">
-          <BaseButton @click="openFromRequestMenu(() => (showLeaveModal = true))">{{ t('adminNav.items.requestLeave') }}</BaseButton>
-          <BaseButton @click="openFromRequestMenu(() => (showMakeUpClassModal = true))">{{ t('makeUpClassRequest.title') }}</BaseButton>
-          <BaseButton @click="openFromRequestMenu(() => router.push('/admin/my-exam-applications'))">{{ t('admin.myExamApplications.title') }}</BaseButton>
-          <RouterLink to="/admin/approvals/my-requests" class="mt-1 text-center text-sm font-medium text-primary-700 hover:underline">
-            {{ t('admin.dashboard.viewMyRequests') }}
-          </RouterLink>
-        </div>
-      </BaseModal>
-
-      <AskForPermissionModal v-model="showLeaveModal" />
-      <MakeUpClassRequestModal v-model="showMakeUpClassModal" />
     </template>
 
     <template v-else-if="!auth.isSuperAdmin">

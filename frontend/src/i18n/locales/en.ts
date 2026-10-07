@@ -584,7 +584,6 @@ const en = {
       enrollment: 'Enrollment',
       classes: 'Classes',
       classesStudyingTooltip: 'Students currently studying',
-      viewMyRequests: 'View all my requests',
       totalAbsentHours: 'Total Absent Hours',
       totalAbsentHoursHint: 'Permission + absent + late',
       totalMakeUpHours: 'Total Make-up Class Hours',
