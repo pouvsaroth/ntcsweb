@@ -72,6 +72,13 @@ use App\Http\Controllers\Api\V1\Admin\LeaveTypeController;
 use App\Http\Controllers\Api\V1\Admin\PayrollComponentController;
 use App\Http\Controllers\Api\V1\Admin\PayrollRulesController;
 use App\Http\Controllers\Api\V1\Admin\PayrollRunController;
+use App\Http\Controllers\Api\V1\Admin\EvaluationFormController;
+use App\Http\Controllers\Api\V1\Admin\KpiController;
+use App\Http\Controllers\Api\V1\Admin\PerformanceCycleController;
+use App\Http\Controllers\Api\V1\Admin\PerformanceGoalController;
+use App\Http\Controllers\Api\V1\Admin\PerformanceReviewController;
+use App\Http\Controllers\Api\V1\Admin\PromotionRecommendationController;
+use App\Http\Controllers\Api\V1\MyPerformanceReviewController;
 use App\Http\Controllers\Api\V1\Admin\PayrollStaffController;
 use App\Http\Controllers\Api\V1\Admin\StaffLoanController;
 use App\Http\Controllers\Api\V1\Admin\SalaryStructureController;
@@ -407,6 +414,33 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('payslips', [PayrollRunController::class, 'payslips'])->name('payslips.index');
         Route::get('payslips/{payslip}', [PayrollRunController::class, 'payslip'])->name('payslips.show');
         Route::put('payslips/{payslip}/adjustment', [PayrollRunController::class, 'adjust'])->name('payslips.adjust');
+
+        // HRM > Performance Management — set-up.
+        Route::get('performance-settings', [PerformanceCycleController::class, 'settings'])->name('performance-settings.show');
+        Route::put('performance-settings', [PerformanceCycleController::class, 'updateSettings'])->name('performance-settings.update');
+        Route::apiResource('performance-cycles', PerformanceCycleController::class)->except(['show']);
+        Route::apiResource('kpis', KpiController::class)->except(['show']);
+        Route::apiResource('evaluation-forms', EvaluationFormController::class);
+        Route::apiResource('performance-goals', PerformanceGoalController::class)->except(['show']);
+
+        // HRM > Performance Management — reviews and scores.
+        Route::get('performance-cycles/{performance_cycle}/candidates', [PerformanceReviewController::class, 'candidates'])->name('performance-cycles.candidates');
+        Route::post('performance-cycles/{performance_cycle}/launch', [PerformanceReviewController::class, 'launch'])->name('performance-cycles.launch');
+        Route::get('performance-scores', [PerformanceReviewController::class, 'scores'])->name('performance-scores');
+        Route::apiResource('performance-reviews', PerformanceReviewController::class)->only(['index', 'show', 'update', 'destroy']);
+        Route::put('performance-reviews/{performance_review}/kpis', [PerformanceReviewController::class, 'replaceKpis'])->name('performance-reviews.kpis');
+        Route::post('performance-reviews/{performance_review}/send-to-manager', [PerformanceReviewController::class, 'sendToManager'])->name('performance-reviews.send-to-manager');
+        Route::post('performance-reviews/{performance_review}/reopen', [PerformanceReviewController::class, 'reopen'])->name('performance-reviews.reopen');
+
+        // HRM > Performance Management — promotion recommendations.
+        Route::get('promotion-recommendations/options', [PromotionRecommendationController::class, 'options'])->name('promotion-recommendations.options');
+        Route::get('promotion-recommendations/suggestions', [PromotionRecommendationController::class, 'suggestions'])->name('promotion-recommendations.suggestions');
+        Route::get('promotion-recommendations/current/{staff}', [PromotionRecommendationController::class, 'current'])->name('promotion-recommendations.current');
+        Route::get('promotion-recommendations', [PromotionRecommendationController::class, 'index'])->name('promotion-recommendations.index');
+        Route::post('promotion-recommendations', [PromotionRecommendationController::class, 'store'])->name('promotion-recommendations.store');
+        Route::post('promotion-recommendations/{promotion_recommendation}/approve', [PromotionRecommendationController::class, 'approve'])->name('promotion-recommendations.approve');
+        Route::post('promotion-recommendations/{promotion_recommendation}/reject', [PromotionRecommendationController::class, 'reject'])->name('promotion-recommendations.reject');
+        Route::post('promotion-recommendations/{promotion_recommendation}/cancel', [PromotionRecommendationController::class, 'cancel'])->name('promotion-recommendations.cancel');
 
         // HRM > Attendance & Time — staff attendance set-up.
         Route::apiResource('shifts', ShiftController::class);
@@ -807,6 +841,16 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         // A staff member's own check-in / check-out — identity-gated, see
         // MyStaffAttendanceController (not the students' my-attendance above).
         Route::get('my-staff-attendance/today', [MyStaffAttendanceController::class, 'today'])->name('my-staff-attendance.today');
+
+        // Staff self-service — identity-gated, see MyPerformanceReviewController.
+        Route::get('my-performance-reviews', [MyPerformanceReviewController::class, 'mine'])->name('my-performance-reviews.index');
+        Route::get('my-performance-reviews/{review}', [MyPerformanceReviewController::class, 'showMine'])->whereNumber('review')->name('my-performance-reviews.show');
+        Route::put('my-performance-reviews/{review}', [MyPerformanceReviewController::class, 'saveMine'])->whereNumber('review')->name('my-performance-reviews.save');
+        Route::post('my-performance-reviews/{review}/submit', [MyPerformanceReviewController::class, 'submitMine'])->whereNumber('review')->name('my-performance-reviews.submit');
+        Route::get('team-performance-reviews', [MyPerformanceReviewController::class, 'team'])->name('team-performance-reviews.index');
+        Route::get('team-performance-reviews/{review}', [MyPerformanceReviewController::class, 'showTeam'])->whereNumber('review')->name('team-performance-reviews.show');
+        Route::put('team-performance-reviews/{review}', [MyPerformanceReviewController::class, 'saveTeam'])->whereNumber('review')->name('team-performance-reviews.save');
+        Route::post('team-performance-reviews/{review}/submit', [MyPerformanceReviewController::class, 'submitTeam'])->whereNumber('review')->name('team-performance-reviews.submit');
         Route::get('my-staff-attendance', [MyStaffAttendanceController::class, 'index'])->name('my-staff-attendance.index');
         Route::post('my-staff-attendance/check-in', [MyStaffAttendanceController::class, 'checkIn'])->name('my-staff-attendance.check-in');
         Route::post('my-staff-attendance/check-out', [MyStaffAttendanceController::class, 'checkOut'])->name('my-staff-attendance.check-out');

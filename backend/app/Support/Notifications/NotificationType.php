@@ -52,6 +52,20 @@ final class NotificationType
 
     public const PAYROLL_RUN_REJECTED = 'payroll_run_rejected';
 
+    public const PERFORMANCE_SELF_ASSESSMENT_OPEN = 'performance_self_assessment_open';
+
+    public const PERFORMANCE_MANAGER_ASSESSMENT_DUE = 'performance_manager_assessment_due';
+
+    public const PERFORMANCE_REVIEW_COMPLETED = 'performance_review_completed';
+
+    public const PROMOTION_SUBMITTED = 'promotion_submitted';
+
+    public const PROMOTION_APPROVED = 'promotion_approved';
+
+    public const PROMOTION_REJECTED = 'promotion_rejected';
+
+    public const PROMOTION_APPLIED = 'promotion_applied';
+
     public const STUDENT_REGISTRATION_SUBMITTED = 'student_registration_submitted';
 
     public const MANPOWER_REQUEST_SUBMITTED = 'manpower_request_submitted';

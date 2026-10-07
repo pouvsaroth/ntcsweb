@@ -5,6 +5,7 @@ import { canOpenOrganizationTab, organizationTabs } from '@/router/organizationT
 import { attendanceTabs } from '@/router/attendanceTabs'
 import { leaveTabs } from '@/router/leaveTabs'
 import { payrollTabs } from '@/router/payrollTabs'
+import { performanceTabs } from '@/router/performanceTabs'
 import { recruitmentTabs } from '@/router/recruitmentTabs'
 import { useAuthStore } from '@/stores/auth'
 
@@ -569,6 +570,30 @@ const adminRoutes: RouteRecordRaw[] = [
       { path: 'history', name: 'admin.payroll.history', component: () => import('@/pages/admin/payroll/PayrollHistory.vue') },
       // One payroll — opened from Payroll calculation, approval or history.
       { path: 'runs/:id', name: 'admin.payroll.run', component: () => import('@/pages/admin/payroll/PayrollRunDetail.vue') },
+    ],
+  },
+  {
+    // HRM > Performance Management: tabs as child routes (see PerformanceLayout.vue / performanceTabs.ts).
+    path: 'performance',
+    component: () => import('@/pages/admin/performance/PerformanceLayout.vue'),
+    meta: { titleKey: 'adminNav.items.performance' },
+    children: [
+      {
+        path: '',
+        name: 'admin.performance',
+        redirect: () => {
+          const auth = useAuthStore()
+          return (performanceTabs.find((tab) => auth.can(tab.permission)) ?? performanceTabs[0]!).to
+        },
+      },
+      { path: 'kpis', name: 'admin.performance.kpis', component: () => import('@/pages/admin/performance/Kpis.vue') },
+      { path: 'goals', name: 'admin.performance.goals', component: () => import('@/pages/admin/performance/PerformanceGoals.vue') },
+      { path: 'reviews', name: 'admin.performance.reviews', component: () => import('@/pages/admin/performance/PerformanceReview.vue') },
+      { path: 'forms', name: 'admin.performance.forms', component: () => import('@/pages/admin/performance/EvaluationForms.vue') },
+      { path: 'self-assessment', name: 'admin.performance.self-assessment', component: () => import('@/pages/admin/performance/AssessmentPage.vue'), props: { side: 'self' } },
+      { path: 'manager-assessment', name: 'admin.performance.manager-assessment', component: () => import('@/pages/admin/performance/AssessmentPage.vue'), props: { side: 'manager' } },
+      { path: 'scores', name: 'admin.performance.scores', component: () => import('@/pages/admin/performance/PerformanceScores.vue') },
+      { path: 'promotions', name: 'admin.performance.promotions', component: () => import('@/pages/admin/performance/PromotionRecommendations.vue') },
     ],
   },
   {

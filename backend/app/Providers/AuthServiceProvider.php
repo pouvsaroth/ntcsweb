@@ -44,6 +44,13 @@ use App\Models\LeavePolicy;
 use App\Models\LeaveType;
 use App\Models\PayrollComponent;
 use App\Models\PayrollRun;
+use App\Models\EvaluationForm;
+use App\Models\Kpi;
+use App\Models\PerformanceCycle;
+use App\Models\PerformanceGoal;
+use App\Models\PerformanceReview;
+use App\Models\PromotionRecommendation;
+use App\Models\PerformanceSetting;
 use App\Models\PayrollSetting;
 use App\Models\SocialSecurityScheme;
 use App\Models\StaffLoan;
@@ -117,6 +124,8 @@ use App\Policies\StaffAttendancePolicy;
 use App\Policies\LeaveManagementPolicy;
 use App\Policies\PayrollPolicy;
 use App\Policies\PayrollRunPolicy;
+use App\Policies\PerformancePolicy;
+use App\Policies\PromotionRecommendationPolicy;
 use App\Policies\EnrollmentPolicy;
 use App\Policies\ExamApplicationPolicy;
 use App\Policies\ExamScorePolicy;
@@ -235,6 +244,13 @@ class AuthServiceProvider extends ServiceProvider
         SocialSecurityScheme::class => PayrollPolicy::class,
         StaffLoan::class => PayrollPolicy::class,
         PayrollRun::class => PayrollRunPolicy::class,
+        PerformanceSetting::class => PerformancePolicy::class,
+        PerformanceCycle::class => PerformancePolicy::class,
+        Kpi::class => PerformancePolicy::class,
+        EvaluationForm::class => PerformancePolicy::class,
+        PerformanceGoal::class => PerformancePolicy::class,
+        PerformanceReview::class => PerformancePolicy::class,
+        PromotionRecommendation::class => PromotionRecommendationPolicy::class,
         Supplier::class => SupplierPolicy::class,
         RepairShop::class => RepairShopPolicy::class,
         AssetIssue::class => AssetIssuePolicy::class,

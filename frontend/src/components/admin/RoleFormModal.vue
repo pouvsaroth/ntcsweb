@@ -158,6 +158,7 @@ const MODULES: ModuleEntry[] = [
   { name: 'Leave management (types, policies, balances)', group: 'Staff', actions: { view: 'leave-management.view', manage: 'leave-management.manage' } },
   { name: 'Payroll set-up and rules (salaries, allowances, bonuses, deductions, overtime, tax, NSSF, loans)', group: 'Staff', actions: { view: 'payroll.view', manage: 'payroll.manage' } },
   { name: 'Payroll runs (work out, send for approval and pay; approve)', group: 'Staff', actions: { create: 'payroll.run', approve: 'payroll.approve' } },
+  { name: 'Performance (KPIs, goals, evaluation forms, reviews, promotion recommendations)', group: 'Staff', actions: { view: 'performance.view', manage: 'performance.manage', approve: 'performance.approve-promotion' } },
   // HRM > Organization Management's Branch/Department/Team/Job grade/Job level tabs share one set.
   {
     name: 'Organization (branches, departments, teams, job grades, job levels)',

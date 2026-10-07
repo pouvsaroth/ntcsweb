@@ -343,6 +343,15 @@ final class Permissions
 
     public const PAYROLL_MANAGE = 'payroll.manage';
 
+    // HRM > Performance Management: view reads KPIs, goals, evaluation
+    // forms, review cycles and scores; manage sets them up.
+    public const PERFORMANCE_VIEW = 'performance.view';
+
+    public const PERFORMANCE_MANAGE = 'performance.manage';
+
+    // Approving or rejecting a promotion recommendation (when there's no Approval Flow for it).
+    public const PERFORMANCE_APPROVE_PROMOTION = 'performance.approve-promotion';
+
     // Working out a payroll, sending it for approval and paying it.
     public const PAYROLL_RUN = 'payroll.run';
 
@@ -886,6 +895,11 @@ final class Permissions
                 self::PAYROLL_RUN => 'Work out a payroll, send it for approval, and pay it',
                 self::PAYROLL_APPROVE => 'Approve or reject a payroll',
             ],
+            'Performance' => [
+                self::PERFORMANCE_VIEW => 'View KPIs, goals, evaluation forms, review cycles and performance scores',
+                self::PERFORMANCE_MANAGE => 'Manage KPIs, goals, evaluation forms, review cycles and score weights, and recommend promotions',
+                self::PERFORMANCE_APPROVE_PROMOTION => 'Approve or reject a promotion recommendation',
+            ],
             'Staff' => [
                 self::STAFF_VIEW => 'View staff',
                 self::STAFF_CREATE => 'Create staff',
@@ -1215,6 +1229,9 @@ final class Permissions
                 self::PAYROLL_MANAGE,
                 self::PAYROLL_RUN,
                 self::PAYROLL_APPROVE,
+                self::PERFORMANCE_VIEW,
+                self::PERFORMANCE_MANAGE,
+                self::PERFORMANCE_APPROVE_PROMOTION,
                 self::MAKE_UP_CLASS_REQUESTS_VIEW,
                 self::MAKE_UP_CLASS_REQUESTS_APPROVE,
                 self::MAKE_UP_CLASS_REQUESTS_REJECT,
