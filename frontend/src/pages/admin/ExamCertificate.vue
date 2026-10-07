@@ -2,7 +2,6 @@
 import { computed, onMounted, ref, shallowReactive, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import ExaminationTabs from '@/components/admin/ExaminationTabs.vue'
 import PhotoReceivedModal from '@/components/admin/PhotoReceivedModal.vue'
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
@@ -233,8 +232,6 @@ onMounted(async () => {
 
 <template>
   <div>
-    <ExaminationTabs />
-
     <div class="mb-6 flex flex-wrap items-start justify-between gap-4">
       <div>
         <h1 class="text-xl font-semibold text-neutral-900">{{ t('admin.examCertificate.title') }}</h1>

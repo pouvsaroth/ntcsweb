@@ -3,7 +3,6 @@ import { computed, onBeforeUnmount, onMounted, ref, shallowReactive, watch } fro
 import { useI18n } from 'vue-i18n'
 
 import ExamApplicationFormModal from '@/components/admin/ExamApplicationFormModal.vue'
-import ExaminationTabs from '@/components/admin/ExaminationTabs.vue'
 import ActionIconButton from '@/components/ui/ActionIconButton.vue'
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
@@ -102,10 +101,10 @@ const columns = [
   { key: 'book', label: t('admin.exams.columnBook') },
   { key: 'exam_date', label: t('admin.exams.columnExamDate') },
   { key: 'time_exam', label: t('admin.exams.columnTimeExam') },
+  { key: 'table_no', label: t('admin.exams.columnTableNumber') },
   { key: 'birth_date', label: t('admin.exams.columnBirthDate') },
   { key: 'address', label: t('admin.exams.columnAddress') },
   { key: 'room_number', label: t('admin.exams.columnRoomNumber') },
-  { key: 'table_no', label: t('admin.exams.columnTableNumber') },
 ]
 
 function statusLabel(status: ExamApplicationStatus): string {
@@ -169,6 +168,7 @@ async function exportImage() {
         { label: t('admin.exams.columnBook'), width: 160, maxWidth: 280 },
         { label: t('admin.exams.columnExamDate'), width: 120 },
         { label: t('admin.exams.columnTimeExam'), width: 130 },
+        { label: t('admin.exams.columnTableNumber'), width: 110 },
       ],
       rows: rows.map((row) => [
         { text: statusLabel(row.status), badge: imageTone(row.status) },
@@ -178,6 +178,7 @@ async function exportImage() {
         { text: row.book?.title ?? row.enrollment.course_package?.name ?? '—' },
         { text: fmtDate(row.exam_date) },
         { text: timeRange(row) },
+        { text: row.table?.name ?? row.table_no ?? '—' },
       ]),
       emptyText: t('admin.exams.emptyMessage'),
       fileName: `exams-${new Date().toISOString().slice(0, 10)}.png`,
@@ -270,13 +271,6 @@ function openApplicationForm(enrollmentCode: string | null = null) {
 
 <template>
   <div>
-    <ExaminationTabs />
-
-    <div class="mb-6">
-      <h1 class="text-xl font-semibold text-neutral-900">{{ t('admin.exams.title') }}</h1>
-      <p class="mt-1 text-sm text-neutral-500">{{ t('admin.exams.subtitle') }}</p>
-    </div>
-
     <div class="mb-4 flex flex-wrap items-center gap-2">
       <BaseButton v-if="canCreate" @click="openApplicationForm()">{{ t('admin.exams.applicationForm') }}</BaseButton>
       <BaseButton variant="outline" @click="printList">{{ t('admin.exams.printList') }}</BaseButton>

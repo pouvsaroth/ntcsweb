@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 
+import ExaminationTabs from '@/components/admin/ExaminationTabs.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import LanguageSwitcher from '@/components/ui/LanguageSwitcher.vue'
 import NotificationBell from '@/components/layout/NotificationBell.vue'
@@ -20,6 +21,9 @@ const websiteUrl = computed(() => (auth.tenantHostname ? `https://${auth.tenantH
 
 /** The current section's name (e.g. "Students", "Books") — same key each page's sidebar link and <h1> already use, so this always matches whatever menu you're on. */
 const pageTitle = computed(() => (route.meta.titleKey ? t(String(route.meta.titleKey)) : null))
+
+/** A page whose route sets `headerTabs` shows its section's tab bar here in place of the title (e.g. Exams / Grades / Make-up Exam / Certificate). */
+const headerTabs = computed(() => route.meta.headerTabs ?? null)
 
 /** A sub-page (e.g. "Register Student") sets this to render "Students › Register Student" here instead of duplicating "Students" again in its own page body. */
 const subPageTitle = computed(() => (route.meta.pageTitleKey ? t(String(route.meta.pageTitleKey)) : null))
@@ -40,7 +44,7 @@ const sectionLink = computed(() => {
 
 <template>
   <header class="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-neutral-200 bg-white px-4 sm:px-6">
-    <div class="flex items-center gap-3">
+    <div class="flex min-w-0 items-center gap-3">
       <button
         type="button"
         class="rounded-lg p-2 text-neutral-600 hover:bg-neutral-100 lg:hidden"
@@ -51,7 +55,8 @@ const sectionLink = computed(() => {
           <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
         </svg>
       </button>
-      <p v-if="pageTitle" class="hidden items-center gap-2 text-sm font-medium text-neutral-500 sm:flex">
+      <ExaminationTabs v-if="headerTabs === 'examination'" />
+      <p v-else-if="pageTitle" class="hidden items-center gap-2 text-sm font-medium text-neutral-500 sm:flex">
         <template v-if="subPageTitle">
           <RouterLink v-if="sectionLink" :to="sectionLink" class="hover:text-primary-700">{{ pageTitle }}</RouterLink>
           <span v-else>{{ pageTitle }}</span>
@@ -62,7 +67,7 @@ const sectionLink = computed(() => {
       </p>
     </div>
 
-    <div class="flex items-center gap-2">
+    <div class="flex shrink-0 items-center gap-2">
       <!-- Same tab, not target="_blank" — on mobile Chrome/Safari, a
            target="_blank" link here reliably opened a new tab that then
            immediately went blank/closed, while typing the same URL directly

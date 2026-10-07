@@ -9,7 +9,9 @@ import { useAuthStore } from '@/stores/auth'
  * Shared tab bar across the "Examination" pages — Exams and Grades used to
  * be separate sidebar entries under Academic Records; they're now reached
  * through one "Examination" item, with this tab bar as the switcher between
- * them. Mirrors StudyBuildingTabs.vue / ProgramsTabs.vue.
+ * them. Rendered in the top header (AdminHeader.vue, via the routes'
+ * `headerTabs` meta) in place of the section title, rather than in each
+ * page body.
  */
 const { t } = useI18n()
 const route = useRoute()
@@ -40,21 +42,19 @@ const tabs = computed(() => allTabs.value.filter((tab) => tab.visible))
 </script>
 
 <template>
-  <div class="mb-6 border-b border-neutral-200">
-    <nav class="-mb-px flex flex-wrap gap-x-6 gap-y-1">
-      <RouterLink
-        v-for="tab in tabs"
-        :key="tab.to"
-        :to="tab.to"
-        class="whitespace-nowrap border-b-2 px-1 py-3 text-sm font-medium"
-        :class="
-          route.path === tab.to
-            ? 'border-primary-600 text-primary-700'
-            : 'border-transparent text-neutral-500 hover:border-neutral-300 hover:text-neutral-700'
-        "
-      >
-        {{ t(tab.labelKey) }}
-      </RouterLink>
-    </nav>
-  </div>
+  <nav class="-mb-px flex h-16 min-w-0 gap-x-6 overflow-x-auto">
+    <RouterLink
+      v-for="tab in tabs"
+      :key="tab.to"
+      :to="tab.to"
+      class="flex items-center whitespace-nowrap border-b-2 px-1 text-sm font-medium"
+      :class="
+        route.path === tab.to
+          ? 'border-primary-600 text-primary-700'
+          : 'border-transparent text-neutral-500 hover:border-neutral-300 hover:text-neutral-700'
+      "
+    >
+      {{ t(tab.labelKey) }}
+    </RouterLink>
+  </nav>
 </template>

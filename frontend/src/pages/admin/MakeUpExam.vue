@@ -3,7 +3,6 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ExamApplicationFormModal from '@/components/admin/ExamApplicationFormModal.vue'
-import ExaminationTabs from '@/components/admin/ExaminationTabs.vue'
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BasePagination from '@/components/ui/BasePagination.vue'
@@ -85,8 +84,6 @@ function openEdit(application: ExamApplication) {
 
 <template>
   <div>
-    <ExaminationTabs />
-
     <div class="mb-6">
       <h1 class="text-xl font-semibold text-neutral-900">{{ t('admin.makeUpExam.title') }}</h1>
       <p class="mt-1 text-sm text-neutral-500">{{ t('admin.makeUpExam.subtitle') }}</p>

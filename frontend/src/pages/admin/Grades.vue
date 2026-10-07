@@ -3,7 +3,6 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import AddExamScoreModal from '@/components/admin/AddExamScoreModal.vue'
-import ExaminationTabs from '@/components/admin/ExaminationTabs.vue'
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
@@ -185,8 +184,6 @@ onMounted(async () => {
 
 <template>
   <div>
-    <ExaminationTabs />
-
     <div class="mb-6 flex flex-wrap items-start justify-between gap-3">
       <div>
         <h1 class="text-xl font-semibold text-neutral-900">{{ t('admin.grades.title') }}</h1>
