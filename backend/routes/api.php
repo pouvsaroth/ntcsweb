@@ -703,6 +703,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('my-attendance', [MyAttendanceController::class, 'index'])->name('my-attendance.index');
 
         // Student self-service — identity-gated, same pattern as my-attendance.
+        Route::get('my-leave-requests/enrollments', [MyLeaveRequestController::class, 'enrollments'])->name('my-leave-requests.enrollments');
         Route::get('my-leave-requests/types', [MyLeaveRequestController::class, 'types'])->name('my-leave-requests.types');
         Route::get('my-leave-requests/quote', [MyLeaveRequestController::class, 'quote'])->name('my-leave-requests.quote');
         Route::get('my-leave-requests', [MyLeaveRequestController::class, 'index'])->name('my-leave-requests.index');

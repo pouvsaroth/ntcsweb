@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Approvals;
 
 use App\Models\ApprovalGroup;
+use App\Models\Enrollment;
 use App\Models\LeaveRequest;
 use App\Models\MakeUpClassRequest;
 use App\Models\Permission;
@@ -227,10 +228,12 @@ class ApprovalFlowTest extends TestCase
     {
         $this->setStudentLeaveFlow([$this->group1->id, $this->group2->id]);
         $studentUser = User::factory()->forTenant($this->tenant)->create();
-        Student::factory()->create(['user_id' => $studentUser->id]);
+        $student = Student::factory()->create(['user_id' => $studentUser->id]);
+        $enrollment = Enrollment::factory()->forStudent($student)->create();
 
         $this->actingAsTenantUser($studentUser);
         $this->postJson('/api/v1/my-leave-requests', [
+            'enrollment_id' => $enrollment->id,
             'from_date' => now()->addDay()->toDateString(),
             'to_date' => now()->addDay()->toDateString(),
             'reason' => 'Family event',

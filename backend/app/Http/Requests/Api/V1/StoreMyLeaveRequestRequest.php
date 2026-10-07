@@ -25,9 +25,13 @@ class StoreMyLeaveRequestRequest extends FormRequest
     {
         // Leave type and day part are a staff member's (HRM > Leave
         // Management); a student's request never has them.
-        $student = $this->user()?->student !== null;
+        $student = $this->user()?->student;
+        // A student picks which of their own active courses it's for.
+        $enrollmentIds = $student?->enrollments()->active()->pluck('id') ?? collect();
+        $student = $student !== null;
 
         return [
+            'enrollment_id' => $student ? ['required', 'integer', Rule::in($enrollmentIds)] : ['prohibited'],
             'leave_type_id' => $student ? ['prohibited'] : ['nullable', 'integer'],
             'day_part' => $student ? ['prohibited'] : ['nullable', Rule::in(LeaveRequest::DAY_PARTS)],
             'from_date' => ['required', 'date'],

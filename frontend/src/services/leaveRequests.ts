@@ -32,6 +32,10 @@ export interface LeaveRequest {
   id: number
   student?: LeaveRequestStudent | null
   staff?: LeaveRequestStaff | null
+  /** Student requests only — the course it's for (null on older ones). */
+  enrollment_id?: number | null
+  course_package?: { id: number; name: string } | null
+  school_class?: { id: number; name: string } | null
   /** Staff requests only (HRM > Leave Management); null on a student's and on older staff ones. */
   leave_type?: { id: number; code: string; name: string; color: string | null } | null
   day_part: LeaveDayPart | null
@@ -52,7 +56,18 @@ export interface LeaveRequest {
   created_at: string
 }
 
+/** One of a student's active courses for the leave form, with its class's weekly study times. */
+export interface MyLeaveEnrollment {
+  id: number
+  course_package: { id: number; name: string } | null
+  school_class: { id: number; name: string } | null
+  /** ISO weekday (1 = Monday … 7 = Sunday), times as HH:MM. */
+  schedules: { day_of_week: number; start_time: string; end_time: string }[]
+}
+
 export interface LeaveRequestInput {
+  /** Student only — which of their courses. */
+  enrollment_id?: number | null
   /** Staff only. */
   leave_type_id?: number | null
   /** Staff only. */
@@ -67,6 +82,7 @@ export interface LeaveRequestInput {
 
 function toFormData(input: LeaveRequestInput): FormData {
   const form = new FormData()
+  if (input.enrollment_id) form.append('enrollment_id', String(input.enrollment_id))
   if (input.leave_type_id) form.append('leave_type_id', String(input.leave_type_id))
   if (input.day_part) form.append('day_part', input.day_part)
   form.append('from_date', input.from_date)
@@ -91,6 +107,9 @@ export const myLeaveRequestsService = {
 
   /** Withdraw one of my own requests while it is still pending. */
   remove: (id: number) => apiDelete(`/my-leave-requests/${id}`),
+
+  /** A student's active courses, newest first — empty for a staff member. */
+  enrollments: () => apiGetWithMeta<MyLeaveEnrollment[]>('/my-leave-requests/enrollments').then((r) => r.data),
 
   /** A staff member's leave types with this year's balance — empty for a student, or before any types are set up. */
   types: (year?: number) => apiGetWithMeta<MyLeaveType[]>('/my-leave-requests/types', { params: year ? { year } : {} }).then((r) => r.data),

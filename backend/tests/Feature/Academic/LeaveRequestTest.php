@@ -44,9 +44,11 @@ class LeaveRequestTest extends TestCase
         Storage::fake('public');
         $this->actingAsAdminWithPermissions([]);
         [$student, $user] = $this->studentWithUser();
+        $enrollment = Enrollment::factory()->forStudent($student)->create();
         $this->actingAsTenantUser($user);
 
         $response = $this->post('/api/v1/my-leave-requests', [
+            'enrollment_id' => $enrollment->id,
             'from_date' => now()->addDay()->toDateString(),
             'to_date' => now()->addDays(2)->toDateString(),
             'reason' => 'Family event out of town',
@@ -56,6 +58,7 @@ class LeaveRequestTest extends TestCase
         $response->assertCreated();
         $response->assertJsonPath('data.status', LeaveRequest::STATUS_PENDING);
         $response->assertJsonCount(1, 'data.attachments');
+        $response->assertJsonPath('data.enrollment_id', $enrollment->id);
         $this->assertSame(1, LeaveRequest::where('student_id', $student->id)->count());
     }
 
@@ -223,7 +226,8 @@ class LeaveRequestTest extends TestCase
     public function test_submitting_a_leave_request_notifies_every_holder_of_the_approve_permission(): void
     {
         $this->actingAsAdminWithPermissions([]);
-        [, $studentUser] = $this->studentWithUser();
+        [$student, $studentUser] = $this->studentWithUser();
+        $enrollment = Enrollment::factory()->forStudent($student)->create();
 
         $approverRole = Role::factory()->forTenant($this->tenant)->create(['slug' => 'test-approver', 'level' => 50]);
         $approverRole->permissions()->attach(Permission::query()->where('slug', Permissions::LEAVE_REQUESTS_APPROVE)->firstOrFail());
@@ -235,6 +239,7 @@ class LeaveRequestTest extends TestCase
 
         $this->actingAsTenantUser($studentUser);
         $this->postJson('/api/v1/my-leave-requests', [
+            'enrollment_id' => $enrollment->id,
             'from_date' => now()->addDay()->toDateString(),
             'to_date' => now()->addDay()->toDateString(),
             'reason' => 'Family event',
@@ -290,5 +295,67 @@ class LeaveRequestTest extends TestCase
         $notification = UserNotification::where('type', NotificationType::LEAVE_REQUEST_REJECTED)->sole();
         $this->assertSame($studentUser->id, $notification->recipient_id);
         $this->assertSame('No reason given', $notification->data['reason']);
+    }
+
+    public function test_a_student_must_pick_one_of_their_own_active_courses(): void
+    {
+        $this->actingAsAdminWithPermissions([]);
+        [, $user] = $this->studentWithUser();
+        $someoneElses = Enrollment::factory()->create();
+        $this->actingAsTenantUser($user);
+
+        $payload = ['from_date' => now()->addDay()->toDateString(), 'to_date' => now()->addDay()->toDateString(), 'reason' => 'Sick'];
+
+        $this->postJson('/api/v1/my-leave-requests', $payload)
+            ->assertUnprocessable()->assertJsonValidationErrors(['enrollment_id']);
+        $this->postJson('/api/v1/my-leave-requests', [...$payload, 'enrollment_id' => $someoneElses->id])
+            ->assertUnprocessable()->assertJsonValidationErrors(['enrollment_id']);
+    }
+
+    public function test_the_enrollments_endpoint_lists_active_courses_newest_first_with_class_times(): void
+    {
+        $this->actingAsAdminWithPermissions([]);
+        [$student, $user] = $this->studentWithUser();
+        $class = SchoolClass::factory()->create();
+        ClassSchedule::factory()->create(['class_id' => $class->id, 'day_of_week' => 3, 'start_time' => '14:00', 'end_time' => '16:00']);
+        ClassSchedule::factory()->create(['class_id' => $class->id, 'day_of_week' => 1, 'start_time' => '08:00', 'end_time' => '10:00']);
+        $older = Enrollment::factory()->forStudent($student)->create(['enrolled_at' => now()->subMonth()]);
+        $newer = Enrollment::factory()->forStudent($student)->create(['class_id' => $class->id, 'enrolled_at' => now()]);
+        $this->actingAsTenantUser($user);
+
+        $response = $this->getJson('/api/v1/my-leave-requests/enrollments')->assertOk();
+
+        $response->assertJsonPath('data.0.id', $newer->id);
+        $response->assertJsonPath('data.1.id', $older->id);
+        $response->assertJsonPath('data.0.schedules', [
+            ['day_of_week' => 1, 'start_time' => '08:00', 'end_time' => '10:00'],
+            ['day_of_week' => 3, 'start_time' => '14:00', 'end_time' => '16:00'],
+        ]);
+    }
+
+    public function test_approving_excuses_only_the_requested_course(): void
+    {
+        $admin = $this->actingAsAdminWithPermissions([Permissions::LEAVE_REQUESTS_APPROVE]);
+        [$student] = $this->studentWithUser();
+        $monday = Carbon::parse('next monday')->toDateString();
+
+        $enrollments = collect([0, 1])->map(function () use ($student) {
+            $class = SchoolClass::factory()->create();
+            ClassSchedule::factory()->create(['class_id' => $class->id, 'day_of_week' => 1, 'start_time' => '08:00', 'end_time' => '10:00']);
+
+            return Enrollment::factory()->forStudent($student)->create(['class_id' => $class->id]);
+        });
+
+        $leave = LeaveRequest::factory()->forStudent($student)->create([
+            'enrollment_id' => $enrollments[0]->id,
+            'from_date' => $monday,
+            'to_date' => $monday,
+        ]);
+
+        $this->actingAsTenantUser($admin);
+        $this->postJson("/api/v1/leave-requests/{$leave->id}/approve")->assertOk();
+
+        $this->assertSame(1, AttendanceRecord::where('enrollment_id', $enrollments[0]->id)->where('status', AttendanceStatus::EXCUSED)->count());
+        $this->assertSame(0, AttendanceRecord::where('enrollment_id', $enrollments[1]->id)->count());
     }
 }

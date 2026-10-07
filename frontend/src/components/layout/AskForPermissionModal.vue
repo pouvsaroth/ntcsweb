@@ -8,7 +8,9 @@ import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
 import { formatDays } from '@/services/leaveManagement'
-import { myLeaveRequestsService, type LeaveDayPart, type MyLeaveType } from '@/services/leaveRequests'
+import { myLeaveRequestsService, type LeaveDayPart, type MyLeaveEnrollment, type MyLeaveType } from '@/services/leaveRequests'
+import { makeUpClassCourseLabel } from '@/services/makeUpClassRequests'
+import { useAuthStore } from '@/stores/auth'
 import { ApiRequestError } from '@/types/api'
 
 /**
@@ -25,13 +27,44 @@ import { ApiRequestError } from '@/types/api'
  * the leave type — seeing what's left of it this year — and, for one date, a
  * full day or a morning/afternoon half; the working days it takes are shown
  * as they pick. A student's form never has these (their type list is empty).
+ *
+ * A student instead picks the course it's for — their newest active course
+ * is pre-selected, both dates default to today, and the time in/out come
+ * from that course's class schedule for the From date (still editable).
  */
 const props = defineProps<{ modelValue: boolean }>()
 const emit = defineEmits<{ 'update:modelValue': [value: boolean] }>()
 
 const { t } = useI18n()
 
-const form = reactive({ leave_type_id: '', day_part: 'full' as LeaveDayPart, from_date: '', to_date: '', from_time: '', to_time: '', reason: '' })
+const auth = useAuthStore()
+const isStudent = computed(() => auth.hasRole('student'))
+
+const form = reactive({ enrollment_id: '', leave_type_id: '', day_part: 'full' as LeaveDayPart, from_date: '', to_date: '', from_time: '', to_time: '', reason: '' })
+
+// --- Student: course, and the class's times for the From date -----------------------
+const enrollments = ref<MyLeaveEnrollment[]>([])
+const enrollmentsLoading = ref(false)
+const courseOptions = computed(() => enrollments.value.map((e) => ({ value: String(e.id), label: makeUpClassCourseLabel(e) })))
+
+function today(): string {
+  const now = new Date()
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+}
+
+/** That class's session on the From date's weekday, else its first one of the week. */
+function fillClassTimes() {
+  const schedules = enrollments.value.find((e) => String(e.id) === form.enrollment_id)?.schedules ?? []
+  if (schedules.length === 0) return
+  const weekday = form.from_date ? ((new Date(`${form.from_date}T00:00:00`).getDay() + 6) % 7) + 1 : null
+  const session = schedules.find((s) => s.day_of_week === weekday) ?? schedules[0]
+  form.from_time = session.start_time
+  form.to_time = session.end_time
+}
+
+watch(() => [form.enrollment_id, form.from_date], () => {
+  if (isStudent.value) fillClassTimes()
+})
 
 // --- Staff: leave type, half days, days taken -------------------------------------
 
@@ -86,6 +119,7 @@ watch(
   (open) => {
     if (!open) return
 
+    form.enrollment_id = ''
     form.leave_type_id = ''
     form.day_part = 'full'
     form.from_date = ''
@@ -98,6 +132,21 @@ watch(
     generalError.value = null
     submitted.value = false
     days.value = null
+
+    if (isStudent.value) {
+      form.from_date = today()
+      form.to_date = today()
+      enrollmentsLoading.value = true
+      myLeaveRequestsService
+        .enrollments()
+        .then((list) => {
+          enrollments.value = list
+          form.enrollment_id = list.length > 0 ? String(list[0].id) : ''
+          fillClassTimes()
+        })
+        .catch(() => (enrollments.value = []))
+        .finally(() => (enrollmentsLoading.value = false))
+    }
 
     myLeaveRequestsService
       .types()
@@ -125,6 +174,7 @@ async function submit() {
 
   try {
     await myLeaveRequestsService.submit({
+      enrollment_id: isStudent.value && form.enrollment_id ? Number(form.enrollment_id) : null,
       leave_type_id: staffMode.value && form.leave_type_id ? Number(form.leave_type_id) : null,
       day_part: staffMode.value ? form.day_part : null,
       from_date: form.from_date,
@@ -158,6 +208,16 @@ async function submit() {
 
     <form v-else class="space-y-4" @submit.prevent="submit">
       <BaseAlert v-if="generalError" variant="danger">{{ generalError }}</BaseAlert>
+
+      <BaseSelect
+        v-if="isStudent"
+        v-model="form.enrollment_id"
+        required
+        :options="courseOptions"
+        :disabled="enrollmentsLoading"
+        :label="t('makeUpClassRequest.course')"
+        :error="errors.enrollment_id?.[0]"
+      />
 
       <template v-if="staffMode">
         <BaseSelect

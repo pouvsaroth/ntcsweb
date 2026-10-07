@@ -31,6 +31,14 @@ class LeaveRequestResource extends JsonResource
                 'name' => $this->staff->fullName(),
                 'employee_code' => $this->staff->employee_code,
             ] : null),
+            // Student requests only — the course it's for.
+            'enrollment_id' => $this->enrollment_id,
+            'course_package' => $this->whenLoaded('enrollment', fn () => $this->enrollment?->coursePackage !== null
+                ? ['id' => $this->enrollment->coursePackage->id, 'name' => $this->enrollment->coursePackage->name]
+                : null),
+            'school_class' => $this->whenLoaded('enrollment', fn () => $this->enrollment?->schoolClass !== null
+                ? ['id' => $this->enrollment->schoolClass->id, 'name' => $this->enrollment->schoolClass->name]
+                : null),
             // Staff requests only (HRM > Leave Management).
             'leave_type' => $this->whenLoaded('leaveType', fn () => $this->leaveType !== null ? [
                 'id' => $this->leaveType->id,

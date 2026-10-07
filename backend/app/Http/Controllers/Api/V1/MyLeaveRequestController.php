@@ -41,7 +41,7 @@ final class MyLeaveRequestController extends Controller
         $query = LeaveRequest::query()
             ->when($student !== null, fn ($q) => $q->where('student_id', $student->id))
             ->when($staff !== null, fn ($q) => $q->where('staff_id', $staff->id))
-            ->with(['attachments', 'leaveType']);
+            ->with(['attachments', 'leaveType', 'enrollment.coursePackage', 'enrollment.schoolClass']);
 
         $requests = ApiQuery::for($query, $request)
             ->filterable(['status'])
@@ -88,6 +88,48 @@ final class MyLeaveRequestController extends Controller
         });
 
         return ApiResponse::noContent();
+    }
+
+    /**
+     * A student's active courses for the form's Course picker, newest first
+     * (the form pre-selects the first), each with its class's weekly study
+     * times so the form can fill in the time in/out for the picked date. A
+     * staff member gets an empty list.
+     */
+    public function enrollments(Request $request): JsonResponse
+    {
+        [$student] = $this->requesterOrFail($request);
+
+        if ($student === null) {
+            return ApiResponse::success([]);
+        }
+
+        $enrollments = $student->enrollments()
+            ->active()
+            ->with(['coursePackage', 'schoolClass.schedules'])
+            ->orderByDesc('enrolled_at')
+            ->orderByDesc('id')
+            ->get()
+            ->map(fn ($enrollment) => [
+                'id' => $enrollment->id,
+                'course_package' => $enrollment->coursePackage !== null
+                    ? ['id' => $enrollment->coursePackage->id, 'name' => $enrollment->coursePackage->name]
+                    : null,
+                'school_class' => $enrollment->schoolClass !== null
+                    ? ['id' => $enrollment->schoolClass->id, 'name' => $enrollment->schoolClass->name]
+                    : null,
+                'schedules' => ($enrollment->schoolClass?->schedules ?? collect())
+                    ->sortBy(['day_of_week', 'start_time'])
+                    ->map(fn ($schedule) => [
+                        'day_of_week' => (int) $schedule->day_of_week,
+                        'start_time' => substr((string) $schedule->start_time, 0, 5),
+                        'end_time' => substr((string) $schedule->end_time, 0, 5),
+                    ])
+                    ->values(),
+            ])
+            ->values();
+
+        return ApiResponse::success($enrollments);
     }
 
     /**

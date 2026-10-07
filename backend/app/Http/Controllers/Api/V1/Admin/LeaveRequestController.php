@@ -39,7 +39,7 @@ final class LeaveRequestController extends Controller
         // resolve for every row in the list, so the Approval queue's detail
         // view (which reads straight off this list, not a per-row show()
         // call) never has anything to show.
-        $query = LeaveRequest::query()->with(['student', 'staff', 'decidedBy', 'attachments', 'leaveType']);
+        $query = LeaveRequest::query()->with(['student', 'staff', 'decidedBy', 'attachments', 'leaveType', 'enrollment.coursePackage', 'enrollment.schoolClass']);
 
         // HRM > Leave Management > Leave request lists staff requests only;
         // `year` narrows it to requests starting that year.

@@ -66,6 +66,7 @@ final class LeaveRequestService
             $request = LeaveRequest::query()->create([
                 'student_id' => $student?->id,
                 'staff_id' => $staff?->id,
+                'enrollment_id' => $student !== null ? ($data['enrollment_id'] ?? null) : null,
                 ...$leave,
                 'from_date' => $data['from_date'],
                 'to_date' => $data['to_date'],
@@ -235,16 +236,19 @@ final class LeaveRequestService
     }
 
     /**
-     * Marks every date in the request's range as Excused, but only for a
-     * class actually meeting that day — a student's active enrollments each
+     * Marks every date in the request's range as Excused in the request's
+     * course, but only for a class actually meeting that day — a student's active enrollments each
      * have their own weekly schedule (ClassSchedule), and a leave request
      * covering, say, a whole week should not manufacture an attendance row
      * for a day the class never had a session on.
      */
     private function applyToAttendance(LeaveRequest $request, User $admin): void
     {
+        // Just the course it's for; a request from before the form asked
+        // for one still covers every active course.
         $enrollments = $request->student->enrollments()
             ->active()
+            ->when($request->enrollment_id !== null, fn ($query) => $query->whereKey($request->enrollment_id))
             ->with('transferHistories')
             ->get();
 

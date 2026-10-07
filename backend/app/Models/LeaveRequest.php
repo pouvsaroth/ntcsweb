@@ -30,7 +30,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int|null $staff_id
  * @property string $status
  */
-#[Fillable(['student_id', 'staff_id', 'leave_type_id', 'from_date', 'to_date', 'from_time', 'to_time', 'day_part', 'days', 'reason', 'status', 'decision_reason', 'decided_by', 'decided_at'])]
+#[Fillable(['student_id', 'staff_id', 'enrollment_id', 'leave_type_id', 'from_date', 'to_date', 'from_time', 'to_time', 'day_part', 'days', 'reason', 'status', 'decision_reason', 'decided_by', 'decided_at'])]
 class LeaveRequest extends Model
 {
     use Auditable, HasFactory, SoftDeletes;
@@ -75,6 +75,12 @@ class LeaveRequest extends Model
     public function staff(): BelongsTo
     {
         return $this->belongsTo(Staff::class);
+    }
+
+    /** The course a student's request is for — null for staff, and for requests from before it was asked. */
+    public function enrollment(): BelongsTo
+    {
+        return $this->belongsTo(Enrollment::class);
     }
 
     /** Staff requests only (HRM > Leave Management) — null on a student's. */
