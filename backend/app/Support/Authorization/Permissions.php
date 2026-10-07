@@ -336,6 +336,19 @@ final class Permissions
 
     public const LEAVE_MANAGEMENT_MANAGE = 'leave-management.manage';
 
+    // HRM > Payroll: view reads salary set-up (structures, salaries,
+    // allowances, bonuses, deductions) and rules (overtime, attendance
+    // deduction, tax, social security, loans); manage changes them.
+    public const PAYROLL_VIEW = 'payroll.view';
+
+    public const PAYROLL_MANAGE = 'payroll.manage';
+
+    // Working out a payroll, sending it for approval and paying it.
+    public const PAYROLL_RUN = 'payroll.run';
+
+    // Approving or rejecting a payroll (when there's no Approval Flow for it).
+    public const PAYROLL_APPROVE = 'payroll.approve';
+
     // Staff — non-teaching personnel (Accountant, HR, Librarian, ...).
     public const STAFF_VIEW = 'staff.view';
 
@@ -867,6 +880,12 @@ final class Permissions
                 self::LEAVE_MANAGEMENT_VIEW => 'View leave types, policies, balances and reports',
                 self::LEAVE_MANAGEMENT_MANAGE => 'Manage leave types and policies, and adjust leave balances',
             ],
+            'Payroll' => [
+                self::PAYROLL_VIEW => 'View payroll set-up and rules: salaries, allowances, bonuses, deductions, overtime, tax, social security and loans',
+                self::PAYROLL_MANAGE => 'Manage payroll set-up and rules: salaries, allowances, bonuses, deductions, overtime, tax, social security and loans',
+                self::PAYROLL_RUN => 'Work out a payroll, send it for approval, and pay it',
+                self::PAYROLL_APPROVE => 'Approve or reject a payroll',
+            ],
             'Staff' => [
                 self::STAFF_VIEW => 'View staff',
                 self::STAFF_CREATE => 'Create staff',
@@ -1192,6 +1211,10 @@ final class Permissions
                 self::STAFF_ATTENDANCE_APPROVE,
                 self::LEAVE_MANAGEMENT_VIEW,
                 self::LEAVE_MANAGEMENT_MANAGE,
+                self::PAYROLL_VIEW,
+                self::PAYROLL_MANAGE,
+                self::PAYROLL_RUN,
+                self::PAYROLL_APPROVE,
                 self::MAKE_UP_CLASS_REQUESTS_VIEW,
                 self::MAKE_UP_CLASS_REQUESTS_APPROVE,
                 self::MAKE_UP_CLASS_REQUESTS_REJECT,

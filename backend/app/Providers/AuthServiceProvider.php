@@ -42,6 +42,14 @@ use App\Models\Holiday;
 use App\Models\LeaveBalanceEntry;
 use App\Models\LeavePolicy;
 use App\Models\LeaveType;
+use App\Models\PayrollComponent;
+use App\Models\PayrollRun;
+use App\Models\PayrollSetting;
+use App\Models\SocialSecurityScheme;
+use App\Models\StaffLoan;
+use App\Models\SalaryStructure;
+use App\Models\StaffPayComponent;
+use App\Models\StaffSalary;
 use App\Models\HomeSlide;
 use App\Models\Interview;
 use App\Models\InterviewEvaluation;
@@ -107,6 +115,8 @@ use App\Policies\OvertimeRequestPolicy;
 use App\Policies\RecruitmentPolicy;
 use App\Policies\StaffAttendancePolicy;
 use App\Policies\LeaveManagementPolicy;
+use App\Policies\PayrollPolicy;
+use App\Policies\PayrollRunPolicy;
 use App\Policies\EnrollmentPolicy;
 use App\Policies\ExamApplicationPolicy;
 use App\Policies\ExamScorePolicy;
@@ -217,6 +227,14 @@ class AuthServiceProvider extends ServiceProvider
         LeaveType::class => LeaveManagementPolicy::class,
         LeavePolicy::class => LeaveManagementPolicy::class,
         LeaveBalanceEntry::class => LeaveManagementPolicy::class,
+        PayrollComponent::class => PayrollPolicy::class,
+        SalaryStructure::class => PayrollPolicy::class,
+        StaffSalary::class => PayrollPolicy::class,
+        StaffPayComponent::class => PayrollPolicy::class,
+        PayrollSetting::class => PayrollPolicy::class,
+        SocialSecurityScheme::class => PayrollPolicy::class,
+        StaffLoan::class => PayrollPolicy::class,
+        PayrollRun::class => PayrollRunPolicy::class,
         Supplier::class => SupplierPolicy::class,
         RepairShop::class => RepairShopPolicy::class,
         AssetIssue::class => AssetIssuePolicy::class,

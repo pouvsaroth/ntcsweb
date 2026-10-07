@@ -69,6 +69,14 @@ use App\Http\Controllers\Api\V1\Admin\LeavePolicyController;
 use App\Http\Controllers\Api\V1\Admin\LeaveReportController;
 use App\Http\Controllers\Api\V1\Admin\LeaveRequestController;
 use App\Http\Controllers\Api\V1\Admin\LeaveTypeController;
+use App\Http\Controllers\Api\V1\Admin\PayrollComponentController;
+use App\Http\Controllers\Api\V1\Admin\PayrollRulesController;
+use App\Http\Controllers\Api\V1\Admin\PayrollRunController;
+use App\Http\Controllers\Api\V1\Admin\PayrollStaffController;
+use App\Http\Controllers\Api\V1\Admin\StaffLoanController;
+use App\Http\Controllers\Api\V1\Admin\SalaryStructureController;
+use App\Http\Controllers\Api\V1\Admin\StaffPayComponentController;
+use App\Http\Controllers\Api\V1\Admin\StaffSalaryController;
 use App\Http\Controllers\Api\V1\Admin\LookupCategoryController;
 use App\Http\Controllers\Api\V1\Admin\LookupValueController;
 use App\Http\Controllers\Api\V1\Admin\MakeUpClassRequestController;
@@ -359,6 +367,46 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('leave-calendar', [LeaveReportController::class, 'calendar'])->name('leave-calendar');
         Route::get('leave-reports', [LeaveReportController::class, 'report'])->name('leave-reports');
         Route::get('leave-workflow', [LeaveReportController::class, 'workflow'])->name('leave-workflow');
+
+        // HRM > Payroll — salary set-up.
+        Route::apiResource('payroll-components', PayrollComponentController::class);
+        Route::apiResource('salary-structures', SalaryStructureController::class);
+        Route::get('staff-salaries', [StaffSalaryController::class, 'index'])->name('staff-salaries.index');
+        Route::post('staff-salaries', [StaffSalaryController::class, 'store'])->name('staff-salaries.store');
+        Route::get('staff-salaries/history/{staff}', [StaffSalaryController::class, 'history'])->name('staff-salaries.history');
+        Route::put('staff-salaries/{staff_salary}', [StaffSalaryController::class, 'update'])->name('staff-salaries.update');
+        Route::delete('staff-salaries/{staff_salary}', [StaffSalaryController::class, 'destroy'])->name('staff-salaries.destroy');
+        Route::apiResource('staff-pay-components', StaffPayComponentController::class)->except(['show']);
+
+        // HRM > Payroll — rules (overtime, attendance deduction, tax, NSSF, loans).
+        Route::get('payroll-rules', [PayrollRulesController::class, 'show'])->name('payroll-rules.show');
+        Route::put('payroll-rules/settings', [PayrollRulesController::class, 'updateSettings'])->name('payroll-rules.settings');
+        Route::put('payroll-rules/tax-brackets', [PayrollRulesController::class, 'replaceBrackets'])->name('payroll-rules.tax-brackets');
+        Route::get('payroll-rules/preview', [PayrollRulesController::class, 'preview'])->name('payroll-rules.preview');
+        Route::post('social-security-schemes', [PayrollRulesController::class, 'storeScheme'])->name('social-security-schemes.store');
+        Route::put('social-security-schemes/{social_security_scheme}', [PayrollRulesController::class, 'updateScheme'])->name('social-security-schemes.update');
+        Route::delete('social-security-schemes/{social_security_scheme}', [PayrollRulesController::class, 'destroyScheme'])->name('social-security-schemes.destroy');
+        Route::get('staff-payroll-profiles', [PayrollStaffController::class, 'profiles'])->name('staff-payroll-profiles.index');
+        Route::put('staff-payroll-profiles/{staff}', [PayrollStaffController::class, 'updateProfile'])->name('staff-payroll-profiles.update');
+        Route::get('payroll-overtime', [PayrollStaffController::class, 'overtime'])->name('payroll-overtime');
+        Route::get('payroll-attendance-deductions', [PayrollStaffController::class, 'deductions'])->name('payroll-attendance-deductions');
+        Route::apiResource('staff-loans', StaffLoanController::class);
+        Route::post('staff-loans/{staff_loan}/cancel', [StaffLoanController::class, 'cancel'])->name('staff-loans.cancel');
+        Route::post('staff-loans/{staff_loan}/repayments', [StaffLoanController::class, 'repay'])->name('staff-loans.repay');
+        Route::delete('staff-loan-repayments/{staff_loan_repayment}', [StaffLoanController::class, 'destroyRepayment'])->name('staff-loan-repayments.destroy');
+
+        // HRM > Payroll — runs and payslips.
+        Route::get('payroll-runs/pay-accounts', [PayrollRunController::class, 'payAccounts'])->name('payroll-runs.pay-accounts');
+        Route::apiResource('payroll-runs', PayrollRunController::class)->only(['index', 'store', 'show', 'update']);
+        Route::post('payroll-runs/{payroll_run}/recalculate', [PayrollRunController::class, 'recalculate'])->name('payroll-runs.recalculate');
+        Route::post('payroll-runs/{payroll_run}/submit', [PayrollRunController::class, 'submit'])->name('payroll-runs.submit');
+        Route::post('payroll-runs/{payroll_run}/approve', [PayrollRunController::class, 'approve'])->name('payroll-runs.approve');
+        Route::post('payroll-runs/{payroll_run}/reject', [PayrollRunController::class, 'reject'])->name('payroll-runs.reject');
+        Route::post('payroll-runs/{payroll_run}/pay', [PayrollRunController::class, 'pay'])->name('payroll-runs.pay');
+        Route::post('payroll-runs/{payroll_run}/cancel', [PayrollRunController::class, 'cancel'])->name('payroll-runs.cancel');
+        Route::get('payslips', [PayrollRunController::class, 'payslips'])->name('payslips.index');
+        Route::get('payslips/{payslip}', [PayrollRunController::class, 'payslip'])->name('payslips.show');
+        Route::put('payslips/{payslip}/adjustment', [PayrollRunController::class, 'adjust'])->name('payslips.adjust');
 
         // HRM > Attendance & Time — staff attendance set-up.
         Route::apiResource('shifts', ShiftController::class);

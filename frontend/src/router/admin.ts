@@ -4,6 +4,7 @@ import { firstAccessibleAdminPath } from '@/router/adminNav'
 import { canOpenOrganizationTab, organizationTabs } from '@/router/organizationTabs'
 import { attendanceTabs } from '@/router/attendanceTabs'
 import { leaveTabs } from '@/router/leaveTabs'
+import { payrollTabs } from '@/router/payrollTabs'
 import { recruitmentTabs } from '@/router/recruitmentTabs'
 import { useAuthStore } from '@/stores/auth'
 
@@ -536,6 +537,38 @@ const adminRoutes: RouteRecordRaw[] = [
       { path: 'workflow', name: 'admin.leave-management.workflow', component: () => import('@/pages/admin/leaveManagement/LeaveWorkflow.vue') },
       { path: 'calendar', name: 'admin.leave-management.calendar', component: () => import('@/pages/admin/leaveManagement/LeaveCalendar.vue') },
       { path: 'reports', name: 'admin.leave-management.reports', component: () => import('@/pages/admin/leaveManagement/LeaveReports.vue') },
+    ],
+  },
+  {
+    // HRM > Payroll: tabs as child routes (see PayrollLayout.vue / payrollTabs.ts).
+    path: 'payroll',
+    component: () => import('@/pages/admin/payroll/PayrollLayout.vue'),
+    meta: { titleKey: 'adminNav.items.payroll' },
+    children: [
+      {
+        path: '',
+        name: 'admin.payroll',
+        redirect: () => {
+          const auth = useAuthStore()
+          return (payrollTabs.find((tab) => auth.can(tab.permission)) ?? payrollTabs[0]!).to
+        },
+      },
+      { path: 'salary-structures', name: 'admin.payroll.salary-structures', component: () => import('@/pages/admin/payroll/SalaryStructures.vue') },
+      { path: 'basic-salary', name: 'admin.payroll.basic-salary', component: () => import('@/pages/admin/payroll/BasicSalaries.vue') },
+      { path: 'allowances', name: 'admin.payroll.allowances', component: () => import('@/pages/admin/payroll/PayComponents.vue'), props: { kind: 'allowance' } },
+      { path: 'bonuses', name: 'admin.payroll.bonuses', component: () => import('@/pages/admin/payroll/PayComponents.vue'), props: { kind: 'bonus' } },
+      { path: 'deductions', name: 'admin.payroll.deductions', component: () => import('@/pages/admin/payroll/PayComponents.vue'), props: { kind: 'deduction' } },
+      { path: 'overtime', name: 'admin.payroll.overtime', component: () => import('@/pages/admin/payroll/PayrollOvertime.vue') },
+      { path: 'attendance-deduction', name: 'admin.payroll.attendance-deduction', component: () => import('@/pages/admin/payroll/AttendanceDeduction.vue') },
+      { path: 'tax', name: 'admin.payroll.tax', component: () => import('@/pages/admin/payroll/PayrollTax.vue') },
+      { path: 'social-security', name: 'admin.payroll.social-security', component: () => import('@/pages/admin/payroll/SocialSecurity.vue') },
+      { path: 'loans', name: 'admin.payroll.loans', component: () => import('@/pages/admin/payroll/StaffLoans.vue') },
+      { path: 'calculation', name: 'admin.payroll.calculation', component: () => import('@/pages/admin/payroll/PayrollCalculation.vue') },
+      { path: 'payslips', name: 'admin.payroll.payslips', component: () => import('@/pages/admin/payroll/PayslipsPage.vue') },
+      { path: 'approval', name: 'admin.payroll.approval', component: () => import('@/pages/admin/payroll/PayrollApproval.vue') },
+      { path: 'history', name: 'admin.payroll.history', component: () => import('@/pages/admin/payroll/PayrollHistory.vue') },
+      // One payroll — opened from Payroll calculation, approval or history.
+      { path: 'runs/:id', name: 'admin.payroll.run', component: () => import('@/pages/admin/payroll/PayrollRunDetail.vue') },
     ],
   },
   {

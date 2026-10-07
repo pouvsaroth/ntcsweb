@@ -46,6 +46,12 @@ final class NotificationType
     /** One step of an approval flow approved — sent to the requester; see ApprovalFlow::approve(). */
     public const APPROVAL_STEP_APPROVED = 'approval_step_approved';
 
+    public const PAYROLL_RUN_SUBMITTED = 'payroll_run_submitted';
+
+    public const PAYROLL_RUN_APPROVED = 'payroll_run_approved';
+
+    public const PAYROLL_RUN_REJECTED = 'payroll_run_rejected';
+
     public const STUDENT_REGISTRATION_SUBMITTED = 'student_registration_submitted';
 
     public const MANPOWER_REQUEST_SUBMITTED = 'manpower_request_submitted';

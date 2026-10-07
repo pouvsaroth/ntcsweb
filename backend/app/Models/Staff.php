@@ -218,6 +218,17 @@ class Staff extends Model
         return $this->belongsTo(Team::class);
     }
 
+    public function overtimeRequests(): HasMany
+    {
+        return $this->hasMany(OvertimeRequest::class);
+    }
+
+    /** Basic salary over time (HRM > Payroll) — see StaffSalary::scopeEffectiveOn(). */
+    public function salaries(): HasMany
+    {
+        return $this->hasMany(StaffSalary::class);
+    }
+
     public function jobGrade(): BelongsTo
     {
         return $this->belongsTo(JobGrade::class);

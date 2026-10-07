@@ -1,6 +1,7 @@
 import { organizationTabs } from '@/router/organizationTabs'
 import { attendanceTabs } from '@/router/attendanceTabs'
 import { leaveTabs } from '@/router/leaveTabs'
+import { payrollTabs } from '@/router/payrollTabs'
 import { documentLinks } from '@/router/publicNav'
 import { recruitmentTabs } from '@/router/recruitmentTabs'
 
@@ -161,6 +162,8 @@ export const adminNav: AdminNavGroup[] = [
       { labelKey: 'adminNav.items.timeAttendance', to: '/admin/time-attendance', permission: attendanceTabs.map((tab) => tab.permission) },
       // One link; Leave types, Leave policies, ... are tabs on the page itself (see leaveTabs.ts).
       { labelKey: 'adminNav.items.leaveManagement', to: '/admin/leave-management', permission: leaveTabs.map((tab) => tab.permission) },
+      // One link; Salary structure, Basic salary, ... are tabs on the page itself (see payrollTabs.ts).
+      { labelKey: 'adminNav.items.payroll', to: '/admin/payroll', permission: payrollTabs.map((tab) => tab.permission) },
       // Self-service for every staff account — the same slug as Request Leave
       // below, so students (who hold none) never see it. See MyCheckIn.vue.
       { labelKey: 'adminNav.items.myCheckIn', to: '/admin/my-check-in', permission: 'my-requests.view' },

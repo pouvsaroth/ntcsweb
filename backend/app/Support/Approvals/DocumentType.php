@@ -11,6 +11,7 @@ use App\Models\LeaveRequest;
 use App\Models\MakeUpClassRequest;
 use App\Models\ManpowerRequest;
 use App\Models\OvertimeRequest;
+use App\Models\PayrollRun;
 use App\Models\ResignationRequest;
 use App\Support\Authorization\Permissions;
 use Illuminate\Database\Eloquent\Builder;
@@ -43,6 +44,8 @@ final class DocumentType
 
     public const ATTENDANCE_CORRECTION = 'attendance_correction';
 
+    public const PAYROLL_RUN = 'payroll_run';
+
     /** @var array<string, class-string<Model>> */
     private const MODELS = [
         self::STUDENT_LEAVE => LeaveRequest::class,
@@ -54,6 +57,7 @@ final class DocumentType
         self::MANPOWER_REQUEST => ManpowerRequest::class,
         self::OVERTIME_REQUEST => OvertimeRequest::class,
         self::ATTENDANCE_CORRECTION => AttendanceCorrection::class,
+        self::PAYROLL_RUN => PayrollRun::class,
     ];
 
     /** @return list<string> */
@@ -110,6 +114,7 @@ final class DocumentType
             self::MANPOWER_REQUEST => Permissions::MANPOWER_REQUESTS_APPROVE,
             self::OVERTIME_REQUEST => Permissions::OVERTIME_REQUESTS_APPROVE,
             self::ATTENDANCE_CORRECTION => Permissions::ATTENDANCE_CORRECTIONS_APPROVE,
+            self::PAYROLL_RUN => Permissions::PAYROLL_APPROVE,
         };
     }
 }
