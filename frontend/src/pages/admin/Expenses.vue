@@ -7,6 +7,7 @@ import BaseBadge from '@/components/ui/BaseBadge.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BasePagination from '@/components/ui/BasePagination.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
+import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import DataTable from '@/components/ui/DataTable.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { expensesService, expenseStatuses, type Expense, type ExpenseStatus } from '@/services/expenses'
@@ -76,7 +77,39 @@ onMounted(() => fetch())
       <BaseButton to="/admin/expenses/new">{{ t('admin.expenses.addExpense') }}</BaseButton>
     </div>
 
+    <!-- Cards on small screens — below sm: this replaces the DataTable
+         entirely. The whole card opens the expense (Approve / Reject / Pay
+         live on its detail page). -->
+    <div class="sm:hidden">
+      <div v-if="loading" class="flex justify-center py-10"><BaseSpinner /></div>
+      <p v-else-if="items.length === 0" class="rounded-[--radius-card] border border-dashed border-neutral-300 py-10 text-center text-sm text-neutral-500">
+        {{ t('admin.expenses.emptyMessage') }}
+      </p>
+      <div v-else class="space-y-2">
+        <RouterLink
+          v-for="row in items"
+          :key="row.id"
+          :to="`/admin/expenses/${row.id}`"
+          class="block rounded-[--radius-card] border border-neutral-200 bg-white p-3 shadow-[--shadow-card] active:bg-neutral-50"
+        >
+          <div class="flex items-start justify-between gap-2">
+            <div class="min-w-0">
+              <p class="truncate font-medium text-primary-700">{{ row.expense_number }}</p>
+              <p class="text-xs text-neutral-500">{{ formatDate(row.expense_date) }}</p>
+            </div>
+            <BaseBadge :variant="statusVariant[row.status]">{{ t(`admin.expenses.status${statusKey(row.status)}`) }}</BaseBadge>
+          </div>
+          <p class="mt-2 truncate text-sm text-neutral-700">{{ row.account.code }} — {{ row.account.name }}</p>
+          <div class="mt-1 flex items-center justify-between gap-2">
+            <p class="truncate text-xs text-neutral-500">{{ row.vendor ?? '—' }}</p>
+            <p class="shrink-0 text-base font-semibold text-neutral-900">${{ row.amount.toFixed(2) }}</p>
+          </div>
+        </RouterLink>
+      </div>
+    </div>
+
     <DataTable
+      class="hidden sm:block"
       :columns="columns"
       :rows="items"
       row-key="id"
