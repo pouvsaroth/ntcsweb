@@ -35,15 +35,23 @@ const { items, loading, error, fetch } = usePaginatedResource<WorkSchedule>((que
 const shifts = ref<Shift[]>([])
 const staff = ref<Staff[]>([])
 const shiftById = computed(() => new Map(shifts.value.map((s) => [s.id, s])))
-const shiftOptions = computed(() => [
-  { value: '', label: t('admin.timeAttendance.schedules.dayOff') },
-  ...shifts.value.filter((s) => s.is_active).map((s) => ({ value: String(s.id), label: `${s.name} (${s.start_time}–${s.end_time})` })),
-])
+// Just the shift — its days and hours live on the shift itself (Shift tab's Day / From / To rows).
+const shiftOptions = computed(() => shifts.value.filter((s) => s.is_active).map((s) => ({ value: String(s.id), label: s.name })))
 const staffOptions = computed(() => staff.value.map((s) => ({ value: String(s.id), label: `${s.full_name} (${s.employee_code})` })))
 
-function shiftOf(schedule: WorkSchedule, day: Weekday): Shift | undefined {
-  const id = schedule[`${day}_shift_id`]
-  return id ? shiftById.value.get(id) : undefined
+/** The distinct shifts a schedule uses, in weekday order — usually just one. */
+function shiftsOf(schedule: WorkSchedule): Shift[] {
+  const ids = [...new Set(WEEKDAYS.map((day) => schedule[`${day}_shift_id`]).filter((id): id is number => !!id))]
+  return ids.map((id) => shiftById.value.get(id)).filter((shift): shift is Shift => shift !== undefined)
+}
+
+/**
+ * The weekdays a shift is worked: the days it has Day / From / To rows for.
+ * A shift from before those rows existed has none — Monday to Friday, the
+ * old default for a new schedule.
+ */
+function workedDays(shift: Shift): Weekday[] {
+  return shift.days?.length ? shift.days.map((day) => WEEKDAYS[day.day_of_week - 1]) : WEEKDAYS.slice(0, 5)
 }
 
 // --- Form ----------------------------------------------------------------------
@@ -54,7 +62,7 @@ const form = reactive({
   name: '',
   description: '',
   is_default: false,
-  days: Object.fromEntries(WEEKDAYS.map((d) => [d, ''])) as Record<Weekday, string>,
+  shift_id: '',
   staff_ids: [] as string[],
 })
 const errors = ref<Record<string, string[]>>({})
@@ -68,11 +76,9 @@ async function open(schedule: WorkSchedule | null) {
   form.name = full?.name ?? ''
   form.description = full?.description ?? ''
   form.is_default = full?.is_default ?? items.value.length === 0
-  for (const day of WEEKDAYS) {
-    const id = full ? full[`${day}_shift_id`] : null
-    // A new schedule starts Monday–Friday on the first shift, weekend off.
-    form.days[day] = id ? String(id) : !full && shifts.value[0] && !['saturday', 'sunday'].includes(day) ? String(shifts.value[0].id) : ''
-  }
+  // Its shift (the first one, for an older schedule mixing several); a new schedule starts on the first active shift.
+  const current = full ? shiftsOf(full)[0] : shifts.value.find((s) => s.is_active)
+  form.shift_id = current ? String(current.id) : ''
   form.staff_ids = (full?.staff ?? []).map((s) => String(s.id))
   errors.value = {}
   saveError.value = null
@@ -83,12 +89,20 @@ async function save() {
   saving.value = true
   errors.value = {}
   saveError.value = null
+  const shift = shiftById.value.get(Number(form.shift_id))
+  if (!shift) {
+    errors.value = { shift_id: [t('admin.timeAttendance.schedules.shiftRequired')] }
+    saving.value = false
+    return
+  }
+  // Stored per weekday as before: the shift on each day it has hours for, a day off otherwise.
+  const worked = new Set(workedDays(shift))
   const input = {
     name: form.name,
     description: form.description.trim() || null,
     is_default: form.is_default,
     staff_ids: form.staff_ids.map(Number),
-    ...(Object.fromEntries(WEEKDAYS.map((d) => [`${d}_shift_id`, form.days[d] ? Number(form.days[d]) : null])) as Record<`${Weekday}_shift_id`, number | null>),
+    ...(Object.fromEntries(WEEKDAYS.map((d) => [`${d}_shift_id`, worked.has(d) ? shift.id : null])) as Record<`${Weekday}_shift_id`, number | null>),
   }
   try {
     if (editing.value) await workSchedulesService.update(editing.value.id, input)
@@ -155,18 +169,16 @@ onMounted(async () => {
           </div>
         </div>
 
-        <!-- The week: seven columns on a computer, a list on a phone. -->
-        <div class="mt-3 grid grid-cols-1 gap-1.5 sm:grid-cols-7">
-          <div v-for="day in WEEKDAYS" :key="day" class="flex items-center justify-between rounded-lg bg-neutral-50 px-3 py-2 sm:block sm:text-center">
-            <p class="text-xs font-semibold uppercase text-neutral-500">{{ t(`admin.timeAttendance.weekdays.${day}`) }}</p>
-            <template v-if="shiftOf(schedule, day)">
-              <p class="text-sm font-medium text-neutral-800">
-                <span class="mr-1 inline-block h-2 w-2 rounded-full" :style="{ backgroundColor: shiftOf(schedule, day)!.color ?? '#9ca3af' }" />{{ shiftOf(schedule, day)!.name }}
-              </p>
-              <p class="text-xs text-neutral-500">{{ shiftOf(schedule, day)!.start_time }}–{{ shiftOf(schedule, day)!.end_time }}</p>
-            </template>
-            <p v-else class="text-sm text-neutral-400">{{ t('admin.timeAttendance.schedules.dayOff') }}</p>
-          </div>
+        <!-- Just the shift — its days and hours are on the Shift tab. -->
+        <div class="mt-3 flex flex-wrap gap-2">
+          <span
+            v-for="shift in shiftsOf(schedule)"
+            :key="shift.id"
+            class="inline-flex items-center gap-1.5 rounded-lg bg-neutral-50 px-3 py-1.5 text-sm font-medium text-neutral-800"
+          >
+            <span class="inline-block h-2 w-2 rounded-full" :style="{ backgroundColor: shift.color ?? '#9ca3af' }" />{{ shift.name }}
+          </span>
+          <span v-if="shiftsOf(schedule).length === 0" class="text-sm text-neutral-400">{{ t('admin.timeAttendance.schedules.dayOff') }}</span>
         </div>
       </section>
     </div>
@@ -176,16 +188,14 @@ onMounted(async () => {
         <BaseAlert v-if="saveError" variant="danger">{{ saveError }}</BaseAlert>
         <BaseInput v-model="form.name" required :label="t('admin.timeAttendance.schedules.name')" :error="errors.name?.[0]" />
 
-        <div class="grid gap-3 sm:grid-cols-2">
-          <BaseSelect
-            v-for="day in WEEKDAYS"
-            :key="day"
-            v-model="form.days[day]"
-            :options="shiftOptions"
-            :label="t(`admin.timeAttendance.weekdays.${day}`)"
-            :error="errors[`${day}_shift_id`]?.[0]"
-          />
-        </div>
+        <BaseSelect
+          v-model="form.shift_id"
+          required
+          :options="shiftOptions"
+          :label="t('admin.timeAttendance.schedules.shift')"
+          :hint="t('admin.timeAttendance.schedules.shiftHint')"
+          :error="errors.shift_id?.[0]"
+        />
 
         <BaseMultiSelect
           v-model="form.staff_ids"
