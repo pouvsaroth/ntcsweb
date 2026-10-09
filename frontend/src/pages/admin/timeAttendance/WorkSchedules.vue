@@ -80,7 +80,7 @@ const staffRows = computed(() => {
     .map((member) => {
       const assigned = assignedSchedule.value.get(member.id) ?? null
       const schedule = assigned ?? defaultSchedule
-      return { id: member.id, member, shifts: schedule ? shiftsOf(schedule) : [], viaDefault: assigned === null && schedule !== null }
+      return { id: member.id, member, assigned, shifts: schedule ? shiftsOf(schedule) : [], viaDefault: assigned === null && schedule !== null }
     })
 })
 
@@ -88,7 +88,65 @@ const staffColumns = computed(() => [
   { key: 'name', label: t('admin.timeAttendance.schedules.staff') },
   { key: 'position', label: t('admin.timeAttendance.schedules.position') },
   { key: 'shift', label: t('admin.timeAttendance.schedules.shift') },
+  ...(canManage.value ? [{ key: 'actions', label: '' }] : []),
 ])
+
+// --- One staff member's shift (the staff list's edit icon) -----------------------
+// Moves them onto another staff shift, or off theirs so they follow the default.
+
+const memberForm = reactive({ open: false, member: null as Staff | null, current: null as WorkSchedule | null, schedule_id: '' })
+const memberError = ref<string | null>(null)
+const memberSaving = ref(false)
+
+/** The schedules to pick from, named by their shift; '' = none of them (the default, if there is one). */
+const memberScheduleOptions = computed(() => {
+  const defaultSchedule = items.value.find((schedule) => schedule.is_default) ?? null
+  const none = defaultSchedule
+    ? t('admin.timeAttendance.schedules.followDefault', { name: scheduleLabel(defaultSchedule) })
+    : t('admin.timeAttendance.schedules.noShift')
+  return [{ value: '', label: none }, ...items.value.filter((s) => !s.is_default).map((s) => ({ value: String(s.id), label: scheduleLabel(s) }))]
+})
+
+function scheduleLabel(schedule: WorkSchedule): string {
+  return shiftsOf(schedule).map((shift) => shift.name).join(' / ') || schedule.name
+}
+
+function openMember(member: Staff, current: WorkSchedule | null) {
+  memberForm.member = member
+  memberForm.current = current
+  // On the default schedule = following it, the same as on none.
+  memberForm.schedule_id = current && !current.is_default ? String(current.id) : ''
+  memberError.value = null
+  memberForm.open = true
+}
+
+/** A schedule's staff ids, read fresh so nobody else's assignment is lost. */
+async function staffIdsOf(scheduleId: number): Promise<number[]> {
+  return ((await workSchedulesService.get(scheduleId)).staff ?? []).map((s) => s.id)
+}
+
+async function saveMember() {
+  const member = memberForm.member
+  if (!member) return
+  memberSaving.value = true
+  memberError.value = null
+  try {
+    const target = memberForm.schedule_id ? Number(memberForm.schedule_id) : null
+    const current = memberForm.current?.id ?? null
+    if (target !== null && target !== current) {
+      // Joining one takes them off their previous one.
+      await workSchedulesService.update(target, { staff_ids: [...(await staffIdsOf(target)), member.id] })
+    } else if (target === null && current !== null) {
+      await workSchedulesService.update(current, { staff_ids: (await staffIdsOf(current)).filter((id) => id !== member.id) })
+    }
+    memberForm.open = false
+    await fetch()
+  } catch (e) {
+    memberError.value = e instanceof ApiRequestError ? e.message : t('admin.timeAttendance.saveFailed')
+  } finally {
+    memberSaving.value = false
+  }
+}
 
 // --- Form ----------------------------------------------------------------------
 
@@ -111,7 +169,8 @@ async function open(schedule: WorkSchedule | null) {
   const full = schedule ? await workSchedulesService.get(schedule.id).catch(() => schedule) : null
   form.name = full?.name ?? ''
   form.description = full?.description ?? ''
-  form.is_default = full?.is_default ?? items.value.length === 0
+  // Never pre-ticked: a default schedule applies to every unassigned staff member, so it must be a deliberate choice.
+  form.is_default = full?.is_default ?? false
   // Its shift (the first one, for an older schedule mixing several); a new schedule starts on the first active shift.
   const current = full ? shiftsOf(full)[0] : shifts.value.find((s) => s.is_active)
   form.shift_id = current ? String(current.id) : ''
@@ -230,7 +289,10 @@ onMounted(async () => {
         </p>
         <div v-else class="space-y-2">
           <div v-for="row in staffRows" :key="row.member.id" class="rounded-[--radius-card] border border-neutral-200 bg-white p-3 shadow-[--shadow-card]">
-            <p class="font-medium text-neutral-900">{{ row.member.full_name }}</p>
+            <div class="flex items-start justify-between gap-2">
+              <p class="font-medium text-neutral-900">{{ row.member.full_name }}</p>
+              <EditIconButton v-if="canManage" class="-mr-1 -mt-1" @click="openMember(row.member, row.assigned)" />
+            </div>
             <p class="text-xs text-neutral-500">{{ [row.member.employee_code, row.member.position?.name].filter(Boolean).join(' · ') }}</p>
             <div class="mt-2 flex flex-wrap items-center gap-2 text-sm text-neutral-800">
               <span v-for="shift in row.shifts" :key="shift.id" class="inline-flex items-center gap-1.5">
@@ -259,9 +321,26 @@ onMounted(async () => {
               <BaseBadge v-if="row.viaDefault" variant="neutral">{{ t('admin.timeAttendance.schedules.default') }}</BaseBadge>
             </div>
           </template>
+          <template #cell-actions="{ row }">
+            <div class="flex justify-end"><EditIconButton @click="openMember(row.member, row.assigned)" /></div>
+          </template>
         </DataTable>
       </div>
     </section>
+
+    <BaseModal v-model="memberForm.open" :title="t('admin.timeAttendance.schedules.changeShift')">
+      <form class="space-y-4" @submit.prevent="saveMember">
+        <BaseAlert v-if="memberError" variant="danger">{{ memberError }}</BaseAlert>
+        <p v-if="memberForm.member" class="text-sm text-neutral-700">
+          <span class="font-medium text-neutral-900">{{ memberForm.member.full_name }}</span> · {{ memberForm.member.employee_code }}
+        </p>
+        <BaseSelect v-model="memberForm.schedule_id" :options="memberScheduleOptions" :label="t('admin.timeAttendance.schedules.shift')" />
+      </form>
+      <template #footer>
+        <BaseButton variant="outline" @click="memberForm.open = false">{{ t('common.close') }}</BaseButton>
+        <BaseButton :loading="memberSaving" @click="saveMember">{{ t('common.save') }}</BaseButton>
+      </template>
+    </BaseModal>
 
     <BaseModal v-model="formOpen" size="lg" :title="editing ? t('admin.timeAttendance.schedules.edit') : t('admin.timeAttendance.schedules.add')">
       <form class="space-y-4" @submit.prevent="save">
