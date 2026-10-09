@@ -179,6 +179,15 @@ final class ExamScoreService
                             'book_id' => $application->book_id,
                             'retake_of_id' => $application->id,
                             'status' => ExamApplication::STATUS_MAKE_UP,
+                            // Same room, table and time in/out as the
+                            // original sitting — only the date moves, to
+                            // the next day.
+                            'classroom_id' => $application->classroom_id,
+                            'table_id' => $application->table_id,
+                            'table_no' => $application->table_no,
+                            'exam_time' => $application->exam_time,
+                            'exam_time_out' => $application->exam_time_out,
+                            'exam_date' => $application->exam_date?->copy()->addDay(),
                         ]);
                         $retakesCreated++;
                     }

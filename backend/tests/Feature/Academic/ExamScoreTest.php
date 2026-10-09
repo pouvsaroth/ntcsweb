@@ -7,6 +7,8 @@ namespace Tests\Feature\Academic;
 use App\Models\AcademicYear;
 use App\Models\AuditLog;
 use App\Models\Book;
+use App\Models\Classroom;
+use App\Models\ClassroomTable;
 use App\Models\CoursePackage;
 use App\Models\Enrollment;
 use App\Models\ExamApplication;
@@ -194,6 +196,34 @@ class ExamScoreTest extends TestCase
         // Unlike the no-retake case, there's still an exam left to sit —
         // the enrollment must not be marked completed underneath it.
         $this->assertNotSame(Enrollment::STATUS_COMPLETED, $app->enrollment->fresh()->status);
+    }
+
+    public function test_a_make_up_keeps_the_room_table_and_times_and_sits_the_next_day(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::EXAM_SCORES_MANAGE_ALL]);
+        $classroom = Classroom::factory()->create();
+        $table = ClassroomTable::factory()->create(['classroom_id' => $classroom->id]);
+        $app = $this->application([
+            'classroom_id' => $classroom->id,
+            'table_id' => $table->id,
+            'table_no' => 'A12',
+            'exam_date' => '2026-10-31',
+            'exam_time' => '08:00',
+            'exam_time_out' => '10:30',
+        ]);
+
+        $this->postJson('/api/v1/exam-scores', ['entries' => [
+            ['exam_application_id' => $app->id, 'score' => 40, 'make_up' => true],
+        ]])->assertOk();
+
+        $retake = ExamApplication::query()->where('retake_of_id', $app->id)->firstOrFail();
+        $app->refresh();
+        $this->assertSame($classroom->id, $retake->classroom_id);
+        $this->assertSame($table->id, $retake->table_id);
+        $this->assertSame('A12', $retake->table_no);
+        $this->assertEquals($app->exam_time, $retake->exam_time);
+        $this->assertEquals($app->exam_time_out, $retake->exam_time_out);
+        $this->assertSame('2026-11-01', $retake->exam_date->toDateString());
     }
 
     public function test_checking_make_up_twice_never_creates_a_second_retake(): void
