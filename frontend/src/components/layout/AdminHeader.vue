@@ -43,8 +43,9 @@ const sectionLink = computed(() => {
 </script>
 
 <template>
-  <header class="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-neutral-200 bg-white px-4 sm:px-6">
-    <div class="flex min-w-0 items-center gap-3">
+  <!-- flex-wrap: on phone the Examination tabs (below) wrap onto their own row under this one. -->
+  <header class="sticky top-0 z-20 flex flex-wrap items-center justify-between border-b border-neutral-200 bg-white px-4 sm:px-6">
+    <div class="flex h-16 min-w-0 items-center gap-3">
       <button
         type="button"
         class="rounded-lg p-2 text-neutral-600 hover:bg-neutral-100 lg:hidden"
@@ -55,7 +56,11 @@ const sectionLink = computed(() => {
           <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
         </svg>
       </button>
-      <ExaminationTabs v-if="headerTabs === 'examination'" />
+      <!-- Phone: too narrow to share this row with Go to website / the bell /
+           the language switcher, so the tabs get their own row below. -->
+      <div v-if="headerTabs === 'examination'" class="hidden min-w-0 sm:block">
+        <ExaminationTabs />
+      </div>
       <p v-else-if="pageTitle" class="hidden items-center gap-2 text-sm font-medium text-neutral-500 sm:flex">
         <template v-if="subPageTitle">
           <RouterLink v-if="sectionLink" :to="sectionLink" class="hover:text-primary-700">{{ pageTitle }}</RouterLink>
@@ -86,6 +91,10 @@ const sectionLink = computed(() => {
            Password, Sign out) lives on the sidebar's profile card now — see
            AdminSidebar.vue. -->
       <LanguageSwitcher />
+    </div>
+
+    <div v-if="headerTabs === 'examination'" class="w-full border-t border-neutral-100 sm:hidden">
+      <ExaminationTabs />
     </div>
   </header>
 </template>

@@ -42,12 +42,13 @@ const tabs = computed(() => allTabs.value.filter((tab) => tab.visible))
 </script>
 
 <template>
-  <nav class="-mb-px flex h-16 min-w-0 gap-x-6 overflow-x-auto">
+  <!-- h-12 in AdminHeader's own row below the header on phone, h-16 inline in the header from sm up. -->
+  <nav class="-mb-px flex h-12 min-w-0 gap-x-6 overflow-x-auto [scrollbar-width:none] sm:h-16 [&::-webkit-scrollbar]:hidden">
     <RouterLink
       v-for="tab in tabs"
       :key="tab.to"
       :to="tab.to"
-      class="flex items-center whitespace-nowrap border-b-2 px-1 text-sm font-medium"
+      class="flex shrink-0 items-center whitespace-nowrap border-b-2 px-1 text-sm font-medium"
       :class="
         route.path === tab.to
           ? 'border-primary-600 text-primary-700'
