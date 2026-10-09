@@ -68,6 +68,14 @@ class Shift extends Model
         ];
     }
 
+    /** Unpaid break minutes on this date's weekday: that day's row, else the shift's own. */
+    public function breakOn(CarbonInterface $date): int
+    {
+        $day = $this->loadMissing('days')->days->firstWhere('day_of_week', $date->dayOfWeekIso);
+
+        return $day?->break_minutes ?? $this->break_minutes;
+    }
+
     public function isOvernight(): bool
     {
         return $this->end_time <= $this->start_time;

@@ -63,7 +63,6 @@ const form = reactive({
   code: '',
   name: '',
   days: [] as ShiftDay[],
-  break_minutes: '60',
   late_grace_minutes: '10',
   early_leave_grace_minutes: '0',
   color: '#3b82f6',
@@ -81,8 +80,7 @@ function open(shift: Shift | null) {
   // A shift from before day rows existed: one Monday row with its hours — every other day falls back to them anyway.
   form.days = shift?.days?.length
     ? shift.days.map((day) => ({ ...day }))
-    : [{ day_of_week: 1, start_time: shift?.start_time ?? '08:00', end_time: shift?.end_time ?? '17:00' }]
-  form.break_minutes = String(shift?.break_minutes ?? 60)
+    : [{ day_of_week: 1, start_time: shift?.start_time ?? '08:00', end_time: shift?.end_time ?? '17:00', break_minutes: shift?.break_minutes ?? 60 }]
   form.late_grace_minutes = String(shift?.late_grace_minutes ?? 10)
   form.early_leave_grace_minutes = String(shift?.early_leave_grace_minutes ?? 0)
   form.color = shift?.color ?? '#3b82f6'
@@ -92,13 +90,13 @@ function open(shift: Shift | null) {
   formOpen.value = true
 }
 
-/** The next day not used yet, with the last row's hours — Monday 08:00–17:00 → Tuesday 08:00–17:00. */
+/** The next day not used yet, with the last row's hours and break — Monday 08:00–17:00 → Tuesday 08:00–17:00. */
 function addDay() {
   const used = new Set(form.days.map((day) => day.day_of_week))
   const next = [1, 2, 3, 4, 5, 6, 7].find((day) => !used.has(day))
   if (next === undefined) return
   const last = form.days[form.days.length - 1]
-  form.days.push({ day_of_week: next, start_time: last?.start_time ?? '08:00', end_time: last?.end_time ?? '17:00' })
+  form.days.push({ day_of_week: next, start_time: last?.start_time ?? '08:00', end_time: last?.end_time ?? '17:00', break_minutes: last?.break_minutes ?? 60 })
 }
 
 function removeDay(index: number) {
@@ -111,7 +109,6 @@ async function save() {
   saveError.value = null
   const input = {
     ...form,
-    break_minutes: Number(form.break_minutes || 0),
     late_grace_minutes: Number(form.late_grace_minutes || 0),
     early_leave_grace_minutes: Number(form.early_leave_grace_minutes || 0),
   }
@@ -190,7 +187,12 @@ onMounted(() => fetch())
           <p v-for="line in hoursSummary(row as Shift)" :key="line">{{ line }}</p>
           <p v-if="((row as Shift).days?.length ?? 0) <= 1" class="text-xs text-neutral-500">{{ formatMinutes(row.work_minutes) }}</p>
         </template>
-        <template #cell-break="{ row }">{{ row.break_minutes ? formatMinutes(row.break_minutes) : '—' }}</template>
+        <template #cell-break="{ row }">
+          <template v-if="(row as Shift).days?.length">
+            <p v-for="day in (row as Shift).days" :key="day.day_of_week">{{ dayLabel(day.day_of_week) }} {{ day.break_minutes ? formatMinutes(day.break_minutes) : '—' }}</p>
+          </template>
+          <template v-else>{{ row.break_minutes ? formatMinutes(row.break_minutes) : '—' }}</template>
+        </template>
         <template #cell-grace="{ row }">{{ t('admin.timeAttendance.shifts.graceLine', { late: row.late_grace_minutes, early: row.early_leave_grace_minutes }) }}</template>
         <template #cell-is_active="{ row }">
           <BaseBadge :variant="row.is_active ? 'success' : 'neutral'">{{ row.is_active ? t('admin.organization.statusActive') : t('admin.organization.statusInactive') }}</BaseBadge>
@@ -206,7 +208,7 @@ onMounted(() => fetch())
 
     <BasePagination v-if="meta" :meta="meta" sticky class="mt-4" @update:page="setPage" />
 
-    <BaseModal v-model="formOpen" :title="editing ? t('admin.timeAttendance.shifts.edit') : t('admin.timeAttendance.shifts.add')">
+    <BaseModal v-model="formOpen" size="lg" :title="editing ? t('admin.timeAttendance.shifts.edit') : t('admin.timeAttendance.shifts.add')">
       <form class="space-y-4" @submit.prevent="save">
         <BaseAlert v-if="saveError" variant="danger">{{ saveError }}</BaseAlert>
         <div class="grid gap-4 sm:grid-cols-2">
@@ -225,7 +227,7 @@ onMounted(() => fetch())
           <div
             v-for="(day, index) in form.days"
             :key="index"
-            class="mb-2 grid grid-cols-2 items-end gap-3 rounded-lg border border-neutral-200 p-3 sm:grid-cols-[1fr_1fr_1fr_auto]"
+            class="mb-2 grid grid-cols-2 items-end gap-3 rounded-lg border border-neutral-200 p-3 sm:grid-cols-[1fr_1fr_1fr_1fr_auto]"
           >
             <BaseSelect
               class="col-span-2 sm:col-span-1"
@@ -237,6 +239,15 @@ onMounted(() => fetch())
             />
             <BaseInput v-model="day.start_time" type="time" required :label="t('admin.classes.startTime')" :error="errors[`days.${index}.start_time`]?.[0]" />
             <BaseInput v-model="day.end_time" type="time" required :label="t('admin.classes.endTime')" :error="errors[`days.${index}.end_time`]?.[0]" />
+            <BaseInput
+              class="col-span-2 sm:col-span-1"
+              :model-value="String(day.break_minutes)"
+              type="number"
+              min="0"
+              :label="t('admin.timeAttendance.shifts.breakMinutes')"
+              :error="errors[`days.${index}.break_minutes`]?.[0]"
+              @update:model-value="day.break_minutes = Number($event || 0)"
+            />
             <button
               v-if="form.days.length > 1"
               type="button"
@@ -249,7 +260,6 @@ onMounted(() => fetch())
         </section>
 
         <div class="grid gap-4 sm:grid-cols-2">
-          <BaseInput v-model="form.break_minutes" type="number" min="0" :label="t('admin.timeAttendance.shifts.breakMinutes')" :error="errors.break_minutes?.[0]" />
           <div>
             <label class="mb-1.5 block text-sm font-medium text-neutral-700">{{ t('admin.timeAttendance.shifts.color') }}</label>
             <input v-model="form.color" type="color" class="h-[38px] w-full cursor-pointer rounded-lg border border-neutral-300 p-1" />

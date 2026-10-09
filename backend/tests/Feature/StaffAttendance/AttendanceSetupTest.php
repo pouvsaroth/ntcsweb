@@ -46,12 +46,15 @@ class AttendanceSetupTest extends TestCase
         $this->actingAsAdminWithPermissions(self::ALL);
 
         $id = $this->postJson('/api/v1/shifts', ['code' => 'WEEK', 'name' => 'Week', 'days' => [
-            ['day_of_week' => 6, 'start_time' => '07:00', 'end_time' => '11:00'],
-            ['day_of_week' => 1, 'start_time' => '08:00', 'end_time' => '17:00'],
+            ['day_of_week' => 6, 'start_time' => '07:00', 'end_time' => '11:00', 'break_minutes' => 0],
+            ['day_of_week' => 1, 'start_time' => '08:00', 'end_time' => '17:00', 'break_minutes' => 60],
         ]])
             ->assertCreated()
             ->assertJsonPath('data.start_time', '08:00')
             ->assertJsonPath('data.end_time', '17:00')
+            ->assertJsonPath('data.break_minutes', 60)
+            ->assertJsonPath('data.days.0.break_minutes', 60)
+            ->assertJsonPath('data.days.1.break_minutes', 0)
             ->assertJsonPath('data.days.0.day_of_week', 1)
             ->assertJsonPath('data.days.1.day_of_week', 6)
             ->assertJsonPath('data.days.1.start_time', '07:00')

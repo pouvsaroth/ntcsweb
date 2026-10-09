@@ -36,10 +36,12 @@ export interface ShiftDay {
   /** "HH:MM". */
   start_time: string
   end_time: string
+  /** Unpaid break that day, in minutes. */
+  break_minutes: number
 }
 
-/** start_time/end_time are worked out on the server from the first day row. */
-export type ShiftInput = Omit<Shift, 'id' | 'work_minutes' | 'overnight' | 'start_time' | 'end_time' | 'days'> & { days: ShiftDay[] }
+/** start_time/end_time/break_minutes are worked out on the server from the first day row. */
+export type ShiftInput = Omit<Shift, 'id' | 'work_minutes' | 'overnight' | 'start_time' | 'end_time' | 'break_minutes' | 'days'> & { days: ShiftDay[] }
 
 export type WorkSchedule = {
   id: number

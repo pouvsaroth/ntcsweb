@@ -33,6 +33,8 @@ class ShiftResource extends JsonResource
                 'day_of_week' => $day->day_of_week,
                 'start_time' => substr((string) $day->start_time, 0, 5),
                 'end_time' => substr((string) $day->end_time, 0, 5),
+                // A row from before per-day breaks falls back to the shift's own — see Shift::breakOn().
+                'break_minutes' => $day->break_minutes ?? $this->break_minutes,
             ])->values()),
         ];
     }

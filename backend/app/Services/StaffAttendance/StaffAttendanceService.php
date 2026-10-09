@@ -263,7 +263,8 @@ final class StaffAttendanceService
         $late = $early = $worked = $overtime = 0;
 
         if ($in !== null && $out !== null) {
-            $worked = max(0, (int) $in->diffInMinutes($out, false) - ($shift?->break_minutes ?? 0));
+            // That weekday's own unpaid break — see Shift::breakOn().
+            $worked = max(0, (int) $in->diffInMinutes($out, false) - ($shift?->breakOn($row->date) ?? 0));
         }
 
         if ($shift !== null && $row->scheduled_start !== null && $row->scheduled_end !== null) {

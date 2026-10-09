@@ -82,7 +82,7 @@ class StaffAttendanceTest extends TestCase
         Staff::factory()->create(['user_id' => $admin->id]);
         $this->office();
         // Saturday is 07:00–11:00; every other day keeps the shift's 08:00–17:00.
-        $this->shift->days()->create(['day_of_week' => 6, 'start_time' => '07:00', 'end_time' => '11:00']);
+        $this->shift->days()->create(['day_of_week' => 6, 'start_time' => '07:00', 'end_time' => '11:00', 'break_minutes' => 15]);
         WorkSchedule::query()->update(['saturday_shift_id' => $this->shift->id]);
 
         // Saturday 2026-10-17, 07:20 local: 20 min late against Saturday's 07:00.
@@ -94,6 +94,12 @@ class StaffAttendanceTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.shift.start_time', '07:00')
             ->assertJsonPath('data.shift.end_time', '11:00');
+
+        // 07:20–11:00 is 220 min, less Saturday's own 15-min break (not the shift's 60).
+        $this->at('2026-10-17 11:00');
+        $this->postJson('/api/v1/my-staff-attendance/check-out')
+            ->assertOk()
+            ->assertJsonPath('data.worked_minutes', 205);
     }
 
     public function test_a_staff_member_sees_their_own_month(): void

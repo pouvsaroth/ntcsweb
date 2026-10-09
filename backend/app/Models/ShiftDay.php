@@ -15,8 +15,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $day_of_week ISO: 1 = Monday … 7 = Sunday
  * @property string $start_time "HH:MM:SS"
  * @property string $end_time "HH:MM:SS"
+ * @property int|null $break_minutes unpaid break that day; null = the shift's own
  */
-#[Fillable(['shift_id', 'day_of_week', 'start_time', 'end_time'])]
+#[Fillable(['shift_id', 'day_of_week', 'start_time', 'end_time', 'break_minutes'])]
 class ShiftDay extends Model
 {
     protected $connection = 'tenant';
@@ -25,6 +26,7 @@ class ShiftDay extends Model
     {
         return [
             'day_of_week' => 'integer',
+            'break_minutes' => 'integer',
         ];
     }
 

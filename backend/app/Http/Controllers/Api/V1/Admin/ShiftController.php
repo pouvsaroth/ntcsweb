@@ -73,6 +73,9 @@ final class ShiftController extends Controller
         if ($days !== null) {
             $data['start_time'] = $days->first()['start_time'];
             $data['end_time'] = $days->first()['end_time'];
+            if (isset($days->first()['break_minutes'])) {
+                $data['break_minutes'] = (int) $days->first()['break_minutes'];
+            }
         }
 
         $shift->fill($data)->save();
@@ -83,6 +86,7 @@ final class ShiftController extends Controller
                 'day_of_week' => (int) $day['day_of_week'],
                 'start_time' => $day['start_time'],
                 'end_time' => $day['end_time'],
+                'break_minutes' => isset($day['break_minutes']) ? (int) $day['break_minutes'] : null,
             ])->all());
         }
 

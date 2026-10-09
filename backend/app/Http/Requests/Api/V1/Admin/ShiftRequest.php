@@ -31,6 +31,7 @@ class ShiftRequest extends FormRequest
             'days.*.day_of_week' => ['required', 'integer', 'between:1,7', 'distinct'],
             'days.*.start_time' => ['required', 'date_format:H:i'],
             'days.*.end_time' => ['required', 'date_format:H:i', 'different:days.*.start_time'],
+            'days.*.break_minutes' => ['nullable', 'integer', 'min:0', 'max:600'],
             'break_minutes' => ['sometimes', 'integer', 'min:0', 'max:600'],
             'late_grace_minutes' => ['sometimes', 'integer', 'min:0', 'max:240'],
             'early_leave_grace_minutes' => ['sometimes', 'integer', 'min:0', 'max:240'],
