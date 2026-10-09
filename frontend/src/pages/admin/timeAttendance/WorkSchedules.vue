@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import BaseAlert from '@/components/ui/BaseAlert.vue'
@@ -9,6 +9,7 @@ import BaseModal from '@/components/ui/BaseModal.vue'
 import BaseMultiSelect from '@/components/ui/BaseMultiSelect.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
 import BaseSpinner from '@/components/ui/BaseSpinner.vue'
+import DataTable from '@/components/ui/DataTable.vue'
 import EditIconButton from '@/components/ui/EditIconButton.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { staffService, type Staff } from '@/services/staff'
@@ -52,6 +53,42 @@ function shiftsOf(schedule: WorkSchedule): Shift[] {
 function workedDays(shift: Shift): Weekday[] {
   return shift.days?.length ? shift.days.map((day) => WEEKDAYS[day.day_of_week - 1]) : WEEKDAYS.slice(0, 5)
 }
+
+// --- Staff list: every active staff member and the shift they work -------------
+// Each schedule's own detail lists its staff; anyone on none follows the default.
+
+const assignedSchedule = ref(new Map<number, WorkSchedule>())
+const staffSearch = ref('')
+
+async function loadAssignments() {
+  const details = await Promise.all(items.value.map((schedule) => workSchedulesService.get(schedule.id).catch(() => null)))
+  const map = new Map<number, WorkSchedule>()
+  for (const detail of details) {
+    for (const member of detail?.staff ?? []) map.set(member.id, detail!)
+  }
+  assignedSchedule.value = map
+}
+
+watch(items, () => void loadAssignments())
+
+const staffRows = computed(() => {
+  const defaultSchedule = items.value.find((schedule) => schedule.is_default) ?? null
+  const needle = staffSearch.value.trim().toLocaleLowerCase()
+
+  return staff.value
+    .filter((member) => !needle || `${member.full_name} ${member.employee_code}`.toLocaleLowerCase().includes(needle))
+    .map((member) => {
+      const assigned = assignedSchedule.value.get(member.id) ?? null
+      const schedule = assigned ?? defaultSchedule
+      return { id: member.id, member, shifts: schedule ? shiftsOf(schedule) : [], viaDefault: assigned === null && schedule !== null }
+    })
+})
+
+const staffColumns = computed(() => [
+  { key: 'name', label: t('admin.timeAttendance.schedules.staff') },
+  { key: 'position', label: t('admin.timeAttendance.schedules.position') },
+  { key: 'shift', label: t('admin.timeAttendance.schedules.shift') },
+])
 
 // --- Form ----------------------------------------------------------------------
 
@@ -174,6 +211,57 @@ onMounted(async () => {
         </div>
       </section>
     </div>
+
+    <!-- Every active staff member and the shift they work — cards on a phone, a table from sm up. -->
+    <section v-if="!loading && items.length > 0" class="mt-8">
+      <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
+        <h2 class="font-semibold text-neutral-900">{{ t('admin.timeAttendance.schedules.staffListTitle') }}</h2>
+        <input
+          v-model="staffSearch"
+          type="search"
+          class="block w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200 sm:w-64"
+          :placeholder="t('admin.timeAttendance.schedules.searchStaff')"
+        />
+      </div>
+
+      <div class="sm:hidden">
+        <p v-if="staffRows.length === 0" class="rounded-[--radius-card] border border-dashed border-neutral-300 py-10 text-center text-sm text-neutral-500">
+          {{ t('admin.timeAttendance.schedules.noStaff') }}
+        </p>
+        <div v-else class="space-y-2">
+          <div v-for="row in staffRows" :key="row.member.id" class="rounded-[--radius-card] border border-neutral-200 bg-white p-3 shadow-[--shadow-card]">
+            <p class="font-medium text-neutral-900">{{ row.member.full_name }}</p>
+            <p class="text-xs text-neutral-500">{{ [row.member.employee_code, row.member.position?.name].filter(Boolean).join(' · ') }}</p>
+            <div class="mt-2 flex flex-wrap items-center gap-2 text-sm text-neutral-800">
+              <span v-for="shift in row.shifts" :key="shift.id" class="inline-flex items-center gap-1.5">
+                <span class="inline-block h-2 w-2 rounded-full" :style="{ backgroundColor: shift.color ?? '#9ca3af' }" />{{ shift.name }}
+              </span>
+              <span v-if="row.shifts.length === 0" class="text-neutral-400">—</span>
+              <BaseBadge v-if="row.viaDefault" variant="neutral">{{ t('admin.timeAttendance.schedules.default') }}</BaseBadge>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hidden sm:block">
+        <DataTable :columns="staffColumns" :rows="staffRows" row-key="id" :empty-message="t('admin.timeAttendance.schedules.noStaff')">
+          <template #cell-name="{ row }">
+            <p class="font-medium text-neutral-900">{{ row.member.full_name }}</p>
+            <p class="text-xs text-neutral-500">{{ row.member.employee_code }}</p>
+          </template>
+          <template #cell-position="{ row }">{{ row.member.position?.name ?? '—' }}</template>
+          <template #cell-shift="{ row }">
+            <div class="flex flex-wrap items-center gap-2">
+              <span v-for="shift in row.shifts" :key="shift.id" class="inline-flex items-center gap-1.5">
+                <span class="inline-block h-2 w-2 rounded-full" :style="{ backgroundColor: shift.color ?? '#9ca3af' }" />{{ shift.name }}
+              </span>
+              <span v-if="row.shifts.length === 0" class="text-neutral-400">—</span>
+              <BaseBadge v-if="row.viaDefault" variant="neutral">{{ t('admin.timeAttendance.schedules.default') }}</BaseBadge>
+            </div>
+          </template>
+        </DataTable>
+      </div>
+    </section>
 
     <BaseModal v-model="formOpen" size="lg" :title="editing ? t('admin.timeAttendance.schedules.edit') : t('admin.timeAttendance.schedules.add')">
       <form class="space-y-4" @submit.prevent="save">
