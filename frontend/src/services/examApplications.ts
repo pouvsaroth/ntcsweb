@@ -121,6 +121,8 @@ export const examApplicationsService = {
       photoReceived?: 'yes' | 'no'
       certificateIssued?: 'yes' | 'no'
       academicYearId?: number
+      /** One student only — ApiQuery's generic filter[student_id]. */
+      studentId?: number
     } = {},
   ): Promise<PaginatedResult<ExamApplication>> {
     const result = await apiGetWithMeta<ExamApplication[]>('/exam-applications', {
@@ -128,7 +130,7 @@ export const examApplicationsService = {
         page: query.page,
         per_page: query.per_page,
         sort: query.sort,
-        filter: query.filter,
+        filter: opts.studentId ? { ...query.filter, student_id: String(opts.studentId) } : query.filter,
         ...(opts.awaitingAction ? { awaiting_action: '1' } : {}),
         // The Approvals queue's view — see ApprovalFlowProgress.
         ...(opts.approvalQueue ? { approval_queue: '1' } : {}),

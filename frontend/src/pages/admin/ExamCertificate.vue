@@ -8,6 +8,7 @@ import BaseBadge from '@/components/ui/BaseBadge.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BasePagination from '@/components/ui/BasePagination.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
+import SearchableSelect from '@/components/ui/SearchableSelect.vue'
 import DataTable from '@/components/ui/DataTable.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { academicYearsService } from '@/services/academicYears'
@@ -40,6 +41,9 @@ const onlyNotIssued = ref(false)
 /** '' = every academic year. */
 const academicYearId = ref('')
 const academicYearOptions = ref<{ value: string; label: string }[]>([])
+/** '' = every student. Type-to-find (SearchableSelect) by name or student code. */
+const studentId = ref('')
+const studentOptions = ref<{ value: string; label: string; hint?: string }[]>([])
 
 function listOptions() {
   return {
@@ -47,7 +51,25 @@ function listOptions() {
     photoReceived: onlyNotGiven.value ? ('no' as const) : undefined,
     certificateIssued: onlyNotIssued.value ? ('no' as const) : undefined,
     academicYearId: academicYearId.value ? Number(academicYearId.value) : undefined,
+    studentId: studentId.value ? Number(studentId.value) : undefined,
   }
+}
+
+/**
+ * Every passed student (no other filter applied), for the Student picker —
+ * read from the same certificate list rather than all students, so it never
+ * offers someone who would list nobody.
+ */
+async function loadStudentOptions() {
+  const seen = new Map<number, { value: string; label: string; hint?: string }>()
+  for (let page = 1; ; page++) {
+    const result = await examApplicationsService.list({ page, per_page: 100 }, { certificate: true })
+    for (const row of result.data) {
+      seen.set(row.student.id, { value: String(row.student.id), label: row.student.name, hint: row.student.student_code })
+    }
+    if (result.pagination?.type !== 'length_aware' || page >= result.pagination.last_page) break
+  }
+  studentOptions.value = [...seen.values()].sort((a, b) => a.label.localeCompare(b.label))
 }
 
 const { items, meta, loading, error, setPage, fetch } = usePaginatedResource<ExamApplication>((query) =>
@@ -64,11 +86,17 @@ function onAcademicYearChange(value: string) {
   onFilterChange()
 }
 
+function onStudentChange(value: string) {
+  studentId.value = value
+  onFilterChange()
+}
+
 /** What the exported image's subtitle says was included. */
 function filterSummary(): string {
   const year = academicYearOptions.value.find((o) => o.value === academicYearId.value)?.label ?? t('admin.examCertificate.allAcademicYears')
   return [
     year,
+    studentOptions.value.find((o) => o.value === studentId.value)?.label ?? null,
     onlyNotGiven.value ? t('admin.examCertificate.onlyNotGiven') : null,
     onlyNotIssued.value ? t('admin.examCertificate.onlyNotIssued') : null,
   ]
@@ -221,6 +249,9 @@ async function onSaved() {
 
 onMounted(async () => {
   void fetch()
+  void loadStudentOptions().catch(() => {
+    // The picker just stays empty — the list itself still works.
+  })
 
   const years = await academicYearsService.listAll()
   academicYearOptions.value = [
@@ -258,6 +289,13 @@ onMounted(async () => {
         :options="academicYearOptions"
         :placeholder="t('admin.examCertificate.allAcademicYears')"
         @update:model-value="onAcademicYearChange"
+      />
+      <SearchableSelect
+        class="w-64"
+        :model-value="studentId"
+        :options="studentOptions"
+        :placeholder="t('admin.attendance.allStudents')"
+        @update:model-value="onStudentChange"
       />
       <label class="inline-flex items-center gap-2 text-sm text-neutral-700">
         <input
