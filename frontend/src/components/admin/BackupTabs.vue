@@ -14,7 +14,7 @@ const tabs = [{ to: '/admin/database-backups', labelKey: 'admin.databaseBackups.
 
 <template>
   <div class="mb-6 border-b border-neutral-200">
-    <nav class="-mb-px flex flex-wrap gap-x-6 gap-y-1">
+    <nav class="-mb-px flex gap-x-6 overflow-x-auto [scrollbar-width:none] sm:flex-wrap sm:gap-y-1 sm:overflow-visible [&::-webkit-scrollbar]:hidden">
       <RouterLink
         v-for="tab in tabs"
         :key="tab.to"

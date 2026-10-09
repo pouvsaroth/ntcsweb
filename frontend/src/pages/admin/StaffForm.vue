@@ -436,7 +436,7 @@ onMounted(load)
       <!-- Tab bar: only "Current Info" holds real state, so switching tabs
            is pure client-side UI — no route change, no data loss. -->
       <div class="mb-6 border-b border-neutral-200">
-        <nav class="-mb-px flex flex-wrap gap-x-6 gap-y-1">
+        <nav class="-mb-px flex gap-x-6 overflow-x-auto [scrollbar-width:none] sm:flex-wrap sm:gap-y-1 sm:overflow-visible [&::-webkit-scrollbar]:hidden">
           <button
             v-for="tab in tabs"
             :key="tab.key"

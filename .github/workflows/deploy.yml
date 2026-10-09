@@ -70,6 +70,13 @@ jobs:
           sed -i '/^BROWSERSHOT_NODE_MODULES_PATH=/d' .env
           echo "BROWSERSHOT_NODE_MODULES_PATH=$(npm root)" >> .env
 
+      # Chromium's first launch on a fresh runner (profile/font-cache setup)
+      # can take longer than puppeteer's fixed 30s launch timeout, failing
+      # InvoicePdfTest with "Timed out ... waiting for the WS endpoint URL".
+      # Launch it once here so the tests get a warm start. Never fails the job.
+      - name: Warm up Chromium
+        run: timeout 120 /usr/bin/chromium --headless --no-sandbox --disable-gpu --dump-dom about:blank > /dev/null 2>&1 || true
+
       # No separate `artisan migrate` step: the Feature tests' RefreshDatabase
       # trait migrates the DB itself, using phpunit.xml's ntcsdb_testing
       # overrides — those only apply inside a phpunit/artisan-test run, not to
