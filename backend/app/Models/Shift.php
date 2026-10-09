@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Models\Concerns\Auditable;
+use Carbon\CarbonInterface;
 use Database\Factories\ShiftFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * Tenant-owned. Working hours (HRM > Attendance & Time > Shift). An end time
@@ -40,6 +42,29 @@ class Shift extends Model
             'late_grace_minutes' => 'integer',
             'early_leave_grace_minutes' => 'integer',
             'is_active' => 'boolean',
+        ];
+    }
+
+    /** Its hours per weekday, Monday first — see the shift_days migration. */
+    public function days(): HasMany
+    {
+        return $this->hasMany(ShiftDay::class)->orderBy('day_of_week');
+    }
+
+    /**
+     * ["HH:MM", "HH:MM"] on this date's weekday: that day's row, else the
+     * shift's own start/end (a weekday it has no row for, or a shift from
+     * before shift_days existed).
+     *
+     * @return array{0:string, 1:string}
+     */
+    public function timesOn(CarbonInterface $date): array
+    {
+        $day = $this->loadMissing('days')->days->firstWhere('day_of_week', $date->dayOfWeekIso);
+
+        return [
+            substr((string) ($day?->start_time ?? $this->start_time), 0, 5),
+            substr((string) ($day?->end_time ?? $this->end_time), 0, 5),
         ];
     }
 

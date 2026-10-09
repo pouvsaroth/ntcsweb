@@ -14,6 +14,7 @@ use App\Support\Query\ApiQuery;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 /** HRM > Attendance & Time > Shift. */
 final class ShiftController extends Controller
@@ -22,7 +23,7 @@ final class ShiftController extends Controller
     {
         $this->authorize('viewAny', Shift::class);
 
-        $shifts = ApiQuery::for(Shift::query(), $request)
+        $shifts = ApiQuery::for(Shift::query()->with('days'), $request)
             ->searchable('code', 'name')
             ->filterable(['is_active'])
             ->sortable(['start_time', 'code', 'name'], default: 'start_time')
@@ -36,23 +37,56 @@ final class ShiftController extends Controller
     {
         $this->authorize('create', Shift::class);
 
-        return ApiResponse::created(new ShiftResource(Shift::query()->create($request->validated())));
+        $shift = DB::connection('tenant')->transaction(fn () => $this->fill(new Shift, $request->validated()));
+
+        return ApiResponse::created(new ShiftResource($shift->load('days')));
     }
 
     public function show(Shift $shift): JsonResponse
     {
         $this->authorize('view', $shift);
 
-        return ApiResponse::success(new ShiftResource($shift));
+        return ApiResponse::success(new ShiftResource($shift->load('days')));
     }
 
     public function update(ShiftRequest $request, Shift $shift): JsonResponse
     {
         $this->authorize('update', $shift);
 
-        $shift->update($request->validated());
+        DB::connection('tenant')->transaction(fn () => $this->fill($shift, $request->validated()));
 
-        return ApiResponse::success(new ShiftResource($shift));
+        return ApiResponse::success(new ShiftResource($shift->load('days')));
+    }
+
+    /**
+     * Saves the shift and, when `days` was sent, replaces its Day / From / To
+     * rows — the first day's hours also become the shift's own start/end,
+     * its fallback for any other weekday (see Shift::timesOn()).
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function fill(Shift $shift, array $data): Shift
+    {
+        $days = isset($data['days']) ? collect($data['days'])->sortBy('day_of_week')->values() : null;
+        unset($data['days']);
+
+        if ($days !== null) {
+            $data['start_time'] = $days->first()['start_time'];
+            $data['end_time'] = $days->first()['end_time'];
+        }
+
+        $shift->fill($data)->save();
+
+        if ($days !== null) {
+            $shift->days()->delete();
+            $shift->days()->createMany($days->map(fn (array $day) => [
+                'day_of_week' => (int) $day['day_of_week'],
+                'start_time' => $day['start_time'],
+                'end_time' => $day['end_time'],
+            ])->all());
+        }
+
+        return $shift;
     }
 
     public function destroy(Shift $shift): JsonResponse

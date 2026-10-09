@@ -28,6 +28,12 @@ class ShiftResource extends JsonResource
             'overnight' => $this->isOvernight(),
             'color' => $this->color,
             'is_active' => $this->is_active,
+            // Day / From / To rows (ISO 1 = Monday … 7 = Sunday); empty for a shift from before shift_days — see Shift::timesOn().
+            'days' => $this->whenLoaded('days', fn () => $this->days->map(fn ($day) => [
+                'day_of_week' => $day->day_of_week,
+                'start_time' => substr((string) $day->start_time, 0, 5),
+                'end_time' => substr((string) $day->end_time, 0, 5),
+            ])->values()),
         ];
     }
 }

@@ -76,6 +76,39 @@ class StaffAttendanceTest extends TestCase
         $this->assertSame(1, StaffAttendance::query()->where('staff_id', $staff->id)->count());
     }
 
+    public function test_lateness_uses_that_weekdays_own_hours_when_the_shift_has_day_rows(): void
+    {
+        $admin = $this->actingAsAdminWithPermissions([]);
+        Staff::factory()->create(['user_id' => $admin->id]);
+        $this->office();
+        // Saturday is 07:00–11:00; every other day keeps the shift's 08:00–17:00.
+        $this->shift->days()->create(['day_of_week' => 6, 'start_time' => '07:00', 'end_time' => '11:00']);
+        WorkSchedule::query()->update(['saturday_shift_id' => $this->shift->id]);
+
+        // Saturday 2026-10-17, 07:20 local: 20 min late against Saturday's 07:00.
+        $this->at('2026-10-17 07:20');
+        $this->postJson('/api/v1/my-staff-attendance/check-in')
+            ->assertOk()
+            ->assertJsonPath('data.late_minutes', 20);
+        $this->getJson('/api/v1/my-staff-attendance/today')
+            ->assertOk()
+            ->assertJsonPath('data.shift.start_time', '07:00')
+            ->assertJsonPath('data.shift.end_time', '11:00');
+    }
+
+    public function test_a_staff_member_sees_their_own_month(): void
+    {
+        $admin = $this->actingAsAdminWithPermissions([]);
+        Staff::factory()->create(['user_id' => $admin->id]);
+        $this->office();
+        $this->at('2026-10-12 09:00');
+
+        $this->getJson('/api/v1/my-staff-attendance?month=2026-10')
+            ->assertOk()
+            ->assertJsonPath('data.month', '2026-10')
+            ->assertJsonCount(31, 'data.days');
+    }
+
     public function test_within_the_allowance_is_on_time_and_staying_late_is_overtime(): void
     {
         $admin = $this->actingAsAdminWithPermissions([]);

@@ -26,9 +26,20 @@ export interface Shift {
   overnight: boolean
   color: string | null
   is_active: boolean
+  /** Day / From / To rows, Monday first. Empty for a shift from before these existed — its start/end then apply every day. */
+  days?: ShiftDay[]
 }
 
-export type ShiftInput = Omit<Shift, 'id' | 'work_minutes' | 'overnight'>
+/** One weekday's hours of a shift — `day_of_week` is ISO, 1 = Monday … 7 = Sunday (same as a class schedule). */
+export interface ShiftDay {
+  day_of_week: number
+  /** "HH:MM". */
+  start_time: string
+  end_time: string
+}
+
+/** start_time/end_time are worked out on the server from the first day row. */
+export type ShiftInput = Omit<Shift, 'id' | 'work_minutes' | 'overnight' | 'start_time' | 'end_time' | 'days'> & { days: ShiftDay[] }
 
 export type WorkSchedule = {
   id: number

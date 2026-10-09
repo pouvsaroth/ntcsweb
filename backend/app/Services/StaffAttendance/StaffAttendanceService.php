@@ -327,8 +327,10 @@ final class StaffAttendanceService
     public function scheduledTimes(Shift $shift, CarbonInterface $day): array
     {
         $date = CarbonImmutable::parse($day->toDateString(), $this->timezone());
-        $start = $this->at($date, substr((string) $shift->start_time, 0, 5));
-        $end = $this->at($date, substr((string) $shift->end_time, 0, 5));
+        // That weekday's own hours when the shift has a row for it — see Shift::timesOn().
+        [$from, $to] = $shift->timesOn($date);
+        $start = $this->at($date, $from);
+        $end = $this->at($date, $to);
 
         return [$start, $end->lessThanOrEqualTo($start) ? $end->addDay() : $end];
     }
@@ -379,7 +381,7 @@ final class StaffAttendanceService
             ->whereDate('to_date', '>=', $from->toDateString())->whereDate('from_date', '<=', $to->toDateString())->get()->groupBy('staff_id');
         $schedules = WorkSchedule::query()->get()->keyBy('id');
         $default = $schedules->firstWhere('is_default', true);
-        $shifts = Shift::query()->get()->keyBy('id');
+        $shifts = Shift::query()->with('days')->get()->keyBy('id');
         $now = $this->localNow();
         // Signed off for the month this range starts in (the sheet is always one month).
         $locked = AttendanceApproval::query()->whereIn('staff_id', $ids)->where('month', $from->format('Y-m'))->pluck('staff_id');

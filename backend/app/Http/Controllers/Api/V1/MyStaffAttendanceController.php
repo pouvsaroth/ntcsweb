@@ -36,10 +36,12 @@ final class MyStaffAttendanceController extends Controller
         $today = StaffAttendance::query()->with('shift')->where('staff_id', $staff->id)->whereDate('date', $now->toDateString())->first();
         $shiftId = WorkSchedule::forStaff($staff)?->shiftIdOn($now);
         $shift = $shiftId !== null ? Shift::query()->find($shiftId) : null;
+        // Today's own hours — see Shift::timesOn().
+        [$shiftStart, $shiftEnd] = $shift?->timesOn($now) ?? [null, null];
 
         return ApiResponse::success([
             'now' => $now->toIso8601String(),
-            'shift' => $shift !== null ? ['name' => $shift->name, 'start_time' => substr((string) $shift->start_time, 0, 5), 'end_time' => substr((string) $shift->end_time, 0, 5)] : null,
+            'shift' => $shift !== null ? ['name' => $shift->name, 'start_time' => $shiftStart, 'end_time' => $shiftEnd] : null,
             'record' => ($open ?? $today) !== null ? new StaffAttendanceResource($open ?? $today) : null,
             'can_check_in' => $open === null && $today?->check_in_at === null,
             'can_check_out' => $open !== null,
@@ -53,7 +55,8 @@ final class MyStaffAttendanceController extends Controller
         $month = $request->validate(['month' => ['nullable', 'date_format:Y-m']])['month'] ?? $this->attendance->localNow()->format('Y-m');
         $from = CarbonImmutable::parse("{$month}-01", $this->attendance->timezone());
 
-        $sheet = $this->attendance->sheet(collect([$staff]), $from, $from->endOfMonth()->startOfDay());
+        // An Eloquent collection — sheet() reads modelKeys(), which a plain collect() doesn't have.
+        $sheet = $this->attendance->sheet($staff->newCollection([$staff]), $from, $from->endOfMonth()->startOfDay());
 
         return ApiResponse::success(['month' => $month, 'days' => $sheet[0]['days'], 'totals' => $sheet[0]['totals']]);
     }

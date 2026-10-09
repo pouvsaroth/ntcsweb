@@ -41,6 +41,34 @@ class AttendanceSetupTest extends TestCase
             ->assertJsonValidationErrors(['code', 'start_time']);
     }
 
+    public function test_a_shift_saves_its_day_from_to_rows_and_takes_its_own_hours_from_the_first_day(): void
+    {
+        $this->actingAsAdminWithPermissions(self::ALL);
+
+        $id = $this->postJson('/api/v1/shifts', ['code' => 'WEEK', 'name' => 'Week', 'days' => [
+            ['day_of_week' => 6, 'start_time' => '07:00', 'end_time' => '11:00'],
+            ['day_of_week' => 1, 'start_time' => '08:00', 'end_time' => '17:00'],
+        ]])
+            ->assertCreated()
+            ->assertJsonPath('data.start_time', '08:00')
+            ->assertJsonPath('data.end_time', '17:00')
+            ->assertJsonPath('data.days.0.day_of_week', 1)
+            ->assertJsonPath('data.days.1.day_of_week', 6)
+            ->assertJsonPath('data.days.1.start_time', '07:00')
+            ->json('data.id');
+
+        // Editing replaces the rows.
+        $this->putJson("/api/v1/shifts/{$id}", ['days' => [['day_of_week' => 2, 'start_time' => '09:00', 'end_time' => '18:00']]])
+            ->assertOk()
+            ->assertJsonCount(1, 'data.days')
+            ->assertJsonPath('data.start_time', '09:00');
+
+        $this->postJson('/api/v1/shifts', ['code' => 'DUP', 'name' => 'Dup', 'days' => [
+            ['day_of_week' => 1, 'start_time' => '08:00', 'end_time' => '17:00'],
+            ['day_of_week' => 1, 'start_time' => '09:00', 'end_time' => '12:00'],
+        ]])->assertUnprocessable()->assertJsonValidationErrors(['days.0.day_of_week']);
+    }
+
     public function test_a_schedule_assigns_shifts_by_weekday_and_staff_follow_it_or_the_default(): void
     {
         $this->actingAsAdminWithPermissions(self::ALL);
