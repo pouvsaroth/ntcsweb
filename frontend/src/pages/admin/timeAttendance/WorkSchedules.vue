@@ -5,7 +5,6 @@ import { useI18n } from 'vue-i18n'
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
-import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import BaseMultiSelect from '@/components/ui/BaseMultiSelect.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
@@ -19,10 +18,10 @@ import { useConfirmDialogStore } from '@/stores/confirmDialog'
 import { ApiRequestError } from '@/types/api'
 
 /**
- * HRM > Attendance & Time > Work schedule — weekly patterns: which shift on
- * each weekday (or a day off), and who follows each. Staff not on any
- * schedule follow the default one. Shown as a week grid per schedule, which
- * stacks on a phone.
+ * HRM > Attendance & Time > Staff shift — pick a shift and assign staff to
+ * it. Staff not assigned to any follow the default one. Still a work
+ * schedule underneath (a shift per weekday): the shift's own Day / From / To
+ * rows decide its working days, and it's named after the shift.
  */
 const { t } = useI18n()
 const auth = useAuthStore()
@@ -98,7 +97,8 @@ async function save() {
   // Stored per weekday as before: the shift on each day it has hours for, a day off otherwise.
   const worked = new Set(workedDays(shift))
   const input = {
-    name: form.name,
+    // No name of its own to type — it's named after its shift.
+    name: shift.name,
     description: form.description.trim() || null,
     is_default: form.is_default,
     staff_ids: form.staff_ids.map(Number),
@@ -118,7 +118,7 @@ async function save() {
 }
 
 async function remove(schedule: WorkSchedule) {
-  if (!(await confirmDialog.confirm({ message: t('admin.timeAttendance.schedules.deleteConfirm', { name: schedule.name }), danger: true }))) return
+  if (!(await confirmDialog.confirm({ message: t('admin.timeAttendance.schedules.deleteConfirm', { name: shiftsOf(schedule)[0]?.name ?? schedule.name }), danger: true }))) return
   actionError.value = null
   try {
     await workSchedulesService.remove(schedule.id)
@@ -155,8 +155,12 @@ onMounted(async () => {
       <section v-for="schedule in items" :key="schedule.id" class="rounded-[--radius-card] border border-neutral-200 bg-white p-4 shadow-[--shadow-card]">
         <div class="flex flex-wrap items-start justify-between gap-2">
           <div>
-            <h2 class="flex items-center gap-2 font-semibold text-neutral-900">
-              {{ schedule.name }}
+            <!-- Titled by its shift — its days and hours are on the Shift tab. -->
+            <h2 class="flex flex-wrap items-center gap-2 font-semibold text-neutral-900">
+              <span v-for="shift in shiftsOf(schedule)" :key="shift.id" class="inline-flex items-center gap-1.5">
+                <span class="inline-block h-2.5 w-2.5 rounded-full" :style="{ backgroundColor: shift.color ?? '#9ca3af' }" />{{ shift.name }}
+              </span>
+              <template v-if="shiftsOf(schedule).length === 0">{{ schedule.name }}</template>
               <BaseBadge v-if="schedule.is_default" variant="primary">{{ t('admin.timeAttendance.schedules.default') }}</BaseBadge>
             </h2>
             <p class="text-sm text-neutral-500">
@@ -168,26 +172,12 @@ onMounted(async () => {
             <button type="button" class="text-sm font-medium text-danger-600" @click="remove(schedule)">{{ t('admin.organization.delete') }}</button>
           </div>
         </div>
-
-        <!-- Just the shift — its days and hours are on the Shift tab. -->
-        <div class="mt-3 flex flex-wrap gap-2">
-          <span
-            v-for="shift in shiftsOf(schedule)"
-            :key="shift.id"
-            class="inline-flex items-center gap-1.5 rounded-lg bg-neutral-50 px-3 py-1.5 text-sm font-medium text-neutral-800"
-          >
-            <span class="inline-block h-2 w-2 rounded-full" :style="{ backgroundColor: shift.color ?? '#9ca3af' }" />{{ shift.name }}
-          </span>
-          <span v-if="shiftsOf(schedule).length === 0" class="text-sm text-neutral-400">{{ t('admin.timeAttendance.schedules.dayOff') }}</span>
-        </div>
       </section>
     </div>
 
     <BaseModal v-model="formOpen" size="lg" :title="editing ? t('admin.timeAttendance.schedules.edit') : t('admin.timeAttendance.schedules.add')">
       <form class="space-y-4" @submit.prevent="save">
         <BaseAlert v-if="saveError" variant="danger">{{ saveError }}</BaseAlert>
-        <BaseInput v-model="form.name" required :label="t('admin.timeAttendance.schedules.name')" :error="errors.name?.[0]" />
-
         <BaseSelect
           v-model="form.shift_id"
           required
