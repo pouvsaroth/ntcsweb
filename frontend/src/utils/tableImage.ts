@@ -1,12 +1,16 @@
+import { useImagePreviewStore } from '@/stores/imagePreview'
+
 /**
- * Draws a simple report table onto a canvas and saves it as a PNG — for
- * "Export as image" buttons. Drawn directly (not a DOM screenshot) so every
+ * Draws a simple report table onto a canvas as a PNG and opens it in the
+ * image preview dialog (view / share / download / copy) — for "Export as
+ * image" buttons. Drawn directly (not a DOM screenshot) so every
  * row is included regardless of scroll position, text stays sharp, and
  * Khmer renders in the page's own font with no extra dependency.
  *
  * Text is never cut off: each column widens to fit its longest text, and a
  * column given a maxWidth wraps onto extra lines instead (the row grows).
  */
+
 export interface TableImageColumn {
   label: string
   align?: 'left' | 'right'
@@ -251,12 +255,6 @@ export async function exportTableAsImage(options: TableImageOptions): Promise<vo
   const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'))
   if (!blob) throw new Error('Could not create the image.')
 
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = options.fileName
-  document.body.appendChild(link)
-  link.click()
-  link.remove()
-  URL.revokeObjectURL(url)
+  // Shown first (view / share / download / copy) rather than downloaded straight away — see ImagePreviewDialog.vue.
+  useImagePreviewStore().show({ title: options.title, fileName: options.fileName, blob })
 }

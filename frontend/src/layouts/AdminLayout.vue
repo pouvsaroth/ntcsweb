@@ -7,6 +7,7 @@ import AdminSidebar from '@/components/layout/AdminSidebar.vue'
 import MobileBottomNav from '@/components/layout/MobileBottomNav.vue'
 import MonthlyPaymentAlertModal from '@/components/admin/MonthlyPaymentAlertModal.vue'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
+import ImagePreviewDialog from '@/components/ui/ImagePreviewDialog.vue'
 import { useAdminUiStore } from '@/stores/adminUi'
 import { useAuthStore } from '@/stores/auth'
 import { applyTranslationOverrides } from '@/i18n'
@@ -72,5 +73,6 @@ onBeforeUnmount(() => applyTranslationOverrides({}))
     <MobileBottomNav />
     <MonthlyPaymentAlertModal v-if="auth.hasRole('student')" />
     <ConfirmDialog />
+    <ImagePreviewDialog />
   </div>
 </template>
