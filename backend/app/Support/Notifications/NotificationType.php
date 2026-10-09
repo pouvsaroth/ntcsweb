@@ -52,6 +52,12 @@ final class NotificationType
 
     public const PAYROLL_RUN_REJECTED = 'payroll_run_rejected';
 
+    public const EXPENSE_SUBMITTED = 'expense_submitted';
+
+    public const EXPENSE_APPROVED = 'expense_approved';
+
+    public const EXPENSE_REJECTED = 'expense_rejected';
+
     public const PERFORMANCE_SELF_ASSESSMENT_OPEN = 'performance_self_assessment_open';
 
     public const PERFORMANCE_MANAGER_ASSESSMENT_DUE = 'performance_manager_assessment_due';

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Api\V1\Admin;
 
 use App\Models\Expense;
+use App\Services\Approvals\ApprovalFlow;
 use Illuminate\Foundation\Http\FormRequest;
 
 /** No body required — self-approval is blocked in ExpenseService, not by any input here. */
@@ -15,7 +16,8 @@ class ApproveExpenseRequest extends FormRequest
         /** @var Expense $expense */
         $expense = $this->route('expense');
 
-        return $this->user()?->can('approve', $expense) ?? false;
+        // With an Expense flow: only the current step's group; without: the policy ability.
+        return $this->user() !== null && app(ApprovalFlow::class)->mayDecide($expense, $this->user(), 'approve');
     }
 
     public function rules(): array

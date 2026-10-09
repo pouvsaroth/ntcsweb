@@ -7,6 +7,7 @@ namespace App\Support\Approvals;
 use App\Models\ApprovalRequest;
 use App\Models\AttendanceCorrection;
 use App\Models\ExamApplication;
+use App\Models\Expense;
 use App\Models\LeaveRequest;
 use App\Models\MakeUpClassRequest;
 use App\Models\ManpowerRequest;
@@ -14,6 +15,7 @@ use App\Models\OvertimeRequest;
 use App\Models\PayrollRun;
 use App\Models\PromotionRecommendation;
 use App\Models\ResignationRequest;
+use App\Support\Accounting\ExpenseStatus;
 use App\Support\Authorization\Permissions;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -49,6 +51,8 @@ final class DocumentType
 
     public const PROMOTION = 'promotion';
 
+    public const EXPENSE = 'expense';
+
     /** @var array<string, class-string<Model>> */
     private const MODELS = [
         self::STUDENT_LEAVE => LeaveRequest::class,
@@ -62,6 +66,7 @@ final class DocumentType
         self::ATTENDANCE_CORRECTION => AttendanceCorrection::class,
         self::PAYROLL_RUN => PayrollRun::class,
         self::PROMOTION => PromotionRecommendation::class,
+        self::EXPENSE => Expense::class,
     ];
 
     /** @return list<string> */
@@ -106,6 +111,16 @@ final class DocumentType
         };
     }
 
+    /**
+     * The status a request of this item has while it waits for a decision —
+     * `pending` everywhere except an expense, whose statuses are upper-case
+     * (see ExpenseStatus).
+     */
+    public static function pendingStatus(string $type): string
+    {
+        return $type === self::EXPENSE ? ExpenseStatus::PENDING_APPROVAL : 'pending';
+    }
+
     /** The permission that decides this item when it has no flow of its own. */
     public static function approvePermission(string $type): string
     {
@@ -120,6 +135,7 @@ final class DocumentType
             self::ATTENDANCE_CORRECTION => Permissions::ATTENDANCE_CORRECTIONS_APPROVE,
             self::PAYROLL_RUN => Permissions::PAYROLL_APPROVE,
             self::PROMOTION => Permissions::PERFORMANCE_APPROVE_PROMOTION,
+            self::EXPENSE => Permissions::EXPENSE_APPROVE,
         };
     }
 }

@@ -45,6 +45,8 @@ class ExpenseResource extends JsonResource
             'cancelled_at' => $this->cancelled_at?->toIso8601String(),
             'attachments' => ExpenseAttachmentResource::collection($this->whenLoaded('attachments')),
             'created_at' => $this->created_at?->toIso8601String(),
+            // Where a pending expense is in its Expense flow — see ApprovalFlow::progress().
+            'approval_flow' => $this->whenLoaded('approvalFlow'),
         ];
     }
 }

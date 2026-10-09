@@ -7,11 +7,16 @@ namespace App\Services\Accounting;
 use App\Models\Account;
 use App\Models\Expense;
 use App\Models\User;
+use App\Services\Approvals\ApprovalFlow;
+use App\Services\Notifications\NotificationService;
 use App\Support\Accounting\ExpenseStatus;
+use App\Support\Approvals\DocumentType;
 use App\Support\Audit\AuditAction;
 use App\Support\Audit\AuditLogger;
+use App\Support\Notifications\NotificationType;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -30,12 +35,38 @@ final class ExpenseService
         private readonly AccountingNumberGenerator $numbers,
         private readonly FinancialTransactionService $transactions,
         private readonly AuditLogger $audit,
+        private readonly ApprovalFlow $flow,
+        private readonly NotificationService $notifications,
     ) {}
 
     /**
      * @param  array{expense_date?:string, account_id:int, amount:float, payment_method?:string|null, vendor?:string|null, description?:string|null, reference_number?:string|null, status?:string}  $data
      */
     public function create(array $data, User $actor): Expense
+    {
+        $expense = $this->createRow($data, $actor);
+
+        if ($expense->status !== ExpenseStatus::PENDING_APPROVAL || ! $this->flow->hasFlow(DocumentType::EXPENSE)) {
+            return $expense;
+        }
+
+        // Approval Flow → Flow Setting has an Expense flow: an expense
+        // created by a member of its last step's group needs nobody else's
+        // say, so it's approved straight away; anyone else's waits on the
+        // first step's group, who are told.
+        if ($this->flow->isLastStepApprover(DocumentType::EXPENSE, $actor)) {
+            return $this->markApproved($expense, $actor, "Auto-approved expense {$expense->expense_number} — created by its flow's last approver");
+        }
+
+        $this->notifyApprovers($expense, $this->flow->submitRecipients($expense, fn () => collect()));
+
+        return $expense;
+    }
+
+    /**
+     * @param  array{expense_date?:string, account_id:int, amount:float, payment_method?:string|null, vendor?:string|null, description?:string|null, reference_number?:string|null, status?:string}  $data
+     */
+    private function createRow(array $data, User $actor): Expense
     {
         return DB::transaction(function () use ($data, $actor) {
             $tenant = $this->context->getOrFail();
@@ -66,19 +97,34 @@ final class ExpenseService
         });
     }
 
-    /** Segregation of duties: whoever created the expense can never approve it, no exceptions. */
+    /**
+     * The final approval — with an Expense flow, only once its last step is
+     * approved (see ExpenseController::approve()). Segregation of duties
+     * without a flow: whoever created the expense can never approve it. With
+     * a flow, the flow decides who approves (and its last group's own
+     * expenses are approved on creation — see create()).
+     */
     public function approve(Expense $expense, User $actor): Expense
     {
-        return DB::transaction(function () use ($expense, $actor) {
+        if (! $this->flow->hasFlow(DocumentType::EXPENSE) && $expense->created_by === $actor->getKey()) {
+            throw ValidationException::withMessages(['status' => 'You cannot approve an expense you created yourself.']);
+        }
+
+        $expense = $this->markApproved($expense, $actor, "Approved expense {$expense->expense_number}");
+
+        $this->notifyCreator($expense, $actor, NotificationType::EXPENSE_APPROVED);
+
+        return $expense;
+    }
+
+    private function markApproved(Expense $expense, User $actor, string $description): Expense
+    {
+        return DB::transaction(function () use ($expense, $actor, $description) {
             /** @var Expense $expense */
             $expense = Expense::query()->whereKey($expense->getKey())->lockForUpdate()->firstOrFail();
 
             if ($expense->status !== ExpenseStatus::PENDING_APPROVAL) {
                 throw ValidationException::withMessages(['status' => 'Only a pending expense can be approved.']);
-            }
-
-            if ($expense->created_by === $actor->getKey()) {
-                throw ValidationException::withMessages(['status' => 'You cannot approve an expense you created yourself.']);
             }
 
             $expense->update([
@@ -91,7 +137,7 @@ final class ExpenseService
                 AuditAction::EXPENSE_APPROVED,
                 'Expenses',
                 $expense,
-                description: "Approved expense {$expense->expense_number}",
+                description: $description,
                 actor: $actor,
             );
 
@@ -99,9 +145,25 @@ final class ExpenseService
         });
     }
 
+    /** @param  Collection<int, User>  $recipients  tells an approval step's group it's their turn */
+    public function notifyApprovers(Expense $expense, Collection $recipients): void
+    {
+        $this->notifications->notifyMany($recipients, NotificationType::EXPENSE_SUBMITTED, ['reference' => $expense->expense_number], link: '/admin/approvals/queue');
+    }
+
+    /** @param  array<string, mixed>  $extra */
+    private function notifyCreator(Expense $expense, User $actor, string $type, array $extra = []): void
+    {
+        $creator = $expense->created_by !== null ? User::query()->find($expense->created_by) : null;
+
+        if ($creator !== null && ! $creator->is($actor)) {
+            $this->notifications->notifyMany(collect([$creator]), $type, ['reference' => $expense->expense_number, ...$extra], link: "/admin/expenses/{$expense->id}");
+        }
+    }
+
     public function reject(Expense $expense, string $reason, User $actor): Expense
     {
-        return DB::transaction(function () use ($expense, $reason, $actor) {
+        $expense = DB::transaction(function () use ($expense, $reason, $actor) {
             /** @var Expense $expense */
             $expense = Expense::query()->whereKey($expense->getKey())->lockForUpdate()->firstOrFail();
 
@@ -122,6 +184,10 @@ final class ExpenseService
 
             return $expense;
         });
+
+        $this->notifyCreator($expense, $actor, NotificationType::EXPENSE_REJECTED, ['reason' => $reason]);
+
+        return $expense;
     }
 
     public function pay(Expense $expense, Account $cashAccount, User $actor, ?string $date = null): Expense

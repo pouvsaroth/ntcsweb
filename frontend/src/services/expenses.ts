@@ -1,3 +1,4 @@
+import type { ApprovalFlowProgress } from '@/services/approvalFlows'
 import { apiDelete, apiGetWithMeta, apiPost, apiPut } from '@/services/http'
 import type { PaginatedQuery } from '@/composables/usePaginatedResource'
 import type { LengthAwarePaginationMeta, PaginatedResult } from '@/types/api'
@@ -37,6 +38,8 @@ export interface Expense {
   cancelled_at: string | null
   attachments: ExpenseAttachment[]
   created_at: string
+  /** Pending + an Expense approval flow is set: the step it waits on, and whether you can act on it. */
+  approval_flow?: ApprovalFlowProgress | null
 }
 
 export interface ExpenseInput {
@@ -62,9 +65,17 @@ function toExpensePayload(input: ExpenseInput) {
 }
 
 export const expensesService = {
-  async list(query: PaginatedQuery): Promise<PaginatedResult<Expense>> {
+  /** `approvalQueue`: the Approvals queue's view — a pending expense with a flow only reaches its current step's group. */
+  async list(query: PaginatedQuery, opts: { approvalQueue?: boolean } = {}): Promise<PaginatedResult<Expense>> {
     const result = await apiGetWithMeta<Expense[]>('/expenses', {
-      params: { page: query.page, per_page: query.per_page, search: query.search, sort: query.sort, filter: query.filter },
+      params: {
+        page: query.page,
+        per_page: query.per_page,
+        search: query.search,
+        sort: query.sort,
+        filter: query.filter,
+        ...(opts.approvalQueue ? { approval_queue: '1' } : {}),
+      },
     })
     return { data: result.data, pagination: result.meta?.pagination as LengthAwarePaginationMeta }
   },

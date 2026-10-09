@@ -7,6 +7,7 @@ namespace App\Services\Approvals;
 use App\Models\ApprovalFlowStep;
 use App\Models\ApprovalGroupMember;
 use App\Models\ApprovalStepApproval;
+use App\Models\Expense;
 use App\Models\User;
 use App\Services\Notifications\NotificationService;
 use App\Support\Approvals\DocumentType;
@@ -147,6 +148,14 @@ final class ApprovalFlow
         return $step !== null && in_array((int) $user->getKey(), $this->memberIds($step->approval_group_id), true);
     }
 
+    /** Is this user in the group of this item's last step? False when it has no flow. */
+    public function isLastStepApprover(string $type, User $user): bool
+    {
+        $last = $this->steps($type)->last();
+
+        return $last !== null && in_array((int) $user->getKey(), $this->memberIds($last->approval_group_id), true);
+    }
+
     /** Is this user in any step's group of any of these items? */
     public function isApproverFor(User $user, array $types): bool
     {
@@ -176,7 +185,7 @@ final class ApprovalFlow
      */
     public function progress(Model $document, ?User $user): ?array
     {
-        if (! in_array($document->getAttribute('status'), self::AWAITING_STATUSES, true)) {
+        if (! in_array($document->getAttribute('status'), $this->awaitingStatuses(DocumentType::forModel($document)), true)) {
             return null;
         }
 
@@ -252,7 +261,7 @@ final class ApprovalFlow
             /** @var Model $locked */
             $locked = $document->newQuery()->whereKey($document->getKey())->lockForUpdate()->firstOrFail();
 
-            if ($locked->getAttribute('status') !== 'pending') {
+            if ($locked->getAttribute('status') !== DocumentType::pendingStatus($type)) {
                 throw ValidationException::withMessages(['status' => 'This request has already been decided.']);
             }
 
@@ -323,6 +332,10 @@ final class ApprovalFlow
      */
     private function requesterOf(Model $document): ?User
     {
+        if ($document instanceof Expense) {
+            return $document->createdBy;
+        }
+
         foreach (['student', 'staff'] as $relation) {
             if ($document->hasAttribute("{$relation}_id") && $document->getAttribute("{$relation}_id") !== null && method_exists($document, $relation)) {
                 $user = $document->{$relation}?->user;
@@ -378,7 +391,7 @@ final class ApprovalFlow
             }
 
             $flowTypes[] = $type;
-            $pendingQuery = $modelClass::query()->whereIn('status', self::AWAITING_STATUSES);
+            $pendingQuery = $modelClass::query()->whereIn('status', $this->awaitingStatuses($type));
             DocumentType::constrain($pendingQuery, $type);
             $pending = $pendingQuery->get();
             $this->preloadApprovals($pending);
@@ -392,7 +405,10 @@ final class ApprovalFlow
             ->pluck('approvable_id');
         $visibleIds = $visibleIds->merge($involvedIds)->unique()->values()->all();
 
-        $query->where(function (Builder $outer) use ($canViewAll, $flowTypes, $plainTypes, $visibleIds) {
+        // Every type stored in one table shares its pending status.
+        $pendingStatus = DocumentType::pendingStatus(DocumentType::forModelClass($modelClass)[0]);
+
+        $query->where(function (Builder $outer) use ($canViewAll, $plainTypes, $visibleIds, $pendingStatus) {
             $outer->whereIn($outer->qualifyColumn('id'), $visibleIds);
 
             if (! $canViewAll) {
@@ -400,10 +416,10 @@ final class ApprovalFlow
             }
 
             // Every decided request, and every pending one of an item with no flow.
-            $outer->orWhere($outer->qualifyColumn('status'), '!=', 'pending');
+            $outer->orWhere($outer->qualifyColumn('status'), '!=', $pendingStatus);
             foreach ($plainTypes as $type) {
-                $outer->orWhere(function (Builder $inner) use ($type) {
-                    $inner->where($inner->qualifyColumn('status'), 'pending');
+                $outer->orWhere(function (Builder $inner) use ($type, $pendingStatus) {
+                    $inner->where($inner->qualifyColumn('status'), $pendingStatus);
                     DocumentType::constrain($inner, $type);
                 });
             }
@@ -411,6 +427,14 @@ final class ApprovalFlow
     }
 
     // --- Internals -----------------------------------------------------------------------
+
+    /** @return list<string> AWAITING_STATUSES, or an expense's own pending status (see DocumentType::pendingStatus()) */
+    private function awaitingStatuses(string $type): array
+    {
+        $pending = DocumentType::pendingStatus($type);
+
+        return $pending === 'pending' ? self::AWAITING_STATUSES : [$pending];
+    }
 
     /** @return Collection<int, User> */
     private function usersIn(int $groupId): Collection

@@ -24,6 +24,7 @@ import { studentRegistrationsService, type StudentRegistration } from '@/service
 import { useAuthStore } from '@/stores/auth'
 import { useConfirmDialogStore } from '@/stores/confirmDialog'
 import type { ApprovalFlowProgress } from '@/services/approvalFlows'
+import { expensesService, type Expense, type ExpenseStatus } from '@/services/expenses'
 import { ApiRequestError } from '@/types/api'
 import { formatDate } from '@/utils/date'
 import { genderLabel } from '@/utils/gender'
@@ -42,7 +43,7 @@ import { genderLabel } from '@/utils/gender'
 type RowStatus = ApprovalRequestStatus | MakeUpClassRequestStatus
 
 type MergedRow = {
-  kind: 'approval' | 'leave' | 'resignation' | 'makeUp' | 'exam' | 'registration' | 'manpower' | 'overtime' | 'correction'
+  kind: 'approval' | 'leave' | 'resignation' | 'makeUp' | 'exam' | 'registration' | 'manpower' | 'overtime' | 'correction' | 'expense'
   id: number
   reference: string
   requestor: string
@@ -60,6 +61,7 @@ type MergedRow = {
   manpower?: ManpowerRequest
   overtime?: OvertimeRequest
   correction?: AttendanceCorrection
+  expense?: Expense
 }
 
 const { t } = useI18n()
@@ -87,6 +89,16 @@ const canViewManpower = computed(() => auth.can('recruitment.view') || auth.isFl
 // HRM > Attendance & Time's overtime claims.
 const canViewOvertime = computed(() => auth.can('staff-attendance.view') || auth.isFlowApprover(['overtime_request']))
 const canViewCorrections = computed(() => auth.can('staff-attendance.view') || auth.isFlowApprover(['attendance_correction']))
+// Accounting's expenses — whoever approves them, or a member of an Expense flow step's group.
+const canViewExpenses = computed(() => (auth.can('expense.view') && auth.can('expense.approve')) || auth.isFlowApprover(['expense']))
+
+/** An expense's status in this queue's own terms — paid counts as approved; draft/cancelled never reach it. */
+function expenseQueueStatus(status: ExpenseStatus): RowStatus | null {
+  if (status === 'PENDING_APPROVAL') return 'pending'
+  if (status === 'APPROVED' || status === 'PAID') return 'approved'
+  if (status === 'REJECTED') return 'rejected'
+  return null
+}
 // Only exam applications can be edited from this queue — a reviewer fixing
 // the student's info or the room/table/date assignment before deciding.
 // Leave/resignation requests have no equivalent "amend before deciding" step.
@@ -163,6 +175,7 @@ const approvePermission: Record<MergedRow['kind'], string> = {
   manpower: 'manpower-requests.approve',
   overtime: 'overtime-requests.approve',
   correction: 'attendance-corrections.approve',
+  expense: 'expense.approve',
 }
 
 const rejectPermission: Record<MergedRow['kind'], string> = {
@@ -175,6 +188,7 @@ const rejectPermission: Record<MergedRow['kind'], string> = {
   manpower: 'manpower-requests.reject',
   overtime: 'overtime-requests.reject',
   correction: 'attendance-corrections.reject',
+  expense: 'expense.reject',
 }
 
 // With an approval flow, only the group the request waits on decides it —
@@ -205,7 +219,7 @@ async function load() {
   error.value = null
 
   try {
-    const [approvals, leaves, resignations, makeUps, exams, registrations, manpowers, overtimes, corrections] = await Promise.all([
+    const [approvals, leaves, resignations, makeUps, exams, registrations, manpowers, overtimes, corrections, expenses] = await Promise.all([
       canViewApprovals.value ? approvalRequestsService.list({}, { approvalQueue: true }) : Promise.resolve({ data: [] as ApprovalRequest[], pagination: undefined }),
       canViewLeave.value
         ? leaveRequestsService.list({ page: 1, per_page: 100, filter: {} }, { approvalQueue: true })
@@ -237,6 +251,9 @@ async function load() {
       canViewCorrections.value
         ? attendanceCorrectionsService.list({ page: 1, per_page: 100, filter: {} }, { approvalQueue: true })
         : Promise.resolve({ data: [] as AttendanceCorrection[], pagination: undefined }),
+      canViewExpenses.value
+        ? expensesService.list({ page: 1, per_page: 100, filter: { status: 'PENDING_APPROVAL,APPROVED,PAID,REJECTED' } }, { approvalQueue: true })
+        : Promise.resolve({ data: [] as Expense[], pagination: undefined }),
     ])
 
     const approvalRows: MergedRow[] = approvals.data.map((r) => ({
@@ -353,7 +370,24 @@ async function load() {
       correction: r,
     }))
 
-    rows.value = [...approvalRows, ...leaveRows, ...resignationRows, ...makeUpRows, ...examRows, ...registrationRows, ...manpowerRows, ...overtimeRows, ...correctionRows].sort((a, b) =>
+    const expenseRows: MergedRow[] = expenses.data.flatMap((r) => {
+      const status = expenseQueueStatus(r.status)
+      return status === null
+        ? []
+        : [{
+            kind: 'expense' as const,
+            id: r.id,
+            reference: r.expense_number,
+            requestor: r.created_by ?? '—',
+            subject: t('admin.approvals.expenseSubject', { amount: `$${r.amount.toFixed(2)}`, account: r.account.name }),
+            status,
+            createdAt: r.created_at,
+            flow: r.approval_flow ?? null,
+            expense: r,
+          }]
+    })
+
+    rows.value = [...approvalRows, ...leaveRows, ...resignationRows, ...makeUpRows, ...examRows, ...registrationRows, ...manpowerRows, ...overtimeRows, ...correctionRows, ...expenseRows].sort((a, b) =>
       b.createdAt.localeCompare(a.createdAt),
     )
   } catch (e) {
@@ -405,6 +439,8 @@ async function approve(row: MergedRow) {
       await overtimeRequestsService.approve(row.id)
     } else if (row.kind === 'correction') {
       await attendanceCorrectionsService.approve(row.id)
+    } else if (row.kind === 'expense') {
+      await expensesService.approve(row.id)
     } else {
       await examApplicationsService.approve(row.id)
     }
@@ -441,6 +477,8 @@ async function confirmReject(reason: string) {
       await overtimeRequestsService.reject(row.id, reason)
     } else if (row.kind === 'correction') {
       await attendanceCorrectionsService.reject(row.id, reason)
+    } else if (row.kind === 'expense') {
+      await expensesService.reject(row.id, reason)
     } else {
       await examApplicationsService.reject(row.id, reason)
     }
@@ -628,6 +666,14 @@ function leaveSubject(r: LeaveRequest): string {
           <div><dt class="text-neutral-500">{{ t('admin.timeAttendance.overtime.minutes') }}</dt><dd class="font-medium text-neutral-900">{{ formatMinutes(detail.overtime.minutes) }}</dd></div>
           <div><dt class="text-neutral-500">{{ t('admin.timeAttendance.overtime.reason') }}</dt><dd class="whitespace-pre-line font-medium text-neutral-900">{{ detail.overtime.reason }}</dd></div>
           <div v-if="detail.overtime.decision_reason"><dt class="text-neutral-500">{{ t('admin.leaveRequests.decisionReason') }}</dt><dd class="font-medium text-neutral-900">{{ detail.overtime.decision_reason }}</dd></div>
+        </dl>
+        <dl v-else-if="detail.kind === 'expense' && detail.expense" class="grid gap-y-2 text-sm">
+          <div><dt class="text-neutral-500">{{ t('admin.expenses.columnDate') }}</dt><dd class="font-medium text-neutral-900">{{ formatDate(detail.expense.expense_date) }}</dd></div>
+          <div><dt class="text-neutral-500">{{ t('admin.expenses.columnAccount') }}</dt><dd class="font-medium text-neutral-900">{{ detail.expense.account.code }} — {{ detail.expense.account.name }}</dd></div>
+          <div><dt class="text-neutral-500">{{ t('admin.expenses.columnAmount') }}</dt><dd class="font-medium text-neutral-900">${{ detail.expense.amount.toFixed(2) }}</dd></div>
+          <div v-if="detail.expense.vendor"><dt class="text-neutral-500">{{ t('admin.expenses.columnVendor') }}</dt><dd class="font-medium text-neutral-900">{{ detail.expense.vendor }}</dd></div>
+          <div v-if="detail.expense.description"><dt class="text-neutral-500">{{ t('admin.expenses.description') }}</dt><dd class="whitespace-pre-line font-medium text-neutral-900">{{ detail.expense.description }}</dd></div>
+          <div v-if="detail.expense.rejected_reason"><dt class="text-neutral-500">{{ t('admin.leaveRequests.decisionReason') }}</dt><dd class="font-medium text-neutral-900">{{ detail.expense.rejected_reason }}</dd></div>
         </dl>
         <div v-else-if="detail.kind === 'registration' && detail.registration">
           <div class="flex gap-4">

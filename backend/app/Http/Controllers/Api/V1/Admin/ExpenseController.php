@@ -20,6 +20,8 @@ use App\Models\Expense;
 use App\Models\ExpenseAttachment;
 use App\Models\Tenant;
 use App\Services\Accounting\ExpenseService;
+use App\Services\Approvals\ApprovalFlow;
+use App\Support\Approvals\DocumentType;
 use App\Support\Query\ApiQuery;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
@@ -31,13 +33,22 @@ final class ExpenseController extends Controller
     public function __construct(
         private readonly ExpenseService $expenses,
         private readonly TenantContext $context,
+        private readonly ApprovalFlow $flow,
     ) {}
 
     public function index(Request $request): JsonResponse
     {
-        $this->authorize('viewAny', Expense::class);
+        $user = $request->user();
+        $canViewAll = $user->can('viewAny', Expense::class);
+        // A member of an Expense flow step's group sees the expenses waiting
+        // on them in the Approvals queue even without expense.view.
+        abort_unless($canViewAll || $this->flow->isApproverFor($user, [DocumentType::EXPENSE]), 403);
 
         $query = Expense::query()->with(['account', 'createdBy']);
+
+        if ($request->boolean('approval_queue') || ! $canViewAll) {
+            $this->flow->scopeQueue($query, Expense::class, $user, $canViewAll);
+        }
 
         if ($request->filled('date_from')) {
             $query->whereDate('expense_date', '>=', $request->string('date_from')->toString());
@@ -53,6 +64,8 @@ final class ExpenseController extends Controller
             ->sortable(['expense_date', 'amount', 'created_at'], default: '-created_at')
             ->paginate();
 
+        $this->flow->attachProgress($expenses->getCollection(), $user);
+
         return ApiResponse::success(ExpenseResource::collection($expenses));
     }
 
@@ -63,13 +76,15 @@ final class ExpenseController extends Controller
         return ApiResponse::created(new ExpenseResource($expense->load(['account', 'createdBy'])));
     }
 
-    public function show(Expense $expense): JsonResponse
+    public function show(Request $request, Expense $expense): JsonResponse
     {
-        $this->authorize('view', $expense);
+        $user = $request->user();
+        abort_unless($user->can('view', $expense) || $this->flow->isCurrentApprover($expense, $user), 403);
 
-        return ApiResponse::success(new ExpenseResource(
-            $expense->load(['account', 'cashAccount', 'createdBy', 'approvedBy', 'cancelledBy', 'attachments.uploadedBy'])
-        ));
+        $expense->load(['account', 'cashAccount', 'createdBy', 'approvedBy', 'cancelledBy', 'attachments.uploadedBy']);
+        $this->flow->attachProgress([$expense], $user);
+
+        return ApiResponse::success(new ExpenseResource($expense));
     }
 
     public function update(UpdateExpenseRequest $request, Expense $expense): JsonResponse
@@ -81,7 +96,16 @@ final class ExpenseController extends Controller
 
     public function approve(ApproveExpenseRequest $request, Expense $expense): JsonResponse
     {
-        $expense = $this->expenses->approve($expense, $request->user());
+        // With an Expense flow: approves the current step (and tells the
+        // next step's group); the last step approves the expense.
+        $expense = $this->flow->approve(
+            $expense,
+            $request->user(),
+            fn (Expense $doc) => $this->expenses->approve($doc, $request->user()),
+            fn (Expense $doc, $nextApprovers) => $this->expenses->notifyApprovers($doc, $nextApprovers),
+        );
+
+        $this->flow->attachProgress([$expense], $request->user());
 
         return ApiResponse::success(new ExpenseResource($expense));
     }

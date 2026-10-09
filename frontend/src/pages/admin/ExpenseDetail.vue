@@ -10,10 +10,12 @@ import BaseBadge from '@/components/ui/BaseBadge.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import { expensesService, type Expense, type ExpenseStatus } from '@/services/expenses'
+import { useAuthStore } from '@/stores/auth'
 import { ApiRequestError } from '@/types/api'
 import { formatDate } from '@/utils/date'
 
 const { t } = useI18n()
+const auth = useAuthStore()
 const route = useRoute()
 const router = useRouter()
 
@@ -40,6 +42,10 @@ const statusVariant: Record<ExpenseStatus, 'neutral' | 'warning' | 'success' | '
   REJECTED: 'danger',
   CANCELLED: 'neutral',
 }
+
+/** With an Expense approval flow, only the group it waits on decides (`can_act`); without one, the approve/reject permissions. */
+const canApprove = computed(() => (expense.value?.approval_flow ? expense.value.approval_flow.can_act : auth.can('expense.approve')))
+const canReject = computed(() => (expense.value?.approval_flow ? expense.value.approval_flow.can_act : auth.can('expense.reject')))
 
 async function load() {
   loading.value = true
@@ -177,9 +183,14 @@ onMounted(load)
 
       <BaseAlert v-if="actionError" variant="danger" class="mb-4">{{ actionError }}</BaseAlert>
 
+      <!-- Where it is in its Expense approval flow (Approval Flow → Flow Setting), when one is set. -->
+      <p v-if="expense.approval_flow" class="mb-3 text-sm text-neutral-500">
+        {{ t('admin.approvals.flowStep', { step: expense.approval_flow.step, total: expense.approval_flow.total, group: expense.approval_flow.group ?? '—' }) }}
+      </p>
+
       <div class="mb-6 flex flex-wrap gap-3">
-        <BaseButton v-if="expense.status === 'PENDING_APPROVAL'" @click="approve">{{ t('admin.expenses.approve') }}</BaseButton>
-        <BaseButton v-if="expense.status === 'PENDING_APPROVAL'" variant="danger" @click="openReject">{{ t('admin.expenses.reject') }}</BaseButton>
+        <BaseButton v-if="expense.status === 'PENDING_APPROVAL' && canApprove" @click="approve">{{ t('admin.expenses.approve') }}</BaseButton>
+        <BaseButton v-if="expense.status === 'PENDING_APPROVAL' && canReject" variant="danger" @click="openReject">{{ t('admin.expenses.reject') }}</BaseButton>
         <BaseButton v-if="expense.status === 'APPROVED'" @click="payModalOpen = true">{{ t('admin.expenses.pay') }}</BaseButton>
         <BaseButton
           v-if="!['PAID', 'REJECTED', 'CANCELLED'].includes(expense.status)"
