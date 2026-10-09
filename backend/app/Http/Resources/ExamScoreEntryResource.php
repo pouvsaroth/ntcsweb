@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Resources;
 
 use App\Models\ExamApplication;
+use App\Support\Academic\ExamMention;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -37,6 +38,8 @@ class ExamScoreEntryResource extends JsonResource
             'book' => $this->book !== null ? ['id' => $this->book->id, 'title' => $this->book->title] : null,
             'exam_date' => $this->exam_date?->toDateString(),
             'score' => $this->score?->score,
+            // Null until a score is entered — see ExamMention for the scale.
+            'mention' => $this->score !== null ? ExamMention::for((float) $this->score->score) : null,
             'remark' => $this->score?->remark,
             'recorded_by' => $this->score?->recordedBy?->name,
             'recorded_at' => $this->score?->recorded_at?->toIso8601String(),

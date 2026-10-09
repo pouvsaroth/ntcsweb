@@ -768,6 +768,7 @@ const ja: MessageSchema = {
       columnActions: '操作',
       columnScore: '得点',
       columnRemark: '備考',
+      exportTitle: '試験結果',
       makeUpExam: '追試',
       scorePlaceholder: '0–100',
       remarkPlaceholder: '備考',

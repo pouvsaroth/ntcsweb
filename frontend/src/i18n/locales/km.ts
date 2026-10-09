@@ -768,6 +768,7 @@ const km: MessageSchema = {
       columnActions: 'សកម្មភាព',
       columnScore: 'ពិន្ទុ',
       columnRemark: 'សម្គាល់',
+      exportTitle: 'លទ្ធផលប្រឡង',
       makeUpExam: 'ប្រឡងសង',
       scorePlaceholder: '0–100',
       remarkPlaceholder: 'សម្គាល់',

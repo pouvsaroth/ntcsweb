@@ -1,4 +1,5 @@
 import { apiGetWithMeta, apiPost } from '@/services/http'
+import type { ExamMention } from '@/services/myScores'
 
 /** One Grades-tab row: an approved exam application plus its score (null until entered). See ExamScoreEntryResource. */
 export interface ExamScoreEntry {
@@ -17,6 +18,8 @@ export interface ExamScoreEntry {
   exam_date: string | null
   /** Laravel's `decimal:2` cast serializes as a string, e.g. "87.50". */
   score: string | null
+  /** Null until a score is entered — see the backend's ExamMention. */
+  mention: ExamMention | null
   remark: string | null
   recorded_by: string | null
   recorded_at: string | null

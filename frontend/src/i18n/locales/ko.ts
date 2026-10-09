@@ -768,6 +768,7 @@ const ko: MessageSchema = {
       columnActions: '작업',
       columnScore: '점수',
       columnRemark: '비고',
+      exportTitle: '시험 결과',
       makeUpExam: '추가 시험',
       scorePlaceholder: '0–100',
       remarkPlaceholder: '비고',

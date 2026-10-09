@@ -62,6 +62,25 @@ class ExamScoreTest extends TestCase
         $response->assertJsonPath('data.0.score', null);
     }
 
+    public function test_the_list_is_ordered_by_exam_date_ascending_and_carries_each_scores_mention(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::EXAM_SCORES_MANAGE_ALL]);
+        $later = $this->application(['exam_date' => '2026-03-10']);
+        $earlier = $this->application(['exam_date' => '2026-01-05']);
+        $unscored = $this->application(['exam_date' => '2026-02-01']);
+        ExamScore::query()->create(['exam_application_id' => $later->id, 'score' => 96]);
+        ExamScore::query()->create(['exam_application_id' => $earlier->id, 'score' => 80]);
+
+        $this->getJson('/api/v1/exam-scores')
+            ->assertOk()
+            ->assertJsonPath('data.0.exam_application_id', $earlier->id)
+            ->assertJsonPath('data.0.mention', 'fail')
+            ->assertJsonPath('data.1.exam_application_id', $unscored->id)
+            ->assertJsonPath('data.1.mention', null)
+            ->assertJsonPath('data.2.exam_application_id', $later->id)
+            ->assertJsonPath('data.2.mention', 'excellent');
+    }
+
     public function test_options_list_the_course_class_book_combinations_that_have_approved_applications(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::EXAM_SCORES_VIEW, Permissions::EXAM_SCORES_MANAGE_ALL]);

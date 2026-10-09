@@ -772,6 +772,7 @@ const en = {
       columnActions: 'Actions',
       columnScore: 'Score',
       columnRemark: 'Remark',
+      exportTitle: 'Examination Result',
       makeUpExam: 'Make-up Exam',
       scorePlaceholder: '0–100',
       remarkPlaceholder: 'Remark',

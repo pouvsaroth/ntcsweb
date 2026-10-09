@@ -40,7 +40,8 @@ final class ExamScoreController extends Controller
             $filters['scored'] = $request->boolean('scored');
         }
 
-        $query = $this->scores->filtered($request->user(), $filters)->orderBy('id');
+        // Earliest exam first; id breaks ties within one exam date.
+        $query = $this->scores->filtered($request->user(), $filters)->orderBy('exam_date')->orderBy('id');
 
         $rows = ApiQuery::for($query, $request)->maxPerPage(500)->paginate();
 

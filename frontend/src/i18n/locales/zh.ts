@@ -767,6 +767,7 @@ const zh: MessageSchema = {
       columnActions: '操作',
       columnScore: '成绩',
       columnRemark: '备注',
+      exportTitle: '考试成绩',
       makeUpExam: '补考',
       scorePlaceholder: '0–100',
       remarkPlaceholder: '备注',
