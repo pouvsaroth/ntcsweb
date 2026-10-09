@@ -111,7 +111,8 @@ async function open(schedule: WorkSchedule | null) {
   const full = schedule ? await workSchedulesService.get(schedule.id).catch(() => schedule) : null
   form.name = full?.name ?? ''
   form.description = full?.description ?? ''
-  form.is_default = full?.is_default ?? items.value.length === 0
+  // Never pre-ticked: a default schedule applies to every unassigned staff member, so it must be a deliberate choice.
+  form.is_default = full?.is_default ?? false
   // Its shift (the first one, for an older schedule mixing several); a new schedule starts on the first active shift.
   const current = full ? shiftsOf(full)[0] : shifts.value.find((s) => s.is_active)
   form.shift_id = current ? String(current.id) : ''
