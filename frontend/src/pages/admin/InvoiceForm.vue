@@ -131,30 +131,35 @@ const errors = ref<Record<string, string[]>>({})
 const generalError = ref<string | null>(null)
 const submitting = ref(false)
 const submittingAndPrinting = ref(false)
+const submittingAndImaging = ref(false)
+const anySubmitting = computed(() => submitting.value || submittingAndPrinting.value || submittingAndImaging.value)
 const printProgress = useTaskProgress()
-const { progress: imageProgress, printInvoice } = useInvoicePrint()
+const { progress: imageProgress, printInvoice, showInvoiceImage } = useInvoicePrint()
 
 const canSubmit = computed(() => selectedStudent.value !== null && form.items.every((item) => item.product_id !== null))
 
 /**
  * `print`: "Save and Print" — also opens print preview with the new invoice
- * as an A5 image (same as the Enrollment form's) before opening it. A failed
- * print still opens the saved invoice, where Download Invoice retries it.
+ * as an A5 image (same as the Enrollment form's) before opening it.
+ * `image`: "Save and Image" — shows that image in the share / download /
+ * copy dialog instead (see useInvoicePrint). Either way a failure still
+ * opens the saved invoice, where Download Invoice / Image retries it.
  */
-async function submit(print = false) {
+async function submit(then: 'none' | 'print' | 'image' = 'none') {
   if (!selectedStudent.value) return
 
-  const busy = print ? submittingAndPrinting : submitting
+  const busy = then === 'print' ? submittingAndPrinting : then === 'image' ? submittingAndImaging : submitting
   busy.value = true
   errors.value = {}
   generalError.value = null
-  if (print) printProgress.creep(t('admin.invoices.progressSaving'), 25)
+  if (then !== 'none') printProgress.creep(t('admin.invoices.progressSaving'), 25)
 
   try {
     const invoice = await invoicesService.create({ ...form, student_id: selectedStudent.value.id })
-    if (print) {
+    if (then !== 'none') {
       printProgress.reset()
-      await printInvoice(invoice.id, invoice.invoice_number).catch(() => {})
+      const output = then === 'print' ? printInvoice : showInvoiceImage
+      await output(invoice.id, invoice.invoice_number).catch(() => {})
     }
     await router.push(`/admin/invoices/${invoice.id}`)
   } catch (error) {
@@ -321,10 +326,25 @@ onMounted(async () => {
         <p class="mt-2 text-xs text-neutral-400">{{ t('admin.invoices.totalPreviewHint') }}</p>
       </div>
 
-      <div class="flex gap-3">
-        <BaseButton type="submit" :loading="submitting" :disabled="!canSubmit || submittingAndPrinting">{{ t('common.save') }}</BaseButton>
-        <BaseButton type="button" variant="outline" :loading="submittingAndPrinting" :disabled="!canSubmit || submitting" @click="submit(true)">
+      <div class="flex flex-wrap gap-3">
+        <BaseButton type="submit" :loading="submitting" :disabled="!canSubmit || (anySubmitting && !submitting)">{{ t('common.save') }}</BaseButton>
+        <BaseButton
+          type="button"
+          variant="outline"
+          :loading="submittingAndPrinting"
+          :disabled="!canSubmit || (anySubmitting && !submittingAndPrinting)"
+          @click="submit('print')"
+        >
           {{ t('admin.invoices.saveAndPrint') }}
+        </BaseButton>
+        <BaseButton
+          type="button"
+          variant="outline"
+          :loading="submittingAndImaging"
+          :disabled="!canSubmit || (anySubmitting && !submittingAndImaging)"
+          @click="submit('image')"
+        >
+          {{ t('admin.invoices.saveAndImage') }}
         </BaseButton>
         <BaseButton type="button" variant="outline" @click="router.push('/admin/invoices')">{{ t('common.cancel') }}</BaseButton>
       </div>

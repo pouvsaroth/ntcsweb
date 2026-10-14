@@ -286,7 +286,7 @@ async function submit() {
  * click that was previously the slowest part of "Save and Print".
  */
 const printProgress = useTaskProgress()
-const { progress: imageProgress, printInvoice } = useInvoicePrint()
+const { progress: imageProgress, printInvoice, showInvoiceImage } = useInvoicePrint()
 
 async function submitAndPrint() {
   submittingAndPrinting.value = true
@@ -313,6 +313,44 @@ async function submitAndPrint() {
   } finally {
     printProgress.reset()
     submittingAndPrinting.value = false
+  }
+}
+
+/**
+ * Like Save and Print, but shows the new invoice image in the app-wide
+ * preview dialog (see stores/imagePreview.ts) instead of printing it — from
+ * there it can be shared to Telegram, Facebook, etc., downloaded or copied.
+ * The dialog lives in AdminLayout, so it stays open after the redirect to
+ * the Enrollments list.
+ */
+const submittingAndImaging = ref(false)
+
+async function submitAndImage() {
+  submittingAndImaging.value = true
+  printProgress.creep(t('admin.invoices.progressSaving'), 25)
+  try {
+    const enrollment = await createEnrollment()
+    if (!enrollment) {
+      printProgress.reset()
+      return
+    }
+
+    if (enrollment.invoice_id && enrollment.invoice_number) {
+      printProgress.reset()
+      try {
+        await showInvoiceImage(enrollment.invoice_id, enrollment.invoice_number)
+      } catch (error) {
+        generalError.value = error instanceof ApiRequestError ? error.message : t('admin.invoices.downloadFailed')
+        return
+      }
+    } else {
+      await printProgress.done()
+    }
+
+    await router.push('/admin/enrollments')
+  } finally {
+    printProgress.reset()
+    submittingAndImaging.value = false
   }
 }
 
@@ -559,11 +597,11 @@ onMounted(async () => {
         <p v-else class="text-sm text-neutral-400">{{ t('admin.enrollments.selectPackage') }}</p>
       </div>
 
-      <div class="flex gap-3 lg:col-span-2">
+      <div class="flex flex-wrap gap-3 lg:col-span-2">
         <BaseButton
           type="submit"
           :loading="submitting"
-          :disabled="submittingAndPrinting || !selectedStudent || !form.class_id || !form.course_package_id || !form.fee_type || (tableRequired && !form.table_id)"
+          :disabled="submittingAndPrinting || submittingAndImaging || !selectedStudent || !form.class_id || !form.course_package_id || !form.fee_type || (tableRequired && !form.table_id)"
         >
           {{ t('common.save') }}
         </BaseButton>
@@ -571,10 +609,19 @@ onMounted(async () => {
           type="button"
           variant="outline"
           :loading="submittingAndPrinting"
-          :disabled="notPaidYet || submitting || !selectedStudent || !form.class_id || !form.course_package_id || !form.fee_type || (tableRequired && !form.table_id)"
+          :disabled="notPaidYet || submitting || submittingAndImaging || !selectedStudent || !form.class_id || !form.course_package_id || !form.fee_type || (tableRequired && !form.table_id)"
           @click="submitAndPrint"
         >
           {{ t('admin.enrollments.saveAndPrint') }}
+        </BaseButton>
+        <BaseButton
+          type="button"
+          variant="outline"
+          :loading="submittingAndImaging"
+          :disabled="notPaidYet || submitting || submittingAndPrinting || !selectedStudent || !form.class_id || !form.course_package_id || !form.fee_type || (tableRequired && !form.table_id)"
+          @click="submitAndImage"
+        >
+          {{ t('admin.enrollments.saveAndImage') }}
         </BaseButton>
         <BaseButton type="button" variant="outline" @click="router.push('/admin/enrollments')">{{ t('common.cancel') }}</BaseButton>
       </div>

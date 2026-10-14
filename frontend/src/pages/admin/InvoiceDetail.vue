@@ -157,17 +157,21 @@ const paymentModalOpen = ref(false)
 
 // "Download Invoice" opens the invoice image in the browser's print preview,
 // where it can be printed or saved as PDF (see useInvoicePrint).
-const { progress: printProgress, printInvoice } = useInvoicePrint()
+// "Image" shows it in the share / download / copy dialog instead.
+const { progress: printProgress, printInvoice, showInvoiceImage } = useInvoicePrint()
 
-async function downloadInvoice() {
+async function outputInvoice(output: typeof printInvoice) {
   if (!invoice.value) return
   actionError.value = null
   try {
-    await printInvoice(invoice.value.id, invoice.value.invoice_number)
+    await output(invoice.value.id, invoice.value.invoice_number)
   } catch (error) {
     actionError.value = error instanceof ApiRequestError ? error.message : t('admin.invoices.downloadFailed')
   }
 }
+
+const downloadInvoice = () => outputInvoice(printInvoice)
+const shareInvoiceImage = () => outputInvoice(showInvoiceImage)
 
 async function downloadReceipt(payment: Payment) {
   actionError.value = null
@@ -217,6 +221,7 @@ onMounted(load)
 
       <div class="mb-6 flex flex-wrap gap-2">
         <BaseButton size="sm" variant="outline" @click="downloadInvoice">{{ t('admin.invoices.downloadInvoice') }}</BaseButton>
+        <BaseButton size="sm" variant="outline" @click="shareInvoiceImage">{{ t('admin.invoices.imageAction') }}</BaseButton>
         <BaseButton size="sm" variant="outline" @click="sendModalOpen = true">{{ t('admin.invoices.sendAction') }}</BaseButton>
         <BaseButton
           v-if="!isInvoiceClosed(invoice.status) && invoice.balance > 0"
