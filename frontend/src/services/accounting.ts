@@ -118,7 +118,8 @@ export interface IncomeDetail {
 }
 
 export const accountingReportsService = {
-  dashboard: (params: DateRangeFilter = {}) => apiGetWithMeta<AccountingSummary>('/accounting/dashboard', { params }).then((r) => r.data),
+  /** `today` — the viewer's own calendar day for the daily tiles; the server's clock runs on UTC. */
+  dashboard: (params: DateRangeFilter & { today?: string } = {}) => apiGetWithMeta<AccountingSummary>('/accounting/dashboard', { params }).then((r) => r.data),
 
   income: (params: Required<DateRangeFilter>) =>
     apiGetWithMeta<IncomeDetail>('/accounting/dashboard/income', { params }).then((r) => r.data),

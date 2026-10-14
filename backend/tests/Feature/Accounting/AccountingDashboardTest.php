@@ -48,6 +48,30 @@ class AccountingDashboardTest extends TestCase
      * Regression: ledger rows used to always be stamped USD, so a KHR school's
      * 80,000 ៛ payment was converted again (80,000 × 4,100) on the dashboard.
      */
+    public function test_todays_figures_follow_the_viewers_day_not_the_servers_utc_day(): void
+    {
+        $this->actingAsAdminWithPermissions([
+            Permissions::INVOICES_CREATE,
+            Permissions::PAYMENTS_CREATE,
+            Permissions::ACCOUNTING_DASHBOARD_VIEW,
+        ]);
+        $this->setUpChartOfAccounts();
+
+        $course = Product::factory()->create(['type' => ProductType::COURSE_FEE, 'price' => 100]);
+        $invoiceId = $this->postJson('/api/v1/invoices', [
+            'student_id' => Student::factory()->create()->id,
+            'items' => [['product_id' => $course->id, 'quantity' => 1]],
+        ])->assertCreated()->json('data.id');
+        $this->postJson("/api/v1/invoices/{$invoiceId}/payments", ['amount' => 100, 'payment_method' => PaymentMethod::CASH])->assertCreated();
+
+        $paidOn = FinancialTransaction::query()->firstOrFail()->transaction_date->toDateString();
+        $dayAfter = \Carbon\CarbonImmutable::parse($paidOn)->addDay()->toDateString();
+
+        $this->getJson("/api/v1/accounting/dashboard?today={$paidOn}")->assertOk()->assertJsonPath('data.todays_income', 100);
+        $this->getJson("/api/v1/accounting/dashboard?today={$dayAfter}")->assertOk()->assertJsonPath('data.todays_income', 0);
+        $this->getJson('/api/v1/accounting/dashboard?today=not-a-date')->assertUnprocessable();
+    }
+
     public function test_a_khr_payment_is_booked_in_khr_and_not_converted_again(): void
     {
         $this->actingAsAdminWithPermissions([

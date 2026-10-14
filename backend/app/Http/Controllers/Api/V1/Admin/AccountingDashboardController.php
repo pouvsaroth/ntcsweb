@@ -37,7 +37,12 @@ final class AccountingDashboardController extends Controller
     {
         abort_unless($request->user()?->hasPermission(Permissions::ACCOUNTING_DASHBOARD_VIEW), 403);
 
-        $today = now()->toDateString();
+        $request->validate(['today' => ['nullable', 'date_format:Y-m-d']]);
+
+        // "Today" is the viewer's calendar day, sent by the dashboard. The
+        // server runs on UTC, so its own today() is still yesterday until
+        // 07:00 in Cambodia — only a fallback for callers that don't send it.
+        $today = $request->string('today')->toString() ?: now()->toDateString();
         $dateFrom = $request->string('date_from')->toString() ?: null;
         $dateTo = $request->string('date_to')->toString() ?: null;
 

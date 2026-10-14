@@ -121,7 +121,6 @@ const MODULES: ModuleEntry[] = [
   { name: 'Invoices card', group: 'Dashboard', actions: { view: 'dashboard.cards.invoices' } },
   { name: 'Student attendance card', group: 'Dashboard', actions: { view: 'dashboard.cards.student-attendance' } },
   { name: 'Teacher attendance card', group: 'Dashboard', actions: { view: 'dashboard.cards.teacher-attendance' } },
-  { name: 'Registration pending card', group: 'Dashboard', actions: { view: 'dashboard.cards.registration-pending' } },
   { name: 'Users card', group: 'Dashboard', actions: { view: 'dashboard.cards.users' } },
   { name: 'Roles card', group: 'Dashboard', actions: { view: 'dashboard.cards.roles' } },
   // These three never had a CRUD permission of their own to reuse in the
