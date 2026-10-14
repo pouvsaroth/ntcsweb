@@ -30,6 +30,9 @@ const form = reactive({
 
 const imageFile = ref<File | null>(null)
 const imagePreview = ref<string | null>(null)
+/** New photos only: several can be picked, and each is saved as its own photo. */
+const newImages = ref<{ file: File; preview: string }[]>([])
+const progress = ref<{ done: number; total: number } | null>(null)
 const errors = ref<Record<string, string[]>>({})
 const generalError = ref<string | null>(null)
 const submitting = ref(false)
@@ -52,6 +55,8 @@ watch(
     form.status = props.photo?.status ?? 'active'
     imageFile.value = null
     imagePreview.value = props.photo?.image_url ?? null
+    newImages.value = []
+    progress.value = null
     errors.value = {}
     generalError.value = null
   },
@@ -59,11 +64,54 @@ watch(
 )
 
 function onFileChange(event: Event) {
-  const file = (event.target as HTMLInputElement).files?.[0]
-  if (!file) return
+  const input = event.target as HTMLInputElement
+  const picked = Array.from(input.files ?? [])
+  if (picked.length === 0) return
 
-  imageFile.value = file
-  imagePreview.value = URL.createObjectURL(file)
+  if (isEditing.value) {
+    imageFile.value = picked[0]
+    imagePreview.value = URL.createObjectURL(picked[0])
+  } else {
+    newImages.value = [...newImages.value, ...picked.map((file) => ({ file, preview: URL.createObjectURL(file) }))]
+    input.value = ''
+  }
+}
+
+function removeNewImage(index: number) {
+  newImages.value = newImages.value.filter((_, i) => i !== index)
+}
+
+/**
+ * Saves each picked photo in turn, numbering them up from the chosen order so
+ * they keep the order they were picked in. Photos that fail stay selected so
+ * the admin can fix the problem and press Save again for just those.
+ */
+async function createAll() {
+  const queue = newImages.value
+  const failed: typeof queue = []
+  let lastError: unknown = null
+  progress.value = { done: 0, total: queue.length }
+
+  for (const [i, item] of queue.entries()) {
+    try {
+      await galleryService.create({ ...form, sort_order: form.sort_order + i, image: item.file })
+    } catch (error) {
+      failed.push(item)
+      lastError = error
+    }
+    progress.value = { done: i + 1, total: queue.length }
+  }
+
+  progress.value = null
+  if (failed.length === queue.length && queue.length === 1) throw lastError
+  if (failed.length > 0) {
+    if (failed.length < queue.length) emit('saved')
+    newImages.value = failed
+    const detail = lastError instanceof ApiRequestError ? lastError.message : t('admin.gallery.saveFailed')
+    generalError.value = `${t('admin.gallery.someFailed', { names: failed.map((f) => f.file.name).join(', ') })} (${detail})`
+    return false
+  }
+  return true
 }
 
 async function submit() {
@@ -71,17 +119,15 @@ async function submit() {
   errors.value = {}
   generalError.value = null
 
-  const payload = { ...form, image: imageFile.value ?? undefined }
-
   try {
     if (isEditing.value) {
-      await galleryService.update(props.photo!.id, payload)
+      await galleryService.update(props.photo!.id, { ...form, image: imageFile.value ?? undefined })
     } else {
-      if (!imageFile.value) {
+      if (newImages.value.length === 0) {
         errors.value = { image: [t('admin.gallery.imageRequired')] }
         return
       }
-      await galleryService.create(payload)
+      if (!(await createAll())) return
     }
 
     emit('saved')
@@ -114,20 +160,43 @@ async function submit() {
         </label>
 
         <div
-          v-if="imagePreview"
+          v-if="isEditing && imagePreview"
           class="mb-3 aspect-square w-32 overflow-hidden rounded-lg border border-neutral-200 bg-neutral-100"
         >
           <img :src="imagePreview" alt="" class="h-full w-full object-cover" />
         </div>
 
+        <div v-if="!isEditing && newImages.length" class="mb-3">
+          <p class="mb-2 text-sm text-neutral-600">{{ t('admin.gallery.photosSelected', { count: newImages.length }, newImages.length) }}</p>
+          <div class="grid grid-cols-3 gap-2 sm:grid-cols-4">
+            <div
+              v-for="(item, index) in newImages"
+              :key="item.preview"
+              class="relative aspect-square overflow-hidden rounded-lg border border-neutral-200 bg-neutral-100"
+            >
+              <img :src="item.preview" :alt="item.file.name" class="h-full w-full object-cover" />
+              <button
+                type="button"
+                class="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-neutral-900/70 text-sm leading-none text-white hover:bg-neutral-900"
+                :aria-label="t('admin.gallery.delete')"
+                :disabled="submitting"
+                @click="removeNewImage(index)"
+              >
+                &times;
+              </button>
+            </div>
+          </div>
+        </div>
+
         <input
           type="file"
+          :multiple="!isEditing"
           accept="image/jpeg,image/png,image/webp,image/gif"
           class="block w-full text-sm text-neutral-600 file:mr-3 file:rounded-lg file:border-0 file:bg-primary-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-primary-800 hover:file:bg-primary-100"
           @change="onFileChange"
         />
         <p v-if="errors.image?.[0]" class="mt-1.5 text-sm text-danger-600">{{ errors.image[0] }}</p>
-        <p v-else class="mt-1.5 text-sm text-neutral-500">{{ t('admin.gallery.imageHint') }}</p>
+        <p v-else class="mt-1.5 text-sm text-neutral-500">{{ isEditing ? t('admin.gallery.imageHint') : t('admin.gallery.imageHintMultiple') }}</p>
       </div>
 
       <BaseInput v-model="form.caption" :label="t('admin.gallery.caption')" :error="errors.caption?.[0]" />
@@ -145,6 +214,7 @@ async function submit() {
     </form>
 
     <template #footer>
+      <span v-if="progress" class="mr-auto text-sm text-neutral-500">{{ t('admin.gallery.savingProgress', progress) }}</span>
       <BaseButton variant="outline" @click="emit('update:modelValue', false)">{{ t('common.close') }}</BaseButton>
       <BaseButton :loading="submitting" @click="submit">{{ t('common.save') }}</BaseButton>
     </template>

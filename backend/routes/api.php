@@ -939,6 +939,10 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('downloads', [PublicDownloadController::class, 'index'])->name('downloads.index');
         Route::get('downloads/folders/{id}', [PublicDownloadController::class, 'show'])->whereNumber('id')->name('downloads.folders.show');
         Route::get('downloads/files/{id}', [PublicDownloadController::class, 'download'])->whereNumber('id')->name('downloads.files.download');
+        Route::get('downloads/folders/{id}/zip', [PublicDownloadController::class, 'zip'])
+            ->whereNumber('id')
+            ->middleware('throttle:download-zips')
+            ->name('downloads.folders.zip');
         Route::get('promotions', [PublicPromotionController::class, 'index'])->name('promotions.index');
         // Careers: open jobs with an active Website posting (see JobPosition::scopeOnCareersPage()).
         Route::get('careers', [CareerController::class, 'index'])->name('careers.index');

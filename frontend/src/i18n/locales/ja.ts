@@ -552,6 +552,12 @@ const ja: MessageSchema = {
     filesCount: '{count} ファイル',
     foldersCount: '{count} フォルダ',
     download: 'ダウンロード',
+    selectAll: 'すべて選択',
+    selectFile: '{name} を選択',
+    selectedCount: '{count}件選択中',
+    downloadSelected: '選択したファイルをダウンロード (.zip)',
+    downloadAll: 'すべてダウンロード (.zip)',
+    tooManyForZip: '1つのzipには最大{files}ファイル・{size}までです。選択を減らしてください。',
   },
 
   promotion: {
@@ -873,6 +879,10 @@ const ja: MessageSchema = {
       image: '画像',
       imageRequired: '画像を選択してください。',
       imageHint: 'JPEG、PNG、WebP、GIF — 最大10MB。',
+      imageHintMultiple: '1枚以上の写真を選択できます。各写真が個別のギャラリー写真になります。JPEG、PNG、WebP、GIF — 各10MBまで。',
+      photosSelected: '{count}枚の写真を選択中',
+      savingProgress: '{total}枚中{done}枚を保存中…',
+      someFailed: '次の写真は保存できなかったため、選択されたままです: {names}',
       caption: 'キャプション',
       sortOrder: '順序',
       status: 'ステータス',

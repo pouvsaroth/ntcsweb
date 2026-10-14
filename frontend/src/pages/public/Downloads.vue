@@ -6,7 +6,14 @@ import { useRoute } from 'vue-router'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import PageHero from '@/components/public/PageHero.vue'
 import SectionContainer from '@/components/public/SectionContainer.vue'
-import { formatFileSize, publicDownloadsService, type PublicDownloadFolder, type PublicDownloadFolderDetail } from '@/services/downloads'
+import {
+  formatFileSize,
+  MAX_ZIP_BYTES,
+  MAX_ZIP_FILES,
+  publicDownloadsService,
+  type PublicDownloadFolder,
+  type PublicDownloadFolderDetail,
+} from '@/services/downloads'
 
 /**
  * The Download page — folders of files anyone can download, managed under
@@ -29,6 +36,7 @@ const notFound = ref(false)
 
 async function load() {
   loading.value = true
+  selected.value = new Set()
   notFound.value = false
   try {
     if (folderId.value === null) {
@@ -44,6 +52,35 @@ async function load() {
 }
 
 watch(folderId, () => void load(), { immediate: true })
+
+// --- Several files at once: tick them and get one .zip ----------------------
+
+const selected = ref(new Set<number>())
+
+const allSelected = computed(() => !!folder.value?.files.length && selected.value.size === folder.value.files.length)
+
+function toggle(id: number) {
+  const next = new Set(selected.value)
+  if (next.has(id)) next.delete(id)
+  else next.add(id)
+  selected.value = next
+}
+
+function toggleAll() {
+  selected.value = allSelected.value ? new Set() : new Set(folder.value?.files.map((f) => f.id) ?? [])
+}
+
+/** What the zip would hold — the ticked files, or the whole folder when none are ticked. */
+const zipFiles = computed(() => {
+  const files = folder.value?.files ?? []
+  return selected.value.size ? files.filter((f) => selected.value.has(f.id)) : files
+})
+
+const zipTooBig = computed(
+  () => zipFiles.value.length > MAX_ZIP_FILES || zipFiles.value.reduce((sum, f) => sum + f.size, 0) > MAX_ZIP_BYTES,
+)
+
+const zipUrl = computed(() => (folder.value ? publicDownloadsService.zipUrl(folder.value.id, [...selected.value]) : ''))
 
 function folderLink(id: number) {
   return { path: '/downloads', query: { folder: String(id) } }
@@ -126,11 +163,60 @@ function folderSummary(f: PublicDownloadFolder): string {
           :message="t('downloads.emptyFolderMessage')"
         />
 
+        <div
+          v-if="folder.files.length > 1"
+          class="mb-4 flex flex-col gap-3 rounded-2xl border border-neutral-200 bg-white p-3 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <label class="flex cursor-pointer items-center gap-2 text-sm font-medium text-neutral-800">
+            <input type="checkbox" class="h-4 w-4 rounded border-neutral-300 text-primary-600" :checked="allSelected" @change="toggleAll" />
+            {{ t('downloads.selectAll') }}
+            <span v-if="selected.size" class="font-normal text-neutral-500">· {{ t('downloads.selectedCount', { count: selected.size }) }}</span>
+          </label>
+          <div class="flex flex-col gap-1 sm:items-end">
+            <span
+              v-if="zipTooBig"
+              class="inline-flex cursor-not-allowed items-center justify-center rounded-lg bg-neutral-200 px-4 py-2 text-sm font-medium text-neutral-500"
+            >
+              {{ selected.size ? t('downloads.downloadSelected') : t('downloads.downloadAll') }}
+            </span>
+            <a
+              v-else
+              :href="zipUrl"
+              class="inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-secondary-900 hover:bg-primary-700"
+            >
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />
+              </svg>
+              {{ selected.size ? t('downloads.downloadSelected') : t('downloads.downloadAll') }}
+            </a>
+            <p v-if="zipTooBig" class="text-xs text-danger-600">
+              {{ t('downloads.tooManyForZip', { files: MAX_ZIP_FILES, size: formatFileSize(MAX_ZIP_BYTES) }) }}
+            </p>
+          </div>
+        </div>
+
         <div v-if="folder.files.length" class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-          <div v-for="file in folder.files" :key="file.id" class="flex flex-col overflow-hidden rounded-2xl border border-neutral-200 bg-white">
+          <div
+            v-for="file in folder.files"
+            :key="file.id"
+            class="flex flex-col overflow-hidden rounded-2xl border bg-white"
+            :class="selected.has(file.id) ? 'border-primary-500 ring-2 ring-primary-200' : 'border-neutral-200'"
+          >
             <div class="relative flex aspect-[4/3] items-center justify-center overflow-hidden bg-neutral-100">
               <img v-if="file.is_image" :src="file.url" :alt="file.name" class="absolute inset-0 h-full w-full object-cover" loading="lazy" />
               <span v-else class="rounded-lg bg-white px-3 py-2 text-lg font-bold uppercase text-neutral-500 shadow-sm">{{ file.extension }}</span>
+              <label
+                v-if="folder.files.length > 1"
+                class="absolute left-2 top-2 flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg bg-white/90 shadow-sm"
+              >
+                <input
+                  type="checkbox"
+                  class="h-4 w-4 rounded border-neutral-300 text-primary-600"
+                  :checked="selected.has(file.id)"
+                  :aria-label="t('downloads.selectFile', { name: file.name })"
+                  @change="toggle(file.id)"
+                />
+              </label>
             </div>
             <div class="flex flex-1 flex-col gap-2 p-3">
               <p class="break-words text-sm font-medium text-neutral-900">

@@ -79,6 +79,10 @@ export const downloadsService = {
 
 // --- The public Download page (see PublicDownloadController) ---------------------
 
+/** Matches PublicDownloadController::MAX_ZIP_FILES / MAX_ZIP_BYTES. */
+export const MAX_ZIP_FILES = 100
+export const MAX_ZIP_BYTES = 300 * 1024 * 1024
+
 export interface PublicDownloadFolder {
   id: number
   name: string
@@ -113,4 +117,10 @@ export const publicDownloadsService = {
    * downloadUrl() for why that's what makes the browser save the file.
    */
   fileUrl: (id: number) => `/api/v1/public/downloads/files/${id}`,
+
+  /** One .zip of the chosen files — or, with none given, the whole folder. */
+  zipUrl(folderId: number, fileIds: number[] = []) {
+    const base = `/api/v1/public/downloads/folders/${folderId}/zip`
+    return fileIds.length ? `${base}?files=${fileIds.join(',')}` : base
+  },
 }

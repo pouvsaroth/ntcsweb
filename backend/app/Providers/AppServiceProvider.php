@@ -132,6 +132,14 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinutes(10, 5)->by("job-applications:{$tenantId}:{$request->ip()}");
         });
 
+        // Building a zip is heavier than one file, so the public Download
+        // page gets a few a minute per visitor.
+        RateLimiter::for('download-zips', function (Request $request) {
+            $tenantId = app(TenantContext::class)->id() ?? 'platform';
+
+            return Limit::perMinute(10)->by("download-zips:{$tenantId}:{$request->ip()}");
+        });
+
         RateLimiter::for('api', function (Request $request) {
             return Limit::perMinute(120)->by(
                 $request->user()?->getKey() ?? $request->ip()

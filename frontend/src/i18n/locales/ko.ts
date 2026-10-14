@@ -552,6 +552,12 @@ const ko: MessageSchema = {
     filesCount: '파일 {count}개',
     foldersCount: '폴더 {count}개',
     download: '다운로드',
+    selectAll: '모두 선택',
+    selectFile: '{name} 선택',
+    selectedCount: '{count}개 선택됨',
+    downloadSelected: '선택한 파일 다운로드 (.zip)',
+    downloadAll: '모두 다운로드 (.zip)',
+    tooManyForZip: 'zip 하나에 최대 {files}개 파일, {size}까지 가능합니다. 더 적게 선택하세요.',
   },
 
   promotion: {
@@ -873,6 +879,10 @@ const ko: MessageSchema = {
       image: '이미지',
       imageRequired: '이미지를 선택해 주세요.',
       imageHint: 'JPEG, PNG, WebP 또는 GIF — 최대 10MB.',
+      imageHintMultiple: '사진을 하나 이상 선택하세요. 각 사진이 개별 갤러리 사진이 됩니다. JPEG, PNG, WebP 또는 GIF — 각 10MB까지.',
+      photosSelected: '사진 {count}장 선택됨',
+      savingProgress: '{total}장 중 {done}장 저장 중…',
+      someFailed: '다음 사진은 저장하지 못해 선택된 상태로 남아 있습니다: {names}',
       caption: '설명',
       sortOrder: '순서',
       status: '상태',

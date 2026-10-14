@@ -551,6 +551,12 @@ const zh: MessageSchema = {
     filesCount: '{count} 个文件',
     foldersCount: '{count} 个文件夹',
     download: '下载',
+    selectAll: '全选',
+    selectFile: '选择 {name}',
+    selectedCount: '已选择 {count} 个',
+    downloadSelected: '下载所选 (.zip)',
+    downloadAll: '全部下载 (.zip)',
+    tooManyForZip: '一个 zip 最多 {files} 个文件、{size}，请减少选择。',
   },
 
   promotion: {
@@ -872,6 +878,10 @@ const zh: MessageSchema = {
       image: '图片',
       imageRequired: '请选择一张图片。',
       imageHint: 'JPEG、PNG、WebP 或 GIF 格式，最大 10MB。',
+      imageHintMultiple: '可选择一张或多张照片，每张都会成为单独的图库照片。JPEG、PNG、WebP 或 GIF — 每张最大 10MB。',
+      photosSelected: '已选择 {count} 张照片',
+      savingProgress: '正在保存第 {done} / {total} 张…',
+      someFailed: '以下照片未能保存，仍保持选中：{names}',
       caption: '说明',
       sortOrder: '顺序',
       status: '状态',

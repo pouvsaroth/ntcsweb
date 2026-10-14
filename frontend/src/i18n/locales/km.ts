@@ -552,6 +552,12 @@ const km: MessageSchema = {
     filesCount: '{count} ឯកសារ',
     foldersCount: '{count} ថត',
     download: 'ទាញយក',
+    selectAll: 'ជ្រើសរើសទាំងអស់',
+    selectFile: 'ជ្រើសរើស {name}',
+    selectedCount: 'បានជ្រើសរើស {count}',
+    downloadSelected: 'ទាញយកឯកសារដែលបានជ្រើសរើស (.zip)',
+    downloadAll: 'ទាញយកទាំងអស់ (.zip)',
+    tooManyForZip: 'zip មួយអាចមានរហូតដល់ {files} ឯកសារ និង {size} — សូមជ្រើសរើសតិចជាងនេះ។',
   },
 
   promotion: {
@@ -873,6 +879,10 @@ const km: MessageSchema = {
       image: 'រូបភាព',
       imageRequired: 'សូមជ្រើសរើសរូបភាព។',
       imageHint: 'JPEG, PNG, WebP ឬ GIF — រហូតដល់ 10MB។',
+      imageHintMultiple: 'ជ្រើសរើសរូបថតមួយ ឬច្រើន — រូបថតនីមួយៗក្លាយជារូបថតវិចិត្រសាលដាច់ដោយឡែក។ JPEG, PNG, WebP ឬ GIF — រហូតដល់ 10MB ក្នុងមួយរូប។',
+      photosSelected: 'បានជ្រើសរើសរូបថត {count}',
+      savingProgress: 'កំពុងរក្សាទុក {done} នៃ {total}…',
+      someFailed: 'រូបថតទាំងនេះមិនអាចរក្សាទុកបាន ហើយនៅតែត្រូវបានជ្រើសរើស៖ {names}',
       caption: 'ចំណារពន្យល់',
       sortOrder: 'លំដាប់',
       status: 'ស្ថានភាព',

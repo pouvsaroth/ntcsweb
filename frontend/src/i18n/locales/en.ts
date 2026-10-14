@@ -555,6 +555,12 @@ const en = {
     filesCount: '{count} file | {count} files',
     foldersCount: '{count} folder | {count} folders',
     download: 'Download',
+    selectAll: 'Select all',
+    selectFile: 'Select {name}',
+    selectedCount: '{count} selected',
+    downloadSelected: 'Download selected (.zip)',
+    downloadAll: 'Download all (.zip)',
+    tooManyForZip: 'Up to {files} files and {size} in one zip — choose fewer.',
   },
 
   promotion: {
@@ -877,6 +883,10 @@ const en = {
       image: 'Image',
       imageRequired: 'Please choose an image.',
       imageHint: 'JPEG, PNG, WebP, or GIF — up to 10MB.',
+      imageHintMultiple: 'Pick one or more photos — each becomes its own gallery photo. JPEG, PNG, WebP, or GIF — up to 10MB each.',
+      photosSelected: '{count} photo selected | {count} photos selected',
+      savingProgress: 'Saving {done} of {total}…',
+      someFailed: 'These photos could not be saved and are still selected: {names}',
       caption: 'Caption',
       sortOrder: 'Order',
       status: 'Status',
