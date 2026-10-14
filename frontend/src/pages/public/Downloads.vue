@@ -52,8 +52,6 @@ async function load() {
   }
 }
 
-watch(folderId, () => void load(), { immediate: true })
-
 // --- Several files at once: tick them and get one .zip ----------------------
 
 const selected = ref(new Set<number>())
@@ -141,6 +139,9 @@ function folderSummary(f: PublicDownloadFolder): string {
   parts.push(t('downloads.filesCount', { count: f.files_count }, f.files_count))
   return parts.join(' · ')
 }
+
+// Last, so everything load() resets (selection, photo view) already exists.
+watch(folderId, () => void load(), { immediate: true })
 </script>
 
 <template>
