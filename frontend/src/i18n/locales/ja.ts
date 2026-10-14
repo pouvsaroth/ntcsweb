@@ -62,6 +62,7 @@ const ja: MessageSchema = {
   },
 
   leaveRequest: {
+    holidayDaysNote: '次の日は休日のため含まれません：{dates}',
     askForPermission: '休暇を申請する',
     title: '休暇を申請する',
     fromDate: '開始日',
@@ -213,6 +214,7 @@ const ja: MessageSchema = {
       denied: 'このサイトの通知はブロックされています。ブラウザまたは端末の設定で許可してから、このメニューを開き直してください。',
     },
     types: {
+      leave_request_cancelled: '{student_name}さんの許可申請は取り消されました — 休日（{holiday}）にあたります。',
       leave_request_submitted: '{student_name}さんが許可申請を提出しました',
       leave_request_approved: '{student_name}さんの許可申請が承認されました',
       leave_request_rejected: '{student_name}さんの許可申請が却下されました：{reason}',
@@ -1160,6 +1162,7 @@ const ja: MessageSchema = {
       emptyMessage: '現在承認待ちの登録はありません。',
     },
     leaveRequests: {
+      statusCancelled: '取消済み',
       title: '休暇申請',
       pageSubtitle: '生徒自身が提出した休暇・外出許可申請。承認待ち、または処理済みのものです。',
       columnStudent: '生徒',
@@ -1302,6 +1305,8 @@ const ja: MessageSchema = {
       noCategoriesMessage: 'フォームカテゴリがまだ設定されていません。',
     },
     myRequests: {
+      tabCancelled: '取消済み',
+      statusCancelled: '取消済み',
       title: 'マイリクエスト',
       columnAction: '操作',
       delete: '削除',
@@ -1328,6 +1333,7 @@ const ja: MessageSchema = {
       emptyMessage: 'ここにはまだ何もありません。',
     },
     approvals: {
+      tabCancelled: '取消済み',
       registrationSubject: '生徒登録 — {course}',
       manpowerSubject: '{job} を {count} 名採用',
       overtimeSubject: '{date} の残業 {time}',
@@ -3147,10 +3153,12 @@ const ja: MessageSchema = {
         deleteConfirm: '「{name}」を削除しますか？所属スタッフは既定に従います。',
       },
       holidays: {
+        cancelledPermissions: 'この休日にかかる生徒の許可申請 {count} 件を取り消しました。',
         add: '新しい休日',
         edit: '休日を編集',
         date: '日付',
         name: '休日',
+        type: '休日の種類',
         days: '日数',
         daysN: '{count} 日',
         from: '開始日',

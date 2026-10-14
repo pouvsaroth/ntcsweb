@@ -65,6 +65,7 @@ const en = {
   },
 
   leaveRequest: {
+    holidayDaysNote: 'These days are holidays and won\'t count: {dates}',
     askForPermission: 'Ask for Permission',
     title: 'Ask for Permission',
     fromDate: 'From date',
@@ -216,6 +217,7 @@ const en = {
       denied: 'Notifications are blocked for this site. Allow them in your browser or phone settings, then reopen this menu.',
     },
     types: {
+      leave_request_cancelled: 'The permission request for {student_name} was cancelled — it falls on a holiday ({holiday}).',
       leave_request_submitted: '{student_name} submitted a permission request',
       leave_request_approved: 'The permission request for {student_name} was approved',
       leave_request_rejected: 'The permission request for {student_name} was rejected: {reason}',
@@ -1164,6 +1166,7 @@ const en = {
       emptyMessage: 'Nothing waiting for approval right now.',
     },
     leaveRequests: {
+      statusCancelled: 'Cancelled',
       title: 'Leave Requests',
       pageSubtitle: 'Students\' own leave/permission requests, awaiting approval or already decided.',
       columnStudent: 'Student',
@@ -1306,6 +1309,8 @@ const en = {
       noCategoriesMessage: 'No form categories have been set up yet.',
     },
     myRequests: {
+      tabCancelled: 'Cancelled',
+      statusCancelled: 'Cancelled',
       title: 'My Request',
       columnAction: 'Action',
       delete: 'Delete',
@@ -1332,6 +1337,7 @@ const en = {
       emptyMessage: 'Nothing here yet.',
     },
     approvals: {
+      tabCancelled: 'Cancelled',
       registrationSubject: 'Student registration — {course}',
       manpowerSubject: 'Hire {count} × {job}',
       overtimeSubject: 'Overtime {time} on {date}',
@@ -3151,10 +3157,12 @@ const en = {
         deleteConfirm: 'Remove "{name}"? Its staff will follow the default.',
       },
       holidays: {
+        cancelledPermissions: '{count} student permission on this holiday was cancelled. | {count} student permissions on this holiday were cancelled.',
         add: 'New holiday',
         edit: 'Edit holiday',
         date: 'Date',
         name: 'Holiday',
+        type: 'Holiday type',
         days: 'Days',
         daysN: '{count} days',
         from: 'From',

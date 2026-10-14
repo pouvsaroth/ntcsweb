@@ -15,6 +15,7 @@ export type NotificationTypeValue =
   | 'leave_request_submitted'
   | 'leave_request_approved'
   | 'leave_request_rejected'
+  | 'leave_request_cancelled'
   | 'resignation_request_submitted'
   | 'resignation_request_approved'
   | 'resignation_request_rejected'

@@ -62,6 +62,7 @@ const zh: MessageSchema = {
   },
 
   leaveRequest: {
+    holidayDaysNote: '以下日期是假日，不计入：{dates}',
     askForPermission: '请假申请',
     title: '请假申请',
     fromDate: '开始日期',
@@ -213,6 +214,7 @@ const zh: MessageSchema = {
       denied: '此网站的通知已被阻止。请在浏览器或手机设置中允许，然后重新打开此菜单。',
     },
     types: {
+      leave_request_cancelled: '{student_name} 的请假申请已取消——当天是假日（{holiday}）。',
       leave_request_submitted: '{student_name} 提交了一项请假申请',
       leave_request_approved: '{student_name} 的请假申请已获批准',
       leave_request_rejected: '{student_name} 的请假申请已被拒绝：{reason}',
@@ -1159,6 +1161,7 @@ const zh: MessageSchema = {
       emptyMessage: '目前没有等待批准的注册。',
     },
     leaveRequests: {
+      statusCancelled: '已取消',
       title: '请假申请',
       pageSubtitle: '学生自行提交的请假/许可申请，等待审批或已处理。',
       columnStudent: '学生',
@@ -1301,6 +1304,8 @@ const zh: MessageSchema = {
       noCategoriesMessage: '尚未设置表单分类。',
     },
     myRequests: {
+      tabCancelled: '已取消',
+      statusCancelled: '已取消',
       title: '我的申请',
       columnAction: '操作',
       delete: '删除',
@@ -1327,6 +1332,7 @@ const zh: MessageSchema = {
       emptyMessage: '这里还没有任何内容。',
     },
     approvals: {
+      tabCancelled: '已取消',
       registrationSubject: '学生注册 — {course}',
       manpowerSubject: '招聘 {job} × {count}',
       overtimeSubject: '{date} 加班 {time}',
@@ -3146,10 +3152,12 @@ const zh: MessageSchema = {
         deleteConfirm: '删除“{name}”？其员工将改用默认。',
       },
       holidays: {
+        cancelledPermissions: '此假日上的 {count} 个学生请假申请已取消。',
         add: '新建节假日',
         edit: '编辑节假日',
         date: '日期',
         name: '节假日',
+        type: '假日类型',
         days: '天数',
         daysN: '{count} 天',
         from: '从',

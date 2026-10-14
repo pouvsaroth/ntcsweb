@@ -42,6 +42,17 @@ class LeaveRequest extends Model
 
     public const STATUS_REJECTED = 'rejected';
 
+    /** A student's request a holiday added later covers entirely — see LeaveRequestService::cancelForHoliday(). */
+    public const STATUS_CANCELLED = 'cancelled';
+
+    /**
+     * Not a column: the dates of a just-submitted student request that fall
+     * on a holiday and so won't count — set by LeaveRequestService::submit().
+     *
+     * @var list<string>|null
+     */
+    public ?array $holidayDates = null;
+
     /** `day_part` of a staff request — a half day is only ever a one-day request. */
     public const DAY_FULL = 'full';
 

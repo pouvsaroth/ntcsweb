@@ -17,6 +17,8 @@ final class NotificationType
 
     public const LEAVE_REQUEST_REJECTED = 'leave_request_rejected';
 
+    public const LEAVE_REQUEST_CANCELLED = 'leave_request_cancelled';
+
     public const RESIGNATION_REQUEST_SUBMITTED = 'resignation_request_submitted';
 
     public const RESIGNATION_REQUEST_APPROVED = 'resignation_request_approved';

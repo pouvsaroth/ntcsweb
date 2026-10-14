@@ -278,6 +278,16 @@ class BaseDataSeeder extends Seeder
                     'PART_TIME' => ['en' => ['name' => 'Part Time'], 'km' => ['name' => 'ក្រៅម៉ោង'], 'zh' => ['name' => '兼职'], 'ko' => ['name' => '시간제'], 'ja' => ['name' => '非常勤']],
                 ],
             ],
+            'HOLIDAY_TYPE' => [
+                'name' => 'Holiday Type',
+                'description' => 'The type picked for each holiday under HRM > Attendance & Time > Holidays (Holiday::TYPE_CATEGORY).',
+                'sort_order' => 13,
+                'values' => [
+                    'PUBLIC_HOLIDAY' => ['en' => ['name' => 'Public Holiday'], 'km' => ['name' => 'ថ្ងៃឈប់សម្រាកសាធារណៈ'], 'zh' => ['name' => '公共假日'], 'ko' => ['name' => '공휴일'], 'ja' => ['name' => '祝日']],
+                    'SCHOOL_HOLIDAY' => ['en' => ['name' => 'School Holiday'], 'km' => ['name' => 'ថ្ងៃឈប់សម្រាករបស់សាលា'], 'zh' => ['name' => '学校假期'], 'ko' => ['name' => '학교 휴일'], 'ja' => ['name' => '学校休日']],
+                    'ADDITIONAL_HOLIDAY' => ['en' => ['name' => 'Additional Holiday'], 'km' => ['name' => 'ថ្ងៃឈប់សម្រាកបន្ថែម'], 'zh' => ['name' => '额外假日'], 'ko' => ['name' => '추가 휴일'], 'ja' => ['name' => '追加休日']],
+                ],
+            ],
         ];
     }
 }

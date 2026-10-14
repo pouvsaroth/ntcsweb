@@ -3,7 +3,8 @@ import type { PaginatedQuery } from '@/composables/usePaginatedResource'
 import type { LengthAwarePaginationMeta, PaginatedResult } from '@/types/api'
 import type { ApprovalFlowProgress } from '@/services/approvalFlows'
 
-export type LeaveRequestStatus = 'pending' | 'approved' | 'rejected'
+/** `cancelled` — a student's request a holiday added later covers entirely. */
+export type LeaveRequestStatus = 'pending' | 'approved' | 'rejected' | 'cancelled'
 
 /** A staff request's full day, or a morning/afternoon half of one date. */
 export type LeaveDayPart = 'full' | 'morning' | 'afternoon'
@@ -47,6 +48,8 @@ export interface LeaveRequest {
   to_time: string | null
   reason: string
   status: LeaveRequestStatus
+  /** Only on a student's just-submitted request: its days that are holidays and won't count. */
+  holiday_dates?: string[]
   /** Approvals queue only — see ApprovalFlowProgress. */
   approval_flow?: ApprovalFlowProgress | null
   decision_reason: string | null

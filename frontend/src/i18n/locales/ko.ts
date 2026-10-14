@@ -62,6 +62,7 @@ const ko: MessageSchema = {
   },
 
   leaveRequest: {
+    holidayDaysNote: '다음 날짜는 휴일이라 포함되지 않습니다: {dates}',
     askForPermission: '휴가 신청',
     title: '휴가 신청',
     fromDate: '시작일',
@@ -213,6 +214,7 @@ const ko: MessageSchema = {
       denied: '이 사이트의 알림이 차단되어 있습니다. 브라우저 또는 휴대폰 설정에서 허용한 후 이 메뉴를 다시 여세요.',
     },
     types: {
+      leave_request_cancelled: '{student_name} 님의 허가 요청이 취소되었습니다 — 휴일({holiday})입니다.',
       leave_request_submitted: '{student_name} 님이 허가 요청을 제출했습니다',
       leave_request_approved: '{student_name} 님의 허가 요청이 승인되었습니다',
       leave_request_rejected: '{student_name} 님의 허가 요청이 거절되었습니다: {reason}',
@@ -1160,6 +1162,7 @@ const ko: MessageSchema = {
       emptyMessage: '현재 승인을 기다리는 등록이 없습니다.',
     },
     leaveRequests: {
+      statusCancelled: '취소됨',
       title: '휴가 신청',
       pageSubtitle: '학생이 직접 제출한 휴가/외출 신청 — 승인 대기 중이거나 이미 처리된 항목입니다.',
       columnStudent: '학생',
@@ -1302,6 +1305,8 @@ const ko: MessageSchema = {
       noCategoriesMessage: '아직 설정된 양식 카테고리가 없습니다.',
     },
     myRequests: {
+      tabCancelled: '취소됨',
+      statusCancelled: '취소됨',
       title: '내 신청',
       columnAction: '작업',
       delete: '삭제',
@@ -1328,6 +1333,7 @@ const ko: MessageSchema = {
       emptyMessage: '아직 아무것도 없습니다.',
     },
     approvals: {
+      tabCancelled: '취소됨',
       registrationSubject: '학생 등록 — {course}',
       manpowerSubject: '{job} {count}명 채용',
       overtimeSubject: '{date} 초과근무 {time}',
@@ -3147,10 +3153,12 @@ const ko: MessageSchema = {
         deleteConfirm: '"{name}"을(를) 삭제하시겠습니까? 소속 직원은 기본을 따릅니다.',
       },
       holidays: {
+        cancelledPermissions: '이 휴일에 해당하는 학생 허가 요청 {count}건이 취소되었습니다.',
         add: '새 공휴일',
         edit: '공휴일 수정',
         date: '날짜',
         name: '공휴일',
+        type: '휴일 유형',
         days: '일수',
         daysN: '{count}일',
         from: '시작',

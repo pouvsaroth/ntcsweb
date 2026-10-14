@@ -40,7 +40,8 @@ import { genderLabel } from '@/utils/gender'
  * only fetched if the current user actually holds its view permission, same
  * gating the sidebar nav already applies.
  */
-type RowStatus = ApprovalRequestStatus | MakeUpClassRequestStatus
+// `cancelled` — a student's permission a holiday covered (leave requests only).
+type RowStatus = ApprovalRequestStatus | MakeUpClassRequestStatus | 'cancelled'
 
 type MergedRow = {
   kind: 'approval' | 'leave' | 'resignation' | 'makeUp' | 'exam' | 'registration' | 'manpower' | 'overtime' | 'correction' | 'expense'
@@ -111,6 +112,7 @@ const tabs = computed<{ key: RowStatus; labelKey: string }[]>(() => [
   ...(canViewMakeUp.value ? [{ key: 'approved_to_study' as const, labelKey: 'admin.approvals.tabApprovedToStudy' }] : []),
   { key: 'approved', labelKey: 'admin.approvals.tabApproved' },
   { key: 'rejected', labelKey: 'admin.approvals.tabRejected' },
+  ...(counts.value.cancelled > 0 ? [{ key: 'cancelled' as const, labelKey: 'admin.approvals.tabCancelled' }] : []),
 ])
 
 const counts = computed(() => ({
@@ -118,6 +120,7 @@ const counts = computed(() => ({
   approved_to_study: rows.value.filter((r) => r.status === 'approved_to_study').length,
   approved: rows.value.filter((r) => r.status === 'approved').length,
   rejected: rows.value.filter((r) => r.status === 'rejected').length,
+  cancelled: rows.value.filter((r) => r.status === 'cancelled').length,
 }))
 
 const visibleRows = computed(() => rows.value.filter((r) => r.status === activeTab.value))
@@ -131,11 +134,12 @@ const columns = [
   { key: 'status', label: t('admin.approvals.columnStatus') },
 ]
 
-const statusVariant: Record<RowStatus, 'warning' | 'primary' | 'success' | 'danger'> = {
+const statusVariant: Record<RowStatus, 'warning' | 'primary' | 'success' | 'danger' | 'neutral'> = {
   pending: 'warning',
   approved_to_study: 'primary',
   approved: 'success',
   rejected: 'danger',
+  cancelled: 'neutral',
 }
 
 const statusLabelKey: Record<RowStatus, string> = {
@@ -143,6 +147,7 @@ const statusLabelKey: Record<RowStatus, string> = {
   approved_to_study: 'admin.myRequests.statusApprovedToStudy',
   approved: 'admin.myRequests.statusApproved',
   rejected: 'admin.myRequests.statusRejected',
+  cancelled: 'admin.myRequests.statusCancelled',
 }
 
 /** Still waiting on a decision — a make-up class approved to study waits on its second Approve. */

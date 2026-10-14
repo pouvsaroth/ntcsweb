@@ -34,7 +34,8 @@ import { formatDate } from '@/utils/date'
  * paginated sources behind one page control isn't meaningful here — a
  * user's own request list is never large enough to need it.
  */
-type RowStatus = ApprovalRequestStatus | MakeUpClassRequestStatus
+// `cancelled` — a student's permission a holiday covered (leave requests only).
+type RowStatus = ApprovalRequestStatus | MakeUpClassRequestStatus | 'cancelled'
 
 type MergedRow = {
   kind: 'approval' | 'leave' | 'resignation' | 'makeUp' | 'exam'
@@ -79,6 +80,7 @@ const tabs = computed<{ key: RowStatus; labelKey: string }[]>(() => [
   ...(canRequestMakeUp.value ? [{ key: 'approved_to_study' as const, labelKey: 'admin.myRequests.tabApprovedToStudy' }] : []),
   { key: 'approved', labelKey: 'admin.myRequests.tabApproved' },
   { key: 'rejected', labelKey: 'admin.myRequests.tabRejected' },
+  ...(counts.value.cancelled > 0 ? [{ key: 'cancelled' as const, labelKey: 'admin.myRequests.tabCancelled' }] : []),
 ])
 
 const counts = computed(() => ({
@@ -86,6 +88,7 @@ const counts = computed(() => ({
   approved_to_study: rows.value.filter((r) => r.status === 'approved_to_study').length,
   approved: rows.value.filter((r) => r.status === 'approved').length,
   rejected: rows.value.filter((r) => r.status === 'rejected').length,
+  cancelled: rows.value.filter((r) => r.status === 'cancelled').length,
 }))
 
 const visibleRows = computed(() => rows.value.filter((r) => r.status === activeTab.value))
@@ -103,11 +106,12 @@ const columns = computed(() => [
   { key: 'reference', label: t('admin.myRequests.columnReference') },
 ])
 
-const statusVariant: Record<RowStatus, 'warning' | 'primary' | 'success' | 'danger'> = {
+const statusVariant: Record<RowStatus, 'warning' | 'primary' | 'success' | 'danger' | 'neutral'> = {
   pending: 'warning',
   approved_to_study: 'primary',
   approved: 'success',
   rejected: 'danger',
+  cancelled: 'neutral',
 }
 
 const statusLabelKey: Record<RowStatus, string> = {
@@ -115,6 +119,7 @@ const statusLabelKey: Record<RowStatus, string> = {
   approved_to_study: 'admin.myRequests.statusApprovedToStudy',
   approved: 'admin.myRequests.statusApproved',
   rejected: 'admin.myRequests.statusRejected',
+  cancelled: 'admin.myRequests.statusCancelled',
 }
 
 const detail = ref<MergedRow | null>(null)

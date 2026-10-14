@@ -12,6 +12,7 @@ import { myLeaveRequestsService, type LeaveDayPart, type MyLeaveEnrollment, type
 import { makeUpClassCourseLabel } from '@/services/makeUpClassRequests'
 import { useAuthStore } from '@/stores/auth'
 import { ApiRequestError } from '@/types/api'
+import { formatDate } from '@/utils/date'
 
 /**
  * A student's self-submitted leave/permission request — launched from
@@ -113,6 +114,8 @@ const errors = ref<Record<string, string[]>>({})
 const generalError = ref<string | null>(null)
 const submitting = ref(false)
 const submitted = ref(false)
+/** A student's request that partly fell on holidays — those days, to tell them. */
+const skippedHolidayDates = ref<string[]>([])
 
 watch(
   () => props.modelValue,
@@ -131,6 +134,7 @@ watch(
     errors.value = {}
     generalError.value = null
     submitted.value = false
+    skippedHolidayDates.value = []
     days.value = null
 
     if (isStudent.value) {
@@ -173,7 +177,7 @@ async function submit() {
   generalError.value = null
 
   try {
-    await myLeaveRequestsService.submit({
+    const created = await myLeaveRequestsService.submit({
       enrollment_id: isStudent.value && form.enrollment_id ? Number(form.enrollment_id) : null,
       leave_type_id: staffMode.value && form.leave_type_id ? Number(form.leave_type_id) : null,
       day_part: staffMode.value ? form.day_part : null,
@@ -185,6 +189,7 @@ async function submit() {
       reason: form.reason,
       attachments: attachments.value,
     })
+    skippedHolidayDates.value = created.holiday_dates ?? []
     submitted.value = true
   } catch (error) {
     if (error instanceof ApiRequestError && error.errors) {
@@ -205,6 +210,9 @@ async function submit() {
     @update:model-value="emit('update:modelValue', $event)"
   >
     <BaseAlert v-if="submitted" variant="success">{{ t('leaveRequest.submitSuccess') }}</BaseAlert>
+    <BaseAlert v-if="submitted && skippedHolidayDates.length" variant="warning" class="mt-2">
+      {{ t('leaveRequest.holidayDaysNote', { dates: skippedHolidayDates.map((d) => formatDate(d)).join(', ') }) }}
+    </BaseAlert>
 
     <form v-else class="space-y-4" @submit.prevent="submit">
       <BaseAlert v-if="generalError" variant="danger">{{ generalError }}</BaseAlert>

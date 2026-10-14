@@ -32,7 +32,7 @@ const auth = useAuthStore()
 
 const canFile = computed(() => auth.can('leave-management.manage'))
 
-const statusVariant: Record<LeaveRequestStatus, 'warning' | 'success' | 'danger'> = { pending: 'warning', approved: 'success', rejected: 'danger' }
+const statusVariant: Record<LeaveRequestStatus, 'warning' | 'success' | 'danger' | 'neutral'> = { pending: 'warning', approved: 'success', rejected: 'danger', cancelled: 'neutral' }
 
 function statusLabel(status: LeaveRequestStatus): string {
   return t(`admin.leaveRequests.status${status.charAt(0).toUpperCase()}${status.slice(1)}`)

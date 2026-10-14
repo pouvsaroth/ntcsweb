@@ -62,6 +62,7 @@ const km: MessageSchema = {
   },
 
   leaveRequest: {
+    holidayDaysNote: 'ថ្ងៃទាំងនេះជាថ្ងៃឈប់សម្រាក ហើយមិនរាប់បញ្ចូលទេ៖ {dates}',
     askForPermission: 'សុំច្បាប់',
     title: 'សុំច្បាប់',
     fromDate: 'ចាប់ពីថ្ងៃ',
@@ -213,6 +214,7 @@ const km: MessageSchema = {
       denied: 'ការជូនដំណឹងត្រូវបានបិទសម្រាប់គេហទំព័រនេះ។ សូមអនុញ្ញាតនៅក្នុងការកំណត់កម្មវិធីរុករក ឬទូរស័ព្ទ រួចបើកម៉ឺនុយនេះម្តងទៀត។',
     },
     types: {
+      leave_request_cancelled: 'សំណើសុំច្បាប់សម្រាប់ {student_name} ត្រូវបានលុបចោល — ត្រូវនឹងថ្ងៃឈប់សម្រាក ({holiday})។',
       leave_request_submitted: '{student_name} បានដាក់ស្នើសំណើសុំច្បាប់',
       leave_request_approved: 'សំណើសុំច្បាប់សម្រាប់ {student_name} ត្រូវបានអនុម័ត',
       leave_request_rejected: 'សំណើសុំច្បាប់សម្រាប់ {student_name} ត្រូវបានបដិសេធ៖ {reason}',
@@ -1160,6 +1162,7 @@ const km: MessageSchema = {
       emptyMessage: 'បច្ចុប្បន្នមិនមានការចុះឈ្មោះកំពុងរង់ចាំការអនុម័តទេ។',
     },
     leaveRequests: {
+      statusCancelled: 'បានលុបចោល',
       title: 'សំណើសុំច្បាប់',
       pageSubtitle: 'សំណើសុំច្បាប់/ការអនុញ្ញាតរបស់សិស្ស កំពុងរង់ចាំការអនុម័ត ឬបានសម្រេចរួច។',
       columnStudent: 'សិស្ស',
@@ -1302,6 +1305,8 @@ const km: MessageSchema = {
       noCategoriesMessage: 'មិនទាន់មានប្រភេទទម្រង់បែបបទត្រូវបានរៀបចំទេ។',
     },
     myRequests: {
+      tabCancelled: 'បានលុបចោល',
+      statusCancelled: 'បានលុបចោល',
       title: 'សំណើរបស់ខ្ញុំ',
       columnAction: 'សកម្មភាព',
       delete: 'លុប',
@@ -1328,6 +1333,7 @@ const km: MessageSchema = {
       emptyMessage: 'មិនទាន់មានអ្វីនៅទីនេះទេ។',
     },
     approvals: {
+      tabCancelled: 'បានលុបចោល',
       registrationSubject: 'ការចុះឈ្មោះសិស្ស — {course}',
       manpowerSubject: 'ជ្រើសរើស {job} ចំនួន {count} នាក់',
       overtimeSubject: 'ម៉ោងបន្ថែម {time} ថ្ងៃ {date}',
@@ -3147,10 +3153,12 @@ const km: MessageSchema = {
         deleteConfirm: 'លុប «{name}»? បុគ្គលិករបស់វានឹងប្រើលំនាំដើម។',
       },
       holidays: {
+        cancelledPermissions: 'សំណើសុំច្បាប់សិស្ស {count} ដែលត្រូវនឹងថ្ងៃឈប់សម្រាកនេះ ត្រូវបានលុបចោល។',
         add: 'ថ្ងៃឈប់សម្រាកថ្មី',
         edit: 'កែសម្រួលថ្ងៃឈប់សម្រាក',
         date: 'កាលបរិច្ឆេទ',
         name: 'ថ្ងៃឈប់សម្រាក',
+        type: 'ប្រភេទថ្ងៃឈប់សម្រាក',
         days: 'ថ្ងៃ',
         daysN: '{count} ថ្ងៃ',
         from: 'ពី',

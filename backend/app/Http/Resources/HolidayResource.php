@@ -18,10 +18,12 @@ class HolidayResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
+            'holiday_type' => $this->holiday_type,
             'start_date' => $this->start_date?->toDateString(),
             'end_date' => $this->end_date?->toDateString(),
             'days' => $this->start_date && $this->end_date ? $this->start_date->diffInDays($this->end_date) + 1 : 1,
             'description' => $this->description,
+            'cancelled_permissions' => $this->when($this->resource->cancelledPermissions !== null, fn () => $this->resource->cancelledPermissions),
         ];
     }
 }

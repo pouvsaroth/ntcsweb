@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Feature\StaffAttendance;
 
+use App\Models\LookupCategory;
+use App\Models\LookupValue;
 use App\Models\Shift;
 use App\Models\Staff;
 use App\Models\WorkSchedule;
@@ -109,15 +111,39 @@ class AttendanceSetupTest extends TestCase
     public function test_holidays_span_days_and_list_by_year(): void
     {
         $this->actingAsAdminWithPermissions(self::ALL);
+        $this->seedHolidayTypes();
 
-        $this->postJson('/api/v1/holidays', ['name' => 'Khmer New Year', 'start_date' => '2027-04-14', 'end_date' => '2027-04-16'])
+        $this->postJson('/api/v1/holidays', ['name' => 'Khmer New Year', 'holiday_type' => 'PUBLIC_HOLIDAY', 'start_date' => '2027-04-14', 'end_date' => '2027-04-16'])
             ->assertCreated()
-            ->assertJsonPath('data.days', 3);
-        $this->postJson('/api/v1/holidays', ['name' => 'Independence Day', 'start_date' => '2026-11-09'])
+            ->assertJsonPath('data.days', 3)
+            ->assertJsonPath('data.holiday_type', 'PUBLIC_HOLIDAY');
+        $this->postJson('/api/v1/holidays', ['name' => 'Independence Day', 'holiday_type' => 'PUBLIC_HOLIDAY', 'start_date' => '2026-11-09'])
             ->assertCreated()
             ->assertJsonPath('data.end_date', '2026-11-09');
 
         $this->getJson('/api/v1/holidays?year=2027')->assertOk()->assertJsonCount(1, 'data');
+    }
+
+    public function test_a_holiday_needs_a_type_from_base_data(): void
+    {
+        $this->actingAsAdminWithPermissions(self::ALL);
+        $this->seedHolidayTypes();
+
+        $this->postJson('/api/v1/holidays', ['name' => 'Staff trip', 'start_date' => '2026-12-01'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('holiday_type');
+        $this->postJson('/api/v1/holidays', ['name' => 'Staff trip', 'holiday_type' => 'MADE_UP', 'start_date' => '2026-12-01'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('holiday_type');
+
+        $id = $this->postJson('/api/v1/holidays', ['name' => 'Staff trip', 'holiday_type' => 'ADDITIONAL_HOLIDAY', 'start_date' => '2026-12-01'])
+            ->assertCreated()
+            ->json('data.id');
+
+        $this->putJson("/api/v1/holidays/{$id}", ['holiday_type' => 'SCHOOL_HOLIDAY'])
+            ->assertOk()
+            ->assertJsonPath('data.holiday_type', 'SCHOOL_HOLIDAY')
+            ->assertJsonPath('data.name', 'Staff trip');
     }
 
     public function test_viewing_alone_cannot_change_the_set_up(): void
@@ -127,5 +153,14 @@ class AttendanceSetupTest extends TestCase
         $this->getJson('/api/v1/shifts')->assertOk();
         $this->postJson('/api/v1/shifts', ['code' => 'X', 'name' => 'X', 'start_time' => '08:00', 'end_time' => '17:00'])->assertForbidden();
         $this->postJson('/api/v1/holidays', ['name' => 'X', 'start_date' => '2026-12-25'])->assertForbidden();
+    }
+
+    /** What BaseDataSeeder gives every school — tests don't run it. */
+    private function seedHolidayTypes(): void
+    {
+        $category = LookupCategory::query()->create(['code' => 'HOLIDAY_TYPE', 'name' => 'Holiday Type']);
+        foreach (['PUBLIC_HOLIDAY', 'SCHOOL_HOLIDAY', 'ADDITIONAL_HOLIDAY'] as $i => $code) {
+            LookupValue::query()->create(['lookup_category_id' => $category->id, 'code' => $code, 'sort_order' => $i]);
+        }
     }
 }

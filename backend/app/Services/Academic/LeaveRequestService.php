@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services\Academic;
 
+use App\Models\AttendanceRecord;
+use App\Models\Holiday;
 use App\Models\LeaveRequest;
 use App\Models\Role;
 use App\Models\SchoolClass;
@@ -56,6 +58,21 @@ final class LeaveRequestService
      */
     public function submit(?Student $student, ?Staff $staff, array $data, bool $byHr = false): LeaveRequest
     {
+        // A student needs no permission for a day off: refuse a request that
+        // falls wholly on holidays; one only partly on them goes through and
+        // reports the days it skips (approval leaves those days alone).
+        $holidayDates = null;
+        if ($student !== null) {
+            $holidayDates = $this->holidayDates($data['from_date'], $data['to_date']);
+            if (count($holidayDates) === count($this->datesBetween($data['from_date'], $data['to_date']))) {
+                throw ValidationException::withMessages([
+                    'from_date' => __('This day is a holiday (:names) — no permission is needed.', [
+                        'names' => $this->holidayNames($data['from_date'], $data['to_date']),
+                    ]),
+                ]);
+            }
+        }
+
         $request = DB::transaction(function () use ($student, $staff, $data, $byHr) {
             $leave = ['leave_type_id' => null, 'day_part' => null, 'days' => null];
             if ($staff !== null) {
@@ -95,6 +112,7 @@ final class LeaveRequestService
 
             return $request->load(['attachments', 'leaveType']);
         });
+        $request->holidayDates = $holidayDates;
 
         // Outside the transaction — a notification that fails to write is
         // never worth rolling back an already-submitted request over.
@@ -254,9 +272,15 @@ final class LeaveRequestService
 
         /** @var array<int, SchoolClass|null> $classes */
         $classes = [];
+        // Nobody is marked on a holiday — there's no class to be excused from.
+        $holidayDates = $this->holidayDates($request->from_date->toDateString(), $request->to_date->toDateString());
 
         foreach ($enrollments as $enrollment) {
             foreach (CarbonPeriod::create($request->from_date, $request->to_date) as $date) {
+                if (in_array($date->toDateString(), $holidayDates, true)) {
+                    continue;
+                }
+
                 // The class the student was in on that day — a leave for an
                 // earlier date still lands in the class they had back then.
                 $classId = $enrollment->placementOn($date->toDateString())['class_id'];
@@ -276,5 +300,148 @@ final class LeaveRequestService
                 ]], $admin);
             }
         }
+    }
+
+    /**
+     * A holiday was added (or moved) — student permissions it now covers
+     * aren't needed any more. A waiting or approved request whose every day
+     * is a holiday becomes Cancelled (its Excused marks removed, the student
+     * and their teachers told); an approved one only partly covered keeps
+     * its other days and just loses the marks on the holiday's days.
+     *
+     * @return int how many requests were cancelled
+     */
+    public function cancelForHoliday(Holiday $holiday, User $admin): int
+    {
+        $from = $holiday->start_date->toDateString();
+        $to = $holiday->end_date->toDateString();
+
+        $affected = LeaveRequest::query()
+            ->whereNotNull('student_id')
+            ->whereIn('status', [LeaveRequest::STATUS_PENDING, LeaveRequest::STATUS_APPROVED])
+            ->whereDate('from_date', '<=', $to)
+            ->whereDate('to_date', '>=', $from)
+            ->pluck('id');
+
+        $cancelled = [];
+        foreach ($affected as $id) {
+            $result = DB::transaction(function () use ($id, $holiday, $admin, $from, $to) {
+                /** @var LeaveRequest|null $request */
+                $request = LeaveRequest::query()->whereKey($id)->lockForUpdate()->first();
+                if ($request === null || ! in_array($request->status, [LeaveRequest::STATUS_PENDING, LeaveRequest::STATUS_APPROVED], true)) {
+                    return null;
+                }
+
+                $requestFrom = $request->from_date->toDateString();
+                $requestTo = $request->to_date->toDateString();
+                $holidayDates = $this->holidayDates($requestFrom, $requestTo);
+
+                if (count($holidayDates) < count($this->datesBetween($requestFrom, $requestTo))) {
+                    if ($request->status === LeaveRequest::STATUS_APPROVED) {
+                        $this->removeExcusedMarks($request, array_values(array_filter($holidayDates, fn (string $d) => $d >= $from && $d <= $to)));
+                    }
+
+                    return null;
+                }
+
+                $this->removeExcusedMarks($request, $this->datesBetween($requestFrom, $requestTo));
+                $request->update([
+                    'status' => LeaveRequest::STATUS_CANCELLED,
+                    'decision_reason' => __('Cancelled — holiday: :name', ['name' => $holiday->name]),
+                    'decided_by' => $admin->getKey(),
+                    'decided_at' => now(),
+                ]);
+
+                return $request;
+            });
+
+            if ($result !== null) {
+                $cancelled[] = $result;
+            }
+        }
+
+        // Outside the transactions, like every other notification here.
+        foreach ($cancelled as $request) {
+            $this->notifyCancelled($request, $holiday);
+        }
+
+        return count($cancelled);
+    }
+
+    /** The student and their teachers — the Excused marks they saw are gone. */
+    private function notifyCancelled(LeaveRequest $request, Holiday $holiday): void
+    {
+        $student = $request->student;
+        if ($student === null) {
+            return;
+        }
+
+        $recipients = collect($student->user !== null ? [$student->user] : []);
+        $teacherUserIds = Staff::query()->whereIn('id', $student->teacherIds())->pluck('user_id')->filter();
+        $recipients = $recipients->merge(User::query()->whereIn('id', $teacherUserIds)->get());
+
+        $this->notifications->notifyMany($recipients, NotificationType::LEAVE_REQUEST_CANCELLED, [
+            'student_id' => $request->student_id,
+            'staff_id' => null,
+            'student_name' => $request->requesterName(),
+            'leave_request_id' => $request->id,
+            'holiday' => $holiday->name,
+        ], link: '/admin/approvals/my-requests');
+    }
+
+    /**
+     * Only the Excused marks this request's approval wrote (see
+     * applyToAttendance()) — a mark a teacher has since changed stays.
+     *
+     * @param  list<string>  $dates
+     */
+    private function removeExcusedMarks(LeaveRequest $request, array $dates): void
+    {
+        if ($dates === []) {
+            return;
+        }
+
+        AttendanceRecord::query()
+            ->where('student_id', $request->student_id)
+            ->where('status', AttendanceStatus::EXCUSED)
+            ->where('remarks', 'like', "Approved leave request #{$request->id}:%")
+            ->where(function ($query) use ($dates) {
+                foreach ($dates as $date) {
+                    $query->orWhereDate('date', $date);
+                }
+            })
+            ->delete();
+    }
+
+    /**
+     * The dates between two days (inclusive) that any holiday covers.
+     *
+     * @return list<string> Y-m-d
+     */
+    private function holidayDates(string $from, string $to): array
+    {
+        $holidays = Holiday::query()->whereDate('end_date', '>=', $from)->whereDate('start_date', '<=', $to)->get();
+
+        return array_values(array_filter(
+            $this->datesBetween($from, $to),
+            fn (string $date) => $holidays->contains(fn (Holiday $h) => $h->start_date->toDateString() <= $date && $h->end_date->toDateString() >= $date),
+        ));
+    }
+
+    /** "Khmer New Year, Visak Bochea" — the holidays between two days. */
+    private function holidayNames(string $from, string $to): string
+    {
+        return Holiday::query()->whereDate('end_date', '>=', $from)->whereDate('start_date', '<=', $to)->orderBy('start_date')->pluck('name')->implode(', ');
+    }
+
+    /** @return list<string> Y-m-d, inclusive */
+    private function datesBetween(string $from, string $to): array
+    {
+        $dates = [];
+        foreach (CarbonPeriod::create(substr($from, 0, 10), substr($to, 0, 10)) as $date) {
+            $dates[] = $date->toDateString();
+        }
+
+        return $dates;
     }
 }

@@ -9,6 +9,7 @@ use App\Http\Requests\Api\V1\Admin\HolidayRequest;
 use App\Http\Resources\HolidayResource;
 use App\Http\Responses\ApiResponse;
 use App\Models\Holiday;
+use App\Services\Academic\LeaveRequestService;
 use App\Support\Query\ApiQuery;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -16,6 +17,8 @@ use Illuminate\Http\Request;
 /** HRM > Attendance & Time > Holidays. */
 final class HolidayController extends Controller
 {
+    public function __construct(private readonly LeaveRequestService $leaveRequests) {}
+
     public function index(Request $request): JsonResponse
     {
         $this->authorize('viewAny', Holiday::class);
@@ -40,7 +43,10 @@ final class HolidayController extends Controller
     {
         $this->authorize('create', Holiday::class);
 
-        return ApiResponse::created(new HolidayResource(Holiday::query()->create($request->validated())));
+        $holiday = Holiday::query()->create($request->validated());
+        $holiday->cancelledPermissions = $this->leaveRequests->cancelForHoliday($holiday, $request->user());
+
+        return ApiResponse::created(new HolidayResource($holiday));
     }
 
     public function show(Holiday $holiday): JsonResponse
@@ -55,6 +61,7 @@ final class HolidayController extends Controller
         $this->authorize('update', $holiday);
 
         $holiday->update($request->validated());
+        $holiday->cancelledPermissions = $this->leaveRequests->cancelForHoliday($holiday, $request->user());
 
         return ApiResponse::success(new HolidayResource($holiday));
     }

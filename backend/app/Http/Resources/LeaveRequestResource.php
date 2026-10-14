@@ -61,6 +61,8 @@ class LeaveRequestResource extends JsonResource
             'decided_at' => $this->decided_at?->toIso8601String(),
             'attachments' => LeaveRequestAttachmentResource::collection($this->whenLoaded('attachments')),
             'created_at' => $this->created_at?->toIso8601String(),
+            // Only on a student's just-submitted request — the days it skips.
+            'holiday_dates' => $this->when($this->resource->holidayDates !== null, fn () => $this->resource->holidayDates),
         ];
     }
 }

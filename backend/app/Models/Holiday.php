@@ -14,12 +14,18 @@ use Illuminate\Database\Eloquent\Model;
  * Attendance & Time > Holidays). A one-day holiday has the same start and
  * end date.
  */
-#[Fillable(['name', 'start_date', 'end_date', 'description'])]
+#[Fillable(['name', 'holiday_type', 'start_date', 'end_date', 'description'])]
 class Holiday extends Model
 {
     use Auditable;
 
     protected $connection = 'tenant';
+
+    /** The Base Data category `holiday_type` takes its codes from. */
+    public const TYPE_CATEGORY = 'HOLIDAY_TYPE';
+
+    /** Not a column: student permissions saving this holiday just cancelled (HolidayController). */
+    public ?int $cancelledPermissions = null;
 
     protected function casts(): array
     {

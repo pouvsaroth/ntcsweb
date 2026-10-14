@@ -62,6 +62,10 @@ export type WorkScheduleInput = {
 export interface Holiday {
   id: number
   name: string
+  /** A HOLIDAY_TYPE Base Data code; null on holidays saved before types existed. */
+  holiday_type: string | null
+  /** Only right after saving: student permissions this holiday cancelled. */
+  cancelled_permissions?: number
   start_date: string
   end_date: string
   days: number
@@ -70,6 +74,7 @@ export interface Holiday {
 
 export interface HolidayInput {
   name: string
+  holiday_type: string
   start_date: string
   end_date: string | null
   description: string | null
