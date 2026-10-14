@@ -3,7 +3,6 @@ import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import EmptyState from '@/components/ui/EmptyState.vue'
-import PageHero from '@/components/public/PageHero.vue'
 import SectionContainer from '@/components/public/SectionContainer.vue'
 import { publicContentService, type Promotion } from '@/services/publicContent'
 
@@ -20,7 +19,6 @@ onMounted(async () => {
 
 <template>
   <div>
-    <PageHero :title="t('promotion.title')" :subtitle="t('promotion.subtitle')" />
     <SectionContainer>
       <div v-if="loading" class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         <div v-for="i in 6" :key="i" class="aspect-video animate-pulse rounded-2xl bg-neutral-100" />

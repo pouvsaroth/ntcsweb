@@ -557,6 +557,9 @@ const zh: MessageSchema = {
     downloadSelected: '下载所选 (.zip)',
     downloadAll: '全部下载 (.zip)',
     tooManyForZip: '一个 zip 最多 {files} 个文件、{size}，请减少选择。',
+    viewPhoto: '查看 {name}',
+    previousPhoto: '上一张',
+    nextPhoto: '下一张',
   },
 
   promotion: {

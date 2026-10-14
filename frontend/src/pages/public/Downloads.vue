@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 
 import EmptyState from '@/components/ui/EmptyState.vue'
-import PageHero from '@/components/public/PageHero.vue'
 import SectionContainer from '@/components/public/SectionContainer.vue'
 import {
   formatFileSize,
@@ -12,6 +11,7 @@ import {
   MAX_ZIP_FILES,
   publicDownloadsService,
   type PublicDownloadFolder,
+  type DownloadFile,
   type PublicDownloadFolderDetail,
 } from '@/services/downloads'
 
@@ -37,6 +37,7 @@ const notFound = ref(false)
 async function load() {
   loading.value = true
   selected.value = new Set()
+  viewingIndex.value = null
   notFound.value = false
   try {
     if (folderId.value === null) {
@@ -80,6 +81,53 @@ const zipTooBig = computed(
   () => zipFiles.value.length > MAX_ZIP_FILES || zipFiles.value.reduce((sum, f) => sum + f.size, 0) > MAX_ZIP_BYTES,
 )
 
+// --- Photo view: click a picture's thumbnail to see it full-size ----------------
+
+const images = computed(() => folder.value?.files.filter((f) => f.is_image) ?? [])
+const viewingIndex = ref<number | null>(null)
+const viewing = computed(() => (viewingIndex.value === null ? null : (images.value[viewingIndex.value] ?? null)))
+
+function view(file: DownloadFile) {
+  const index = images.value.findIndex((f) => f.id === file.id)
+  viewingIndex.value = index >= 0 ? index : null
+}
+
+function closeView() {
+  viewingIndex.value = null
+}
+
+function step(delta: number) {
+  if (viewingIndex.value === null || images.value.length < 2) return
+  viewingIndex.value = (viewingIndex.value + delta + images.value.length) % images.value.length
+}
+
+function onKey(event: KeyboardEvent) {
+  if (viewingIndex.value === null) return
+  if (event.key === 'Escape') closeView()
+  else if (event.key === 'ArrowLeft') step(-1)
+  else if (event.key === 'ArrowRight') step(1)
+}
+
+// Swipe left/right on a phone.
+let touchStartX: number | null = null
+function onTouchStart(event: TouchEvent) {
+  touchStartX = event.touches[0]?.clientX ?? null
+}
+function onTouchEnd(event: TouchEvent) {
+  const endX = event.changedTouches[0]?.clientX
+  if (touchStartX !== null && endX !== undefined && Math.abs(endX - touchStartX) > 50) step(endX < touchStartX ? 1 : -1)
+  touchStartX = null
+}
+
+watch(viewingIndex, (index) => {
+  document.body.style.overflow = index === null ? '' : 'hidden'
+})
+window.addEventListener('keydown', onKey)
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onKey)
+  document.body.style.overflow = ''
+})
+
 const zipUrl = computed(() => (folder.value ? publicDownloadsService.zipUrl(folder.value.id, [...selected.value]) : ''))
 
 function folderLink(id: number) {
@@ -97,7 +145,6 @@ function folderSummary(f: PublicDownloadFolder): string {
 
 <template>
   <div>
-    <PageHero :title="folder?.name ?? t('downloads.title')" :subtitle="folder ? undefined : t('downloads.subtitle')" />
 
     <SectionContainer>
       <!-- Where you are: Download › Parent › Folder -->
@@ -203,7 +250,15 @@ function folderSummary(f: PublicDownloadFolder): string {
             :class="selected.has(file.id) ? 'border-primary-500 ring-2 ring-primary-200' : 'border-neutral-200'"
           >
             <div class="relative flex aspect-[4/3] items-center justify-center overflow-hidden bg-neutral-100">
-              <img v-if="file.is_image" :src="file.url" :alt="file.name" class="absolute inset-0 h-full w-full object-cover" loading="lazy" />
+              <button
+                v-if="file.is_image"
+                type="button"
+                class="group absolute inset-0 cursor-zoom-in"
+                :aria-label="t('downloads.viewPhoto', { name: file.name })"
+                @click="view(file)"
+              >
+                <img :src="file.url" :alt="file.name" class="h-full w-full object-cover transition-transform group-hover:scale-105" loading="lazy" />
+              </button>
               <span v-else class="rounded-lg bg-white px-3 py-2 text-lg font-bold uppercase text-neutral-500 shadow-sm">{{ file.extension }}</span>
               <label
                 v-if="folder.files.length > 1"
@@ -237,5 +292,71 @@ function folderSummary(f: PublicDownloadFolder): string {
         </div>
       </template>
     </SectionContainer>
+
+    <!-- Photo view — full-size, with previous/next through the folder's pictures. -->
+    <div
+      v-if="viewing"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-neutral-900/90 p-4"
+      role="dialog"
+      aria-modal="true"
+      :aria-label="viewing.name"
+      @click.self="closeView"
+      @touchstart.passive="onTouchStart"
+      @touchend="onTouchEnd"
+    >
+      <button
+        type="button"
+        class="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
+        :aria-label="t('common.close')"
+        @click="closeView"
+      >
+        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+
+      <template v-if="images.length > 1">
+        <button
+          type="button"
+          class="absolute left-2 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 sm:left-4"
+          :aria-label="t('downloads.previousPhoto')"
+          @click="step(-1)"
+        >
+          <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+        <button
+          type="button"
+          class="absolute right-2 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 sm:right-4"
+          :aria-label="t('downloads.nextPhoto')"
+          @click="step(1)"
+        >
+          <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+      </template>
+
+      <div class="flex max-h-full max-w-4xl flex-col items-center">
+        <img :key="viewing.id" :src="viewing.url" :alt="viewing.name" class="max-h-[75vh] max-w-full rounded-lg object-contain" />
+
+        <div class="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 px-12 text-center">
+          <p class="break-all text-sm text-white/90">
+            {{ viewing.name }}<span class="text-white/50">.{{ viewing.extension }}</span>
+            <span v-if="images.length > 1" class="ml-2 text-white/50">{{ viewingIndex! + 1 }} / {{ images.length }}</span>
+          </p>
+          <a
+            :href="publicDownloadsService.fileUrl(viewing.id)"
+            class="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-sm font-medium text-neutral-800 hover:bg-neutral-100"
+          >
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />
+            </svg>
+            {{ t('downloads.download') }}
+          </a>
+        </div>
+      </div>
+    </div>
   </div>
 </template>

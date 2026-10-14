@@ -558,6 +558,9 @@ const km: MessageSchema = {
     downloadSelected: 'ទាញយកឯកសារដែលបានជ្រើសរើស (.zip)',
     downloadAll: 'ទាញយកទាំងអស់ (.zip)',
     tooManyForZip: 'zip មួយអាចមានរហូតដល់ {files} ឯកសារ និង {size} — សូមជ្រើសរើសតិចជាងនេះ។',
+    viewPhoto: 'មើល {name}',
+    previousPhoto: 'រូបថតមុន',
+    nextPhoto: 'រូបថតបន្ទាប់',
   },
 
   promotion: {

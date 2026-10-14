@@ -561,6 +561,9 @@ const en = {
     downloadSelected: 'Download selected (.zip)',
     downloadAll: 'Download all (.zip)',
     tooManyForZip: 'Up to {files} files and {size} in one zip — choose fewer.',
+    viewPhoto: 'View {name}',
+    previousPhoto: 'Previous photo',
+    nextPhoto: 'Next photo',
   },
 
   promotion: {

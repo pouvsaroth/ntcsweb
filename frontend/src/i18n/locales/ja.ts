@@ -558,6 +558,9 @@ const ja: MessageSchema = {
     downloadSelected: '選択したファイルをダウンロード (.zip)',
     downloadAll: 'すべてダウンロード (.zip)',
     tooManyForZip: '1つのzipには最大{files}ファイル・{size}までです。選択を減らしてください。',
+    viewPhoto: '{name} を表示',
+    previousPhoto: '前の写真',
+    nextPhoto: '次の写真',
   },
 
   promotion: {

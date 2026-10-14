@@ -558,6 +558,9 @@ const ko: MessageSchema = {
     downloadSelected: '선택한 파일 다운로드 (.zip)',
     downloadAll: '모두 다운로드 (.zip)',
     tooManyForZip: 'zip 하나에 최대 {files}개 파일, {size}까지 가능합니다. 더 적게 선택하세요.',
+    viewPhoto: '{name} 보기',
+    previousPhoto: '이전 사진',
+    nextPhoto: '다음 사진',
   },
 
   promotion: {
