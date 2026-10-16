@@ -187,7 +187,7 @@ jobs:
 
             # The scheduler is long-running and keeps the environment it started
             # with; restart it too so it sees new code and any .env change
-            # (it also runs the back office's backup tick every minute).
+            # (it also runs the back office backup tick every minute).
             docker compose -f docker-compose.prod.yml restart scheduler
 
             # `up --build` recreates php (new container IP) whenever its image
