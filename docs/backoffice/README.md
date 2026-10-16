@@ -54,7 +54,8 @@ there from before the move to a database per school (`students`,
 from before is kept outside the repo. The central database now holds only
 what is central. Consequence: the old `is_super_admin` "platform mode" can
 no longer read school models with no school selected. (`is_super_admin`
-itself stays permanently — owner's decision, see stage-2-schools.md.) The same clean-up on the server is the owner's step.
+itself stays permanently — owner's decision, see stage-2-schools.md.) The same clean-up was done on the server the same day (70 tables, all empty but
+the default `form_categories` row; dump in `/root/db-backups/bo_school_before_drop.dump`).
 
 ## Database names
 
