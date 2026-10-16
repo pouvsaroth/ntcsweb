@@ -27,15 +27,37 @@ renamed and no database is created for an existing school.
 
 ## Your steps on the server
 
-### 1. DNS and HTTPS for smis.newtechkh.com
+### 1. HTTPS for smis.newtechkh.com (host Apache)
 
-Point `smis.newtechkh.com` at the server the same way `erp.newtechkh.com`
-is (same A record / proxy), and give it HTTPS the same way erp has it.
-nginx inside Docker already answers for that name on port 80.
+DNS already points `smis.newtechkh.com` at the server (38.242.236.109). As
+for `erp.newtechkh.com`, the **host's own Apache** is the front door: it
+terminates HTTPS and reverse-proxies into the Docker nginx on
+`127.0.0.1:8095` (see `docs/deployment.md`). Until smis has its own Apache
+site, Apache answers it with its default site.
 
-Recommended: allow only your office's IP addresses to reach
-smis.newtechkh.com (at the proxy/firewall, or an `allow … ; deny all;` in its
-nginx block). The back office manages every school.
+Copy erp's Apache site and change the name — the important lines:
+
+```apache
+<VirtualHost *:80>
+    ServerName smis.newtechkh.com
+    ProxyPreserveHost On
+    ProxyPass        / http://127.0.0.1:8095/
+    ProxyPassReverse / http://127.0.0.1:8095/
+    RequestHeader set X-Forwarded-Proto "http"
+</VirtualHost>
+```
+
+`ProxyPreserveHost On` matters: the Docker nginx picks the back office by
+the `smis.newtechkh.com` Host header. Then:
+
+```bash
+sudo a2ensite smis.newtechkh.com && sudo systemctl reload apache2
+sudo certbot --apache -d smis.newtechkh.com     # same as erp's Let's Encrypt certificate
+```
+
+Recommended: allow only your office's IP addresses in that vhost
+(`<Location /> Require ip … </Location>`). The back office manages every
+school.
 
 ### 2. Make sure backups can run
 
