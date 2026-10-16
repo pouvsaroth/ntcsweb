@@ -60,5 +60,5 @@ itself stays permanently — owner's decision, see stage-2-schools.md.) The same
 
 `bo_school` is the central (platform) database; each school has its own
 `tn_<slug>` (e.g. `tn_newtech`). The code was switched from `tenant_<slug>`
-to `tn_<slug>` on 2026-10-16 (`TenancyServiceProvider`). Production still
-uses `tenant_*` names and must be renamed before this code is deployed.
+to `tn_<slug>` on 2026-10-16 (the prefix is `TENANCY_DB_PREFIX`). Production
+was renamed the same day: `ntcsdb` → `bo_school`, `tenant_*` → `tn_*`.

@@ -89,7 +89,12 @@ a password. Add the rest of your staff from **Staff**.
 
 After any `.env` change: `docker compose -f docker-compose.prod.yml restart php queue scheduler`.
 
-### 5. Later, if you want `tn_` names on the server too
+### 5. Renaming the server's databases to `bo_school` / `tn_` — done 2026-10-16
+
+Done on production: `ntcsdb` → `bo_school`, `tenant_demo|newtech|test` → `tn_…`,
+with `DB_DATABASE=bo_school` and `TENANCY_DB_PREFIX=tn_` in the server's
+`backend/.env`. Dumps from just before are in `/root/db-backups/before-rename/`.
+The procedure, for reference:
 
 Only in a maintenance window, with fresh backups:
 
