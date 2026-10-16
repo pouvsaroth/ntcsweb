@@ -9,6 +9,7 @@ use App\Http\Requests\Api\V1\Auth\ChangePasswordRequest;
 use App\Http\Requests\Api\V1\Auth\ForgotPasswordRequest;
 use App\Http\Requests\Api\V1\Auth\ResetPasswordRequest;
 use App\Http\Responses\ApiResponse;
+use App\Models\Tenant;
 use App\Models\User;
 use App\Services\Auth\PasswordResetService;
 use App\Support\Audit\AuditAction;
@@ -47,7 +48,7 @@ final class PasswordController extends Controller
     {
         $succeeded = $this->passwords->reset(
             $request->string('email')->toString(),
-            $this->context->id(),
+            $this->context->id() ?? $this->schoolNamedInTheLink($request),
             $request->string('token')->toString(),
             $request->string('password')->toString(),
         );
@@ -59,6 +60,27 @@ final class PasswordController extends Controller
         }
 
         return ApiResponse::success(message: __('Your password has been reset. Please sign in.'));
+    }
+
+    /**
+     * The school a set-password link names (`tenant=` — every reset and invite
+     * link carries it), for when the request arrives where no school is
+     * resolved: the shared console (erp.newtechkh.com), where production does
+     * not resolve schools from the request. Without this every reset and
+     * every owner invite opened there answered "invalid or expired".
+     *
+     * Safe: it only says WHICH school's tokens to check. The token must still
+     * match that school and that email exactly, or nothing happens.
+     */
+    private function schoolNamedInTheLink(ResetPasswordRequest $request): ?int
+    {
+        $slug = mb_strtolower(trim($request->string('tenant')->toString()));
+
+        if ($slug === '') {
+            return null;
+        }
+
+        return Tenant::query()->active()->where('slug', $slug)->value('id');
     }
 
     /**

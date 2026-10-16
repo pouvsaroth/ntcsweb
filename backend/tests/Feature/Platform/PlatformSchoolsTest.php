@@ -201,6 +201,39 @@ class PlatformSchoolsTest extends TestCase
         $this->postJson("/api/v1/platform/schools/{$id}/owner/invite-link")->assertUnprocessable();
     }
 
+    /**
+     * Production opens invite links on the shared console, where schools are
+     * NOT resolved from the request (allow_request_resolution off). Found
+     * live on 2026-10-16: every owner's "set password" answered "invalid or
+     * expired". The link's own tenant= now names the school for the check.
+     */
+    public function test_an_invite_link_works_on_the_console_where_schools_are_not_resolved_from_the_request(): void
+    {
+        $this->actingAsStaff($this->platformStaff());
+        $id = $this->createSchool()->json('data.id');
+        $owner = School::query()->findOrFail($id)->owner;
+        $token = $this->inviteToken($owner);
+        Tenant::factory()->create(['slug' => 'other-school']);
+
+        config(['tenancy.allow_request_resolution' => false]);
+        app(\App\Support\Tenancy\TenantContext::class)->forget();
+
+        $submit = fn (string $school) => $this->postJson('http://localhost/api/v1/auth/reset-password', [
+            'token' => $token,
+            'email' => $owner->email,
+            'tenant' => $school,
+            'password' => 'my-own-secret-1',
+            'password_confirmation' => 'my-own-secret-1',
+        ]);
+
+        // The token belongs to angkor: naming another school does nothing.
+        $submit('other-school')->assertUnprocessable();
+        $this->assertSame(User::STATUS_INVITED, $owner->fresh()->status);
+
+        $submit('angkor')->assertOk();
+        $this->assertSame(User::STATUS_ACTIVE, $owner->fresh()->status);
+    }
+
     public function test_an_invite_link_lasts_seven_days_not_sixty_minutes(): void
     {
         $this->actingAsStaff($this->platformStaff());
