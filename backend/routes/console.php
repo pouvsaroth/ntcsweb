@@ -13,3 +13,7 @@ Artisan::command('inspire', function () {
 Schedule::command('students:deactivate-idle')->timezone('Asia/Phnom_Penh')->dailyAt('01:00')->withoutOverlapping();
 Schedule::command('staff:sync-login-access')->timezone('Asia/Phnom_Penh')->dailyAt('01:05')->withoutOverlapping();
 Schedule::command('performance:apply-promotions')->timezone('Asia/Phnom_Penh')->dailyAt('01:10')->withoutOverlapping();
+
+// The back office (docs/backoffice/stage-3-data-ops.md): scheduler heartbeat,
+// scheduled backups when due, and retention. Cheap when there is nothing to do.
+Schedule::command('platform:backups-tick')->everyMinute()->withoutOverlapping();

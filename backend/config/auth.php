@@ -42,6 +42,13 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+
+        // The back office (docs/backoffice/). Its own table, so a school
+        // session or Sanctum token can never satisfy it.
+        'staff' => [
+            'driver' => 'session',
+            'provider' => 'platform_staff',
+        ],
     ],
 
     /*
@@ -65,6 +72,11 @@ return [
         'users' => [
             'driver' => 'eloquent',
             'model' => env('AUTH_MODEL', User::class),
+        ],
+
+        'platform_staff' => [
+            'driver' => 'eloquent',
+            'model' => App\Platform\Models\PlatformStaff::class,
         ],
 
         // 'users' => [

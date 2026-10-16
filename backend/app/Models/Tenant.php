@@ -62,6 +62,13 @@ class Tenant extends Model implements TenantWithDatabase
 
     public const STATUS_ARCHIVED = 'archived';
 
+    // Set by the back office (docs/backoffice/stage-2-schools.md): a school
+    // being set up, or whose setup failed. Neither is active, so every
+    // resolver and EnsureUserIsActive already refuse it.
+    public const STATUS_PROVISIONING = 'provisioning';
+
+    public const STATUS_FAILED = 'failed';
+
     // The only two currencies anything in this app is ever recorded in —
     // Invoice/CoursePackage/FinancialTransaction all share this same pair.
     public const CURRENCY_USD = 'USD';

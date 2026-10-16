@@ -22,6 +22,8 @@ const errors = ref<Record<string, string[]>>({})
 const generalError = ref<string | null>(null)
 const submitting = ref(false)
 
+const isInvite = route.query.invite === '1'
+
 async function submit() {
   submitting.value = true
   errors.value = {}
@@ -47,8 +49,9 @@ async function submit() {
 
 <template>
   <div>
-    <h2 class="mb-1 text-lg font-semibold text-neutral-900">{{ t('auth.resetPassword.title') }}</h2>
-    <p class="mb-6 text-sm text-neutral-500">{{ t('auth.resetPassword.subtitle') }}</p>
+    <!-- ?invite=1: a new school owner's first password, from the back office's invite (same token flow as a reset). -->
+    <h2 class="mb-1 text-lg font-semibold text-neutral-900">{{ isInvite ? t('auth.resetPassword.inviteTitle') : t('auth.resetPassword.title') }}</h2>
+    <p class="mb-6 text-sm text-neutral-500">{{ isInvite ? t('auth.resetPassword.inviteSubtitle') : t('auth.resetPassword.subtitle') }}</p>
 
     <BaseAlert v-if="generalError" variant="danger" class="mb-4">{{ generalError }}</BaseAlert>
 
@@ -68,7 +71,7 @@ async function submit() {
         autocomplete="new-password"
         required
       />
-      <BaseButton type="submit" :loading="submitting" block>{{ t('auth.resetPassword.submit') }}</BaseButton>
+      <BaseButton type="submit" :loading="submitting" block>{{ isInvite ? t('auth.resetPassword.inviteSubmit') : t('auth.resetPassword.submit') }}</BaseButton>
     </form>
   </div>
 </template>

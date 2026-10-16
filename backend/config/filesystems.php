@@ -30,6 +30,32 @@ return [
 
     'disks' => [
 
+        // The back office's database backups (docs/backoffice/stage-3-data-ops.md).
+        // Private: served only through the audited download route.
+        'backups' => [
+            'driver' => 'local',
+            'root' => storage_path('app/backups'),
+            'serve' => false,
+            'throw' => true,
+            // The queue worker (root) writes these and php-fpm (www-data)
+            // serves the download: Flysystem's default 0700 folders made every
+            // download a 404. Still never web-served directly ('serve' off).
+            'visibility' => 'public',
+            'directory_visibility' => 'public',
+        ],
+
+        // A second copy of each backup, when PLATFORM_BACKUP_COPY_DISK names
+        // this disk. A stand-in folder for local testing; the real second
+        // place (S3-type or SFTP) is a disk added here later.
+        'backups-copy' => [
+            'driver' => 'local',
+            'root' => storage_path('app/backups-copy'),
+            'serve' => false,
+            'throw' => true,
+            'visibility' => 'public',
+            'directory_visibility' => 'public',
+        ],
+
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),

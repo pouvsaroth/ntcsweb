@@ -7,6 +7,8 @@ use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\RequireTenant;
 use App\Http\Middleware\ResolveTenant;
 use App\Http\Responses\ApiResponse;
+use App\Platform\Http\Middleware\AuthenticateStaff;
+use App\Platform\Http\Middleware\EnsureStaffPermission;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -14,6 +16,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
@@ -26,7 +29,16 @@ return Application::configure(basePath: dirname(__DIR__))
         api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
+        // The back office: session + CSRF from `web`, and none of the tenant
+        // middleware the `api` group carries — see routes/platform.php.
+        then: function () {
+            Route::middleware('web')
+                ->prefix('api/v1/platform')
+                ->name('platform.')
+                ->group(base_path('routes/platform.php'));
+        },
     )
+    ->withCommands([__DIR__.'/../app/Platform/Console'])
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->api(prepend: [
             // Turns a request from a first-party SPA on a stateful domain into
@@ -65,6 +77,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'tenant.required' => RequireTenant::class,
             'active' => EnsureUserIsActive::class,
+            'platform.staff' => AuthenticateStaff::class,
+            'platform.can' => EnsureStaffPermission::class,
         ]);
 
         // Tenant hostnames are dynamic, so the trusted-host list cannot be

@@ -56,6 +56,22 @@ final readonly class PasswordResetService
         $this->audit->logFor(AuditAction::PASSWORD_RESET_REQUESTED, 'Auth', $user->tenant_id, $user);
     }
 
+    /**
+     * A set-password token for an invited account — the back office's
+     * school-owner invite. Same table and same /reset-password page as a
+     * reset, but no throttle (staff may resend at once, which kills the old
+     * link) and it lasts `platform.invite_days` while the account is still
+     * invited (see isExpired()).
+     */
+    public function issueInvite(User $user): string
+    {
+        $token = Str::random(64);
+
+        $this->upsertToken($user, $token);
+
+        return $token;
+    }
+
     public function reset(string $email, ?int $tenantId, string $token, string $password): bool
     {
         $user = $this->findUser($email, $tenantId);
@@ -77,7 +93,7 @@ final readonly class PasswordResetService
             return false;
         }
 
-        if ($this->isExpired($record->created_at)) {
+        if ($this->isExpired($record->created_at, $user)) {
             $this->deleteToken($user);
 
             return false;
@@ -87,7 +103,14 @@ final readonly class PasswordResetService
             $user->forceFill([
                 'password' => $password,
                 'remember_token' => Str::random(60),
-            ])->save();
+            ]);
+
+            // Accepting an invite is what makes the account usable.
+            if ($user->status === User::STATUS_INVITED) {
+                $user->forceFill(['status' => User::STATUS_ACTIVE, 'email_verified_at' => $user->email_verified_at ?? now()]);
+            }
+
+            $user->save();
 
             // A password change must invalidate every other credential: API
             // tokens and sessions elsewhere are exactly what an attacker who
@@ -149,11 +172,13 @@ final readonly class PasswordResetService
             ->delete();
     }
 
-    private function isExpired(string $createdAt): bool
+    private function isExpired(string $createdAt, User $user): bool
     {
-        return Carbon::parse($createdAt)
-            ->addMinutes((int) config('auth.passwords.users.expire', 60))
-            ->isPast();
+        $minutes = $user->status === User::STATUS_INVITED
+            ? (int) config('platform.invite_days', 7) * 24 * 60
+            : (int) config('auth.passwords.users.expire', 60);
+
+        return Carbon::parse($createdAt)->addMinutes($minutes)->isPast();
     }
 
     private function throttleSeconds(): int

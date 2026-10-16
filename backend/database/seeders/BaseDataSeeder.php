@@ -35,6 +35,12 @@ class BaseDataSeeder extends Seeder
         });
     }
 
+    /** One school only — for the back office's provisioning job. */
+    public function seedTenant(Tenant $tenant): void
+    {
+        $this->seedForTenant($tenant, Language::query()->get()->keyBy('code'));
+    }
+
     /**
      * `lookup_categories`/`lookup_values`/`lookup_value_translations` live
      * in the tenant database — runFor() only sets the logical TenantContext,

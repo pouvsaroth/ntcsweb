@@ -105,11 +105,20 @@ jobs:
       # admin/ERP bundle — see .github/workflows/deploy-website.yml for the
       # public website's own independent build+deploy.
       - run: npm run build:admin
+      # The back office (smis.newtechkh.com) — type-checked by build:admin's
+      # `vue-tsc -b` above (same src/), so only the bundle is built here.
+      - run: npx vite build --config vite.config.backoffice.ts
 
       - uses: actions/upload-artifact@v4
         with:
           name: frontend-dist-admin
           path: frontend/dist/admin
+          retention-days: 1
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist-backoffice
+          path: frontend/dist/backoffice
           retention-days: 1
 
   deploy:
@@ -121,6 +130,11 @@ jobs:
         with:
           name: frontend-dist-admin
           path: dist-admin
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist-backoffice
+          path: dist-backoffice
 
       - name: Configure SSH
         run: |
@@ -136,6 +150,11 @@ jobs:
         run: |
           rsync -az --delete -e "ssh -i ~/.ssh/deploy_key" \
             dist-admin/ "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${{ secrets.DEPLOY_PATH }}/frontend/dist/admin/"
+
+      # The back office's own folder — served by prod.conf's smis.newtechkh.com block.
+      - name: Upload back office frontend build
+        run: |
+          rsync -az --delete -e "ssh -i ~/.ssh/deploy_key"             dist-backoffice/ "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${{ secrets.DEPLOY_PATH }}/frontend/dist/backoffice/"
 
       # The backend itself is bind-mounted into the php/queue containers, so
       # a `git reset --hard` alone already changes the code they see; `up -d
@@ -165,6 +184,11 @@ jobs:
             docker compose -f docker-compose.prod.yml exec -T php php artisan config:clear
             docker compose -f docker-compose.prod.yml exec -T php chown -R www-data:www-data storage bootstrap/cache
             docker compose -f docker-compose.prod.yml restart queue
+
+            # The scheduler is long-running and keeps the environment it started
+            # with; restart it too so it sees new code and any .env change
+            # (it also runs the back office's backup tick every minute).
+            docker compose -f docker-compose.prod.yml restart scheduler
 
             # `up --build` recreates php (new container IP) whenever its image
             # changes, but leaves nginx running — its fastcgi_pass hostname

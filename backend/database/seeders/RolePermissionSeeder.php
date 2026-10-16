@@ -42,6 +42,17 @@ class RolePermissionSeeder extends Seeder
         $this->bootstrapUnassignedUsers();
     }
 
+    /**
+     * One school only — what the back office's provisioning job runs for a
+     * new school, instead of walking every school like run() does.
+     */
+    public function seedTenant(Tenant $tenant): void
+    {
+        app(PermissionRegistry::class)->sync();
+
+        $this->ensureTenantRoles($tenant, Permission::query()->pluck('id', 'slug'));
+    }
+
     private function ensurePlatformSuperAdminRole(): void
     {
         $this->putRole(

@@ -134,7 +134,14 @@ return [
 
         'template_tenant_connection' => null,
 
-        // A converted tenant's own database is named tenant<id>, e.g. tenant5.
+        // A school's own database is `<name_prefix><slug>` (TenancyServiceProvider).
+        // Production's databases are `tenant_<slug>`, so that stays the default;
+        // a machine whose databases were renamed to `tn_<slug>` (beside the
+        // central `bo_school`) sets TENANCY_DB_PREFIX=tn_. Switch production only
+        // after renaming its databases — otherwise provisioning creates empty ones.
+        'name_prefix' => env('TENANCY_DB_PREFIX', 'tenant_'),
+
+        // Unused: the name comes from name_prefix + slug (see above).
         'prefix' => 'tenant',
         'suffix' => '',
 

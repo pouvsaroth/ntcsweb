@@ -300,6 +300,9 @@ const zh: MessageSchema = {
       newPassword: '新密码',
       confirmPassword: '确认新密码',
       submit: '重置密码',
+      inviteTitle: '欢迎 — 设置您的密码',
+      inviteSubtitle: '设置您登录学校时使用的密码',
+      inviteSubmit: '设置密码',
     },
   },
 

@@ -41,9 +41,11 @@ class TenancyServiceProvider extends ServiceProvider
         // two different environments (e.g. a local dev database and a real
         // data dump, each with their own row #1) would otherwise collide on
         // the same physical Postgres server. Slugs are already unique and
-        // human-readable (`tenant_newtech`, not `tenant1`).
+        // human-readable (`tenant_newtech`, not `tenant1`). The prefix is
+        // config (tenancy.database.name_prefix): `tenant_` in production,
+        // `tn_` where the databases were renamed beside `bo_school`.
         DatabaseConfig::generateDatabaseNamesUsing(
-            fn ($tenant) => 'tenant_'.$tenant->slug,
+            fn ($tenant) => config('tenancy.database.name_prefix').$tenant->slug,
         );
 
         // Queued jobs run in a long-lived worker process. Without this, a job

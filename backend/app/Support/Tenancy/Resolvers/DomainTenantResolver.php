@@ -59,8 +59,11 @@ final readonly class DomainTenantResolver implements TenantResolver
 
     private function lookup(string $hostname): ?int
     {
+        // A domain added from the back office resolves only once its DNS TXT
+        // record has been found; older rows (no token) resolve as before.
         $explicit = TenantDomain::query()
             ->where('hostname', $hostname)
+            ->where(fn ($q) => $q->whereNotNull('verified_at')->orWhereNull('verification_token'))
             ->value('tenant_id');
 
         if ($explicit !== null) {

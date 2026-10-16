@@ -300,6 +300,9 @@ const ja: MessageSchema = {
       newPassword: '新しいパスワード',
       confirmPassword: '新しいパスワード（確認）',
       submit: 'パスワードを再設定',
+      inviteTitle: 'ようこそ — パスワードを設定してください',
+      inviteSubtitle: '学校へのサインインに使うパスワードを設定してください',
+      inviteSubmit: 'パスワードを設定',
     },
   },
 

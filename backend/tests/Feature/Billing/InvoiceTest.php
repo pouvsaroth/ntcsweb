@@ -52,10 +52,14 @@ class InvoiceTest extends TestCase
     {
         $this->actingAsAdminWithPermissions([Permissions::INVOICES_CREATE, Permissions::INVOICES_VIEW]);
 
-        $make = function (array $student, string $productName, float $price): string {
+        // Due in the future, so "issued" stays issued whatever day the suite
+        // runs (a fixed past date turned both invoices overdue on 2026-10-16).
+        $due = now()->addMonth();
+
+        $make = function (array $student, string $productName, float $price) use ($due): string {
             return $this->postJson('/api/v1/invoices', [
                 'student_id' => Student::factory()->create($student)->id,
-                'due_date' => '2026-10-15',
+                'due_date' => $due->toDateString(),
                 'items' => [['product_id' => Product::factory()->create(['name' => $productName, 'price' => $price])->id, 'quantity' => 1]],
             ])->assertCreated()->json('data.invoice_number');
         };
@@ -73,7 +77,7 @@ class InvoiceTest extends TestCase
         $this->assertSame([$dara], $numbersFor('12,345'));
         $this->assertSame([$other], $numbersFor('graphic'));
         $this->assertSame([$dara], $numbersFor($dara));
-        $this->assertEqualsCanonicalizing([$dara, $other], $numbersFor('15-10-2026'));
+        $this->assertEqualsCanonicalizing([$dara, $other], $numbersFor($due->format('d-m-Y')));
         $this->assertEqualsCanonicalizing([$dara, $other], $numbersFor('issued'));
         $this->assertSame([], $numbersFor('nobody-matches-this'));
     }

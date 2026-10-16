@@ -300,6 +300,9 @@ const ko: MessageSchema = {
       newPassword: '새 비밀번호',
       confirmPassword: '새 비밀번호 확인',
       submit: '비밀번호 재설정',
+      inviteTitle: '환영합니다 — 비밀번호를 설정하세요',
+      inviteSubtitle: '학교에 로그인할 때 사용할 비밀번호를 설정하세요',
+      inviteSubmit: '비밀번호 설정',
     },
   },
 

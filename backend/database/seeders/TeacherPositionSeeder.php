@@ -30,7 +30,8 @@ class TeacherPositionSeeder extends Seeder
         });
     }
 
-    private function ensureTeacherPosition(Tenant $tenant): void
+    /** Public for the back office's provisioning job, which seeds one school. */
+    public function ensureTeacherPosition(Tenant $tenant): void
     {
         // `positions` lives in the tenant database — runFor() only sets the
         // logical TenantContext, it never points the `tenant` connection at

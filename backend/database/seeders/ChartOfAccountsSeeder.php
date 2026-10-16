@@ -61,7 +61,8 @@ class ChartOfAccountsSeeder extends Seeder
         });
     }
 
-    private function seedForTenant(Tenant $tenant): void
+    /** Public for the back office's provisioning job, which seeds one school. */
+    public function seedForTenant(Tenant $tenant): void
     {
         // `accounts` lives in the tenant database — runFor() only sets the
         // logical TenantContext (for BelongsToTenant-style scoping), it

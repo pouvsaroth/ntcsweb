@@ -51,7 +51,12 @@ final class AuditLogger
         ?int $tenantId = null,
     ): void {
         try {
-            $actor ??= $this->request->user();
+            // Only a school user is an actor here. Inside a back-office request
+            // the signed-in account is platform staff (bo_staff), recorded in
+            // bo_audit_logs instead — writing its id into audit_logs.user_id
+            // would break the foreign key and abort the whole transaction.
+            $signedIn = $this->request->user();
+            $actor ??= $signedIn instanceof User ? $signedIn : null;
             $old = $this->redact($old);
             $new = $this->redact($new);
 

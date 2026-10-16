@@ -6,9 +6,11 @@
   "scripts": {
     "dev": "vite",
     "dev:admin": "vite --config vite.config.admin.ts",
-    "build": "vue-tsc -b && vite build && vite build --config vite.config.admin.ts",
+    "dev:backoffice": "vite --config vite.config.backoffice.ts",
+    "build": "vue-tsc -b && vite build && vite build --config vite.config.admin.ts && vite build --config vite.config.backoffice.ts",
     "build:public": "vue-tsc -b && vite build",
     "build:admin": "vue-tsc -b && vite build --config vite.config.admin.ts",
+    "build:backoffice": "vue-tsc -b && vite build --config vite.config.backoffice.ts",
     "preview": "vite preview",
     "type-check": "vue-tsc -b --noEmit"
   },

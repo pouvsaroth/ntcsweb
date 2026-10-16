@@ -44,6 +44,8 @@
         <env name="SESSION_DRIVER" value="array"/>
         <env name="TENANCY_CENTRAL_DOMAINS" value="localhost,127.0.0.1,ntcsweb.test"/>
         <env name="TENANCY_ROOT_DOMAIN" value="ntcsweb.test"/>
+        <env name="TENANCY_DB_PREFIX" value="tn_"/>
+        <env name="PLATFORM_CONSOLE_URL" value="http://localhost:5299"/>
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
