@@ -90,7 +90,7 @@ class PlatformSchoolsTest extends TestCase
 
         $this->getJson("/api/v1/platform/schools/{$id}")->assertOk()
             ->assertJsonPath('data.status', 'active')
-            ->assertJsonPath('data.database', 'tn_angkor')
+            ->assertJsonPath('data.database', config('tenancy.database.shared_database')) // shared is the default placement (stage 4)
             ->assertJsonPath('data.owner.accepted', false)
             ->assertJsonCount(5, 'data.provisioning_log');
     }

@@ -9,7 +9,9 @@ import BaseModal from '@/components/ui/BaseModal.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
 import { ApiRequestError } from '@/types/api'
 
-import { schoolsApi, type School } from '../api'
+import { schoolsApi, type PlacementMode, type School, type ServerLogin } from '../api'
+import PlacementChoice from './PlacementChoice.vue'
+import ServerFields from './ServerFields.vue'
 
 /** New school: the essentials only. Setup runs in the background once saved. */
 defineProps<{ modelValue: boolean }>()
@@ -26,6 +28,9 @@ const blank = () => ({
   timezone: 'Asia/Phnom_Penh',
   locale: 'km',
   default_currency: 'USD' as 'USD' | 'KHR',
+  // Shared unless staff choose otherwise (stage 4, as SmartGPS).
+  placement: 'shared' as PlacementMode,
+  server: { host: '', port: 5432, database: '', username: '', password: '', sslmode: 'require' } as ServerLogin,
 })
 const form = ref(blank())
 const slugTouched = ref(false)
@@ -65,7 +70,12 @@ async function save(): Promise<void> {
   saving.value = true
   error.value = null
   try {
-    const school = await schoolsApi.create({ ...form.value, name_en: form.value.name_en || null })
+    const { server, ...rest } = form.value
+    const school = await schoolsApi.create({
+      ...rest,
+      name_en: rest.name_en || null,
+      server: rest.placement === 'separate' ? { ...server, port: Number(server.port) } : undefined,
+    })
     emit('created', school)
     close()
   } catch (e) {
@@ -107,6 +117,12 @@ async function save(): Promise<void> {
             required
           />
         </div>
+      </fieldset>
+
+      <fieldset class="space-y-3 rounded-lg border border-neutral-200 p-4">
+        <legend class="px-1 text-sm font-medium text-neutral-700">{{ t('bo.placement.title') }}</legend>
+        <PlacementChoice v-model="form.placement" />
+        <ServerFields v-if="form.placement === 'separate'" v-model="form.server" :errors="error" />
       </fieldset>
 
       <fieldset class="rounded-lg border border-neutral-200 p-4">

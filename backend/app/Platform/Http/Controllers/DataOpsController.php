@@ -13,6 +13,7 @@ use App\Platform\DataOps\SchoolMigrator;
 use App\Platform\Models\Backup;
 use App\Platform\Models\BackupSchedule;
 use App\Platform\Models\MigrationRun;
+use App\Platform\Services\SchoolDatabase;
 use App\Platform\Support\PlatformAudit;
 use App\Support\Query\ApiQuery;
 use Illuminate\Http\JsonResponse;
@@ -35,6 +36,7 @@ final class DataOpsController extends Controller
         private readonly BackupRunner $backups,
         private readonly SchoolMigrator $migrator,
         private readonly PlatformAudit $audit,
+        private readonly SchoolDatabase $schoolDatabase,
     ) {}
 
     public function databases(): JsonResponse
@@ -46,8 +48,8 @@ final class DataOpsController extends Controller
 
     public function backups(Request $request): JsonResponse
     {
-        $backups = ApiQuery::for(Backup::query()->with('staff:id,name'), $request)
-            ->filterable(['database', 'status', 'trigger'])
+        $backups = ApiQuery::for(Backup::query()->with(['staff:id,name', 'tenant:id,name,slug']), $request)
+            ->filterable(['database', 'status', 'trigger', 'format', 'tenant_id'])
             ->sortable(['created_at'], default: '-created_at')
             ->paginate();
 
@@ -57,14 +59,18 @@ final class DataOpsController extends Controller
     /** Back up now: one database, or every existing one. */
     public function backupNow(Request $request): JsonResponse
     {
-        $data = $request->validate(['database' => ['required', 'string', 'max:100']]);
+        $data = $request->validate([
+            'database' => ['required_without:school_id', 'nullable', 'string', 'max:100'],
+            // One school's own rows — how a shared school is backed up alone.
+            'school_id' => ['nullable', 'integer', Rule::exists(Tenant::class, 'id')],
+        ]);
         $staff = $request->user('staff');
 
-        $names = $data['database'] === 'all'
-            ? array_values(array_filter(array_column($this->databases->all(), 'database'), fn ($n) => $this->databases->exists($n)))
-            : [$this->knownExisting($data['database'])];
-
-        $queued = array_map(fn (string $name) => $this->backups->queue($name, 'manual', $staff), $names);
+        $queued = match (true) {
+            isset($data['school_id']) => [$this->backups->queueSchool(Tenant::query()->findOrFail($data['school_id']), 'manual', $staff)],
+            $data['database'] === 'all' => $this->backups->queueAll('manual', $staff),
+            default => [$this->backups->queue($this->knownExisting($data['database']), 'manual', $staff)],
+        };
 
         foreach ($queued as $backup) {
             $this->audit->record('backup.started', $backup, new: ['database' => $backup->database], tenantId: $backup->tenant_id);
@@ -147,7 +153,7 @@ final class DataOpsController extends Controller
 
         $tenants = $data['tenant_id'] === 'all'
             ? Tenant::query()->whereIn('status', [Tenant::STATUS_ACTIVE, Tenant::STATUS_SUSPENDED])->orderBy('name')->get()
-                ->filter(fn (Tenant $t) => $this->databases->exists($this->databases->nameFor($t)))
+                ->filter(fn (Tenant $t) => $this->schoolDatabase->hasDataStore($t))
             : collect([Tenant::query()->findOrFail($data['tenant_id'])]);
 
         $runs = $this->migrator->queue($tenants, MigrationRun::KIND_MIGRATE, $request->user('staff'));
@@ -162,7 +168,7 @@ final class DataOpsController extends Controller
         if (! in_array($school->status, [Tenant::STATUS_ACTIVE, Tenant::STATUS_SUSPENDED], true)) {
             throw ValidationException::withMessages(['school' => __('Only an active or suspended school is given a database here — a new school is set up from Schools.')]);
         }
-        if ($this->databases->exists($this->databases->nameFor($school))) {
+        if ($this->schoolDatabase->hasDataStore($school)) {
             throw ValidationException::withMessages(['school' => __('This school already has its database.')]);
         }
 
@@ -237,6 +243,8 @@ final class DataOpsController extends Controller
             'database' => $b->database,
             'tenant_id' => $b->tenant_id,
             'trigger' => $b->trigger,
+            'format' => $b->format,
+            'school' => $b->tenant ? ['id' => $b->tenant->id, 'name' => $b->tenant->name, 'slug' => $b->tenant->slug] : null,
             'staff' => $b->staff?->name,
             'status' => $b->status,
             'size_bytes' => $b->size_bytes,

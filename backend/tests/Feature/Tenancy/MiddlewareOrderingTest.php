@@ -11,6 +11,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use App\Support\Authorization\PermissionRegistry;
 use App\Support\Authorization\Permissions;
+use App\Support\Tenancy\TenantContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -44,7 +45,10 @@ class MiddlewareOrderingTest extends TestCase
         $user = User::factory()->forTenant($tenant)->create();
         $user->attachRoles($role);
 
-        $student = Student::factory()->create();
+        // The student belongs to the school (row-level security refuses a row
+        // written with no school set); the REQUEST below still starts with no
+        // school in context, which is what this test is about.
+        $student = app(TenantContext::class)->runFor($tenant, fn () => Student::factory()->create());
 
         $token = $user->createToken('regression-test')->plainTextToken;
 

@@ -83,6 +83,7 @@ class ProjectTaskChecklistTest extends TestCase
 
     public function test_removing_a_checklist_item_requires_the_update_permission(): void
     {
+        $this->inSchool();
         $project = Project::factory()->create();
         $column = ProjectColumn::factory()->create(['project_id' => $project->id]);
         $task = ProjectTask::factory()->create(['project_id' => $project->id, 'project_column_id' => $column->id]);

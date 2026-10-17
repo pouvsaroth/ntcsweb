@@ -13,11 +13,34 @@ use Illuminate\Support\Facades\Process;
  */
 class PgDump
 {
-    /** Custom-format dump of $database into $path. Throws with pg_dump's own message on failure. */
-    public function dump(string $database, string $path): void
+    /**
+     * Custom-format dump of $database into $path. Throws with pg_dump's own
+     * message on failure. $server: a separate server's host / port / login /
+     * password / sslmode — otherwise this server's, from config.
+     *
+     * A separate server's login is no superuser, so the school tables' FORCEd
+     * row-level security binds it even as their owner — and pg_dump's default
+     * (row security off) is refused there. So: keep it on, and say which
+     * school the session is for, which on that server is all of its rows.
+     *
+     * @param  array{host: string, port: int, username: string, password: string, sslmode?: ?string, tenant_id?: int}|null  $server
+     */
+    public function dump(string $database, string $path, ?array $server = null): void
     {
-        $result = Process::timeout(3600)->env(['PGPASSWORD' => $this->credential('password')])->run([
-            'pg_dump', ...$this->connectionArgs(), '--format=custom', '--no-owner', '--file='.$path, $database,
+        $args = $server === null ? $this->connectionArgs() : [
+            '--host='.$server['host'], '--port='.$server['port'], '--username='.$server['username'], '--no-password',
+            '--enable-row-security',
+        ];
+        $env = ['PGPASSWORD' => $server['password'] ?? $this->credential('password')];
+        if (! empty($server['sslmode'])) {
+            $env['PGSSLMODE'] = $server['sslmode'];
+        }
+        if (isset($server['tenant_id'])) {
+            $env['PGOPTIONS'] = '-c app.tenant_id='.(int) $server['tenant_id'];
+        }
+
+        $result = Process::timeout(3600)->env($env)->run([
+            'pg_dump', ...$args, '--format=custom', '--no-owner', '--file='.$path, $database,
         ]);
 
         if (! $result->successful()) {

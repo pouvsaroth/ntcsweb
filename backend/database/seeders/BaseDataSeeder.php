@@ -9,6 +9,7 @@ use App\Models\LookupCategory;
 use App\Models\LookupValue;
 use App\Models\LookupValueTranslation;
 use App\Models\Tenant;
+use App\Support\Tenancy\SchoolDefaults;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Database\Seeder;
 use Stancl\Tenancy\Database\DatabaseManager;
@@ -62,6 +63,10 @@ class BaseDataSeeder extends Seeder
 
         try {
             app(TenantContext::class)->runFor($tenant, function () use ($languagesByCode) {
+                // The defaults older migrations used to insert (form templates,
+                // payroll + performance settings) — per school now.
+                SchoolDefaults::seed();
+
                 foreach ($this->categories() as $categoryCode => $categoryData) {
                     // withTrashed(): a school deactivating/removing one of
                     // these (see class docblock) soft-deletes it, but

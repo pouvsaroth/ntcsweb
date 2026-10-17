@@ -38,7 +38,6 @@ const flagVariant: Record<DatabaseFlag, 'danger' | 'warning'> = {
 const columns = computed(() => [
   { key: 'database', label: t('bo.data.database') },
   { key: 'size_bytes', label: t('bo.data.size'), align: 'text-right' },
-  { key: 'pending_migrations', label: t('bo.data.pending'), align: 'text-right' },
   { key: 'last_backup_at', label: t('bo.data.lastBackup') },
   { key: 'flags', label: t('bo.data.state') },
   { key: 'actions', label: '', align: 'text-right' },
@@ -71,6 +70,13 @@ async function act(key: string, action: () => Promise<unknown>, done: string): P
 }
 
 const backup = (db: string) => act(db, () => dataApi.backupNow(db), t('bo.data.backupQueued'))
+// One school's own rows out of the shared database.
+const exportSchool = (id: number) => act(`school-${id}`, () => dataApi.backupSchool(id), t('bo.data.backupQueued'))
+
+const kindVariant = { central: 'neutral', template: 'neutral', shared: 'primary', school: 'success' } as const
+// The template is only copied from — never backed up.
+const canBackupRow = (row: PlatformDatabase) => canBackup.value && row.exists && row.kind !== 'template'
+const hasActions = (row: PlatformDatabase) => canBackupRow(row) || (canMigrate.value && !!row.school && (row.exists || row.flags.includes('missing')))
 
 async function migrate(row: PlatformDatabase): Promise<void> {
   if (!row.school) return
@@ -119,9 +125,15 @@ onMounted(load)
           <div class="flex items-start justify-between gap-2">
             <div class="min-w-0">
               <p class="font-mono text-sm break-all text-neutral-900">{{ row.database }}</p>
-              <p class="truncate text-xs text-neutral-500">{{ row.school?.name ?? t('bo.data.central') }}</p>
+              <p class="mt-0.5 flex flex-wrap items-center gap-1 text-xs text-neutral-500">
+                <BaseBadge :variant="kindVariant[row.kind]">{{ t(`bo.data.dbKinds.${row.kind}`) }}</BaseBadge>
+                <span v-if="row.school" class="truncate">{{ row.school.name }}</span>
+                <span v-else-if="row.kind === 'template'">{{ t('bo.data.templateHint') }}</span>
+                <span v-else-if="row.kind === 'shared'">{{ t('bo.data.schoolsInShared', { n: row.schools.length }) }}</span>
+              </p>
+              <p v-if="row.server" class="font-mono text-xs break-all text-neutral-500">{{ row.server }}</p>
             </div>
-            <span class="text-sm text-neutral-600 tabular-nums">{{ formatBytes(row.size_bytes) }}</span>
+            <span class="text-sm whitespace-nowrap text-neutral-600 tabular-nums">{{ formatBytes(row.size_bytes) }}</span>
           </div>
           <div class="mt-2 flex flex-wrap gap-1">
             <BaseBadge v-for="flag in row.flags" :key="flag" :variant="flagVariant[flag]">{{ t(`bo.data.flags.${flag}`) }}</BaseBadge>
@@ -132,8 +144,14 @@ onMounted(load)
             <template v-if="row.pending_migrations"> · {{ t('bo.data.pending') }}: {{ row.pending_migrations }}</template>
           </p>
           <p v-if="row.error" class="mt-1 font-mono text-xs break-all text-red-700">{{ row.error }}</p>
-          <div class="mt-3 flex flex-wrap gap-2 border-t border-neutral-100 pt-3">
-            <BaseButton v-if="canBackup && row.exists" size="sm" variant="outline" :loading="busy === row.database" @click="backup(row.database)">{{ t('bo.data.backupNow') }}</BaseButton>
+          <ul v-if="row.schools.length" class="mt-2 space-y-1 border-t border-neutral-100 pt-2">
+            <li v-for="s in row.schools" :key="s.id" class="flex items-center justify-between gap-2 text-sm">
+              <RouterLink :to="`/schools/${s.id}`" class="truncate text-neutral-800 hover:underline">{{ s.name }}</RouterLink>
+              <BaseButton v-if="canBackup" size="sm" variant="ghost" :loading="busy === `school-${s.id}`" @click="exportSchool(s.id)">{{ t('bo.data.exportSchool') }}</BaseButton>
+            </li>
+          </ul>
+          <div v-if="hasActions(row)" class="mt-3 flex flex-wrap gap-2 border-t border-neutral-100 pt-3">
+            <BaseButton v-if="canBackupRow(row)" size="sm" variant="outline" :loading="busy === row.database" @click="backup(row.database)">{{ t('bo.data.backupNow') }}</BaseButton>
             <BaseButton v-if="canMigrate && row.school && row.exists" size="sm" variant="ghost" @click="migrate(row)">{{ t('bo.data.migrate') }}</BaseButton>
             <BaseButton v-if="canMigrate && row.flags.includes('missing')" size="sm" @click="createDatabase(row)">{{ t('bo.data.createDatabase') }}</BaseButton>
           </div>
@@ -145,25 +163,36 @@ onMounted(load)
     <div class="hidden sm:block">
       <DataTable :columns="columns" :rows="rows" row-key="database" :loading="loading">
         <template #cell-database="{ row }">
-          <p class="font-mono text-sm text-neutral-900">{{ row.database }}</p>
-          <p class="text-xs text-neutral-500">
-            <RouterLink v-if="row.school" :to="`/schools/${row.school.id}`" class="hover:underline">{{ row.school.name }}</RouterLink>
-            <template v-else>{{ t('bo.data.central') }}</template>
-          </p>
-          <p v-if="row.error" class="mt-1 max-w-xs font-mono text-xs break-all text-red-700">{{ row.error }}</p>
+          <div class="max-w-[16rem]">
+            <p class="font-mono text-sm break-all text-neutral-900">{{ row.database }}</p>
+            <p class="mt-0.5 flex flex-wrap items-center gap-1 text-xs text-neutral-500">
+              <BaseBadge :variant="kindVariant[row.kind as PlatformDatabase['kind']]">{{ t(`bo.data.dbKinds.${row.kind}`) }}</BaseBadge>
+              <RouterLink v-if="row.school" :to="`/schools/${row.school.id}`" class="hover:underline">{{ row.school.name }}</RouterLink>
+              <span v-else-if="row.kind === 'template'">{{ t('bo.data.templateHint') }}</span>
+              <span v-else-if="row.kind === 'shared'">{{ t('bo.data.schoolsInShared', { n: row.schools.length }) }}</span>
+            </p>
+            <p v-if="row.server" class="font-mono text-xs break-all text-neutral-500">{{ row.server }}</p>
+            <ul v-if="row.schools.length" class="mt-2 space-y-0.5">
+              <li v-for="s in row.schools" :key="s.id" class="flex items-center gap-2 text-xs">
+                <RouterLink :to="`/schools/${s.id}`" class="text-neutral-700 hover:underline">{{ s.name }}</RouterLink>
+                <BaseButton v-if="canBackup" size="sm" variant="ghost" :loading="busy === `school-${s.id}`" @click="exportSchool(s.id)">{{ t('bo.data.exportSchool') }}</BaseButton>
+              </li>
+            </ul>
+            <p v-if="row.error" class="mt-1 font-mono text-xs break-all text-red-700">{{ row.error }}</p>
+          </div>
         </template>
         <template #cell-size_bytes="{ row }"><span class="tabular-nums">{{ formatBytes(row.size_bytes) }}</span></template>
-        <template #cell-pending_migrations="{ row }"><span class="tabular-nums">{{ row.pending_migrations ?? '—' }}</span></template>
         <template #cell-last_backup_at="{ row }">{{ row.last_backup_at ? formatDateTime(row.last_backup_at) : t('bo.data.never') }}</template>
         <template #cell-flags="{ row }">
           <div class="flex flex-wrap gap-1">
             <BaseBadge v-for="flag in row.flags" :key="flag" :variant="flagVariant[flag as DatabaseFlag]">{{ t(`bo.data.flags.${flag}`) }}</BaseBadge>
             <BaseBadge v-if="!row.flags.length" variant="success">{{ t('bo.data.ok') }}</BaseBadge>
           </div>
+          <p v-if="row.pending_migrations" class="mt-1 text-xs text-neutral-500">{{ t('bo.data.pending') }}: {{ row.pending_migrations }}</p>
         </template>
         <template #cell-actions="{ row }">
-          <div class="flex justify-end gap-1">
-            <BaseButton v-if="canBackup && row.exists" size="sm" variant="ghost" :loading="busy === row.database" @click="backup(row.database)">{{ t('bo.data.backupNow') }}</BaseButton>
+          <div class="flex flex-col items-end gap-1">
+            <BaseButton v-if="canBackupRow(row as PlatformDatabase)" size="sm" variant="ghost" :loading="busy === row.database" @click="backup(row.database)">{{ t('bo.data.backupNow') }}</BaseButton>
             <BaseButton v-if="canMigrate && row.school && row.exists" size="sm" variant="ghost" @click="migrate(row)">{{ t('bo.data.migrate') }}</BaseButton>
             <BaseButton v-if="canMigrate && row.flags.includes('missing')" size="sm" @click="createDatabase(row)">{{ t('bo.data.createDatabase') }}</BaseButton>
           </div>

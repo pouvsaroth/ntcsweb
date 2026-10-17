@@ -6,6 +6,7 @@ namespace App\Platform\Http\Resources;
 
 use App\Models\Tenant;
 use App\Platform\Models\School;
+use App\Platform\Models\SchoolPlacement;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -17,6 +18,21 @@ use Illuminate\Http\Resources\Json\JsonResource;
  */
 class SchoolResource extends JsonResource
 {
+    /** @return array<string, mixed> */
+    private function placement(): array
+    {
+        $p = SchoolPlacement::of($this->resource);
+
+        return [
+            'mode' => $p->mode,
+            'database' => $p->database,
+            'host' => $p->host,
+            'port' => $p->port,
+            'username' => $p->username,
+            'sslmode' => $p->sslmode,
+        ];
+    }
+
     public function toArray(Request $request): array
     {
         /** @var School|null $school */
@@ -30,7 +46,9 @@ class SchoolResource extends JsonResource
             'slug' => $this->slug,
             'status' => $this->status,
             'subdomain' => $this->slug.'.'.config('tenancy.root_domain'),
-            'database' => config('tenancy.database.name_prefix').$this->slug,
+            'database' => SchoolPlacement::of($this->resource)->database,
+            // Where its data lives; a separate server's password never leaves the server.
+            'placement' => $this->placement(),
             'domain_target' => config('platform.domain_target'),
             'email' => $this->email,
             'phone' => $this->phone,

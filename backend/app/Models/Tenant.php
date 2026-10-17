@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Support\Tenancy\SchoolDatabaseConfig;
 use App\Support\Tenancy\TenantHost;
 use Database\Factories\TenantFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -90,6 +91,16 @@ class Tenant extends Model implements TenantWithDatabase
         // drop the moment a slug changes or a school is suspended.
         static::saved(fn (self $tenant) => $tenant->flushHostnameCache());
         static::deleted(fn (self $tenant) => $tenant->flushHostnameCache());
+    }
+
+    /**
+     * Placement-aware (docs/backoffice/stage-4-database-placement.md): a
+     * school's data may live in the shared database, its own database, or on
+     * a separate server. Every connection to it is built from this.
+     */
+    public function database(): \Stancl\Tenancy\DatabaseConfig
+    {
+        return new SchoolDatabaseConfig($this);
     }
 
     public function users(): HasMany

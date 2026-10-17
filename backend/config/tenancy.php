@@ -141,6 +141,17 @@ return [
         // after renaming its databases — otherwise provisioning creates empty ones.
         'name_prefix' => env('TENANCY_DB_PREFIX', 'tenant_'),
 
+        // Placements (docs/backoffice/stage-4-database-placement.md): the
+        // database shared schools live in, and the template every dedicated
+        // school's database is cloned from. Both belong to no single school.
+        'shared_database' => env('TENANCY_SHARED_DATABASE', 'school_share'),
+        'template_database' => env('TENANCY_TEMPLATE_DATABASE', 'tn_template'),
+
+        // Row-level security (docs/backoffice/stage-4-database-placement.md):
+        // the school connection drops to this role, which is no superuser and
+        // has no BYPASSRLS, so the per-school policies bind it. Empty = off.
+        'app_role' => env('TENANCY_DB_APP_ROLE', 'ntcs_app'),
+
         // Unused: the name comes from name_prefix + slug (see above).
         'prefix' => 'tenant',
         'suffix' => '',

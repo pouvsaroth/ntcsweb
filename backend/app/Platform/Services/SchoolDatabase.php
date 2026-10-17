@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace App\Platform\Services;
 
 use App\Models\Tenant;
+use App\Platform\Models\SchoolPlacement;
 use App\Services\Tenancy\TenantProvisioningService;
 use Illuminate\Support\Facades\DB;
 use Stancl\Tenancy\Database\DatabaseManager;
 
 /**
- * The physical side of a school: its own database `tn_<slug>`.
+ * The physical side of a school: where its data lives — the shared database,
+ * its own database, or a database on a separate server (SchoolPlacement).
  *
  * A seam on purpose — tests replace it (FakeSchoolDatabase) so the suite
  * never creates real databases on the Postgres server, while the rest of
@@ -26,6 +28,31 @@ class SchoolDatabase
     public function nameFor(string $slug): string
     {
         return config('tenancy.database.name_prefix').$slug;
+    }
+
+    public function placementOf(Tenant $tenant): SchoolPlacement
+    {
+        return SchoolPlacement::of($tenant);
+    }
+
+    /**
+     * Is the place this school's data lives there? Shared: the shared
+     * database exists. Dedicated: its database exists on this server.
+     * Separate: we can connect to it with the stored login.
+     */
+    public function hasDataStore(Tenant $tenant): bool
+    {
+        $placement = $this->placementOf($tenant);
+
+        if (! $placement->isSeparate()) {
+            return $this->exists($placement->database);
+        }
+
+        try {
+            return (bool) $this->within($tenant, fn () => DB::connection('tenant')->selectOne('select 1 as ok')->ok);
+        } catch (\Throwable) {
+            return false;
+        }
     }
 
     /** Is there already a database with this name on the server? */
@@ -62,6 +89,24 @@ class SchoolDatabase
     public function appliedMigrations(Tenant $tenant): array
     {
         return $this->within($tenant, fn () => DB::connection('tenant')->table('migrations')->pluck('migration')->all());
+    }
+
+    /**
+     * Migrations applied in a database that belongs to no single school (the
+     * template, the shared database) on this server.
+     *
+     * @return list<string>
+     */
+    public function appliedMigrationsIn(string $database): array
+    {
+        $name = 'platform_probe';
+        config(['database.connections.'.$name => array_merge(config('database.connections.'.config('tenancy.database.central_connection')), ['database' => $database])]);
+
+        try {
+            return DB::connection($name)->table('migrations')->pluck('migration')->all();
+        } finally {
+            DB::purge($name);
+        }
     }
 
     /** Point the `tenant` connection at this school's database while $callback runs. */

@@ -34,6 +34,11 @@ class RestoreBackupCommand extends Command
 
             return self::FAILURE;
         }
+        if ($backup->format === Backup::FORMAT_SCHOOL) {
+            $this->components->error('That backup is one school\'s own rows (a .zip export), not a database dump — it is brought back by moving the school (stage 4d), not by pg_restore.');
+
+            return self::FAILURE;
+        }
         if (! preg_match('/^[a-z][a-z0-9_-]{2,62}$/', $into)) {
             $this->components->error('Give --into a new database name: lowercase letters, digits, _ and -.');
 

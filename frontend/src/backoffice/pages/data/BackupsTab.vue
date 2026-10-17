@@ -94,7 +94,10 @@ onMounted(async () => {
         <div v-else class="space-y-2">
           <div v-for="row in items" :key="row.id" class="rounded-[--radius-card] border border-neutral-200 bg-white p-3 shadow-[--shadow-card]">
             <div class="flex items-start justify-between gap-2">
-              <p class="font-mono text-sm break-all text-neutral-900">{{ row.database }}</p>
+              <div class="min-w-0">
+                <p class="font-mono text-sm break-all text-neutral-900">{{ row.database }}</p>
+                <p v-if="row.format === 'school'" class="text-xs text-neutral-500">{{ t('bo.data.schoolExport') }}{{ row.school ? ` · ${row.school.name}` : '' }}</p>
+              </div>
               <BaseBadge :variant="statusVariant[row.status]">{{ t(`bo.data.statuses.${row.status}`) }}</BaseBadge>
             </div>
             <p class="mt-1 text-xs text-neutral-500">
@@ -118,6 +121,7 @@ onMounted(async () => {
           <template #cell-created_at="{ row }"><span class="whitespace-nowrap">{{ formatDateTime(row.created_at) }}</span></template>
           <template #cell-database="{ row }">
             <span class="font-mono text-xs">{{ row.database }}</span>
+            <p v-if="row.format === 'school'" class="text-xs text-neutral-500">{{ t('bo.data.schoolExport') }}{{ row.school ? ` · ${row.school.name}` : '' }}</p>
             <p v-if="row.error" class="mt-1 max-w-xs font-mono text-xs break-all text-red-700">{{ row.error }}</p>
           </template>
           <template #cell-trigger="{ row }">
@@ -137,7 +141,7 @@ onMounted(async () => {
             </p>
           </template>
           <template #cell-actions="{ row }">
-            <div v-if="canBackup && row.status !== 'running'" class="flex justify-end gap-1">
+            <div v-if="canBackup && row.status !== 'running'" class="flex flex-col items-end gap-1">
               <BaseButton v-if="row.status === 'ok'" size="sm" variant="ghost" :href="dataApi.downloadUrl(row.id)">{{ t('bo.data.download') }}</BaseButton>
               <BaseButton size="sm" variant="ghost" @click="remove(row)">{{ t('bo.data.remove') }}</BaseButton>
             </div>

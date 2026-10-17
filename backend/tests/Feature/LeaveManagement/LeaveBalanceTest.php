@@ -36,6 +36,7 @@ class LeaveBalanceTest extends TestCase
     {
         parent::setUp();
         Carbon::setTestNow('2026-10-05 09:00:00');
+        $this->inSchool();
 
         $this->staff = Staff::factory()->create(['hire_date' => '2020-01-01']);
         $this->annual = LeaveType::factory()->create(['name' => 'Annual leave']);

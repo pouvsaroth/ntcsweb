@@ -34,12 +34,14 @@ final class TenantContext
     {
         $this->tenant = $tenant;
         $this->platform = false;
+        SchoolConnection::sync($tenant->getKey());
     }
 
     public function forget(): void
     {
         $this->tenant = null;
         $this->platform = false;
+        SchoolConnection::sync(null);
     }
 
     /**
@@ -52,6 +54,7 @@ final class TenantContext
     {
         $this->tenant = null;
         $this->platform = true;
+        SchoolConnection::sync(null);
     }
 
     public function isPlatform(): bool
@@ -154,6 +157,9 @@ final class TenantContext
         } finally {
             $this->tenant = $previousTenant;
             $this->platform = $previousPlatform;
+            // The school connection follows the context back, or it would
+            // keep reading the inner school's rows after runFor() returns.
+            SchoolConnection::sync($previousTenant?->getKey());
         }
     }
 }

@@ -18,6 +18,12 @@ class Backup extends Model
 
     public const STATUS_FAILED = 'failed';
 
+    /** A whole database (pg_dump). */
+    public const FORMAT_DUMP = 'dump';
+
+    /** One school's own rows (SchoolExporter) — a shared school's backup. */
+    public const FORMAT_SCHOOL = 'school';
+
     protected $table = 'bo_backups';
 
     protected $guarded = [];

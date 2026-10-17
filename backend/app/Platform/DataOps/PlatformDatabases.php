@@ -7,6 +7,7 @@ namespace App\Platform\DataOps;
 use App\Models\Tenant;
 use App\Platform\Models\Backup;
 use App\Platform\Models\BackupSchedule;
+use App\Platform\Models\SchoolPlacement;
 use App\Platform\Services\SchoolDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -26,16 +27,36 @@ final class PlatformDatabases
         return (string) config('database.connections.'.config('tenancy.database.central_connection').'.database');
     }
 
-    /** @return list<array{database: string, tenant: ?Tenant}> */
+    /**
+     * Every data store, once: the central database, the template, the shared
+     * database, then each school that has a database of its own (dedicated or
+     * on a separate server). Shared schools live inside the shared database's
+     * row (`schools`), not as rows of their own.
+     *
+     * @return list<array{database: string, kind: string, tenant: ?Tenant, schools?: list<Tenant>}>
+     */
     public function all(): array
     {
-        $rows = [['database' => $this->centralName(), 'tenant' => null]];
+        $tenants = Tenant::query()->orderBy('name')->get();
+        $placements = SchoolPlacement::query()->whereIn('tenant_id', $tenants->modelKeys())->get()->keyBy('tenant_id');
+        $shared = [];
+        $own = [];
 
-        foreach (Tenant::query()->orderBy('name')->get() as $tenant) {
-            $rows[] = ['database' => $this->database->nameFor($tenant->slug), 'tenant' => $tenant];
+        foreach ($tenants as $tenant) {
+            $placement = $placements[$tenant->id] ?? SchoolPlacement::of($tenant);
+            if ($placement->isShared()) {
+                $shared[] = $tenant;
+            } else {
+                $own[] = ['database' => $placement->database, 'kind' => 'school', 'tenant' => $tenant];
+            }
         }
 
-        return $rows;
+        return [
+            ['database' => $this->centralName(), 'kind' => 'central', 'tenant' => null],
+            ['database' => (string) config('tenancy.database.template_database'), 'kind' => 'template', 'tenant' => null],
+            ['database' => (string) config('tenancy.database.shared_database'), 'kind' => 'shared', 'tenant' => null, 'schools' => $shared],
+            ...$own,
+        ];
     }
 
     /** @throws \InvalidArgumentException for a name that is not one of ours */
@@ -50,13 +71,14 @@ final class PlatformDatabases
         throw new \InvalidArgumentException("{$database} is not a platform database.");
     }
 
-    public function nameFor(Tenant $tenant): string
-    {
-        return $this->database->nameFor($tenant->slug);
-    }
-
     public function exists(string $database): bool
     {
+        foreach ($this->all() as $row) {
+            if ($row['database'] === $database && $row['tenant'] !== null && SchoolPlacement::of($row['tenant'])->isSeparate()) {
+                return $this->database->hasDataStore($row['tenant']);
+            }
+        }
+
         return $this->database->exists($database);
     }
 
@@ -80,10 +102,14 @@ final class PlatformDatabases
         return array_map(function (array $row) use ($centralFiles, $tenantFiles, $lastGood, $schedule, $staleBefore) {
             $tenant = $row['tenant'];
             $name = $row['database'];
+            $placement = $tenant ? SchoolPlacement::of($tenant) : null;
             $out = [
                 'database' => $name,
-                'kind' => $tenant ? 'school' : 'central',
+                'kind' => $row['kind'],
                 'school' => $tenant ? ['id' => $tenant->id, 'name' => $tenant->name, 'slug' => $tenant->slug, 'status' => $tenant->status] : null,
+                'placement' => $placement?->mode,
+                'server' => $placement?->isSeparate() ? $placement->host.':'.$placement->port : null,
+                'schools' => array_map(fn (Tenant $t) => ['id' => $t->id, 'name' => $t->name, 'slug' => $t->slug, 'status' => $t->status], $row['schools'] ?? []),
                 'exists' => false,
                 'size_bytes' => null,
                 'pending_migrations' => null,
@@ -92,13 +118,20 @@ final class PlatformDatabases
             ];
 
             try {
-                $out['size_bytes'] = $this->database->sizeOf($name);
-                $out['exists'] = $out['size_bytes'] !== null;
+                if ($placement?->isSeparate()) {
+                    $out['exists'] = $this->database->hasDataStore($tenant);
+                    $out['size_bytes'] = $out['exists'] ? $this->database->within($tenant, fn () => (int) DB::connection('tenant')->selectOne('select pg_database_size(current_database()) as s')->s) : null;
+                } else {
+                    $out['size_bytes'] = $this->database->sizeOf($name);
+                    $out['exists'] = $out['size_bytes'] !== null;
+                }
                 if ($out['exists']) {
-                    $applied = $tenant
-                        ? $this->database->appliedMigrations($tenant)
-                        : DB::connection(config('tenancy.database.central_connection'))->table('migrations')->pluck('migration')->all();
-                    $out['pending_migrations'] = count(array_diff($tenant ? $tenantFiles : $centralFiles, $applied));
+                    $applied = match ($row['kind']) {
+                        'central' => DB::connection(config('tenancy.database.central_connection'))->table('migrations')->pluck('migration')->all(),
+                        'school' => $this->database->appliedMigrations($tenant),
+                        default => $this->database->appliedMigrationsIn($name),
+                    };
+                    $out['pending_migrations'] = count(array_diff($row['kind'] === 'central' ? $centralFiles : $tenantFiles, $applied));
                 }
             } catch (\Throwable $e) {
                 $out['error'] = $e->getMessage();
@@ -106,14 +139,19 @@ final class PlatformDatabases
 
             // A school being set up, failed or archived is not expected to have
             // a working database; an active or suspended one is.
-            $expected = $tenant === null || in_array($tenant->status, [Tenant::STATUS_ACTIVE, Tenant::STATUS_SUSPENDED], true);
+            $expected = match ($row['kind']) {
+                'school' => in_array($tenant->status, [Tenant::STATUS_ACTIVE, Tenant::STATUS_SUSPENDED], true),
+                'shared' => ($row['schools'] ?? []) !== [],
+                default => true,
+            };
             $stale = $out['last_backup_at'] === null || Carbon::parse($out['last_backup_at'])->lessThan($staleBefore);
 
             $out['flags'] = array_values(array_filter([
                 $expected && ! $out['exists'] && $out['error'] === null ? 'missing' : null,
                 $out['error'] !== null ? 'unreachable' : null,
                 ($out['pending_migrations'] ?? 0) > 0 ? 'behind' : null,
-                $out['exists'] && $schedule->enabled && $stale ? 'no_recent_backup' : null,
+                // The template holds no data and is never backed up on purpose.
+                $out['exists'] && $schedule->enabled && $stale && $row['kind'] !== 'template' ? 'no_recent_backup' : null,
             ]));
 
             return $out;

@@ -84,6 +84,7 @@ class ProjectLabelTest extends TestCase
 
     public function test_deleting_a_label_requires_the_projects_update_permission(): void
     {
+        $this->inSchool();
         $label = ProjectLabel::factory()->create();
 
         $this->actingAsAdminWithPermissions([Permissions::PROJECTS_VIEW]);

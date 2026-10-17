@@ -42,6 +42,7 @@ return [
                 ['key' => 'platform.school.read', 'label' => 'View schools', 'label_km' => 'មើលសាលារៀន'],
                 ['key' => 'platform.school.write', 'label' => 'Create and manage schools', 'label_km' => 'បង្កើត និងគ្រប់គ្រងសាលារៀន'],
                 ['key' => 'platform.school.status', 'label' => 'Suspend, reactivate and archive schools', 'label_km' => 'ផ្អាក បើកវិញ និងរក្សាទុកសាលារៀន'],
+                ['key' => 'platform.school.placement', 'label' => 'Move school data between placements', 'label_km' => 'ផ្លាស់ទីទិន្នន័យសាលារវាងទីតាំង'],
             ],
         ],
         [
@@ -88,6 +89,9 @@ return [
 
     // The console — where every school's users sign in. Invite links point here.
     'console_url' => env('PLATFORM_CONSOLE_URL', 'https://erp.newtechkh.com'),
+
+    // Where a new school's data lives unless staff choose otherwise (as SmartGPS).
+    'default_placement' => env('PLATFORM_DEFAULT_PLACEMENT', 'shared'),
 
     // How long an owner's invite link stays good.
     'invite_days' => 7,

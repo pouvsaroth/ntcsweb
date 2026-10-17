@@ -203,6 +203,7 @@ export interface School {
   subdomain: string
   database: string
   domain_target: string
+  placement: Placement
   email: string | null
   phone: string | null
   address: string | null
@@ -221,6 +222,48 @@ export interface School {
   [key: string]: unknown
 }
 
+export type PlacementMode = 'shared' | 'dedicated' | 'separate'
+
+/** Where a school's data lives. A separate server's password is never sent back. */
+export interface Placement {
+  mode: PlacementMode
+  database: string
+  host: string | null
+  port: number | null
+  username: string | null
+  sslmode: string | null
+}
+
+/** A separate Postgres server, as staff type it in. */
+export interface ServerLogin {
+  host: string
+  port: number
+  database: string
+  username: string
+  password: string
+  sslmode: string
+}
+
+export interface ConnectionTest {
+  ok: boolean
+  message: string
+  superuser?: boolean
+  can_create?: boolean
+}
+
+export interface SchoolMove {
+  id: number
+  status: 'queued' | 'running' | 'done' | 'failed'
+  from: Omit<Placement, 'mode'> & { mode: PlacementMode }
+  to: Omit<Placement, 'mode'> & { mode: PlacementMode }
+  steps: { step: string; status: 'ok' | 'failed'; message: string | null; ms: number }[]
+  counts: { source?: Record<string, number>; copy?: Record<string, number>; written?: Record<string, number> } | null
+  error: string | null
+  staff: string | null
+  old_copy_removed_at: string | null
+  created_at: string | null
+}
+
 export interface NewSchool {
   name: string
   name_en: string | null
@@ -230,6 +273,8 @@ export interface NewSchool {
   timezone?: string
   locale?: string
   default_currency?: 'USD' | 'KHR'
+  placement?: PlacementMode
+  server?: ServerLogin
 }
 
 export type SchoolProfile = Partial<Pick<School, 'name' | 'name_en' | 'email' | 'phone' | 'address' | 'timezone' | 'locale' | 'default_currency'>>
@@ -244,6 +289,10 @@ export const schoolsApi = {
   reactivate: (id: number) => send<School>('post', `/schools/${id}/reactivate`),
   archive: (id: number, reason: string) => send<School>('post', `/schools/${id}/archive`, { reason }),
   resendInvite: (id: number) => send<null>('post', `/schools/${id}/owner/invite`),
+  testConnection: (server: ServerLogin) => send<ConnectionTest>('post', '/schools/test-connection', server),
+  moves: (id: number) => get<SchoolMove[]>(`/schools/${id}/moves`),
+  move: (id: number, placement: PlacementMode, server?: ServerLogin) => send<SchoolMove>('post', `/schools/${id}/moves`, { placement, server }),
+  removeOldCopy: (moveId: number) => send<SchoolMove>('post', `/school-moves/${moveId}/remove-old-copy`),
   inviteLink: (id: number) => send<{ url: string; expires_in_days: number }>('post', `/schools/${id}/owner/invite-link`),
   changeOwner: (id: number, name: string, email: string) => send<null>('put', `/schools/${id}/owner`, { name, email }),
   addDomain: (id: number, hostname: string) => send<{ id: number; hostname: string }>('post', `/schools/${id}/domains`, { hostname }),
@@ -258,7 +307,10 @@ export type DatabaseFlag = 'missing' | 'unreachable' | 'behind' | 'no_recent_bac
 
 export interface PlatformDatabase {
   database: string
-  kind: 'central' | 'school'
+  kind: 'central' | 'template' | 'shared' | 'school'
+  placement: PlacementMode | null
+  server: string | null
+  schools: { id: number; name: string; slug: string; status: SchoolStatus }[]
   school: { id: number; name: string; slug: string; status: SchoolStatus } | null
   exists: boolean
   size_bytes: number | null
@@ -273,7 +325,9 @@ export interface BackupRow {
   id: number
   database: string
   tenant_id: number | null
-  trigger: 'manual' | 'scheduled'
+  trigger: 'manual' | 'scheduled' | 'move'
+  format: 'dump' | 'school'
+  school: { id: number; name: string; slug: string } | null
   staff: string | null
   status: 'running' | 'ok' | 'failed'
   size_bytes: number | null
@@ -323,6 +377,7 @@ export const dataApi = {
   health: () => get<PlatformHealth>('/data/health'),
   backups: (query: ListQuery) => page<BackupRow>('/data/backups', query),
   backupNow: (database: string) => send<BackupRow[]>('post', '/data/backups', { database }),
+  backupSchool: (schoolId: number) => send<BackupRow[]>('post', '/data/backups', { school_id: schoolId }),
   downloadUrl: (id: number) => `/api/v1/platform/data/backups/${id}/download`,
   removeBackup: (id: number) => send<void>('delete', `/data/backups/${id}`),
   schedule: () => get<BackupScheduleRow>('/data/backup-schedule'),

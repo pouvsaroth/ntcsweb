@@ -36,13 +36,7 @@ class BackupsTickCommand extends Command
             // Take the slot first: a second tick overlapping this one must not start another run.
             $schedule->forceFill(['last_run_at' => now()])->save();
 
-            $queued = 0;
-            foreach ($databases->all() as $row) {
-                if ($databases->exists($row['database'])) {
-                    $runner->queue($row['database'], 'scheduled');
-                    $queued++;
-                }
-            }
+            $queued = count($runner->queueAll('scheduled'));
             $this->components->info("Queued {$queued} scheduled backup(s).");
         }
 

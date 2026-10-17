@@ -86,6 +86,7 @@ class LeaveSetupTest extends TestCase
 
     public function test_a_grade_policy_wins_over_the_everyone_policy(): void
     {
+        $this->inSchool();
         $type = LeaveType::factory()->create();
         $grade = JobGrade::factory()->create();
         $everyone = LeavePolicy::factory()->create(['leave_type_id' => $type->id, 'days_per_year' => 18]);

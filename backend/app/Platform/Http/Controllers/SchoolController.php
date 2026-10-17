@@ -10,9 +10,11 @@ use App\Models\Tenant;
 use App\Platform\Http\Resources\SchoolResource;
 use App\Platform\Jobs\ProvisionSchool;
 use App\Platform\Models\School;
+use App\Platform\Models\SchoolPlacement;
 use App\Platform\Services\SchoolDatabase;
 use App\Platform\Services\SchoolOwners;
 use App\Platform\Services\SchoolStatus;
+use App\Platform\Services\SeparateServerProbe;
 use App\Platform\Support\PlatformAudit;
 use App\Support\Query\ApiQuery;
 use Illuminate\Http\JsonResponse;
@@ -20,6 +22,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Schools: list, open, create (→ background provisioning), retry, edit the
@@ -34,6 +37,7 @@ final class SchoolController extends Controller
         private readonly SchoolOwners $owners,
         private readonly SchoolDatabase $database,
         private readonly PlatformAudit $audit,
+        private readonly SeparateServerProbe $probe,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -69,9 +73,28 @@ final class SchoolController extends Controller
             'timezone' => ['nullable', 'timezone'],
             'locale' => ['nullable', Rule::in(['en', 'km', 'zh', 'ko', 'ja'])],
             'default_currency' => ['nullable', Rule::in([Tenant::CURRENCY_USD, Tenant::CURRENCY_KHR])],
+            // Where its data lives (docs/backoffice/stage-4-database-placement.md).
+            'placement' => ['nullable', Rule::in(SchoolPlacement::MODES)],
+            'server' => ['exclude_unless:placement,separate', 'required', 'array'],
+            'server.host' => ['exclude_unless:placement,separate', 'required', 'string', 'max:255'],
+            'server.port' => ['exclude_unless:placement,separate', 'required', 'integer', 'between:1,65535'],
+            'server.database' => ['exclude_unless:placement,separate', 'required', 'string', 'max:63', 'regex:/^[A-Za-z_][A-Za-z0-9_$-]*$/'],
+            'server.username' => ['exclude_unless:placement,separate', 'required', 'string', 'max:63'],
+            'server.password' => ['exclude_unless:placement,separate', 'required', 'string', 'max:255'],
+            'server.sslmode' => ['exclude_unless:placement,separate', 'nullable', Rule::in(SeparateServerProbe::SSL_MODES)],
         ]);
 
-        $tenant = DB::connection((new Tenant)->getConnectionName())->transaction(function () use ($data, $request) {
+        $mode = $data['placement'] ?? config('platform.default_placement', SchoolPlacement::SHARED);
+
+        // A separate server must answer before anything is created for it.
+        if ($mode === SchoolPlacement::SEPARATE) {
+            $probe = $this->probe->probe($data['server']);
+            if (! $probe['ok']) {
+                throw ValidationException::withMessages(['server' => $probe['message']]);
+            }
+        }
+
+        $tenant = DB::connection((new Tenant)->getConnectionName())->transaction(function () use ($data, $request, $mode) {
             $tenant = new Tenant([
                 'name' => $data['name'],
                 'name_en' => $data['name_en'] ?? null,
@@ -83,12 +106,24 @@ final class SchoolController extends Controller
             $tenant->forceFill(['status' => Tenant::STATUS_PROVISIONING])->save();
 
             School::for($tenant)->forceFill(['created_by' => $request->user('staff')->getKey()])->save();
+
+            SchoolPlacement::query()->create(match ($mode) {
+                SchoolPlacement::SHARED => ['tenant_id' => $tenant->id, 'mode' => $mode, 'database' => config('tenancy.database.shared_database')],
+                SchoolPlacement::DEDICATED => ['tenant_id' => $tenant->id, 'mode' => $mode, 'database' => $this->database->nameFor($tenant->slug)],
+                SchoolPlacement::SEPARATE => [
+                    'tenant_id' => $tenant->id, 'mode' => $mode,
+                    'database' => $data['server']['database'], 'host' => $data['server']['host'], 'port' => (int) $data['server']['port'],
+                    'username' => $data['server']['username'], 'password' => $data['server']['password'],
+                    'sslmode' => $data['server']['sslmode'] ?? 'prefer',
+                ],
+            });
             $this->owners->ensureAccount($tenant, $data['owner_name'], $data['owner_email']);
 
             $this->audit->record('school.created', $tenant, new: [
                 'name' => $tenant->name,
                 'slug' => $tenant->slug,
                 'owner_email' => $data['owner_email'],
+                'placement' => $mode,
             ], tenantId: $tenant->getKey());
 
             return $tenant;
@@ -119,6 +154,21 @@ final class SchoolController extends Controller
         $this->audit->record('school.updated', $school, $old, $school->only(array_keys($data)), tenantId: $school->getKey());
 
         return ApiResponse::success(new SchoolResource($this->detailed($school)));
+    }
+
+    /** "Test connection" for a separate server: nothing is saved. */
+    public function testConnection(Request $request): JsonResponse
+    {
+        $server = $request->validate([
+            'host' => ['required', 'string', 'max:255'],
+            'port' => ['required', 'integer', 'between:1,65535'],
+            'database' => ['required', 'string', 'max:63'],
+            'username' => ['required', 'string', 'max:63'],
+            'password' => ['required', 'string', 'max:255'],
+            'sslmode' => ['nullable', Rule::in(SeparateServerProbe::SSL_MODES)],
+        ]);
+
+        return ApiResponse::success($this->probe->probe($server));
     }
 
     /** A failed school: back to provisioning, and the job runs again from the top (every step is idempotent). */

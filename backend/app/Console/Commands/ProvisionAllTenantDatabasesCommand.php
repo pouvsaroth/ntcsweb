@@ -24,6 +24,14 @@ class ProvisionAllTenantDatabasesCommand extends Command
 
     public function handle(TenantProvisioningService $provisioning): int
     {
+        // The template every dedicated school is cloned from, and the shared
+        // database — both belong to no single school; kept migrated so a new
+        // school starts up to date (docs/backoffice/stage-4-database-placement.md).
+        foreach ([$provisioning->templateName(), $provisioning->sharedName()] as $database) {
+            $this->components->info("Preparing \"{$database}\"...");
+            $provisioning->prepareSchoollessDatabase($database);
+        }
+
         $tenants = Tenant::active()->get();
 
         foreach ($tenants as $tenant) {

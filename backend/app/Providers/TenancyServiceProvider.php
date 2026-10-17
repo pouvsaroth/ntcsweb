@@ -6,6 +6,7 @@ namespace App\Providers;
 
 use App\Support\Tenancy\Contracts\TenantResolver;
 use App\Support\Tenancy\Resolvers\DomainTenantResolver;
+use App\Support\Tenancy\SchoolConnection;
 use App\Support\Tenancy\TenantContext;
 use App\Support\Tenancy\TenantHost;
 use App\Support\Tenancy\TenantResolverChain;
@@ -46,6 +47,13 @@ class TenancyServiceProvider extends ServiceProvider
         // `tn_` where the databases were renamed beside `bo_school`.
         DatabaseConfig::generateDatabaseNamesUsing(
             fn ($tenant) => config('tenancy.database.name_prefix').$tenant->slug,
+        );
+
+        // Row-level security: every new school connection drops to the app
+        // role and is told which school it serves (SchoolConnection).
+        $this->app['events']->listen(
+            \Illuminate\Database\Events\ConnectionEstablished::class,
+            fn (\Illuminate\Database\Events\ConnectionEstablished $event) => SchoolConnection::prepare($event->connection),
         );
 
         // Queued jobs run in a long-lived worker process. Without this, a job

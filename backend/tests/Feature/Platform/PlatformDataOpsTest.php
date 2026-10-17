@@ -292,6 +292,121 @@ class PlatformDataOpsTest extends TestCase
         $this->assertSame('backups-copy', $health['disk']['copy_disk']);
     }
 
+    // ── Stage 4c: placements ──────────────────────────────────────────────
+
+    private function place(Tenant $tenant, string $mode, array $extra = []): void
+    {
+        \App\Platform\Models\SchoolPlacement::query()->create(['tenant_id' => $tenant->id, 'mode' => $mode] + $extra + [
+            'database' => match ($mode) {
+                'shared' => config('tenancy.database.shared_database'),
+                default => 'tn_'.$tenant->slug,
+            },
+        ]);
+    }
+
+    public function test_back_up_all_covers_every_placement_and_skips_the_template(): void
+    {
+        $shared = config('tenancy.database.shared_database');
+        $template = config('tenancy.database.template_database');
+        $this->database->existing = [$this->central, $shared, $template];
+
+        $a = $this->school('share-a', withDatabase: false);
+        $b = $this->school('share-b', withDatabase: false);
+        $this->place($a, 'shared');
+        $this->place($b, 'shared');
+        $this->school('own');
+
+        $this->actingAsStaff($this->platformStaff())->postJson('/api/v1/platform/data/backups', ['database' => 'all'])->assertCreated();
+
+        $this->assertEqualsCanonicalizing([$this->central, $shared, 'tn_own'], $this->pgDump->dumped, 'whole databases, never the template');
+        $exports = Backup::query()->where('format', Backup::FORMAT_SCHOOL)->pluck('tenant_id')->all();
+        $this->assertEqualsCanonicalizing([$a->id, $b->id], $exports, 'one export per shared school');
+    }
+
+    public function test_a_school_export_holds_that_schools_rows_and_no_other(): void
+    {
+        // The test database is one database for every test school — exactly the
+        // shared-database case.
+        $a = $this->school('share-a', withDatabase: false);
+        $b = $this->school('share-b', withDatabase: false);
+        $this->place($a, 'shared');
+        $this->place($b, 'shared');
+        app(\App\Support\Tenancy\TenantContext::class)->runFor($a, fn () => \App\Models\LookupCategory::query()->create(['code' => 'only-a', 'name' => 'A']));
+        app(\App\Support\Tenancy\TenantContext::class)->runFor($b, fn () => \App\Models\LookupCategory::query()->create(['code' => 'only-b', 'name' => 'B']));
+
+        $this->actingAsStaff($this->platformStaff())->postJson('/api/v1/platform/data/backups', ['school_id' => $a->id])->assertCreated();
+
+        $backup = Backup::query()->sole();
+        $this->assertSame('ok', $backup->status, (string) $backup->error);
+        $this->assertStringEndsWith('.zip', $backup->path);
+
+        $zip = new \ZipArchive;
+        $zip->open(Storage::disk('backups')->path($backup->path));
+        $manifest = json_decode($zip->getFromName('manifest.json'), true);
+        $rows = array_filter(explode("\n", (string) $zip->getFromName('tables/lookup_categories.jsonl')));
+        $all = '';
+        for ($i = 0; $i < $zip->numFiles; $i++) {
+            $all .= $zip->getFromIndex($i);
+        }
+        $zip->close();
+
+        $this->assertSame('share-a', $manifest['school']['slug']);
+        $this->assertSame(count($rows), $manifest['tables']['lookup_categories']);
+        $this->assertStringContainsString('only-a', $all);
+        $this->assertStringNotContainsString('only-b', $all);
+        $this->assertSame(0, preg_match('/"tenant_id":(?!'.$a->id.'\b)\d+/', $all), 'every row carries school A\'s id');
+    }
+
+    public function test_a_separate_school_is_dumped_with_its_own_login_and_school(): void
+    {
+        $far = $this->school('far', withDatabase: false);
+        $this->place($far, 'separate', ['database' => 'school_far', 'host' => 'db.far.example', 'port' => 5432, 'username' => 'school_far', 'password' => 's3cret', 'sslmode' => 'require']);
+        $this->database->existing[] = 'school_far';
+
+        $this->actingAsStaff($this->platformStaff())->postJson('/api/v1/platform/data/backups', ['database' => 'school_far'])->assertCreated();
+
+        $this->assertSame(
+            ['host' => 'db.far.example', 'port' => 5432, 'username' => 'school_far', 'password' => 's3cret', 'sslmode' => 'require', 'tenant_id' => $far->id],
+            $this->pgDump->servers['school_far'],
+        );
+        $this->assertNull($this->pgDump->servers[$this->central] ?? null, 'main-server databases use this server\'s own login');
+    }
+
+    public function test_retention_keeps_the_newest_of_each_kind(): void
+    {
+        $shared = config('tenancy.database.shared_database');
+        $a = $this->school('share-a', withDatabase: false);
+        $this->actingAsStaff($this->platformStaff());
+
+        $make = function (string $format, ?int $tenantId, int $daysAgo) use ($shared): Backup {
+            $path = "{$shared}/{$format}-{$tenantId}-{$daysAgo}";
+            Storage::disk('backups')->put($path, 'x');
+
+            return Backup::query()->forceCreate([
+                'database' => $shared, 'tenant_id' => $tenantId, 'format' => $format, 'trigger' => 'scheduled',
+                'status' => 'ok', 'path' => $path, 'created_at' => now()->subDays($daysAgo), 'finished_at' => now()->subDays($daysAgo),
+            ]);
+        };
+
+        $oldDump = $make(Backup::FORMAT_DUMP, null, 40);
+        $newerExport = $make(Backup::FORMAT_SCHOOL, $a->id, 30);
+
+        BackupSchedule::current()->forceFill(['enabled' => false, 'keep_days' => 14])->save();
+        $this->artisan('platform:backups-tick')->assertSuccessful();
+
+        $this->assertNotNull(Backup::query()->find($oldDump->id), 'the only whole-database dump stays, though an export is newer');
+        $this->assertNotNull(Backup::query()->find($newerExport->id));
+    }
+
+    public function test_restore_refuses_a_school_export(): void
+    {
+        $backup = Backup::query()->forceCreate(['database' => 'school_share', 'format' => Backup::FORMAT_SCHOOL, 'trigger' => 'manual', 'status' => 'ok', 'path' => 'x.zip']);
+
+        $this->artisan('platform:restore-backup', ['backup' => $backup->id, '--into' => 'tn_restored'])
+            ->expectsOutputToContain('not a database dump')
+            ->assertFailed();
+    }
+
     /**
      * The queue worker (root) creates backup folders and php-fpm (www-data)
      * serves the download. With Flysystem's default 0700 folders every

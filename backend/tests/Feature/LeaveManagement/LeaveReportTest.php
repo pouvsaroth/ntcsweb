@@ -37,6 +37,7 @@ class LeaveReportTest extends TestCase
     {
         parent::setUp();
         Carbon::setTestNow('2026-10-05 09:00:00');
+        $this->inSchool();
 
         $this->ann = Staff::factory()->create(['first_name' => 'Ann']);
         $this->bo = Staff::factory()->create(['first_name' => 'Bo']);

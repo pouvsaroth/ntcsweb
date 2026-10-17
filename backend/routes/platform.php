@@ -7,6 +7,7 @@ use App\Platform\Http\Controllers\DataOpsController;
 use App\Platform\Http\Controllers\RoleController;
 use App\Platform\Http\Controllers\SchoolController;
 use App\Platform\Http\Controllers\SchoolDomainController;
+use App\Platform\Http\Controllers\SchoolMoveController;
 use App\Platform\Http\Controllers\SchoolOwnerController;
 use App\Platform\Http\Controllers\StaffAuthController;
 use App\Platform\Http\Controllers\StaffController;
@@ -58,12 +59,18 @@ Route::middleware('platform.staff')->group(function () {
 
     Route::get('schools', [SchoolController::class, 'index'])->middleware('platform.can:platform.school.read')->name('schools.index');
     Route::get('schools/{school}', [SchoolController::class, 'show'])->middleware('platform.can:platform.school.read')->name('schools.show');
+    Route::post('schools/test-connection', [SchoolController::class, 'testConnection'])->middleware('platform.can:platform.school.write')->name('schools.test-connection');
     Route::post('schools', [SchoolController::class, 'store'])->middleware('platform.can:platform.school.write')->name('schools.store');
     Route::patch('schools/{school}', [SchoolController::class, 'update'])->middleware('platform.can:platform.school.write')->name('schools.update');
     Route::post('schools/{school}/retry', [SchoolController::class, 'retry'])->middleware('platform.can:platform.school.write')->name('schools.retry');
     Route::post('schools/{school}/suspend', [SchoolController::class, 'suspend'])->middleware('platform.can:platform.school.status')->name('schools.suspend');
     Route::post('schools/{school}/reactivate', [SchoolController::class, 'reactivate'])->middleware('platform.can:platform.school.status')->name('schools.reactivate');
     Route::post('schools/{school}/archive', [SchoolController::class, 'archive'])->middleware('platform.can:platform.school.status')->name('schools.archive');
+
+    // Moving a school's data between placements (stage 4d).
+    Route::get('schools/{school}/moves', [SchoolMoveController::class, 'index'])->middleware('platform.can:platform.school.read')->name('schools.moves.index');
+    Route::post('schools/{school}/moves', [SchoolMoveController::class, 'store'])->middleware('platform.can:platform.school.placement')->name('schools.moves.store');
+    Route::post('school-moves/{move}/remove-old-copy', [SchoolMoveController::class, 'removeOldCopy'])->middleware('platform.can:platform.school.placement')->name('school-moves.remove-old-copy');
 
     Route::post('schools/{school}/owner/invite', [SchoolOwnerController::class, 'resendInvite'])->middleware('platform.can:platform.school.write')->name('schools.owner.invite');
     Route::post('schools/{school}/owner/invite-link', [SchoolOwnerController::class, 'inviteLink'])->middleware('platform.can:platform.school.write')->name('schools.owner.invite-link');

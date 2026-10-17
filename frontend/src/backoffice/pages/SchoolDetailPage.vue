@@ -14,6 +14,7 @@ import { schoolsApi, type School } from '../api'
 import ReasonModal from '../components/ReasonModal.vue'
 import SchoolDomainsPanel from '../components/SchoolDomainsPanel.vue'
 import SchoolOwnerPanel from '../components/SchoolOwnerPanel.vue'
+import SchoolPlacementPanel from '../components/SchoolPlacementPanel.vue'
 import SchoolProfileForm from '../components/SchoolProfileForm.vue'
 import SchoolSetupPanel from '../components/SchoolSetupPanel.vue'
 import SchoolStatusBadge from '../components/SchoolStatusBadge.vue'
@@ -128,6 +129,12 @@ async function reactivate(): Promise<void> {
             :can-retry="canWrite"
             :retrying="retrying"
             @retry="retry"
+          />
+          <SchoolPlacementPanel
+            v-if="school.status !== 'provisioning'"
+            :school="school"
+            :can-move="session.can('platform.school.placement')"
+            @changed="load"
           />
           <SchoolProfileForm :school="school" :can-write="canWrite" @saved="load" />
           <SchoolDomainsPanel v-if="school.status === 'active' || school.status === 'suspended'" :school="school" :can-write="canWrite" @changed="load" />

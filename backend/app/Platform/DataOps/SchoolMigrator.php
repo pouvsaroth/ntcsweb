@@ -63,7 +63,7 @@ final class SchoolMigrator
                 $this->provisioner->createDatabase($tenant);
                 $applied = count($this->database->appliedMigrations($tenant));
             } else {
-                if (! $this->database->exists($this->database->nameFor($tenant->slug))) {
+                if (! $this->database->hasDataStore($tenant)) {
                     throw new \RuntimeException('The school has no database yet — use Create database.');
                 }
                 $before = count($this->database->appliedMigrations($tenant));

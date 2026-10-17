@@ -24,12 +24,36 @@ trait HasAcademicAdmin
 
     protected User $admin;
 
+    private ?int $adminCount = null;
+
+    /**
+     * The test's school, made (once) and set as the current school — for
+     * fixtures created before anyone signs in. Row-level security refuses a
+     * school row written with no school set; a later
+     * actingAsAdminWithPermissions() joins this same school.
+     */
+    protected function inSchool(): Tenant
+    {
+        $this->tenant ??= Tenant::factory()->create();
+        $this->actingInTenant($this->tenant);
+
+        return $this->tenant;
+    }
+
     /**
      * @param  list<string>  $permissions
      */
     protected function actingAsAdminWithPermissions(array $permissions): User
     {
-        $this->tenant = Tenant::factory()->create();
+        // A second call in the same test is another admin of the SAME school
+        // (e.g. "an enrollments-only role can reseat the student the first
+        // admin enrolled"). It used to create a fresh school each time, which
+        // only worked while every test school shared one unprotected database:
+        // the second admin was quietly acting on another school's rows.
+        // Row-level security (stage 4a) rightly answers 404 to that now.
+        $firstInThisSchool = ! isset($this->tenant);
+        $this->tenant ??= Tenant::factory()->create();
+        $this->adminCount = ($this->adminCount ?? 0) + 1;
 
         app(PermissionRegistry::class)->sync();
 
@@ -39,7 +63,8 @@ trait HasAcademicAdmin
         // "Accountant" for their own tenant. A random collision with this
         // tenant's own admin role would fail on the (tenant_id, slug)
         // unique constraint depending on the run's random seed.
-        $role = Role::factory()->forTenant($this->tenant)->create(['name' => 'Test Admin', 'slug' => 'test-admin']);
+        $suffix = $this->adminCount === 1 ? '' : '-'.$this->adminCount;
+        $role = Role::factory()->forTenant($this->tenant)->create(['name' => 'Test Admin'.$suffix, 'slug' => 'test-admin'.$suffix]);
         $role->permissions()->attach(Permission::query()->whereIn('slug', $permissions)->pluck('id'));
 
         $this->admin = User::factory()->forTenant($this->tenant)->create();
@@ -53,11 +78,13 @@ trait HasAcademicAdmin
         // fixture tenants need the same guarantee — not the whole seeder
         // (which also touches every other tenant in the database), just the
         // one row that would otherwise be missing.
-        Role::factory()->forTenant($this->tenant)->system()->create([
-            'slug' => Role::STUDENT,
-            'name' => 'Student',
-            'level' => Role::LEVELS[Role::STUDENT],
-        ]);
+        if ($firstInThisSchool) {
+            Role::factory()->forTenant($this->tenant)->system()->create([
+                'slug' => Role::STUDENT,
+                'name' => 'Student',
+                'level' => Role::LEVELS[Role::STUDENT],
+            ]);
+        }
 
         return $this->admin;
     }
