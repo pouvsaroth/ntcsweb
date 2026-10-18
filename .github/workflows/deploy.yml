@@ -58,6 +58,14 @@ jobs:
           cp .env.example .env
           php artisan key:generate
 
+      # School connections switch to the ntcs_app role on connect (row-level
+      # security, SchoolConnection::prepare). Roles live per Postgres server,
+      # and this one is brand new, so create it before any test connects.
+      - name: Create the app role for row-level security
+        env:
+          PGPASSWORD: ntcspassword
+        run: psql -h 127.0.0.1 -U ntcsuser -d ntcsdb_testing -c "CREATE ROLE ntcs_app NOLOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE"
+
       # ubuntu-latest already has a system chromium at /usr/bin/chromium
       # (matching BROWSERSHOT_CHROME_PATH in .env.example — see
       # InvoicePdfTest's Chromium-availability skip guard, which only
