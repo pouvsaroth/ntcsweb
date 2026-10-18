@@ -39,7 +39,7 @@ sign-in, its own routes and its own app.
 | 1 | Foundation — staff accounts, sign-in + 2FA, guard, permissions, audit, the app shell | [stage-1-foundation.md](stage-1-foundation.md) | ✅ Live since 2026-10-16 |
 | 2 | Schools — create, background provisioning with status + retry, suspend, invite the owner, domains | [stage-2-schools.md](stage-2-schools.md) | ✅ Live since 2026-10-16 |
 | 3 | Data ops — backups per school database, migrate all schools, health | [stage-3-data-ops.md](stage-3-data-ops.md) | ✅ Live since 2026-10-16 |
-| 4 | Where a school's data lives — shared (one database, rows tagged by school), dedicated, separate server; move between them | [stage-4-database-placement.md](stage-4-database-placement.md) | ✅ Built locally (4a–4e) — full suite 1153 passed; not committed |
+| 4 | Where a school's data lives — shared (one database, rows tagged by school), dedicated, separate server; move between them | [stage-4-database-placement.md](stage-4-database-placement.md) | ✅ Live since 2026-10-18 |
 | 5 | Billing — plans and subscriptions per school | — | Not started |
 | 6 | Support — per-school health, audited read-only impersonation | — | Not started |
 

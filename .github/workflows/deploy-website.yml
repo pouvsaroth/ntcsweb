@@ -35,7 +35,7 @@ permissions:
 
 jobs:
   deploy-website:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment: production
     defaults:
       run:
