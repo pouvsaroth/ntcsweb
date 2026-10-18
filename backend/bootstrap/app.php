@@ -79,6 +79,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'active' => EnsureUserIsActive::class,
             'platform.staff' => AuthenticateStaff::class,
             'platform.can' => EnsureStaffPermission::class,
+            'school.module' => \App\Http\Middleware\RequireSchoolModule::class,
         ]);
 
         // Tenant hostnames are dynamic, so the trusted-host list cannot be

@@ -325,7 +325,8 @@ async function submit() {
   } catch (error) {
     if (error instanceof ApiRequestError && error.errors) {
       errors.value = error.errors
-      generalError.value = t('registerWizard.fixErrorsBelow')
+      // The school is full on its plan (back office billing): nothing below to fix.
+      generalError.value = error.fieldError('student_limit') ? t('registerWizard.schoolFull') : t('registerWizard.fixErrorsBelow')
     } else {
       generalError.value = error instanceof ApiRequestError ? error.message : t('registerWizard.submitFailed')
     }

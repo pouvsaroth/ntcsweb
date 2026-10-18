@@ -1,6 +1,14 @@
 import { apiGetWithMeta, apiPost, primeCsrfCookie } from '@/services/http'
 import type { User } from '@/types/models'
 
+/** See backend App\Platform\Billing\BillingNotice. */
+export interface BillingNotice {
+  plan?:
+    | { kind: 'ending'; trial: boolean; plan: string | null; end_on: string; days_left: number }
+    | { kind: 'ended'; trial: boolean; plan: string | null; end_on: string; suspend_on: string }
+  students?: { active: number; limit: number; full: boolean }
+}
+
 export interface LoginPayload {
   /** An email address or a phone number — the backend tries both. */
   login: string
@@ -43,6 +51,10 @@ export interface MeResult {
     default_currency: 'USD' | 'KHR'
     /** Today's KHR-per-USD rate, or null if the school has never entered one — see CurrencyConversionService. */
     khr_per_usd_rate: number | null
+    /** Console modules the school's plan includes (back office billing); null = every module. */
+    modules: string[] | null
+    /** The owner's billing banner (plan ending/ended, student limit); null for everyone else or when all is well. */
+    billing_notice: BillingNotice | null
     /** The school's own public website's hostname — see AdminHeader.vue's "Go to website" link, needed now that the admin app is a separate origin from it. */
     hostname: string
   } | null

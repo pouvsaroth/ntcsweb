@@ -15,6 +15,7 @@ declare module 'vue-router' {
 /** The menu, in order — ShellLayout draws it from this, filtered by permission. */
 export const navItems = [
   { to: '/schools', labelKey: 'bo.nav.schools', permission: 'platform.school.read', icon: 'school' },
+  { to: '/billing', labelKey: 'bo.nav.billing', permission: 'platform.billing.read', icon: 'card' },
   { to: '/data', labelKey: 'bo.nav.data', permission: 'platform.data.read', icon: 'database' },
   { to: '/staff', labelKey: 'bo.nav.staff', permission: 'platform.staff.read', icon: 'users' },
   { to: '/roles', labelKey: 'bo.nav.roles', permission: 'platform.role.read', icon: 'shield' },
@@ -34,6 +35,17 @@ const routes: RouteRecordRaw[] = [
       { path: '', redirect: () => firstAllowedPage() },
       { path: 'schools', component: () => import('./pages/SchoolsPage.vue'), meta: { permission: 'platform.school.read' } },
       { path: 'schools/:id(\\d+)', component: () => import('./pages/SchoolDetailPage.vue'), meta: { permission: 'platform.school.read' } },
+      {
+        path: 'billing',
+        component: () => import('./pages/billing/BillingLayout.vue'),
+        meta: { permission: 'platform.billing.read' },
+        children: [
+          { path: '', redirect: '/billing/plans' },
+          { path: 'plans', component: () => import('./pages/billing/PlansTab.vue') },
+          { path: 'payments', component: () => import('./pages/billing/PaymentsTab.vue') },
+          { path: 'settings', component: () => import('./pages/billing/SettingsTab.vue') },
+        ],
+      },
       {
         path: 'data',
         component: () => import('./pages/data/DataOpsLayout.vue'),

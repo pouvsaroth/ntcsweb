@@ -67,6 +67,8 @@ class SchoolResource extends JsonResource
             'activated_at' => $school?->activated_at?->toIso8601String(),
             'invite_sent_at' => $school?->invite_sent_at?->toIso8601String(),
             'created_at' => $this->created_at?->toIso8601String(),
+            // Plan, end date and flag (stage 5) — set by SchoolController.
+            'billing' => $this->resource->relationLoaded('billingSummary') ? $this->resource->getRelation('billingSummary') : null,
             'domains' => $this->whenLoaded('domains', fn () => $this->domains->map(fn ($domain) => [
                 'id' => $domain->id,
                 'hostname' => $domain->hostname,

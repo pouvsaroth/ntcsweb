@@ -12,6 +12,7 @@ import { formatDateTime } from '@/utils/date'
 
 import { schoolsApi, type School } from '../api'
 import ReasonModal from '../components/ReasonModal.vue'
+import SchoolBillingPanel from '../components/SchoolBillingPanel.vue'
 import SchoolDomainsPanel from '../components/SchoolDomainsPanel.vue'
 import SchoolOwnerPanel from '../components/SchoolOwnerPanel.vue'
 import SchoolPlacementPanel from '../components/SchoolPlacementPanel.vue'
@@ -141,6 +142,11 @@ async function reactivate(): Promise<void> {
         </div>
 
         <div class="space-y-6">
+          <SchoolBillingPanel
+            v-if="session.can('platform.billing.read') && school.status !== 'provisioning'"
+            :school="school"
+            :can-manage="session.can('platform.billing.manage')"
+          />
           <SchoolOwnerPanel :school="school" :can-write="canWrite" @changed="load" />
 
           <section class="rounded-[--radius-card] border border-neutral-200 bg-white p-5 shadow-[--shadow-card]">

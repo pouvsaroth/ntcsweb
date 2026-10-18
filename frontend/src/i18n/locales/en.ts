@@ -450,6 +450,7 @@ const en = {
     back: 'Back',
     next: 'Next',
     completeRequiredFields: 'Please complete the required fields before continuing.',
+    schoolFull: "Registration is not available right now — the school is not taking new students online. Please contact the school.",
     fixErrorsBelow: 'Please fix the errors below.',
     submitFailed: 'Could not submit your registration. Please try again.',
     successTitle: 'Registration successful!',
@@ -608,6 +609,21 @@ const en = {
     title: 'Page not found',
     message: "The page you're looking for doesn't exist.",
     backHome: 'Back to Home',
+  },
+  billingBanner: {
+    ending: "Your plan ends on {date} ({days} days left). Contact us to renew.",
+    endsToday: "Your plan ends today. Contact us to renew.",
+    trialEnding: "Your free trial ends on {date} ({days} days left). Contact us to choose a plan.",
+    trialEndsToday: "Your free trial ends today. Contact us to choose a plan.",
+    ended: "Your plan ended on {date}. The school will be suspended on {suspend} unless payment is received.",
+    trialEnded: "Your free trial ended on {date}. The school will be suspended on {suspend} unless a plan is chosen.",
+    studentsNear: "You have {active} of {limit} active students allowed on your plan.",
+    studentsFull: "Your plan's student limit is reached ({active} of {limit}). New students cannot be enrolled — contact us to upgrade.",
+  },
+  siteOffline: {
+    title: "This website is not available",
+    message: "The school's website is currently turned off. Staff and students can still sign in.",
+    signIn: "Sign in",
   },
 
   admin: {

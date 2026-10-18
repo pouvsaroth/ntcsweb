@@ -1,0 +1,166 @@
+<script setup lang="ts">
+import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import BaseAlert from '@/components/ui/BaseAlert.vue'
+import BaseButton from '@/components/ui/BaseButton.vue'
+import BaseInput from '@/components/ui/BaseInput.vue'
+import BaseModal from '@/components/ui/BaseModal.vue'
+import BaseSelect from '@/components/ui/BaseSelect.vue'
+import { ApiRequestError } from '@/types/api'
+
+import { billingApi, type Plan, type PlanModule } from '../api'
+import { moduleLabel } from '../billing'
+
+/** Create or edit a plan: price per period, student limit, modules. */
+const props = defineProps<{ modelValue: boolean; plan: Plan | null; modules: PlanModule[] }>()
+const emit = defineEmits<{ 'update:modelValue': [open: boolean]; saved: [plan: Plan] }>()
+
+const { t, locale } = useI18n()
+
+const blank = () => ({
+  code: '',
+  name: '',
+  description: '',
+  price: '0',
+  currency: 'USD' as 'USD' | 'KHR',
+  period_months: '1',
+  max_students: '',
+  modules: [] as string[],
+})
+const form = ref(blank())
+const saving = ref(false)
+const error = ref<ApiRequestError | null>(null)
+
+watch(
+  () => props.modelValue,
+  (open) => {
+    if (!open) return
+    error.value = null
+    const p = props.plan
+    form.value = p
+      ? {
+          code: p.code,
+          name: p.name,
+          description: p.description ?? '',
+          price: String(p.price),
+          currency: p.currency,
+          period_months: p.period_months === null ? '' : String(p.period_months),
+          max_students: p.max_students === null ? '' : String(p.max_students),
+          modules: [...p.modules],
+        }
+      : blank()
+  },
+)
+
+const currencyOptions = [
+  { value: 'USD', label: 'USD ($)' },
+  { value: 'KHR', label: 'KHR (៛)' },
+]
+
+const allOn = computed(() => form.value.modules.length === props.modules.length)
+
+function toggle(code: string, on: boolean): void {
+  form.value.modules = on ? [...form.value.modules, code] : form.value.modules.filter((m) => m !== code)
+}
+
+function toggleAll(): void {
+  form.value.modules = allOn.value ? [] : props.modules.map((m) => m.code)
+}
+
+async function save(): Promise<void> {
+  saving.value = true
+  error.value = null
+  const body = {
+    code: form.value.code.trim(),
+    name: form.value.name.trim(),
+    description: form.value.description.trim() || null,
+    price: form.value.price,
+    currency: form.value.currency,
+    period_months: form.value.period_months === '' ? null : Number(form.value.period_months),
+    max_students: form.value.max_students === '' ? null : Number(form.value.max_students),
+    modules: form.value.modules,
+  }
+  try {
+    const saved = props.plan ? await billingApi.updatePlan(props.plan.id, body) : await billingApi.createPlan(body)
+    emit('saved', saved)
+    emit('update:modelValue', false)
+  } catch (e) {
+    error.value = e instanceof ApiRequestError ? e : new ApiRequestError(t('bo.common.failed'), 0)
+  } finally {
+    saving.value = false
+  }
+}
+</script>
+
+<template>
+  <BaseModal :model-value="modelValue" :title="plan ? t('bo.billing.plans.edit') : t('bo.billing.plans.add')" size="lg" @update:model-value="emit('update:modelValue', $event)">
+    <form id="bo-plan" class="space-y-4" @submit.prevent="save">
+      <BaseAlert v-if="error && !error.errors" variant="danger">{{ error.message }}</BaseAlert>
+      <p v-if="plan?.is_legacy" class="text-sm text-neutral-500">{{ t('bo.billing.plans.legacyHint') }}</p>
+
+      <div class="grid gap-4 sm:grid-cols-2">
+        <BaseInput v-model="form.name" :label="t('bo.billing.plans.name')" :error="error?.fieldError('name')" required />
+        <BaseInput
+          v-model="form.code"
+          :label="t('bo.billing.plans.code')"
+          :hint="t('bo.billing.plans.codeHint')"
+          :error="error?.fieldError('code')"
+          :disabled="plan?.is_legacy"
+          required
+        />
+      </div>
+      <BaseInput v-model="form.description" :label="t('bo.billing.plans.description')" :error="error?.fieldError('description')" />
+
+      <div class="grid gap-4 sm:grid-cols-3">
+        <BaseInput v-model="form.price" type="number" :label="t('bo.billing.plans.price')" :error="error?.fieldError('price')" required />
+        <BaseSelect v-model="form.currency" :options="currencyOptions" :label="t('bo.billing.plans.currency')" :error="error?.fieldError('currency')" />
+        <BaseInput
+          v-model="form.period_months"
+          type="number"
+          :label="t('bo.billing.plans.periodMonths')"
+          :hint="t('bo.billing.plans.periodHint')"
+          :error="error?.fieldError('period_months')"
+        />
+      </div>
+      <BaseInput
+        v-model="form.max_students"
+        type="number"
+        :label="t('bo.billing.plans.maxStudents')"
+        :hint="t('bo.billing.plans.maxStudentsHint')"
+        :error="error?.fieldError('max_students')"
+      />
+
+      <div>
+        <div class="mb-2 flex items-center justify-between gap-2">
+          <p class="text-sm font-medium text-neutral-700">{{ t('bo.billing.plans.modules') }}</p>
+          <button type="button" class="text-sm text-secondary-700 hover:underline" @click="toggleAll">
+            {{ allOn ? t('bo.billing.plans.noModules') : t('bo.billing.plans.allModules') }}
+          </button>
+        </div>
+        <div class="grid gap-2 sm:grid-cols-3">
+          <label
+            v-for="module in modules"
+            :key="module.code"
+            class="flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm"
+            :class="form.modules.includes(module.code) ? 'border-primary-500 bg-primary-50 text-neutral-900' : 'border-neutral-200 text-neutral-600'"
+          >
+            <input
+              type="checkbox"
+              class="rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+              :checked="form.modules.includes(module.code)"
+              @change="toggle(module.code, ($event.target as HTMLInputElement).checked)"
+            />
+            {{ moduleLabel(module, locale) }}
+          </label>
+        </div>
+        <p class="mt-1.5 text-sm text-neutral-500">{{ t('bo.billing.plans.modulesHint') }}</p>
+        <p v-if="error?.fieldError('modules')" class="mt-1 text-xs text-red-600">{{ error.fieldError('modules') }}</p>
+      </div>
+    </form>
+    <template #footer>
+      <BaseButton variant="ghost" @click="emit('update:modelValue', false)">{{ t('bo.common.cancel') }}</BaseButton>
+      <BaseButton type="submit" form="bo-plan" :loading="saving">{{ t('bo.common.save') }}</BaseButton>
+    </template>
+  </BaseModal>
+</template>

@@ -42,6 +42,12 @@ export interface AdminNavItem {
    * (see backend ApprovalFlow).
    */
   flowApprover?: boolean
+  /**
+   * The plan module this item belongs to (back office billing, see backend
+   * Modules.php) — only for items no module permission already gates, such
+   * as the self-service My check-in, which every staff member can open.
+   */
+  module?: string
 }
 
 export interface AdminNavGroup {
@@ -166,10 +172,10 @@ export const adminNav: AdminNavGroup[] = [
       // One link; Salary structure, Basic salary, ... are tabs on the page itself (see payrollTabs.ts).
       { labelKey: 'adminNav.items.payroll', to: '/admin/payroll', permission: payrollTabs.map((tab) => tab.permission) },
       // One link; KPI, Goals, Performance review, ... are tabs on the page itself (see performanceTabs.ts).
-      { labelKey: 'adminNav.items.performance', to: '/admin/performance', permission: performanceTabs.map((tab) => tab.permission) },
+      { labelKey: 'adminNav.items.performance', to: '/admin/performance', permission: performanceTabs.map((tab) => tab.permission), module: 'hrm' },
       // Self-service for every staff account — the same slug as Request Leave
       // below, so students (who hold none) never see it. See MyCheckIn.vue.
-      { labelKey: 'adminNav.items.myCheckIn', to: '/admin/my-check-in', permission: 'my-requests.view' },
+      { labelKey: 'adminNav.items.myCheckIn', to: '/admin/my-check-in', permission: 'my-requests.view', module: 'hrm' },
       // Self-service, same page used by the public site's "Document and
       // Form" menu for students — MyRequests.vue's backend auto-detects
       // whether the signed-in account is a student or staff (see
@@ -185,7 +191,7 @@ export const adminNav: AdminNavGroup[] = [
       // `?tab=resignation` on the second link only exists so the two sidebar
       // entries don't share an identical `to` (which the sidebar keys and
       // highlights by) — MyRequests.vue never reads it.
-      { labelKey: 'adminNav.items.requestLeave', to: '/admin/approvals/my-requests', permission: 'my-requests.view' },
+      { labelKey: 'adminNav.items.requestLeave', to: '/admin/approvals/my-requests', permission: 'my-requests.view', module: 'hrm' },
       { labelKey: 'adminNav.items.resignationForm', to: '/admin/approvals/my-requests?tab=resignation', permission: 'my-requests.view' },
     ],
   },
@@ -234,7 +240,7 @@ export const adminNav: AdminNavGroup[] = [
     labelKey: 'adminNav.groups.website',
     items: [
       { labelKey: 'adminNav.items.homeSlides', to: '/admin/home-slides', permission: 'home-slides.view' },
-      { labelKey: 'adminNav.items.aboutPage', to: '/admin/about-page', permission: 'tenant-settings.view' },
+      { labelKey: 'adminNav.items.aboutPage', to: '/admin/about-page', permission: 'tenant-settings.view', module: 'website' },
       // News/Events/Announcements/Documents are still "coming soon"
       // placeholders (see ComingSoon.vue) — these permissions exist purely
       // to gate sidebar visibility until real features land behind them.
@@ -307,6 +313,7 @@ export interface AdminNavAccess {
   can: (permission: string) => boolean
   hasRole: (...slugs: string[]) => boolean
   isFlowApprover?: () => boolean
+  hasModule?: (code: string) => boolean
 }
 
 /** The same visibility rule AdminSidebar.vue applies per item — shared so the router guard's "can this account even reach this page" check can't drift from what the sidebar actually shows. */
@@ -314,6 +321,7 @@ export function isNavItemVisible(item: AdminNavItem, access: AdminNavAccess): bo
   if (item.superAdminOnly && !access.isSuperAdmin) return false
   if (item.studentOnly && !access.hasRole('student')) return false
   if (item.hiddenForStudent && access.hasRole('student')) return false
+  if (item.module && access.hasModule && !access.hasModule(item.module)) return false
   if (item.permission) {
     const required = Array.isArray(item.permission) ? item.permission : [item.permission]
     const viaFlow = item.flowApprover === true && access.isFlowApprover?.() === true

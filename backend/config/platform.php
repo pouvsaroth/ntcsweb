@@ -56,6 +56,15 @@ return [
             ],
         ],
         [
+            'key' => 'platform.billing',
+            'label' => 'Billing',
+            'label_km' => 'វិក្កយបត្រ',
+            'children' => [
+                ['key' => 'platform.billing.read', 'label' => 'View plans, subscriptions and payments', 'label_km' => 'មើលគម្រោង ការជាវ និងការបង់ប្រាក់'],
+                ['key' => 'platform.billing.manage', 'label' => 'Change plans, subscriptions, payments and billing settings', 'label_km' => 'កែប្រែគម្រោង ការជាវ ការបង់ប្រាក់ និងការកំណត់វិក្កយបត្រ'],
+            ],
+        ],
+        [
             'key' => 'platform.audit',
             'label' => 'Audit',
             'label_km' => 'សវនកម្ម',
@@ -92,6 +101,9 @@ return [
 
     // Where a new school's data lives unless staff choose otherwise (as SmartGPS).
     'default_placement' => env('PLATFORM_DEFAULT_PLACEMENT', 'shared'),
+
+    // Billing (Stage 5): the zone a subscription's dates are read in.
+    'billing_timezone' => 'Asia/Phnom_Penh',
 
     // How long an owner's invite link stays good.
     'invite_days' => 7,

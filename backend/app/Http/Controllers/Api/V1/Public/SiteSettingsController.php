@@ -45,6 +45,9 @@ final class SiteSettingsController extends Controller
             // not public marketing content) — just whether the registration
             // wizard's payment step should offer QR as an option at all.
             'has_khqr' => $tenant->khqrTemplate() !== null,
+            // False when the school's plan has no Website module: the public
+            // site shows "not available" (docs/backoffice/stage-5-billing.md, 5c).
+            'website_enabled' => app(\App\Platform\Billing\SchoolModules::class)->has($tenant->getKey(), 'website'),
         ]);
     }
 }

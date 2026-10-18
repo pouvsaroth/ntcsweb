@@ -447,6 +447,7 @@ const ko: MessageSchema = {
     back: '이전',
     next: '다음',
     completeRequiredFields: '계속하려면 필수 항목을 입력해 주세요.',
+    schoolFull: "지금은 등록할 수 없습니다 — 학교에서 온라인으로 신입생을 받지 않습니다. 학교에 문의해 주세요.",
     fixErrorsBelow: '아래 오류를 수정해 주세요.',
     submitFailed: '등록을 제출할 수 없습니다. 다시 시도해 주세요.',
     successTitle: '등록이 완료되었습니다!',
@@ -605,6 +606,21 @@ const ko: MessageSchema = {
     title: '페이지를 찾을 수 없습니다',
     message: '찾으시는 페이지가 존재하지 않습니다.',
     backHome: '홈으로 돌아가기',
+  },
+  billingBanner: {
+    ending: "요금제가 {date}에 종료됩니다({days}일 남음). 갱신하려면 문의해 주세요.",
+    endsToday: "요금제가 오늘 종료됩니다. 갱신하려면 문의해 주세요.",
+    trialEnding: "무료 체험이 {date}에 종료됩니다({days}일 남음). 요금제를 선택하려면 문의해 주세요.",
+    trialEndsToday: "무료 체험이 오늘 종료됩니다. 요금제를 선택하려면 문의해 주세요.",
+    ended: "요금제가 {date}에 종료되었습니다. 결제가 없으면 {suspend}에 학교가 정지됩니다.",
+    trialEnded: "무료 체험이 {date}에 종료되었습니다. 요금제를 선택하지 않으면 {suspend}에 학교가 정지됩니다.",
+    studentsNear: "요금제에서 허용하는 재학생 {limit}명 중 {active}명입니다.",
+    studentsFull: "요금제의 학생 한도에 도달했습니다({active}/{limit}). 신입생을 등록할 수 없습니다 — 업그레이드하려면 문의해 주세요.",
+  },
+  siteOffline: {
+    title: "이 웹사이트를 사용할 수 없습니다",
+    message: "학교 웹사이트가 현재 꺼져 있습니다. 교직원과 학생은 계속 로그인할 수 있습니다.",
+    signIn: "로그인",
   },
 
   admin: {

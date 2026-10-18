@@ -930,33 +930,40 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
     */
 
     Route::prefix('public')->name('public.')->middleware('tenant.required')->group(function () {
+        // Always on: the console's sign-in page reads the school's name and
+        // logo here, and says whether the website is on (website_enabled).
         Route::get('settings', [SiteSettingsController::class, 'show'])->name('settings');
-        Route::get('home-slides', [PublicHomeSlideController::class, 'index'])->name('home-slides.index');
-        Route::get('gallery', [PublicGalleryController::class, 'index'])->name('gallery.index');
-        Route::get('gallery/{id}/download', [PublicGalleryController::class, 'download'])
-            ->whereNumber('id')
-            ->name('gallery.download');
-        Route::get('downloads', [PublicDownloadController::class, 'index'])->name('downloads.index');
-        Route::get('downloads/folders/{id}', [PublicDownloadController::class, 'show'])->whereNumber('id')->name('downloads.folders.show');
-        Route::get('downloads/files/{id}', [PublicDownloadController::class, 'download'])->whereNumber('id')->name('downloads.files.download');
-        Route::get('downloads/folders/{id}/zip', [PublicDownloadController::class, 'zip'])
-            ->whereNumber('id')
-            ->middleware('throttle:download-zips')
-            ->name('downloads.folders.zip');
-        Route::get('promotions', [PublicPromotionController::class, 'index'])->name('promotions.index');
-        // Careers: open jobs with an active Website posting (see JobPosition::scopeOnCareersPage()).
-        Route::get('careers', [CareerController::class, 'index'])->name('careers.index');
-        Route::get('careers/{id}', [CareerController::class, 'show'])->whereNumber('id')->name('careers.show');
-        Route::post('careers/{id}/apply', [CareerController::class, 'apply'])->whereNumber('id')->middleware('throttle:job-applications')->name('careers.apply');
-        Route::get('visits', [WebsiteVisitController::class, 'stats'])->name('visits.stats');
-        Route::post('visits', [WebsiteVisitController::class, 'record'])->name('visits.record');
-        Route::get('programs', [PublicProgramController::class, 'index'])->name('programs.index');
-        Route::get('course-packages', [PublicCoursePackageController::class, 'index'])->name('course-packages.index');
-        Route::get('course-packages/{course_package}/classes', [PublicCoursePackageController::class, 'classes'])->name('course-packages.classes');
-        Route::get('video-lessons', [VideoLessonController::class, 'index'])->name('video-lessons.index');
-        Route::get('schedules', [PublicScheduleController::class, 'index'])->name('schedules.index');
-        Route::post('enrollment-inquiries', [EnrollmentInquiryController::class, 'store'])->name('enrollment-inquiries.store');
         Route::post('student-registrations', [PublicStudentRegistrationController::class, 'store'])->name('student-registrations.store');
+
+        // The school's public website: gone (404) when its plan has no
+        // Website module (docs/backoffice/stage-5-billing.md, 5c).
+        Route::middleware('school.module:website')->group(function () {
+            Route::get('home-slides', [PublicHomeSlideController::class, 'index'])->name('home-slides.index');
+            Route::get('gallery', [PublicGalleryController::class, 'index'])->name('gallery.index');
+            Route::get('gallery/{id}/download', [PublicGalleryController::class, 'download'])
+                ->whereNumber('id')
+                ->name('gallery.download');
+            Route::get('downloads', [PublicDownloadController::class, 'index'])->name('downloads.index');
+            Route::get('downloads/folders/{id}', [PublicDownloadController::class, 'show'])->whereNumber('id')->name('downloads.folders.show');
+            Route::get('downloads/files/{id}', [PublicDownloadController::class, 'download'])->whereNumber('id')->name('downloads.files.download');
+            Route::get('downloads/folders/{id}/zip', [PublicDownloadController::class, 'zip'])
+                ->whereNumber('id')
+                ->middleware('throttle:download-zips')
+                ->name('downloads.folders.zip');
+            Route::get('promotions', [PublicPromotionController::class, 'index'])->name('promotions.index');
+            // Careers: open jobs with an active Website posting (see JobPosition::scopeOnCareersPage()).
+            Route::get('careers', [CareerController::class, 'index'])->name('careers.index');
+            Route::get('careers/{id}', [CareerController::class, 'show'])->whereNumber('id')->name('careers.show');
+            Route::post('careers/{id}/apply', [CareerController::class, 'apply'])->whereNumber('id')->middleware('throttle:job-applications')->name('careers.apply');
+            Route::get('visits', [WebsiteVisitController::class, 'stats'])->name('visits.stats');
+            Route::post('visits', [WebsiteVisitController::class, 'record'])->name('visits.record');
+            Route::get('programs', [PublicProgramController::class, 'index'])->name('programs.index');
+            Route::get('course-packages', [PublicCoursePackageController::class, 'index'])->name('course-packages.index');
+            Route::get('course-packages/{course_package}/classes', [PublicCoursePackageController::class, 'classes'])->name('course-packages.classes');
+            Route::get('video-lessons', [VideoLessonController::class, 'index'])->name('video-lessons.index');
+            Route::get('schedules', [PublicScheduleController::class, 'index'])->name('schedules.index');
+            Route::post('enrollment-inquiries', [EnrollmentInquiryController::class, 'store'])->name('enrollment-inquiries.store');
+        });
         Route::get('khqr-preview', [PublicKhqrController::class, 'preview'])->name('khqr-preview');
 
         // Cambodia's administrative hierarchy, for the registration wizard's

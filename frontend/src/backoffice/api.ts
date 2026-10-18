@@ -219,6 +219,7 @@ export interface School {
   domains?: SchoolDomain[]
   provisioning_log?: ProvisioningStep[]
   status_history?: { from: string | null; to: string; reason: string | null; staff: string | null; at: string | null }[]
+  billing?: BillingSummary | null
   [key: string]: unknown
 }
 
@@ -301,7 +302,156 @@ export const schoolsApi = {
   removeDomain: (id: number, domainId: number) => send<void>('delete', `/schools/${id}/domains/${domainId}`),
 }
 
-// ── Data ops (Stage 3) ───────────────────────────────────────────────────────
+// ── Billing (Stage 5) ────────────────────────────────────────────────────────
+
+export interface PlanModule {
+  code: string
+  label: string
+  label_km: string
+  groups: string[]
+}
+
+export interface Plan {
+  id: number
+  code: string
+  name: string
+  description: string | null
+  price: string
+  currency: 'USD' | 'KHR'
+  /** Months one payment covers; null = paid once, no end. */
+  period_months: number | null
+  /** Active students allowed; null = no limit. */
+  max_students: number | null
+  modules: string[]
+  status: 'active' | 'inactive'
+  is_legacy: boolean
+  live_count: number
+  [key: string]: unknown
+}
+
+export type PlanInput = Pick<Plan, 'code' | 'name' | 'description' | 'currency' | 'period_months' | 'max_students' | 'modules'> & {
+  price: string | number
+  status?: Plan['status']
+}
+
+export type SubscriptionStatus = 'trial' | 'active' | 'expired' | 'cancelled' | 'replaced'
+export type BillingFlag = 'none' | 'expiring' | 'expired' | 'cancelled' | 'no_plan'
+
+export interface Subscription {
+  id: number
+  status: SubscriptionStatus
+  live: boolean
+  plan: Pick<Plan, 'id' | 'code' | 'name' | 'price' | 'currency' | 'period_months' | 'max_students' | 'modules'> | null
+  start_on: string | null
+  end_on: string | null
+  days_left: number | null
+  notes: string | null
+  created_by: string | null
+  ended_at: string | null
+  created_at: string | null
+}
+
+export interface BillingSummary {
+  flag: BillingFlag
+  subscription: Subscription | null
+}
+
+export interface SchoolBilling extends BillingSummary {
+  history: Subscription[]
+  /** Active students against the plan's limit; null when the school's database could not be read. */
+  usage: { active: number; limit: number | null } | null
+}
+
+export interface BillingSettingsRow {
+  trial_days: number
+  grace_days: number
+  warning_days: number
+  trial_plan_id: number | null
+  company_name: string | null
+  company_address: string | null
+  company_phone: string | null
+  company_email: string | null
+  company_tax_number: string | null
+  company_logo: string | null
+  /** The logo as a data: URI, for the preview. */
+  company_logo_data: string | null
+}
+
+export type PaymentMethod = 'cash' | 'bank' | 'khqr' | 'cheque' | 'other'
+
+export interface SchoolPaymentRow {
+  id: number
+  receipt_number: string
+  school: { id: number; name: string; slug: string } | null
+  plan: string | null
+  amount: string
+  currency: 'USD' | 'KHR'
+  periods: number
+  method: PaymentMethod
+  reference: string | null
+  paid_on: string
+  covered_from: string | null
+  covered_to: string | null
+  notes: string | null
+  recorded_by: string | null
+  void: boolean
+  voided_at: string | null
+  voided_by: string | null
+  void_reason: string | null
+  created_at: string | null
+  [key: string]: unknown
+}
+
+export interface PaymentQuote {
+  plan: string | null
+  status: SubscriptionStatus
+  currency: 'USD' | 'KHR'
+  amount: string
+  covered_from: string | null
+  covered_to: string | null
+}
+
+export interface NewPayment {
+  periods: number
+  amount: string | null
+  method: PaymentMethod
+  reference: string | null
+  paid_on: string | null
+  notes: string | null
+}
+
+export const paymentsApi = {
+  list: (query: ListQuery) => page<SchoolPaymentRow>('/billing/payments', query),
+  quote: (schoolId: number, periods: number) => get<PaymentQuote>(`/schools/${schoolId}/billing/payment-quote`, { periods }),
+  record: (schoolId: number, body: NewPayment) => send<SchoolPaymentRow>('post', `/schools/${schoolId}/billing/payments`, body),
+  void: (id: number, reason: string) => send<SchoolPaymentRow>('post', `/billing/payments/${id}/void`, { reason }),
+  receiptUrl: (id: number) => `/api/v1/platform/billing/payments/${id}/receipt`,
+  uploadLogo: (file: File) => {
+    const body = new FormData()
+    body.append('logo', file)
+    return send<BillingSettingsRow>('post', '/billing/settings/logo', body)
+  },
+  removeLogo: () => send<BillingSettingsRow>('delete', '/billing/settings/logo'),
+}
+
+export const billingApi = {
+  plans: () => get<{ plans: Plan[]; modules: PlanModule[] }>('/billing/plans'),
+  createPlan: (body: PlanInput) => send<Plan>('post', '/billing/plans', body),
+  updatePlan: (id: number, body: Partial<PlanInput>) => send<Plan>('patch', `/billing/plans/${id}`, body),
+  removePlan: (id: number) => send<{ deleted: boolean }>('delete', `/billing/plans/${id}`),
+  settings: () => get<BillingSettingsRow>('/billing/settings'),
+  saveSettings: (body: Partial<Omit<BillingSettingsRow, 'company_logo' | 'company_logo_data'>>) => send<BillingSettingsRow>('put', '/billing/settings', body),
+  school: (id: number) => get<SchoolBilling>(`/schools/${id}/billing`),
+  subscribe: (
+    id: number,
+    body: { plan_id: number; status: 'trial' | 'active'; start_on?: string | null; end_on?: string | null; notes?: string | null },
+  ) => send<SchoolBilling>('post', `/schools/${id}/billing/subscribe`, body),
+  changePlan: (id: number, body: { plan_id: number; notes?: string | null }) => send<SchoolBilling>('post', `/schools/${id}/billing/change-plan`, body),
+  updateSubscription: (id: number, body: { end_on?: string | null; notes?: string | null }) => send<SchoolBilling>('patch', `/schools/${id}/billing`, body),
+  cancel: (id: number, reason: string) => send<SchoolBilling>('post', `/schools/${id}/billing/cancel`, { reason }),
+}
+
+// ── Data ops (Stage 3)───────────────────────────────────────────────────────
 
 export type DatabaseFlag = 'missing' | 'unreachable' | 'behind' | 'no_recent_backup'
 

@@ -1,7 +1,7 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 
-import { authService, loginRequiresTenantSelection, type LoginPayload, type LoginResult, type MeResult } from '@/services/auth'
+import { authService, loginRequiresTenantSelection, type BillingNotice, type LoginPayload, type LoginResult, type MeResult } from '@/services/auth'
 import { type ActingTenant, getActingTenant, resetDevTenant, setActingTenant, setDevTenant } from '@/services/http'
 import { detachPushOnLogout } from '@/services/pushNotifications'
 import type { User } from '@/types/models'
@@ -16,6 +16,10 @@ export const useAuthStore = defineStore('auth', () => {
   const tenantDefaultCurrency = ref<'USD' | 'KHR' | null>(null)
   /** Today's KHR-per-USD rate, or null if the school has never entered one under Currency Rates. */
   const khrPerUsdRate = ref<number | null>(null)
+  /** Modules the school's plan includes; null = every module (see backend SchoolModules). */
+  const tenantModules = ref<string[] | null>(null)
+  /** Plan ending / ended / student limit — AdminBillingBanner; owners and admins only. */
+  const billingNotice = ref<BillingNotice | null>(null)
   /** The signed-in school's own public website hostname — see AdminHeader.vue's "Go to website" link. Null for a platform Super Admin browsing no particular school. */
   const tenantHostname = ref<string | null>(null)
   /** A Super Admin deliberately browsing one school's admin data — see setActingTenant. Restored from sessionStorage so a page refresh doesn't drop it. */
@@ -55,6 +59,8 @@ export const useAuthStore = defineStore('auth', () => {
     tenantName.value = result.tenant?.name ?? null
     tenantDefaultCurrency.value = result.tenant?.default_currency ?? null
     khrPerUsdRate.value = result.tenant?.khr_per_usd_rate ?? null
+    tenantModules.value = result.tenant?.modules ?? null
+    billingNotice.value = result.tenant?.billing_notice ?? null
     tenantHostname.value = result.tenant?.hostname ?? null
 
     // Dev only (see setDevTenant), and skipped entirely while actingTenant is
@@ -77,6 +83,8 @@ export const useAuthStore = defineStore('auth', () => {
     tenantName.value = null
     tenantDefaultCurrency.value = null
     khrPerUsdRate.value = null
+    tenantModules.value = null
+    billingNotice.value = null
     tenantHostname.value = null
   }
 
@@ -190,6 +198,11 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = await authService.updateProfile(payload)
   }
 
+  /** Whether the school's plan includes a console module — for self-service pages no permission gates. */
+  function hasModule(code: string): boolean {
+    return isSuperAdmin.value || tenantModules.value === null || tenantModules.value.includes(code)
+  }
+
   return {
     user,
     permissions,
@@ -197,6 +210,9 @@ export const useAuthStore = defineStore('auth', () => {
     tenantName,
     tenantDefaultCurrency,
     khrPerUsdRate,
+    tenantModules,
+    billingNotice,
+    hasModule,
     tenantHostname,
     actingTenant,
     initialized,

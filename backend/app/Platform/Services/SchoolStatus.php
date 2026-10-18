@@ -57,6 +57,12 @@ final class SchoolStatus
             'staff_id' => $staff?->getKey(),
         ]);
 
+        // Out of suspended (by staff or by billing): no longer suspended for
+        // billing (docs/backoffice/stage-5-billing.md, 5e).
+        if ($from === Tenant::STATUS_SUSPENDED) {
+            \App\Platform\Models\School::query()->whereKey($tenant->getKey())->update(['billing_suspended_at' => null]);
+        }
+
         $this->audit->record('school.status_changed', $tenant, ['status' => $from], array_filter([
             'status' => $to,
             'reason' => $reason,

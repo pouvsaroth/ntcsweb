@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import AdminHeader from '@/components/layout/AdminHeader.vue'
 import AdminSidebar from '@/components/layout/AdminSidebar.vue'
 import MobileBottomNav from '@/components/layout/MobileBottomNav.vue'
+import AdminBillingBanner from '@/components/admin/AdminBillingBanner.vue'
 import MonthlyPaymentAlertModal from '@/components/admin/MonthlyPaymentAlertModal.vue'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 import ImagePreviewDialog from '@/components/ui/ImagePreviewDialog.vue'
@@ -60,6 +61,7 @@ onBeforeUnmount(() => applyTranslationOverrides({}))
         </button>
       </div>
       <AdminHeader @toggle-sidebar="sidebarOpen = !sidebarOpen" />
+      <AdminBillingBanner />
       <!-- Extra bottom padding: a page with sticky pagination (BasePagination's
            `sticky` prop, or Students.vue's own bar) is `fixed`, so it no
            longer reserves its own space in normal flow — without this, it

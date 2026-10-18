@@ -447,6 +447,7 @@ const ja: MessageSchema = {
     back: '戻る',
     next: '次へ',
     completeRequiredFields: '続行する前に必須項目を入力してください。',
+    schoolFull: "現在、登録できません — 学校はオンラインで新しい生徒を受け付けていません。学校にお問い合わせください。",
     fixErrorsBelow: '以下のエラーを修正してください。',
     submitFailed: '登録を送信できませんでした。もう一度お試しください。',
     successTitle: '登録が完了しました！',
@@ -605,6 +606,21 @@ const ja: MessageSchema = {
     title: 'ページが見つかりません',
     message: 'お探しのページは存在しません。',
     backHome: 'ホームに戻る',
+  },
+  billingBanner: {
+    ending: "プランは {date} に終了します（残り {days} 日）。更新についてはお問い合わせください。",
+    endsToday: "プランは本日終了します。更新についてはお問い合わせください。",
+    trialEnding: "無料トライアルは {date} に終了します（残り {days} 日）。プランの選択についてはお問い合わせください。",
+    trialEndsToday: "無料トライアルは本日終了します。プランの選択についてはお問い合わせください。",
+    ended: "プランは {date} に終了しました。お支払いがない場合、{suspend} に学校は停止されます。",
+    trialEnded: "無料トライアルは {date} に終了しました。プランを選択しない場合、{suspend} に学校は停止されます。",
+    studentsNear: "プランで認められた在籍生徒 {limit} 名のうち {active} 名です。",
+    studentsFull: "プランの生徒上限に達しました（{active}/{limit}）。新しい生徒は登録できません — アップグレードについてはお問い合わせください。",
+  },
+  siteOffline: {
+    title: "このウェブサイトは利用できません",
+    message: "学校のウェブサイトは現在停止しています。職員と生徒は引き続きログインできます。",
+    signIn: "ログイン",
   },
 
   admin: {

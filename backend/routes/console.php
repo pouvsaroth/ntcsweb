@@ -17,3 +17,7 @@ Schedule::command('performance:apply-promotions')->timezone('Asia/Phnom_Penh')->
 // The back office (docs/backoffice/stage-3-data-ops.md): scheduler heartbeat,
 // scheduled backups when due, and retention. Cheap when there is nothing to do.
 Schedule::command('platform:backups-tick')->everyMinute()->withoutOverlapping();
+
+// Billing (docs/backoffice/stage-5-billing.md, 5e): expire ended plans, then
+// suspend schools unpaid past the grace days. Just after midnight, Phnom Penh.
+Schedule::command('platform:billing-tick')->timezone('Asia/Phnom_Penh')->dailyAt('00:15')->withoutOverlapping();

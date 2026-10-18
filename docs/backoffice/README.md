@@ -40,7 +40,7 @@ sign-in, its own routes and its own app.
 | 2 | Schools — create, background provisioning with status + retry, suspend, invite the owner, domains | [stage-2-schools.md](stage-2-schools.md) | ✅ Live since 2026-10-16 |
 | 3 | Data ops — backups per school database, migrate all schools, health | [stage-3-data-ops.md](stage-3-data-ops.md) | ✅ Live since 2026-10-16 |
 | 4 | Where a school's data lives — shared (one database, rows tagged by school), dedicated, separate server; move between them | [stage-4-database-placement.md](stage-4-database-placement.md) | ✅ Live since 2026-10-18 |
-| 5 | Billing — plans and subscriptions per school | — | Not started |
+| 5 | Billing — plans (price, period, modules, student limit), subscriptions, payments + receipts, expiry → suspend | [stage-5-billing.md](stage-5-billing.md) | ✅ Built locally 2026-10-18 (5a–5e) — full suite 1202 passed; not committed |
 | 6 | Support — per-school health, audited read-only impersonation | — | Not started |
 
 Each stage gets its brief before any code, and a "done when" that is a list

@@ -53,6 +53,8 @@ export interface PublicSiteInfo {
   documents: SiteDocuments
   /** Whether the registration wizard's payment step should offer QR (Bakong KHQR) as an option — see School Settings. */
   has_khqr: boolean
+  /** False when the school's plan has no Website module — PublicLayout then shows a "not available" notice. */
+  website_enabled: boolean
 }
 
 const FALLBACK: PublicSiteInfo = {
@@ -65,6 +67,7 @@ const FALLBACK: PublicSiteInfo = {
   about: null,
   documents: { school_regulation_url: null, student_attendance_policy_url: null },
   has_khqr: false,
+  website_enabled: true,
 }
 
 /**

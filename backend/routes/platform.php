@@ -3,8 +3,12 @@
 declare(strict_types=1);
 
 use App\Platform\Http\Controllers\AuditLogController;
+use App\Platform\Http\Controllers\BillingSettingsController;
 use App\Platform\Http\Controllers\DataOpsController;
+use App\Platform\Http\Controllers\PaymentController;
+use App\Platform\Http\Controllers\PlanController;
 use App\Platform\Http\Controllers\RoleController;
+use App\Platform\Http\Controllers\SchoolBillingController;
 use App\Platform\Http\Controllers\SchoolController;
 use App\Platform\Http\Controllers\SchoolDomainController;
 use App\Platform\Http\Controllers\SchoolMoveController;
@@ -94,6 +98,28 @@ Route::middleware('platform.staff')->group(function () {
         Route::post('migrate', [DataOpsController::class, 'migrate'])->middleware('platform.can:platform.data.migrate')->name('migrate');
         Route::post('schools/{school}/create-database', [DataOpsController::class, 'createDatabase'])->middleware('platform.can:platform.data.migrate')->name('create-database');
     });
+
+    // Billing (stage 5): plans, each school's subscription, settings.
+    Route::prefix('billing')->name('billing.')->group(function () {
+        Route::get('plans', [PlanController::class, 'index'])->middleware('platform.can:platform.billing.read')->name('plans.index');
+        Route::post('plans', [PlanController::class, 'store'])->middleware('platform.can:platform.billing.manage')->name('plans.store');
+        Route::patch('plans/{plan}', [PlanController::class, 'update'])->middleware('platform.can:platform.billing.manage')->name('plans.update');
+        Route::delete('plans/{plan}', [PlanController::class, 'destroy'])->middleware('platform.can:platform.billing.manage')->name('plans.destroy');
+        Route::get('settings', [BillingSettingsController::class, 'show'])->middleware('platform.can:platform.billing.read')->name('settings.show');
+        Route::put('settings', [BillingSettingsController::class, 'update'])->middleware('platform.can:platform.billing.manage')->name('settings.update');
+        Route::post('settings/logo', [BillingSettingsController::class, 'uploadLogo'])->middleware('platform.can:platform.billing.manage')->name('settings.logo.store');
+        Route::delete('settings/logo', [BillingSettingsController::class, 'removeLogo'])->middleware('platform.can:platform.billing.manage')->name('settings.logo.destroy');
+        Route::get('payments', [PaymentController::class, 'index'])->middleware('platform.can:platform.billing.read')->name('payments.index');
+        Route::post('payments/{payment}/void', [PaymentController::class, 'void'])->middleware('platform.can:platform.billing.manage')->name('payments.void');
+        Route::get('payments/{payment}/receipt', [PaymentController::class, 'receipt'])->middleware('platform.can:platform.billing.read')->name('payments.receipt');
+    });
+    Route::get('schools/{school}/billing', [SchoolBillingController::class, 'show'])->middleware('platform.can:platform.billing.read')->name('schools.billing.show');
+    Route::post('schools/{school}/billing/subscribe', [SchoolBillingController::class, 'subscribe'])->middleware('platform.can:platform.billing.manage')->name('schools.billing.subscribe');
+    Route::post('schools/{school}/billing/change-plan', [SchoolBillingController::class, 'changePlan'])->middleware('platform.can:platform.billing.manage')->name('schools.billing.change-plan');
+    Route::patch('schools/{school}/billing', [SchoolBillingController::class, 'update'])->middleware('platform.can:platform.billing.manage')->name('schools.billing.update');
+    Route::get('schools/{school}/billing/payment-quote', [PaymentController::class, 'quote'])->middleware('platform.can:platform.billing.read')->name('schools.billing.payment-quote');
+    Route::post('schools/{school}/billing/payments', [PaymentController::class, 'store'])->middleware('platform.can:platform.billing.manage')->name('schools.billing.payments.store');
+    Route::post('schools/{school}/billing/cancel', [SchoolBillingController::class, 'cancel'])->middleware('platform.can:platform.billing.manage')->name('schools.billing.cancel');
 
     Route::get('audit-logs', [AuditLogController::class, 'index'])->middleware('platform.can:platform.audit.read')->name('audit-logs.index');
 });

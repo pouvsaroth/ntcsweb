@@ -136,6 +136,8 @@ async function submit() {
   } catch (error) {
     if (error instanceof ApiRequestError && error.errors) {
       errors.value = error.errors
+      // The school's plan is full (back office billing): not tied to any one field.
+      generalError.value = error.fieldError('student_limit') ?? null
     } else {
       generalError.value = error instanceof ApiRequestError ? error.message : t('admin.enrollments.statusSaveFailed')
     }

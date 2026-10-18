@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
 import BaseAlert from '@/components/ui/BaseAlert.vue'
+import BaseBadge from '@/components/ui/BaseBadge.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BasePagination from '@/components/ui/BasePagination.vue'
@@ -13,7 +14,8 @@ import DataTable from '@/components/ui/DataTable.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { formatDate } from '@/utils/date'
 
-import { schoolsApi, type School } from '../api'
+import { schoolsApi, type BillingFlag, type School } from '../api'
+import { endLabel, flagVariant } from '../billing'
 import SchoolCreateModal from '../components/SchoolCreateModal.vue'
 import SchoolStatusBadge from '../components/SchoolStatusBadge.vue'
 import { useSession } from '../session'
@@ -41,6 +43,7 @@ const columns = computed(() => [
   { key: 'name', label: t('bo.schools.name'), sortable: true },
   { key: 'slug', label: t('bo.schools.slug'), sortable: true },
   { key: 'status', label: t('bo.schools.status') },
+  { key: 'plan', label: t('bo.billing.school.plan') },
   { key: 'owner', label: t('bo.schools.owner') },
   { key: 'created_at', label: t('bo.schools.created'), sortable: true },
 ])
@@ -91,6 +94,11 @@ onMounted(() => fetch())
           </div>
           <p class="mt-2 font-mono text-xs text-neutral-500">{{ row.subdomain }}</p>
           <p v-if="row.owner" class="mt-1 truncate text-xs text-neutral-500">{{ row.owner.name }} · {{ row.owner.email }}</p>
+          <p v-if="row.billing?.subscription" class="mt-1 flex flex-wrap items-center gap-1 text-xs text-neutral-600">
+            <span>{{ row.billing.subscription.plan?.name }}</span>
+            <BaseBadge v-if="row.billing.flag !== 'none'" :variant="flagVariant[row.billing.flag]">{{ t(`bo.billing.flags.${row.billing.flag}`) }}</BaseBadge>
+            <span v-if="row.billing.subscription.live" class="text-neutral-500">· {{ endLabel(row.billing.subscription, t) }}</span>
+          </p>
         </button>
       </div>
     </div>
@@ -112,6 +120,18 @@ onMounted(() => fetch())
         </template>
         <template #cell-slug="{ row }"><span class="font-mono text-xs">{{ row.slug }}</span></template>
         <template #cell-status="{ row }"><SchoolStatusBadge :status="row.status" /></template>
+        <template #cell-plan="{ row }">
+          <template v-if="row.billing?.subscription">
+            <p class="text-sm">{{ row.billing.subscription.plan?.name ?? '—' }}</p>
+            <p class="text-xs text-neutral-500">
+              <BaseBadge v-if="row.billing.flag !== 'none'" :variant="flagVariant[row.billing.flag as BillingFlag]" class="mr-1">
+                {{ t(`bo.billing.flags.${row.billing.flag}`) }}
+              </BaseBadge>
+              <template v-if="row.billing.subscription.live">{{ endLabel(row.billing.subscription, t) }}</template>
+            </p>
+          </template>
+          <span v-else class="text-neutral-400">—</span>
+        </template>
         <template #cell-owner="{ row }">
           <template v-if="row.owner">
             <p class="text-sm">{{ row.owner.name }}</p>

@@ -12,6 +12,7 @@ use App\Models\SchoolClass;
 use App\Models\Student;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Platform\Billing\StudentLimit;
 use App\Services\Billing\CurrencyConversionService;
 use App\Services\Billing\InvoiceService;
 use App\Services\Billing\PaymentService;
@@ -72,6 +73,8 @@ final class EnrollmentService
 
             $this->assertEnrollable($class, $package);
             $this->assertNotAlreadyEnrolled((int) $data['student_id'], $package);
+            // The plan's student limit (back office billing, 5d).
+            app(StudentLimit::class)->assertRoomFor((int) $data['student_id']);
 
             $feeType = $data['fee_type'];
             $feeColumn = 'fee_'.$feeType;
@@ -176,6 +179,11 @@ final class EnrollmentService
 
             if ($enrollment->status === Enrollment::STATUS_DROPPED) {
                 throw ValidationException::withMessages(['status' => 'This enrollment was closed by a cancellation or transfer and can no longer be managed here.']);
+            }
+
+            // Back into a counted status: the plan's student limit applies (back office billing, 5d).
+            if (in_array($status, StudentLimit::COUNTED, true) && ! in_array($enrollment->status, StudentLimit::COUNTED, true)) {
+                app(StudentLimit::class)->assertRoomFor((int) $enrollment->student_id, (int) $enrollment->getKey());
             }
 
             EnrollmentStatusHistory::query()->create([

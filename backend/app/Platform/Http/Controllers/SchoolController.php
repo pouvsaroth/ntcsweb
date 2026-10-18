@@ -7,6 +7,7 @@ namespace App\Platform\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponse;
 use App\Models\Tenant;
+use App\Platform\Billing\Subscriptions;
 use App\Platform\Http\Resources\SchoolResource;
 use App\Platform\Jobs\ProvisionSchool;
 use App\Platform\Models\School;
@@ -38,6 +39,7 @@ final class SchoolController extends Controller
         private readonly SchoolDatabase $database,
         private readonly PlatformAudit $audit,
         private readonly SeparateServerProbe $probe,
+        private readonly Subscriptions $subscriptions,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -53,6 +55,8 @@ final class SchoolController extends Controller
             ->paginate();
 
         $this->attachSchools($tenants->getCollection());
+        $billing = $this->subscriptions->summaries($tenants->getCollection()->modelKeys());
+        $tenants->getCollection()->each(fn (Tenant $t) => $t->setRelation('billingSummary', $billing[$t->getKey()] ?? null));
 
         return ApiResponse::success(SchoolResource::collection($tenants));
     }
@@ -118,6 +122,9 @@ final class SchoolController extends Controller
                 ],
             });
             $this->owners->ensureAccount($tenant, $data['owner_name'], $data['owner_email']);
+
+            // Every new school starts on a trial (docs/backoffice/stage-5-billing.md).
+            $this->subscriptions->startTrial($tenant, $request->user('staff'));
 
             $this->audit->record('school.created', $tenant, new: [
                 'name' => $tenant->name,
@@ -233,6 +240,8 @@ final class SchoolController extends Controller
                 ->from('bo_school_provisioning_logs')
                 ->where('tenant_id', $tenant->getKey()))->orderBy('id'),
         ]);
+
+        $tenant->setRelation('billingSummary', $this->subscriptions->summary($tenant));
 
         return $tenant->load('domains')->setRelation('backoffice', $school);
     }

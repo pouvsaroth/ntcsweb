@@ -7,6 +7,7 @@ namespace App\Support\Authorization;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
+use App\Platform\Billing\SchoolModules;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -36,11 +37,16 @@ final class PermissionRegistry
     {
         $key = $this->userKey($user);
 
-        return $this->resolved[$key] ??= $this->cache->remember(
+        $granted = $this->resolved[$key] ??= $this->cache->remember(
             $key,
             (int) config('auth.rbac.cache_ttl', 900),
             fn () => $this->load($user),
         );
+
+        // What the school's plan includes (docs/backoffice/stage-5-billing.md,
+        // 5c). Applied after the cache, so a plan change takes effect on the
+        // next request with no invalidation.
+        return app(SchoolModules::class)->filter($user->tenant_id, $granted);
     }
 
     public function has(User $user, string $permission): bool

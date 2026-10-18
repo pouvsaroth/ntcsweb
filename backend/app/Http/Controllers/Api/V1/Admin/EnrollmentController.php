@@ -16,6 +16,7 @@ use App\Http\Resources\EnrollmentTransferHistoryResource;
 use App\Http\Responses\ApiResponse;
 use App\Models\CoursePackage;
 use App\Models\Enrollment;
+use App\Platform\Billing\StudentLimit;
 use App\Models\SchoolClass;
 use App\Services\Academic\EnrollmentService;
 use App\Support\Query\ApiQuery;
@@ -52,6 +53,12 @@ final class EnrollmentController extends Controller
 
     public function update(UpdateEnrollmentRequest $request, Enrollment $enrollment): JsonResponse
     {
+        // Back into a counted status: the plan's student limit applies (back office billing, 5d).
+        $status = $request->validated('status');
+        if (in_array($status, StudentLimit::COUNTED, true) && ! in_array($enrollment->status, StudentLimit::COUNTED, true)) {
+            app(StudentLimit::class)->assertRoomFor((int) $enrollment->student_id, (int) $enrollment->getKey());
+        }
+
         $enrollment->update($request->validated());
 
         return ApiResponse::success(new EnrollmentResource($enrollment->load(self::WITH)));

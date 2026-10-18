@@ -252,6 +252,13 @@ final class AuthController extends Controller
                         'id' => $tenant->id,
                         'name' => $tenant->name,
                         'default_currency' => $tenant->default_currency,
+                        // The modules the school's plan includes; null = all
+                        // (docs/backoffice/stage-5-billing.md, 5c). The menu
+                        // hides self-service items of a module that is off.
+                        'modules' => app(\App\Platform\Billing\SchoolModules::class)->enabled($tenant->id),
+                        // Plan ending / ended / student limit, for the owner's
+                        // banner (5e); null for everyone else or when all is well.
+                        'billing_notice' => app(\App\Platform\Billing\BillingNotice::class)->for($user, $tenant->id),
                         // Today's rate, not tied to any one transaction date
                         // — this is "what should the enrollment form show
                         // right now", see EnrollmentPackageForm.vue. Each

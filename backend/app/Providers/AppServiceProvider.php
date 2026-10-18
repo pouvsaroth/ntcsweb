@@ -20,7 +20,8 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        //
+        // Which modules each school's plan includes — looked up once per request or job.
+        $this->app->scoped(\App\Platform\Billing\SchoolModules::class);
     }
 
     public function boot(): void

@@ -446,6 +446,7 @@ const zh: MessageSchema = {
     back: '上一步',
     next: '下一步',
     completeRequiredFields: '请填写完必填字段后再继续。',
+    schoolFull: "目前无法报名——学校暂不在线招收新学生。请联系学校。",
     fixErrorsBelow: '请修正以下错误。',
     submitFailed: '无法提交您的注册，请重试。',
     successTitle: '注册成功！',
@@ -604,6 +605,21 @@ const zh: MessageSchema = {
     title: '页面未找到',
     message: '您访问的页面不存在。',
     backHome: '返回首页',
+  },
+  billingBanner: {
+    ending: "您的套餐将于 {date} 到期（剩余 {days} 天）。请联系我们续费。",
+    endsToday: "您的套餐今天到期。请联系我们续费。",
+    trialEnding: "您的免费试用将于 {date} 结束（剩余 {days} 天）。请联系我们选择套餐。",
+    trialEndsToday: "您的免费试用今天结束。请联系我们选择套餐。",
+    ended: "您的套餐已于 {date} 到期。如未付款，学校将于 {suspend} 被暂停。",
+    trialEnded: "您的免费试用已于 {date} 结束。如未选择套餐，学校将于 {suspend} 被暂停。",
+    studentsNear: "您的套餐允许 {limit} 名在读学生，目前已有 {active} 名。",
+    studentsFull: "已达到套餐的学生上限（{active}/{limit}）。无法再录取新学生——请联系我们升级套餐。",
+  },
+  siteOffline: {
+    title: "该网站暂不可用",
+    message: "学校网站目前已关闭。教职员工和学生仍可登录。",
+    signIn: "登录",
   },
 
   admin: {
