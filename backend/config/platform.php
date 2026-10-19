@@ -74,6 +74,14 @@ return [
             ],
         ],
         [
+            'key' => 'platform.security',
+            'label' => 'Security',
+            'label_km' => 'សុវត្ថិភាព',
+            'children' => [
+                ['key' => 'platform.security.manage', 'label' => 'See and change sign-in security (authenticator code)', 'label_km' => 'មើល និងកែប្រែសុវត្ថិភាពការចូល (លេខកូដកម្មវិធីផ្ទៀងផ្ទាត់)'],
+            ],
+        ],
+        [
             'key' => 'platform.audit',
             'label' => 'Audit',
             'label_km' => 'សវនកម្ម',

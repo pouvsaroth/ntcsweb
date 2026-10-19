@@ -2,7 +2,7 @@
 const en = {
   brand: 'Back office',
   brandSub: 'NTCSWEB platform',
-  language: 'ភាសាខ្មែរ',
+  language: 'Language',
   nav: {
     schools: 'Schools',
     data: 'Data ops',
@@ -11,9 +11,12 @@ const en = {
     staff: 'Staff',
     roles: 'Roles',
     audit: 'Audit log',
+    settings: 'Settings',
     account: 'My account',
     signOut: 'Sign out',
     menu: 'Menu',
+    collapse: 'Collapse menu',
+    expand: 'Expand menu',
   },
   signIn: {
     title: 'Staff sign-in',
@@ -48,6 +51,8 @@ const en = {
     title: 'My account',
     twoFactor: 'Two-step sign-in',
     twoFactorOn: 'On',
+    twoFactorNotSetUp: 'Not set up',
+    twoFactorNotSetUpHint: 'Sign-in does not ask for an authentication code right now (Settings → Security). You will set up an authenticator app if that is switched back on.',
     recoveryLeft: '{n} recovery codes left',
     regenerate: 'New recovery codes',
     regenerateHint: 'Replaces every unused code. Enter your password to continue.',
@@ -536,6 +541,28 @@ const en = {
     settings: {
       minutes: 'A support view lasts (minutes)',
       minutesHint: 'Between 5 and 240. It ends by itself after this, or when staff press End.',
+    },
+  },
+  settings: {
+    title: 'Settings',
+    tabs: { security: 'Security' },
+    security: {
+      title: 'Sign-in security',
+      sub: 'How staff prove who they are when they sign in to the back office.',
+      label: 'Require authentication code',
+      onHelp: 'Staff enter their password, then a 6-digit code from an authenticator app. Anyone without an app sets one up at their next sign-in.',
+      offHelp: 'Staff sign in with their password alone. Authenticator apps already set up are kept, and are asked for again if you switch this back on.',
+      required: 'Required',
+      notRequired: 'Not required',
+      confirmTitle: 'Stop asking for an authentication code?',
+      confirmText:
+        'Staff will sign in with their password alone. A staff account can act on every school, so a leaked password would be enough to get in. This change is recorded in the audit log.',
+      confirmOk: 'Turn off',
+      savedOn: 'Staff now need an authentication code to sign in.',
+      savedOff: 'Staff now sign in with their password alone.',
+      saveFailed: 'The setting could not be saved. Try again.',
+      loadFailed: 'The security settings could not be loaded.',
+      retry: 'Try again',
     },
   },
   common: {

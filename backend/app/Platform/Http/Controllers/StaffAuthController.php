@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponse;
 use App\Platform\Http\Resources\StaffResource;
 use App\Platform\Models\PlatformStaff;
+use App\Platform\Models\SecuritySettings;
 use App\Platform\Services\StaffSignIn;
 use App\Platform\Support\PlatformAudit;
 use App\Platform\Support\Totp;
@@ -54,6 +55,14 @@ final class StaffAuthController extends Controller
         }
 
         RateLimiter::clear($key);
+
+        // Settings → Security asks for no code: the password alone signs in.
+        // An authenticator already set up is kept, for when it is switched back on.
+        if (! SecuritySettings::twoFactorRequired()) {
+            $this->signIn->complete($request, $staff, passwordOnly: true);
+
+            return ApiResponse::success(['two_factor' => 'off', ...$this->sessionPayload($staff->fresh())]);
+        }
 
         return ApiResponse::success(['two_factor' => $staff->hasTwoFactor() ? 'required' : 'setup']);
     }
@@ -163,6 +172,9 @@ final class StaffAuthController extends Controller
         /** @var PlatformStaff $staff */
         $staff = $request->user('staff');
         $request->validate(['current_password' => ['required', 'string', 'current_password:staff']]);
+        if (! $staff->hasTwoFactor()) {
+            return ApiResponse::error(__('Two-step sign-in is not set up for your account.'), 409, 'TWO_FACTOR_NOT_SET_UP');
+        }
 
         $codes = DB::connection($staff->getConnectionName())->transaction(function () use ($staff) {
             $codes = $this->signIn->regenerateRecoveryCodes($staff);

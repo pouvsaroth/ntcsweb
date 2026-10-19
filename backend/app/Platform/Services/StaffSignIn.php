@@ -19,7 +19,9 @@ use Illuminate\Support\Str;
  * A correct password signs nobody in. It parks the account's id in the
  * session for a few minutes ("pending"), and only a correct code — or a
  * first-time enrolment confirmed with one — turns that into a staff guard
- * login. So a stolen password alone never reaches a single platform route.
+ * login. So a stolen password alone never reaches a single platform route —
+ * unless an Owner switched the code off in Settings → Security
+ * (SecuritySettings), when StaffAuthController completes it straight away.
  */
 final class StaffSignIn
 {
@@ -128,13 +130,14 @@ final class StaffSignIn
         return $codes;
     }
 
-    public function complete(Request $request, PlatformStaff $staff): void
+    /** @param  bool  $passwordOnly  Settings → Security asked for no code; recorded with the sign-in. */
+    public function complete(Request $request, PlatformStaff $staff, bool $passwordOnly = false): void
     {
         $request->session()->forget(self::PENDING_KEY);
 
-        DB::connection($staff->getConnectionName())->transaction(function () use ($request, $staff) {
+        DB::connection($staff->getConnectionName())->transaction(function () use ($request, $staff, $passwordOnly) {
             $staff->forceFill(['last_login_at' => now(), 'last_login_ip' => $request->ip()])->save();
-            $this->audit->record('auth.signed_in', $staff, actor: $staff);
+            $this->audit->record('auth.signed_in', $staff, new: $passwordOnly ? ['two_factor' => 'not required'] : [], actor: $staff);
         });
 
         Auth::guard('staff')->login($staff);

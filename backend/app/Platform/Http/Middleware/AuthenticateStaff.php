@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Platform\Http\Middleware;
 
 use App\Platform\Models\PlatformStaff;
+use App\Platform\Models\SecuritySettings;
 use Closure;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests;
@@ -31,7 +32,10 @@ final class AuthenticateStaff implements AuthenticatesRequests
         $guard = Auth::guard('staff');
         $staff = $guard->user();
 
-        if (! $staff instanceof PlatformStaff || ! $staff->isActive() || ! $staff->hasTwoFactor()) {
+        // The second factor is only demanded while Settings → Security requires
+        // it: switched back on, a session without one ends and the next
+        // sign-in sets an authenticator up.
+        if (! $staff instanceof PlatformStaff || ! $staff->isActive() || (! $staff->hasTwoFactor() && SecuritySettings::twoFactorRequired())) {
             if ($staff !== null) {
                 $guard->logout();
             }

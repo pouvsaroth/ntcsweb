@@ -21,6 +21,7 @@ export const navItems = [
   { to: '/staff', labelKey: 'bo.nav.staff', permission: 'platform.staff.read', icon: 'users' },
   { to: '/roles', labelKey: 'bo.nav.roles', permission: 'platform.role.read', icon: 'shield' },
   { to: '/audit', labelKey: 'bo.nav.audit', permission: 'platform.audit.read', icon: 'list' },
+  { to: '/settings', labelKey: 'bo.nav.settings', permission: 'platform.security.manage', icon: 'cog' },
 ] as const
 
 const routes: RouteRecordRaw[] = [
@@ -72,6 +73,15 @@ const routes: RouteRecordRaw[] = [
       { path: 'staff', component: () => import('./pages/StaffPage.vue'), meta: { permission: 'platform.staff.read' } },
       { path: 'roles', component: () => import('./pages/RolesPage.vue'), meta: { permission: 'platform.role.read' } },
       { path: 'audit', component: () => import('./pages/AuditPage.vue'), meta: { permission: 'platform.audit.read' } },
+      {
+        path: 'settings',
+        component: () => import('./pages/settings/SettingsLayout.vue'),
+        meta: { permission: 'platform.security.manage' },
+        children: [
+          { path: '', redirect: '/settings/security' },
+          { path: 'security', component: () => import('./pages/settings/SecurityTab.vue') },
+        ],
+      },
       { path: 'account', component: () => import('./pages/AccountPage.vue') },
     ],
   },

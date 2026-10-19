@@ -133,7 +133,9 @@ export interface ListQuery {
 // ── Sign-in ──────────────────────────────────────────────────────────────────
 
 export const authApi = {
-  login: (email: string, password: string) => send<{ two_factor: 'required' | 'setup' }>('post', '/auth/login', { email, password }),
+  /** 'off': Settings → Security asks for no code, and the reply is already the signed-in session. */
+  login: (email: string, password: string) =>
+    send<{ two_factor: 'required' | 'setup' } | ({ two_factor: 'off' } & Session)>('post', '/auth/login', { email, password }),
   twoFactor: (code: string) => send<Session>('post', '/auth/two-factor', { code }),
   setup: () => send<{ secret: string; otpauth_uri: string }>('post', '/auth/two-factor/setup'),
   confirm: (code: string) => send<Session & { recovery_codes: string[] }>('post', '/auth/two-factor/confirm', { code }),
@@ -651,4 +653,16 @@ export const supportApi = {
   end: (id: number) => send<SupportView>('post', `/support/sessions/${id}/end`),
   settings: () => get<{ duration_minutes: number }>('/support/settings'),
   updateSettings: (body: { duration_minutes: number }) => send<{ duration_minutes: number }>('patch', '/support/settings', body),
+}
+
+// ── Settings → Security ─────────────────────────────────────────────────────
+
+export interface SecuritySettings {
+  /** Staff sign in with a code from an authenticator app as well as their password. */
+  require_two_factor: boolean
+}
+
+export const securityApi = {
+  get: () => get<SecuritySettings>('/settings/security'),
+  update: (body: SecuritySettings) => send<SecuritySettings>('put', '/settings/security', body),
 }

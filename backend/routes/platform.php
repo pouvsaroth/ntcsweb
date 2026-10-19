@@ -13,6 +13,7 @@ use App\Platform\Http\Controllers\SchoolController;
 use App\Platform\Http\Controllers\SchoolDomainController;
 use App\Platform\Http\Controllers\SchoolMoveController;
 use App\Platform\Http\Controllers\SchoolOwnerController;
+use App\Platform\Http\Controllers\SecuritySettingsController;
 use App\Platform\Http\Controllers\StaffAuthController;
 use App\Platform\Http\Controllers\StaffController;
 use App\Platform\Http\Controllers\SupportController;
@@ -130,6 +131,9 @@ Route::middleware('platform.staff')->group(function () {
     Route::post('support/sessions/{session}/end', [SupportController::class, 'end'])->middleware('platform.can:platform.support.view')->name('support.end');
     Route::get('support/settings', [SupportController::class, 'settings'])->middleware('platform.can:platform.support.read')->name('support.settings');
     Route::patch('support/settings', [SupportController::class, 'updateSettings'])->middleware('platform.can:platform.support.view')->name('support.settings.update');
+
+    Route::get('settings/security', [SecuritySettingsController::class, 'show'])->middleware('platform.can:platform.security.manage')->name('settings.security');
+    Route::put('settings/security', [SecuritySettingsController::class, 'update'])->middleware('platform.can:platform.security.manage')->name('settings.security.update');
 
     Route::get('audit-logs', [AuditLogController::class, 'index'])->middleware('platform.can:platform.audit.read')->name('audit-logs.index');
 });

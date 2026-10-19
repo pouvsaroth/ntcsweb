@@ -99,11 +99,20 @@ async function regenerate(): Promise<void> {
     <section class="rounded-[--radius-card] border border-neutral-200 bg-white p-5 shadow-[--shadow-card]">
       <div class="flex items-center justify-between gap-3">
         <h2 class="font-semibold text-neutral-900">{{ t('bo.account.twoFactor') }}</h2>
-        <span class="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">{{ t('bo.account.twoFactorOn') }}</span>
+        <span
+          v-if="session.staff?.two_factor_enabled"
+          class="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700"
+        >
+          {{ t('bo.account.twoFactorOn') }}
+        </span>
+        <span v-else class="rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-medium text-neutral-600">{{ t('bo.account.twoFactorNotSetUp') }}</span>
       </div>
-      <p class="mt-1 text-sm text-neutral-600">{{ t('bo.account.recoveryLeft', { n: session.session?.recovery_codes_left ?? 0 }) }}</p>
+      <p v-if="session.staff?.two_factor_enabled" class="mt-1 text-sm text-neutral-600">
+        {{ t('bo.account.recoveryLeft', { n: session.session?.recovery_codes_left ?? 0 }) }}
+      </p>
+      <p v-else class="mt-1 text-sm text-neutral-600">{{ t('bo.account.twoFactorNotSetUpHint') }}</p>
 
-      <form class="mt-4 space-y-3" @submit.prevent="regenerate">
+      <form v-if="session.staff?.two_factor_enabled" class="mt-4 space-y-3" @submit.prevent="regenerate">
         <p class="text-sm text-neutral-600">{{ t('bo.account.regenerateHint') }}</p>
         <BaseInput
           v-model="regenPassword"

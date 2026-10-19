@@ -10,7 +10,7 @@ import BaseInput from '@/components/ui/BaseInput.vue'
 import { ApiRequestError } from '@/types/api'
 
 import { authApi, primeCsrf, type Session } from '../api'
-import { setLocale } from '../i18n'
+import LanguageSwitch from '../components/LanguageSwitch.vue'
 import { useSession } from '../session'
 
 /**
@@ -19,7 +19,7 @@ import { useSession } from '../session'
  */
 type Step = 'password' | 'code' | 'setup' | 'recovery'
 
-const { t, locale } = useI18n()
+const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const session = useSession()
@@ -59,7 +59,10 @@ async function submitPassword(): Promise<void> {
   try {
     await primeCsrf()
     const result = await authApi.login(email.value, password.value)
-    if (result.two_factor === 'required') {
+    if (result.two_factor === 'off') {
+      // Settings → Security asks for no code: already signed in.
+      await finish(result)
+    } else if (result.two_factor === 'required') {
       step.value = 'code'
     } else {
       const setup = await authApi.setup()
@@ -126,9 +129,7 @@ async function finish(next: Session | null = signedIn): Promise<void> {
           <p class="text-xl font-bold">{{ t('bo.brand') }}</p>
           <p class="text-xs text-secondary-300">{{ t('bo.brandSub') }}</p>
         </div>
-        <button type="button" class="rounded px-2 py-1 text-sm hover:bg-white/10" @click="setLocale(locale === 'km' ? 'en' : 'km')">
-          {{ t('bo.language') }}
-        </button>
+        <LanguageSwitch dark />
       </div>
 
       <div class="rounded-[--radius-card] bg-white p-6 shadow-[--shadow-card] sm:p-8">
