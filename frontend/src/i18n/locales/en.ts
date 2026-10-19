@@ -619,6 +619,18 @@ const en = {
     failedTitle: 'Could not open the support view',
     close: 'Close this tab',
   },
+  servicesPage: {
+    title: 'Our services',
+    subtitle: 'Choose what you are looking for.',
+    computerSchool: 'Computer School',
+    sms: 'School Management System',
+    open: 'Open',
+    backToServices: 'Back to our services',
+    servicesHome: 'Services',
+    signIn: 'Sign in',
+    contactUs: 'Contact us',
+    features: 'What it does',
+  },
   billingBanner: {
     ending: "Your plan ends on {date} ({days} days left). Contact us to renew.",
     endsToday: "Your plan ends today. Contact us to renew.",

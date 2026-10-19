@@ -79,12 +79,13 @@ const routes: RouteRecordRaw[] = [
         component: () => import('./pages/website/WebsiteLayout.vue'),
         meta: { permission: 'platform.website.read' },
         children: [
-          { path: '', redirect: '/website/slides' },
+          { path: '', redirect: '/website/services' },
           ...(['slides', 'gallery', 'promotions'] as const).map((kind) => ({
             path: kind,
             component: () => import('./pages/website/ImagesTab.vue'),
             props: { kind },
           })),
+          { path: 'services', component: () => import('./pages/website/ServicesTab.vue') },
           { path: 'about', component: () => import('./pages/website/AboutTab.vue') },
           { path: 'downloads', component: () => import('./pages/website/DownloadsTab.vue') },
           ...(['news', 'events', 'announcements', 'documents'] as const).map((tab) => ({

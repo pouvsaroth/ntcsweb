@@ -133,3 +133,42 @@ website. Render-checked in headless Chrome, desktop and phone.
   `WebsiteAdminTest`. Public website tests unchanged.
 - The `admin.*` translation keys of the removed pages are left in the
   locale files, unused.
+
+## Services front page — Step 1, the editor (2026-10-19)
+
+- `ServicesPageContent` (`tenants.settings->services`): `enabled` (off by
+  default), `computer_school` and `sms` cards (title, text — `_km` / `_en` —
+  and a picture), plus the School Management System product page (heading,
+  description, features one per line, `_km` / `_en`) and its Sign in address
+  (default `https://erp.newtechkh.com`).
+- Back office → Website → **Services page** (first tab; Website opens on
+  it): the switch, both cards side by side in Khmer and English, the
+  product page. `GET/POST /api/v1/platform/website/services`, audited as
+  `website.services.updated`.
+- Public: `/api/v1/public/settings` gains `services` — null while off, so
+  the website is unchanged until it is switched on.
+- Tests in `WebsiteAdminTest` (off by default, save with pictures, replace
+  a picture, other settings kept, public feed only for NewTech, validation,
+  manage needed).
+- Next, Step 2: the public website — the cards at `/`, the school's home at
+  `/computer-school`, the product page at `/school-management-system`, a
+  Services home button.
+
+## Services front page — Step 2, the public website (2026-10-19)
+
+- `/` (`Landing.vue`): `ServicesHome` — the two cards — while
+  `site.services` is set, else the school's `Home` as before. The school's
+  home also lives at `/computer-school`; the product page at
+  `/school-management-system` (heading, description, features, picture,
+  Sign in → `sms.sign_in_url`, Contact us) sends you to `/` while off.
+- Those two pages use `CompanyHeader` (brand, Login, language; no school
+  menu, no bottom tab bar). School pages keep `PublicHeader`; with the
+  services page on, Home / logo / the phone Home tab go to
+  `/computer-school` (`site.schoolHome`) and a **Services** link goes back.
+- Text: `utils/bilingual.ts` `pickText()` — Khmer for km, English for every
+  other language, each falling back to the other.
+- Checked locally with the switch off (unchanged; product page → `/`) and
+  on (cards, card → /computer-school, Services link, Home → /computer-school,
+  product page with 5 features), desktop and phone, then switched back off.
+  The `/public/news` and `/public/events` 404s on the home page are older
+  (those endpoints were never built).

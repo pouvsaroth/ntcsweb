@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
 
@@ -13,7 +14,11 @@ const { t } = useI18n()
 // One flat list — Program used to open a dropdown of separate
 // destinations; it's now a plain link like every other item here (see
 // publicNav.ts's programNavItem docblock).
-const mainNavItems = [...publicNavBeforeProgram, programNavItem, ...publicNavAfterProgram]
+// While the website opens on the services page, the school's own Home is
+// /computer-school (site.schoolHome) — and a Services button goes back.
+const mainNavItems = computed(() =>
+  [...publicNavBeforeProgram, programNavItem, ...publicNavAfterProgram].map((item) => (item.to === '/' ? { ...item, to: site.schoolHome } : item)),
+)
 
 // This site never has a logged-in visitor to greet — login only happens on
 // the shared ERP domain (see docs/multi-tenancy.md), and every role
@@ -29,7 +34,7 @@ const mainNavItems = [...publicNavBeforeProgram, programNavItem, ...publicNavAft
     <div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
       <!-- Desktop only — on mobile/tablet this slot is a profile/login
            icon instead (see below), so the whole brand block hides there. -->
-      <RouterLink to="/" class="hidden items-center gap-2 font-bold text-secondary-700 lg:flex">
+      <RouterLink :to="site.schoolHome" class="hidden items-center gap-2 font-bold text-secondary-700 lg:flex">
         <img v-if="site.info.logo" :src="site.info.logo" alt="" class="h-9 w-9 rounded object-contain" />
         <span v-else class="flex h-9 w-9 items-center justify-center rounded-lg bg-primary-600 text-secondary-900">
           {{ site.info.name.charAt(0) }}
@@ -57,6 +62,14 @@ const mainNavItems = [...publicNavBeforeProgram, programNavItem, ...publicNavAft
       </nav>
 
       <div class="hidden items-center gap-2 lg:flex">
+        <RouterLink
+          v-if="site.servicesOn"
+          to="/"
+          class="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm font-medium text-secondary-700 hover:bg-secondary-50"
+          :title="t('servicesPage.servicesHome')"
+        >
+          <span aria-hidden="true">⌂</span>{{ t('servicesPage.servicesHome') }}
+        </RouterLink>
         <BaseButton to="/register" variant="outline" size="sm">{{ t('nav.register') }}</BaseButton>
         <BaseButton href="/login" size="sm">{{ t('nav.portalLogin') }}</BaseButton>
         <LanguageSwitcher />
@@ -65,6 +78,9 @@ const mainNavItems = [...publicNavBeforeProgram, programNavItem, ...publicNavAft
       <!-- Mobile/tablet controls — no hamburger: the bottom tab bar
            (MobileBottomNav) is the mobile site's primary navigation. -->
       <div class="flex items-center gap-1 lg:hidden">
+        <RouterLink v-if="site.servicesOn" to="/" class="rounded-lg px-2 py-1.5 text-sm font-medium text-secondary-700 hover:bg-secondary-50">
+          {{ t('servicesPage.servicesHome') }}
+        </RouterLink>
         <LanguageSwitcher />
       </div>
     </div>

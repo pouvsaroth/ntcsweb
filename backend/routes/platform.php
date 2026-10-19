@@ -20,6 +20,7 @@ use App\Platform\Http\Controllers\SupportController;
 use App\Platform\Http\Controllers\Website\WebsiteAboutController;
 use App\Platform\Http\Controllers\Website\WebsiteDownloadsController;
 use App\Platform\Http\Controllers\Website\WebsiteImagesController;
+use App\Platform\Http\Controllers\Website\WebsiteServicesController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -144,6 +145,8 @@ Route::middleware('platform.staff')->group(function () {
         Route::get('/', [WebsiteAboutController::class, 'summary'])->middleware($read)->name('summary');
         Route::get('about', [WebsiteAboutController::class, 'show'])->middleware($read)->name('about');
         Route::post('about', [WebsiteAboutController::class, 'update'])->middleware($manage)->name('about.update');
+        Route::get('services', [WebsiteServicesController::class, 'show'])->middleware($read)->name('services');
+        Route::post('services', [WebsiteServicesController::class, 'update'])->middleware($manage)->name('services.update');
 
         Route::get('download-folders', [WebsiteDownloadsController::class, 'folders'])->middleware($read)->name('download-folders.index');
         Route::post('download-folders', [WebsiteDownloadsController::class, 'storeFolder'])->middleware($manage)->name('download-folders.store');

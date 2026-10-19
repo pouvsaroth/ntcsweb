@@ -1,21 +1,27 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
 
+import { useSiteStore } from '@/stores/site'
+
 const { t } = useI18n()
+const site = useSiteStore()
 
 /**
  * Day and Time Study isn't its own tab here — it's now part of the
  * Programs page (see Programs.vue and publicNav.ts's `programNavItem`), so
  * this bar doesn't need a second, redundant path to the same content.
  */
-const items = [
-  { labelKey: 'mobileNav.home', to: '/', icon: 'home' },
+// Home is the school's own home: /computer-school while the website opens on
+// the services page (site.schoolHome).
+const items = computed(() => [
+  { labelKey: 'mobileNav.home', to: site.schoolHome, icon: 'home' },
   { labelKey: 'mobileNav.programsFee', to: '/programs', icon: 'programs' },
   { labelKey: 'mobileNav.register', to: '/register', icon: 'register' },
   { labelKey: 'mobileNav.photo', to: '/gallery', icon: 'photo' },
   { labelKey: 'mobileNav.download', to: '/downloads', icon: 'download' },
-] as const
+])
 </script>
 
 <template>

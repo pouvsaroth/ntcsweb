@@ -778,3 +778,40 @@ export const websiteApi = {
   about: () => get<WebsiteAbout>('/website/about'),
   saveAbout: (fields: Omit<WebsiteAbout, 'history_image_url'> & { history_image?: File }) => send<WebsiteAbout>('post', '/website/about', formData(fields)),
 }
+
+/** The website's "group of services" front page (Website → Services page). Text fields come in _km and _en. */
+export interface WebsiteServicesCard {
+  title_km: string
+  title_en: string
+  text_km: string
+  text_en: string
+  image_url: string | null
+}
+
+export interface WebsiteServicesSms extends WebsiteServicesCard {
+  heading_km: string
+  heading_en: string
+  description_km: string
+  description_en: string
+  /** One feature per line. */
+  features_km: string
+  features_en: string
+  sign_in_url: string
+}
+
+export interface WebsiteServices {
+  enabled: boolean
+  computer_school: WebsiteServicesCard
+  sms: WebsiteServicesSms
+}
+
+export const websiteServicesApi = {
+  get: () => get<WebsiteServices>('/website/services'),
+  save: (body: {
+    enabled: boolean
+    computer_school: Omit<WebsiteServicesCard, 'image_url'>
+    sms: Omit<WebsiteServicesSms, 'image_url'>
+    computer_school_image?: File
+    sms_image?: File
+  }) => send<WebsiteServices>('post', '/website/services', formData({ ...body, enabled: body.enabled ? 1 : 0 })),
+}

@@ -616,6 +616,18 @@ const ko: MessageSchema = {
     failedTitle: '지원 보기를 열 수 없습니다',
     close: '이 탭 닫기',
   },
+  servicesPage: {
+    title: '우리의 서비스',
+    subtitle: '찾고 계신 것을 선택하세요.',
+    computerSchool: '컴퓨터 학교',
+    sms: '학교 관리 시스템',
+    open: '열기',
+    backToServices: '서비스 목록으로 돌아가기',
+    servicesHome: '서비스',
+    signIn: '로그인',
+    contactUs: '문의하기',
+    features: '주요 기능',
+  },
   billingBanner: {
     ending: "요금제가 {date}에 종료됩니다({days}일 남음). 갱신하려면 문의해 주세요.",
     endsToday: "요금제가 오늘 종료됩니다. 갱신하려면 문의해 주세요.",

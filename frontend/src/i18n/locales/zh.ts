@@ -615,6 +615,18 @@ const zh: MessageSchema = {
     failedTitle: '无法打开支持查看',
     close: '关闭此标签页',
   },
+  servicesPage: {
+    title: '我们的服务',
+    subtitle: '请选择您要找的服务。',
+    computerSchool: '电脑学校',
+    sms: '学校管理系统',
+    open: '打开',
+    backToServices: '返回服务列表',
+    servicesHome: '服务',
+    signIn: '登录',
+    contactUs: '联系我们',
+    features: '主要功能',
+  },
   billingBanner: {
     ending: "您的套餐将于 {date} 到期（剩余 {days} 天）。请联系我们续费。",
     endsToday: "您的套餐今天到期。请联系我们续费。",

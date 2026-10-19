@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponse;
 use App\Support\Content\AboutPageContent;
 use App\Support\Content\SchoolDocumentsContent;
+use App\Support\Content\ServicesPageContent;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
 
@@ -41,6 +42,10 @@ final class SiteSettingsController extends Controller
             // the public About page falls back to static copy until then.
             'about' => AboutPageContent::isConfigured($tenant) ? AboutPageContent::forTenant($tenant) : null,
             'documents' => SchoolDocumentsContent::forTenant($tenant),
+            // The "group of services" front page (back office → Website →
+            // Services page); null while it is off, and the website opens
+            // on the school's own home page as before.
+            'services' => ServicesPageContent::publicFor($tenant),
             // Never the raw template itself (that's an account reference,
             // not public marketing content) — just whether the registration
             // wizard's payment step should offer QR as an option at all.

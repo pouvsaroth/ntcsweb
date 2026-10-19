@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRoute } from 'vue-router'
 
+import CompanyHeader from '@/components/layout/CompanyHeader.vue'
 import PublicFooter from '@/components/layout/PublicFooter.vue'
 import PublicHeader from '@/components/layout/PublicHeader.vue'
 import MobileBottomNav from '@/components/public/MobileBottomNav.vue'
@@ -9,8 +11,16 @@ import BaseButton from '@/components/ui/BaseButton.vue'
 import { useSiteStore } from '@/stores/site'
 
 const site = useSiteStore()
+const route = useRoute()
 const { t } = useI18n()
 const logoFailed = ref(false)
+
+/**
+ * The services front page and the School Management System page are the
+ * company's, not the computer school's: a plain header, without the
+ * school's menu or its bottom tab bar.
+ */
+const companyView = computed(() => route.name === 'sms' || (route.name === 'home' && site.servicesOn))
 
 onMounted(async () => {
   await site.load()
@@ -33,14 +43,15 @@ onMounted(async () => {
   </div>
 
   <div v-else class="flex min-h-screen flex-col">
-    <PublicHeader />
+    <CompanyHeader v-if="companyView" />
+    <PublicHeader v-else />
     <!-- pb-16 clears the fixed MobileBottomNav (mobile/tablet only, see
          its own lg:hidden) so the last section on a page is never hidden
          behind it. -->
-    <main class="flex-1 pb-16 lg:pb-0">
+    <main class="flex-1" :class="companyView ? '' : 'pb-16 lg:pb-0'">
       <RouterView />
     </main>
     <PublicFooter />
-    <MobileBottomNav />
+    <MobileBottomNav v-if="!companyView" />
   </div>
 </template>

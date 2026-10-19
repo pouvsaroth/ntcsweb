@@ -39,6 +39,33 @@ export interface SiteDocuments {
   student_attendance_policy_url: string | null
 }
 
+/** One card on the "group of services" front page; text comes in Khmer and English. */
+export interface ServicesCard {
+  title_km: string
+  title_en: string
+  text_km: string
+  text_en: string
+  image_url: string | null
+}
+
+export interface ServicesSms extends ServicesCard {
+  heading_km: string
+  heading_en: string
+  description_km: string
+  description_en: string
+  /** One feature per line. */
+  features_km: string
+  features_en: string
+  sign_in_url: string
+}
+
+/** The front page edited in back office → Website → Services page. */
+export interface ServicesContent {
+  enabled: boolean
+  computer_school: ServicesCard
+  sms: ServicesSms
+}
+
 export interface PublicSiteInfo {
   name: string
   /** Optional Latin-script name shown below `name` on the Login page — `name` itself is free-text and often in Khmer. */
@@ -55,6 +82,8 @@ export interface PublicSiteInfo {
   has_khqr: boolean
   /** False when the school's plan has no Website module — PublicLayout then shows a "not available" notice. */
   website_enabled: boolean
+  /** The "group of services" front page; null while it is off and `/` is the school's home page. */
+  services: ServicesContent | null
 }
 
 const FALLBACK: PublicSiteInfo = {
@@ -68,6 +97,7 @@ const FALLBACK: PublicSiteInfo = {
   documents: { school_regulation_url: null, student_attendance_policy_url: null },
   has_khqr: false,
   website_enabled: true,
+  services: null,
 }
 
 /**
@@ -151,5 +181,10 @@ export const useSiteStore = defineStore('site', () => {
     }
   }
 
-  return { info, loaded, resolved, visitStats, load, pingVisit }
+  /** The website opens on the services page; the school's own pages start at /computer-school. */
+  const servicesOn = computed(() => info.value.services !== null && info.value.services !== undefined)
+  /** Where the school's own "Home" is: /computer-school while the services page is on, else /. */
+  const schoolHome = computed(() => (servicesOn.value ? '/computer-school' : '/'))
+
+  return { info, loaded, resolved, visitStats, load, pingVisit, servicesOn, schoolHome }
 })

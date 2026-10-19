@@ -152,6 +152,65 @@ class WebsiteAdminTest extends TestCase
         $this->assertDatabaseHas('bo_audit_logs', ['action' => 'website.about.updated', 'tenant_id' => $this->newtech->id]);
     }
 
+    // ── The services front page (website "group of services") ──
+
+    public function test_the_services_page_is_off_by_default_and_the_public_feed_says_so(): void
+    {
+        $this->manager();
+
+        $this->getJson('/api/v1/platform/website/services')->assertOk()
+            ->assertJsonPath('data.enabled', false)
+            ->assertJsonPath('data.sms.sign_in_url', 'https://erp.newtechkh.com');
+
+        $this->withHeader('X-Tenant', 'newtech')->getJson('/api/v1/public/settings')->assertOk()->assertJsonPath('data.services', null);
+    }
+
+    public function test_saving_the_services_page_with_both_cards_and_pictures(): void
+    {
+        $this->manager();
+        $this->newtech->update(['settings' => ['about' => ['history_title' => 'Keep me']]]);
+
+        $this->post('/api/v1/platform/website/services', [
+            'enabled' => '1',
+            'computer_school' => ['title_km' => 'សាលាកុំព្យូទ័រ', 'title_en' => 'Computer School', 'text_en' => 'Courses for everyone.'],
+            'sms' => ['title_en' => 'School Management System', 'heading_en' => 'Run your school', 'features_en' => "Students\nInvoices", 'sign_in_url' => 'https://erp.newtechkh.com/login'],
+            'computer_school_image' => UploadedFile::fake()->image('cs.jpg'),
+            'sms_image' => UploadedFile::fake()->image('sms.jpg'),
+        ])->assertOk()
+            ->assertJsonPath('data.enabled', true)
+            ->assertJsonPath('data.computer_school.title_km', 'សាលាកុំព្យូទ័រ')
+            ->assertJsonPath('data.sms.features_en', "Students\nInvoices")
+            ->assertJsonPath('data.sms.sign_in_url', 'https://erp.newtechkh.com/login');
+
+        $saved = $this->newtech->fresh()->settings;
+        $this->assertSame('Keep me', $saved['about']['history_title']);
+        Storage::disk('public')->assertExists($saved['services']['computer_school']['image_path']);
+        Storage::disk('public')->assertExists($saved['services']['sms']['image_path']);
+        $this->assertDatabaseHas('bo_audit_logs', ['action' => 'website.services.updated', 'tenant_id' => $this->newtech->id]);
+
+        // On: the public site gets it, and only for NewTech.
+        $this->withHeader('X-Tenant', 'newtech')->getJson('/api/v1/public/settings')
+            ->assertJsonPath('data.services.computer_school.title_en', 'Computer School');
+        $this->withHeader('X-Tenant', 'other')->getJson('/api/v1/public/settings')->assertJsonPath('data.services', null);
+
+        // A new picture replaces the old file; leaving it out keeps it.
+        $old = $saved['services']['sms']['image_path'];
+        $this->post('/api/v1/platform/website/services', ['enabled' => '1', 'sms_image' => UploadedFile::fake()->image('sms2.jpg')])->assertOk();
+        Storage::disk('public')->assertMissing($old);
+        $this->assertSame($saved['services']['computer_school']['image_path'], $this->newtech->fresh()->setting('services.computer_school.image_path'));
+    }
+
+    public function test_the_services_page_validates_and_needs_manage(): void
+    {
+        $this->actingAsStaff($this->platformStaff(['platform.website.read']));
+        $this->postJson('/api/v1/platform/website/services', ['enabled' => true])->assertNotFound();
+
+        $this->manager();
+        $this->postJson('/api/v1/platform/website/services', [])->assertUnprocessable()->assertJsonValidationErrors('enabled');
+        $this->postJson('/api/v1/platform/website/services', ['enabled' => true, 'sms' => ['sign_in_url' => 'not a url']])
+            ->assertUnprocessable()->assertJsonValidationErrors('sms.sign_in_url');
+    }
+
     // ── Behaviour carried over from the school app's own tests (stage 7c) ──
 
     public function test_a_non_image_is_refused_and_an_edit_without_a_new_picture_keeps_it(): void

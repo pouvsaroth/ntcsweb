@@ -10,7 +10,7 @@ import { websiteApi, type WebsiteSchool } from '../../api'
  */
 const { t } = useI18n()
 
-const tabs = ['slides', 'about', 'gallery', 'downloads', 'promotions', 'news', 'events', 'announcements', 'documents'] as const
+const tabs = ['services', 'slides', 'about', 'gallery', 'downloads', 'promotions', 'news', 'events', 'announcements', 'documents'] as const
 
 const school = ref<WebsiteSchool | null>(null)
 const schoolError = ref<string | null>(null)

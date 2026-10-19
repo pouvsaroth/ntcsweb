@@ -616,6 +616,18 @@ const ja: MessageSchema = {
     failedTitle: 'サポート表示を開けませんでした',
     close: 'このタブを閉じる',
   },
+  servicesPage: {
+    title: '私たちのサービス',
+    subtitle: 'お探しのものを選んでください。',
+    computerSchool: 'コンピュータースクール',
+    sms: '学校管理システム',
+    open: '開く',
+    backToServices: 'サービス一覧に戻る',
+    servicesHome: 'サービス',
+    signIn: 'ログイン',
+    contactUs: 'お問い合わせ',
+    features: '主な機能',
+  },
   billingBanner: {
     ending: "プランは {date} に終了します（残り {days} 日）。更新についてはお問い合わせください。",
     endsToday: "プランは本日終了します。更新についてはお問い合わせください。",
