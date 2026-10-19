@@ -624,6 +624,7 @@ const en = {
     subtitle: 'Choose what you are looking for.',
     computerSchool: 'Computer School',
     sms: 'School Management System',
+    backOffice: 'Back office',
     clickToOpen: 'Click to open',
     open: 'Open',
     backToServices: 'Back to our services',

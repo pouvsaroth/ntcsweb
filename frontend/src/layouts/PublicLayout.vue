@@ -18,10 +18,16 @@ const logoFailed = ref(false)
 /**
  * The services front page and each card's own page are the company's, not
  * the computer school's: no title bar, no school menu, no bottom tab bar —
- * those start once a visitor opens the Computer School. Only a small
- * language button stays, in the corner.
+ * those start once a visitor opens the Computer School. Only a Back office
+ * button and the language button stay, in the corner. While the services
+ * page is on, the Downloads page is one of its cards, so it looks the same.
  */
-const companyView = computed(() => route.name === 'service-page' || (route.name === 'home' && site.servicesOn))
+const companyView = computed(
+  () => route.name === 'service-page' || (site.servicesOn && (route.name === 'home' || route.name === 'downloads')),
+)
+
+/** The platform back office (staff only), beside the language button. */
+const backOfficeUrl = (import.meta.env.VITE_BACKOFFICE_URL as string | undefined) || 'https://smis.newtechkh.com'
 
 onMounted(async () => {
   await site.load()
@@ -44,7 +50,13 @@ onMounted(async () => {
   </div>
 
   <div v-else class="relative flex min-h-screen flex-col">
-    <div v-if="companyView" class="absolute top-3 right-3 z-30 sm:top-4 sm:right-6">
+    <div v-if="companyView" class="absolute top-3 right-3 z-30 flex items-center gap-2 sm:top-4 sm:right-6">
+      <a
+        :href="backOfficeUrl"
+        class="rounded-lg border border-neutral-300 bg-white/80 px-3 py-1.5 text-xs font-semibold text-secondary-800 shadow-sm hover:bg-white"
+      >
+        {{ t('servicesPage.backOffice') }}
+      </a>
       <LanguageSwitcher />
     </div>
     <PublicHeader v-else />

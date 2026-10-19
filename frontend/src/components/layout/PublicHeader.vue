@@ -17,7 +17,10 @@ const { t } = useI18n()
 // While the website opens on the services page, the school's own Home is
 // /computer-school (site.schoolHome) — and a Services button goes back.
 const mainNavItems = computed(() =>
-  [...publicNavBeforeProgram, programNavItem, ...publicNavAfterProgram].map((item) => (item.to === '/' ? { ...item, to: site.schoolHome } : item)),
+  [...publicNavBeforeProgram, programNavItem, ...publicNavAfterProgram]
+    // Downloads is a card on the services page while that is on, not a school menu item.
+    .filter((item) => !(site.servicesOn && item.to === '/downloads'))
+    .map((item) => (item.to === '/' ? { ...item, to: site.schoolHome } : item)),
 )
 
 // This site never has a logged-in visitor to greet — login only happens on

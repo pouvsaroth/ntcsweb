@@ -53,7 +53,8 @@ async function toggle(): Promise<void> {
 
 const editing = ref<ServiceCard | null>(null)
 const modalOpen = ref(false)
-const schoolTaken = computed(() => content.value?.cards.some((c) => c.kind === 'school') ?? false)
+/** Only one card may open the Computer School, one the Downloads page. */
+const takenKinds = computed(() => (content.value?.cards ?? []).map((c) => c.kind).filter((k) => k === 'school' || k === 'downloads'))
 const nextOrder = computed(() => Math.max(-1, ...(content.value?.cards.map((c) => c.sort_order) ?? [])) + 1)
 function openAdd(): void {
   editing.value = null
@@ -81,9 +82,8 @@ async function confirmRemove(): Promise<void> {
   }
 }
 
-const title = (c: ServiceCard) => c.title_en || c.title_km || '—'
 const opens = (c: ServiceCard) =>
-  c.kind === 'school' ? '/computer-school' : c.kind === 'link' ? c.link_url : `/services/${c.slug}`
+  c.kind === 'school' ? '/computer-school' : c.kind === 'downloads' ? '/downloads' : c.kind === 'link' ? c.link_url : `/services/${c.slug}`
 </script>
 
 <template>
@@ -131,13 +131,18 @@ const opens = (c: ServiceCard) =>
           class="flex flex-col overflow-hidden rounded-[--radius-card] border border-neutral-200 bg-white shadow-[--shadow-card]"
           :class="{ 'opacity-60': card.status === 'inactive' }"
         >
-          <div class="aspect-[16/9] bg-neutral-100">
-            <img v-if="card.image_url" :src="card.image_url" alt="" class="h-full w-full object-cover" />
-            <div v-else class="flex h-full items-center justify-center text-3xl text-neutral-300" aria-hidden="true">🖼️</div>
+          <!-- A fixed height, the logo shown whole — as on the website. -->
+          <div class="flex h-24 items-center justify-center bg-neutral-50 p-2">
+            <img v-if="card.image_url" :src="card.image_url" alt="" class="h-full max-w-full object-contain" />
+            <span v-else class="text-3xl text-neutral-300" aria-hidden="true">🖼️</span>
           </div>
           <div class="flex flex-1 flex-col p-4">
             <div class="flex items-start justify-between gap-2">
-              <h3 class="min-w-0 font-semibold break-words text-neutral-900">{{ title(card) }}</h3>
+              <div class="min-w-0">
+                <h3 v-if="card.title_km" class="truncate font-semibold text-neutral-900">{{ card.title_km }}</h3>
+                <p v-if="card.title_en" class="truncate text-sm font-semibold text-neutral-700">{{ card.title_en }}</p>
+                <h3 v-if="!card.title_km && !card.title_en" class="font-semibold text-neutral-400">—</h3>
+              </div>
               <BaseBadge :variant="card.status === 'active' ? 'success' : 'neutral'">
                 {{ card.status === 'active' ? t('bo.website.shown') : t('bo.website.hidden') }}
               </BaseBadge>
@@ -154,7 +159,7 @@ const opens = (c: ServiceCard) =>
         </article>
       </div>
 
-      <ServiceCardModal v-model="modalOpen" :card="editing" :school-taken="schoolTaken" :next-order="nextOrder" @saved="load" />
+      <ServiceCardModal v-model="modalOpen" :card="editing" :taken-kinds="takenKinds" :next-order="nextOrder" @saved="load" />
 
       <BaseModal :model-value="removing !== null" :title="t('bo.website.removeTitle')" size="sm" @update:model-value="removing = null">
         <p class="text-sm text-neutral-600">{{ t('bo.website.removeText') }}</p>

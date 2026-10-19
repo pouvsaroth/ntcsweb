@@ -225,6 +225,17 @@ class WebsiteAdminTest extends TestCase
             ->assertOk()->assertJsonPath('data.link_url', '')->assertJsonPath('data.slug', 'online-shop');
     }
 
+    public function test_one_card_can_open_the_downloads_page(): void
+    {
+        $this->manager();
+
+        $id = $this->addCard(['kind' => 'downloads', 'title_en' => 'Downloads', 'slug' => 'ignored'])
+            ->assertCreated()->assertJsonPath('data.kind', 'downloads')->assertJsonPath('data.slug', '')->json('data.id');
+        $this->addCard(['kind' => 'downloads', 'title_en' => 'Again'])->assertUnprocessable()->assertJsonValidationErrors('kind');
+        // Changing that same card is fine.
+        $this->post("/api/v1/platform/website/services/cards/{$id}", ['_method' => 'PUT', 'kind' => 'downloads', 'status' => 'active', 'title_en' => 'Files'])->assertOk();
+    }
+
     public function test_the_first_version_is_read_as_two_cards(): void
     {
         $this->manager();

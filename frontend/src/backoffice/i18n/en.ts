@@ -605,7 +605,7 @@ const en = {
       addCard: 'Add card',
       editCard: 'Edit card',
       opens: 'Clicking the card opens',
-      kinds: { page: 'Its own page', school: 'Computer School pages', link: 'A web address' },
+      kinds: { page: 'Its own page', school: 'Computer School pages', downloads: 'Downloads page', link: 'A web address' },
       theCard: 'The card',
       lang: { km: 'Khmer', en: 'English' },
       cardTitle: 'Title',

@@ -15,13 +15,15 @@ const site = useSiteStore()
  */
 // Home is the school's own home: /computer-school while the website opens on
 // the services page (site.schoolHome).
-const items = computed(() => [
+const allItems = computed(() => [
   { labelKey: 'mobileNav.home', to: site.schoolHome, icon: 'home' },
   { labelKey: 'mobileNav.programsFee', to: '/programs', icon: 'programs' },
   { labelKey: 'mobileNav.register', to: '/register', icon: 'register' },
   { labelKey: 'mobileNav.photo', to: '/gallery', icon: 'photo' },
   { labelKey: 'mobileNav.download', to: '/downloads', icon: 'download' },
 ])
+// Downloads is a card on the services page while that is on.
+const items = computed(() => allItems.value.filter((item) => !(site.servicesOn && item.to === '/downloads')))
 </script>
 
 <template>
@@ -32,7 +34,7 @@ const items = computed(() => [
     class="fixed inset-x-0 bottom-0 z-40 border-t border-neutral-200 bg-white pb-[env(safe-area-inset-bottom)] lg:hidden"
     :aria-label="t('common.primaryNav')"
   >
-    <div class="grid grid-cols-5">
+    <div class="grid" :class="items.length === 5 ? 'grid-cols-5' : 'grid-cols-4'">
       <RouterLink
         v-for="item in items"
         :key="item.to"

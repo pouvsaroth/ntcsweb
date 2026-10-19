@@ -779,8 +779,8 @@ export const websiteApi = {
   saveAbout: (fields: Omit<WebsiteAbout, 'history_image_url'> & { history_image?: File }) => send<WebsiteAbout>('post', '/website/about', formData(fields)),
 }
 
-/** What a service card opens: its own page (/services/{slug}), the Computer School's pages, or a web address. */
-export type ServiceCardKind = 'page' | 'school' | 'link'
+/** What a service card opens: its own page (/services/{slug}), the Computer School's pages, a web address, or the Downloads page. */
+export type ServiceCardKind = 'page' | 'school' | 'link' | 'downloads'
 
 /** One card on the website's "group of services" front page. Text fields come in _km and _en. */
 export interface ServiceCard {

@@ -20,8 +20,8 @@ import { websiteServicesApi, type ServiceCard, type ServiceCardInput, type Servi
 const props = defineProps<{
   modelValue: boolean
   card: ServiceCard | null
-  /** Another card already opens the Computer School. */
-  schoolTaken: boolean
+  /** Kinds another card already has that only one card may have (school, downloads). */
+  takenKinds: ServiceCardKind[]
   nextOrder: number
 }>()
 const emit = defineEmits<{ 'update:modelValue': [open: boolean]; saved: [] }>()
@@ -58,8 +58,8 @@ const error = ref<ApiRequestError | null>(null)
 const fieldError = (f: string) => error.value?.fieldError(f)
 
 const kindOptions = computed(() =>
-  (['page', 'school', 'link'] as const)
-    .filter((k) => k !== 'school' || !props.schoolTaken || props.card?.kind === 'school')
+  (['page', 'school', 'downloads', 'link'] as const)
+    .filter((k) => !props.takenKinds.includes(k) || props.card?.kind === k)
     .map((k) => ({ value: k, label: t(`bo.website.services.kinds.${k}`) })),
 )
 const statusOptions = computed(() => [

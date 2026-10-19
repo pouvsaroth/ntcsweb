@@ -39,8 +39,8 @@ export interface SiteDocuments {
   student_attendance_policy_url: string | null
 }
 
-/** What a service card opens: its own page (/services/{slug}), the Computer School's pages, or a web address. */
-export type ServiceCardKind = 'page' | 'school' | 'link'
+/** What a service card opens: its own page (/services/{slug}), the Computer School's pages, a web address, or the Downloads page. */
+export type ServiceCardKind = 'page' | 'school' | 'link' | 'downloads'
 
 /** One card on the "group of services" front page; text comes in Khmer and English (_km / _en). */
 export interface ServiceCard {

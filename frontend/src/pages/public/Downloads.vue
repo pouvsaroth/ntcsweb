@@ -14,6 +14,7 @@ import {
   type DownloadFile,
   type PublicDownloadFolderDetail,
 } from '@/services/downloads'
+import { useSiteStore } from '@/stores/site'
 
 /**
  * The Download page — folders of files anyone can download, managed under
@@ -22,6 +23,7 @@ import {
  * shared; without it, the top folders are listed.
  */
 const { t } = useI18n()
+const site = useSiteStore()
 const route = useRoute()
 
 const folderId = computed(() => {
@@ -146,6 +148,10 @@ watch(folderId, () => void load(), { immediate: true })
 
 <template>
   <div>
+    <!-- Reached from the services page's Downloads card: the way back. -->
+    <div v-if="site.servicesOn" class="mx-auto max-w-7xl px-4 pt-6 sm:px-6 lg:px-8">
+      <RouterLink to="/" class="text-sm font-medium text-secondary-700 hover:underline">← {{ t('servicesPage.backToServices') }}</RouterLink>
+    </div>
 
     <SectionContainer>
       <!-- Where you are: Download › Parent › Folder -->

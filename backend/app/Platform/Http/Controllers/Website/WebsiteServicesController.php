@@ -81,9 +81,11 @@ final class WebsiteServicesController extends Controller
         $old = $id === null ? null : $this->find($stored['cards'], $id);
         $others = array_values(array_filter($stored['cards'], fn (array $c) => $id === null || (string) $c['id'] !== $id));
 
-        // One card opens the Computer School.
-        if ($data['kind'] === ServicesPageContent::KIND_SCHOOL && collect($others)->contains(fn (array $c) => ($c['kind'] ?? '') === ServicesPageContent::KIND_SCHOOL)) {
-            throw ValidationException::withMessages(['kind' => __('Another card already opens the Computer School.')]);
+        // One card opens the Computer School, one the Downloads page.
+        if (in_array($data['kind'], ServicesPageContent::SINGLE_KINDS, true) && collect($others)->contains(fn (array $c) => ($c['kind'] ?? '') === $data['kind'])) {
+            throw ValidationException::withMessages(['kind' => $data['kind'] === ServicesPageContent::KIND_SCHOOL
+                ? __('Another card already opens the Computer School.')
+                : __('Another card already opens the Downloads page.')]);
         }
 
         // An edit that does not send an order keeps the card where it was.

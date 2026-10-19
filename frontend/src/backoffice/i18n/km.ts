@@ -607,7 +607,7 @@ const km: BackofficeMessages = {
       addCard: 'បន្ថែមកាត',
       editCard: 'កែកាត',
       opens: 'ចុចកាតនឹងបើក',
-      kinds: { page: 'ទំព័រផ្ទាល់របស់វា', school: 'ទំព័រសាលាកុំព្យូទ័រ', link: 'អាសយដ្ឋានគេហទំព័រ' },
+      kinds: { page: 'ទំព័រផ្ទាល់របស់វា', school: 'ទំព័រសាលាកុំព្យូទ័រ', downloads: 'ទំព័រទាញយក', link: 'អាសយដ្ឋានគេហទំព័រ' },
       theCard: 'កាត',
       lang: { km: 'ខ្មែរ', en: 'អង់គ្លេស' },
       cardTitle: 'ចំណងជើង',
