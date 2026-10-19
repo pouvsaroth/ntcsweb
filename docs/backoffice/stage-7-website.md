@@ -172,3 +172,24 @@ website. Render-checked in headless Chrome, desktop and phone.
   product page with 5 features), desktop and phone, then switched back off.
   The `/public/news` and `/public/events` 404s on the home page are older
   (those endpoints were never built).
+
+## Services front page — cards (2026-10-19, owner's change)
+
+- The page is now a **list of cards** (more can be added later):
+  `tenants.settings->services = { enabled, cards: [...] }`. Each card: id,
+  kind, status (shown/hidden), order, title/text (`_km`/`_en`), picture, and
+  - `page` — its own page at `/services/{slug}` (heading, description,
+    features one per line, an optional button: label `_km`/`_en` + address);
+  - `school` — the Computer School's pages (`/computer-school`), one card at most;
+  - `link` — any web address, opened in a new tab.
+- The first version's `computer_school` / `sms` shape is read as two cards
+  (School Management System at `/services/school-management-system`, its
+  Sign in address as the button) and rewritten on the next save.
+- Back office: `PUT website/services/settings` (the switch, applies at
+  once), `POST website/services/cards`, `PUT` / `DELETE
+  website/services/cards/{id}`; audited `website.services.switched` /
+  `card_created` / `card_updated` / `card_deleted`. An edit without an order
+  keeps the card's place.
+- Public: smaller cards (about 60% smaller: 208 px instead of ~496 px, two
+  per row on a phone) centred in rows; `/services/:slug` (`ServicePage.vue`);
+  `/school-management-system` redirects to its new address.

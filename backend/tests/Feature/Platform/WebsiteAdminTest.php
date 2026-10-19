@@ -152,63 +152,109 @@ class WebsiteAdminTest extends TestCase
         $this->assertDatabaseHas('bo_audit_logs', ['action' => 'website.about.updated', 'tenant_id' => $this->newtech->id]);
     }
 
-    // ── The services front page (website "group of services") ──
+    // ── The services front page: a list of cards ──
 
-    public function test_the_services_page_is_off_by_default_and_the_public_feed_says_so(): void
+    private function addCard(array $fields): \Illuminate\Testing\TestResponse
+    {
+        return $this->post('/api/v1/platform/website/services/cards', ['kind' => 'page', 'status' => 'active', ...$fields], ['Accept' => 'application/json']);
+    }
+
+    public function test_the_services_page_is_off_and_empty_by_default(): void
     {
         $this->manager();
 
         $this->getJson('/api/v1/platform/website/services')->assertOk()
             ->assertJsonPath('data.enabled', false)
-            ->assertJsonPath('data.sms.sign_in_url', 'https://erp.newtechkh.com');
-
+            ->assertJsonPath('data.cards', []);
         $this->withHeader('X-Tenant', 'newtech')->getJson('/api/v1/public/settings')->assertOk()->assertJsonPath('data.services', null);
     }
 
-    public function test_saving_the_services_page_with_both_cards_and_pictures(): void
+    public function test_cards_are_added_changed_ordered_hidden_and_removed(): void
     {
         $this->manager();
-        $this->newtech->update(['settings' => ['about' => ['history_title' => 'Keep me']]]);
 
-        $this->post('/api/v1/platform/website/services', [
-            'enabled' => '1',
-            'computer_school' => ['title_km' => 'សាលាកុំព្យូទ័រ', 'title_en' => 'Computer School', 'text_en' => 'Courses for everyone.'],
-            'sms' => ['title_en' => 'School Management System', 'heading_en' => 'Run your school', 'features_en' => "Students\nInvoices", 'sign_in_url' => 'https://erp.newtechkh.com/login'],
-            'computer_school_image' => UploadedFile::fake()->image('cs.jpg'),
-            'sms_image' => UploadedFile::fake()->image('sms.jpg'),
-        ])->assertOk()
-            ->assertJsonPath('data.enabled', true)
-            ->assertJsonPath('data.computer_school.title_km', 'សាលាកុំព្យូទ័រ')
-            ->assertJsonPath('data.sms.features_en', "Students\nInvoices")
-            ->assertJsonPath('data.sms.sign_in_url', 'https://erp.newtechkh.com/login');
+        $school = $this->addCard(['kind' => 'school', 'title_en' => 'Computer School', 'title_km' => 'សាលាកុំព្យូទ័រ', 'sort_order' => 0, 'image' => UploadedFile::fake()->image('cs.jpg')])
+            ->assertCreated()->assertJsonPath('data.kind', 'school')->assertJsonPath('data.slug', '')->json('data.id');
+        $sms = $this->addCard(['title_en' => 'School Management System', 'heading_en' => 'Run your school', 'features_en' => "Students\nInvoices",
+            'button_label_en' => 'Sign in', 'button_url' => 'https://erp.newtechkh.com', 'sort_order' => 1])
+            ->assertCreated()->assertJsonPath('data.slug', 'school-management-system')->json('data.id');
+        $this->addCard(['title_en' => 'Mobile App', 'slug' => 'mobile', 'sort_order' => 2, 'status' => 'inactive'])->assertCreated()->assertJsonPath('data.slug', 'mobile');
 
-        $saved = $this->newtech->fresh()->settings;
-        $this->assertSame('Keep me', $saved['about']['history_title']);
-        Storage::disk('public')->assertExists($saved['services']['computer_school']['image_path']);
-        Storage::disk('public')->assertExists($saved['services']['sms']['image_path']);
-        $this->assertDatabaseHas('bo_audit_logs', ['action' => 'website.services.updated', 'tenant_id' => $this->newtech->id]);
+        // A second card cannot open the Computer School, nor take a page address in use.
+        $this->addCard(['kind' => 'school', 'title_en' => 'Again'])->assertUnprocessable()->assertJsonValidationErrors('kind');
+        $this->addCard(['title_en' => 'Copy', 'slug' => 'mobile'])->assertUnprocessable()->assertJsonValidationErrors('slug');
+        // A same-titled page gets its own address.
+        $this->addCard(['title_en' => 'School Management System', 'sort_order' => 3])->assertCreated()->assertJsonPath('data.slug', 'school-management-system-2');
 
-        // On: the public site gets it, and only for NewTech.
-        $this->withHeader('X-Tenant', 'newtech')->getJson('/api/v1/public/settings')
-            ->assertJsonPath('data.services.computer_school.title_en', 'Computer School');
+        $cards = $this->getJson('/api/v1/platform/website/services')->assertOk()->json('data.cards');
+        $this->assertSame(['Computer School', 'School Management System', 'Mobile App', 'School Management System'], array_column($cards, 'title_en'));
+
+        // Changing a card keeps its picture unless a new one comes; a new one replaces the file.
+        $oldPath = $this->newtech->fresh()->setting('services.cards')[0]['image_path'];
+        $this->post("/api/v1/platform/website/services/cards/{$school}", ['_method' => 'PUT', 'kind' => 'school', 'status' => 'active', 'title_en' => 'Computer School', 'text_en' => 'Courses'])
+            ->assertOk()->assertJsonPath('data.text_en', 'Courses');
+        Storage::disk('public')->assertExists($oldPath);
+        $this->post("/api/v1/platform/website/services/cards/{$school}", ['_method' => 'PUT', 'kind' => 'school', 'status' => 'active', 'image' => UploadedFile::fake()->image('new.jpg')])->assertOk();
+        Storage::disk('public')->assertMissing($oldPath);
+
+        // On: the public site gets the shown cards only, in order.
+        $this->putJson('/api/v1/platform/website/services/settings', ['enabled' => true])->assertOk()->assertJsonPath('data.enabled', true);
+        $public = $this->withHeader('X-Tenant', 'newtech')->getJson('/api/v1/public/settings')->json('data.services.cards');
+        $this->assertSame(['school', 'page', 'page'], array_column($public, 'kind'));
+        $this->assertSame('Sign in', $public[1]['button_label_en']);
         $this->withHeader('X-Tenant', 'other')->getJson('/api/v1/public/settings')->assertJsonPath('data.services', null);
 
-        // A new picture replaces the old file; leaving it out keeps it.
-        $old = $saved['services']['sms']['image_path'];
-        $this->post('/api/v1/platform/website/services', ['enabled' => '1', 'sms_image' => UploadedFile::fake()->image('sms2.jpg')])->assertOk();
-        Storage::disk('public')->assertMissing($old);
-        $this->assertSame($saved['services']['computer_school']['image_path'], $this->newtech->fresh()->setting('services.computer_school.image_path'));
+        $this->deleteJson("/api/v1/platform/website/services/cards/{$sms}")->assertNoContent();
+        $this->deleteJson('/api/v1/platform/website/services/cards/nope')->assertNotFound();
+        $this->assertCount(3, $this->getJson('/api/v1/platform/website/services')->json('data.cards'));
+        foreach (['card_created', 'card_updated', 'card_deleted', 'switched'] as $what) {
+            $this->assertDatabaseHas('bo_audit_logs', ['action' => "website.services.{$what}", 'tenant_id' => $this->newtech->id]);
+        }
     }
 
-    public function test_the_services_page_validates_and_needs_manage(): void
+    public function test_a_card_can_open_a_web_address(): void
+    {
+        $this->manager();
+
+        $this->addCard(['kind' => 'link', 'title_en' => 'Online shop'])->assertUnprocessable()->assertJsonValidationErrors('link_url');
+        $id = $this->addCard(['kind' => 'link', 'title_en' => 'Online shop', 'slug' => 'ignored', 'link_url' => 'https://shop.example.com'])
+            ->assertCreated()->assertJsonPath('data.kind', 'link')->assertJsonPath('data.link_url', 'https://shop.example.com')->assertJsonPath('data.slug', '')->json('data.id');
+
+        // Turned into its own page, the address goes and a page address comes.
+        $this->post("/api/v1/platform/website/services/cards/{$id}", ['_method' => 'PUT', 'kind' => 'page', 'status' => 'active', 'title_en' => 'Online shop', 'link_url' => 'https://shop.example.com'])
+            ->assertOk()->assertJsonPath('data.link_url', '')->assertJsonPath('data.slug', 'online-shop');
+    }
+
+    public function test_the_first_version_is_read_as_two_cards(): void
+    {
+        $this->manager();
+        $this->newtech->update(['settings' => ['services' => [
+            'enabled' => true,
+            'computer_school' => ['title_en' => 'Computer School', 'image_path' => null],
+            'sms' => ['title_en' => 'SMS', 'heading_en' => 'Run it', 'sign_in_url' => 'https://erp.newtechkh.com/login', 'image_path' => null],
+        ]]]);
+
+        $cards = $this->getJson('/api/v1/platform/website/services')->assertOk()->json('data.cards');
+        $this->assertSame(['school', 'page'], array_column($cards, 'kind'));
+        $this->assertSame('school-management-system', $cards[1]['slug']);
+        $this->assertSame('https://erp.newtechkh.com/login', $cards[1]['button_url']);
+        $this->assertSame('Sign in', $cards[1]['button_label_en']);
+
+        // The next change stores the new shape.
+        $this->putJson('/api/v1/platform/website/services/settings', ['enabled' => true])->assertOk();
+        $this->assertCount(2, $this->newtech->fresh()->setting('services.cards'));
+    }
+
+    public function test_cards_validate_and_need_manage(): void
     {
         $this->actingAsStaff($this->platformStaff(['platform.website.read']));
-        $this->postJson('/api/v1/platform/website/services', ['enabled' => true])->assertNotFound();
+        $this->addCard(['title_en' => 'X'])->assertNotFound();
+        $this->putJson('/api/v1/platform/website/services/settings', ['enabled' => true])->assertNotFound();
 
         $this->manager();
-        $this->postJson('/api/v1/platform/website/services', [])->assertUnprocessable()->assertJsonValidationErrors('enabled');
-        $this->postJson('/api/v1/platform/website/services', ['enabled' => true, 'sms' => ['sign_in_url' => 'not a url']])
-            ->assertUnprocessable()->assertJsonValidationErrors('sms.sign_in_url');
+        $this->postJson('/api/v1/platform/website/services/cards', [])->assertUnprocessable()->assertJsonValidationErrors(['kind', 'status']);
+        $this->addCard(['title_en' => 'X', 'button_url' => 'not a url'])->assertUnprocessable()->assertJsonValidationErrors('button_url');
+        $this->addCard(['title_en' => 'X', 'slug' => 'Has Spaces'])->assertUnprocessable()->assertJsonValidationErrors('slug');
     }
 
     // ── Behaviour carried over from the school app's own tests (stage 7c) ──

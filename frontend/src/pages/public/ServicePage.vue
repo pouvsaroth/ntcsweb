@@ -1,55 +1,62 @@
 <script setup lang="ts">
 import { computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { RouterLink, useRouter } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 
 import { useSiteStore } from '@/stores/site'
 import { lines, pickText } from '@/utils/bilingual'
 
 /**
- * The School Management System's product page, from the services front page
- * (back office → Website → Services page). Gone while that page is off.
+ * One service's own page, /services/{slug}, from the services front page
+ * (back office → Website → Services page): heading, description, picture,
+ * features and an optional button. Back to / when the page is off, the
+ * card is hidden, or there is no such card.
  */
 const { t, locale } = useI18n()
 const site = useSiteStore()
+const route = useRoute()
 const router = useRouter()
 
-const sms = computed(() => site.info.services?.sms ?? null)
-const heading = computed(() => (sms.value ? pickText(sms.value, 'heading', locale.value) || pickText(sms.value, 'title', locale.value) || t('servicesPage.sms') : ''))
-const description = computed(() => (sms.value ? pickText(sms.value, 'description', locale.value) || pickText(sms.value, 'text', locale.value) : ''))
-const features = computed(() => (sms.value ? lines(pickText(sms.value, 'features', locale.value)) : []))
+const card = computed(() => site.info.services?.cards.find((c) => c.kind === 'page' && c.slug === route.params.slug) ?? null)
+const heading = computed(() => (card.value ? pickText(card.value, 'heading', locale.value) || pickText(card.value, 'title', locale.value) : ''))
+const description = computed(() => (card.value ? pickText(card.value, 'description', locale.value) || pickText(card.value, 'text', locale.value) : ''))
+const features = computed(() => (card.value ? lines(pickText(card.value, 'features', locale.value)) : []))
+const buttonLabel = computed(() => (card.value ? pickText(card.value, 'button_label', locale.value) || t('servicesPage.open') : ''))
 
 onMounted(() => site.load())
-// The services page is off: there is no product page to show.
 watch(
-  () => site.loaded && !site.servicesOn,
+  () => site.loaded && card.value === null,
   (gone) => gone && void router.replace('/'),
   { immediate: true },
 )
 </script>
 
 <template>
-  <div v-if="sms">
+  <div v-if="card">
     <section class="bg-gradient-to-b from-secondary-50 to-white px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
       <div class="mx-auto grid max-w-6xl items-center gap-8 lg:grid-cols-2">
         <div>
           <RouterLink to="/" class="text-sm font-medium text-secondary-700 hover:underline">← {{ t('servicesPage.backToServices') }}</RouterLink>
-          <h1 class="mt-3 text-3xl font-bold text-neutral-900 sm:text-4xl">{{ heading }}</h1>
+          <h1 class="mt-3 text-3xl font-bold break-words text-neutral-900 sm:text-4xl">{{ heading }}</h1>
           <p v-if="description" class="mt-4 text-base whitespace-pre-line text-neutral-600">{{ description }}</p>
           <div class="mt-6 flex flex-wrap gap-3">
             <a
-              :href="sms.sign_in_url"
+              v-if="card.button_url"
+              :href="card.button_url"
               class="inline-flex items-center rounded-lg bg-primary-500 px-5 py-2.5 text-sm font-semibold text-secondary-900 shadow-sm hover:bg-primary-400"
             >
-              {{ t('servicesPage.signIn') }}
+              {{ buttonLabel }}
             </a>
-            <RouterLink to="/contact" class="inline-flex items-center rounded-lg border border-neutral-300 bg-white px-5 py-2.5 text-sm font-semibold text-neutral-800 hover:bg-neutral-50">
+            <RouterLink
+              to="/contact"
+              class="inline-flex items-center rounded-lg border border-neutral-300 bg-white px-5 py-2.5 text-sm font-semibold text-neutral-800 hover:bg-neutral-50"
+            >
               {{ t('servicesPage.contactUs') }}
             </RouterLink>
           </div>
         </div>
         <div class="overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-100 shadow-sm">
-          <img v-if="sms.image_url" :src="sms.image_url" :alt="heading" class="aspect-[16/10] w-full object-cover" />
+          <img v-if="card.image_url" :src="card.image_url" :alt="heading" class="aspect-[16/10] w-full object-cover" />
           <div v-else class="flex aspect-[16/10] items-center justify-center bg-gradient-to-br from-secondary-600 to-secondary-800 text-6xl" aria-hidden="true">🏫</div>
         </div>
       </div>

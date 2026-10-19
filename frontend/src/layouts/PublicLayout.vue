@@ -20,7 +20,7 @@ const logoFailed = ref(false)
  * company's, not the computer school's: a plain header, without the
  * school's menu or its bottom tab bar.
  */
-const companyView = computed(() => route.name === 'sms' || (route.name === 'home' && site.servicesOn))
+const companyView = computed(() => route.name === 'service-page' || (route.name === 'home' && site.servicesOn))
 
 onMounted(async () => {
   await site.load()

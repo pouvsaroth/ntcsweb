@@ -39,16 +39,22 @@ export interface SiteDocuments {
   student_attendance_policy_url: string | null
 }
 
-/** One card on the "group of services" front page; text comes in Khmer and English. */
-export interface ServicesCard {
+/** What a service card opens: its own page (/services/{slug}), the Computer School's pages, or a web address. */
+export type ServiceCardKind = 'page' | 'school' | 'link'
+
+/** One card on the "group of services" front page; text comes in Khmer and English (_km / _en). */
+export interface ServiceCard {
+  id: string
+  kind: ServiceCardKind
+  slug: string
+  link_url: string
+  status: 'active' | 'inactive'
+  sort_order: number
   title_km: string
   title_en: string
   text_km: string
   text_en: string
   image_url: string | null
-}
-
-export interface ServicesSms extends ServicesCard {
   heading_km: string
   heading_en: string
   description_km: string
@@ -56,14 +62,15 @@ export interface ServicesSms extends ServicesCard {
   /** One feature per line. */
   features_km: string
   features_en: string
-  sign_in_url: string
+  button_label_km: string
+  button_label_en: string
+  button_url: string
 }
 
-/** The front page edited in back office → Website → Services page. */
+/** The front page edited in back office → Website → Services page: its shown cards, in order. */
 export interface ServicesContent {
   enabled: boolean
-  computer_school: ServicesCard
-  sms: ServicesSms
+  cards: ServiceCard[]
 }
 
 export interface PublicSiteInfo {

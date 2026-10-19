@@ -779,16 +779,25 @@ export const websiteApi = {
   saveAbout: (fields: Omit<WebsiteAbout, 'history_image_url'> & { history_image?: File }) => send<WebsiteAbout>('post', '/website/about', formData(fields)),
 }
 
-/** The website's "group of services" front page (Website → Services page). Text fields come in _km and _en. */
-export interface WebsiteServicesCard {
+/** What a service card opens: its own page (/services/{slug}), the Computer School's pages, or a web address. */
+export type ServiceCardKind = 'page' | 'school' | 'link'
+
+/** One card on the website's "group of services" front page. Text fields come in _km and _en. */
+export interface ServiceCard {
+  id: string
+  kind: ServiceCardKind
+  /** Its own page's address, /services/{slug} — kind `page` only. */
+  slug: string
+  /** Where it goes — kind `link` only. */
+  link_url: string
+  status: WebsiteStatus
+  sort_order: number
   title_km: string
   title_en: string
   text_km: string
   text_en: string
   image_url: string | null
-}
-
-export interface WebsiteServicesSms extends WebsiteServicesCard {
+  // Its own page (kind `page`):
   heading_km: string
   heading_en: string
   description_km: string
@@ -796,22 +805,24 @@ export interface WebsiteServicesSms extends WebsiteServicesCard {
   /** One feature per line. */
   features_km: string
   features_en: string
-  sign_in_url: string
+  button_label_km: string
+  button_label_en: string
+  button_url: string
 }
 
 export interface WebsiteServices {
   enabled: boolean
-  computer_school: WebsiteServicesCard
-  sms: WebsiteServicesSms
+  cards: ServiceCard[]
 }
+
+export type ServiceCardInput = Omit<ServiceCard, 'id' | 'image_url'> & { image?: File }
 
 export const websiteServicesApi = {
   get: () => get<WebsiteServices>('/website/services'),
-  save: (body: {
-    enabled: boolean
-    computer_school: Omit<WebsiteServicesCard, 'image_url'>
-    sms: Omit<WebsiteServicesSms, 'image_url'>
-    computer_school_image?: File
-    sms_image?: File
-  }) => send<WebsiteServices>('post', '/website/services', formData({ ...body, enabled: body.enabled ? 1 : 0 })),
+  /** The switch alone; it applies at once. */
+  setEnabled: (enabled: boolean) => send<WebsiteServices>('put', '/website/services/settings', { enabled }),
+  addCard: (card: ServiceCardInput) => send<ServiceCard>('post', '/website/services/cards', formData({ ...card })),
+  /** A POST with `_method=PUT`: PHP only reads uploaded files from a POST. */
+  updateCard: (id: string, card: ServiceCardInput) => send<ServiceCard>('post', `/website/services/cards/${id}`, formData({ ...card, _method: 'PUT' })),
+  removeCard: (id: string) => send<null>('delete', `/website/services/cards/${id}`),
 }

@@ -3,10 +3,12 @@ import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 const publicRoutes: RouteRecordRaw[] = [
   // `/` is the "group of services" page while it is switched on (back office →
   // Website → Services page), else the school's home; which also lives at
-  // /computer-school. The product page is gone (→ /) while it is off.
+  // /computer-school. Each card's own page is /services/{slug} (→ / while off).
   { path: '', name: 'home', component: () => import('@/pages/public/Landing.vue') },
   { path: 'computer-school', name: 'school-home', component: () => import('@/pages/public/Home.vue') },
-  { path: 'school-management-system', name: 'sms', component: () => import('@/pages/public/SchoolManagementSystem.vue') },
+  { path: 'services/:slug', name: 'service-page', component: () => import('@/pages/public/ServicePage.vue') },
+  // Where the School Management System page first lived.
+  { path: 'school-management-system', redirect: '/services/school-management-system' },
   { path: 'about', name: 'about', component: () => import('@/pages/public/About.vue') },
   { path: 'video-lessons', name: 'video-lessons', component: () => import('@/pages/public/VideoLessons.vue') },
   { path: 'programs', name: 'programs', component: () => import('@/pages/public/Programs.vue') },

@@ -146,7 +146,10 @@ Route::middleware('platform.staff')->group(function () {
         Route::get('about', [WebsiteAboutController::class, 'show'])->middleware($read)->name('about');
         Route::post('about', [WebsiteAboutController::class, 'update'])->middleware($manage)->name('about.update');
         Route::get('services', [WebsiteServicesController::class, 'show'])->middleware($read)->name('services');
-        Route::post('services', [WebsiteServicesController::class, 'update'])->middleware($manage)->name('services.update');
+        Route::put('services/settings', [WebsiteServicesController::class, 'updateSettings'])->middleware($manage)->name('services.settings');
+        Route::post('services/cards', [WebsiteServicesController::class, 'storeCard'])->middleware($manage)->name('services.cards.store');
+        Route::put('services/cards/{id}', [WebsiteServicesController::class, 'updateCard'])->where('id', '[A-Za-z0-9-]+')->middleware($manage)->name('services.cards.update');
+        Route::delete('services/cards/{id}', [WebsiteServicesController::class, 'destroyCard'])->where('id', '[A-Za-z0-9-]+')->middleware($manage)->name('services.cards.destroy');
 
         Route::get('download-folders', [WebsiteDownloadsController::class, 'folders'])->middleware($read)->name('download-folders.index');
         Route::post('download-folders', [WebsiteDownloadsController::class, 'storeFolder'])->middleware($manage)->name('download-folders.store');
