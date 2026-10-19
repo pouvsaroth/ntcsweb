@@ -13,17 +13,12 @@ use Illuminate\Validation\Rule;
  * the frontend sends `POST` with a spoofed `_method=PUT` field (Laravel's
  * standard method-override support, already enabled by default), which
  * still lands here via the normal apiResource `update` route.
+ *
+ * Validation rules only: the back office's website controllers use them
+ * (docs/backoffice/stage-7-website.md).
  */
 class UpdateHomeSlideRequest extends FormRequest
 {
-    public function authorize(): bool
-    {
-        /** @var HomeSlide $slide */
-        $slide = $this->route('home_slide');
-
-        return $this->user()?->can('update', $slide) ?? false;
-    }
-
     public function rules(): array
     {
         return [

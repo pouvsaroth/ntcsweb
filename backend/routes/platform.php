@@ -17,6 +17,9 @@ use App\Platform\Http\Controllers\SecuritySettingsController;
 use App\Platform\Http\Controllers\StaffAuthController;
 use App\Platform\Http\Controllers\StaffController;
 use App\Platform\Http\Controllers\SupportController;
+use App\Platform\Http\Controllers\Website\WebsiteAboutController;
+use App\Platform\Http\Controllers\Website\WebsiteDownloadsController;
+use App\Platform\Http\Controllers\Website\WebsiteImagesController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -131,6 +134,35 @@ Route::middleware('platform.staff')->group(function () {
     Route::post('support/sessions/{session}/end', [SupportController::class, 'end'])->middleware('platform.can:platform.support.view')->name('support.end');
     Route::get('support/settings', [SupportController::class, 'settings'])->middleware('platform.can:platform.support.read')->name('support.settings');
     Route::patch('support/settings', [SupportController::class, 'updateSettings'])->middleware('platform.can:platform.support.view')->name('support.settings.update');
+
+    // Website: NewTech's public website (docs/backoffice/stage-7-website.md).
+    // The permission first, then step into the school (EnterWebsiteSchool).
+    Route::prefix('website')->name('website.')->group(function () {
+        $read = ['platform.can:platform.website.read', 'platform.website'];
+        $manage = ['platform.can:platform.website.manage', 'platform.website'];
+
+        Route::get('/', [WebsiteAboutController::class, 'summary'])->middleware($read)->name('summary');
+        Route::get('about', [WebsiteAboutController::class, 'show'])->middleware($read)->name('about');
+        Route::post('about', [WebsiteAboutController::class, 'update'])->middleware($manage)->name('about.update');
+
+        Route::get('download-folders', [WebsiteDownloadsController::class, 'folders'])->middleware($read)->name('download-folders.index');
+        Route::post('download-folders', [WebsiteDownloadsController::class, 'storeFolder'])->middleware($manage)->name('download-folders.store');
+        Route::patch('download-folders/{id}', [WebsiteDownloadsController::class, 'updateFolder'])->whereNumber('id')->middleware($manage)->name('download-folders.update');
+        Route::delete('download-folders/{id}', [WebsiteDownloadsController::class, 'destroyFolder'])->whereNumber('id')->middleware($manage)->name('download-folders.destroy');
+        Route::get('download-folders/{id}/files', [WebsiteDownloadsController::class, 'files'])->whereNumber('id')->middleware($read)->name('download-files.index');
+        Route::post('download-folders/{id}/files', [WebsiteDownloadsController::class, 'storeFile'])->whereNumber('id')->middleware($manage)->name('download-files.store');
+        Route::patch('download-files/{id}', [WebsiteDownloadsController::class, 'updateFile'])->whereNumber('id')->middleware($manage)->name('download-files.update');
+        Route::delete('download-files/{id}', [WebsiteDownloadsController::class, 'destroyFile'])->whereNumber('id')->middleware($manage)->name('download-files.destroy');
+
+        // Home slides, gallery, promotions: one shape each (WebsiteImagesController).
+        foreach (['slides', 'gallery', 'promotions'] as $kind) {
+            Route::get($kind, [WebsiteImagesController::class, 'index'])->defaults('kind', $kind)->middleware($read)->name("{$kind}.index");
+            Route::post($kind, [WebsiteImagesController::class, 'store'])->defaults('kind', $kind)->middleware($manage)->name("{$kind}.store");
+            Route::get("{$kind}/{id}", [WebsiteImagesController::class, 'show'])->defaults('kind', $kind)->whereNumber('id')->middleware($read)->name("{$kind}.show");
+            Route::put("{$kind}/{id}", [WebsiteImagesController::class, 'update'])->defaults('kind', $kind)->whereNumber('id')->middleware($manage)->name("{$kind}.update");
+            Route::delete("{$kind}/{id}", [WebsiteImagesController::class, 'destroy'])->defaults('kind', $kind)->whereNumber('id')->middleware($manage)->name("{$kind}.destroy");
+        }
+    });
 
     Route::get('settings/security', [SecuritySettingsController::class, 'show'])->middleware('platform.can:platform.security.manage')->name('settings.security');
     Route::put('settings/security', [SecuritySettingsController::class, 'update'])->middleware('platform.can:platform.security.manage')->name('settings.security.update');

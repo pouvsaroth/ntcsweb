@@ -18,6 +18,7 @@ export const navItems = [
   { to: '/billing', labelKey: 'bo.nav.billing', permission: 'platform.billing.read', icon: 'card' },
   { to: '/data', labelKey: 'bo.nav.data', permission: 'platform.data.read', icon: 'database' },
   { to: '/support', labelKey: 'bo.nav.support', permission: 'platform.support.read', icon: 'eye' },
+  { to: '/website', labelKey: 'bo.nav.website', permission: 'platform.website.read', icon: 'globe' },
   { to: '/staff', labelKey: 'bo.nav.staff', permission: 'platform.staff.read', icon: 'users' },
   { to: '/roles', labelKey: 'bo.nav.roles', permission: 'platform.role.read', icon: 'shield' },
   { to: '/audit', labelKey: 'bo.nav.audit', permission: 'platform.audit.read', icon: 'list' },
@@ -73,6 +74,26 @@ const routes: RouteRecordRaw[] = [
       { path: 'staff', component: () => import('./pages/StaffPage.vue'), meta: { permission: 'platform.staff.read' } },
       { path: 'roles', component: () => import('./pages/RolesPage.vue'), meta: { permission: 'platform.role.read' } },
       { path: 'audit', component: () => import('./pages/AuditPage.vue'), meta: { permission: 'platform.audit.read' } },
+      {
+        path: 'website',
+        component: () => import('./pages/website/WebsiteLayout.vue'),
+        meta: { permission: 'platform.website.read' },
+        children: [
+          { path: '', redirect: '/website/slides' },
+          ...(['slides', 'gallery', 'promotions'] as const).map((kind) => ({
+            path: kind,
+            component: () => import('./pages/website/ImagesTab.vue'),
+            props: { kind },
+          })),
+          { path: 'about', component: () => import('./pages/website/AboutTab.vue') },
+          { path: 'downloads', component: () => import('./pages/website/DownloadsTab.vue') },
+          ...(['news', 'events', 'announcements', 'documents'] as const).map((tab) => ({
+            path: tab,
+            component: () => import('./pages/website/ComingSoonTab.vue'),
+            props: { tab },
+          })),
+        ],
+      },
       {
         path: 'settings',
         component: () => import('./pages/settings/SettingsLayout.vue'),

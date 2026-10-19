@@ -36,8 +36,6 @@ use App\Models\FinancialTransaction;
 use App\Models\ApprovalGroup;
 use App\Models\FormCategory;
 use App\Models\FormTemplate;
-use App\Models\DownloadFolder;
-use App\Models\GalleryImage;
 use App\Models\Holiday;
 use App\Models\LeaveBalanceEntry;
 use App\Models\LeavePolicy;
@@ -57,7 +55,6 @@ use App\Models\StaffLoan;
 use App\Models\SalaryStructure;
 use App\Models\StaffPayComponent;
 use App\Models\StaffSalary;
-use App\Models\HomeSlide;
 use App\Models\Interview;
 use App\Models\InterviewEvaluation;
 use App\Models\Invoice;
@@ -134,9 +131,6 @@ use App\Policies\FinancialTransactionPolicy;
 use App\Policies\ApprovalGroupPolicy;
 use App\Policies\FormCategoryPolicy;
 use App\Policies\FormTemplatePolicy;
-use App\Policies\DownloadFolderPolicy;
-use App\Policies\GalleryImagePolicy;
-use App\Policies\HomeSlidePolicy;
 use App\Policies\InvoicePolicy;
 use App\Policies\LanguagePolicy;
 use App\Policies\LeaveRequestPolicy;
@@ -148,7 +142,6 @@ use App\Policies\ProductPolicy;
 use App\Policies\ProgramPolicy;
 use App\Policies\ProjectPolicy;
 use App\Policies\ProjectTaskCommentPolicy;
-use App\Policies\PromotionPolicy;
 use App\Policies\RepairShopPolicy;
 use App\Policies\MakeUpClassRequestPolicy;
 use App\Policies\ResignationRequestPolicy;
@@ -192,10 +185,6 @@ class AuthServiceProvider extends ServiceProvider
         Language::class => LanguagePolicy::class,
         LookupCategory::class => LookupCategoryPolicy::class,
         LookupValue::class => LookupValuePolicy::class,
-        HomeSlide::class => HomeSlidePolicy::class,
-        GalleryImage::class => GalleryImagePolicy::class,
-        DownloadFolder::class => DownloadFolderPolicy::class,
-        Promotion::class => PromotionPolicy::class,
         ResignationRequest::class => ResignationRequestPolicy::class,
         MakeUpClassRequest::class => MakeUpClassRequestPolicy::class,
         Program::class => ProgramPolicy::class,

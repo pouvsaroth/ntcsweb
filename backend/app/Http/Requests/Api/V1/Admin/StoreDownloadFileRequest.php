@@ -7,6 +7,7 @@ namespace App\Http\Requests\Api\V1\Admin;
 use App\Models\DownloadFolder;
 use Illuminate\Foundation\Http\FormRequest;
 
+/** Validation rules only: the back office's website controllers use them (docs/backoffice/stage-7-website.md). */
 class StoreDownloadFileRequest extends FormRequest
 {
     /**
@@ -16,10 +17,6 @@ class StoreDownloadFileRequest extends FormRequest
      */
     public const EXTENSIONS = 'jpg,jpeg,png,gif,webp,pdf,doc,docx,xls,xlsx,ppt,pptx,txt,csv,psd,ai,zip,rar,7z,mp3,mp4';
 
-    public function authorize(): bool
-    {
-        return $this->user()?->can('create', DownloadFolder::class) ?? false;
-    }
 
     public function rules(): array
     {

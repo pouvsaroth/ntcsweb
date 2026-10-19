@@ -1,9 +1,9 @@
-import { apiDelete, apiGet, apiPost, apiPut } from '@/services/http'
+import { apiGet } from '@/services/http'
 import { ApiRequestError } from '@/types/api'
 
 /**
- * The admin Upload menu (folders of files) and the public Download page that
- * shows them — see backend DownloadFolder. Two folder levels at most: a top
+ * The public Download page: folders of files (edited in the back office,
+ * docs/backoffice/stage-7-website.md) — see backend DownloadFolder. Two folder levels at most: a top
  * folder may hold sub-folders, a sub-folder may not. Both may hold files.
  */
 export type DownloadFolderStatus = 'active' | 'inactive'
@@ -18,13 +18,6 @@ export interface DownloadFolder {
   /** Top folders only, in the admin tree listing. */
   children?: DownloadFolder[]
   created_at: string
-}
-
-export interface DownloadFolderInput {
-  parent_id?: number | null
-  name: string
-  sort_order: number
-  status: DownloadFolderStatus
 }
 
 export interface DownloadFile {
@@ -50,31 +43,6 @@ export function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`
-}
-
-export const downloadsService = {
-  listFolders: () => apiGet<DownloadFolder[]>('/download-folders'),
-  createFolder: (input: DownloadFolderInput) => apiPost<DownloadFolder>('/download-folders', input),
-  updateFolder: (id: number, input: Omit<DownloadFolderInput, 'parent_id'>) => apiPut<DownloadFolder>(`/download-folders/${id}`, input),
-  /** Also removes every sub-folder and file inside. */
-  removeFolder: (id: number) => apiDelete(`/download-folders/${id}`),
-
-  listFiles: (folderId: number) => apiGet<DownloadFile[]>(`/download-folders/${folderId}/files`),
-
-  /** One file per request, so each can be up to the full 50 MB. */
-  uploadFile(folderId: number, file: File, onProgress?: (fraction: number) => void) {
-    const form = new FormData()
-    form.append('file', file)
-
-    return apiPost<DownloadFile>(`/download-folders/${folderId}/files`, form, {
-      onUploadProgress: (event) => {
-        if (onProgress && event.total) onProgress(event.loaded / event.total)
-      },
-    })
-  },
-
-  renameFile: (id: number, name: string) => apiPut<DownloadFile>(`/download-files/${id}`, { name }),
-  removeFile: (id: number) => apiDelete(`/download-files/${id}`),
 }
 
 // --- The public Download page (see PublicDownloadController) ---------------------

@@ -42,7 +42,7 @@ final class Modules
             'label_km' => 'ធនធានមនុស្ស',
             'groups' => [
                 'staff', 'staff-attendance', 'positions', 'leave-management', 'leave-requests',
-                'recruitment', 'resignation-requests', 'performance', 'promotions',
+                'recruitment', 'resignation-requests', 'performance',
                 'overtime-requests', 'manpower-requests', 'attendance-corrections',
             ],
         ],
@@ -65,8 +65,9 @@ final class Modules
             'label' => 'Website',
             'label_km' => 'គេហទំព័រ',
             'groups' => [
-                'news', 'events', 'gallery', 'home-slides', 'videos', 'announcements', 'contact-messages',
-                'downloads', 'documents',
+                // Home slides, gallery, downloads, promotions and the About page are
+                // edited in the back office now (docs/backoffice/stage-7-website.md).
+                'videos', 'contact-messages',
             ],
         ],
         'projects' => [

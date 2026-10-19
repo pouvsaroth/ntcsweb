@@ -8,13 +8,9 @@ use App\Models\HomeSlide;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
+/** Validation rules only: the back office's website controllers use them (docs/backoffice/stage-7-website.md). */
 class StoreHomeSlideRequest extends FormRequest
 {
-    public function authorize(): bool
-    {
-        return $this->user()?->can('create', HomeSlide::class) ?? false;
-    }
-
     public function rules(): array
     {
         return [

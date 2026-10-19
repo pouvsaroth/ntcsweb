@@ -11,17 +11,12 @@ use Illuminate\Validation\Rule;
 /**
  * A real file input can't be sent with a literal HTTP PUT from a browser —
  * see UpdateGalleryImageRequest for the same POST + `_method=PUT` note.
+ *
+ * Validation rules only: the back office's website controllers use them
+ * (docs/backoffice/stage-7-website.md).
  */
 class UpdatePromotionRequest extends FormRequest
 {
-    public function authorize(): bool
-    {
-        /** @var Promotion $promotion */
-        $promotion = $this->route('promotion');
-
-        return $this->user()?->can('update', $promotion) ?? false;
-    }
-
     public function rules(): array
     {
         return [

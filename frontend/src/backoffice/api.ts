@@ -666,3 +666,115 @@ export const securityApi = {
   get: () => get<SecuritySettings>('/settings/security'),
   update: (body: SecuritySettings) => send<SecuritySettings>('put', '/settings/security', body),
 }
+
+// ── Website (stage 7) — NewTech's public website ────────────────────────────
+
+export type WebsiteStatus = 'active' | 'inactive'
+export type WebsiteImageKind = 'slides' | 'gallery' | 'promotions'
+
+/** A home slide, gallery photo or promotion: a picture and a few of these fields. */
+export interface WebsiteImage {
+  id: number
+  image_url: string
+  title?: string | null
+  subtitle?: string | null
+  link_url?: string | null
+  caption?: string | null
+  sort_order: number
+  status: WebsiteStatus
+  created_at: string
+}
+
+export interface WebsiteSchool {
+  id: number
+  name: string
+  name_en: string | null
+  slug: string
+  hostname: string
+}
+
+export interface WebsiteFolder {
+  id: number
+  parent_id: number | null
+  name: string
+  sort_order: number
+  status: WebsiteStatus
+  files_count?: number
+  /** Top folders only. */
+  children?: WebsiteFolder[]
+  created_at: string
+}
+
+export interface WebsiteFile {
+  id: number
+  name: string
+  extension: string
+  mime_type: string | null
+  size: number
+  is_image: boolean
+  url: string
+  sort_order: number
+  created_at: string
+}
+
+export interface WebsiteAbout {
+  history_title: string
+  history_paragraph_1: string
+  history_paragraph_2: string
+  history_image_url: string | null
+  stats: { value: string; label: string }[]
+  pillars: { icon: string; title: string; description: string }[]
+  achievements_title: string
+  achievements: { icon: string; value: string; label: string }[]
+}
+
+/** Matches StoreDownloadFileRequest (and upload_max_filesize). */
+export const MAX_WEBSITE_FILE_BYTES = 50 * 1024 * 1024
+export const WEBSITE_FILE_ACCEPT = '.jpg,.jpeg,.png,.gif,.webp,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.psd,.ai,.zip,.rar,.7z,.mp3,.mp4'
+
+/** Text fields travel as multipart form data (pictures cannot be JSON); nested arrays as `a[0][b]`. */
+function formData(fields: Record<string, unknown>): FormData {
+  const form = new FormData()
+  const add = (key: string, value: unknown): void => {
+    if (value === undefined || value === null) return
+    if (value instanceof File) form.append(key, value)
+    else if (Array.isArray(value)) value.forEach((v, i) => add(`${key}[${i}]`, v))
+    else if (typeof value === 'object') Object.entries(value as Record<string, unknown>).forEach(([k, v]) => add(`${key}[${k}]`, v))
+    else form.append(key, String(value))
+  }
+  Object.entries(fields).forEach(([k, v]) => add(k, v))
+  return form
+}
+
+export const websiteApi = {
+  school: () => get<WebsiteSchool>('/website'),
+
+  images: (kind: WebsiteImageKind, query: ListQuery) => page<WebsiteImage>(`/website/${kind}`, query),
+  createImage: (kind: WebsiteImageKind, fields: Record<string, unknown>) => send<WebsiteImage>('post', `/website/${kind}`, formData(fields)),
+  /** A POST with `_method=PUT`: PHP only reads uploaded files from a POST. */
+  updateImage: (kind: WebsiteImageKind, id: number, fields: Record<string, unknown>) =>
+    send<WebsiteImage>('post', `/website/${kind}/${id}`, formData({ ...fields, _method: 'PUT' })),
+  removeImage: (kind: WebsiteImageKind, id: number) => send<null>('delete', `/website/${kind}/${id}`),
+
+  folders: () => get<WebsiteFolder[]>('/website/download-folders'),
+  createFolder: (body: { parent_id?: number | null; name: string; sort_order: number; status: WebsiteStatus }) =>
+    send<WebsiteFolder>('post', '/website/download-folders', body),
+  updateFolder: (id: number, body: { name: string; sort_order: number; status: WebsiteStatus }) =>
+    send<WebsiteFolder>('patch', `/website/download-folders/${id}`, body),
+  removeFolder: (id: number) => send<null>('delete', `/website/download-folders/${id}`),
+  files: (folderId: number) => get<WebsiteFile[]>(`/website/download-folders/${folderId}/files`),
+  async uploadFile(folderId: number, file: File, onProgress?: (fraction: number) => void): Promise<WebsiteFile> {
+    const body = await call<WebsiteFile>({
+      method: 'post',
+      url: `/website/download-folders/${folderId}/files`,
+      data: formData({ file }),
+      onUploadProgress: onProgress ? (e) => e.total && onProgress(Math.min(1, e.loaded / e.total)) : undefined,
+    })
+    return body.data
+  },
+  renameFile: (id: number, name: string) => send<WebsiteFile>('patch', `/website/download-files/${id}`, { name }),
+  removeFile: (id: number) => send<null>('delete', `/website/download-files/${id}`),
+
+  about: () => get<WebsiteAbout>('/website/about'),
+  saveAbout: (fields: Omit<WebsiteAbout, 'history_image_url'> & { history_image?: File }) => send<WebsiteAbout>('post', '/website/about', formData(fields)),
+}

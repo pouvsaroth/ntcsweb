@@ -230,42 +230,6 @@ final class Permissions
 
     public const BASE_DATA_MANAGE_LANGUAGES = 'base-data.manage-languages';
 
-    // Home slides — the public homepage's image slider.
-    public const HOME_SLIDES_VIEW = 'home-slides.view';
-
-    public const HOME_SLIDES_CREATE = 'home-slides.create';
-
-    public const HOME_SLIDES_UPDATE = 'home-slides.update';
-
-    public const HOME_SLIDES_DELETE = 'home-slides.delete';
-
-    // Gallery — photos on the public site's Gallery page.
-    public const GALLERY_VIEW = 'gallery.view';
-
-    public const GALLERY_CREATE = 'gallery.create';
-
-    public const GALLERY_UPDATE = 'gallery.update';
-
-    public const GALLERY_DELETE = 'gallery.delete';
-
-    // Downloads — folders of files on the public site's Download page (the admin Upload menu).
-    public const DOWNLOADS_VIEW = 'downloads.view';
-
-    public const DOWNLOADS_CREATE = 'downloads.create';
-
-    public const DOWNLOADS_UPDATE = 'downloads.update';
-
-    public const DOWNLOADS_DELETE = 'downloads.delete';
-
-    // Promotions — banner images on the public site's Promotion page.
-    public const PROMOTIONS_VIEW = 'promotions.view';
-
-    public const PROMOTIONS_CREATE = 'promotions.create';
-
-    public const PROMOTIONS_UPDATE = 'promotions.update';
-
-    public const PROMOTIONS_DELETE = 'promotions.delete';
-
     // Programs — the public marketing catalog of courses (not to be confused
     // with `classes`, an actual scheduled teaching group).
     public const PROGRAMS_VIEW = 'programs.view';
@@ -657,14 +621,6 @@ final class Permissions
     // only controls whether the sidebar link itself shows.
     public const MY_ASSETS_VIEW = 'my-assets.view';
 
-    public const NEWS_VIEW = 'news.view';
-
-    public const EVENTS_VIEW = 'events.view';
-
-    public const ANNOUNCEMENTS_VIEW = 'announcements.view';
-
-    public const DOCUMENTS_VIEW = 'documents.view';
-
     public const CONTACT_MESSAGES_VIEW = 'contact-messages.view';
 
     public const NOTIFICATIONS_VIEW = 'notifications.view';
@@ -826,30 +782,6 @@ final class Permissions
                 self::BASE_DATA_MANAGE_TRANSLATIONS => 'Manage translations (lookup values and the app\'s own words)',
                 self::BASE_DATA_MANAGE_LANGUAGES => 'Manage supported languages',
             ],
-            'Home slides' => [
-                self::HOME_SLIDES_VIEW => 'View homepage slides',
-                self::HOME_SLIDES_CREATE => 'Upload homepage slides',
-                self::HOME_SLIDES_UPDATE => 'Update homepage slides',
-                self::HOME_SLIDES_DELETE => 'Delete homepage slides',
-            ],
-            'Gallery' => [
-                self::GALLERY_VIEW => 'View gallery photos',
-                self::GALLERY_CREATE => 'Upload gallery photos',
-                self::GALLERY_UPDATE => 'Update gallery photos',
-                self::GALLERY_DELETE => 'Delete gallery photos',
-            ],
-            'Downloads' => [
-                self::DOWNLOADS_VIEW => 'View download folders and files',
-                self::DOWNLOADS_CREATE => 'Create download folders and upload files',
-                self::DOWNLOADS_UPDATE => 'Update download folders and files',
-                self::DOWNLOADS_DELETE => 'Delete download folders and files',
-            ],
-            'Promotions' => [
-                self::PROMOTIONS_VIEW => 'View promotion images',
-                self::PROMOTIONS_CREATE => 'Upload promotion images',
-                self::PROMOTIONS_UPDATE => 'Update promotion images',
-                self::PROMOTIONS_DELETE => 'Delete promotion images',
-            ],
             'Programs' => [
                 self::PROGRAMS_VIEW => 'View programs',
                 self::PROGRAMS_CREATE => 'Create programs',
@@ -989,12 +921,6 @@ final class Permissions
             'My Assets' => [
                 self::MY_ASSETS_VIEW => 'View assets assigned to you',
             ],
-            'Website Content' => [
-                self::NEWS_VIEW => 'View news',
-                self::EVENTS_VIEW => 'View events',
-                self::ANNOUNCEMENTS_VIEW => 'View announcements',
-                self::DOCUMENTS_VIEW => 'View documents',
-            ],
             'Communication' => [
                 self::CONTACT_MESSAGES_VIEW => 'View contact messages',
                 self::NOTIFICATIONS_VIEW => 'View notifications',
@@ -1080,10 +1006,6 @@ final class Permissions
             self::VIDEOS_VIEW, self::VIDEOS_CREATE, self::VIDEOS_UPDATE, self::VIDEOS_DELETE,
             self::ACADEMIC_YEARS_VIEW, self::ACADEMIC_YEARS_CREATE, self::ACADEMIC_YEARS_UPDATE, self::ACADEMIC_YEARS_DELETE,
             self::ACADEMIC_REPORTS_VIEW, self::ACADEMIC_REPORTS_EXPORT,
-            self::HOME_SLIDES_VIEW, self::HOME_SLIDES_CREATE, self::HOME_SLIDES_UPDATE, self::HOME_SLIDES_DELETE,
-            self::GALLERY_VIEW, self::GALLERY_CREATE, self::GALLERY_UPDATE, self::GALLERY_DELETE,
-            self::DOWNLOADS_VIEW, self::DOWNLOADS_CREATE, self::DOWNLOADS_UPDATE, self::DOWNLOADS_DELETE,
-            self::PROMOTIONS_VIEW, self::PROMOTIONS_CREATE, self::PROMOTIONS_UPDATE, self::PROMOTIONS_DELETE,
             self::PROGRAMS_VIEW, self::PROGRAMS_CREATE, self::PROGRAMS_UPDATE, self::PROGRAMS_DELETE,
             self::POSITIONS_VIEW, self::POSITIONS_CREATE, self::POSITIONS_UPDATE, self::POSITIONS_DELETE,
             self::ORGANIZATION_VIEW, self::ORGANIZATION_CREATE, self::ORGANIZATION_UPDATE, self::ORGANIZATION_DELETE,
@@ -1173,7 +1095,6 @@ final class Permissions
         // (see ComingSoon.vue) — school-admin only by default, same
         // reasoning as $billing/$accounting/$assets above.
         $comingSoonPlaceholders = [
-            self::NEWS_VIEW, self::EVENTS_VIEW, self::ANNOUNCEMENTS_VIEW, self::DOCUMENTS_VIEW,
             self::CONTACT_MESSAGES_VIEW, self::NOTIFICATIONS_VIEW, self::EXAMINATION_VIEW,
         ];
 

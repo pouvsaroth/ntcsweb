@@ -8,16 +8,9 @@ use App\Models\DownloadFolder;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
+/** Validation rules only: the back office's website controllers use them (docs/backoffice/stage-7-website.md). */
 class UpdateDownloadFolderRequest extends FormRequest
 {
-    public function authorize(): bool
-    {
-        /** @var DownloadFolder $folder */
-        $folder = $this->route('download_folder');
-
-        return $this->user()?->can('update', $folder) ?? false;
-    }
-
     public function rules(): array
     {
         return [

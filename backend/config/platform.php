@@ -74,6 +74,15 @@ return [
             ],
         ],
         [
+            'key' => 'platform.website',
+            'label' => 'Website',
+            'label_km' => 'គេហទំព័រ',
+            'children' => [
+                ['key' => 'platform.website.read', 'label' => 'See the website content', 'label_km' => 'មើលមាតិកាគេហទំព័រ'],
+                ['key' => 'platform.website.manage', 'label' => 'Add, change and remove website content', 'label_km' => 'បន្ថែម កែប្រែ និងលុបមាតិកាគេហទំព័រ'],
+            ],
+        ],
+        [
             'key' => 'platform.security',
             'label' => 'Security',
             'label_km' => 'សុវត្ថិភាព',
@@ -115,6 +124,12 @@ return [
 
     // The console — where every school's users sign in. Invite links point here.
     'console_url' => env('PLATFORM_CONSOLE_URL', 'https://erp.newtechkh.com'),
+
+    /*
+    | The school whose public website the back office edits (Website menu,
+    | docs/backoffice/stage-7-website.md): NewTech's own, newtechkh.com.
+    */
+    'website_school' => env('PLATFORM_WEBSITE_SCHOOL', 'newtech'),
 
     // Where a new school's data lives unless staff choose otherwise (as SmartGPS).
     'default_placement' => env('PLATFORM_DEFAULT_PLACEMENT', 'shared'),

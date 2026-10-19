@@ -8,13 +8,9 @@ use App\Models\GalleryImage;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
+/** Validation rules only: the back office's website controllers use them (docs/backoffice/stage-7-website.md). */
 class StoreGalleryImageRequest extends FormRequest
 {
-    public function authorize(): bool
-    {
-        return $this->user()?->can('create', GalleryImage::class) ?? false;
-    }
-
     public function rules(): array
     {
         return [

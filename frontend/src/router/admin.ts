@@ -42,13 +42,7 @@ const organizationUnits = () => import('@/pages/admin/OrganizationUnits.vue')
  * marks a page a student account is allowed to open (see the router guard's
  * `studentAllowed` check below).
  */
-const comingSoonPages: [string, string, boolean?][] = [
-  ['news', 'adminNav.items.news'],
-  ['events', 'adminNav.items.events'],
-  ['announcements', 'adminNav.items.announcements'],
-  ['documents', 'adminNav.items.documents'],
-  ['contact-messages', 'adminNav.items.contactMessages'],
-]
+const comingSoonPages: [string, string, boolean?][] = [['contact-messages', 'adminNav.items.contactMessages']]
 
 const adminRoutes: RouteRecordRaw[] = [
   {
@@ -78,30 +72,12 @@ const adminRoutes: RouteRecordRaw[] = [
     component: () => import('@/pages/admin/Users.vue'),
     meta: { titleKey: 'adminNav.items.users' },
   },
-  {
-    path: 'home-slides',
-    name: 'admin.home-slides',
-    component: () => import('@/pages/admin/HomeSlides.vue'),
-    meta: { titleKey: 'adminNav.items.homeSlides' },
-  },
-  {
-    path: 'gallery',
-    name: 'admin.gallery',
-    component: () => import('@/pages/admin/Gallery.vue'),
-    meta: { titleKey: 'adminNav.items.gallery' },
-  },
-  {
-    path: 'uploads',
-    name: 'admin.uploads',
-    component: () => import('@/pages/admin/Uploads.vue'),
-    meta: { titleKey: 'adminNav.items.uploads' },
-  },
-  {
-    path: 'promotions',
-    name: 'admin.promotions',
-    component: () => import('@/pages/admin/Promotions.vue'),
-    meta: { titleKey: 'adminNav.items.promotions' },
-  },
+  // The website is edited in the back office now (docs/backoffice/stage-7-website.md);
+  // an old bookmark to one of its pages lands on the dashboard.
+  ...['home-slides', 'gallery', 'uploads', 'promotions', 'about-page', 'news', 'events', 'announcements', 'documents'].map((path) => ({
+    path,
+    redirect: { name: 'admin.dashboard' },
+  })),
   {
     path: 'student-imports',
     name: 'admin.student-imports',
@@ -113,12 +89,6 @@ const adminRoutes: RouteRecordRaw[] = [
     name: 'admin.programs',
     component: () => import('@/pages/admin/Programs.vue'),
     meta: { titleKey: 'adminNav.items.programs' },
-  },
-  {
-    path: 'about-page',
-    name: 'admin.about-page',
-    component: () => import('@/pages/admin/AboutPage.vue'),
-    meta: { titleKey: 'adminNav.items.aboutPage' },
   },
   {
     path: 'students',

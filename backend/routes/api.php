@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Http\Controllers\Api\V1\Admin\AboutPageController;
 use App\Http\Controllers\Api\V1\Admin\AcademicProgramController;
 use App\Http\Controllers\Api\V1\Admin\AcademicReportController;
 use App\Http\Controllers\Api\V1\Admin\AcademicYearController;
@@ -49,12 +48,8 @@ use App\Http\Controllers\Api\V1\Admin\ExpenseController;
 use App\Http\Controllers\Api\V1\Admin\FinancialTransactionController;
 use App\Http\Controllers\Api\V1\Admin\FormCategoryController;
 use App\Http\Controllers\Api\V1\Admin\FormTemplateController;
-use App\Http\Controllers\Api\V1\Admin\DownloadFileController;
-use App\Http\Controllers\Api\V1\Admin\DownloadFolderController;
-use App\Http\Controllers\Api\V1\Admin\GalleryController as AdminGalleryController;
 use App\Http\Controllers\Api\V1\Admin\GeneralSettingsController;
 use App\Http\Controllers\Api\V1\Admin\HolidayController;
-use App\Http\Controllers\Api\V1\Admin\HomeSlideController as AdminHomeSlideController;
 use App\Http\Controllers\Api\V1\Admin\IncomeController;
 use App\Http\Controllers\Api\V1\Admin\InterviewController;
 use App\Http\Controllers\Api\V1\Admin\InterviewEvaluationController;
@@ -107,7 +102,6 @@ use App\Http\Controllers\Api\V1\Admin\ProjectTaskChecklistItemController;
 use App\Http\Controllers\Api\V1\Admin\ProjectTaskCommentController;
 use App\Http\Controllers\Api\V1\Admin\ProjectTaskController;
 use App\Http\Controllers\Api\V1\Admin\ProjectTaskDependencyController;
-use App\Http\Controllers\Api\V1\Admin\PromotionController as AdminPromotionController;
 use App\Http\Controllers\Api\V1\Admin\RepairShopController;
 use App\Http\Controllers\Api\V1\Admin\ResignationRequestController;
 use App\Http\Controllers\Api\V1\Admin\RoleController;
@@ -558,15 +552,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::post('project-tasks/{project_task}/dependencies', [ProjectTaskDependencyController::class, 'store'])->name('project-tasks.dependencies.store');
         Route::delete('project-tasks/{project_task}/dependencies/{depends_on_project_task}', [ProjectTaskDependencyController::class, 'destroy'])->name('project-tasks.dependencies.destroy');
 
-        Route::apiResource('home-slides', AdminHomeSlideController::class);
-        Route::apiResource('gallery', AdminGalleryController::class);
         // The Upload menu — folders (two levels) of files for the public Download page.
-        Route::apiResource('download-folders', DownloadFolderController::class);
-        Route::get('download-folders/{download_folder}/files', [DownloadFileController::class, 'index'])->name('download-folders.files.index');
-        Route::post('download-folders/{download_folder}/files', [DownloadFileController::class, 'store'])->name('download-folders.files.store');
-        Route::put('download-files/{download_file}', [DownloadFileController::class, 'update'])->name('download-files.update');
-        Route::delete('download-files/{download_file}', [DownloadFileController::class, 'destroy'])->name('download-files.destroy');
-        Route::apiResource('promotions', AdminPromotionController::class);
         Route::apiResource('programs', AdminProgramController::class);
 
         // Position-based automatic user roles: Staff belongs to a Position,
@@ -868,8 +854,6 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::delete('my-push-subscriptions', [MyPushSubscriptionController::class, 'destroy'])->name('my-push-subscriptions.destroy');
 
         // Singleton, not a resource — see AboutPageController.
-        Route::get('settings/about', [AboutPageController::class, 'show'])->name('settings.about.show');
-        Route::post('settings/about', [AboutPageController::class, 'update'])->name('settings.about.update');
 
         // Same shape — see GeneralSettingsController. Currently just
         // `student_id_prefix`; a later general setting adds a key here

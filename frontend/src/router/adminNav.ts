@@ -236,24 +236,8 @@ export const adminNav: AdminNavGroup[] = [
       { labelKey: 'adminNav.items.assetReports', to: '/admin/asset-reports', permission: 'assets.reports.view' },
     ],
   },
-  {
-    labelKey: 'adminNav.groups.website',
-    items: [
-      { labelKey: 'adminNav.items.homeSlides', to: '/admin/home-slides', permission: 'home-slides.view' },
-      { labelKey: 'adminNav.items.aboutPage', to: '/admin/about-page', permission: 'tenant-settings.view', module: 'website' },
-      // News/Events/Announcements/Documents are still "coming soon"
-      // placeholders (see ComingSoon.vue) — these permissions exist purely
-      // to gate sidebar visibility until real features land behind them.
-      { labelKey: 'adminNav.items.news', to: '/admin/news', permission: 'news.view' },
-      { labelKey: 'adminNav.items.events', to: '/admin/events', permission: 'events.view' },
-      { labelKey: 'adminNav.items.announcements', to: '/admin/announcements', permission: 'announcements.view' },
-      { labelKey: 'adminNav.items.gallery', to: '/admin/gallery', permission: 'gallery.view' },
-      // Folders of files for the public site's Download page.
-      { labelKey: 'adminNav.items.uploads', to: '/admin/uploads', permission: 'downloads.view' },
-      { labelKey: 'adminNav.items.promotions', to: '/admin/promotions', permission: 'promotions.view' },
-      { labelKey: 'adminNav.items.documents', to: '/admin/documents', permission: 'documents.view' },
-    ],
-  },
+  // No Website group: the public website is edited in the back office
+  // (docs/backoffice/stage-7-website.md).
   {
     labelKey: 'adminNav.groups.communication',
     items: [
