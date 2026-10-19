@@ -621,6 +621,7 @@ const ja: MessageSchema = {
     subtitle: 'お探しのものを選んでください。',
     computerSchool: 'コンピュータースクール',
     sms: '学校管理システム',
+    clickToOpen: 'クリックして開く',
     open: '開く',
     backToServices: 'サービス一覧に戻る',
     servicesHome: 'サービス',

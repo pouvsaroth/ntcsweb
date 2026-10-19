@@ -620,6 +620,7 @@ const zh: MessageSchema = {
     subtitle: '请选择您要找的服务。',
     computerSchool: '电脑学校',
     sms: '学校管理系统',
+    clickToOpen: '点击打开',
     open: '打开',
     backToServices: '返回服务列表',
     servicesHome: '服务',

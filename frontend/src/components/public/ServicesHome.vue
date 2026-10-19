@@ -40,19 +40,16 @@ const cards = computed(() =>
           v-bind="c.external ? { href: c.card.link_url, target: '_blank', rel: 'noopener' } : { to: c.to }"
           class="group flex w-[calc(50%-0.5rem)] flex-col overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:outline-none sm:w-52"
         >
-          <div class="aspect-[4/3] bg-neutral-100">
+          <div class="aspect-[8/3] bg-neutral-100">
             <img v-if="c.card.image_url" :src="c.card.image_url" :alt="c.title" class="h-full w-full object-cover" />
-            <div v-else class="flex h-full items-center justify-center bg-gradient-to-br from-secondary-600 to-secondary-800 text-3xl" aria-hidden="true">
+            <div v-else class="flex h-full items-center justify-center bg-gradient-to-br from-secondary-600 to-secondary-800 text-lg" aria-hidden="true">
               {{ c.card.kind === 'school' ? '💻' : c.external ? '🔗' : '🏫' }}
             </div>
           </div>
           <div class="flex flex-1 flex-col p-3">
             <h2 class="text-sm font-semibold break-words text-neutral-900">{{ c.title }}</h2>
             <p v-if="c.text" class="mt-1 line-clamp-3 flex-1 text-xs text-neutral-600">{{ c.text }}</p>
-            <span class="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-secondary-700 group-hover:text-secondary-900">
-              {{ t('servicesPage.open') }}
-              <span aria-hidden="true">{{ c.external ? '↗' : '→' }}</span>
-            </span>
+            <span class="mt-2 text-[11px] text-neutral-400 group-hover:text-neutral-600">{{ t('servicesPage.clickToOpen') }}</span>
           </div>
         </component>
       </div>

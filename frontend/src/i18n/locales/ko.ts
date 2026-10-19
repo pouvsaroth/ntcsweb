@@ -621,6 +621,7 @@ const ko: MessageSchema = {
     subtitle: '찾고 계신 것을 선택하세요.',
     computerSchool: '컴퓨터 학교',
     sms: '학교 관리 시스템',
+    clickToOpen: '클릭하여 열기',
     open: '열기',
     backToServices: '서비스 목록으로 돌아가기',
     servicesHome: '서비스',

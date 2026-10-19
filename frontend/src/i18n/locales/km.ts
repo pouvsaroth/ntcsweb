@@ -621,6 +621,7 @@ const km: MessageSchema = {
     subtitle: 'ជ្រើសរើសអ្វីដែលអ្នកកំពុងស្វែងរក។',
     computerSchool: 'សាលាកុំព្យូទ័រ',
     sms: 'ប្រព័ន្ធគ្រប់គ្រងសាលា',
+    clickToOpen: 'ចុចដើម្បីបើក',
     open: 'បើក',
     backToServices: 'ត្រឡប់ទៅសេវាកម្មរបស់យើង',
     servicesHome: 'សេវាកម្ម',

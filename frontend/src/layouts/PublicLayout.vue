@@ -3,11 +3,11 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 
-import CompanyHeader from '@/components/layout/CompanyHeader.vue'
 import PublicFooter from '@/components/layout/PublicFooter.vue'
 import PublicHeader from '@/components/layout/PublicHeader.vue'
 import MobileBottomNav from '@/components/public/MobileBottomNav.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
+import LanguageSwitcher from '@/components/ui/LanguageSwitcher.vue'
 import { useSiteStore } from '@/stores/site'
 
 const site = useSiteStore()
@@ -16,9 +16,10 @@ const { t } = useI18n()
 const logoFailed = ref(false)
 
 /**
- * The services front page and the School Management System page are the
- * company's, not the computer school's: a plain header, without the
- * school's menu or its bottom tab bar.
+ * The services front page and each card's own page are the company's, not
+ * the computer school's: no title bar, no school menu, no bottom tab bar —
+ * those start once a visitor opens the Computer School. Only a small
+ * language button stays, in the corner.
  */
 const companyView = computed(() => route.name === 'service-page' || (route.name === 'home' && site.servicesOn))
 
@@ -42,13 +43,15 @@ onMounted(async () => {
     <BaseButton href="/login" class="mt-6">{{ t('siteOffline.signIn') }}</BaseButton>
   </div>
 
-  <div v-else class="flex min-h-screen flex-col">
-    <CompanyHeader v-if="companyView" />
+  <div v-else class="relative flex min-h-screen flex-col">
+    <div v-if="companyView" class="absolute top-3 right-3 z-30 sm:top-4 sm:right-6">
+      <LanguageSwitcher />
+    </div>
     <PublicHeader v-else />
     <!-- pb-16 clears the fixed MobileBottomNav (mobile/tablet only, see
          its own lg:hidden) so the last section on a page is never hidden
          behind it. -->
-    <main class="flex-1" :class="companyView ? '' : 'pb-16 lg:pb-0'">
+    <main class="relative flex-1" :class="companyView ? '' : 'pb-16 lg:pb-0'">
       <RouterView />
     </main>
     <PublicFooter />
