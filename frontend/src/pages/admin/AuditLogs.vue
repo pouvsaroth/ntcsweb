@@ -26,7 +26,7 @@ const ACTIONS = [
   'CREATE', 'UPDATE', 'DELETE', 'RESTORE',
   'LOGIN', 'LOGIN_FAILED', 'LOGIN_BLOCKED', 'LOGOUT', 'FORCE_LOGOUT',
   'PASSWORD_CHANGE', 'PASSWORD_RESET_REQUESTED', 'EMAIL_VERIFIED',
-  'ROLE_CHANGE', 'STATUS_CHANGE', 'POSITION_CHANGE', 'AUDIT_LOGS_CLEARED',
+  'ROLE_CHANGE', 'STATUS_CHANGE', 'POSITION_CHANGE', 'AUDIT_LOGS_CLEARED', 'SUPPORT_VIEW',
 ] as const
 
 const MODULES = ['Auth', 'Users', 'Students', 'Staff', 'Positions', 'Roles', 'Programs', 'Enrollments', 'Audit Logs'] as const
@@ -48,6 +48,7 @@ const actionBadgeVariant: Record<string, 'success' | 'warning' | 'danger' | 'neu
   STATUS_CHANGE: 'warning',
   POSITION_CHANGE: 'warning',
   AUDIT_LOGS_CLEARED: 'danger',
+  SUPPORT_VIEW: 'warning',
 }
 
 const userOptions = ref<{ value: string; label: string }[]>([])

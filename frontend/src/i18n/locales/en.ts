@@ -610,6 +610,15 @@ const en = {
     message: "The page you're looking for doesn't exist.",
     backHome: 'Back to Home',
   },
+  supportView: {
+    bar: 'Support view by {staff} — read-only — ends {time}',
+    end: 'End',
+    entering: 'Opening the support view…',
+    endedTitle: 'Support view ended',
+    endedBody: 'This support view has ended. Open a new one from the back office if you need to look again.',
+    failedTitle: 'Could not open the support view',
+    close: 'Close this tab',
+  },
   billingBanner: {
     ending: "Your plan ends on {date} ({days} days left). Contact us to renew.",
     endsToday: "Your plan ends today. Contact us to renew.",

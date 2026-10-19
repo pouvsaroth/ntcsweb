@@ -22,6 +22,16 @@ export const http: AxiosInstance = axios.create({
   },
 })
 
+// A back office support view that ended (time up, or staff pressed End):
+// the server has already signed this browser out. Say so plainly instead of
+// leaving the page half-broken.
+http.interceptors.response.use(undefined, (error: unknown) => {
+  if (isAxiosError<ApiError>(error) && error.response?.status === 401 && error.response.data?.error?.code === 'SUPPORT_VIEW_ENDED') {
+    window.location.assign('/support-view?ended=1')
+  }
+  return Promise.reject(error)
+})
+
 export interface ActingTenant {
   id: number
   slug: string

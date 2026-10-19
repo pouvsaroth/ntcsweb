@@ -1,7 +1,7 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 
-import { authService, loginRequiresTenantSelection, type BillingNotice, type LoginPayload, type LoginResult, type MeResult } from '@/services/auth'
+import { authService, loginRequiresTenantSelection, type BillingNotice, type LoginPayload, type LoginResult, type MeResult, type SupportView } from '@/services/auth'
 import { type ActingTenant, getActingTenant, resetDevTenant, setActingTenant, setDevTenant } from '@/services/http'
 import { detachPushOnLogout } from '@/services/pushNotifications'
 import type { User } from '@/types/models'
@@ -24,6 +24,8 @@ export const useAuthStore = defineStore('auth', () => {
   const tenantHostname = ref<string | null>(null)
   /** A Super Admin deliberately browsing one school's admin data — see setActingTenant. Restored from sessionStorage so a page refresh doesn't drop it. */
   const actingTenant = ref<ActingTenant | null>(getActingTenant())
+  /** Set while NewTech staff look at the school as this user (read-only) — see SupportViewBar.vue. */
+  const supportView = ref<SupportView | null>(null)
 
   /** True once the initial /auth/me check has resolved, either way. Lets the
    *  router/App shell distinguish "still checking" from "confirmed logged out". */
@@ -62,6 +64,7 @@ export const useAuthStore = defineStore('auth', () => {
     tenantModules.value = result.tenant?.modules ?? null
     billingNotice.value = result.tenant?.billing_notice ?? null
     tenantHostname.value = result.tenant?.hostname ?? null
+    supportView.value = result.support_view
 
     // Dev only (see setDevTenant), and skipped entirely while actingTenant is
     // set — that's a deliberate choice (see enterTenant) this correction must
@@ -86,6 +89,7 @@ export const useAuthStore = defineStore('auth', () => {
     tenantModules.value = null
     billingNotice.value = null
     tenantHostname.value = null
+    supportView.value = null
   }
 
   /** Called once, at app start (see main.ts), to restore an existing session. */
@@ -166,7 +170,8 @@ export const useAuthStore = defineStore('auth', () => {
   async function logout(): Promise<void> {
     try {
       // Before the session ends — the unlink call needs to still be signed in.
-      await detachPushOnLogout()
+      // Not in a support view: this browser is staff's, not the user's.
+      if (!supportView.value) await detachPushOnLogout()
       await authService.logout()
     } finally {
       clearSession()
@@ -215,6 +220,7 @@ export const useAuthStore = defineStore('auth', () => {
     hasModule,
     tenantHostname,
     actingTenant,
+    supportView,
     initialized,
     isAuthenticated,
     can,

@@ -17,6 +17,7 @@ use App\Platform\Services\SchoolOwners;
 use App\Platform\Services\SchoolStatus;
 use App\Platform\Services\SeparateServerProbe;
 use App\Platform\Support\PlatformAudit;
+use App\Platform\Support\SchoolHealth;
 use App\Support\Query\ApiQuery;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -40,6 +41,7 @@ final class SchoolController extends Controller
         private readonly PlatformAudit $audit,
         private readonly SeparateServerProbe $probe,
         private readonly Subscriptions $subscriptions,
+        private readonly SchoolHealth $health,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -57,6 +59,12 @@ final class SchoolController extends Controller
         $this->attachSchools($tenants->getCollection());
         $billing = $this->subscriptions->summaries($tenants->getCollection()->modelKeys());
         $tenants->getCollection()->each(fn (Tenant $t) => $t->setRelation('billingSummary', $billing[$t->getKey()] ?? null));
+
+        // The health dot (stage 6a): central tables only, for staff who may see health.
+        if ($request->user('staff')->hasPermission('platform.support.read')) {
+            $dots = $this->health->dots($tenants->getCollection(), $billing);
+            $tenants->getCollection()->each(fn (Tenant $t) => $t->setRelation('healthDot', $dots[$t->getKey()] ?? null));
+        }
 
         return ApiResponse::success(SchoolResource::collection($tenants));
     }

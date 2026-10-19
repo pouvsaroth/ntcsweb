@@ -15,6 +15,7 @@ use App\Platform\Http\Controllers\SchoolMoveController;
 use App\Platform\Http\Controllers\SchoolOwnerController;
 use App\Platform\Http\Controllers\StaffAuthController;
 use App\Platform\Http\Controllers\StaffController;
+use App\Platform\Http\Controllers\SupportController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -120,6 +121,15 @@ Route::middleware('platform.staff')->group(function () {
     Route::get('schools/{school}/billing/payment-quote', [PaymentController::class, 'quote'])->middleware('platform.can:platform.billing.read')->name('schools.billing.payment-quote');
     Route::post('schools/{school}/billing/payments', [PaymentController::class, 'store'])->middleware('platform.can:platform.billing.manage')->name('schools.billing.payments.store');
     Route::post('schools/{school}/billing/cancel', [SchoolBillingController::class, 'cancel'])->middleware('platform.can:platform.billing.manage')->name('schools.billing.cancel');
+
+    Route::get('schools/{school}/health', [SupportController::class, 'health'])->middleware('platform.can:platform.support.read')->name('schools.health');
+    Route::get('schools/{school}/support/users', [SupportController::class, 'users'])->middleware('platform.can:platform.support.view')->name('schools.support.users');
+    Route::post('schools/{school}/support/sessions', [SupportController::class, 'store'])->middleware('platform.can:platform.support.view')->name('schools.support.store');
+    Route::get('support/sessions', [SupportController::class, 'index'])->middleware('platform.can:platform.support.read')->name('support.index');
+    Route::get('support/sessions/{session}', [SupportController::class, 'show'])->middleware('platform.can:platform.support.read')->name('support.show');
+    Route::post('support/sessions/{session}/end', [SupportController::class, 'end'])->middleware('platform.can:platform.support.view')->name('support.end');
+    Route::get('support/settings', [SupportController::class, 'settings'])->middleware('platform.can:platform.support.read')->name('support.settings');
+    Route::patch('support/settings', [SupportController::class, 'updateSettings'])->middleware('platform.can:platform.support.view')->name('support.settings.update');
 
     Route::get('audit-logs', [AuditLogController::class, 'index'])->middleware('platform.can:platform.audit.read')->name('audit-logs.index');
 });

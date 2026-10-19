@@ -14,11 +14,13 @@ import { schoolsApi, type School } from '../api'
 import ReasonModal from '../components/ReasonModal.vue'
 import SchoolBillingPanel from '../components/SchoolBillingPanel.vue'
 import SchoolDomainsPanel from '../components/SchoolDomainsPanel.vue'
+import SchoolHealthPanel from '../components/SchoolHealthPanel.vue'
 import SchoolOwnerPanel from '../components/SchoolOwnerPanel.vue'
 import SchoolPlacementPanel from '../components/SchoolPlacementPanel.vue'
 import SchoolProfileForm from '../components/SchoolProfileForm.vue'
 import SchoolSetupPanel from '../components/SchoolSetupPanel.vue'
 import SchoolStatusBadge from '../components/SchoolStatusBadge.vue'
+import SchoolSupportPanel from '../components/SchoolSupportPanel.vue'
 import { useSession } from '../session'
 
 /** One school: setup progress, profile, owner, status, domains, history. Polls while setting up. */
@@ -142,6 +144,8 @@ async function reactivate(): Promise<void> {
         </div>
 
         <div class="space-y-6">
+          <SchoolHealthPanel v-if="session.can('platform.support.read') && school.status !== 'provisioning'" :key="school.status" :school="school" />
+          <SchoolSupportPanel v-if="session.can('platform.support.read') && school.status !== 'provisioning'" :key="`support-${school.status}`" :school="school" />
           <SchoolBillingPanel
             v-if="session.can('platform.billing.read') && school.status !== 'provisioning'"
             :school="school"

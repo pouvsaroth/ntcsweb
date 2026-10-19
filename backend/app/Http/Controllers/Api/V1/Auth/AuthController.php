@@ -11,6 +11,7 @@ use App\Http\Requests\Api\V1\Auth\UpdateProfileRequest;
 use App\Http\Resources\UserResource;
 use App\Http\Responses\ApiResponse;
 use App\Models\User;
+use App\Platform\Support\SupportViewSession;
 use App\Services\Academic\StudentAccessService;
 use App\Services\Auth\AuthService;
 use App\Services\Billing\CurrencyConversionService;
@@ -51,6 +52,7 @@ final class AuthController extends Controller
         private readonly AuditLogger $audit,
         private readonly StudentAccessService $studentAccess,
         private readonly DatabaseManager $tenantDatabases,
+        private readonly SupportViewSession $supportViews,
     ) {}
 
     public function login(LoginRequest $request): JsonResponse
@@ -247,6 +249,8 @@ final class AuthController extends Controller
             meta: [
                 'permissions' => $user->isSuperAdmin() ? ['*'] : $user->permissionSlugs(),
                 'is_super_admin' => $user->isSuperAdmin(),
+                // A back office support view (read-only): who opened it and when it ends, for the red bar.
+                'support_view' => ($view = $this->supportViews->current($request)) !== null ? SupportViewSession::present($view) : null,
                 'tenant' => $tenant !== null
                     ? [
                         'id' => $tenant->id,

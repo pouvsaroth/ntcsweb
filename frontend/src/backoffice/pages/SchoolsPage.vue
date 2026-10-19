@@ -14,7 +14,7 @@ import DataTable from '@/components/ui/DataTable.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { formatDate } from '@/utils/date'
 
-import { schoolsApi, type BillingFlag, type School } from '../api'
+import { schoolsApi, type BillingFlag, type HealthDot, type School } from '../api'
 import { endLabel, flagVariant } from '../billing'
 import SchoolCreateModal from '../components/SchoolCreateModal.vue'
 import SchoolStatusBadge from '../components/SchoolStatusBadge.vue'
@@ -47,6 +47,13 @@ const columns = computed(() => [
   { key: 'owner', label: t('bo.schools.owner') },
   { key: 'created_at', label: t('bo.schools.created'), sortable: true },
 ])
+
+// The health dot (stage 6a): green, amber, red; the title says which lines need a look.
+const dotClass: Record<HealthDot['state'], string> = { ok: 'bg-green-500', warn: 'bg-amber-500', bad: 'bg-red-500' }
+function dotTitle(health: HealthDot): string {
+  const state = t(`bo.health.states.${health.state}`)
+  return health.reasons.length ? `${state}: ${health.reasons.map((r) => t(`bo.health.lines.${r}`)).join(', ')}` : state
+}
 
 const createOpen = ref(false)
 const open = (school: School) => router.push(`/schools/${school.id}`)
@@ -87,7 +94,10 @@ onMounted(() => fetch())
         >
           <div class="flex items-start justify-between gap-2">
             <div class="min-w-0">
-              <p class="truncate font-medium text-neutral-900">{{ row.name }}</p>
+              <p class="flex items-center gap-2 font-medium text-neutral-900">
+                <span v-if="row.health" class="h-2.5 w-2.5 shrink-0 rounded-full" :class="dotClass[row.health.state]" :title="dotTitle(row.health)" />
+                <span class="truncate">{{ row.name }}</span>
+              </p>
               <p v-if="row.name_en" class="truncate text-sm text-neutral-500">{{ row.name_en }}</p>
             </div>
             <SchoolStatusBadge :status="row.status" />
@@ -115,7 +125,10 @@ onMounted(() => fetch())
         @sort="(col) => setSort(sort === col ? `-${col}` : col)"
       >
         <template #cell-name="{ row }">
-          <RouterLink :to="`/schools/${row.id}`" class="font-medium text-secondary-700 hover:underline">{{ row.name }}</RouterLink>
+          <span class="flex items-center gap-2">
+            <span v-if="row.health" class="h-2.5 w-2.5 shrink-0 rounded-full" :class="dotClass[row.health.state as HealthDot['state']]" :title="dotTitle(row.health as HealthDot)" />
+            <RouterLink :to="`/schools/${row.id}`" class="font-medium text-secondary-700 hover:underline">{{ row.name }}</RouterLink>
+          </span>
           <p v-if="row.name_en" class="text-xs text-neutral-500">{{ row.name_en }}</p>
         </template>
         <template #cell-slug="{ row }"><span class="font-mono text-xs">{{ row.slug }}</span></template>

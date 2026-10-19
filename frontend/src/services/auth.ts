@@ -41,10 +41,20 @@ export function loginRequiresTenantSelection(
   return 'requires_tenant_selection' in result
 }
 
+/** A read-only support view opened from the back office (backend SupportViewSession). */
+export interface SupportView {
+  id: number
+  /** The NewTech staff member who opened it. */
+  staff: string | null
+  expires_at: string
+}
+
 export interface MeResult {
   user: User
   permissions: string[] | ['*']
   is_super_admin: boolean
+  /** Set while this browser is in a back office support view; null otherwise. */
+  support_view: SupportView | null
   tenant: {
     id: number
     name: string
@@ -102,6 +112,11 @@ export const authService = {
     return withCsrf(() => apiPost<void>('/auth/logout'))
   },
 
+  /** Exchanges the back office's one-time support ticket for a read-only session as the school user. */
+  enterSupportView(ticket: string) {
+    return withCsrf(() => apiPost<{ support_view: SupportView }>('/auth/support-view', { ticket }))
+  },
+
   /** Returns null on 401 rather than throwing — "am I logged in?" is a query, not an error. */
   async me(): Promise<MeResult | null> {
     try {
@@ -110,6 +125,7 @@ export const authService = {
         user: result.data,
         permissions: (result.meta?.permissions as string[] | ['*'] | undefined) ?? [],
         is_super_admin: Boolean(result.meta?.is_super_admin),
+        support_view: (result.meta?.support_view as SupportView | null | undefined) ?? null,
         tenant: (result.meta?.tenant as MeResult['tenant']) ?? null,
       }
     } catch {

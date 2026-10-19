@@ -22,6 +22,9 @@ const authRoutes: RouteRecordRaw[] = [
     component: () => import('@/pages/auth/ForgotPassword.vue'),
     meta: { guestOnly: true },
   },
+  // A back office support view's landing page (and where an ended view goes).
+  // Neither guestOnly nor requiresAuth: it works whoever is signed in.
+  { path: 'support-view', name: 'support-view', component: () => import('@/pages/auth/SupportViewEnter.vue') },
   {
     path: 'reset-password',
     name: 'reset-password',

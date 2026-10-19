@@ -69,6 +69,8 @@ class SchoolResource extends JsonResource
             'created_at' => $this->created_at?->toIso8601String(),
             // Plan, end date and flag (stage 5) — set by SchoolController.
             'billing' => $this->resource->relationLoaded('billingSummary') ? $this->resource->getRelation('billingSummary') : null,
+            // The Schools list health dot (stage 6a) — only for staff who may see health.
+            'health' => $this->resource->relationLoaded('healthDot') ? $this->resource->getRelation('healthDot') : null,
             'domains' => $this->whenLoaded('domains', fn () => $this->domains->map(fn ($domain) => [
                 'id' => $domain->id,
                 'hostname' => $domain->hostname,

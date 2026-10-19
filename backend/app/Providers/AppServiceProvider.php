@@ -32,6 +32,29 @@ class AppServiceProvider extends ServiceProvider
         $this->configureDatabaseGuards();
         $this->configureRateLimiting();
         $this->configureTenantMigrationsForTesting();
+        $this->configureQueuePayload();
+    }
+
+    /**
+     * Tag every queued job with its school (`ntcs_tenant_id`), so the back
+     * office can count a school's failed jobs (docs/backoffice/stage-6-support.md).
+     * A job that names its school (a `tenantId` property) wins; otherwise the
+     * school of the request or job that queued it.
+     */
+    private function configureQueuePayload(): void
+    {
+        \Illuminate\Support\Facades\Queue::createPayloadUsing(function ($connection, $queue, array $payload): array {
+            // The job object itself (it is serialized after the hooks run).
+            $command = $payload['data']['command'] ?? null;
+            if (is_object($command) && property_exists($command, 'tenantId')) {
+                $id = (new \ReflectionProperty($command, 'tenantId'))->getValue($command);
+                if (is_int($id)) {
+                    return ['ntcs_tenant_id' => $id];
+                }
+            }
+
+            return ['ntcs_tenant_id' => app(TenantContext::class)->id()];
+        });
     }
 
     private function configureModels(): void

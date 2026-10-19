@@ -4,6 +4,7 @@ use App\Exceptions\Tenancy\TenantMismatchException;
 use App\Exceptions\Tenancy\TenantNotResolvedException;
 use App\Http\Middleware\EnsureTenantMatchesUser;
 use App\Http\Middleware\EnsureUserIsActive;
+use App\Http\Middleware\GuardSupportView;
 use App\Http\Middleware\RequireTenant;
 use App\Http\Middleware\ResolveTenant;
 use App\Http\Responses\ApiResponse;
@@ -54,6 +55,8 @@ return Application::configure(basePath: dirname(__DIR__))
             ResolveTenant::class,
             // ...and no authenticated user may act outside their own school.
             EnsureTenantMatchesUser::class,
+            // A back office support view is read-only, logged and short.
+            GuardSupportView::class,
         ]);
 
         // Laravel's default middlewarePriority list runs SubstituteBindings
@@ -72,6 +75,12 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->appendToPriorityList(
             after: \Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests::class,
             append: ResolveTenant::class,
+        );
+        // Same reason: a support view's write is refused (and logged) before
+        // any route-model binding looks the record up.
+        $middleware->appendToPriorityList(
+            after: ResolveTenant::class,
+            append: GuardSupportView::class,
         );
 
         $middleware->alias([

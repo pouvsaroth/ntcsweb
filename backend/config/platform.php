@@ -65,6 +65,15 @@ return [
             ],
         ],
         [
+            'key' => 'platform.support',
+            'label' => 'Support',
+            'label_km' => 'ជំនួយ',
+            'children' => [
+                ['key' => 'platform.support.read', 'label' => 'See school health and support views', 'label_km' => 'មើលសុខភាពសាលា និងការមើលជំនួយ'],
+                ['key' => 'platform.support.view', 'label' => 'Open and end support views of a school', 'label_km' => 'បើក និងបញ្ចប់ការមើលជំនួយរបស់សាលា'],
+            ],
+        ],
+        [
             'key' => 'platform.audit',
             'label' => 'Audit',
             'label_km' => 'សវនកម្ម',

@@ -607,6 +607,15 @@ const ko: MessageSchema = {
     message: '찾으시는 페이지가 존재하지 않습니다.',
     backHome: '홈으로 돌아가기',
   },
+  supportView: {
+    bar: '{staff}의 지원 보기 — 읽기 전용 — {time}에 종료',
+    end: '종료',
+    entering: '지원 보기를 여는 중…',
+    endedTitle: '지원 보기가 종료되었습니다',
+    endedBody: '이 지원 보기는 종료되었습니다. 다시 확인하려면 백오피스에서 새로 여세요.',
+    failedTitle: '지원 보기를 열 수 없습니다',
+    close: '이 탭 닫기',
+  },
   billingBanner: {
     ending: "요금제가 {date}에 종료됩니다({days}일 남음). 갱신하려면 문의해 주세요.",
     endsToday: "요금제가 오늘 종료됩니다. 갱신하려면 문의해 주세요.",

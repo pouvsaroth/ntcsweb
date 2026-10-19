@@ -607,6 +607,15 @@ const ja: MessageSchema = {
     message: 'お探しのページは存在しません。',
     backHome: 'ホームに戻る',
   },
+  supportView: {
+    bar: '{staff} によるサポート表示 — 閲覧のみ — {time} に終了',
+    end: '終了',
+    entering: 'サポート表示を開いています…',
+    endedTitle: 'サポート表示は終了しました',
+    endedBody: 'このサポート表示は終了しました。もう一度確認する場合は、バックオフィスから新しく開いてください。',
+    failedTitle: 'サポート表示を開けませんでした',
+    close: 'このタブを閉じる',
+  },
   billingBanner: {
     ending: "プランは {date} に終了します（残り {days} 日）。更新についてはお問い合わせください。",
     endsToday: "プランは本日終了します。更新についてはお問い合わせください。",

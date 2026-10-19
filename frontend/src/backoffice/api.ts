@@ -220,7 +220,66 @@ export interface School {
   provisioning_log?: ProvisioningStep[]
   status_history?: { from: string | null; to: string; reason: string | null; staff: string | null; at: string | null }[]
   billing?: BillingSummary | null
+  /** The Schools list dot (stage 6a); only for staff with platform.support.read. */
+  health?: HealthDot | null
   [key: string]: unknown
+}
+
+// ── Health (stage 6a) ───────────────────────────────────────────────────────
+
+export type HealthState = 'ok' | 'warn' | 'bad' | 'off'
+export type HealthKey = 'status' | 'database' | 'backup' | 'plan' | 'students' | 'users' | 'sign_in' | 'failed_jobs'
+
+export interface HealthDot {
+  state: Exclude<HealthState, 'off'>
+  /** The lines that are warn or bad. */
+  reasons: HealthKey[]
+}
+
+/** One health line; which fields are set depends on the key. */
+export interface HealthLine {
+  key: HealthKey
+  state: HealthState
+  // status
+  status?: string
+  since?: string | null
+  reason?: string | null
+  by?: string | null
+  // database
+  mode?: PlacementMode
+  database?: string | null
+  server?: string | null
+  exists?: boolean | null
+  size_bytes?: number | null
+  pending_migrations?: number | null
+  error?: string | null
+  // backup, sign_in
+  at?: string | null
+  copied?: boolean
+  copy_error?: string | null
+  schedule_enabled?: boolean
+  // plan
+  flag?: BillingFlag
+  subscription?: Subscription | null
+  // students, users
+  active?: number | null
+  limit?: number | null
+  unavailable?: boolean
+  total?: number
+  active_days?: number
+  // sign_in
+  name?: string | null
+  quiet_days?: number
+  // failed_jobs
+  count?: number
+  days?: number
+  latest?: { message: string; at: string } | null
+}
+
+export interface SchoolHealthReport {
+  state: Exclude<HealthState, 'off'>
+  checked_at: string
+  lines: HealthLine[]
 }
 
 export type PlacementMode = 'shared' | 'dedicated' | 'separate'
@@ -283,6 +342,7 @@ export type SchoolProfile = Partial<Pick<School, 'name' | 'name_en' | 'email' | 
 export const schoolsApi = {
   list: (query: ListQuery) => page<School>('/schools', query),
   show: (id: number) => get<School>(`/schools/${id}`),
+  health: (id: number) => get<SchoolHealthReport>(`/schools/${id}/health`),
   create: (body: NewSchool) => send<School>('post', '/schools', body),
   update: (id: number, body: SchoolProfile) => send<School>('patch', `/schools/${id}`, body),
   retry: (id: number) => send<School>('post', `/schools/${id}/retry`),
@@ -548,4 +608,47 @@ export function formatBytes(bytes: number | null | undefined): string {
     unit++
   }
   return `${value.toFixed(unit === 0 ? 0 : 1)} ${units[unit]}`
+}
+
+// ── Support views (stage 6b) ────────────────────────────────────────────────
+
+export type SupportViewState = 'open' | 'ended' | 'timed_out'
+
+export interface SupportView {
+  id: number
+  state: SupportViewState
+  school: { id: number; name: string; slug: string } | null
+  staff: { id: number; name: string } | null
+  user: { id: number; name: string; email: string | null } | null
+  reason: string
+  started_at: string
+  expires_at: string
+  ended_at: string | null
+  ended_by: 'staff' | 'timeout' | 'sign_out' | null
+  ended_by_staff: string | null
+  /** The console exchanged the ticket. */
+  entered: boolean
+  ip: string | null
+  events_count: number
+  /** Only on the detail call. */
+  events: { method: string; path: string; status: number | null; at: string }[] | null
+}
+
+export interface SupportUser {
+  id: number
+  name: string
+  email: string | null
+  phone: string | null
+  is_owner: boolean
+}
+
+export const supportApi = {
+  list: (query: ListQuery) => page<SupportView>('/support/sessions', query),
+  show: (id: number) => get<SupportView>(`/support/sessions/${id}`),
+  users: (schoolId: number, search?: string) => get<SupportUser[]>(`/schools/${schoolId}/support/users`, search ? { search } : undefined),
+  /** Returns the console address with the one-time ticket; it works once, within 60 seconds. */
+  open: (schoolId: number, body: { user_id: number; reason: string }) => send<SupportView & { url: string }>('post', `/schools/${schoolId}/support/sessions`, body),
+  end: (id: number) => send<SupportView>('post', `/support/sessions/${id}/end`),
+  settings: () => get<{ duration_minutes: number }>('/support/settings'),
+  updateSettings: (body: { duration_minutes: number }) => send<{ duration_minutes: number }>('patch', '/support/settings', body),
 }

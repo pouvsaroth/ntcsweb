@@ -128,6 +128,7 @@ use App\Http\Controllers\Api\V1\Admin\UserController;
 use App\Http\Controllers\Api\V1\Admin\VideoController;
 use App\Http\Controllers\Api\V1\Admin\WorkScheduleController;
 use App\Http\Controllers\Api\V1\Auth\AuthController;
+use App\Http\Controllers\Api\V1\Auth\SupportViewController;
 use App\Http\Controllers\Api\V1\Auth\EmailVerificationController;
 use App\Http\Controllers\Api\V1\Auth\PasswordController;
 use App\Http\Controllers\Api\V1\GeographyController;
@@ -219,6 +220,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::middleware('throttle:auth')->group(function () {
             Route::post('login', [AuthController::class, 'login'])->name('login');
             Route::post('login/select-tenant', [AuthController::class, 'selectTenant'])->name('login.select-tenant');
+            // A back office support view's one-time ticket (docs/backoffice/stage-6-support.md).
+            Route::post('support-view', [SupportViewController::class, 'enter'])->name('support-view');
             Route::post('forgot-password', [PasswordController::class, 'forgot'])->name('forgot-password');
             Route::post('reset-password', [PasswordController::class, 'reset'])->name('reset-password');
         });

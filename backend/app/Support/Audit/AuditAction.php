@@ -174,4 +174,8 @@ final class AuditAction
     // Written right after a date-range clear (AuditLogController::clear), so
     // the deletion itself always leaves a trace that survives it.
     public const AUDIT_LOGS_CLEARED = 'AUDIT_LOGS_CLEARED';
+
+    // NewTech staff opened a read-only support view as one of the school's
+    // users (back office stage 6b). Not a sign-in: no LOGIN row is written.
+    public const SUPPORT_VIEW = 'SUPPORT_VIEW';
 }

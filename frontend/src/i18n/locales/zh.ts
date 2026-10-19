@@ -606,6 +606,15 @@ const zh: MessageSchema = {
     message: '您访问的页面不存在。',
     backHome: '返回首页',
   },
+  supportView: {
+    bar: '{staff} 的支持查看 — 只读 — {time} 结束',
+    end: '结束',
+    entering: '正在打开支持查看…',
+    endedTitle: '支持查看已结束',
+    endedBody: '此支持查看已结束。如需再次查看，请从后台重新打开。',
+    failedTitle: '无法打开支持查看',
+    close: '关闭此标签页',
+  },
   billingBanner: {
     ending: "您的套餐将于 {date} 到期（剩余 {days} 天）。请联系我们续费。",
     endsToday: "您的套餐今天到期。请联系我们续费。",

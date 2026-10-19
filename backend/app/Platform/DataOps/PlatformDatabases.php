@@ -97,7 +97,7 @@ final class PlatformDatabases
             ->groupBy('database')
             ->pluck('finished_at', 'database');
         $schedule = BackupSchedule::current();
-        $staleBefore = now()->subDays($this->intervalDays($schedule))->subHours(6);
+        $staleBefore = $this->staleBefore($schedule);
 
         return array_map(function (array $row) use ($centralFiles, $tenantFiles, $lastGood, $schedule, $staleBefore) {
             $tenant = $row['tenant'];
@@ -156,6 +156,18 @@ final class PlatformDatabases
 
             return $out;
         }, $this->all());
+    }
+
+    /** A good backup older than this is not recent: the schedule's longest gap, plus 6 hours. */
+    public function staleBefore(?BackupSchedule $schedule = null): Carbon
+    {
+        return now()->subDays($this->intervalDays($schedule ?? BackupSchedule::current()))->subHours(6);
+    }
+
+    /** @return list<string> the school migrations every school database should have */
+    public function schoolMigrationFiles(): array
+    {
+        return $this->migrationFiles(database_path('migrations/tenant'));
     }
 
     /** Longest gap between two scheduled days, so "recent" follows the schedule. */

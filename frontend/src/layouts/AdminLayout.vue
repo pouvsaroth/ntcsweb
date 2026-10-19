@@ -7,6 +7,7 @@ import AdminSidebar from '@/components/layout/AdminSidebar.vue'
 import MobileBottomNav from '@/components/layout/MobileBottomNav.vue'
 import AdminBillingBanner from '@/components/admin/AdminBillingBanner.vue'
 import MonthlyPaymentAlertModal from '@/components/admin/MonthlyPaymentAlertModal.vue'
+import SupportViewBar from '@/components/admin/SupportViewBar.vue'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 import ImagePreviewDialog from '@/components/ui/ImagePreviewDialog.vue'
 import { useAdminUiStore } from '@/stores/adminUi'
@@ -47,6 +48,7 @@ onBeforeUnmount(() => applyTranslationOverrides({}))
     <AdminSidebar :open="sidebarOpen" @close="sidebarOpen = false" />
 
     <div class="flex min-h-screen flex-col" :class="adminUi.sidebarCollapsed ? 'lg:pl-16' : 'lg:pl-64'">
+      <SupportViewBar />
       <!-- A Super Admin browsing one school's admin data (see stores/auth.ts's
            enterTenant) — this must stay visible on every tenant-scoped page so
            it's never ambiguous whose data is on screen, with an always-reachable
