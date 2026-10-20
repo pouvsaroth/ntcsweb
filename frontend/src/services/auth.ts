@@ -63,6 +63,8 @@ export interface MeResult {
     khr_per_usd_rate: number | null
     /** Console modules the school's plan includes (back office billing); null = every module. */
     modules: string[] | null
+    /** The systems the customer has live (stage 9). */
+    systems?: { code: string; name: string; name_km: string | null }[]
     /** The owner's billing banner (plan ending/ended, student limit); null for everyone else or when all is well. */
     billing_notice: BillingNotice | null
     /** The school's own public website's hostname — see AdminHeader.vue's "Go to website" link, needed now that the admin app is a separate origin from it. */

@@ -727,6 +727,8 @@ const ko: MessageSchema = {
     trialEndsToday: "무료 체험이 오늘 종료됩니다. 요금제를 선택하려면 문의해 주세요.",
     ended: "요금제가 {date}에 종료되었습니다. 결제가 없으면 {suspend}에 학교가 정지됩니다.",
     trialEnded: "무료 체험이 {date}에 종료되었습니다. 요금제를 선택하지 않으면 {suspend}에 학교가 정지됩니다.",
+    endedOrg: "Your plan ended on {date}. The account will be suspended on {suspend} unless payment is received.",
+    trialEndedOrg: "Your free trial ended on {date}. The account will be suspended on {suspend} unless a plan is chosen.",
     studentsNear: "요금제에서 허용하는 재학생 {limit}명 중 {active}명입니다.",
     studentsFull: "요금제의 학생 한도에 도달했습니다({active}/{limit}). 신입생을 등록할 수 없습니다 — 업그레이드하려면 문의해 주세요.",
   },

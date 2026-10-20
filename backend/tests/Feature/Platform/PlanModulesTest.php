@@ -111,6 +111,27 @@ class PlanModulesTest extends TestCase
         }
     }
 
+    public function test_school_dashboard_tiles_follow_their_modules(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::DASHBOARD_VIEW, Permissions::DASHBOARD_CARDS_ENROLLMENT, Permissions::DASHBOARD_FINANCE_VIEW, Permissions::DASHBOARD_CARDS_TEACHER_ATTENDANCE, Permissions::DASHBOARD_CARDS_USERS]);
+        $this->putOnPlan(['hrm', 'payroll']); // an ERP/HR-only customer
+
+        $permissions = $this->getJson('/api/v1/auth/me')->assertOk()->json('meta.permissions');
+        $this->assertContains(Permissions::DASHBOARD_VIEW, $permissions);
+        $this->assertContains(Permissions::DASHBOARD_CARDS_USERS, $permissions, 'core tiles stay');
+        $this->assertContains(Permissions::DASHBOARD_CARDS_TEACHER_ATTENDANCE, $permissions, 'staff attendance is HRM');
+        $this->assertNotContains(Permissions::DASHBOARD_CARDS_ENROLLMENT, $permissions);
+        $this->assertNotContains(Permissions::DASHBOARD_FINANCE_VIEW, $permissions);
+    }
+
+    public function test_every_module_slug_is_a_real_permission(): void
+    {
+        $all = collect(Permissions::catalog())->flatMap(fn ($group) => array_keys($group))->all();
+        foreach (array_keys(Modules::SLUG_MODULES) as $slug) {
+            $this->assertContains($slug, $all, "{$slug} is not a permission");
+        }
+    }
+
     public function test_an_expired_plan_keeps_its_modules_through_grace(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::PAYROLL_VIEW]);

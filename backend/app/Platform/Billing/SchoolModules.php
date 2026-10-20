@@ -118,6 +118,10 @@ final class SchoolModules
         $menus = $this->plan((int) $tenantId)['menus'];
 
         return array_values(array_filter($slugs, function (string $slug) use ($enabled, $menus) {
+            // A single permission tied to a module (the dashboard's school tiles): the module decides.
+            if (isset(Modules::SLUG_MODULES[$slug])) {
+                return in_array(Modules::SLUG_MODULES[$slug], $enabled, true);
+            }
             $group = strstr($slug, '.', true) ?: $slug;
             $module = Modules::moduleOfGroup($group);
             if ($module === null) {

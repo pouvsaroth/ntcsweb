@@ -254,7 +254,8 @@ export const adminNav: AdminNavGroup[] = [
   {
     labelKey: 'adminNav.groups.settings',
     items: [
-      { labelKey: 'adminNav.items.schoolDocuments', to: '/admin/school-documents', permission: 'tenant-settings.view' },
+      // School regulation and student attendance policy: an Academics item (stage 9d).
+      { labelKey: 'adminNav.items.schoolDocuments', to: '/admin/school-documents', permission: 'tenant-settings.view', module: 'academics' },
       { labelKey: 'adminNav.items.settings', to: '/admin/settings', permission: 'tenant-settings.view' },
       { labelKey: 'adminNav.items.users', to: '/admin/users', permission: 'users.view' },
       { labelKey: 'adminNav.items.roles', to: '/admin/roles', permission: 'roles.view' },

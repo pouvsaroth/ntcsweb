@@ -132,6 +132,28 @@ final class Modules
         'projects' => ['Projects', 'គម្រោង'],
     ];
 
+    /**
+     * Single permissions in a Core group that still belong to a module — the
+     * dashboard's school tiles and stats (docs/backoffice/stage-9-products.md,
+     * 9d): a customer without Academics or Finance (an ERP/HR-only customer)
+     * never sees student or tuition tiles. Module only; they are not menus.
+     *
+     * @var array<string, string> permission slug => module
+     */
+    public const SLUG_MODULES = [
+        'dashboard.cards.register-student' => 'academics',
+        'dashboard.cards.enrollment' => 'academics',
+        'dashboard.cards.classes' => 'academics',
+        'dashboard.cards.student-attendance' => 'academics',
+        'dashboard.cards.registration-pending' => 'academics',
+        'dashboard.attendance.view' => 'academics',
+        'dashboard.cards.teacher-attendance' => 'hrm',
+        'dashboard.cards.student-payment' => 'finance',
+        'dashboard.cards.invoices' => 'finance',
+        'dashboard.finance.view' => 'finance',
+        'dashboard.payment-alerts.view' => 'finance',
+    ];
+
     /** @return list<string> */
     public static function codes(): array
     {

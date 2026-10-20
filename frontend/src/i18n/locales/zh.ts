@@ -726,6 +726,8 @@ const zh: MessageSchema = {
     trialEndsToday: "您的免费试用今天结束。请联系我们选择套餐。",
     ended: "您的套餐已于 {date} 到期。如未付款，学校将于 {suspend} 被暂停。",
     trialEnded: "您的免费试用已于 {date} 结束。如未选择套餐，学校将于 {suspend} 被暂停。",
+    endedOrg: "Your plan ended on {date}. The account will be suspended on {suspend} unless payment is received.",
+    trialEndedOrg: "Your free trial ended on {date}. The account will be suspended on {suspend} unless a plan is chosen.",
     studentsNear: "您的套餐允许 {limit} 名在读学生，目前已有 {active} 名。",
     studentsFull: "已达到套餐的学生上限（{active}/{limit}）。无法再录取新学生——请联系我们升级套餐。",
   },

@@ -727,6 +727,8 @@ const ja: MessageSchema = {
     trialEndsToday: "無料トライアルは本日終了します。プランの選択についてはお問い合わせください。",
     ended: "プランは {date} に終了しました。お支払いがない場合、{suspend} に学校は停止されます。",
     trialEnded: "無料トライアルは {date} に終了しました。プランを選択しない場合、{suspend} に学校は停止されます。",
+    endedOrg: "Your plan ended on {date}. The account will be suspended on {suspend} unless payment is received.",
+    trialEndedOrg: "Your free trial ended on {date}. The account will be suspended on {suspend} unless a plan is chosen.",
     studentsNear: "プランで認められた在籍生徒 {limit} 名のうち {active} 名です。",
     studentsFull: "プランの生徒上限に達しました（{active}/{limit}）。新しい生徒は登録できません — アップグレードについてはお問い合わせください。",
   },

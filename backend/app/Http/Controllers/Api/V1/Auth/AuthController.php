@@ -260,6 +260,11 @@ final class AuthController extends Controller
                         // (docs/backoffice/stage-5-billing.md, 5c). The menu
                         // hides self-service items of a module that is off.
                         'modules' => app(\App\Platform\Billing\SchoolModules::class)->enabled($tenant->id),
+                        // The systems the customer has live (stage 9): the
+                        // console words follow them (school vs organization).
+                        'systems' => \App\Platform\Models\SchoolSubscription::query()
+                            ->where('tenant_id', $tenant->id)->live()->with('product:id,code,name,name_km')->get()
+                            ->pluck('product')->filter()->map(fn ($p) => $p->only(['code', 'name', 'name_km']))->unique('code')->values(),
                         // Plan ending / ended / student limit, for the owner's
                         // banner (5e); null for everyone else or when all is well.
                         'billing_notice' => app(\App\Platform\Billing\BillingNotice::class)->for($user, $tenant->id),

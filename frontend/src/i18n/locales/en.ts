@@ -272,9 +272,9 @@ const en = {
   },
 
   auth: {
-    platformTagline: 'Sign in to manage your school',
-    school: 'School',
-    schoolHint: 'Type your school\'s code so we know which account to check. Leave blank if you\'re signing in with a platform admin account.',
+    platformTagline: 'Sign in to manage your school or business',
+    school: 'School / company code',
+    schoolHint: 'Type your school\'s or company\'s code so we know which account to check. Leave blank if you\'re signing in with a platform admin account.',
     schoolPlaceholder: 'e.g. newtech',
     login: {
       title: 'Sign in',
@@ -730,6 +730,8 @@ const en = {
     trialEndsToday: "Your free trial ends today. Contact us to choose a plan.",
     ended: "Your plan ended on {date}. The school will be suspended on {suspend} unless payment is received.",
     trialEnded: "Your free trial ended on {date}. The school will be suspended on {suspend} unless a plan is chosen.",
+    endedOrg: "Your plan ended on {date}. The account will be suspended on {suspend} unless payment is received.",
+    trialEndedOrg: "Your free trial ended on {date}. The account will be suspended on {suspend} unless a plan is chosen.",
     studentsNear: "You have {active} of {limit} active students allowed on your plan.",
     studentsFull: "Your plan's student limit is reached ({active} of {limit}). New students cannot be enrolled — contact us to upgrade.",
   },

@@ -18,6 +18,8 @@ export const useAuthStore = defineStore('auth', () => {
   const khrPerUsdRate = ref<number | null>(null)
   /** Modules the school's plan includes; null = every module (see backend SchoolModules). */
   const tenantModules = ref<string[] | null>(null)
+  /** The systems the customer has live (stage 9), e.g. ['school'] or ['erp']. Empty = not known. */
+  const tenantSystems = ref<{ code: string; name: string; name_km: string | null }[]>([])
   /** Plan ending / ended / student limit — AdminBillingBanner; owners and admins only. */
   const billingNotice = ref<BillingNotice | null>(null)
   /** The signed-in school's own public website hostname — see AdminHeader.vue's "Go to website" link. Null for a platform Super Admin browsing no particular school. */
@@ -62,6 +64,7 @@ export const useAuthStore = defineStore('auth', () => {
     tenantDefaultCurrency.value = result.tenant?.default_currency ?? null
     khrPerUsdRate.value = result.tenant?.khr_per_usd_rate ?? null
     tenantModules.value = result.tenant?.modules ?? null
+    tenantSystems.value = result.tenant?.systems ?? []
     billingNotice.value = result.tenant?.billing_notice ?? null
     tenantHostname.value = result.tenant?.hostname ?? null
     supportView.value = result.support_view
@@ -87,6 +90,7 @@ export const useAuthStore = defineStore('auth', () => {
     tenantDefaultCurrency.value = null
     khrPerUsdRate.value = null
     tenantModules.value = null
+    tenantSystems.value = []
     billingNotice.value = null
     tenantHostname.value = null
     supportView.value = null
@@ -203,6 +207,9 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = await authService.updateProfile(payload)
   }
 
+  /** A customer of the school system (or not known): school words; otherwise organization words. */
+  const isSchoolCustomer = computed(() => tenantSystems.value.length === 0 || tenantSystems.value.some((s) => s.code === 'school'))
+
   /** Whether the school's plan includes a console module — for self-service pages no permission gates. */
   function hasModule(code: string): boolean {
     return isSuperAdmin.value || tenantModules.value === null || tenantModules.value.includes(code)
@@ -216,6 +223,8 @@ export const useAuthStore = defineStore('auth', () => {
     tenantDefaultCurrency,
     khrPerUsdRate,
     tenantModules,
+    tenantSystems,
+    isSchoolCustomer,
     billingNotice,
     hasModule,
     tenantHostname,

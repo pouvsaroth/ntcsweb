@@ -93,5 +93,17 @@ system (`product_code`), one card per system. Tests: `SystemSignupTest`.
   (an ERP/HR-only customer never sees "students" or "school").
 - Larger; scoped after 9a–9c.
 
+**As built 9d (2026-10-20):** `Modules::SLUG_MODULES` ties the dashboard's
+school tiles and stats (register student, enrollment, classes, student
+attendance, registration pending → Academics; teacher attendance → HRM;
+student payment, invoices, finance stats, payment alerts → Finance) to their
+module, so an ERP/HR-only customer never gets them (API included). The
+console's Documents menu (school regulation, attendance policy) is an
+Academics item. `/auth/me` returns `tenant.systems`; `auth.isSchoolCustomer`
+picks "account" wording for the plan-ended banner; the shared sign-in page
+asks for a "School / company code".
+**Left for the owner:** the shared sign-in page's fixed mark (logo and
+"School Management System") — a platform brand name to choose.
+
 ## Not in this stage
 - Building SmartGPS itself (new modules) — its own project, then added as a system.

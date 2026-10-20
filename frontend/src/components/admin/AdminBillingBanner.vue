@@ -25,7 +25,8 @@ const lines = computed(() => {
     out.push({ text: t(`billingBanner.${key}`, { date: formatDate(plan.end_on), days: plan.days_left }), urgent: plan.days_left <= 3 })
   } else if (plan?.kind === 'ended') {
     out.push({
-      text: t(plan.trial ? 'billingBanner.trialEnded' : 'billingBanner.ended', { date: formatDate(plan.end_on), suspend: formatDate(plan.suspend_on) }),
+      // Not a school customer (stage 9): "the account" rather than "the school".
+      text: t(`billingBanner.${plan.trial ? 'trialEnded' : 'ended'}${auth.isSchoolCustomer ? '' : 'Org'}`, { date: formatDate(plan.end_on), suspend: formatDate(plan.suspend_on) }),
       urgent: true,
     })
   }
