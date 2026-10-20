@@ -78,7 +78,7 @@
     @endif
 
     <div class="foot">
-        <div class="cell"><div class="line"></div>Received by<br><strong>{{ $payment->recorder?->name }}</strong></div>
+        <div class="cell"><div class="line"></div>Received by<br><strong>{{ $payment->recorder?->name ?? 'Bakong KHQR (online)' }}</strong></div>
         <div class="cell"><div class="line"></div>School</div>
     </div>
 </body>

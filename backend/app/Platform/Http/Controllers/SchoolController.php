@@ -12,6 +12,7 @@ use App\Platform\Http\Resources\SchoolResource;
 use App\Platform\Jobs\ProvisionSchool;
 use App\Platform\Models\School;
 use App\Platform\Models\SchoolPlacement;
+use App\Platform\Services\SchoolCreator;
 use App\Platform\Services\SchoolDatabase;
 use App\Platform\Services\SchoolOwners;
 use App\Platform\Services\SchoolStatus;
@@ -42,6 +43,7 @@ final class SchoolController extends Controller
         private readonly SeparateServerProbe $probe,
         private readonly Subscriptions $subscriptions,
         private readonly SchoolHealth $health,
+        private readonly SchoolCreator $creator,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -106,45 +108,7 @@ final class SchoolController extends Controller
             }
         }
 
-        $tenant = DB::connection((new Tenant)->getConnectionName())->transaction(function () use ($data, $request, $mode) {
-            $tenant = new Tenant([
-                'name' => $data['name'],
-                'name_en' => $data['name_en'] ?? null,
-                'slug' => $data['slug'],
-                'timezone' => $data['timezone'] ?? 'Asia/Phnom_Penh',
-                'locale' => $data['locale'] ?? 'km',
-                'default_currency' => $data['default_currency'] ?? Tenant::CURRENCY_USD,
-            ]);
-            $tenant->forceFill(['status' => Tenant::STATUS_PROVISIONING])->save();
-
-            School::for($tenant)->forceFill(['created_by' => $request->user('staff')->getKey()])->save();
-
-            SchoolPlacement::query()->create(match ($mode) {
-                SchoolPlacement::SHARED => ['tenant_id' => $tenant->id, 'mode' => $mode, 'database' => config('tenancy.database.shared_database')],
-                SchoolPlacement::DEDICATED => ['tenant_id' => $tenant->id, 'mode' => $mode, 'database' => $this->database->nameFor($tenant->slug)],
-                SchoolPlacement::SEPARATE => [
-                    'tenant_id' => $tenant->id, 'mode' => $mode,
-                    'database' => $data['server']['database'], 'host' => $data['server']['host'], 'port' => (int) $data['server']['port'],
-                    'username' => $data['server']['username'], 'password' => $data['server']['password'],
-                    'sslmode' => $data['server']['sslmode'] ?? 'prefer',
-                ],
-            });
-            $this->owners->ensureAccount($tenant, $data['owner_name'], $data['owner_email']);
-
-            // Every new school starts on a trial (docs/backoffice/stage-5-billing.md).
-            $this->subscriptions->startTrial($tenant, $request->user('staff'));
-
-            $this->audit->record('school.created', $tenant, new: [
-                'name' => $tenant->name,
-                'slug' => $tenant->slug,
-                'owner_email' => $data['owner_email'],
-                'placement' => $mode,
-            ], tenantId: $tenant->getKey());
-
-            return $tenant;
-        });
-
-        ProvisionSchool::dispatch($tenant->getKey())->afterCommit();
+        $tenant = $this->creator->create($data, $mode, $request->user('staff'));
 
         return ApiResponse::created(new SchoolResource($this->detailed($tenant->fresh())));
     }

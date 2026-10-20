@@ -7,6 +7,7 @@ use App\Platform\Http\Controllers\BillingSettingsController;
 use App\Platform\Http\Controllers\DataOpsController;
 use App\Platform\Http\Controllers\PaymentController;
 use App\Platform\Http\Controllers\PlanController;
+use App\Platform\Http\Controllers\SignupController;
 use App\Platform\Http\Controllers\RoleController;
 use App\Platform\Http\Controllers\SchoolBillingController;
 use App\Platform\Http\Controllers\SchoolController;
@@ -116,6 +117,11 @@ Route::middleware('platform.staff')->group(function () {
         Route::post('settings/logo', [BillingSettingsController::class, 'uploadLogo'])->middleware('platform.can:platform.billing.manage')->name('settings.logo.store');
         Route::delete('settings/logo', [BillingSettingsController::class, 'removeLogo'])->middleware('platform.can:platform.billing.manage')->name('settings.logo.destroy');
         Route::get('payments', [PaymentController::class, 'index'])->middleware('platform.can:platform.billing.read')->name('payments.index');
+        // Self-service sign-ups from the website (stage 8).
+        Route::get('signups', [SignupController::class, 'index'])->middleware('platform.can:platform.billing.read')->name('signups.index');
+        Route::post('signups/{signup}/retry', [SignupController::class, 'retry'])->middleware('platform.can:platform.billing.manage')->name('signups.retry');
+        Route::put('settings/payment', [BillingSettingsController::class, 'updatePayment'])->middleware('platform.can:platform.billing.manage')->name('settings.payment.update');
+        Route::post('settings/payment/test', [BillingSettingsController::class, 'testBakong'])->middleware('platform.can:platform.billing.manage')->name('settings.payment.test');
         Route::post('payments/{payment}/void', [PaymentController::class, 'void'])->middleware('platform.can:platform.billing.manage')->name('payments.void');
         Route::get('payments/{payment}/receipt', [PaymentController::class, 'receipt'])->middleware('platform.can:platform.billing.read')->name('payments.receipt');
     });

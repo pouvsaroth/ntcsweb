@@ -53,8 +53,8 @@ async function toggle(): Promise<void> {
 
 const editing = ref<ServiceCard | null>(null)
 const modalOpen = ref(false)
-/** Only one card may open the Computer School, one the Downloads page. */
-const takenKinds = computed(() => (content.value?.cards ?? []).map((c) => c.kind).filter((k) => k === 'school' || k === 'downloads'))
+/** Only one card may open the Computer School, one the plans page, one the Downloads page. */
+const takenKinds = computed(() => (content.value?.cards ?? []).map((c) => c.kind).filter((k) => k === 'school' || k === 'downloads' || k === 'plans'))
 const nextOrder = computed(() => Math.max(-1, ...(content.value?.cards.map((c) => c.sort_order) ?? [])) + 1)
 function openAdd(): void {
   editing.value = null
@@ -83,7 +83,7 @@ async function confirmRemove(): Promise<void> {
 }
 
 const opens = (c: ServiceCard) =>
-  c.kind === 'school' ? '/computer-school' : c.kind === 'downloads' ? '/downloads' : c.kind === 'link' ? c.link_url : `/services/${c.slug}`
+  c.kind === 'school' ? '/computer-school' : c.kind === 'downloads' ? '/downloads' : c.kind === 'plans' ? '/plans' : c.kind === 'link' ? c.link_url : `/services/${c.slug}`
 </script>
 
 <template>

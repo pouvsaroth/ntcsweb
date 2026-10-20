@@ -47,7 +47,7 @@ final class Payments
     /**
      * @param  array{periods: int, amount?: float|string|null, method: string, reference?: ?string, paid_on?: ?string, notes?: ?string}  $data
      */
-    public function record(Tenant $tenant, array $data, PlatformStaff $actor): SchoolPayment
+    public function record(Tenant $tenant, array $data, ?PlatformStaff $actor): SchoolPayment
     {
         $sub = $this->payable($tenant);
         if (! $sub) {
@@ -79,7 +79,8 @@ final class Payments
                 'covered_to' => $to?->toDateString(),
                 'end_before' => $endBefore,
                 'notes' => $data['notes'] ?? null,
-                'recorded_by' => $actor->getKey(),
+                // Null: paid online by KHQR (stage 8), no staff member.
+                'recorded_by' => $actor?->getKey(),
             ]);
 
             $oldStatus = $sub->status;

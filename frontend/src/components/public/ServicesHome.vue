@@ -11,8 +11,8 @@ import { pickText } from '@/utils/bilingual'
  * Services page): one card per service, in order — its logo, the Khmer
  * title above the English one (each on one line; the card is as wide as
  * its longest title), a short text. A card opens its own page
- * (/services/{slug}), the Computer School's pages, the Downloads page, or
- * a web address in a new tab.
+ * (/services/{slug}), the Computer School's pages, the Downloads page, the
+ * plans page (/plans), or a web address in a new tab.
  */
 const { t, locale } = useI18n()
 const site = useSiteStore()
@@ -23,7 +23,8 @@ const cards = computed(() =>
     titleKm: card.title_km.trim(),
     titleEn: card.title_en.trim(),
     text: pickText(card, 'text', locale.value),
-    to: card.kind === 'school' ? '/computer-school' : card.kind === 'downloads' ? '/downloads' : `/services/${card.slug}`,
+    to:
+      card.kind === 'school' ? '/computer-school' : card.kind === 'downloads' ? '/downloads' : card.kind === 'plans' ? '/plans' : `/services/${card.slug}`,
     external: card.kind === 'link',
   })),
 )
@@ -47,7 +48,7 @@ const cards = computed(() =>
           <div class="flex h-24 items-center justify-center bg-neutral-50 p-2">
             <img v-if="c.card.image_url" :src="c.card.image_url" :alt="c.titleEn || c.titleKm" class="h-full max-w-full object-contain" />
             <span v-else class="text-3xl" aria-hidden="true">
-              {{ c.card.kind === 'school' ? '💻' : c.card.kind === 'downloads' ? '📥' : c.external ? '🔗' : '🏫' }}
+              {{ c.card.kind === 'school' ? '💻' : c.card.kind === 'downloads' ? '📥' : c.card.kind === 'plans' ? '🏫' : c.external ? '🔗' : '🏫' }}
             </span>
           </div>
           <div class="flex flex-1 flex-col px-4 py-3 text-center">

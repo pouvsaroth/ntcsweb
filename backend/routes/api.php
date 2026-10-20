@@ -152,6 +152,8 @@ use App\Http\Controllers\Api\V1\Public\DownloadController as PublicDownloadContr
 use App\Http\Controllers\Api\V1\Public\GalleryController as PublicGalleryController;
 use App\Http\Controllers\Api\V1\Public\HomeSlideController as PublicHomeSlideController;
 use App\Http\Controllers\Api\V1\Public\KhqrController as PublicKhqrController;
+use App\Http\Controllers\Api\V1\Public\PlanController as PublicPlanController;
+use App\Http\Controllers\Api\V1\Public\SignupController as PublicSignupController;
 use App\Http\Controllers\Api\V1\Public\ProgramController as PublicProgramController;
 use App\Http\Controllers\Api\V1\Public\PromotionController as PublicPromotionController;
 use App\Http\Controllers\Api\V1\Public\ScheduleController as PublicScheduleController;
@@ -952,6 +954,12 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::post('enrollment-inquiries', [EnrollmentInquiryController::class, 'store'])->name('enrollment-inquiries.store');
         });
         Route::get('khqr-preview', [PublicKhqrController::class, 'preview'])->name('khqr-preview');
+        // NewTech's plans page (docs/backoffice/stage-8-signup.md, 8a); 404 on any other school.
+        Route::get('plans', [PublicPlanController::class, 'index'])->name('plans.index');
+        // Self-service sign-up (8b): web address check, start, and the visitor's own status page.
+        Route::get('signup/slug', [PublicSignupController::class, 'slug'])->middleware('throttle:signup-checks')->name('signup.slug');
+        Route::post('signup', [PublicSignupController::class, 'store'])->middleware('throttle:signups')->name('signup.store');
+        Route::get('signup/{token}', [PublicSignupController::class, 'show'])->whereUuid('token')->middleware('throttle:signup-checks')->name('signup.show');
 
         // Cambodia's administrative hierarchy, for the registration wizard's
         // cascading address selects — same platform-wide reference data and

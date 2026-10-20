@@ -14,12 +14,17 @@ class BillingSettings extends Model
 
     protected $guarded = [];
 
+    protected $hidden = ['bakong_token'];
+
     protected function casts(): array
     {
         return [
             'trial_days' => 'integer',
             'grace_days' => 'integer',
             'warning_days' => 'integer',
+            // Stage 8c: never shown back, never in an audit row.
+            'bakong_token' => 'encrypted',
+            'bakong_token_expires_at' => 'datetime',
         ];
     }
 

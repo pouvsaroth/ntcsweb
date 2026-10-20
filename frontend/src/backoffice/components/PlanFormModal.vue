@@ -27,6 +27,14 @@ const blank = () => ({
   period_months: '1',
   max_students: '',
   modules: [] as string[],
+  show_on_website: false,
+  name_km: '',
+  tagline_km: '',
+  tagline_en: '',
+  features_km: '',
+  features_en: '',
+  recommended: false,
+  website_order: '0',
 })
 const form = ref(blank())
 const saving = ref(false)
@@ -48,6 +56,14 @@ watch(
           period_months: p.period_months === null ? '' : String(p.period_months),
           max_students: p.max_students === null ? '' : String(p.max_students),
           modules: [...p.modules],
+          show_on_website: p.show_on_website,
+          name_km: p.name_km ?? '',
+          tagline_km: p.tagline_km ?? '',
+          tagline_en: p.tagline_en ?? '',
+          features_km: p.features_km ?? '',
+          features_en: p.features_en ?? '',
+          recommended: p.recommended,
+          website_order: String(p.website_order ?? 0),
         }
       : blank()
   },
@@ -57,6 +73,9 @@ const currencyOptions = [
   { value: 'USD', label: 'USD ($)' },
   { value: 'KHR', label: 'KHR (៛)' },
 ]
+
+const textarea =
+  'block w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm text-neutral-900 shadow-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-200 focus:outline-none'
 
 const allOn = computed(() => form.value.modules.length === props.modules.length)
 
@@ -80,6 +99,19 @@ async function save(): Promise<void> {
     period_months: form.value.period_months === '' ? null : Number(form.value.period_months),
     max_students: form.value.max_students === '' ? null : Number(form.value.max_students),
     modules: form.value.modules,
+    // The Legacy plan never goes on the website, so its form sends none of this.
+    ...(props.plan?.is_legacy
+      ? {}
+      : {
+          show_on_website: form.value.show_on_website,
+          name_km: form.value.name_km.trim() || null,
+          tagline_km: form.value.tagline_km.trim() || null,
+          tagline_en: form.value.tagline_en.trim() || null,
+          features_km: form.value.features_km.trim() || null,
+          features_en: form.value.features_en.trim() || null,
+          recommended: form.value.recommended,
+          website_order: Number(form.value.website_order) || 0,
+        }),
   }
   try {
     const saved = props.plan ? await billingApi.updatePlan(props.plan.id, body) : await billingApi.createPlan(body)
@@ -157,6 +189,60 @@ async function save(): Promise<void> {
         <p class="mt-1.5 text-sm text-neutral-500">{{ t('bo.billing.plans.modulesHint') }}</p>
         <p v-if="error?.fieldError('modules')" class="mt-1 text-xs text-red-600">{{ error.fieldError('modules') }}</p>
       </div>
+
+      <!-- The plan card on the website's plans page (docs/backoffice/stage-8-signup.md, 8a). -->
+      <fieldset class="space-y-4 border-t border-neutral-100 pt-4">
+        <legend class="sr-only">{{ t('bo.billing.plans.web.section') }}</legend>
+        <div>
+          <p class="font-medium text-neutral-900">{{ t('bo.billing.plans.web.section') }}</p>
+          <p class="text-sm text-neutral-500">{{ plan?.is_legacy ? t('bo.billing.plans.web.legacyNo') : t('bo.billing.plans.web.sectionHint') }}</p>
+        </div>
+        <template v-if="!plan?.is_legacy">
+          <label class="flex cursor-pointer items-center gap-2 text-sm text-neutral-800">
+            <input v-model="form.show_on_website" type="checkbox" class="rounded border-neutral-300 text-primary-600 focus:ring-primary-500" />
+            {{ t('bo.billing.plans.web.show') }}
+          </label>
+          <template v-if="form.show_on_website">
+            <div class="grid gap-4 sm:grid-cols-3">
+              <BaseInput v-model="form.name_km" :label="t('bo.billing.plans.web.nameKm')" :error="error?.fieldError('name_km')" />
+              <BaseInput
+                v-model="form.website_order"
+                type="number"
+                :label="t('bo.billing.plans.web.order')"
+                :error="error?.fieldError('website_order')"
+              />
+              <label class="flex cursor-pointer items-start gap-2 pt-7 text-sm text-neutral-800">
+                <input v-model="form.recommended" type="checkbox" class="mt-0.5 rounded border-neutral-300 text-primary-600 focus:ring-primary-500" />
+                <span>
+                  {{ t('bo.billing.plans.web.recommended') }}
+                  <span class="block text-xs text-neutral-500">{{ t('bo.billing.plans.web.recommendedHint') }}</span>
+                </span>
+              </label>
+            </div>
+            <div class="grid gap-4 sm:grid-cols-2">
+              <BaseInput
+                v-model="form.tagline_km"
+                :label="t('bo.billing.plans.web.taglineKm')"
+                :hint="t('bo.billing.plans.web.taglineHint')"
+                :error="error?.fieldError('tagline_km')"
+              />
+              <BaseInput v-model="form.tagline_en" :label="t('bo.billing.plans.web.taglineEn')" :error="error?.fieldError('tagline_en')" />
+              <label class="block">
+                <span class="mb-1.5 block text-sm font-medium text-neutral-700">{{ t('bo.billing.plans.web.featuresKm') }}</span>
+                <textarea v-model="form.features_km" rows="6" :class="textarea" />
+                <span class="mt-1 block text-xs text-neutral-500">{{ t('bo.billing.plans.web.featuresHint') }}</span>
+                <span v-if="error?.fieldError('features_km')" class="mt-1 block text-xs text-red-600">{{ error.fieldError('features_km') }}</span>
+              </label>
+              <label class="block">
+                <span class="mb-1.5 block text-sm font-medium text-neutral-700">{{ t('bo.billing.plans.web.featuresEn') }}</span>
+                <textarea v-model="form.features_en" rows="6" :class="textarea" />
+                <span class="mt-1 block text-xs text-neutral-500">{{ t('bo.billing.plans.web.featuresHint') }}</span>
+                <span v-if="error?.fieldError('features_en')" class="mt-1 block text-xs text-red-600">{{ error.fieldError('features_en') }}</span>
+              </label>
+            </div>
+          </template>
+        </template>
+      </fieldset>
     </form>
     <template #footer>
       <BaseButton variant="ghost" @click="emit('update:modelValue', false)">{{ t('bo.common.cancel') }}</BaseButton>

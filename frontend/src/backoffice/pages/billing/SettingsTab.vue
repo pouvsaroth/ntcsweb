@@ -10,6 +10,7 @@ import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import { ApiRequestError } from '@/types/api'
 
 import { billingApi, paymentsApi, type Plan } from '../../api'
+import OnlinePaymentSettings from '../../components/OnlinePaymentSettings.vue'
 import { useSession } from '../../session'
 
 /** Billing settings: trial days and plan, reminder and grace days, the receipt header. */
@@ -119,7 +120,8 @@ onMounted(load)
 
 <template>
   <div v-if="!loaded" class="flex justify-center py-10"><BaseSpinner /></div>
-  <form v-else class="max-w-3xl space-y-6" @submit.prevent="save">
+  <template v-else>
+  <form class="max-w-3xl space-y-6" @submit.prevent="save">
     <BaseAlert v-if="saved" variant="success">{{ t('bo.common.saved') }}</BaseAlert>
     <BaseAlert v-if="error && !error.errors" variant="danger">{{ error.message }}</BaseAlert>
 
@@ -200,4 +202,8 @@ onMounted(load)
 
     <BaseButton v-if="canManage" type="submit" :loading="saving">{{ t('bo.common.save') }}</BaseButton>
   </form>
+
+  <!-- Its own Save: the token is write-only (stage 8c). -->
+  <OnlinePaymentSettings class="mt-8" />
+  </template>
 </template>

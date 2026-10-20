@@ -55,7 +55,10 @@ final class SchoolProvisioner
             $this->step($tenant, $attempt, 'owner', function () use ($tenant, $school) {
                 $owner = $school->fresh()->owner ?? throw new \RuntimeException('No owner was recorded for this school.');
                 $this->owners->grantSchoolAdmin($tenant, $owner);
-                $this->owners->invite($tenant->fresh());
+                // An owner who chose a password on the website's sign-up form needs no invite.
+                if ($owner->status === \App\Models\User::STATUS_INVITED) {
+                    $this->owners->invite($tenant->fresh());
+                }
             });
         } catch (\Throwable $e) {
             $school->forceFill(['status_detail' => $e->getMessage()])->save();

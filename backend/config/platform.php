@@ -122,6 +122,15 @@ return [
     'backup_copy_disk' => env('PLATFORM_BACKUP_COPY_DISK') ?: null,
     'backup_timezone' => 'Asia/Phnom_Penh',
 
+    // Bakong Open API (docs/backoffice/stage-8-signup.md, 8c): where a sign-up's
+    // KHQR payment is looked up. The token itself is kept (encrypted) in
+    // back office → Billing → Settings, not here.
+    'bakong' => [
+        'api_url' => env('BAKONG_API_URL', 'https://api-bakong.nbc.gov.kh'),
+        // A payment made just as the code expired is still looked for this long after.
+        'late_minutes' => 10,
+    ],
+
     // The console — where every school's users sign in. Invite links point here.
     'console_url' => env('PLATFORM_CONSOLE_URL', 'https://erp.newtechkh.com'),
 

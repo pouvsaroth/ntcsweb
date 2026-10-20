@@ -17,7 +17,8 @@ use Illuminate\Validation\Rule;
  * pages (/computer-school).
  *
  * A card can also open any web address (kind `link`), or the website's
- * Downloads page (kind `downloads`, one card at most).
+ * Downloads page (kind `downloads`, one card at most), or the plans page
+ * (kind `plans`, one card at most; docs/backoffice/stage-8-signup.md).
  *
  * Stored in `tenants.settings->services` = { enabled, cards: [...] }, one per
  * school. Off unless switched on: the website opens on the school's own home
@@ -41,10 +42,13 @@ final class ServicesPageContent
     /** Opens the website's Downloads page (/downloads). At most one card. */
     public const KIND_DOWNLOADS = 'downloads';
 
-    public const KINDS = [self::KIND_SCHOOL, self::KIND_PAGE, self::KIND_LINK, self::KIND_DOWNLOADS];
+    /** Opens the plans page (/plans): the plans in back office → Billing → Plans. At most one card. */
+    public const KIND_PLANS = 'plans';
+
+    public const KINDS = [self::KIND_SCHOOL, self::KIND_PAGE, self::KIND_LINK, self::KIND_DOWNLOADS, self::KIND_PLANS];
 
     /** Kinds only one card may have: each opens one fixed part of the website. */
-    public const SINGLE_KINDS = [self::KIND_SCHOOL, self::KIND_DOWNLOADS];
+    public const SINGLE_KINDS = [self::KIND_SCHOOL, self::KIND_DOWNLOADS, self::KIND_PLANS];
 
     public const STATUS_ACTIVE = 'active';
 

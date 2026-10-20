@@ -20,4 +20,6 @@ Schedule::command('platform:backups-tick')->everyMinute()->withoutOverlapping();
 
 // Billing (docs/backoffice/stage-5-billing.md, 5e): expire ended plans, then
 // suspend schools unpaid past the grace days. Just after midnight, Phnom Penh.
+// Website sign-ups (stage 8c): look up KHQR payments the visitor's page did not wait for.
+Schedule::command('platform:signups-tick')->everyMinute()->withoutOverlapping();
 Schedule::command('platform:billing-tick')->timezone('Asia/Phnom_Penh')->dailyAt('00:15')->withoutOverlapping();

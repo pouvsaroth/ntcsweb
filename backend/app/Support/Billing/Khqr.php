@@ -95,6 +95,23 @@ final class Khqr
         return $body.self::crc16($body);
     }
 
+    /**
+     * A fixed-amount code for one online payment (docs/backoffice/stage-8-signup.md, 8c):
+     * withAmount() plus tag 99 — creation and expiry timestamps in milliseconds,
+     * as Bakong's own KHQR SDK writes for a one-time code. Two sign-ups for the
+     * same amount therefore never share a code, so the code's MD5 (what Bakong
+     * looks a payment up by) belongs to one sign-up only. Tag 99 goes last,
+     * just before the CRC; the rest of the template is left byte for byte.
+     */
+    public static function forPayment(string $template, float $amount, string $currency, \DateTimeInterface $created, \DateTimeInterface $expires): string
+    {
+        $body = self::stripCrc(self::withAmount($template, $amount, $currency));
+        $ms = fn (\DateTimeInterface $d) => (string) ((int) $d->format('U') * 1000 + (int) $d->format('v'));
+        $body .= self::field('99', self::field('00', $ms($created)).self::field('01', $ms($expires))).self::CRC_TAG;
+
+        return $body.self::crc16($body);
+    }
+
     private static function field(string $tag, string $value): string
     {
         return $tag.str_pad((string) strlen($value), 2, '0', STR_PAD_LEFT).$value;

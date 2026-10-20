@@ -23,7 +23,7 @@ const logoFailed = ref(false)
  * page is on, the Downloads page is one of its cards, so it looks the same.
  */
 const companyView = computed(
-  () => route.name === 'service-page' || (site.servicesOn && (route.name === 'home' || route.name === 'downloads')),
+  () => route.name === 'service-page' || route.name === 'plans' || route.name === 'signup' || route.name === 'signup-status' || (site.servicesOn && (route.name === 'home' || route.name === 'downloads')),
 )
 
 /** The platform back office (staff only), beside the language button. */

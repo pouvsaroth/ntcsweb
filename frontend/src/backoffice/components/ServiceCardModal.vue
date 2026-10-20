@@ -20,7 +20,7 @@ import { websiteServicesApi, type ServiceCard, type ServiceCardInput, type Servi
 const props = defineProps<{
   modelValue: boolean
   card: ServiceCard | null
-  /** Kinds another card already has that only one card may have (school, downloads). */
+  /** Kinds another card already has that only one card may have (school, plans, downloads). */
   takenKinds: ServiceCardKind[]
   nextOrder: number
 }>()
@@ -58,7 +58,7 @@ const error = ref<ApiRequestError | null>(null)
 const fieldError = (f: string) => error.value?.fieldError(f)
 
 const kindOptions = computed(() =>
-  (['page', 'school', 'downloads', 'link'] as const)
+  (['page', 'school', 'plans', 'downloads', 'link'] as const)
     .filter((k) => !props.takenKinds.includes(k) || props.card?.kind === k)
     .map((k) => ({ value: k, label: t(`bo.website.services.kinds.${k}`) })),
 )

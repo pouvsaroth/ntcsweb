@@ -388,10 +388,21 @@ export interface Plan {
   status: 'active' | 'inactive'
   is_legacy: boolean
   live_count: number
+  /** On the website's plans page (docs/backoffice/stage-8-signup.md, 8a). */
+  show_on_website: boolean
+  name_km: string | null
+  tagline_en: string | null
+  tagline_km: string | null
+  /** One feature per line. */
+  features_en: string | null
+  features_km: string | null
+  recommended: boolean
+  website_order: number
   [key: string]: unknown
 }
 
-export type PlanInput = Pick<Plan, 'code' | 'name' | 'description' | 'currency' | 'period_months' | 'max_students' | 'modules'> & {
+export type PlanInput = Pick<Plan, 'code' | 'name' | 'description' | 'currency' | 'period_months' | 'max_students' | 'modules'> &
+  Partial<Pick<Plan, 'show_on_website' | 'name_km' | 'tagline_en' | 'tagline_km' | 'features_en' | 'features_km' | 'recommended' | 'website_order'>> & {
   price: string | number
   status?: Plan['status']
 }
@@ -437,6 +448,10 @@ export interface BillingSettingsRow {
   company_logo: string | null
   /** The logo as a data: URI, for the preview. */
   company_logo_data: string | null
+  /** Online payment for website sign-ups (stage 8c). The token itself is never sent. */
+  khqr_template: string | null
+  bakong_token_set: boolean
+  bakong_token_expires_at: string | null
 }
 
 export type PaymentMethod = 'cash' | 'bank' | 'khqr' | 'cheque' | 'other'
@@ -482,6 +497,40 @@ export interface NewPayment {
   notes: string | null
 }
 
+// ── Sign-ups (Stage 8) ───────────────────────────────────────────────────────
+
+export type SignupStatus = 'pending_payment' | 'paid' | 'created' | 'expired' | 'failed'
+
+export interface SignupRow {
+  id: number
+  kind: 'trial' | 'paid'
+  status: SignupStatus
+  plan: { id: number; code: string; name: string } | null
+  periods: number | null
+  amount: string
+  currency: 'USD' | 'KHR'
+  school_name: string
+  school_name_en: string | null
+  slug: string
+  owner_name: string
+  owner_email: string
+  owner_phone: string
+  school: { id: number; name: string; slug: string; status: string } | null
+  failure: string | null
+  ip_address: string | null
+  paid_at: string | null
+  paid_amount: string | null
+  bakong_hash: string | null
+  /** Paid the right amount, but the school was not created: staff may try again. */
+  can_retry: boolean
+  created_at: string
+}
+
+export const signupsApi = {
+  list: (query: ListQuery) => page<SignupRow>('/billing/signups', query),
+  retry: (id: number) => send<{ status: SignupStatus; failure: string | null; school_id: number | null }>('post', `/billing/signups/${id}/retry`),
+}
+
 export const paymentsApi = {
   list: (query: ListQuery) => page<SchoolPaymentRow>('/billing/payments', query),
   quote: (schoolId: number, periods: number) => get<PaymentQuote>(`/schools/${schoolId}/billing/payment-quote`, { periods }),
@@ -502,7 +551,12 @@ export const billingApi = {
   updatePlan: (id: number, body: Partial<PlanInput>) => send<Plan>('patch', `/billing/plans/${id}`, body),
   removePlan: (id: number) => send<{ deleted: boolean }>('delete', `/billing/plans/${id}`),
   settings: () => get<BillingSettingsRow>('/billing/settings'),
-  saveSettings: (body: Partial<Omit<BillingSettingsRow, 'company_logo' | 'company_logo_data'>>) => send<BillingSettingsRow>('put', '/billing/settings', body),
+  saveSettings: (
+    body: Partial<Omit<BillingSettingsRow, 'company_logo' | 'company_logo_data' | 'khqr_template' | 'bakong_token_set' | 'bakong_token_expires_at'>>,
+  ) => send<BillingSettingsRow>('put', '/billing/settings', body),
+  savePayment: (body: { khqr_template: string | null; bakong_token: string | null; clear_token?: boolean }) =>
+    send<BillingSettingsRow>('put', '/billing/settings/payment', body),
+  testBakong: () => send<{ ok: boolean; message: string }>('post', '/billing/settings/payment/test'),
   school: (id: number) => get<SchoolBilling>(`/schools/${id}/billing`),
   subscribe: (
     id: number,
@@ -780,7 +834,7 @@ export const websiteApi = {
 }
 
 /** What a service card opens: its own page (/services/{slug}), the Computer School's pages, a web address, or the Downloads page. */
-export type ServiceCardKind = 'page' | 'school' | 'link' | 'downloads'
+export type ServiceCardKind = 'page' | 'school' | 'link' | 'downloads' | 'plans'
 
 /** One card on the website's "group of services" front page. Text fields come in _km and _en. */
 export interface ServiceCard {

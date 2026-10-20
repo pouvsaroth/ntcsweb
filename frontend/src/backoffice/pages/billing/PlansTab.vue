@@ -104,6 +104,8 @@ onMounted(load)
           <h2 class="font-semibold text-neutral-900">{{ plan.name }}</h2>
           <BaseBadge v-if="plan.is_legacy">{{ t('bo.billing.plans.legacy') }}</BaseBadge>
           <BaseBadge v-if="plan.status === 'inactive'" variant="warning">{{ t('bo.billing.plans.inactive') }}</BaseBadge>
+          <BaseBadge v-if="plan.show_on_website" variant="primary">{{ t('bo.billing.plans.web.shown') }}</BaseBadge>
+          <BaseBadge v-if="plan.recommended" variant="success">{{ t('bo.billing.plans.web.recommended') }}</BaseBadge>
         </div>
         <p class="font-mono text-xs text-neutral-400">{{ plan.code }}</p>
         <p class="mt-3 text-lg font-semibold text-neutral-900">{{ priceLabel(plan, t) }}</p>

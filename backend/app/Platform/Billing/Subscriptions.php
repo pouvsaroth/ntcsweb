@@ -59,7 +59,7 @@ final class Subscriptions
      * The end defaults to one period of the plan from the start (none for a
      * plan with no period); a trial's to the settings' trial days.
      */
-    public function subscribe(Tenant $tenant, Plan $plan, string $status, ?Carbon $start, ?Carbon $end, ?string $notes, PlatformStaff $actor): SchoolSubscription
+    public function subscribe(Tenant $tenant, Plan $plan, string $status, ?Carbon $start, ?Carbon $end, ?string $notes, ?PlatformStaff $actor): SchoolSubscription
     {
         if ($this->live($tenant)) {
             throw ValidationException::withMessages(['plan_id' => __('This school is already on a plan. Change its plan instead.')]);

@@ -44,6 +44,7 @@ final class PlanController extends Controller
 
         $plan = $this->transaction(function () use ($data) {
             $plan = Plan::query()->create($data + ['status' => Plan::STATUS_ACTIVE]);
+            $this->onlyRecommended($plan);
             $this->audit->record('billing.plan_created', $plan, new: $data);
 
             return $plan;
@@ -59,6 +60,7 @@ final class PlanController extends Controller
 
         $this->transaction(function () use ($plan, $data, $old) {
             $plan->update($data);
+            $this->onlyRecommended($plan);
             $this->audit->record('billing.plan_updated', $plan, $old, $plan->only(array_keys($data)));
         });
 
@@ -102,18 +104,37 @@ final class PlanController extends Controller
             'modules' => [$required, 'array'],
             'modules.*' => ['string', 'distinct', Rule::in(Modules::codes())],
             'status' => ['sometimes', Rule::in([Plan::STATUS_ACTIVE, Plan::STATUS_INACTIVE])],
+            // On the website (docs/backoffice/stage-8-signup.md, 8a).
+            'show_on_website' => ['sometimes', 'boolean'],
+            'name_km' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'tagline_en' => ['sometimes', 'nullable', 'string', 'max:150'],
+            'tagline_km' => ['sometimes', 'nullable', 'string', 'max:150'],
+            'features_en' => ['sometimes', 'nullable', 'string', 'max:3000'],
+            'features_km' => ['sometimes', 'nullable', 'string', 'max:3000'],
+            'recommended' => ['sometimes', 'boolean'],
+            'website_order' => ['sometimes', 'integer', 'between:0,1000'],
         ]);
 
         if ($plan?->code === Plan::LEGACY) {
             abort_if(isset($data['code']) && $data['code'] !== Plan::LEGACY, 409, __('The Legacy plan keeps its code.'));
             abort_if(($data['status'] ?? Plan::STATUS_ACTIVE) !== Plan::STATUS_ACTIVE, 409, __('The Legacy plan cannot be deactivated.'));
         }
+        // The Legacy plan is never sold on the website.
+        abort_if(($plan?->code === Plan::LEGACY || ($data['code'] ?? null) === Plan::LEGACY) && ! empty($data['show_on_website']), 409, __('The Legacy plan is not shown on the website.'));
         if (isset($data['modules'])) {
             // Stored in catalog order, so two plans with the same modules read the same.
             $data['modules'] = array_values(array_intersect(Modules::codes(), $data['modules']));
         }
 
         return $data;
+    }
+
+    /** One plan at most carries the Recommended mark: marking one clears the others. */
+    private function onlyRecommended(Plan $plan): void
+    {
+        if ($plan->recommended) {
+            Plan::query()->whereKeyNot($plan->getKey())->where('recommended', true)->update(['recommended' => false]);
+        }
     }
 
     private function withLiveCount(Plan $plan): Plan
@@ -137,6 +158,14 @@ final class PlanController extends Controller
             'status' => $plan->status,
             'is_legacy' => $plan->code === Plan::LEGACY,
             'live_count' => (int) ($plan->live_count ?? 0),
+            'show_on_website' => (bool) $plan->show_on_website,
+            'name_km' => $plan->name_km,
+            'tagline_en' => $plan->tagline_en,
+            'tagline_km' => $plan->tagline_km,
+            'features_en' => $plan->features_en,
+            'features_km' => $plan->features_km,
+            'recommended' => (bool) $plan->recommended,
+            'website_order' => (int) $plan->website_order,
         ];
     }
 

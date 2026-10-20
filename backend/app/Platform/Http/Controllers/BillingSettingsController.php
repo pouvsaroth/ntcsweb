@@ -70,7 +70,60 @@ final class BillingSettingsController extends Controller
     /** @return array<string, mixed> */
     private function present(BillingSettings $settings): array
     {
-        return $settings->only(self::FIELDS) + ['company_logo_data' => PdfImageEncoder::dataUri($settings->logoPath())];
+        return $settings->only(self::FIELDS) + [
+            'company_logo_data' => PdfImageEncoder::dataUri($settings->logoPath()),
+            // Online payment for website sign-ups (stage 8c). The token is never sent back.
+            'khqr_template' => $settings->khqr_template,
+            'bakong_token_set' => filled($settings->bakong_token),
+            'bakong_token_expires_at' => $settings->bakong_token_expires_at?->toIso8601String(),
+        ];
+    }
+
+    /** NewTech's KHQR and the Bakong token (stage 8c). An empty token field keeps the saved one. */
+    public function updatePayment(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'khqr_template' => ['sometimes', 'nullable', 'string', 'max:1000', function (string $attr, mixed $value, \Closure $fail) {
+                if (filled($value)) {
+                    try {
+                        \App\Support\Billing\Khqr::withAmount(trim((string) $value), 1, 'USD');
+                    } catch (\InvalidArgumentException) {
+                        $fail(__('This does not look like a KHQR code. Paste the text of your bank app\'s "receive any amount" QR.'));
+                    }
+                }
+            }],
+            'bakong_token' => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'clear_token' => ['sometimes', 'boolean'],
+        ]);
+
+        $settings = BillingSettings::current();
+        $changes = [];
+        if (array_key_exists('khqr_template', $data)) {
+            $changes['khqr_template'] = filled($data['khqr_template']) ? trim($data['khqr_template']) : null;
+        }
+        if (filled($data['bakong_token'] ?? null)) {
+            $token = trim($data['bakong_token']);
+            $changes['bakong_token'] = $token;
+            $changes['bakong_token_expires_at'] = \App\Platform\Signup\Bakong::expiryOf($token);
+        } elseif ($request->boolean('clear_token')) {
+            $changes['bakong_token'] = null;
+            $changes['bakong_token_expires_at'] = null;
+        }
+
+        DB::connection($settings->getConnectionName())->transaction(function () use ($settings, $changes) {
+            $old = ['khqr_template' => $settings->khqr_template, 'bakong_token_set' => filled($settings->bakong_token)];
+            $settings->update($changes);
+            // The token itself never goes into the audit log.
+            $this->audit->record('billing.payment_settings_updated', $settings, $old, ['khqr_template' => $settings->khqr_template, 'bakong_token_set' => filled($settings->bakong_token)]);
+        });
+
+        return ApiResponse::success($this->present($settings->fresh()));
+    }
+
+    /** "Test the token": asks Bakong about a code nobody paid. */
+    public function testBakong(\App\Platform\Signup\Bakong $bakong): JsonResponse
+    {
+        return ApiResponse::success($bakong->test());
     }
 
     public function update(Request $request): JsonResponse

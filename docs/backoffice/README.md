@@ -43,6 +43,7 @@ sign-in, its own routes and its own app.
 | 5 | Billing — plans (price, period, modules, student limit), subscriptions, payments + receipts, expiry → suspend | [stage-5-billing.md](stage-5-billing.md) | ✅ Live since 2026-10-18 |
 | 6 | Support — per-school health, audited read-only impersonation | [stage-6-support.md](stage-6-support.md) | ✅ Live since 2026-10-19 (6a health, 6b-1 back office, 6b-2 console) |
 | 7 | Website — NewTech's public website edited in the back office; removed from the school app | [stage-7-website.md](stage-7-website.md) | ✅ Live since 2026-10-19 (7a server, 7b screens, 7c school app removal) |
+| 8 | Sign-up — plans on the website, self-service sign-up form, Bakong KHQR auto-checked payment | [stage-8-signup.md](stage-8-signup.md) | 🚧 8a + 8b + 8c built locally 2026-10-20 |
 
 Each stage gets its brief before any code, and a "done when" that is a list
 of commands.

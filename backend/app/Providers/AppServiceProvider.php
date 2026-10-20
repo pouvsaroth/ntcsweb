@@ -150,6 +150,11 @@ class AppServiceProvider extends ServiceProvider
 
         // The public Careers page's Apply form — anyone can send it, with a
         // file, so a handful per IP per school is plenty.
+        // Self-service sign-up on the website (docs/backoffice/stage-8-signup.md):
+        // a few sign-ups per visitor, and enough status/address checks to type and wait.
+        RateLimiter::for('signups', fn (Request $request) => Limit::perMinutes(60, 5)->by("signups:{$request->ip()}"));
+        RateLimiter::for('signup-checks', fn (Request $request) => Limit::perMinute(60)->by("signup-checks:{$request->ip()}"));
+
         RateLimiter::for('job-applications', function (Request $request) {
             $tenantId = app(TenantContext::class)->id() ?? 'platform';
 
