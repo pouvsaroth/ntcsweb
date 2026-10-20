@@ -53,6 +53,12 @@ its chat files. Tests: `tests/Feature/Platform/SupportChatTest.php`.
   replied. Opens a panel: the conversation, a box to type, attach (or paste a
   screenshot), send. Images show as pictures; files as links.
 
+**As built 10b (2026-10-21):** `components/layout/SupportChat.vue` in
+AdminHeader (before the bell); `services/supportChat.ts`. Hidden for
+students, platform accounts and with no school; in a support view the panel
+is read-only. Unread dot every 30 s; open panel polls `?after=` every 5 s and
+marks read. Attach button, Ctrl+V screenshots, Enter to send.
+
 ### 10c. In the back office
 - Support → **Chats**: list (customer, person, last message, waiting/answered,
   unread), the conversation on the right, reply with text and files, close.

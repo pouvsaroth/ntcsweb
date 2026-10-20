@@ -7,6 +7,7 @@ import ExaminationTabs from '@/components/admin/ExaminationTabs.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import LanguageSwitcher from '@/components/ui/LanguageSwitcher.vue'
 import NotificationBell from '@/components/layout/NotificationBell.vue'
+import SupportChat from '@/components/layout/SupportChat.vue'
 import { adminNav } from '@/router/adminNav'
 import { useAuthStore } from '@/stores/auth'
 
@@ -84,6 +85,9 @@ const sectionLink = computed(() => {
         </svg>
         {{ t('common.goToWebsite') }}
       </BaseButton>
+
+      <!-- Ask NewTech support (staff users only). -->
+      <SupportChat />
 
       <NotificationBell />
 
