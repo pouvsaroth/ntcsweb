@@ -18,6 +18,8 @@ export interface PublicPlan {
   period_months: number | null
   max_students: number | null
   recommended: boolean
+  /** Its main menus (modules), shown on the card. */
+  modules: { label: string; label_km: string }[]
 }
 
 /** The system a plans page sells (stage 9). */

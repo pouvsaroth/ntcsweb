@@ -640,6 +640,7 @@ const en = {
     free: 'Free',
     trialDays: 'for {n} days',
     trialText: 'Try every feature before you choose a plan.',
+    includes: 'Includes',
     recommended: 'Recommended',
     perMonth: 'per month',
     perYear: 'per year',

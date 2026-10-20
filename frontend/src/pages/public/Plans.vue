@@ -48,6 +48,7 @@ const cards = computed(() =>
     name: pick(p.name_km, p.name) || p.name,
     tagline: pick(p.tagline_km, p.tagline_en),
     features: km.value ? (p.features_km.length ? p.features_km : p.features_en) : p.features_en.length ? p.features_en : p.features_km,
+    modules: (p.modules ?? []).map((m) => (km.value ? m.label_km || m.label : m.label)),
     price: formatMoney(Number(p.price), p.currency).replace(/\.00$/, ''),
     period:
       p.period_months === null
@@ -102,6 +103,13 @@ const cards = computed(() =>
           <p class="mt-3 text-3xl font-bold text-neutral-900">{{ c.price }}</p>
           <p class="text-sm text-neutral-500">{{ c.period }}</p>
           <p v-if="c.tagline" class="mt-3 text-sm text-neutral-600">{{ c.tagline }}</p>
+          <!-- Its main menus, from the plan's modules in the back office. -->
+          <div v-if="c.modules.length" class="mt-4 border-t border-neutral-100 pt-4">
+            <p class="text-xs font-medium tracking-wide text-neutral-500 uppercase">{{ t('plansPage.includes') }}</p>
+            <div class="mt-2 flex flex-wrap gap-1.5">
+              <span v-for="m in c.modules" :key="m" class="rounded-full bg-secondary-50 px-2.5 py-0.5 text-xs font-medium text-secondary-800">{{ m }}</span>
+            </div>
+          </div>
           <ul v-if="c.features.length" class="mt-4 space-y-2 border-t border-neutral-100 pt-4">
             <li v-for="(f, i) in c.features" :key="i" class="flex items-start gap-2 text-sm text-neutral-800">
               <span class="mt-0.5 text-primary-600" aria-hidden="true">✓</span>

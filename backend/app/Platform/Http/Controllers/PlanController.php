@@ -29,6 +29,7 @@ final class PlanController extends Controller
         $plans = Plan::query()
             ->with('product:id,code,name,name_km')
             ->withCount(['subscriptions as live_count' => fn ($q) => $q->whereIn('status', SchoolSubscription::LIVE)])
+            ->withCount('subscriptions as used_count')
             ->orderByRaw("status = 'active' desc")
             ->orderBy('price')
             ->orderBy('name')
@@ -163,7 +164,7 @@ final class PlanController extends Controller
 
     private function withLiveCount(Plan $plan): Plan
     {
-        return $plan->load('product:id,code,name,name_km')->loadCount(['subscriptions as live_count' => fn ($q) => $q->whereIn('status', SchoolSubscription::LIVE)]);
+        return $plan->load('product:id,code,name,name_km')->loadCount(['subscriptions as live_count' => fn ($q) => $q->whereIn('status', SchoolSubscription::LIVE), 'subscriptions as used_count']);
     }
 
     /** @return array<string, mixed> */
@@ -185,6 +186,8 @@ final class PlanController extends Controller
             'status' => $plan->status,
             'is_legacy' => $plan->code === Plan::LEGACY,
             'live_count' => (int) ($plan->live_count ?? 0),
+            // Ever on a customer: then it can only be deactivated, never deleted.
+            'used_count' => (int) ($plan->used_count ?? 0),
             'show_on_website' => (bool) $plan->show_on_website,
             'name_km' => $plan->name_km,
             'tagline_en' => $plan->tagline_en,

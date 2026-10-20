@@ -74,7 +74,8 @@ function modulesOf(plan: Plan): string {
 }
 
 async function remove(plan: Plan): Promise<void> {
-  if (!(await confirmDialog.confirm(t('bo.billing.plans.removeConfirm', { name: plan.name })))) return
+  const question = plan.used_count === 0 ? 'bo.billing.plans.deleteConfirm' : 'bo.billing.plans.deactivateConfirm'
+  if (!(await confirmDialog.confirm(t(question, { name: plan.name })))) return
   notice.value = null
   try {
     const { deleted } = await billingApi.removePlan(plan.id)
@@ -131,12 +132,20 @@ onMounted(load)
         <p v-if="plan.description" class="mt-2 text-sm text-neutral-600">{{ plan.description }}</p>
         <p class="mt-3 text-xs font-medium tracking-wide text-neutral-500 uppercase">{{ t('bo.billing.plans.modules') }}</p>
         <p class="text-sm text-neutral-700">{{ modulesOf(plan) }}</p>
-        <p class="mt-3 text-xs text-neutral-500">{{ t('bo.billing.plans.liveCount', { n: plan.live_count }) }}</p>
+        <p class="mt-3 text-xs text-neutral-500">
+          {{ t('bo.billing.plans.liveCount', { n: plan.live_count }) }}<template v-if="plan.used_count === 0"> · {{ t('bo.billing.plans.neverUsed') }}</template>
+        </p>
 
         <div v-if="canManage" class="mt-4 flex flex-wrap gap-2 border-t border-neutral-100 pt-4">
           <BaseButton size="sm" variant="outline" @click="openForm(plan)">{{ t('bo.billing.plans.edit') }}</BaseButton>
           <BaseButton v-if="plan.status === 'inactive'" size="sm" variant="outline" @click="reactivate(plan)">{{ t('bo.billing.plans.reactivate') }}</BaseButton>
-          <BaseButton v-else-if="!plan.is_legacy" size="sm" variant="ghost" @click="remove(plan)">{{ t('bo.billing.plans.remove') }}</BaseButton>
+          <!-- Never used by a customer: deleted for good (active or not). Used: only deactivated. -->
+          <BaseButton v-if="!plan.is_legacy && plan.used_count === 0" size="sm" variant="ghost" class="!text-red-600" @click="remove(plan)">
+            {{ t('bo.billing.plans.delete') }}
+          </BaseButton>
+          <BaseButton v-else-if="!plan.is_legacy && plan.status === 'active'" size="sm" variant="ghost" @click="remove(plan)">
+            {{ t('bo.billing.plans.deactivate') }}
+          </BaseButton>
         </div>
       </section>
     </div>

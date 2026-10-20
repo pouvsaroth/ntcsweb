@@ -637,6 +637,7 @@ const km: MessageSchema = {
     free: 'ឥតគិតថ្លៃ',
     trialDays: 'រយៈពេល {n} ថ្ងៃ',
     trialText: 'សាកល្បងមុខងារទាំងអស់ មុនពេលជ្រើសរើសកញ្ចប់។',
+    includes: 'រួមមាន',
     recommended: 'ណែនាំ',
     perMonth: 'ក្នុងមួយខែ',
     perYear: 'ក្នុងមួយឆ្នាំ',

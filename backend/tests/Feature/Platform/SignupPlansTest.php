@@ -80,7 +80,8 @@ class SignupPlansTest extends TestCase
             ->assertJsonPath('data.trial_days', 15)
             ->assertJsonPath('data.plans.*.code', ['starter', 'pro'])
             ->assertJsonPath('data.plans.0.features_km', ['ចុះឈ្មោះសិស្ស', 'គ្រប់គ្រងថ្នាក់'])
-            ->assertJsonMissingPath('data.plans.0.modules');
+            ->assertJsonPath('data.plans.0.modules.0.label', 'Academics')
+            ->assertJsonMissingPath('data.plans.0.menus');
     }
 
     public function test_only_the_website_school_has_a_plans_page(): void

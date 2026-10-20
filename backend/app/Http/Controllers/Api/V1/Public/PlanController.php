@@ -70,6 +70,11 @@ final class PlanController extends Controller
                 'period_months' => $p->period_months,
                 'max_students' => $p->max_students,
                 'recommended' => (bool) $p->recommended,
+                // Its main menus, for the card (names only — never menus or limits).
+                'modules' => array_values(array_map(fn (string $m) => [
+                    'label' => \App\Platform\Billing\Modules::CATALOG[$m]['label'],
+                    'label_km' => \App\Platform\Billing\Modules::CATALOG[$m]['label_km'],
+                ], array_filter($p->modules ?? [], fn ($m) => isset(\App\Platform\Billing\Modules::CATALOG[$m])))),
             ])->values(),
         ]);
     }

@@ -428,6 +428,8 @@ export interface Plan {
   status: 'active' | 'inactive'
   is_legacy: boolean
   live_count: number
+  /** Customers ever on it: 0 = it can be deleted; otherwise only deactivated. */
+  used_count: number
   /** On the website's plans page (docs/backoffice/stage-8-signup.md, 8a). */
   show_on_website: boolean
   name_km: string | null

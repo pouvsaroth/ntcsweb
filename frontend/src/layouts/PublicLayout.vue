@@ -59,11 +59,24 @@ onMounted(async () => {
 
   <div v-else class="relative flex min-h-screen flex-col">
     <div v-if="companyView" class="absolute top-3 right-3 z-30 flex items-center gap-2 sm:top-4 sm:right-6">
+      <!-- Icon only; its name shows on hover (and to screen readers). -->
       <a
         :href="backOfficeUrl"
-        class="rounded-lg border border-neutral-300 bg-white/80 px-3 py-1.5 text-xs font-semibold text-secondary-800 shadow-sm hover:bg-white"
+        class="group relative flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-300 bg-white/80 text-secondary-800 shadow-sm hover:bg-white focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:outline-none"
+        :aria-label="t('servicesPage.backOffice')"
       >
-        {{ t('servicesPage.backOffice') }}
+        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <rect x="3" y="3" width="7" height="7" rx="1.5" />
+          <rect x="14" y="3" width="7" height="7" rx="1.5" />
+          <rect x="3" y="14" width="7" height="7" rx="1.5" />
+          <rect x="14" y="14" width="7" height="7" rx="1.5" />
+        </svg>
+        <span
+          class="pointer-events-none absolute top-full right-0 mt-1.5 rounded-md bg-neutral-900 px-2 py-1 text-xs font-medium whitespace-nowrap text-white opacity-0 shadow transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+          aria-hidden="true"
+        >
+          {{ t('servicesPage.backOffice') }}
+        </span>
       </a>
       <LanguageSwitcher />
     </div>

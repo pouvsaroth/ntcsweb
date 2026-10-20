@@ -2,7 +2,8 @@
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { LOCALE_FLAGS, LOCALE_NAMES, SUPPORTED_LOCALES, setLocale, type Locale } from '@/i18n'
+import FlagIcon from '@/components/ui/FlagIcon.vue'
+import { LOCALE_NAMES, SUPPORTED_LOCALES, setLocale, type Locale } from '@/i18n'
 
 interface Props {
   /** 'light' for dark backgrounds (public header on a light page), 'dark' text for light backgrounds. */
@@ -27,10 +28,12 @@ function choose(next: Locale) {
       class="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium transition-colors"
       :class="variant === 'light' ? 'text-white/90 hover:bg-white/10' : 'text-neutral-600 hover:bg-neutral-100'"
       :aria-label="t('common.language')"
+      :title="LOCALE_NAMES[locale as Locale]"
       :aria-expanded="open"
       @click="open = !open"
     >
-      <span class="text-base leading-none" aria-hidden="true">{{ LOCALE_FLAGS[locale as Locale] }}</span>
+      <!-- Drawn flags: Windows shows emoji flags as letters ("US"). -->
+      <FlagIcon :locale="locale as Locale" />
     </button>
 
     <div v-if="open" class="fixed inset-0 z-40" @click="open = false" />
@@ -54,7 +57,7 @@ function choose(next: Locale) {
             @click="choose(code)"
           >
             <span class="flex items-center gap-2">
-              <span class="text-base leading-none" aria-hidden="true">{{ LOCALE_FLAGS[code] }}</span>
+              <FlagIcon :locale="code" />
               {{ LOCALE_NAMES[code] }}
             </span>
             <svg v-if="locale === code" class="h-4 w-4 text-secondary-600" fill="currentColor" viewBox="0 0 20 20">
