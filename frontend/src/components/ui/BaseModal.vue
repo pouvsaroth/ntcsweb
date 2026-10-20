@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, watch } from 'vue'
+import { onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 interface Props {
@@ -23,6 +23,14 @@ const sizes = {
   lg: 'max-w-2xl',
   full: 'max-w-none w-[calc(100vw-2rem)] h-[calc(100vh-2rem)]',
 } as const
+
+/**
+ * A click on the dark area closes the dialog only when the press began and
+ * ended there: selecting text in a field and letting go outside the box would
+ * otherwise count as a click outside and throw the form away.
+ */
+const pressedOutside = ref(false)
+const releasedOutside = ref(false)
 
 function close() {
   emit('update:modelValue', false)
@@ -68,7 +76,9 @@ onUnmounted(() => {
       <div
         v-if="modelValue"
         class="fixed inset-0 z-50 flex items-center justify-center bg-neutral-900/50 p-4"
-        @click.self="close"
+        @pointerdown="pressedOutside = $event.target === $event.currentTarget"
+        @pointerup="releasedOutside = $event.target === $event.currentTarget"
+        @click.self="pressedOutside && releasedOutside && close()"
       >
         <!--
           flex-col + max-h caps the dialog to the viewport and makes the
