@@ -180,4 +180,21 @@ class SupportChatTest extends TestCase
 
         Http::assertSent(fn ($r) => str_contains($r->url(), 'bot123:ABC/sendMessage') && $r['chat_id'] === '-100123' && str_contains($r['text'], 'Hello support'));
     }
+
+    public function test_a_message_from_a_school_in_cambodia_time_is_stored_in_utc(): void
+    {
+        Queue::fake();
+        $this->actingAsAdminWithPermissions([]);
+        $zone = date_default_timezone_get();
+        date_default_timezone_set('Asia/Phnom_Penh'); // as a console request runs
+        try {
+            $this->ask(['body' => 'What time is it?'])->assertCreated();
+        } finally {
+            date_default_timezone_set($zone);
+        }
+
+        $stored = \Illuminate\Support\Carbon::parse((string) \Illuminate\Support\Facades\DB::connection(config('tenancy.database.central_connection'))
+            ->table('bo_chat_messages')->value('created_at'), 'UTC');
+        $this->assertLessThan(120, abs($stored->diffInSeconds(now('UTC'))), 'stored as UTC, not Phnom Penh time');
+    }
 }

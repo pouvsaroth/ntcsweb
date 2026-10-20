@@ -9,6 +9,7 @@ import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import { ApiRequestError } from '@/types/api'
 
 import { supportApi } from '../../api'
+import ChatTelegramSettings from '../../components/ChatTelegramSettings.vue'
 import { useSession } from '../../session'
 
 /** How long a support view lasts before it ends by itself. */
@@ -44,7 +45,8 @@ async function save(): Promise<void> {
 
 <template>
   <div v-if="!loaded" class="flex justify-center py-10"><BaseSpinner /></div>
-  <form v-else class="max-w-md space-y-4 rounded-[--radius-card] border border-neutral-200 bg-white p-5 shadow-[--shadow-card]" @submit.prevent="save">
+  <template v-else>
+  <form class="max-w-md space-y-4 rounded-[--radius-card] border border-neutral-200 bg-white p-5 shadow-[--shadow-card]" @submit.prevent="save">
     <BaseInput
       v-model="minutes"
       type="number"
@@ -58,4 +60,8 @@ async function save(): Promise<void> {
     <BaseAlert v-if="saved" variant="success">{{ t('bo.common.saved') }}</BaseAlert>
     <BaseButton v-if="canEdit" type="submit" :loading="saving">{{ t('bo.common.save') }}</BaseButton>
   </form>
+
+  <!-- Support chat alerts (stage 10). -->
+  <ChatTelegramSettings v-if="session.can('platform.support.chat')" class="mt-6" />
+  </template>
 </template>

@@ -65,6 +65,13 @@ marks read. Attach button, Ctrl+V screenshots, Enter to send.
   A badge on Support in the menu when customers are waiting.
 - Settings → Support chat (Telegram).
 
+**As built 10c (2026-10-21):** Support → **Chats** (`pages/support/ChatsTab.vue`,
+`/support/chats/{id}` — the Telegram link): filters Waiting / Open / Closed /
+All, search, list refresh 15 s, open chat 5 s; reply with files or a pasted
+screenshot; close / reopen. Support menu badge = chats waiting (every 30 s).
+Support → Settings: Telegram card (`ChatTelegramSettings.vue`). Console chat
+requests run in UTC (`SupportViewSession::inUtc`), so times match the back office.
+
 ## Done when
 - `php artisan test --filter=Chat` passes (send, files, who may read what,
   students refused, support view refused, staff reply, unread, Telegram faked).

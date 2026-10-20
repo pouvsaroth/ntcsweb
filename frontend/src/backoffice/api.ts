@@ -773,6 +773,57 @@ export interface SupportUser {
   is_owner: boolean
 }
 
+// ── Support chat (Stage 10) ──────────────────────────────────────────────────
+
+export interface ChatSummary {
+  id: number
+  customer: { id: number; name: string; slug: string } | null
+  user_name: string
+  user_email: string | null
+  status: 'open' | 'closed'
+  /** The customer wrote last and has no answer yet. */
+  waiting: boolean
+  unread: number
+  last_staff: string | null
+  last_message_at: string | null
+  last_message: { sender: 'user' | 'staff'; text: string } | null
+}
+
+export interface ChatAttachment {
+  name: string
+  mime: string
+  size: number
+  is_image: boolean
+  url: string
+}
+
+export interface ChatMessageRow {
+  id: number
+  sender: 'user' | 'staff'
+  staff: string | null
+  body: string | null
+  attachments: ChatAttachment[]
+  created_at: string
+}
+
+export const chatsApi = {
+  list: (query: ListQuery) => page<ChatSummary>('/support/chats', query),
+  waiting: () => get<{ waiting: number }>('/support/chats/waiting'),
+  show: (id: number, after?: number) => get<{ chat: ChatSummary; messages: ChatMessageRow[] }>(`/support/chats/${id}`, after ? { after } : undefined),
+  reply: (id: number, body: string, files: File[]) => {
+    const form = new FormData()
+    if (body.trim()) form.append('body', body.trim())
+    files.forEach((f) => form.append('files[]', f))
+    return send<ChatMessageRow>('post', `/support/chats/${id}/messages`, form)
+  },
+  close: (id: number) => send<ChatSummary>('post', `/support/chats/${id}/close`),
+  reopen: (id: number) => send<ChatSummary>('post', `/support/chats/${id}/reopen`),
+  settings: () => get<{ telegram_chat_id: string | null; telegram_token_set: boolean }>('/support/chats/settings'),
+  saveSettings: (body: { telegram_bot_token?: string | null; telegram_chat_id: string | null; clear_token?: boolean }) =>
+    send<{ telegram_chat_id: string | null; telegram_token_set: boolean }>('put', '/support/chats/settings', body),
+  testTelegram: () => send<{ ok: boolean; message: string }>('post', '/support/chats/settings/test'),
+}
+
 export const supportApi = {
   list: (query: ListQuery) => page<SupportView>('/support/sessions', query),
   show: (id: number) => get<SupportView>(`/support/sessions/${id}`),

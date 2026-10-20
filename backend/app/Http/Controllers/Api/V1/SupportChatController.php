@@ -10,6 +10,7 @@ use App\Models\Role;
 use App\Models\User;
 use App\Platform\Models\ChatMessage;
 use App\Platform\Support\Chats;
+use App\Platform\Support\SupportViewSession;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -28,55 +29,67 @@ final class SupportChatController extends Controller
     /** The conversation: the last 100 messages, or only those after `after`. */
     public function show(Request $request): JsonResponse
     {
-        $user = $this->chatter($request);
-        $chat = $this->chats->forUser($user);
-        $after = (int) $request->query('after', 0);
+        // bo_* tables are UTC; this request runs in the school's zone.
+        return SupportViewSession::inUtc(function () use ($request): JsonResponse {
+            $user = $this->chatter($request);
+            $chat = $this->chats->forUser($user);
+            $after = (int) $request->query('after', 0);
 
-        $messages = $chat->messages()->with('staff:id,name')
-            ->when($after > 0, fn ($q) => $q->where('id', '>', $after))
-            ->orderByDesc('id')->limit(100)->get()->reverse()->values();
+            $messages = $chat->messages()->with('staff:id,name')
+                ->when($after > 0, fn ($q) => $q->where('id', '>', $after))
+                ->orderByDesc('id')->limit(100)->get()->reverse()->values();
 
-        return ApiResponse::success([
-            'chat' => ['id' => $chat->id, 'status' => $chat->status, 'unread' => $chat->unread_user],
-            'messages' => $messages->map(fn (ChatMessage $m) => Chats::present($m, fn (ChatMessage $msg, int $i) => "/api/v1/support-chat/files/{$msg->id}/{$i}"))->values(),
-        ]);
+            return ApiResponse::success([
+                'chat' => ['id' => $chat->id, 'status' => $chat->status, 'unread' => $chat->unread_user],
+                'messages' => $messages->map(fn (ChatMessage $m) => Chats::present($m, fn (ChatMessage $msg, int $i) => "/api/v1/support-chat/files/{$msg->id}/{$i}"))->values(),
+            ]);
+        });
     }
 
     /** For the button's dot: replies from NewTech not read yet. */
     public function unread(Request $request): JsonResponse
     {
-        $user = $this->chatter($request);
-        $unread = (int) \App\Platform\Models\Chat::query()->where('user_id', $user->getKey())->value('unread_user');
+        // bo_* tables are UTC; this request runs in the school's zone.
+        return SupportViewSession::inUtc(function () use ($request): JsonResponse {
+            $user = $this->chatter($request);
+            $unread = (int) \App\Platform\Models\Chat::query()->where('user_id', $user->getKey())->value('unread_user');
 
-        return ApiResponse::success(['unread' => $unread]);
+            return ApiResponse::success(['unread' => $unread]);
+        });
     }
 
     public function send(Request $request): JsonResponse
     {
-        $user = $this->chatter($request);
-        $data = $request->validate([
-            'body' => ['nullable', 'string', 'max:4000'],
-            'files' => ['nullable', 'array', 'max:'.Chats::MAX_FILES],
-            'files.*' => Chats::FILE_RULES,
-        ]);
-        $body = isset($data['body']) ? (trim($data['body']) ?: null) : null;
-        $files = $request->file('files', []);
-        if ($body === null && $files === []) {
-            throw ValidationException::withMessages(['body' => __('Write a message or attach a file.')]);
-        }
+        // bo_* tables are UTC; this request runs in the school's zone.
+        return SupportViewSession::inUtc(function () use ($request): JsonResponse {
+            $user = $this->chatter($request);
+            $data = $request->validate([
+                'body' => ['nullable', 'string', 'max:4000'],
+                'files' => ['nullable', 'array', 'max:'.Chats::MAX_FILES],
+                'files.*' => Chats::FILE_RULES,
+            ]);
+            $body = isset($data['body']) ? (trim($data['body']) ?: null) : null;
+            $files = $request->file('files', []);
+            if ($body === null && $files === []) {
+                throw ValidationException::withMessages(['body' => __('Write a message or attach a file.')]);
+            }
 
-        $message = $this->chats->fromUser($user, $body, $files);
+            $message = $this->chats->fromUser($user, $body, $files);
 
-        return ApiResponse::created(Chats::present($message, fn (ChatMessage $msg, int $i) => "/api/v1/support-chat/files/{$msg->id}/{$i}"));
+            return ApiResponse::created(Chats::present($message, fn (ChatMessage $msg, int $i) => "/api/v1/support-chat/files/{$msg->id}/{$i}"));
+        });
     }
 
     /** The user saw NewTech's replies. */
     public function read(Request $request): JsonResponse
     {
-        $user = $this->chatter($request);
-        \App\Platform\Models\Chat::query()->where('user_id', $user->getKey())->update(['unread_user' => 0]);
+        // bo_* tables are UTC; this request runs in the school's zone.
+        return SupportViewSession::inUtc(function () use ($request): JsonResponse {
+            $user = $this->chatter($request);
+            \App\Platform\Models\Chat::query()->where('user_id', $user->getKey())->update(['unread_user' => 0]);
 
-        return ApiResponse::success(['unread' => 0]);
+            return ApiResponse::success(['unread' => 0]);
+        });
     }
 
     public function file(Request $request, int $message, int $index): StreamedResponse
