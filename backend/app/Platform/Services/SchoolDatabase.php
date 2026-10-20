@@ -109,6 +109,45 @@ class SchoolDatabase
         }
     }
 
+    /**
+     * Delete this school's data where it lives (customer delete): its own
+     * database is dropped; in the shared or a separate database, its rows are
+     * deleted (the database itself stays — other schools, or not ours).
+     */
+    public function erase(Tenant $tenant): void
+    {
+        $placement = $this->placementOf($tenant);
+        $central = DB::connection(config('tenancy.database.central_connection'));
+
+        if ($placement->mode === SchoolPlacement::DEDICATED) {
+            if ($placement->database === config('tenancy.database.shared_database') || $placement->database === $central->getDatabaseName()) {
+                throw new \RuntimeException("Refusing to drop {$placement->database}: it is not this school's own database.");
+            }
+            $central->select('select pg_terminate_backend(pid) from pg_stat_activity where datname = ? and pid <> pg_backend_pid()', [$placement->database]);
+            $central->statement('DROP DATABASE IF EXISTS "'.str_replace('"', '""', $placement->database).'"');
+
+            return;
+        }
+
+        $name = 'platform_erase';
+        $base = config('database.connections.'.config('tenancy.database.central_connection'));
+        config(['database.connections.'.$name => $placement->mode === SchoolPlacement::SEPARATE
+            ? array_merge($base, [
+                'url' => null, 'host' => $placement->host, 'port' => $placement->port, 'database' => $placement->database,
+                'username' => $placement->username, 'password' => $placement->password, 'sslmode' => $placement->sslmode ?: 'prefer',
+                'search_path' => 'public', 'app_role' => '',
+            ])
+            : array_merge($base, ['database' => $placement->database, 'search_path' => 'public'])]);
+
+        try {
+            $db = DB::connection($name);
+            $db->select("select set_config('app.tenant_id', ?, false)", [(string) $tenant->getKey()]);
+            app(\App\Platform\DataOps\SchoolImporter::class)->deleteAll($db, (int) $tenant->getKey());
+        } finally {
+            DB::purge($name);
+        }
+    }
+
     /** Point the `tenant` connection at this school's database while $callback runs. */
     public function within(Tenant $tenant, callable $callback): mixed
     {

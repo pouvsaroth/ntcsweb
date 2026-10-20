@@ -135,6 +135,26 @@ final class SchoolController extends Controller
         return ApiResponse::success(new SchoolResource($this->detailed($school)));
     }
 
+    /**
+     * Delete a customer for good, with all its data (SchoolEraser). Staff type
+     * the customer's code to confirm.
+     */
+    public function destroy(Request $request, Tenant $school): JsonResponse
+    {
+        $data = $request->validate([
+            'confirm' => ['required', 'string'],
+            'keep_backups' => ['sometimes', 'boolean'],
+        ]);
+        if ($data['confirm'] !== $school->slug) {
+            throw ValidationException::withMessages(['confirm' => __('Type the code :slug exactly to confirm.', ['slug' => $school->slug])]);
+        }
+
+        set_time_limit(600);
+        app(\App\Platform\Services\SchoolEraser::class)->erase($school, $request->user('staff'), (bool) ($data['keep_backups'] ?? false));
+
+        return ApiResponse::success(['deleted' => true]);
+    }
+
     /** "Test connection" for a separate server: nothing is saved. */
     public function testConnection(Request $request): JsonResponse
     {

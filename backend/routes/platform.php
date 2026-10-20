@@ -78,6 +78,8 @@ Route::middleware('platform.staff')->group(function () {
     Route::post('schools/{school}/suspend', [SchoolController::class, 'suspend'])->middleware('platform.can:platform.school.status')->name('schools.suspend');
     Route::post('schools/{school}/reactivate', [SchoolController::class, 'reactivate'])->middleware('platform.can:platform.school.status')->name('schools.reactivate');
     Route::post('schools/{school}/archive', [SchoolController::class, 'archive'])->middleware('platform.can:platform.school.status')->name('schools.archive');
+    // Delete for good, with all its data (owner-level permission).
+    Route::delete('schools/{school}', [SchoolController::class, 'destroy'])->middleware('platform.can:platform.school.delete')->name('schools.destroy');
 
     // Moving a school's data between placements (stage 4d).
     Route::get('schools/{school}/moves', [SchoolMoveController::class, 'index'])->middleware('platform.can:platform.school.read')->name('schools.moves.index');

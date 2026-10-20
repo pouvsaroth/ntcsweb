@@ -351,6 +351,8 @@ export const schoolsApi = {
   suspend: (id: number, reason: string) => send<School>('post', `/schools/${id}/suspend`, { reason }),
   reactivate: (id: number) => send<School>('post', `/schools/${id}/reactivate`),
   archive: (id: number, reason: string) => send<School>('post', `/schools/${id}/archive`, { reason }),
+  /** For good, with all its data; `confirm` is the customer's code typed by staff. */
+  destroy: (id: number, confirm: string, keepBackups: boolean) => send<{ deleted: boolean }>('delete', `/schools/${id}`, { confirm, keep_backups: keepBackups }),
   resendInvite: (id: number) => send<null>('post', `/schools/${id}/owner/invite`),
   testConnection: (server: ServerLogin) => send<ConnectionTest>('post', '/schools/test-connection', server),
   moves: (id: number) => get<SchoolMove[]>(`/schools/${id}/moves`),

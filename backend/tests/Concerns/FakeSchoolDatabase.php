@@ -47,4 +47,17 @@ class FakeSchoolDatabase extends SchoolDatabase
     {
         return $callback();
     }
+
+    /** @var list<string> slugs erase() was called for */
+    public array $erased = [];
+
+    public bool $failErase = false;
+
+    public function erase(Tenant $tenant): void
+    {
+        if ($this->failErase) {
+            throw new \RuntimeException('could not connect to server');
+        }
+        $this->erased[] = $tenant->slug;
+    }
 }

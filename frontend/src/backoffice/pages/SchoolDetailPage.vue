@@ -13,6 +13,7 @@ import { formatDateTime } from '@/utils/date'
 import { schoolsApi, type School } from '../api'
 import ReasonModal from '../components/ReasonModal.vue'
 import SchoolBillingPanel from '../components/SchoolBillingPanel.vue'
+import SchoolDeletePanel from '../components/SchoolDeletePanel.vue'
 import SchoolDomainsPanel from '../components/SchoolDomainsPanel.vue'
 import SchoolHealthPanel from '../components/SchoolHealthPanel.vue'
 import SchoolOwnerPanel from '../components/SchoolOwnerPanel.vue'
@@ -167,6 +168,9 @@ async function reactivate(): Promise<void> {
               </li>
             </ol>
           </section>
+
+          <!-- Delete for good, with all its data (owner-level permission). -->
+          <SchoolDeletePanel v-if="session.can('platform.school.delete') && school.status !== 'provisioning'" :school="school" />
         </div>
       </div>
 
