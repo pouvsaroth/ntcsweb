@@ -42,6 +42,7 @@ final class SchoolEraser
         }
 
         $id = $tenant->getKey();
+        $chatIds = \App\Platform\Models\Chat::query()->where('tenant_id', $id)->pluck('id')->all();
         $placement = $this->database->placementOf($tenant);
         $record = ['name' => $tenant->name, 'slug' => $tenant->slug, 'placement' => $placement->mode, 'database' => $placement->database, 'kept_backups' => $keepBackups];
 
@@ -72,7 +73,10 @@ final class SchoolEraser
             $tenant->forceDelete();
         });
 
-        // 4. Its uploaded files.
+        // 4. Its uploaded files, and its support chats' attachments.
+        foreach ($chatIds as $chatId) {
+            Storage::disk('local')->deleteDirectory('chats/'.$chatId);
+        }
         foreach (['public', 'local'] as $disk) {
             try {
                 Storage::disk($disk)->deleteDirectory('tenants/'.$id);

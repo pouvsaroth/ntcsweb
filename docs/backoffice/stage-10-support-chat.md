@@ -34,6 +34,20 @@ arrived.
   blocking the customer.
 - Rate limit on sending; files checked by type and size.
 
+**As built (2026-10-21):** tables `bo_chats` (one per user, unique) and
+`bo_chat_messages`; `bo_support_settings.telegram_bot_token` (encrypted) /
+`telegram_chat_id`. `App\Platform\Support\Chats` (send from user / staff,
+store files on the local disk under `chats/{id}/`, present, download).
+Console API `api/v1/support-chat` (show `?after=`, unread, send, read,
+files) — staff users only (students and platform accounts 403; a support
+view cannot send: GuardSupportView). Back office API
+`platform/support/chats` (index with `filter[waiting]`, waiting count, show,
+reply, close, reopen, files, settings, settings/test). New permission
+`platform.support.chat` (answer, close, Telegram); reading needs
+`platform.support.read`. Telegram: `SendChatTelegram` job when a question
+starts (not for every line while still waiting). Customer delete removes
+its chat files. Tests: `tests/Feature/Platform/SupportChatTest.php`.
+
 ### 10b. In the system (console)
 - A chat button in the top bar on every page, with a red dot when NewTech
   replied. Opens a panel: the conversation, a box to type, attach (or paste a

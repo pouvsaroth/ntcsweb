@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Platform\Http\Controllers\AuditLogController;
 use App\Platform\Http\Controllers\BillingSettingsController;
+use App\Platform\Http\Controllers\ChatController;
 use App\Platform\Http\Controllers\DataOpsController;
 use App\Platform\Http\Controllers\PaymentController;
 use App\Platform\Http\Controllers\PlanController;
@@ -142,6 +143,19 @@ Route::middleware('platform.staff')->group(function () {
     Route::post('schools/{school}/billing/payments', [PaymentController::class, 'store'])->middleware('platform.can:platform.billing.manage')->name('schools.billing.payments.store');
     Route::post('schools/{school}/billing/cancel', [SchoolBillingController::class, 'cancel'])->middleware('platform.can:platform.billing.manage')->name('schools.billing.cancel');
 
+    // Support chat (stage 10): customers' questions, NewTech's answers, Telegram alerts.
+    Route::prefix('support/chats')->name('support.chats.')->group(function () {
+        Route::get('/', [ChatController::class, 'index'])->middleware('platform.can:platform.support.read')->name('index');
+        Route::get('waiting', [ChatController::class, 'waiting'])->middleware('platform.can:platform.support.read')->name('waiting');
+        Route::get('settings', [ChatController::class, 'settings'])->middleware('platform.can:platform.support.chat')->name('settings');
+        Route::put('settings', [ChatController::class, 'updateSettings'])->middleware('platform.can:platform.support.chat')->name('settings.update');
+        Route::post('settings/test', [ChatController::class, 'testTelegram'])->middleware('platform.can:platform.support.chat')->name('settings.test');
+        Route::get('{chat}', [ChatController::class, 'show'])->whereNumber('chat')->middleware('platform.can:platform.support.read')->name('show');
+        Route::post('{chat}/messages', [ChatController::class, 'reply'])->whereNumber('chat')->middleware(['platform.can:platform.support.chat', 'throttle:60,1'])->name('reply');
+        Route::post('{chat}/close', [ChatController::class, 'close'])->whereNumber('chat')->middleware('platform.can:platform.support.chat')->name('close');
+        Route::post('{chat}/reopen', [ChatController::class, 'reopen'])->whereNumber('chat')->middleware('platform.can:platform.support.chat')->name('reopen');
+        Route::get('{chat}/files/{message}/{index}', [ChatController::class, 'file'])->whereNumber(['chat', 'message', 'index'])->middleware('platform.can:platform.support.read')->name('file');
+    });
     Route::get('schools/{school}/health', [SupportController::class, 'health'])->middleware('platform.can:platform.support.read')->name('schools.health');
     Route::get('schools/{school}/support/users', [SupportController::class, 'users'])->middleware('platform.can:platform.support.view')->name('schools.support.users');
     Route::post('schools/{school}/support/sessions', [SupportController::class, 'store'])->middleware('platform.can:platform.support.view')->name('schools.support.store');

@@ -72,6 +72,7 @@ return [
             'children' => [
                 ['key' => 'platform.support.read', 'label' => 'See school health and support views', 'label_km' => 'មើលសុខភាពសាលា និងការមើលជំនួយ'],
                 ['key' => 'platform.support.view', 'label' => 'Open and end support views of a school', 'label_km' => 'បើក និងបញ្ចប់ការមើលជំនួយរបស់សាលា'],
+                ['key' => 'platform.support.chat', 'label' => 'Answer support chats and set their Telegram alerts', 'label_km' => 'ឆ្លើយការជជែកជំនួយ និងកំណត់ការជូនដំណឹង Telegram'],
             ],
         ],
         [
@@ -131,6 +132,9 @@ return [
         // A payment made just as the code expired is still looked for this long after.
         'late_minutes' => 10,
     ],
+
+    // The back office itself, for links in Telegram alerts (stage 10).
+    'backoffice_url' => env('PLATFORM_BACKOFFICE_URL', 'https://smis.newtechkh.com'),
 
     // The console — where every school's users sign in. Invite links point here.
     'console_url' => env('PLATFORM_CONSOLE_URL', 'https://erp.newtechkh.com'),

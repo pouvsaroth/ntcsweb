@@ -13,9 +13,15 @@ class SupportSettings extends Model
 
     protected $guarded = [];
 
+    protected $hidden = ['telegram_bot_token'];
+
     protected function casts(): array
     {
-        return ['duration_minutes' => 'integer'];
+        return [
+            'duration_minutes' => 'integer',
+            // Support chat alerts (stage 10): never sent back, never audited.
+            'telegram_bot_token' => 'encrypted',
+        ];
     }
 
     public function getConnectionName(): ?string

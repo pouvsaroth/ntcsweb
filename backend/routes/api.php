@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Api\V1\SupportChatController;
 use App\Http\Controllers\Api\V1\Admin\AcademicProgramController;
 use App\Http\Controllers\Api\V1\Admin\AcademicReportController;
 use App\Http\Controllers\Api\V1\Admin\AcademicYearController;
@@ -257,6 +258,15 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         // so both the index queries and the {param} route-model bindings only
         // ever see the current school's rows — a stray id for another
         // tenant's record 404s the same way a nonexistent id would.
+        // Support chat with NewTech (docs/backoffice/stage-10-support-chat.md): staff only.
+        Route::prefix('support-chat')->name('support-chat.')->group(function () {
+            Route::get('/', [SupportChatController::class, 'show'])->name('show');
+            Route::get('unread', [SupportChatController::class, 'unread'])->name('unread');
+            Route::post('/', [SupportChatController::class, 'send'])->middleware('throttle:30,1')->name('send');
+            Route::post('read', [SupportChatController::class, 'read'])->name('read');
+            Route::get('files/{message}/{index}', [SupportChatController::class, 'file'])->whereNumber(['message', 'index'])->name('file');
+        });
+
         Route::apiResource('students', StudentController::class);
 
         // Bulk CSV import from the legacy `t_student` system — a separate
