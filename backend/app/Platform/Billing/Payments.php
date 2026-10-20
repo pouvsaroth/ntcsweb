@@ -31,11 +31,12 @@ final class Payments
 {
     public function __construct(private readonly PlatformAudit $audit) {}
 
-    /** The subscription a payment for this school would pay for, or null. */
-    public function payable(Tenant $tenant): ?SchoolSubscription
+    /** The subscription a payment for this customer (and system, when given) would pay for, or null. */
+    public function payable(Tenant $tenant, ?int $productId = null): ?SchoolSubscription
     {
         $latest = SchoolSubscription::query()
             ->where('tenant_id', $tenant->getKey())
+            ->when($productId !== null, fn ($q) => $q->where('product_id', $productId))
             ->with('plan')
             ->orderByRaw("status in ('trial', 'active') desc")
             ->latest('id')
@@ -45,11 +46,11 @@ final class Payments
     }
 
     /**
-     * @param  array{periods: int, amount?: float|string|null, method: string, reference?: ?string, paid_on?: ?string, notes?: ?string}  $data
+     * @param  array{periods: int, amount?: float|string|null, method: string, reference?: ?string, paid_on?: ?string, notes?: ?string, product_id?: ?int}  $data
      */
     public function record(Tenant $tenant, array $data, ?PlatformStaff $actor): SchoolPayment
     {
-        $sub = $this->payable($tenant);
+        $sub = $this->payable($tenant, isset($data['product_id']) ? (int) $data['product_id'] : null);
         if (! $sub) {
             throw ValidationException::withMessages(['subscription' => __('This school is not on a plan. Put it on a plan first.')]);
         }

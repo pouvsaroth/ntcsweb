@@ -444,10 +444,20 @@ export type PlanInput = Pick<Plan, 'code' | 'name' | 'description' | 'currency' 
 export type SubscriptionStatus = 'trial' | 'active' | 'expired' | 'cancelled' | 'replaced'
 export type BillingFlag = 'none' | 'expiring' | 'expired' | 'cancelled' | 'no_plan'
 
+/** A system as billing rows name it. */
+export interface SystemRef {
+  id: number
+  code: string
+  name: string
+  name_km: string | null
+}
+
 export interface Subscription {
   id: number
   status: SubscriptionStatus
   live: boolean
+  /** The system this subscription is to (stage 9). */
+  product: SystemRef | null
   plan: Pick<Plan, 'id' | 'code' | 'name' | 'price' | 'currency' | 'period_months' | 'max_students' | 'modules'> | null
   start_on: string | null
   end_on: string | null
@@ -461,9 +471,15 @@ export interface Subscription {
 export interface BillingSummary {
   flag: BillingFlag
   subscription: Subscription | null
+  /** In the customers list: every system the customer has live. */
+  systems?: SystemRef[]
 }
 
-export interface SchoolBilling extends BillingSummary {
+export interface SchoolBilling extends Omit<BillingSummary, 'systems'> {
+  /** The system this panel shows. */
+  product_id: number | null
+  /** Every system the customer has or had, each with its flag. */
+  systems: (BillingSummary & { product: SystemRef })[]
   history: Subscription[]
   /** Active students against the plan's limit; null when the school's database could not be read. */
   usage: { active: number; limit: number | null } | null
@@ -523,6 +539,8 @@ export interface PaymentQuote {
 }
 
 export interface NewPayment {
+  /** Which of the customer's systems it pays for. */
+  product_id?: number | null
   periods: number
   amount: string | null
   method: PaymentMethod
@@ -567,7 +585,8 @@ export const signupsApi = {
 
 export const paymentsApi = {
   list: (query: ListQuery) => page<SchoolPaymentRow>('/billing/payments', query),
-  quote: (schoolId: number, periods: number) => get<PaymentQuote>(`/schools/${schoolId}/billing/payment-quote`, { periods }),
+  quote: (schoolId: number, periods: number, productId?: number | null) =>
+    get<PaymentQuote>(`/schools/${schoolId}/billing/payment-quote`, { periods, product_id: productId ?? undefined }),
   record: (schoolId: number, body: NewPayment) => send<SchoolPaymentRow>('post', `/schools/${schoolId}/billing/payments`, body),
   void: (id: number, reason: string) => send<SchoolPaymentRow>('post', `/billing/payments/${id}/void`, { reason }),
   receiptUrl: (id: number) => `/api/v1/platform/billing/payments/${id}/receipt`,
@@ -600,14 +619,15 @@ export const billingApi = {
   savePayment: (body: { khqr_template: string | null; bakong_token: string | null; clear_token?: boolean }) =>
     send<BillingSettingsRow>('put', '/billing/settings/payment', body),
   testBakong: () => send<{ ok: boolean; message: string }>('post', '/billing/settings/payment/test'),
-  school: (id: number) => get<SchoolBilling>(`/schools/${id}/billing`),
+  school: (id: number, productId?: number | null) => get<SchoolBilling>(`/schools/${id}/billing`, { product_id: productId ?? undefined }),
   subscribe: (
     id: number,
     body: { plan_id: number; status: 'trial' | 'active'; start_on?: string | null; end_on?: string | null; notes?: string | null },
   ) => send<SchoolBilling>('post', `/schools/${id}/billing/subscribe`, body),
   changePlan: (id: number, body: { plan_id: number; notes?: string | null }) => send<SchoolBilling>('post', `/schools/${id}/billing/change-plan`, body),
-  updateSubscription: (id: number, body: { end_on?: string | null; notes?: string | null }) => send<SchoolBilling>('patch', `/schools/${id}/billing`, body),
-  cancel: (id: number, reason: string) => send<SchoolBilling>('post', `/schools/${id}/billing/cancel`, { reason }),
+  updateSubscription: (id: number, body: { end_on?: string | null; notes?: string | null; product_id?: number | null }) =>
+    send<SchoolBilling>('patch', `/schools/${id}/billing`, body),
+  cancel: (id: number, reason: string, productId?: number | null) => send<SchoolBilling>('post', `/schools/${id}/billing/cancel`, { reason, product_id: productId ?? null }),
 }
 
 // ── Data ops (Stage 3)───────────────────────────────────────────────────────

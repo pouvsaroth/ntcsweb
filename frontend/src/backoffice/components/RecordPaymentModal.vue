@@ -13,7 +13,7 @@ import { formatDate } from '@/utils/date'
 import { paymentsApi, type PaymentMethod, type PaymentQuote, type SchoolPaymentRow } from '../api'
 
 /** Record money a school already paid: periods, amount (defaults to price × periods), method, reference. */
-const props = defineProps<{ modelValue: boolean; schoolId: number }>()
+const props = defineProps<{ modelValue: boolean; schoolId: number; productId?: number | null }>()
 const emit = defineEmits<{ 'update:modelValue': [open: boolean]; recorded: [payment: SchoolPaymentRow] }>()
 
 const { t } = useI18n()
@@ -31,7 +31,7 @@ const methodOptions = computed(() => METHODS.map((m) => ({ value: m, label: t(`b
 async function refreshQuote(): Promise<void> {
   const periods = Math.max(1, Number(form.value.periods) || 1)
   try {
-    quote.value = await paymentsApi.quote(props.schoolId, periods)
+    quote.value = await paymentsApi.quote(props.schoolId, periods, props.productId)
     if (!amountTouched.value) form.value.amount = quote.value.amount
   } catch (e) {
     error.value = e instanceof ApiRequestError ? e : new ApiRequestError(t('bo.common.failed'), 0)
@@ -61,6 +61,7 @@ async function save(): Promise<void> {
   const f = form.value
   try {
     const payment = await paymentsApi.record(props.schoolId, {
+      product_id: props.productId ?? null,
       periods: Number(f.periods),
       amount: f.amount === '' ? null : f.amount,
       method: f.method,

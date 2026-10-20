@@ -49,7 +49,7 @@ final class PaymentController extends Controller
     public function quote(Request $request, Tenant $school): JsonResponse
     {
         $periods = max(1, min(120, (int) $request->input('periods', 1)));
-        $sub = $this->payments->payable($school);
+        $sub = $this->payments->payable($school, $request->filled('product_id') ? (int) $request->input('product_id') : null);
         abort_if($sub === null, 404, __('This school is not on a plan. Put it on a plan first.'));
 
         [$from, $to] = $this->payments->coverage($sub, $periods, \App\Platform\Models\SchoolSubscription::today());
@@ -73,6 +73,8 @@ final class PaymentController extends Controller
             'reference' => ['nullable', 'string', 'max:100'],
             'paid_on' => ['nullable', 'date', 'before_or_equal:tomorrow'],
             'notes' => ['nullable', 'string', 'max:2000'],
+            // Which of the customer's systems it pays for (stage 9); none = the main one.
+            'product_id' => ['nullable', 'integer'],
         ]);
 
         $payment = $this->payments->record($school, $data, $request->user('staff'));

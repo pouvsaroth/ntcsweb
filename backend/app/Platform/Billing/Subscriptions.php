@@ -8,6 +8,7 @@ use App\Models\Tenant;
 use App\Platform\Models\BillingSettings;
 use App\Platform\Models\Plan;
 use App\Platform\Models\PlatformStaff;
+use App\Platform\Models\Product;
 use App\Platform\Models\SchoolSubscription;
 use App\Platform\Support\PlatformAudit;
 use Illuminate\Support\Carbon;
@@ -24,23 +25,60 @@ final class Subscriptions
 {
     public function __construct(private readonly PlatformAudit $audit) {}
 
-    public function live(Tenant|int $tenant): ?SchoolSubscription
+    /**
+     * The live row for one system; with no system given, any live row — the
+     * school system's first (stage 9: a customer may hold several systems).
+     */
+    public function live(Tenant|int $tenant, ?int $productId = null): ?SchoolSubscription
     {
         return SchoolSubscription::query()
             ->where('tenant_id', $tenant instanceof Tenant ? $tenant->getKey() : $tenant)
             ->live()
-            ->with(['plan', 'creator:id,name'])
+            ->when($productId !== null, fn ($q) => $q->where('product_id', $productId))
+            ->when($productId === null, fn ($q) => $q->orderByRaw('product_id = ? desc', [self::schoolProductId()]))
+            ->with(['plan', 'creator:id,name', 'product'])
             ->first();
     }
 
-    /** The live row, or else the most recent one. */
-    public function latest(Tenant|int $tenant): ?SchoolSubscription
+    /** The live row, or else the most recent one (of one system, when given). */
+    public function latest(Tenant|int $tenant, ?int $productId = null): ?SchoolSubscription
     {
-        return $this->live($tenant) ?? SchoolSubscription::query()
+        return $this->live($tenant, $productId) ?? SchoolSubscription::query()
             ->where('tenant_id', $tenant instanceof Tenant ? $tenant->getKey() : $tenant)
-            ->with(['plan', 'creator:id,name'])
+            ->when($productId !== null, fn ($q) => $q->where('product_id', $productId))
+            ->with(['plan', 'creator:id,name', 'product'])
             ->latest('id')
             ->first();
+    }
+
+    /**
+     * Every system the customer has (or had): each one's summary, school system first.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function systems(Tenant|int $tenant): array
+    {
+        $settings = BillingSettings::current();
+        $ids = SchoolSubscription::query()
+            ->where('tenant_id', $tenant instanceof Tenant ? $tenant->getKey() : $tenant)
+            ->distinct()->pluck('product_id')->filter()->all();
+
+        return Product::query()->whereIn('id', $ids)->orderBy('sort_order')->orderBy('id')->get()
+            ->map(fn (Product $p) => ['product' => self::presentProduct($p)] + $this->summarise($this->latest($tenant, $p->id), $settings))
+            ->values()->all();
+    }
+
+    public static function schoolProductId(): int
+    {
+        static $id = null;
+
+        return $id ??= (int) Product::query()->where('code', Product::SCHOOL)->value('id');
+    }
+
+    /** @return array{id: int, code: string, name: string, name_km: ?string} */
+    public static function presentProduct(Product $p): array
+    {
+        return ['id' => $p->id, 'code' => $p->code, 'name' => $p->name, 'name_km' => $p->name_km];
     }
 
     /** A new school: a trial on the settings' trial plan (Legacy if none), for the settings' trial days. */
@@ -61,8 +99,8 @@ final class Subscriptions
      */
     public function subscribe(Tenant $tenant, Plan $plan, string $status, ?Carbon $start, ?Carbon $end, ?string $notes, ?PlatformStaff $actor): SchoolSubscription
     {
-        if ($this->live($tenant)) {
-            throw ValidationException::withMessages(['plan_id' => __('This school is already on a plan. Change its plan instead.')]);
+        if ($this->live($tenant, $plan->product_id)) {
+            throw ValidationException::withMessages(['plan_id' => __('This customer already has this system. Change its plan instead.')]);
         }
         $this->assertSellable($plan);
 
@@ -87,9 +125,10 @@ final class Subscriptions
      */
     public function changePlan(Tenant $tenant, Plan $plan, ?string $notes, PlatformStaff $actor): SchoolSubscription
     {
-        $live = $this->live($tenant);
+        // A plan change stays inside one system.
+        $live = $this->live($tenant, $plan->product_id);
         if (! $live) {
-            throw ValidationException::withMessages(['plan_id' => __('This school is not on a plan. Subscribe it instead.')]);
+            throw ValidationException::withMessages(['plan_id' => __('This customer does not have this system. Add the system instead.')]);
         }
         if ($live->plan_id === $plan->getKey()) {
             throw ValidationException::withMessages(['plan_id' => __('The school is already on this plan.')]);
@@ -180,9 +219,9 @@ final class Subscriptions
      *
      * @return array<string, mixed>
      */
-    public function summary(Tenant|int $tenant, ?BillingSettings $settings = null): array
+    public function summary(Tenant|int $tenant, ?BillingSettings $settings = null, ?int $productId = null): array
     {
-        return $this->summarise($this->latest($tenant), $settings ?? BillingSettings::current());
+        return $this->summarise($this->latest($tenant, $productId), $settings ?? BillingSettings::current());
     }
 
     /**
@@ -196,15 +235,21 @@ final class Subscriptions
         $settings = BillingSettings::current();
         $rows = SchoolSubscription::query()
             ->whereIn('tenant_id', $tenantIds)
-            ->with(['plan', 'creator:id,name'])
+            ->with(['plan', 'creator:id,name', 'product'])
             ->orderByDesc('id')
             ->get()
             ->groupBy('tenant_id');
+        $school = self::schoolProductId();
 
         $out = [];
         foreach ($tenantIds as $id) {
             $subs = $rows->get($id, collect());
-            $out[$id] = $this->summarise($subs->first(fn ($s) => $s->isLive()) ?? $subs->first(), $settings);
+            // The school system's row first, as the list always showed.
+            $live = $subs->filter(fn ($s) => $s->isLive())->sortByDesc(fn ($s) => (int) ($s->product_id === $school))->first();
+            $out[$id] = $this->summarise($live ?? $subs->first(), $settings) + [
+                // Which systems this customer has live (stage 9).
+                'systems' => $subs->filter(fn ($s) => $s->isLive() && $s->product)->sortBy(fn ($s) => [$s->product->sort_order, $s->product_id])->map(fn ($s) => self::presentProduct($s->product))->unique('id')->values()->all(),
+            ];
         }
 
         return $out;
@@ -237,6 +282,7 @@ final class Subscriptions
             'id' => $sub->id,
             'status' => $sub->status,
             'live' => $sub->isLive(),
+            'product' => $sub->product ? self::presentProduct($sub->product) : null,
             'plan' => $sub->plan ? [
                 'id' => $sub->plan->id,
                 'code' => $sub->plan->code,
@@ -277,7 +323,7 @@ final class Subscriptions
                 'end_on' => $end?->toDateString(),
             ], tenantId: $tenant->getKey(), actor: $actor);
 
-            return $sub->load(['plan', 'creator:id,name']);
+            return $sub->load(['plan', 'creator:id,name', 'product']);
         });
     }
 

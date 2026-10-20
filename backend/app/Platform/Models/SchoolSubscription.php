@@ -11,9 +11,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
- * One school on one plan for a stretch of time (docs/backoffice/stage-5-billing.md).
+ * One customer on one plan of one system for a stretch of time
+ * (docs/backoffice/stage-5-billing.md; systems: stage-9-products.md).
  *
- *   trial, active                live — at most one per school (a unique index)
+ *   trial, active                live — at most one per customer per system (a unique index)
  *   expired                      the end passed unpaid (5e)
  *   cancelled                    staff stopped it
  *   replaced                     staff moved the school to another plan
@@ -49,8 +50,17 @@ class SchoolSubscription extends Model
 
     protected static function booted(): void
     {
+        // A subscription is to its plan's system.
+        static::creating(function (SchoolSubscription $sub) {
+            $sub->product_id ??= Plan::query()->whereKey($sub->plan_id)->value('product_id');
+        });
         // A plan change must reach this request's permission checks too.
         static::saved(fn () => app(\App\Platform\Billing\SchoolModules::class)->forget());
+    }
+
+    public function product(): BelongsTo
+    {
+        return $this->belongsTo(Product::class);
     }
 
     public function getConnectionName(): ?string

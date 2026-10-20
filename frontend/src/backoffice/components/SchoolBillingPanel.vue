@@ -17,14 +17,21 @@ import { endLabel, flagVariant, priceLabel, studentsLabel } from '../billing'
 import ReasonModal from './ReasonModal.vue'
 import RecordPaymentModal from './RecordPaymentModal.vue'
 
-/** A school's plan: what it is on, until when, its history; subscribe, change, edit the end, cancel (stage 5a). */
+/**
+ * A customer's plans: one system at a time (stage 9) — what it is on, until
+ * when, its history; subscribe, change, edit the end, cancel (stage 5a), and
+ * add another system.
+ */
 const props = defineProps<{ school: School; canManage: boolean }>()
 const emit = defineEmits<{ changed: [] }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const billing = ref<SchoolBilling | null>(null)
 const plans = ref<Plan[]>([])
+/** The system shown; null = the customer's main one (school first). */
+const productId = ref<number | null>(null)
+const systemName = (s: { name: string; name_km: string | null }) => (locale.value === 'km' && s.name_km ? s.name_km : s.name)
 const error = ref<string | null>(null)
 const live = computed(() => (billing.value?.subscription?.live ? billing.value.subscription : null))
 
@@ -46,10 +53,11 @@ const payable = computed(() => billing.value?.subscription && ['trial', 'active'
 async function load(): Promise<void> {
   try {
     const [b, p] = await Promise.all([
-      billingApi.school(props.school.id),
+      billingApi.school(props.school.id, productId.value),
       paymentsApi.list({ page: 1, per_page: 5, filter: { tenant_id: String(props.school.id) } }),
     ])
     billing.value = b
+    productId.value = b.product_id
     payments.value = p.data
     paymentCount.value = p.pagination?.type === 'length_aware' ? p.pagination.total : p.data.length
     error.value = null
@@ -62,11 +70,22 @@ async function loadPlans(): Promise<void> {
   if (plans.value.length === 0) plans.value = (await billingApi.plans()).plans
 }
 
+function showSystem(id: number): void {
+  productId.value = id
+  void load()
+}
+
+/** "Add system": its plans are every active plan of a system the customer has no live subscription to. */
+const adding = ref(false)
+const heldLive = computed(() => (billing.value?.systems ?? []).filter((s) => s.subscription?.live).map((s) => s.product.id))
+
 const planOptions = computed(() => [
   { value: '', label: t('bo.billing.school.choosePlan') },
   ...plans.value
     .filter((p) => p.status === 'active' && p.id !== live.value?.plan?.id)
-    .map((p) => ({ value: String(p.id), label: `${p.name} — ${priceLabel(p, t)}` })),
+    // Adding: another system. Otherwise: a plan of the system shown.
+    .filter((p) => (adding.value ? !heldLive.value.includes(p.product?.id ?? 0) : productId.value === null || p.product?.id === productId.value))
+    .map((p) => ({ value: String(p.id), label: `${adding.value && p.product ? `${systemName(p.product)} · ` : ''}${p.name} — ${priceLabel(p, t)}` })),
 ])
 
 // One modal for the three forms that pick or date a plan.
@@ -76,7 +95,8 @@ const form = ref({ plan_id: '', status: 'active' as 'trial' | 'active', start_on
 const busy = ref(false)
 const formError = ref<ApiRequestError | null>(null)
 
-async function open(m: Mode): Promise<void> {
+async function open(m: Mode, add = false): Promise<void> {
+  adding.value = add
   formError.value = null
   form.value = { plan_id: '', status: 'active', start_on: '', end_on: m === 'end' ? (live.value?.end_on ?? '') : '', notes: m === 'end' ? (live.value?.notes ?? '') : '' }
   if (m !== 'end') await loadPlans()
@@ -84,7 +104,7 @@ async function open(m: Mode): Promise<void> {
 }
 
 const title = computed(() =>
-  mode.value === 'subscribe' ? t('bo.billing.school.subscribe') : mode.value === 'change' ? t('bo.billing.school.changePlan') : t('bo.billing.school.editEnd'),
+  mode.value === 'subscribe' ? (adding.value ? t('bo.billing.school.addSystem') : t('bo.billing.school.subscribe')) : mode.value === 'change' ? t('bo.billing.school.changePlan') : t('bo.billing.school.editEnd'),
 )
 
 async function submit(): Promise<void> {
@@ -93,6 +113,8 @@ async function submit(): Promise<void> {
   const f = form.value
   try {
     if (mode.value === 'subscribe') {
+      // The new subscription's system is shown next.
+      productId.value = plans.value.find((p) => p.id === Number(f.plan_id))?.product?.id ?? productId.value
       billing.value = await billingApi.subscribe(props.school.id, {
         plan_id: Number(f.plan_id),
         status: f.status,
@@ -103,7 +125,7 @@ async function submit(): Promise<void> {
     } else if (mode.value === 'change') {
       billing.value = await billingApi.changePlan(props.school.id, { plan_id: Number(f.plan_id), notes: f.notes.trim() || null })
     } else {
-      billing.value = await billingApi.updateSubscription(props.school.id, { end_on: f.end_on || null, notes: f.notes.trim() || null })
+      billing.value = await billingApi.updateSubscription(props.school.id, { end_on: f.end_on || null, notes: f.notes.trim() || null, product_id: productId.value })
     }
     mode.value = null
     emit('changed')
@@ -122,7 +144,7 @@ async function confirmCancel(reason: string): Promise<void> {
   cancelBusy.value = true
   cancelError.value = undefined
   try {
-    billing.value = await billingApi.cancel(props.school.id, reason)
+    billing.value = await billingApi.cancel(props.school.id, reason, productId.value)
     cancelOpen.value = false
     emit('changed')
   } catch (e) {
@@ -148,6 +170,22 @@ onMounted(load)
     </div>
 
     <BaseAlert v-if="error" variant="danger" class="mb-3">{{ error }}</BaseAlert>
+
+    <!-- The customer's systems: one at a time below. -->
+    <div v-if="billing && (billing.systems.length > 1 || canManage)" class="mb-4 flex flex-wrap items-center gap-2">
+      <button
+        v-for="s in billing.systems"
+        :key="s.product.id"
+        type="button"
+        class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm"
+        :class="s.product.id === productId ? 'border-primary-500 bg-primary-50 font-medium text-neutral-900' : 'border-neutral-200 text-neutral-600 hover:bg-neutral-50'"
+        @click="showSystem(s.product.id)"
+      >
+        {{ systemName(s.product) }}
+        <span v-if="s.flag !== 'none'" class="h-2 w-2 rounded-full" :class="s.flag === 'expiring' ? 'bg-amber-500' : s.flag === 'expired' ? 'bg-red-500' : 'bg-neutral-400'" :title="t(`bo.billing.flags.${s.flag}`)" />
+      </button>
+      <BaseButton v-if="canManage" size="sm" variant="ghost" @click="open('subscribe', true)">+ {{ t('bo.billing.school.addSystem') }}</BaseButton>
+    </div>
 
     <template v-if="billing">
       <div v-if="live?.plan" class="space-y-1">
@@ -230,6 +268,7 @@ onMounted(load)
       <form id="bo-billing" class="space-y-4" @submit.prevent="submit">
         <BaseAlert v-if="formError && !formError.errors" variant="danger">{{ formError.message }}</BaseAlert>
         <p v-if="mode === 'change'" class="text-sm text-neutral-600">{{ t('bo.billing.school.changeHint') }}</p>
+        <p v-if="adding && planOptions.length === 1" class="text-sm text-amber-700">{{ t('bo.billing.school.noOtherPlans') }}</p>
 
         <BaseSelect
           v-if="mode !== 'end'"
@@ -266,7 +305,7 @@ onMounted(load)
       </template>
     </BaseModal>
 
-    <RecordPaymentModal v-model="payOpen" :school-id="school.id" @recorded="load(), emit('changed')" />
+    <RecordPaymentModal v-model="payOpen" :school-id="school.id" :product-id="productId" @recorded="load(), emit('changed')" />
 
     <ReasonModal
       v-model="cancelOpen"

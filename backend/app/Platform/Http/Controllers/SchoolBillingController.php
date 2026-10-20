@@ -27,9 +27,9 @@ final class SchoolBillingController extends Controller
         private readonly TenantContext $context,
     ) {}
 
-    public function show(Tenant $school): JsonResponse
+    public function show(Request $request, Tenant $school): JsonResponse
     {
-        return ApiResponse::success($this->payload($school));
+        return ApiResponse::success($this->payload($school, $this->productId($request)));
     }
 
     public function subscribe(Request $request, Tenant $school): JsonResponse
@@ -42,9 +42,10 @@ final class SchoolBillingController extends Controller
             'notes' => ['nullable', 'string', 'max:2000'],
         ]);
 
+        $plan = Plan::query()->findOrFail($data['plan_id']);
         $this->subscriptions->subscribe(
             $school,
-            Plan::query()->findOrFail($data['plan_id']),
+            $plan,
             $data['status'],
             isset($data['start_on']) ? Carbon::parse($data['start_on']) : null,
             isset($data['end_on']) ? Carbon::parse($data['end_on']) : null,
@@ -52,7 +53,7 @@ final class SchoolBillingController extends Controller
             $request->user('staff'),
         );
 
-        return ApiResponse::success($this->payload($school));
+        return ApiResponse::success($this->payload($school, $plan->product_id));
     }
 
     public function changePlan(Request $request, Tenant $school): JsonResponse
@@ -62,9 +63,10 @@ final class SchoolBillingController extends Controller
             'notes' => ['nullable', 'string', 'max:2000'],
         ]);
 
-        $this->subscriptions->changePlan($school, Plan::query()->findOrFail($data['plan_id']), $data['notes'] ?? null, $request->user('staff'));
+        $plan = Plan::query()->findOrFail($data['plan_id']);
+        $this->subscriptions->changePlan($school, $plan, $data['notes'] ?? null, $request->user('staff'));
 
-        return ApiResponse::success($this->payload($school));
+        return ApiResponse::success($this->payload($school, $plan->product_id));
     }
 
     public function update(Request $request, Tenant $school): JsonResponse
@@ -75,34 +77,53 @@ final class SchoolBillingController extends Controller
         ]);
 
         // Live, or expired and the latest (more time for an unpaid school — 5e).
-        $current = $this->subscriptions->latest($school);
+        $product = $this->productId($request);
+        $current = $this->subscriptions->latest($school, $product);
         abort_if($current === null, 404, __('This school is not on a plan.'));
         $this->subscriptions->update($current, $data, $request->user('staff'));
 
-        return ApiResponse::success($this->payload($school));
+        return ApiResponse::success($this->payload($school, $product));
     }
 
     public function cancel(Request $request, Tenant $school): JsonResponse
     {
         $data = $request->validate(['reason' => ['required', 'string', 'max:500']]);
 
-        $live = $this->subscriptions->live($school);
+        $product = $this->productId($request);
+        $live = $this->subscriptions->live($school, $product);
         abort_if($live === null, 404, __('This school is not on a plan.'));
         $this->subscriptions->cancel($live, $data['reason'], $request->user('staff'));
 
-        return ApiResponse::success($this->payload($school));
+        return ApiResponse::success($this->payload($school, $product));
     }
 
-    /** @return array<string, mixed> */
-    private function payload(Tenant $school): array
+    /** The system a request is about (`product_id`), or null for the customer's main one. */
+    private function productId(Request $request): ?int
     {
+        $id = $request->input('product_id');
+
+        return $id === null || $id === '' ? null : (int) $id;
+    }
+
+    /**
+     * One system's plan, history and usage, plus every system the customer has
+     * (stage 9). With no system asked for: the main one (school first).
+     *
+     * @return array<string, mixed>
+     */
+    private function payload(Tenant $school, ?int $productId = null): array
+    {
+        $productId ??= $this->subscriptions->latest($school)?->product_id;
         $history = SchoolSubscription::query()
             ->where('tenant_id', $school->getKey())
-            ->with(['plan', 'creator:id,name'])
+            ->when($productId !== null, fn ($q) => $q->where('product_id', $productId))
+            ->with(['plan', 'creator:id,name', 'product'])
             ->latest('id')
             ->get();
 
-        return $this->subscriptions->summary($school) + [
+        return $this->subscriptions->summary($school, null, $productId) + [
+            'product_id' => $productId,
+            'systems' => $this->subscriptions->systems($school),
             'history' => $history->map(fn ($s) => Subscriptions::present($s))->values(),
             'usage' => $this->usage($school),
         ];

@@ -57,12 +57,16 @@ final class BillingSuspensions
         $suspended = 0;
         $lastDayOfGrace = $today->copy()->subDays($settings->grace_days + 1)->toDateString();
 
-        // Each school's latest subscription, when it is expired and its grace is over.
+        // Each customer's latest subscription, when it is expired and its grace
+        // is over — and no other system of the customer is still live (stage 9).
         $latestIds = SchoolSubscription::query()->selectRaw('max(id)')->groupBy('tenant_id');
         SchoolSubscription::query()
             ->whereIn('id', $latestIds)
             ->where('status', SchoolSubscription::EXPIRED)
             ->whereDate('end_on', '<=', $lastDayOfGrace)
+            ->whereNotExists(fn ($q) => $q->selectRaw('1')->from('bo_school_subscriptions as other')
+                ->whereColumn('other.tenant_id', 'bo_school_subscriptions.tenant_id')
+                ->whereIn('other.status', SchoolSubscription::LIVE))
             ->with('tenant')
             ->each(function (SchoolSubscription $sub) use (&$suspended, $settings) {
                 $tenant = $sub->tenant;

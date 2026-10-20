@@ -4,7 +4,7 @@ const en = {
   brandSub: 'NTCSWEB platform',
   language: 'Language',
   nav: {
-    schools: 'Schools',
+    schools: 'Customers',
     data: 'Data ops',
     billing: 'Billing',
     support: 'Support',
@@ -59,8 +59,8 @@ const en = {
     regenerateHint: 'Replaces every unused code. Enter your password to continue.',
   },
   schools: {
-    title: 'Schools',
-    add: 'New school',
+    title: 'Customers',
+    add: 'New customer',
     search: 'Search name or slug',
     allStatuses: 'All statuses (except archived)',
     name: 'Name (Khmer)',
@@ -488,6 +488,8 @@ const en = {
       overdue: 'Ended {n} days ago',
       noPlan: 'This school is not on a plan.',
       subscribe: 'Put on a plan',
+      noOtherPlans: 'No plans of another system yet. Add one in Billing → Plans first.',
+      addSystem: 'Add system',
       changePlan: 'Change plan',
       changeHint: 'The school moves to the new plan today and keeps its end date (a plan with no period has no end).',
       editEnd: 'Edit end date',
