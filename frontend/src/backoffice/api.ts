@@ -425,6 +425,8 @@ export interface Plan {
   modules: string[]
   /** The menus kept inside its modules; null = every menu of each module. */
   menus: string[] | null
+  /** Where its customers' data is kept. */
+  placement: 'shared' | 'dedicated'
   status: 'active' | 'inactive'
   is_legacy: boolean
   live_count: number
@@ -444,7 +446,7 @@ export interface Plan {
 }
 
 export type PlanInput = Pick<Plan, 'code' | 'name' | 'description' | 'currency' | 'period_months' | 'max_students' | 'modules'> &
-  Partial<Pick<Plan, 'menus'>> & { product_id?: number } &
+  Partial<Pick<Plan, 'menus' | 'placement'>> & { product_id?: number } &
   Partial<Pick<Plan, 'show_on_website' | 'name_km' | 'tagline_en' | 'tagline_km' | 'features_en' | 'features_km' | 'recommended' | 'website_order'>> & {
   price: string | number
   status?: Plan['status']

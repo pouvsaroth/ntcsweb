@@ -111,4 +111,26 @@ class SystemSignupTest extends TestCase
         $this->patchJson("/api/v1/platform/billing/products/{$this->erp->id}", ['trial_plan_id' => $this->erpPlan->id])
             ->assertOk()->assertJsonPath('data.trial_plan_id', $this->erpPlan->id);
     }
+
+    public function test_a_sign_up_gets_the_database_its_plan_says(): void
+    {
+        $this->erpPlan->update(['placement' => 'dedicated']);
+        $this->erp->update(['trial_plan_id' => $this->erpPlan->id]);
+
+        $this->withHeader('X-Tenant', 'newtech')->postJson('/api/v1/public/signup', $this->form(['plan' => 'trial', 'system' => 'erp']))->assertCreated();
+        $tenant = Tenant::query()->where('slug', 'angkor-co')->firstOrFail();
+        $this->assertSame('dedicated', \App\Platform\Models\SchoolPlacement::of($tenant)->mode);
+
+        // A shared plan: the shared database.
+        $this->withHeader('X-Tenant', 'newtech')->postJson('/api/v1/public/signup', $this->form(['plan' => 'trial', 'slug' => 'bayon-co', 'owner_email' => 'b@example.com']))->assertCreated();
+        $this->assertSame('shared', \App\Platform\Models\SchoolPlacement::of(Tenant::query()->where('slug', 'bayon-co')->firstOrFail())->mode);
+    }
+
+    public function test_staff_set_a_plans_database(): void
+    {
+        $this->actingAsStaff($this->platformStaff());
+
+        $this->patchJson("/api/v1/platform/billing/plans/{$this->erpPlan->id}", ['placement' => 'dedicated'])->assertOk()->assertJsonPath('data.placement', 'dedicated');
+        $this->patchJson("/api/v1/platform/billing/plans/{$this->erpPlan->id}", ['placement' => 'separate'])->assertUnprocessable()->assertJsonValidationErrors('placement');
+    }
 }

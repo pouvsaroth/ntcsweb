@@ -472,6 +472,9 @@ const en = {
       legacy: 'Legacy',
       legacyHint: 'Schools from before billing. It cannot be removed or deactivated.',
       form: {
+        database: 'Database',
+        databaseHint: 'Customers who sign up on the website are set up this way. Changing it later does not move existing customers (use Move on the customer).',
+        db: { shared: 'Shared database', sharedHint: 'With other customers, separated by customer. Cheaper.', dedicated: 'Own database', dedicatedHint: 'A database of its own. For larger or premium customers.' },
         steps: { basics: 'Basics', included: "What's included", website: 'On the website', check: 'Check' },
         whichSystem: 'Which system is this plan for?',
         nameEn: 'Plan name',

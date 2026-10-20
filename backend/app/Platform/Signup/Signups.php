@@ -138,7 +138,7 @@ final class Signups
 
         return $this->createSchool($signup, $product->code === Product::SCHOOL ? null : fn (Tenant $tenant) => $this->subscriptions->subscribe(
             $tenant, $trialPlan, SchoolSubscription::TRIAL, SchoolSubscription::today(), null, __('Free trial from the website.'), null,
-        ));
+        ), $trialPlan);
     }
 
     /** A fixed-amount KHQR for this sign-up from NewTech's own code, valid until its hold ends. Left empty while none is set. */
@@ -225,7 +225,7 @@ final class Signups
                     'notes' => __('Paid by KHQR on the website (sign-up #:id).', ['id' => $signup->getKey()]),
                 ], null);
                 $signup->forceFill(['payment_id' => $payment->getKey()])->save();
-            });
+            }, $plan);
         } catch (\Throwable $e) {
             report($e);
             Signup::query()->whereKey($signup->getKey())->update(['status' => Signup::FAILED, 'failure' => 'Paid, but the school could not be created: '.$e->getMessage()]);
@@ -247,9 +247,9 @@ final class Signups
      *
      * @param  (\Closure(Tenant): mixed)|null  $subscribe  Puts the school on its plan; null = the free trial.
      */
-    public function createSchool(Signup $signup, ?\Closure $subscribe = null): Signup
+    public function createSchool(Signup $signup, ?\Closure $subscribe = null, ?Plan $plan = null): Signup
     {
-        return DB::connection($signup->getConnectionName())->transaction(function () use ($signup, $subscribe) {
+        return DB::connection($signup->getConnectionName())->transaction(function () use ($signup, $subscribe, $plan) {
             $signup = Signup::query()->lockForUpdate()->findOrFail($signup->getKey());
             if ($signup->tenant_id !== null) {
                 return $signup;
@@ -267,7 +267,10 @@ final class Signups
                     'locale' => $signup->locale,
                     'default_currency' => $signup->currency,
                 ],
-                (string) config('platform.default_placement', SchoolPlacement::SHARED),
+                // Shared or its own database, as its plan says.
+                in_array($plan?->placement, [SchoolPlacement::SHARED, SchoolPlacement::DEDICATED], true)
+                    ? $plan->placement
+                    : (string) config('platform.default_placement', SchoolPlacement::SHARED),
                 null,
                 $signup->owner_password,
                 $subscribe,

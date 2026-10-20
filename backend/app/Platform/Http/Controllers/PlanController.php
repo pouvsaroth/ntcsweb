@@ -116,6 +116,8 @@ final class PlanController extends Controller
             'menus' => ['sometimes', 'nullable', 'array'],
             'menus.*' => ['string', 'distinct', Rule::in(Modules::groups())],
             'status' => ['sometimes', Rule::in([Plan::STATUS_ACTIVE, Plan::STATUS_INACTIVE])],
+            // Where its customers' data is kept: the shared database or one of its own.
+            'placement' => ['sometimes', Rule::in([\App\Platform\Models\SchoolPlacement::SHARED, \App\Platform\Models\SchoolPlacement::DEDICATED])],
             // On the website (docs/backoffice/stage-8-signup.md, 8a).
             'show_on_website' => ['sometimes', 'boolean'],
             'name_km' => ['sometimes', 'nullable', 'string', 'max:100'],
@@ -181,6 +183,7 @@ final class PlanController extends Controller
             'max_students' => $plan->max_students,
             'product' => $plan->product ? ['id' => $plan->product->id, 'code' => $plan->product->code, 'name' => $plan->product->name, 'name_km' => $plan->product->name_km] : null,
             'modules' => $plan->modules ?? [],
+            'placement' => $plan->placement ?? 'shared',
             // null = every menu of its modules
             'menus' => $plan->menus,
             'status' => $plan->status,

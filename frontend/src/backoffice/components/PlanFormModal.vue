@@ -36,6 +36,7 @@ const blank = () => ({
   period_months: '1',
   /** '' = no limit. */
   max_students: '',
+  placement: 'shared' as 'shared' | 'dedicated',
   modules: [] as string[],
   /** Every ticked menu, across modules. */
   menus: [] as string[],
@@ -83,6 +84,7 @@ watch(
           currency: p.currency,
           period_months: p.period_months === null ? '' : String(p.period_months),
           max_students: p.max_students === null ? '' : String(p.max_students),
+          placement: p.placement ?? 'shared',
           modules: [...p.modules],
           // null = every menu of its modules
           menus: p.menus ?? props.modules.filter((m) => p.modules.includes(m.code)).flatMap((m) => m.groups),
@@ -200,7 +202,7 @@ const preview = computed(() => {
 
 // ── Steps ────────────────────────────────────────────────────────────────────
 const STEP_FIELDS: Record<number, string[]> = {
-  0: ['product_id', 'code', 'name', 'name_km', 'price', 'currency', 'period_months', 'max_students'],
+  0: ['product_id', 'code', 'name', 'name_km', 'price', 'currency', 'period_months', 'max_students', 'placement'],
   1: ['modules', 'menus'],
   2: ['show_on_website', 'tagline_km', 'tagline_en', 'features_km', 'features_en', 'recommended', 'website_order'],
   3: ['description'],
@@ -258,6 +260,7 @@ async function save(): Promise<void> {
     currency: f.currency,
     period_months: f.period_months === '' ? null : Number(f.period_months),
     max_students: noLimit.value || f.max_students === '' ? null : Number(f.max_students),
+    placement: f.placement,
     modules: f.modules,
     // The server keeps only menus of the ticked modules, and stores "every menu" as null.
     menus: f.menus,
@@ -412,6 +415,26 @@ const chip = (on: boolean) =>
             <BaseInput v-if="!noLimit" v-model="form.max_students" type="number" class="w-32" placeholder="300" :error="fieldError('max_students')" />
           </div>
         </div>
+
+        <!-- Where a customer on this plan keeps its data (new sign-ups are set up this way). -->
+        <div>
+          <p class="mb-1.5 text-sm font-medium text-neutral-700">{{ t('bo.billing.plans.form.database') }}</p>
+          <div class="grid gap-2 sm:grid-cols-2">
+            <button
+              v-for="p in ['shared', 'dedicated'] as const"
+              :key="p"
+              type="button"
+              class="rounded-lg border px-3 py-2 text-left text-sm"
+              :class="chip(form.placement === p)"
+              @click="form.placement = p"
+            >
+              <span class="block">{{ t(`bo.billing.plans.form.db.${p}`) }}</span>
+              <span class="block text-xs font-normal text-neutral-500">{{ t(`bo.billing.plans.form.db.${p}Hint`) }}</span>
+            </button>
+          </div>
+          <p class="mt-1 text-xs text-neutral-500">{{ t('bo.billing.plans.form.databaseHint') }}</p>
+          <p v-if="fieldError('placement')" class="mt-1 text-xs text-red-600">{{ fieldError('placement') }}</p>
+        </div>
       </template>
 
       <!-- 2. What is included -->
@@ -528,6 +551,10 @@ const chip = (on: boolean) =>
             <div>
               <dt class="text-neutral-500">{{ t('bo.billing.plans.maxStudents') }}</dt>
               <dd class="font-medium text-neutral-900">{{ noLimit ? t('bo.billing.plans.noLimit') : form.max_students }}</dd>
+            </div>
+            <div>
+              <dt class="text-neutral-500">{{ t('bo.billing.plans.form.database') }}</dt>
+              <dd class="font-medium text-neutral-900">{{ t(`bo.billing.plans.form.db.${form.placement}`) }}</dd>
             </div>
             <div>
               <dt class="text-neutral-500">{{ t('bo.billing.plans.modules') }}</dt>
