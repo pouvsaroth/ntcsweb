@@ -132,6 +132,18 @@ class PlanModulesTest extends TestCase
         }
     }
 
+    public function test_newtechs_own_website_school_is_never_limited_by_its_plan(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::STUDENTS_VIEW]);
+        config(['platform.website_school' => $this->tenant->slug]);
+        $this->putOnPlan(['academics']); // no Website module
+
+        $modules = app(\App\Platform\Billing\SchoolModules::class);
+        $modules->forget();
+        $this->assertNull($modules->enabled($this->tenant->id));
+        $this->assertTrue($modules->has($this->tenant->id, 'website'));
+    }
+
     public function test_an_expired_plan_keeps_its_modules_through_grace(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::PAYROLL_VIEW]);

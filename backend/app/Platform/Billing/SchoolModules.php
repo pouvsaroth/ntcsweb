@@ -24,10 +24,12 @@ final class SchoolModules
     /** @var array<int, array{modules: list<string>|null, menus: list<string>|null, max_students: int|null}> */
     private array $memo = [];
 
+    private ?int $websiteSchoolId = null;
+
     /** @return list<string>|null module codes; null = every module */
     public function enabled(?int $tenantId): ?array
     {
-        if ($tenantId === null) {
+        if ($tenantId === null || $this->isWebsiteSchool($tenantId)) {
             return null;
         }
 
@@ -130,6 +132,20 @@ final class SchoolModules
 
             return in_array($module, $enabled, true) && ($menus === null || in_array($group, $menus, true));
         }));
+    }
+
+    /**
+     * NewTech's own school (`platform.website_school`, the one behind
+     * newtechkh.com) is never limited by a plan: its website, and everything
+     * else, stays on whatever plan it is on.
+     */
+    private function isWebsiteSchool(int $tenantId): bool
+    {
+        $slug = (string) config('platform.website_school');
+        if ($slug === '') {
+            return false;
+        }
+        return ($this->websiteSchoolId ??= (int) \App\Models\Tenant::query()->where('slug', $slug)->value('id')) === $tenantId;
     }
 
     public function forget(): void
