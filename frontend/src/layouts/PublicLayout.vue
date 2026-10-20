@@ -7,6 +7,7 @@ import PublicFooter from '@/components/layout/PublicFooter.vue'
 import PublicHeader from '@/components/layout/PublicHeader.vue'
 import MobileBottomNav from '@/components/public/MobileBottomNav.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
+import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import LanguageSwitcher from '@/components/ui/LanguageSwitcher.vue'
 import { useSiteStore } from '@/stores/site'
 
@@ -47,6 +48,13 @@ onMounted(async () => {
     <h2 class="mt-6 text-lg font-medium text-neutral-800">{{ t('siteOffline.title') }}</h2>
     <p class="mt-2 max-w-md text-sm text-neutral-600">{{ t('siteOffline.message') }}</p>
     <BaseButton href="/login" class="mt-6">{{ t('siteOffline.signIn') }}</BaseButton>
+  </div>
+
+  <!-- Until the settings arrive we do not know whether this is the services
+       page or the school's website, so neither is drawn — otherwise the
+       school's menu flashes up first on newtechkh.com. -->
+  <div v-else-if="!site.loaded" class="flex min-h-screen items-center justify-center" aria-busy="true">
+    <BaseSpinner />
   </div>
 
   <div v-else class="relative flex min-h-screen flex-col">
