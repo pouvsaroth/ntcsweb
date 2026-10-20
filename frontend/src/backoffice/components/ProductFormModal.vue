@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import BaseAlert from '@/components/ui/BaseAlert.vue'
@@ -8,7 +8,9 @@ import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import { ApiRequestError } from '@/types/api'
 
-import { billingApi, type PlanModule, type Product } from '../api'
+import BaseSelect from '@/components/ui/BaseSelect.vue'
+
+import { billingApi, type Plan, type PlanModule, type Product } from '../api'
 import { moduleLabel } from '../billing'
 
 /** Add or edit a system (stage 9a): its names, logo and the modules it is built from. */
@@ -17,7 +19,13 @@ const emit = defineEmits<{ 'update:modelValue': [open: boolean]; saved: [product
 
 const { t, locale } = useI18n()
 
-const blank = () => ({ code: '', name: '', name_km: '', description: '', description_km: '', modules: [] as string[], sort_order: '0' })
+const blank = () => ({ code: '', name: '', name_km: '', description: '', description_km: '', modules: [] as string[], sort_order: '0', trial_plan_id: '' })
+/** This system's active plans, for its free-trial plan. */
+const plans = ref<Plan[]>([])
+const trialOptions = computed(() => [
+  { value: '', label: props.product?.is_school ? t('bo.billing.systems.trialDefault') : t('bo.billing.systems.noTrial') },
+  ...plans.value.filter((p) => p.product?.id === props.product?.id && p.status === 'active').map((p) => ({ value: String(p.id), label: p.name })),
+])
 const form = ref(blank())
 const logo = ref<File | null>(null)
 const saving = ref(false)
@@ -39,8 +47,10 @@ watch(
           description_km: p.description_km ?? '',
           modules: [...p.modules],
           sort_order: String(p.sort_order),
+          trial_plan_id: p.trial_plan_id ? String(p.trial_plan_id) : '',
         }
       : blank()
+    if (p) void billingApi.plans().then((d) => (plans.value = d.plans))
   },
 )
 
@@ -59,6 +69,8 @@ async function save(): Promise<void> {
     description_km: form.value.description_km.trim() || null,
     modules: form.value.modules,
     sort_order: Number(form.value.sort_order) || 0,
+    // Only an existing system has plans to choose from.
+    ...(props.product ? { trial_plan_id: form.value.trial_plan_id ? Number(form.value.trial_plan_id) : null } : {}),
   }
   try {
     let saved = props.product ? await billingApi.updateProduct(props.product.id, body) : await billingApi.createProduct(body)
@@ -104,6 +116,15 @@ const textarea =
           <textarea v-model="form.description_km" rows="3" :class="textarea" />
         </label>
       </div>
+
+      <BaseSelect
+        v-if="product"
+        v-model="form.trial_plan_id"
+        :options="trialOptions"
+        :label="t('bo.billing.systems.trialPlan')"
+        :hint="t('bo.billing.systems.trialPlanHint')"
+        :error="error?.fieldError('trial_plan_id')"
+      />
 
       <div>
         <p class="mb-1.5 text-sm font-medium text-neutral-700">{{ t('bo.billing.systems.logo') }}</p>

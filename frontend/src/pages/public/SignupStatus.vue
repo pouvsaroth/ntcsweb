@@ -15,10 +15,16 @@ import { formatMoney } from '@/utils/currency'
  * its payment (8c): the KHQR for the exact amount, a countdown, and a check
  * every few seconds — Bakong is asked by our server, never from here.
  */
-const { t } = useI18n()
+const { t, te } = useI18n()
 const route = useRoute()
 
 const state = ref<SignupState | null>(null)
+/** Not the school system: "organization" words (signupPage.org.*) where there are any. */
+function w(key: string, values?: Record<string, unknown>): string {
+  const orgKey = key.replace('signupPage.', 'signupPage.org.')
+  const org = !!state.value?.system && state.value.system.code !== 'school'
+  return org && te(orgKey) ? t(orgKey, values ?? {}) : t(key, values ?? {})
+}
 const missing = ref(false)
 let timer: ReturnType<typeof setTimeout> | undefined
 
@@ -70,69 +76,69 @@ const amount = computed(() => (state.value ? formatMoney(Number(state.value.amou
       <div v-if="!state && !missing" class="flex justify-center py-16"><BaseSpinner /></div>
 
       <div v-else-if="missing" class="rounded-2xl border border-neutral-200 bg-white p-6 text-center shadow-sm">
-        <p class="text-neutral-700">{{ t('signupPage.notFound') }}</p>
-        <BaseButton to="/plans" class="mt-4">{{ t('signupPage.backToPlans') }}</BaseButton>
+        <p class="text-neutral-700">{{ w('signupPage.notFound') }}</p>
+        <BaseButton to="/plans" class="mt-4">{{ w('signupPage.backToPlans') }}</BaseButton>
       </div>
 
       <div v-else-if="state" class="rounded-2xl border border-neutral-200 bg-white p-6 text-center shadow-sm sm:p-8" aria-live="polite">
         <template v-if="view === 'building'">
           <BaseSpinner class="mx-auto" />
-          <h1 class="mt-4 text-xl font-bold text-neutral-900">{{ t('signupPage.building') }}</h1>
-          <p class="mt-2 text-sm text-neutral-600">{{ t('signupPage.buildingText') }}</p>
+          <h1 class="mt-4 text-xl font-bold text-neutral-900">{{ w('signupPage.building') }}</h1>
+          <p class="mt-2 text-sm text-neutral-600">{{ w('signupPage.buildingText') }}</p>
         </template>
 
         <template v-else-if="view === 'ready'">
           <p class="text-5xl" aria-hidden="true">🎉</p>
-          <h1 class="mt-3 text-xl font-bold text-neutral-900">{{ t('signupPage.ready', { name: state.school_name }) }}</h1>
-          <p class="mt-2 text-sm text-neutral-600">{{ t('signupPage.readyText') }}</p>
+          <h1 class="mt-3 text-xl font-bold text-neutral-900">{{ w('signupPage.ready', { name: state.school_name }) }}</h1>
+          <p class="mt-2 text-sm text-neutral-600">{{ w('signupPage.readyText') }}</p>
           <dl class="mx-auto mt-4 max-w-xs space-y-1 rounded-xl bg-neutral-50 p-4 text-left text-sm">
             <div class="flex justify-between gap-3">
-              <dt class="text-neutral-500">{{ t('signupPage.slug') }}</dt>
+              <dt class="text-neutral-500">{{ w('signupPage.slug') }}</dt>
               <dd class="font-mono font-semibold text-neutral-900">{{ state.slug }}</dd>
             </div>
             <div class="flex justify-between gap-3">
-              <dt class="text-neutral-500">{{ t('signupPage.email') }}</dt>
+              <dt class="text-neutral-500">{{ w('signupPage.email') }}</dt>
               <dd class="break-all text-neutral-900">{{ state.owner_email }}</dd>
             </div>
           </dl>
-          <p v-if="state.receipt_number" class="mt-3 text-xs text-neutral-500">{{ t('signupPage.paidReceipt', { n: state.receipt_number }) }}</p>
-          <BaseButton v-if="state.sign_in_url" :href="state.sign_in_url" class="mt-5">{{ t('signupPage.signIn') }}</BaseButton>
+          <p v-if="state.receipt_number" class="mt-3 text-xs text-neutral-500">{{ w('signupPage.paidReceipt', { n: state.receipt_number }) }}</p>
+          <BaseButton v-if="state.sign_in_url" :href="state.sign_in_url" class="mt-5">{{ w('signupPage.signIn') }}</BaseButton>
         </template>
 
         <template v-else-if="view === 'failed'">
-          <h1 class="text-xl font-bold text-neutral-900">{{ t('signupPage.failedTitle') }}</h1>
-          <p class="mt-2 text-sm text-neutral-600">{{ state.paid_at ? t('signupPage.failedPaidText') : t('signupPage.failedText') }}</p>
+          <h1 class="text-xl font-bold text-neutral-900">{{ w('signupPage.failedTitle') }}</h1>
+          <p class="mt-2 text-sm text-neutral-600">{{ state.paid_at ? w('signupPage.failedPaidText') : w('signupPage.failedText') }}</p>
           <RouterLink to="/contact" class="mt-4 inline-block text-sm font-medium text-secondary-700 hover:underline">{{ t('servicesPage.contactUs') }}</RouterLink>
         </template>
 
         <template v-else-if="view === 'expired'">
-          <h1 class="text-xl font-bold text-neutral-900">{{ t('signupPage.expired') }}</h1>
-          <p class="mt-2 text-sm text-neutral-600">{{ t('signupPage.expiredText') }}</p>
-          <BaseButton to="/plans" class="mt-4">{{ t('signupPage.backToPlans') }}</BaseButton>
+          <h1 class="text-xl font-bold text-neutral-900">{{ w('signupPage.expired') }}</h1>
+          <p class="mt-2 text-sm text-neutral-600">{{ w('signupPage.expiredText') }}</p>
+          <BaseButton to="/plans" class="mt-4">{{ w('signupPage.backToPlans') }}</BaseButton>
         </template>
 
         <!-- Pay: the KHQR for this amount. -->
         <template v-else-if="state.khqr">
-          <h1 class="text-xl font-bold text-neutral-900">{{ t('signupPage.payTitle') }}</h1>
-          <p class="mt-1 text-sm text-neutral-600">{{ t('signupPage.payScan') }}</p>
+          <h1 class="text-xl font-bold text-neutral-900">{{ w('signupPage.payTitle') }}</h1>
+          <p class="mt-1 text-sm text-neutral-600">{{ w('signupPage.payScan') }}</p>
           <div class="mx-auto mt-4 w-fit rounded-2xl border-2 border-red-600 bg-white p-3">
             <p class="mb-2 rounded bg-red-600 py-1 text-sm font-bold tracking-wide text-white">KHQR</p>
             <img v-if="qrImage" :src="qrImage" alt="KHQR" class="mx-auto h-64 w-64" :class="{ 'opacity-30': secondsLeft === 0 }" />
             <p class="mt-2 text-2xl font-bold text-neutral-900">{{ amount }}</p>
           </div>
-          <p v-if="secondsLeft > 0" class="mt-3 text-sm text-neutral-600">{{ t('signupPage.validFor', { time: countdown }) }}</p>
-          <p v-else class="mt-3 text-sm font-medium text-amber-700">{{ t('signupPage.codeExpired') }}</p>
+          <p v-if="secondsLeft > 0" class="mt-3 text-sm text-neutral-600">{{ w('signupPage.validFor', { time: countdown }) }}</p>
+          <p v-else class="mt-3 text-sm font-medium text-amber-700">{{ w('signupPage.codeExpired') }}</p>
           <p class="mt-4 flex items-center justify-center gap-2 text-sm text-neutral-500">
-            <BaseSpinner class="h-4 w-4" />{{ t('signupPage.waitingPayment') }}
+            <BaseSpinner class="h-4 w-4" />{{ w('signupPage.waitingPayment') }}
           </p>
-          <p class="mt-4 text-xs text-neutral-400">{{ t('signupPage.payKeepOpen') }}</p>
+          <p class="mt-4 text-xs text-neutral-400">{{ w('signupPage.payKeepOpen') }}</p>
         </template>
 
         <!-- Online payment not set up yet: we take it from here. -->
         <template v-else>
-          <h1 class="text-xl font-bold text-neutral-900">{{ t('signupPage.payTitle') }}</h1>
+          <h1 class="text-xl font-bold text-neutral-900">{{ w('signupPage.payTitle') }}</h1>
           <p class="mt-2 text-3xl font-bold text-neutral-900">{{ amount }}</p>
-          <p class="mt-2 text-sm text-neutral-600">{{ t('signupPage.payLater') }}</p>
+          <p class="mt-2 text-sm text-neutral-600">{{ w('signupPage.payLater') }}</p>
           <RouterLink to="/contact" class="mt-4 inline-block text-sm font-medium text-secondary-700 hover:underline">{{ t('servicesPage.contactUs') }}</RouterLink>
         </template>
       </div>

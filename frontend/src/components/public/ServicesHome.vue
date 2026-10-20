@@ -24,7 +24,7 @@ const cards = computed(() =>
     titleEn: card.title_en.trim(),
     text: pickText(card, 'text', locale.value),
     to:
-      card.kind === 'school' ? '/computer-school' : card.kind === 'downloads' ? '/downloads' : card.kind === 'plans' ? '/plans' : `/services/${card.slug}`,
+      card.kind === 'school' ? '/computer-school' : card.kind === 'downloads' ? '/downloads' : card.kind === 'plans' ? (card.product_code && card.product_code !== 'school' ? `/plans/${card.product_code}` : '/plans') : `/services/${card.slug}`,
     external: card.kind === 'link',
   })),
 )

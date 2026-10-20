@@ -31,7 +31,7 @@ final class SignupController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $query = Signup::query()->with(['plan:id,code,name', 'tenant:id,name,slug,status']);
+        $query = Signup::query()->with(['plan:id,code,name', 'tenant:id,name,slug,status', 'product:id,code,name,name_km']);
 
         $page = ApiQuery::for($query, $request)
             ->searchable('school_name', 'school_name_en', 'slug', 'owner_name', 'owner_email', 'owner_phone')
@@ -42,6 +42,7 @@ final class SignupController extends Controller
         $page->through(fn (Signup $s) => [
             'id' => $s->id,
             'kind' => $s->kind,
+            'system' => $s->product?->only(['id', 'code', 'name', 'name_km']),
             'status' => $s->status === Signup::PENDING_PAYMENT && $s->expires_at?->copy()->addMinutes((int) config('platform.bakong.late_minutes', 10))->isPast() ? Signup::EXPIRED : $s->status,
             'plan' => $s->plan?->only(['id', 'code', 'name']),
             'periods' => $s->periods,

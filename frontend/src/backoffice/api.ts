@@ -394,10 +394,15 @@ export interface Product {
   status: 'active' | 'inactive'
   sort_order: number
   is_school: boolean
+  /** Its free trial's plan; null = none (the school system: Billing → Settings' trial plan). */
+  trial_plan_id: number | null
   plans_count: number
 }
 
-export type ProductInput = Pick<Product, 'code' | 'name' | 'name_km' | 'description' | 'description_km' | 'modules' | 'sort_order'> & { status?: Product['status'] }
+export type ProductInput = Pick<Product, 'code' | 'name' | 'name_km' | 'description' | 'description_km' | 'modules' | 'sort_order'> & {
+  status?: Product['status']
+  trial_plan_id?: number | null
+}
 
 /** A system as the plan form needs it. */
 export type ProductChoice = Pick<Product, 'id' | 'code' | 'name' | 'name_km' | 'modules' | 'status'>
@@ -556,6 +561,7 @@ export type SignupStatus = 'pending_payment' | 'paid' | 'created' | 'expired' | 
 export interface SignupRow {
   id: number
   kind: 'trial' | 'paid'
+  system: { id: number; code: string; name: string; name_km: string | null } | null
   status: SignupStatus
   plan: { id: number; code: string; name: string } | null
   periods: number | null
@@ -907,6 +913,8 @@ export interface ServiceCard {
   slug: string
   /** Where it goes — kind `link` only. */
   link_url: string
+  /** Which system's plans — kind `plans` only (stage 9). */
+  product_code?: string
   status: WebsiteStatus
   sort_order: number
   title_km: string
@@ -930,6 +938,8 @@ export interface ServiceCard {
 export interface WebsiteServices {
   enabled: boolean
   cards: ServiceCard[]
+  /** Systems a plans card can open. */
+  products?: { code: string; name: string; name_km: string | null }[]
 }
 
 export type ServiceCardInput = Omit<ServiceCard, 'id' | 'image_url'> & { image?: File }

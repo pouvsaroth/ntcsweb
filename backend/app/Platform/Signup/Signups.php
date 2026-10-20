@@ -9,6 +9,7 @@ use App\Platform\Billing\Payments;
 use App\Platform\Billing\Subscriptions;
 use App\Platform\Models\BillingSettings;
 use App\Platform\Models\Plan;
+use App\Platform\Models\Product;
 use App\Platform\Models\SchoolSubscription;
 use App\Platform\Models\SchoolPlacement;
 use App\Platform\Models\Signup;
@@ -73,6 +74,9 @@ final class Signups
     {
         $email = Str::lower(trim($data['owner_email']));
         $trial = $data['plan'] === Signup::KIND_TRIAL;
+        // The system it is for (stage 9c); none = the school system.
+        $product = Product::query()->where('code', (string) ($data['system'] ?? Product::SCHOOL))->where('status', Product::STATUS_ACTIVE)->first()
+            ?? throw ValidationException::withMessages(['plan' => __('This system is not available.')]);
 
         if (($problem = $this->slugProblem($data['slug'], $email)) !== null) {
             throw ValidationException::withMessages(['slug' => $problem]);
@@ -81,22 +85,25 @@ final class Signups
         $plan = null;
         $periods = null;
         if (! $trial) {
-            $plan = Plan::query()->where('code', $data['plan'])->where('show_on_website', true)
+            $plan = Plan::query()->where('code', $data['plan'])->where('product_id', $product->id)->where('show_on_website', true)
                 ->where('status', Plan::STATUS_ACTIVE)->where('code', '!=', Plan::LEGACY)->first()
                 ?? throw ValidationException::withMessages(['plan' => __('This plan is not available.')]);
             // A one-time plan is bought once.
             $periods = $plan->period_months === null ? 1 : (int) ($data['periods'] ?? 1);
-        } elseif (Signup::query()->where('kind', Signup::KIND_TRIAL)->where('owner_email', $email)->where('status', Signup::CREATED)->exists()) {
+        } elseif ($product->freeTrialPlan() === null) {
+            throw ValidationException::withMessages(['plan' => __('This system has no free trial. Please choose a plan.')]);
+        } elseif (Signup::query()->where('kind', Signup::KIND_TRIAL)->where('product_id', $product->id)->where('owner_email', $email)->where('status', Signup::CREATED)->exists()) {
             throw ValidationException::withMessages(['owner_email' => __('This email has already had a free trial. Please choose a plan.')]);
         }
 
-        $signup = DB::connection((new Signup)->getConnectionName())->transaction(function () use ($data, $email, $trial, $plan, $periods, $ip) {
+        $signup = DB::connection((new Signup)->getConnectionName())->transaction(function () use ($data, $email, $trial, $plan, $periods, $ip, $product) {
             // Starting again replaces this person's earlier unpaid sign-up.
             Signup::query()->where('owner_email', $email)->where('status', Signup::PENDING_PAYMENT)->update(['status' => Signup::EXPIRED]);
 
             $signup = Signup::query()->create([
                 'token' => (string) Str::uuid(),
                 'kind' => $trial ? Signup::KIND_TRIAL : Signup::KIND_PAID,
+                'product_id' => $product->getKey(),
                 'plan_id' => $plan?->getKey(),
                 'periods' => $periods,
                 'amount' => $plan ? round((float) $plan->price * $periods, 2) : 0,
@@ -123,7 +130,15 @@ final class Signups
             return $signup;
         });
 
-        return $trial ? $this->createSchool($signup) : $signup;
+        if (! $trial) {
+            return $signup;
+        }
+        // The school system's trial as always; another system's on its own trial plan.
+        $trialPlan = $product->freeTrialPlan();
+
+        return $this->createSchool($signup, $product->code === Product::SCHOOL ? null : fn (Tenant $tenant) => $this->subscriptions->subscribe(
+            $tenant, $trialPlan, SchoolSubscription::TRIAL, SchoolSubscription::today(), null, __('Free trial from the website.'), null,
+        ));
     }
 
     /** A fixed-amount KHQR for this sign-up from NewTech's own code, valid until its hold ends. Left empty while none is set. */

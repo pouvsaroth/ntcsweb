@@ -20,11 +20,24 @@ export interface PublicPlan {
   recommended: boolean
 }
 
+/** The system a plans page sells (stage 9). */
+export interface PublicSystem {
+  code: string
+  name: string
+  name_km: string | null
+  description: string | null
+  description_km: string | null
+  logo_url: string | null
+  is_school: boolean
+}
+
 export interface PublicPlans {
+  system: PublicSystem
   trial_days: number
   plans: PublicPlan[]
 }
 
 export const publicPlansService = {
-  list: () => apiGet<PublicPlans>('/public/plans'),
+  /** One system's plans; none = the school system. */
+  list: (system?: string | null) => apiGet<PublicPlans>('/public/plans', { params: { system: system || undefined } }),
 }

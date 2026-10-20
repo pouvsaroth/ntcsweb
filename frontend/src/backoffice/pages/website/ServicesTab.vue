@@ -53,8 +53,9 @@ async function toggle(): Promise<void> {
 
 const editing = ref<ServiceCard | null>(null)
 const modalOpen = ref(false)
-/** Only one card may open the Computer School, one the plans page, one the Downloads page. */
-const takenKinds = computed(() => (content.value?.cards ?? []).map((c) => c.kind).filter((k) => k === 'school' || k === 'downloads' || k === 'plans'))
+/** Only one card may open the Computer School, one the Downloads page; one plans card per system. */
+const takenProducts = computed(() => (content.value?.cards ?? []).filter((c) => c.kind === 'plans').map((c) => c.product_code || 'school'))
+const takenKinds = computed(() => (content.value?.cards ?? []).map((c) => c.kind).filter((k) => k === 'school' || k === 'downloads'))
 const nextOrder = computed(() => Math.max(-1, ...(content.value?.cards.map((c) => c.sort_order) ?? [])) + 1)
 function openAdd(): void {
   editing.value = null
@@ -83,7 +84,7 @@ async function confirmRemove(): Promise<void> {
 }
 
 const opens = (c: ServiceCard) =>
-  c.kind === 'school' ? '/computer-school' : c.kind === 'downloads' ? '/downloads' : c.kind === 'plans' ? '/plans' : c.kind === 'link' ? c.link_url : `/services/${c.slug}`
+  c.kind === 'school' ? '/computer-school' : c.kind === 'downloads' ? '/downloads' : c.kind === 'plans' ? (c.product_code && c.product_code !== 'school' ? `/plans/${c.product_code}` : '/plans') : c.kind === 'link' ? c.link_url : `/services/${c.slug}`
 </script>
 
 <template>
@@ -159,7 +160,15 @@ const opens = (c: ServiceCard) =>
         </article>
       </div>
 
-      <ServiceCardModal v-model="modalOpen" :card="editing" :taken-kinds="takenKinds" :next-order="nextOrder" @saved="load" />
+      <ServiceCardModal
+        v-model="modalOpen"
+        :card="editing"
+        :taken-kinds="takenKinds"
+        :next-order="nextOrder"
+        :products="content.products ?? []"
+        :taken-products="takenProducts"
+        @saved="load"
+      />
 
       <BaseModal :model-value="removing !== null" :title="t('bo.website.removeTitle')" size="sm" @update:model-value="removing = null">
         <p class="text-sm text-neutral-600">{{ t('bo.website.removeText') }}</p>

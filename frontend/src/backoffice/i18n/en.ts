@@ -359,6 +359,10 @@ const en = {
     tabs: { systems: 'Systems', plans: 'Plans', payments: 'Payments', signups: 'Sign-ups', settings: 'Settings' },
     systems: {
       hint: 'What we sell. Each system is built from modules; its plans offer only those.',
+      trialPlan: 'Free trial plan',
+      trialPlanHint: 'The plan a free trial of this system runs on. None: no Free trial card on its plans page.',
+      trialDefault: 'Billing → Settings trial plan',
+      noTrial: 'No free trial',
       add: 'New system',
       edit: 'Edit system',
       name: 'Name',
@@ -681,6 +685,7 @@ const en = {
       addCard: 'Add card',
       editCard: 'Edit card',
       opens: 'Clicking the card opens',
+      system: 'System',
       kinds: { page: 'Its own page', school: 'Computer School pages', plans: 'Plans page (Billing → Plans)', downloads: 'Downloads page', link: 'A web address' },
       theCard: 'The card',
       lang: { km: 'Khmer', en: 'English' },

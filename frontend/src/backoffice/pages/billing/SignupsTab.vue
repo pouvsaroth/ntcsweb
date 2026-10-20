@@ -54,7 +54,8 @@ const columns = computed(() => [
 ])
 
 const planLabel = (s: SignupRow) =>
-  s.kind === 'trial' ? t('bo.billing.signups.trial') : `${s.plan?.name ?? '—'}${s.periods && s.periods > 1 ? ` ${t('bo.billing.signups.periods', { n: s.periods })}` : ''}`
+  (s.system && s.system.code !== 'school' ? `${s.system.name} · ` : '') +
+  (s.kind === 'trial' ? t('bo.billing.signups.trial') : `${s.plan?.name ?? '—'}${s.periods && s.periods > 1 ? ` ${t('bo.billing.signups.periods', { n: s.periods })}` : ''}`)
 const session = useSession()
 const canManage = computed(() => session.can('platform.billing.manage'))
 const retrying = ref<number | null>(null)

@@ -47,6 +47,8 @@ export interface ServiceCard {
   id: string
   kind: ServiceCardKind
   slug: string
+  /** A plans card's system code (stage 9). */
+  product_code?: string
   link_url: string
   status: 'active' | 'inactive'
   sort_order: number

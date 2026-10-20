@@ -42,13 +42,13 @@ final class ServicesPageContent
     /** Opens the website's Downloads page (/downloads). At most one card. */
     public const KIND_DOWNLOADS = 'downloads';
 
-    /** Opens the plans page (/plans): the plans in back office → Billing → Plans. At most one card. */
+    /** Opens one system's plans page (/plans/{system}): its plans in back office → Billing → Plans. One card per system. */
     public const KIND_PLANS = 'plans';
 
     public const KINDS = [self::KIND_SCHOOL, self::KIND_PAGE, self::KIND_LINK, self::KIND_DOWNLOADS, self::KIND_PLANS];
 
     /** Kinds only one card may have: each opens one fixed part of the website. */
-    public const SINGLE_KINDS = [self::KIND_SCHOOL, self::KIND_DOWNLOADS, self::KIND_PLANS];
+    public const SINGLE_KINDS = [self::KIND_SCHOOL, self::KIND_DOWNLOADS];
 
     public const STATUS_ACTIVE = 'active';
 
@@ -115,6 +115,8 @@ final class ServicesPageContent
             'status' => ['required', Rule::in([self::STATUS_ACTIVE, self::STATUS_INACTIVE])],
             'sort_order' => ['nullable', 'integer', 'min:0', 'max:100000'],
             'button_url' => ['nullable', 'url:http,https', 'max:255'],
+            // A plans card's system (stage 9c); none = the school system.
+            'product_code' => ['nullable', 'string', 'max:50'],
             // 10M matches upload_max_filesize in docker/php/uploads.ini.
             'image' => ['nullable', 'image', 'mimes:jpeg,png,webp,gif', 'max:10240'],
         ];
@@ -156,6 +158,8 @@ final class ServicesPageContent
             'status' => ($card['status'] ?? self::STATUS_ACTIVE) === self::STATUS_INACTIVE ? self::STATUS_INACTIVE : self::STATUS_ACTIVE,
             'sort_order' => (int) ($card['sort_order'] ?? 0),
             'button_url' => (string) ($card['button_url'] ?? ''),
+            // A plans card's system; an older plans card is the school system's.
+            'product_code' => ($card['kind'] ?? null) === self::KIND_PLANS ? ((string) ($card['product_code'] ?? '') ?: 'school') : '',
         ];
         foreach ([...self::CARD_TEXT, ...self::PAGE_TEXT] as $field) {
             foreach (['km', 'en'] as $lang) {

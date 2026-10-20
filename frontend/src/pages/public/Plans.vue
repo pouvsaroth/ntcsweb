@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRoute } from 'vue-router'
 
 import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import { publicPlansService, type PublicPlan, type PublicPlans } from '@/services/plans'
@@ -15,18 +15,29 @@ import { formatMoney } from '@/utils/currency'
  */
 const { t, locale } = useI18n()
 
+const route = useRoute()
+/** /plans/{system}; /plans = the school system. */
+const systemCode = computed(() => (typeof route.params.system === 'string' && route.params.system ? route.params.system : null))
+
 const data = ref<PublicPlans | null>(null)
 const failed = ref(false)
 
-onMounted(async () => {
+async function load(): Promise<void> {
+  data.value = null
+  failed.value = false
   try {
-    data.value = await publicPlansService.list()
+    data.value = await publicPlansService.list(systemCode.value)
   } catch {
     failed.value = true
   }
-})
+}
+onMounted(load)
+watch(systemCode, load)
 
 const km = computed(() => locale.value === 'km')
+/** The system's name as the page title (falls back to the usual title). */
+const title = computed(() => (data.value ? (km.value ? data.value.system.name_km || data.value.system.name : data.value.system.name) : t('plansPage.title')))
+const signupQuery = (plan: string) => (data.value && !data.value.system.is_school ? { system: data.value.system.code, plan } : { plan })
 const width = 'w-full sm:w-[calc(50%-0.625rem)] lg:w-[calc(25%-0.9375rem)]'
 const button = 'mt-5 inline-flex w-full items-center justify-center rounded-lg px-4 py-2.5 text-sm font-semibold shadow-sm'
 const pick = (kmText: string | null, enText: string | null) => ((km.value ? kmText || enText : enText || kmText) ?? '').trim()
@@ -54,7 +65,7 @@ const cards = computed(() =>
   <section class="bg-gradient-to-b from-secondary-50 to-white px-4 pt-16 pb-12 sm:px-6 sm:py-14 lg:px-8">
     <div class="mx-auto max-w-6xl">
       <RouterLink to="/" class="text-sm font-medium text-secondary-700 hover:underline">← {{ t('servicesPage.backToServices') }}</RouterLink>
-      <h1 class="mt-3 text-center text-2xl font-bold text-neutral-900 sm:text-3xl">{{ t('plansPage.title') }}</h1>
+      <h1 class="mt-3 text-center text-2xl font-bold text-neutral-900 sm:text-3xl">{{ title }}</h1>
       <p class="mx-auto mt-2 max-w-2xl text-center text-neutral-600">{{ t('plansPage.subtitle') }}</p>
 
       <div v-if="!data && !failed" class="flex justify-center py-16"><BaseSpinner /></div>
@@ -70,7 +81,7 @@ const cards = computed(() =>
           <p class="mt-3 text-3xl font-bold text-neutral-900">{{ t('plansPage.free') }}</p>
           <p class="text-sm text-neutral-500">{{ t('plansPage.trialDays', { n: data.trial_days }) }}</p>
           <p class="mt-3 flex-1 text-sm text-neutral-600">{{ t('plansPage.trialText') }}</p>
-          <RouterLink :to="{ path: '/signup', query: { plan: 'trial' } }" :class="button" class="border border-neutral-300 bg-white text-neutral-800 hover:bg-neutral-50">
+          <RouterLink :to="{ path: '/signup', query: signupQuery('trial') }" :class="button" class="border border-neutral-300 bg-white text-neutral-800 hover:bg-neutral-50">
             {{ t('plansPage.startTrial') }}
           </RouterLink>
         </article>
@@ -99,7 +110,7 @@ const cards = computed(() =>
           </ul>
           <div class="flex-1" />
           <RouterLink
-            :to="{ path: '/signup', query: { plan: c.plan.code } }"
+            :to="{ path: '/signup', query: signupQuery(c.plan.code) }"
             :class="[button, c.plan.recommended ? 'bg-primary-500 text-secondary-900 hover:bg-primary-400' : 'bg-secondary-700 text-white hover:bg-secondary-800']"
           >
             {{ t('plansPage.choose') }}

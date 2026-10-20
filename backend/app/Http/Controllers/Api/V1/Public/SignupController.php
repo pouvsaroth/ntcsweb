@@ -46,6 +46,8 @@ final class SignupController extends Controller
 
         $data = $request->validate([
             'plan' => ['required', 'string', 'max:50'],
+            // Which system (stage 9c); none = the school system.
+            'system' => ['nullable', 'string', 'max:50'],
             'periods' => ['nullable', 'integer', 'between:1,12'],
             'school_name' => ['required', 'string', 'max:255'],
             'school_name_en' => ['nullable', 'string', 'max:255'],
@@ -85,7 +87,7 @@ final class SignupController extends Controller
     /** @return array<string, mixed> */
     private function present(Signup $signup): array
     {
-        $signup->loadMissing(['plan', 'tenant']);
+        $signup->loadMissing(['plan', 'tenant', 'product']);
         $tenant = $signup->tenant;
         $status = $signup->status;
         // A payment made as the code ran out is still looked for a few minutes.
@@ -98,6 +100,7 @@ final class SignupController extends Controller
         return [
             'token' => $signup->token,
             'kind' => $signup->kind,
+            'system' => $signup->product ? ['code' => $signup->product->code, 'name' => $signup->product->name, 'name_km' => $signup->product->name_km] : null,
             'status' => $status,
             'plan' => $signup->plan ? ['code' => $signup->plan->code, 'name' => $signup->plan->name, 'name_km' => $signup->plan->name_km] : null,
             'periods' => $signup->periods,

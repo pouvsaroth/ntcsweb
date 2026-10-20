@@ -125,7 +125,12 @@ final class ProductController extends Controller
             'modules.*' => ['string', 'distinct', Rule::in(Modules::codes())],
             'status' => ['sometimes', Rule::in([Product::STATUS_ACTIVE, Product::STATUS_INACTIVE])],
             'sort_order' => ['sometimes', 'integer', 'between:0,1000'],
+            // Its free trial (stage 9c); none = no free trial on the website.
+            'trial_plan_id' => ['sometimes', 'nullable', 'integer', Rule::exists((new Plan)->getConnectionName().'.bo_plans', 'id')->where('status', Plan::STATUS_ACTIVE)],
         ]);
+        if (! empty($data['trial_plan_id']) && $product !== null && (int) Plan::query()->whereKey($data['trial_plan_id'])->value('product_id') !== $product->id) {
+            throw ValidationException::withMessages(['trial_plan_id' => __('The trial plan must be a plan of this system.')]);
+        }
         if (isset($data['modules'])) {
             $data['modules'] = array_values(array_intersect(Modules::codes(), $data['modules']));
         }
@@ -148,6 +153,7 @@ final class ProductController extends Controller
             'status' => $p->status,
             'sort_order' => $p->sort_order,
             'is_school' => $p->code === Product::SCHOOL,
+            'trial_plan_id' => $p->trial_plan_id,
             'plans_count' => (int) ($p->plans_count ?? 0),
         ];
     }

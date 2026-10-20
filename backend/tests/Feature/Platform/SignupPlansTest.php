@@ -97,7 +97,11 @@ class SignupPlansTest extends TestCase
 
         $this->post('/api/v1/platform/website/services/cards', $card, ['Accept' => 'application/json'])->assertCreated()
             ->assertJsonPath('data.kind', 'plans')
+            ->assertJsonPath('data.product_code', 'school')
             ->assertJsonPath('data.slug', '');
-        $this->post('/api/v1/platform/website/services/cards', $card, ['Accept' => 'application/json'])->assertUnprocessable()->assertJsonValidationErrors('kind');
+        // One plans card per system: a second for the school system is refused; one for ERP is fine.
+        $this->post('/api/v1/platform/website/services/cards', $card, ['Accept' => 'application/json'])->assertUnprocessable()->assertJsonValidationErrors('product_code');
+        $this->post('/api/v1/platform/website/services/cards', $card + ['product_code' => 'erp'], ['Accept' => 'application/json'])->assertCreated()
+            ->assertJsonPath('data.product_code', 'erp');
     }
 }

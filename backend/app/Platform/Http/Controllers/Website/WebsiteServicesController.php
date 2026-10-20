@@ -30,7 +30,11 @@ final class WebsiteServicesController extends Controller
 
     public function show(): JsonResponse
     {
-        return ApiResponse::success(ServicesPageContent::forTenant($this->context->getOrFail()));
+        return ApiResponse::success(ServicesPageContent::forTenant($this->context->getOrFail()) + [
+            // For a plans card's System choice (stage 9c).
+            'products' => \App\Platform\Models\Product::query()->where('status', 'active')->orderBy('sort_order')->orderBy('id')
+                ->get(['id', 'code', 'name', 'name_km'])->map(fn ($p) => $p->only(['code', 'name', 'name_km']))->values(),
+        ]);
     }
 
     /** The switch alone; it applies at once. */
@@ -99,6 +103,16 @@ final class WebsiteServicesController extends Controller
         }
         $card['button_url'] = (string) ($data['button_url'] ?? '');
         $card['link_url'] = $data['kind'] === ServicesPageContent::KIND_LINK ? (string) ($data['link_url'] ?? '') : '';
+
+        // One plans card per system.
+        $card['product_code'] = '';
+        if ($data['kind'] === ServicesPageContent::KIND_PLANS) {
+            $card['product_code'] = (string) ($data['product_code'] ?? '') ?: 'school';
+            abort_unless(\App\Platform\Models\Product::query()->where('code', $card['product_code'])->exists(), 422, __('Unknown system.'));
+            if (collect($others)->contains(fn (array $c) => ($c['kind'] ?? '') === ServicesPageContent::KIND_PLANS && (((string) ($c['product_code'] ?? '')) ?: 'school') === $card['product_code'])) {
+                throw ValidationException::withMessages(['product_code' => __('Another card already opens this system\'s plans.')]);
+            }
+        }
 
         // Its own page's address: as typed, else from the title; unique among the cards.
         if ($data['kind'] === ServicesPageContent::KIND_PAGE) {

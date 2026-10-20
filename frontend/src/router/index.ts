@@ -8,7 +8,7 @@ const publicRoutes: RouteRecordRaw[] = [
   { path: 'computer-school', name: 'school-home', component: () => import('@/pages/public/Home.vue') },
   { path: 'services/:slug', name: 'service-page', component: () => import('@/pages/public/ServicePage.vue') },
   // The plans card's page (back office → Billing → Plans, docs/backoffice/stage-8-signup.md).
-  { path: 'plans', name: 'plans', component: () => import('@/pages/public/Plans.vue') },
+  { path: 'plans/:system?', name: 'plans', component: () => import('@/pages/public/Plans.vue') },
   // Self-service sign-up from a plan card, then its status page (8b).
   { path: 'signup', name: 'signup', component: () => import('@/pages/public/Signup.vue') },
   { path: 'signup/:token', name: 'signup-status', component: () => import('@/pages/public/SignupStatus.vue') },

@@ -8,6 +8,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponse;
 use App\Platform\Models\BillingSettings;
 use App\Platform\Models\Plan;
+use App\Platform\Models\Product;
+use Illuminate\Http\Request;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
 
@@ -24,11 +26,17 @@ final class PlanController extends Controller
 {
     public function __construct(private readonly TenantContext $context) {}
 
-    public function index(): JsonResponse
+    /** One system's plans (`?system=erp`; default: the school system). */
+    public function index(Request $request): JsonResponse
     {
         abort_unless($this->context->getOrFail()->slug === config('platform.website_school'), 404);
 
+        $product = Product::query()->where('code', (string) $request->query('system', Product::SCHOOL))
+            ->where('status', Product::STATUS_ACTIVE)->first();
+        abort_if($product === null, 404);
+
         $plans = Plan::query()
+            ->where('product_id', $product->id)
             ->where('show_on_website', true)
             ->where('status', Plan::STATUS_ACTIVE)
             ->where('code', '!=', Plan::LEGACY)
@@ -38,7 +46,17 @@ final class PlanController extends Controller
             ->get();
 
         return ApiResponse::success([
-            'trial_days' => BillingSettings::current()->trial_days,
+            'system' => [
+                'code' => $product->code,
+                'name' => $product->name,
+                'name_km' => $product->name_km,
+                'description' => $product->description,
+                'description_km' => $product->description_km,
+                'logo_url' => $product->logoUrl(),
+                'is_school' => $product->code === Product::SCHOOL,
+            ],
+            // No free-trial plan for this system = no Free trial card.
+            'trial_days' => $product->freeTrialPlan() !== null ? BillingSettings::current()->trial_days : 0,
             'plans' => $plans->map(fn (Plan $p) => [
                 'code' => $p->code,
                 'name' => $p->name,

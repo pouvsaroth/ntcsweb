@@ -4,6 +4,8 @@ import { apiGet, apiPost } from '@/services/http'
 export interface SignupForm {
   /** A plan code, or 'trial'. */
   plan: string
+  /** The system (stage 9); none = the school system. */
+  system?: string | null
   periods: number | null
   school_name: string
   school_name_en: string
@@ -23,6 +25,7 @@ export type SignupStatus = 'pending_payment' | 'paid' | 'created' | 'expired' | 
 export interface SignupState {
   token: string
   kind: 'trial' | 'paid'
+  system: { code: string; name: string; name_km: string | null } | null
   status: SignupStatus
   plan: { code: string; name: string; name_km: string | null } | null
   periods: number | null

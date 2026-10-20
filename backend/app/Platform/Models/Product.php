@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Platform\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Storage;
 
@@ -42,6 +43,26 @@ class Product extends Model
     public function plans(): HasMany
     {
         return $this->hasMany(Plan::class);
+    }
+
+    public function trialPlan(): BelongsTo
+    {
+        return $this->belongsTo(Plan::class, 'trial_plan_id');
+    }
+
+    /**
+     * The plan a free trial of this system runs on, or null when it has no
+     * free trial. The school system falls back to Billing → Settings' trial
+     * plan, then Legacy — as before systems existed.
+     */
+    public function freeTrialPlan(): ?Plan
+    {
+        $plan = $this->trialPlan()->where('status', Plan::STATUS_ACTIVE)->first();
+        if ($plan !== null || $this->code !== self::SCHOOL) {
+            return $plan;
+        }
+
+        return BillingSettings::current()->trialPlan()->where('status', Plan::STATUS_ACTIVE)->first() ?? Plan::legacy();
     }
 
     public static function school(): self

@@ -20,19 +20,23 @@ import { websiteServicesApi, type ServiceCard, type ServiceCardInput, type Servi
 const props = defineProps<{
   modelValue: boolean
   card: ServiceCard | null
-  /** Kinds another card already has that only one card may have (school, plans, downloads). */
+  /** Kinds another card already has that only one card may have (school, downloads). */
   takenKinds: ServiceCardKind[]
   nextOrder: number
+  /** Systems a plans card can open, and the ones another card already opens. */
+  products?: { code: string; name: string; name_km: string | null }[]
+  takenProducts?: string[]
 }>()
 const emit = defineEmits<{ 'update:modelValue': [open: boolean]; saved: [] }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const langs = ['km', 'en'] as const
 
 const blank = (): ServiceCardInput => ({
   kind: 'page',
   slug: '',
   link_url: '',
+  product_code: 'school',
   status: 'active',
   sort_order: 0,
   title_km: '',
@@ -56,6 +60,12 @@ const preview = ref<string | null>(null)
 const busy = ref(false)
 const error = ref<ApiRequestError | null>(null)
 const fieldError = (f: string) => error.value?.fieldError(f)
+
+const productOptions = computed(() =>
+  (props.products ?? [])
+    .filter((p) => !(props.takenProducts ?? []).includes(p.code) || props.card?.product_code === p.code)
+    .map((p) => ({ value: p.code, label: locale.value === 'km' && p.name_km ? p.name_km : p.name })),
+)
 
 const kindOptions = computed(() =>
   (['page', 'school', 'plans', 'downloads', 'link'] as const)
@@ -168,6 +178,16 @@ const langLabel = (l: 'km' | 'en') => t(`bo.website.services.lang.${l}`)
           <p v-if="fieldError('image')" class="mt-1 text-sm text-red-600">{{ fieldError('image') }}</p>
         </div>
       </fieldset>
+
+      <!-- Which system's plans page -->
+      <BaseSelect
+        v-if="form.kind === 'plans'"
+        :model-value="form.product_code || 'school'"
+        :options="productOptions"
+        :label="t('bo.website.services.system')"
+        :error="fieldError('product_code')"
+        @update:model-value="(v: string) => (form.product_code = v)"
+      />
 
       <!-- A web address -->
       <BaseInput

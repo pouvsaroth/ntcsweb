@@ -73,6 +73,21 @@ System choice on the plan form; the plans list filters by system. Tests:
   "company"); creates the customer + that subscription (paid by KHQR as 8c).
 - An existing customer adding a second system: from the back office first.
 
+**As built 9b (2026-10-20):** `bo_school_subscriptions.product_id`; unique
+index `bo_school_subscriptions_one_live_per_product`. `Subscriptions::live()/
+latest()/summary()` take an optional system (none = any, school first);
+`systems()` lists a customer's systems. `SchoolModules` = union of each
+system's live subscription (or latest while in grace). A customer is
+suspended only when no system is live. Billing panel: system switcher +
+Add system; payments, end date and cancel per system (`product_id`). Schools
+are called Customers. Tests: `CustomerSystemsTest`.
+
+**As built 9c (2026-10-20):** `bo_products.trial_plan_id` (none = no free
+trial; school falls back to Billing settings); `bo_signups.product_id`.
+`GET public/plans?system=` and `/plans/{system}`; sign-up takes `system`;
+non-school wording under `signupPage.org.*`. A plans services card has a
+system (`product_code`), one card per system. Tests: `SystemSignupTest`.
+
 ### 9d. Console follows the customer's systems
 - Words, dashboard and the console's name follow what the customer has
   (an ERP/HR-only customer never sees "students" or "school").
