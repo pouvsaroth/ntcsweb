@@ -431,6 +431,7 @@ const en = {
       modules: 'Modules',
       modulesHint: 'Core features (dashboard, users, roles, settings, notifications) are always on.',
       allModules: 'All modules',
+      menusOf: '{n} of {total} menus',
       noModules: 'Core only',
       legacy: 'Legacy',
       legacyHint: 'Schools from before billing. It cannot be removed or deactivated.',

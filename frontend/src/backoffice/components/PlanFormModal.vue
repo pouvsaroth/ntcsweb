@@ -12,7 +12,7 @@ import { ApiRequestError } from '@/types/api'
 import { billingApi, type Plan, type PlanModule } from '../api'
 import { moduleLabel } from '../billing'
 
-/** Create or edit a plan: price per period, student limit, modules. */
+/** Create or edit a plan: price per period, student limit, modules and the menus inside them. */
 const props = defineProps<{ modelValue: boolean; plan: Plan | null; modules: PlanModule[] }>()
 const emit = defineEmits<{ 'update:modelValue': [open: boolean]; saved: [plan: Plan] }>()
 
@@ -27,6 +27,8 @@ const blank = () => ({
   period_months: '1',
   max_students: '',
   modules: [] as string[],
+  /** Every ticked menu, across modules. */
+  menus: [] as string[],
   show_on_website: false,
   name_km: '',
   tagline_km: '',
@@ -56,6 +58,8 @@ watch(
           period_months: p.period_months === null ? '' : String(p.period_months),
           max_students: p.max_students === null ? '' : String(p.max_students),
           modules: [...p.modules],
+          // null = every menu of its modules
+          menus: p.menus ?? props.modules.filter((m) => p.modules.includes(m.code)).flatMap((m) => m.groups),
           show_on_website: p.show_on_website,
           name_km: p.name_km ?? '',
           tagline_km: p.tagline_km ?? '',
@@ -79,13 +83,28 @@ const textarea =
 
 const allOn = computed(() => form.value.modules.length === props.modules.length)
 
+const groupsOf = (code: string) => props.modules.find((m) => m.code === code)?.groups ?? []
+
+/** A module on: all its menus on. Off: its menus go too. */
 function toggle(code: string, on: boolean): void {
+  const groups = groupsOf(code)
   form.value.modules = on ? [...form.value.modules, code] : form.value.modules.filter((m) => m !== code)
+  form.value.menus = on ? [...new Set([...form.value.menus, ...groups])] : form.value.menus.filter((g) => !groups.includes(g))
 }
 
 function toggleAll(): void {
-  form.value.modules = allOn.value ? [] : props.modules.map((m) => m.code)
+  const on = !allOn.value
+  form.value.modules = on ? props.modules.map((m) => m.code) : []
+  form.value.menus = on ? props.modules.flatMap((m) => m.groups) : []
 }
+
+/** One menu on or off; its module's last menu off turns the module off. */
+function toggleMenu(module: string, group: string, on: boolean): void {
+  form.value.menus = on ? [...form.value.menus, group] : form.value.menus.filter((g) => g !== group)
+  if (!on && !groupsOf(module).some((g) => form.value.menus.includes(g))) toggle(module, false)
+}
+
+const menuCount = (m: PlanModule) => m.groups.filter((g) => form.value.menus.includes(g)).length
 
 async function save(): Promise<void> {
   saving.value = true
@@ -99,6 +118,8 @@ async function save(): Promise<void> {
     period_months: form.value.period_months === '' ? null : Number(form.value.period_months),
     max_students: form.value.max_students === '' ? null : Number(form.value.max_students),
     modules: form.value.modules,
+    // The server keeps only menus of the ticked modules, and stores "every menu" as null.
+    menus: form.value.menus,
     // The Legacy plan never goes on the website, so its form sends none of this.
     ...(props.plan?.is_legacy
       ? {}
@@ -170,24 +191,42 @@ async function save(): Promise<void> {
             {{ allOn ? t('bo.billing.plans.noModules') : t('bo.billing.plans.allModules') }}
           </button>
         </div>
-        <div class="grid gap-2 sm:grid-cols-3">
-          <label
+        <!-- Each module, and under a ticked one its menus (when it has more than one). -->
+        <div class="space-y-2">
+          <div
             v-for="module in modules"
             :key="module.code"
-            class="flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm"
-            :class="form.modules.includes(module.code) ? 'border-primary-500 bg-primary-50 text-neutral-900' : 'border-neutral-200 text-neutral-600'"
+            class="rounded-lg border text-sm"
+            :class="form.modules.includes(module.code) ? 'border-primary-500 bg-primary-50/40' : 'border-neutral-200'"
           >
-            <input
-              type="checkbox"
-              class="rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
-              :checked="form.modules.includes(module.code)"
-              @change="toggle(module.code, ($event.target as HTMLInputElement).checked)"
-            />
-            {{ moduleLabel(module, locale) }}
-          </label>
+            <label class="flex cursor-pointer items-center gap-2 px-3 py-2" :class="form.modules.includes(module.code) ? 'text-neutral-900' : 'text-neutral-600'">
+              <input
+                type="checkbox"
+                class="rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+                :checked="form.modules.includes(module.code)"
+                @change="toggle(module.code, ($event.target as HTMLInputElement).checked)"
+              />
+              <span class="font-medium">{{ moduleLabel(module, locale) }}</span>
+              <span v-if="form.modules.includes(module.code) && module.menus.length > 1" class="ml-auto text-xs text-neutral-500">
+                {{ t('bo.billing.plans.menusOf', { n: menuCount(module), total: module.menus.length }) }}
+              </span>
+            </label>
+            <div v-if="form.modules.includes(module.code) && module.menus.length > 1" class="flex flex-wrap gap-x-4 gap-y-1.5 border-t border-primary-100 px-3 py-2 pl-9">
+              <label v-for="menu in module.menus" :key="menu.code" class="flex cursor-pointer items-center gap-1.5 text-neutral-700">
+                <input
+                  type="checkbox"
+                  class="h-3.5 w-3.5 rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+                  :checked="form.menus.includes(menu.code)"
+                  @change="toggleMenu(module.code, menu.code, ($event.target as HTMLInputElement).checked)"
+                />
+                {{ locale === 'km' ? menu.label_km : menu.label }}
+              </label>
+            </div>
+          </div>
         </div>
         <p class="mt-1.5 text-sm text-neutral-500">{{ t('bo.billing.plans.modulesHint') }}</p>
         <p v-if="error?.fieldError('modules')" class="mt-1 text-xs text-red-600">{{ error.fieldError('modules') }}</p>
+        <p v-if="error?.fieldError('menus')" class="mt-1 text-xs text-red-600">{{ error.fieldError('menus') }}</p>
       </div>
 
       <!-- The plan card on the website's plans page (docs/backoffice/stage-8-signup.md, 8a). -->

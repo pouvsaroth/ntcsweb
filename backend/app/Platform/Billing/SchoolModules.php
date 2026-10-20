@@ -21,7 +21,7 @@ use App\Platform\Models\SchoolSubscription;
  */
 final class SchoolModules
 {
-    /** @var array<int, array{modules: list<string>|null, max_students: int|null}> */
+    /** @var array<int, array{modules: list<string>|null, menus: list<string>|null, max_students: int|null}> */
     private array $memo = [];
 
     /** @return list<string>|null module codes; null = every module */
@@ -40,18 +40,18 @@ final class SchoolModules
         return $tenantId === null ? null : $this->plan($tenantId)['max_students'];
     }
 
-    /** @return array{modules: list<string>|null, max_students: int|null} */
+    /** @return array{modules: list<string>|null, menus: list<string>|null, max_students: int|null} */
     private function plan(int $tenantId): array
     {
         if (! array_key_exists($tenantId, $this->memo)) {
             $sub = SchoolSubscription::query()
                 ->where('tenant_id', $tenantId)
-                ->with('plan:id,modules,max_students')
+                ->with('plan:id,modules,menus,max_students')
                 ->orderByRaw("status in ('trial', 'active') desc")
                 ->latest('id')
                 ->first(['id', 'plan_id', 'status']);
 
-            $this->memo[$tenantId] = ['modules' => $sub?->plan?->modules, 'max_students' => $sub?->plan?->max_students];
+            $this->memo[$tenantId] = ['modules' => $sub?->plan?->modules, 'menus' => $sub?->plan?->menus, 'max_students' => $sub?->plan?->max_students];
         }
 
         return $this->memo[$tenantId];
@@ -65,7 +65,8 @@ final class SchoolModules
     }
 
     /**
-     * Drop the permissions whose group belongs to a module the plan lacks.
+     * Drop the permissions whose group belongs to a module the plan lacks, or
+     * is a menu of an included module that the plan leaves out.
      *
      * @param  list<string>  $slugs
      * @return list<string>
@@ -76,11 +77,16 @@ final class SchoolModules
         if ($enabled === null) {
             return $slugs;
         }
+        $menus = $this->plan((int) $tenantId)['menus'];
 
-        return array_values(array_filter($slugs, function (string $slug) use ($enabled) {
-            $module = Modules::moduleOfGroup(strstr($slug, '.', true) ?: $slug);
+        return array_values(array_filter($slugs, function (string $slug) use ($enabled, $menus) {
+            $group = strstr($slug, '.', true) ?: $slug;
+            $module = Modules::moduleOfGroup($group);
+            if ($module === null) {
+                return true; // Core
+            }
 
-            return $module === null || in_array($module, $enabled, true);
+            return in_array($module, $enabled, true) && ($menus === null || in_array($group, $menus, true));
         }));
     }
 

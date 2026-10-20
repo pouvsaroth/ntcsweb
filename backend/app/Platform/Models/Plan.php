@@ -32,6 +32,7 @@ class Plan extends Model
             'period_months' => 'integer',
             'max_students' => 'integer',
             'modules' => 'array',
+            'menus' => 'array',
             'show_on_website' => 'boolean',
             'recommended' => 'boolean',
             'website_order' => 'integer',

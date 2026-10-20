@@ -432,6 +432,7 @@ const km: BackofficeMessages = {
       noLimit: 'គ្មានកំណត់ចំនួនសិស្ស',
       modules: 'ម៉ូឌុល',
       modulesHint: 'មុខងារស្នូល (ផ្ទាំងគ្រប់គ្រង អ្នកប្រើ តួនាទី ការកំណត់ ការជូនដំណឹង) តែងតែបើក។',
+      menusOf: '{n} ក្នុងចំណោម {total} ម៉ឺនុយ',
       allModules: 'ម៉ូឌុលទាំងអស់',
       noModules: 'តែស្នូល',
       legacy: 'ចាស់',

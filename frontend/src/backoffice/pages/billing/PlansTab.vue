@@ -48,11 +48,15 @@ function openForm(plan: Plan | null): void {
 }
 
 function modulesOf(plan: Plan): string {
-  if (plan.modules.length === modules.value.length) return t('bo.billing.plans.allModules')
+  if (plan.modules.length === modules.value.length && plan.menus === null) return t('bo.billing.plans.allModules')
   if (plan.modules.length === 0) return t('bo.billing.plans.noModules')
   return modules.value
     .filter((m) => plan.modules.includes(m.code))
-    .map((m) => moduleLabel(m, locale.value))
+    .map((m) => {
+      // Some menus only: "Academics (8/16)".
+      const kept = plan.menus === null ? m.groups.length : m.groups.filter((g) => plan.menus!.includes(g)).length
+      return kept < m.groups.length ? `${moduleLabel(m, locale.value)} (${kept}/${m.groups.length})` : moduleLabel(m, locale.value)
+    })
     .join(' · ')
 }
 

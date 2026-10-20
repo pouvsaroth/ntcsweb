@@ -103,6 +103,9 @@ final class PlanController extends Controller
             'max_students' => ['sometimes', 'nullable', 'integer', 'min:1'],
             'modules' => [$required, 'array'],
             'modules.*' => ['string', 'distinct', Rule::in(Modules::codes())],
+            // Menus inside the modules; null or absent = every menu of each module.
+            'menus' => ['sometimes', 'nullable', 'array'],
+            'menus.*' => ['string', 'distinct', Rule::in(Modules::groups())],
             'status' => ['sometimes', Rule::in([Plan::STATUS_ACTIVE, Plan::STATUS_INACTIVE])],
             // On the website (docs/backoffice/stage-8-signup.md, 8a).
             'show_on_website' => ['sometimes', 'boolean'],
@@ -124,6 +127,11 @@ final class PlanController extends Controller
         if (isset($data['modules'])) {
             // Stored in catalog order, so two plans with the same modules read the same.
             $data['modules'] = array_values(array_intersect(Modules::codes(), $data['modules']));
+        }
+        if (array_key_exists('menus', $data) || isset($data['modules'])) {
+            $modules = $data['modules'] ?? $plan?->modules ?? [];
+            $menus = array_key_exists('menus', $data) ? $data['menus'] : $plan?->menus;
+            $data['menus'] = Modules::normaliseMenus($modules, $menus);
         }
 
         return $data;
@@ -155,6 +163,8 @@ final class PlanController extends Controller
             'period_months' => $plan->period_months,
             'max_students' => $plan->max_students,
             'modules' => $plan->modules ?? [],
+            // null = every menu of its modules
+            'menus' => $plan->menus,
             'status' => $plan->status,
             'is_legacy' => $plan->code === Plan::LEGACY,
             'live_count' => (int) ($plan->live_count ?? 0),

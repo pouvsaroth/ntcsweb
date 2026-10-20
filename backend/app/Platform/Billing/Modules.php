@@ -77,21 +77,106 @@ final class Modules
         ],
     ];
 
+    /**
+     * Each module's menus — one per permission group — as the plan form lists them
+     * (a plan may include a module but only some of its menus).
+     *
+     * @var array<string, array{0: string, 1: string}> group => [English, Khmer]
+     */
+    public const MENU_LABELS = [
+        'academic-programs' => ['Academic programs', 'កម្មវិធីសិក្សា'],
+        'academic-years' => ['Academic years', 'ឆ្នាំសិក្សា'],
+        'academic-reports' => ['Academic reports', 'របាយការណ៍សិក្សា'],
+        'programs' => ['Programs', 'កម្មវិធី'],
+        'course-packages' => ['Course packages', 'កញ្ចប់វគ្គសិក្សា'],
+        'classes' => ['Classes', 'ថ្នាក់'],
+        'classrooms' => ['Classrooms', 'បន្ទប់រៀន'],
+        'buildings' => ['Buildings', 'អគារ'],
+        'students' => ['Students', 'សិស្ស'],
+        'enrollments' => ['Enrollments', 'ការចុះឈ្មោះចូលរៀន'],
+        'attendance' => ['Student attendance', 'វត្តមានសិស្ស'],
+        'make-up-class-requests' => ['Make-up class requests', 'សំណើរៀនសង'],
+        'exam-applications' => ['Exam applications', 'ពាក្យប្រឡង'],
+        'exam-scores' => ['Exam scores', 'ពិន្ទុប្រឡង'],
+        'examination' => ['Examination', 'ការប្រឡង'],
+        'student-feedback' => ['Student feedback', 'មតិសិស្ស'],
+        'invoices' => ['Invoices', 'វិក្កយបត្រ'],
+        'payments' => ['Payments', 'ការបង់ប្រាក់'],
+        'receipts' => ['Receipts', 'បង្កាន់ដៃ'],
+        'billing-reports' => ['Billing reports', 'របាយការណ៍វិក្កយបត្រ'],
+        'products' => ['Products', 'ផលិតផល'],
+        'accounting' => ['Accounting', 'គណនេយ្យ'],
+        'accounts' => ['Chart of accounts', 'តារាងគណនី'],
+        'income' => ['Income', 'ចំណូល'],
+        'expense' => ['Expenses', 'ចំណាយ'],
+        'transactions' => ['Transactions', 'ប្រតិបត្តិការ'],
+        'reports' => ['Financial reports', 'របាយការណ៍ហិរញ្ញវត្ថុ'],
+        'staff' => ['Staff', 'បុគ្គលិក'],
+        'staff-attendance' => ['Staff attendance', 'វត្តមានបុគ្គលិក'],
+        'positions' => ['Positions', 'មុខតំណែង'],
+        'leave-management' => ['Leave management', 'គ្រប់គ្រងការឈប់សម្រាក'],
+        'leave-requests' => ['Leave requests', 'សំណើឈប់សម្រាក'],
+        'recruitment' => ['Recruitment', 'ការជ្រើសរើសបុគ្គលិក'],
+        'resignation-requests' => ['Resignation requests', 'សំណើលាលែង'],
+        'performance' => ['Performance', 'ការវាយតម្លៃការងារ'],
+        'overtime-requests' => ['Overtime requests', 'សំណើម៉ោងបន្ថែម'],
+        'manpower-requests' => ['Manpower requests', 'សំណើបុគ្គលិកបន្ថែម'],
+        'attendance-corrections' => ['Attendance corrections', 'កែតម្រូវវត្តមាន'],
+        'payroll' => ['Payroll', 'បើកប្រាក់បៀវត្សរ៍'],
+        'assets' => ['Assets', 'ទ្រព្យសម្បត្តិ'],
+        'my-assets' => ['My assets', 'ទ្រព្យសម្បត្តិរបស់ខ្ញុំ'],
+        'books' => ['Books', 'សៀវភៅ'],
+        'book-categories' => ['Book categories', 'ប្រភេទសៀវភៅ'],
+        'videos' => ['Video lessons', 'មេរៀនវីដេអូ'],
+        'contact-messages' => ['Contact messages', 'សារទំនាក់ទំនង'],
+        'projects' => ['Projects', 'គម្រោង'],
+    ];
+
     /** @return list<string> */
     public static function codes(): array
     {
         return array_keys(self::CATALOG);
     }
 
-    /** @return list<array{code: string, label: string, label_km: string, groups: list<string>}> */
+    /** @return list<array{code: string, label: string, label_km: string, groups: list<string>, menus: list<array{code: string, label: string, label_km: string}>}> */
     public static function list(): array
     {
         $out = [];
         foreach (self::CATALOG as $code => $module) {
-            $out[] = ['code' => $code] + $module;
+            $out[] = ['code' => $code] + $module + ['menus' => array_map(fn (string $g) => [
+                'code' => $g,
+                'label' => self::MENU_LABELS[$g][0] ?? $g,
+                'label_km' => self::MENU_LABELS[$g][1] ?? $g,
+            ], $module['groups'])];
         }
 
         return $out;
+    }
+
+    /** Every menu (permission group) that belongs to a module. @return list<string> */
+    public static function groups(): array
+    {
+        return array_merge(...array_values(array_map(fn (array $m) => $m['groups'], self::CATALOG)));
+    }
+
+    /**
+     * A plan's menus as stored: only menus of its modules, and null when every
+     * one of its modules has all its menus (so a plan saved before menus
+     * existed, and one that simply keeps everything, read the same).
+     *
+     * @param  list<string>  $modules
+     * @param  list<string>|null  $menus
+     * @return list<string>|null
+     */
+    public static function normaliseMenus(array $modules, ?array $menus): ?array
+    {
+        if ($menus === null) {
+            return null;
+        }
+        $inModules = array_merge([], ...array_map(fn (string $m) => self::CATALOG[$m]['groups'] ?? [], $modules));
+        $kept = array_values(array_intersect($inModules, $menus)); // catalog order
+
+        return count($kept) === count($inModules) ? null : $kept;
     }
 
     /** The module a permission group belongs to, or null for Core. */

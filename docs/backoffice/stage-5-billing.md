@@ -127,6 +127,14 @@ Draft catalog (to confirm, see Open questions):
 
 Platform super admins (`is_super_admin`) still see everything, as today.
 
+**Menus inside modules (2026-10-20):** a plan may keep only some menus
+(permission groups) of a module — `bo_plans.menus`, a list of groups; null =
+every menu of its modules (all plans before this). `Modules::MENU_LABELS`
+names each menu for the plan form; `SchoolModules::filter()` drops a group
+that is in an included module but not in the plan's menus, so the menu
+disappears from the console and its API answers 403, like a module. Saving
+every menu of each module stores null (`Modules::normaliseMenus()`).
+
 ### 5d. Student limit
 
 **Active students** = distinct students with an enrollment in

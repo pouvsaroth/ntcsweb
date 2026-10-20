@@ -10,6 +10,7 @@ use App\Platform\Models\SchoolSubscription;
 use App\Support\Authorization\Permissions;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\HasAcademicAdmin;
+use Tests\Concerns\HasPlatformStaff;
 use Tests\TestCase;
 
 /**
@@ -18,14 +19,14 @@ use Tests\TestCase;
  */
 class PlanModulesTest extends TestCase
 {
-    use HasAcademicAdmin, RefreshDatabase;
+    use HasAcademicAdmin, HasPlatformStaff, RefreshDatabase;
 
     /** @param list<string> $modules */
-    private function putOnPlan(array $modules, string $status = 'active'): Plan
+    private function putOnPlan(array $modules, string $status = 'active', ?array $menus = null): Plan
     {
         $plan = Plan::query()->create([
             'code' => 'p-'.fake()->unique()->numberBetween(1, 99999), 'name' => 'Plan', 'price' => 10, 'currency' => 'USD',
-            'period_months' => 1, 'modules' => $modules, 'status' => Plan::STATUS_ACTIVE,
+            'period_months' => 1, 'modules' => $modules, 'menus' => $menus, 'status' => Plan::STATUS_ACTIVE,
         ]);
         SchoolSubscription::query()->where('tenant_id', $this->tenant->id)->live()->update(['status' => SchoolSubscription::REPLACED]);
         SchoolSubscription::query()->create([
@@ -67,6 +68,47 @@ class PlanModulesTest extends TestCase
         $plan->update(['modules' => ['academics', 'payroll']]);
 
         $this->getJson('/api/v1/payroll-rules')->assertOk();
+    }
+
+    public function test_a_menu_the_plan_leaves_out_is_refused_while_the_rest_of_its_module_works(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::STUDENTS_VIEW, Permissions::CLASSES_VIEW, Permissions::USERS_VIEW]);
+        $this->putOnPlan(['academics'], menus: ['students', 'enrollments']);
+
+        $this->getJson('/api/v1/students')->assertOk();
+        $this->getJson('/api/v1/classes')->assertForbidden();
+
+        $permissions = $this->getJson('/api/v1/auth/me')->assertOk()->json('meta.permissions');
+        $this->assertContains(Permissions::STUDENTS_VIEW, $permissions);
+        $this->assertNotContains(Permissions::CLASSES_VIEW, $permissions);
+        $this->assertContains(Permissions::USERS_VIEW, $permissions, 'core is always on');
+    }
+
+    public function test_staff_pick_menus_and_a_plan_with_every_menu_stores_none(): void
+    {
+        $this->actingAsStaff($this->platformStaff());
+        $body = ['code' => 'menu-plan', 'name' => 'Menu plan', 'price' => 5, 'currency' => 'USD', 'period_months' => 1];
+
+        // Menus of modules not in the plan are dropped; order follows the catalog.
+        $id = $this->postJson('/api/v1/platform/billing/plans', $body + ['modules' => ['academics'], 'menus' => ['students', 'classes', 'payroll']])
+            ->assertCreated()->assertJsonPath('data.menus', ['classes', 'students'])->json('data.id');
+
+        // Every menu of each module ticked = stored as null ("everything").
+        $this->patchJson("/api/v1/platform/billing/plans/{$id}", ['modules' => ['payroll'], 'menus' => ['payroll']])
+            ->assertOk()->assertJsonPath('data.menus', null);
+
+        $this->postJson('/api/v1/platform/billing/plans', $body + ['code' => 'bad', 'modules' => ['academics'], 'menus' => ['nope']])
+            ->assertUnprocessable()->assertJsonValidationErrors('menus.0');
+
+        $catalog = collect($this->getJson('/api/v1/platform/billing/plans')->json('data.modules'))->firstWhere('code', 'academics');
+        $this->assertSame('Students', collect($catalog['menus'])->firstWhere('code', 'students')['label']);
+    }
+
+    public function test_every_module_menu_has_a_label(): void
+    {
+        foreach (Modules::groups() as $group) {
+            $this->assertArrayHasKey($group, Modules::MENU_LABELS, "No label for menu {$group}");
+        }
     }
 
     public function test_an_expired_plan_keeps_its_modules_through_grace(): void

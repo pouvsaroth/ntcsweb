@@ -366,11 +366,19 @@ export const schoolsApi = {
 
 // ── Billing (Stage 5) ────────────────────────────────────────────────────────
 
+export interface PlanMenu {
+  code: string
+  label: string
+  label_km: string
+}
+
 export interface PlanModule {
   code: string
   label: string
   label_km: string
   groups: string[]
+  /** Its menus (one per permission group); a plan may keep only some. */
+  menus: PlanMenu[]
 }
 
 export interface Plan {
@@ -385,6 +393,8 @@ export interface Plan {
   /** Active students allowed; null = no limit. */
   max_students: number | null
   modules: string[]
+  /** The menus kept inside its modules; null = every menu of each module. */
+  menus: string[] | null
   status: 'active' | 'inactive'
   is_legacy: boolean
   live_count: number
@@ -402,6 +412,7 @@ export interface Plan {
 }
 
 export type PlanInput = Pick<Plan, 'code' | 'name' | 'description' | 'currency' | 'period_months' | 'max_students' | 'modules'> &
+  Partial<Pick<Plan, 'menus'>> &
   Partial<Pick<Plan, 'show_on_website' | 'name_km' | 'tagline_en' | 'tagline_km' | 'features_en' | 'features_km' | 'recommended' | 'website_order'>> & {
   price: string | number
   status?: Plan['status']
