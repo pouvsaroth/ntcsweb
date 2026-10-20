@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponse;
 use App\Platform\Billing\Modules;
 use App\Platform\Models\Plan;
+use App\Platform\Models\Product;
 use App\Platform\Models\SchoolSubscription;
 use App\Platform\Support\PlatformAudit;
 use Illuminate\Http\JsonResponse;
@@ -26,6 +27,7 @@ final class PlanController extends Controller
     public function index(): JsonResponse
     {
         $plans = Plan::query()
+            ->with('product:id,code,name,name_km')
             ->withCount(['subscriptions as live_count' => fn ($q) => $q->whereIn('status', SchoolSubscription::LIVE)])
             ->orderByRaw("status = 'active' desc")
             ->orderBy('price')
@@ -35,6 +37,10 @@ final class PlanController extends Controller
         return ApiResponse::success([
             'plans' => $plans->map(fn (Plan $p) => $this->present($p))->values(),
             'modules' => Modules::list(),
+            // The systems a plan can sell, each with the modules it may use.
+            'products' => Product::query()->orderBy('sort_order')->orderBy('id')->get()
+                ->map(fn (Product $p) => ['id' => $p->id, 'code' => $p->code, 'name' => $p->name, 'name_km' => $p->name_km, 'modules' => $p->modules ?? [], 'status' => $p->status])
+                ->values(),
         ]);
     }
 
@@ -94,6 +100,8 @@ final class PlanController extends Controller
         $required = $plan ? 'sometimes' : 'required';
 
         $data = $request->validate([
+            // The system it sells; a new plan without one sells the school system.
+            'product_id' => ['sometimes', 'integer', Rule::exists((new Product)->getConnectionName().'.bo_products', 'id')],
             'code' => [$required, 'string', 'max:50', 'regex:/^[a-z0-9][a-z0-9_-]*$/', Rule::unique((new Plan)->getConnectionName().'.bo_plans', 'code')->ignore($plan?->getKey())],
             'name' => [$required, 'string', 'max:100'],
             'description' => ['sometimes', 'nullable', 'string', 'max:2000'],
@@ -124,6 +132,14 @@ final class PlanController extends Controller
         }
         // The Legacy plan is never sold on the website.
         abort_if(($plan?->code === Plan::LEGACY || ($data['code'] ?? null) === Plan::LEGACY) && ! empty($data['show_on_website']), 409, __('The Legacy plan is not shown on the website.'));
+        // A plan offers only modules of its system.
+        $product = isset($data['product_id']) ? Product::query()->find($data['product_id']) : ($plan?->product ?? Product::school());
+        $modules = $data['modules'] ?? $plan?->modules ?? [];
+        $outside = array_values(array_diff($modules, $product->modules ?? []));
+        if ($outside !== []) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['modules' => __('Not part of :system: :modules.', ['system' => $product->name, 'modules' => implode(', ', $outside)])]);
+        }
+        abort_if($plan?->code === Plan::LEGACY && isset($data['product_id']) && $data['product_id'] !== $plan->product_id, 409, __('The Legacy plan stays with the school system.'));
         if (isset($data['modules'])) {
             // Stored in catalog order, so two plans with the same modules read the same.
             $data['modules'] = array_values(array_intersect(Modules::codes(), $data['modules']));
@@ -147,7 +163,7 @@ final class PlanController extends Controller
 
     private function withLiveCount(Plan $plan): Plan
     {
-        return $plan->loadCount(['subscriptions as live_count' => fn ($q) => $q->whereIn('status', SchoolSubscription::LIVE)]);
+        return $plan->load('product:id,code,name,name_km')->loadCount(['subscriptions as live_count' => fn ($q) => $q->whereIn('status', SchoolSubscription::LIVE)]);
     }
 
     /** @return array<string, mixed> */
@@ -162,6 +178,7 @@ final class PlanController extends Controller
             'currency' => $plan->currency,
             'period_months' => $plan->period_months,
             'max_students' => $plan->max_students,
+            'product' => $plan->product ? ['id' => $plan->product->id, 'code' => $plan->product->code, 'name' => $plan->product->name, 'name_km' => $plan->product->name_km] : null,
             'modules' => $plan->modules ?? [],
             // null = every menu of its modules
             'menus' => $plan->menus,

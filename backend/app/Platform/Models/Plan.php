@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Platform\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
@@ -41,6 +42,10 @@ class Plan extends Model
 
     protected static function booted(): void
     {
+        // A plan made without a system sells the school system (as every plan did before systems).
+        static::creating(function (Plan $plan) {
+            $plan->product_id ??= Product::query()->where('code', Product::SCHOOL)->value('id');
+        });
         // Editing a plan's modules must reach this request's permission checks too.
         static::saved(fn () => app(\App\Platform\Billing\SchoolModules::class)->forget());
     }
@@ -48,6 +53,12 @@ class Plan extends Model
     public function getConnectionName(): ?string
     {
         return config('tenancy.database.central_connection');
+    }
+
+    /** The system this plan sells (docs/backoffice/stage-9-products.md). */
+    public function product(): BelongsTo
+    {
+        return $this->belongsTo(Product::class);
     }
 
     public function subscriptions(): HasMany

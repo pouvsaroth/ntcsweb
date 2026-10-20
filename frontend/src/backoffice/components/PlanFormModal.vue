@@ -9,16 +9,18 @@ import BaseModal from '@/components/ui/BaseModal.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
 import { ApiRequestError } from '@/types/api'
 
-import { billingApi, type Plan, type PlanModule } from '../api'
+import { billingApi, type Plan, type PlanModule, type ProductChoice } from '../api'
 import { moduleLabel } from '../billing'
 
 /** Create or edit a plan: price per period, student limit, modules and the menus inside them. */
-const props = defineProps<{ modelValue: boolean; plan: Plan | null; modules: PlanModule[] }>()
+const props = defineProps<{ modelValue: boolean; plan: Plan | null; modules: PlanModule[]; products: ProductChoice[]; defaultProductId?: number | null }>()
 const emit = defineEmits<{ 'update:modelValue': [open: boolean]; saved: [plan: Plan] }>()
 
 const { t, locale } = useI18n()
 
+const schoolId = () => props.products.find((p) => p.code === 'school')?.id ?? props.products[0]?.id ?? 0
 const blank = () => ({
+  product_id: props.defaultProductId ?? schoolId(),
   code: '',
   name: '',
   description: '',
@@ -50,6 +52,7 @@ watch(
     const p = props.plan
     form.value = p
       ? {
+          product_id: p.product?.id ?? schoolId(),
           code: p.code,
           name: p.name,
           description: p.description ?? '',
@@ -81,7 +84,24 @@ const currencyOptions = [
 const textarea =
   'block w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm text-neutral-900 shadow-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-200 focus:outline-none'
 
-const allOn = computed(() => form.value.modules.length === props.modules.length)
+/** Only the modules of the plan's system. */
+const product = computed(() => props.products.find((p) => p.id === Number(form.value.product_id)) ?? null)
+const shownModules = computed(() => props.modules.filter((m) => product.value?.modules.includes(m.code)))
+const productOptions = computed(() =>
+  props.products
+    .filter((p) => p.status === 'active' || p.id === props.plan?.product?.id)
+    .map((p) => ({ value: String(p.id), label: locale.value === 'km' && p.name_km ? p.name_km : p.name })),
+)
+/** Another system: modules (and their menus) it does not have are dropped. */
+function changeProduct(value: string): void {
+  form.value.product_id = Number(value)
+  const keep = product.value?.modules ?? []
+  form.value.modules = form.value.modules.filter((m) => keep.includes(m))
+  const groups = props.modules.filter((m) => keep.includes(m.code)).flatMap((m) => m.groups)
+  form.value.menus = form.value.menus.filter((g) => groups.includes(g))
+}
+
+const allOn = computed(() => shownModules.value.length > 0 && shownModules.value.every((m) => form.value.modules.includes(m.code)))
 
 const groupsOf = (code: string) => props.modules.find((m) => m.code === code)?.groups ?? []
 
@@ -94,8 +114,8 @@ function toggle(code: string, on: boolean): void {
 
 function toggleAll(): void {
   const on = !allOn.value
-  form.value.modules = on ? props.modules.map((m) => m.code) : []
-  form.value.menus = on ? props.modules.flatMap((m) => m.groups) : []
+  form.value.modules = on ? shownModules.value.map((m) => m.code) : []
+  form.value.menus = on ? shownModules.value.flatMap((m) => m.groups) : []
 }
 
 /** One menu on or off; its module's last menu off turns the module off. */
@@ -110,6 +130,7 @@ async function save(): Promise<void> {
   saving.value = true
   error.value = null
   const body = {
+    product_id: Number(form.value.product_id),
     code: form.value.code.trim(),
     name: form.value.name.trim(),
     description: form.value.description.trim() || null,
@@ -151,6 +172,16 @@ async function save(): Promise<void> {
     <form id="bo-plan" class="space-y-4" @submit.prevent="save">
       <BaseAlert v-if="error && !error.errors" variant="danger">{{ error.message }}</BaseAlert>
       <p v-if="plan?.is_legacy" class="text-sm text-neutral-500">{{ t('bo.billing.plans.legacyHint') }}</p>
+
+      <BaseSelect
+        :model-value="String(form.product_id)"
+        :options="productOptions"
+        :label="t('bo.billing.plans.system')"
+        :hint="t('bo.billing.plans.systemHint')"
+        :error="error?.fieldError('product_id')"
+        :disabled="plan?.is_legacy"
+        @update:model-value="changeProduct"
+      />
 
       <div class="grid gap-4 sm:grid-cols-2">
         <BaseInput v-model="form.name" :label="t('bo.billing.plans.name')" :error="error?.fieldError('name')" required />
@@ -194,7 +225,7 @@ async function save(): Promise<void> {
         <!-- Each module, and under a ticked one its menus (when it has more than one). -->
         <div class="space-y-2">
           <div
-            v-for="module in modules"
+            v-for="module in shownModules"
             :key="module.code"
             class="rounded-lg border text-sm"
             :class="form.modules.includes(module.code) ? 'border-primary-500 bg-primary-50/40' : 'border-neutral-200'"

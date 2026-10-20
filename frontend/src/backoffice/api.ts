@@ -381,6 +381,27 @@ export interface PlanModule {
   menus: PlanMenu[]
 }
 
+/** A system the platform sells (stage 9): the modules it is built from. */
+export interface Product {
+  id: number
+  code: string
+  name: string
+  name_km: string | null
+  description: string | null
+  description_km: string | null
+  logo_url: string | null
+  modules: string[]
+  status: 'active' | 'inactive'
+  sort_order: number
+  is_school: boolean
+  plans_count: number
+}
+
+export type ProductInput = Pick<Product, 'code' | 'name' | 'name_km' | 'description' | 'description_km' | 'modules' | 'sort_order'> & { status?: Product['status'] }
+
+/** A system as the plan form needs it. */
+export type ProductChoice = Pick<Product, 'id' | 'code' | 'name' | 'name_km' | 'modules' | 'status'>
+
 export interface Plan {
   id: number
   code: string
@@ -392,6 +413,8 @@ export interface Plan {
   period_months: number | null
   /** Active students allowed; null = no limit. */
   max_students: number | null
+  /** The system it sells. */
+  product: { id: number; code: string; name: string; name_km: string | null } | null
   modules: string[]
   /** The menus kept inside its modules; null = every menu of each module. */
   menus: string[] | null
@@ -412,7 +435,7 @@ export interface Plan {
 }
 
 export type PlanInput = Pick<Plan, 'code' | 'name' | 'description' | 'currency' | 'period_months' | 'max_students' | 'modules'> &
-  Partial<Pick<Plan, 'menus'>> &
+  Partial<Pick<Plan, 'menus'>> & { product_id?: number } &
   Partial<Pick<Plan, 'show_on_website' | 'name_km' | 'tagline_en' | 'tagline_km' | 'features_en' | 'features_km' | 'recommended' | 'website_order'>> & {
   price: string | number
   status?: Plan['status']
@@ -557,7 +580,16 @@ export const paymentsApi = {
 }
 
 export const billingApi = {
-  plans: () => get<{ plans: Plan[]; modules: PlanModule[] }>('/billing/plans'),
+  plans: () => get<{ plans: Plan[]; modules: PlanModule[]; products: ProductChoice[] }>('/billing/plans'),
+  products: () => get<{ products: Product[]; modules: PlanModule[] }>('/billing/products'),
+  createProduct: (body: ProductInput) => send<Product>('post', '/billing/products', body),
+  updateProduct: (id: number, body: Partial<ProductInput>) => send<Product>('patch', `/billing/products/${id}`, body),
+  removeProduct: (id: number) => send<{ deleted: boolean }>('delete', `/billing/products/${id}`),
+  uploadProductLogo: (id: number, file: File) => {
+    const body = new FormData()
+    body.append('logo', file)
+    return send<Product>('post', `/billing/products/${id}/logo`, body)
+  },
   createPlan: (body: PlanInput) => send<Plan>('post', '/billing/plans', body),
   updatePlan: (id: number, body: Partial<PlanInput>) => send<Plan>('patch', `/billing/plans/${id}`, body),
   removePlan: (id: number) => send<{ deleted: boolean }>('delete', `/billing/plans/${id}`),

@@ -44,6 +44,7 @@ const routes: RouteRecordRaw[] = [
         meta: { permission: 'platform.billing.read' },
         children: [
           { path: '', redirect: '/billing/plans' },
+          { path: 'systems', component: () => import('./pages/billing/SystemsTab.vue') },
           { path: 'plans', component: () => import('./pages/billing/PlansTab.vue') },
           { path: 'payments', component: () => import('./pages/billing/PaymentsTab.vue') },
           { path: 'signups', component: () => import('./pages/billing/SignupsTab.vue') },

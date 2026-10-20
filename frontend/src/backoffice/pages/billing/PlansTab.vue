@@ -9,7 +9,9 @@ import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import { useConfirmDialogStore } from '@/stores/confirmDialog'
 import { ApiRequestError } from '@/types/api'
 
-import { billingApi, type Plan, type PlanModule } from '../../api'
+import BaseSelect from '@/components/ui/BaseSelect.vue'
+
+import { billingApi, type Plan, type PlanModule, type ProductChoice } from '../../api'
 import { moduleLabel, priceLabel, studentsLabel } from '../../billing'
 import PlanFormModal from '../../components/PlanFormModal.vue'
 import { useSession } from '../../session'
@@ -22,6 +24,15 @@ const canManage = computed(() => session.can('platform.billing.manage'))
 
 const plans = ref<Plan[]>([])
 const modules = ref<PlanModule[]>([])
+const products = ref<ProductChoice[]>([])
+/** Show one system's plans, or all. */
+const system = ref('')
+const systemOptions = computed(() => [
+  { value: '', label: t('bo.billing.plans.allSystems') },
+  ...products.value.map((p) => ({ value: String(p.id), label: locale.value === 'km' && p.name_km ? p.name_km : p.name })),
+])
+const shown = computed(() => (system.value ? plans.value.filter((p) => String(p.product?.id) === system.value) : plans.value))
+const systemName = (plan: Plan) => (plan.product ? (locale.value === 'km' && plan.product.name_km ? plan.product.name_km : plan.product.name) : '')
 const loading = ref(true)
 const error = ref<string | null>(null)
 const notice = ref<string | null>(null)
@@ -31,6 +42,7 @@ async function load(): Promise<void> {
     const data = await billingApi.plans()
     plans.value = data.plans
     modules.value = data.modules
+    products.value = data.products
     error.value = null
   } catch (e) {
     error.value = e instanceof ApiRequestError ? e.message : t('bo.common.failed')
@@ -48,7 +60,8 @@ function openForm(plan: Plan | null): void {
 }
 
 function modulesOf(plan: Plan): string {
-  if (plan.modules.length === modules.value.length && plan.menus === null) return t('bo.billing.plans.allModules')
+  const ofSystem = products.value.find((p) => p.id === plan.product?.id)?.modules.length ?? modules.value.length
+  if (plan.modules.length === ofSystem && plan.menus === null) return t('bo.billing.plans.allModules')
   if (plan.modules.length === 0) return t('bo.billing.plans.noModules')
   return modules.value
     .filter((m) => plan.modules.includes(m.code))
@@ -86,20 +99,21 @@ onMounted(load)
 
 <template>
   <div>
-    <div class="mb-4 flex justify-end">
+    <div class="mb-4 flex flex-wrap items-end justify-between gap-3">
+      <BaseSelect v-model="system" :options="systemOptions" class="w-full sm:w-72" />
       <BaseButton v-if="canManage" @click="openForm(null)">{{ t('bo.billing.plans.add') }}</BaseButton>
     </div>
 
     <BaseAlert v-if="error" variant="danger" class="mb-4">{{ error }}</BaseAlert>
     <BaseAlert v-if="notice" variant="info" class="mb-4">{{ notice }}</BaseAlert>
     <div v-if="loading" class="flex justify-center py-10"><BaseSpinner /></div>
-    <p v-else-if="plans.length === 0" class="rounded-[--radius-card] border border-dashed border-neutral-300 py-10 text-center text-sm text-neutral-500">
+    <p v-else-if="shown.length === 0" class="rounded-[--radius-card] border border-dashed border-neutral-300 py-10 text-center text-sm text-neutral-500">
       {{ t('bo.billing.plans.empty') }}
     </p>
 
     <div v-else class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
       <section
-        v-for="plan in plans"
+        v-for="plan in shown"
         :key="plan.id"
         class="flex flex-col rounded-[--radius-card] border border-neutral-200 bg-white p-5 shadow-[--shadow-card]"
         :class="{ 'opacity-60': plan.status === 'inactive' }"
@@ -111,7 +125,7 @@ onMounted(load)
           <BaseBadge v-if="plan.show_on_website" variant="primary">{{ t('bo.billing.plans.web.shown') }}</BaseBadge>
           <BaseBadge v-if="plan.recommended" variant="success">{{ t('bo.billing.plans.web.recommended') }}</BaseBadge>
         </div>
-        <p class="font-mono text-xs text-neutral-400">{{ plan.code }}</p>
+        <p class="font-mono text-xs text-neutral-400">{{ plan.code }}<span v-if="plan.product" class="ml-2 font-sans text-secondary-700">· {{ systemName(plan) }}</span></p>
         <p class="mt-3 text-lg font-semibold text-neutral-900">{{ priceLabel(plan, t) }}</p>
         <p class="text-sm text-neutral-600">{{ studentsLabel(plan.max_students, t) }}</p>
         <p v-if="plan.description" class="mt-2 text-sm text-neutral-600">{{ plan.description }}</p>
@@ -127,6 +141,13 @@ onMounted(load)
       </section>
     </div>
 
-    <PlanFormModal v-model="formOpen" :plan="editing" :modules="modules" @saved="load" />
+    <PlanFormModal
+      v-model="formOpen"
+      :plan="editing"
+      :modules="modules"
+      :products="products"
+      :default-product-id="system ? Number(system) : null"
+      @saved="load"
+    />
   </div>
 </template>

@@ -7,6 +7,7 @@ use App\Platform\Http\Controllers\BillingSettingsController;
 use App\Platform\Http\Controllers\DataOpsController;
 use App\Platform\Http\Controllers\PaymentController;
 use App\Platform\Http\Controllers\PlanController;
+use App\Platform\Http\Controllers\ProductController;
 use App\Platform\Http\Controllers\SignupController;
 use App\Platform\Http\Controllers\RoleController;
 use App\Platform\Http\Controllers\SchoolBillingController;
@@ -108,6 +109,12 @@ Route::middleware('platform.staff')->group(function () {
 
     // Billing (stage 5): plans, each school's subscription, settings.
     Route::prefix('billing')->name('billing.')->group(function () {
+        // Systems the platform sells (stage 9).
+        Route::get('products', [ProductController::class, 'index'])->middleware('platform.can:platform.billing.read')->name('products.index');
+        Route::post('products', [ProductController::class, 'store'])->middleware('platform.can:platform.billing.manage')->name('products.store');
+        Route::patch('products/{product}', [ProductController::class, 'update'])->middleware('platform.can:platform.billing.manage')->name('products.update');
+        Route::delete('products/{product}', [ProductController::class, 'destroy'])->middleware('platform.can:platform.billing.manage')->name('products.destroy');
+        Route::post('products/{product}/logo', [ProductController::class, 'uploadLogo'])->middleware('platform.can:platform.billing.manage')->name('products.logo');
         Route::get('plans', [PlanController::class, 'index'])->middleware('platform.can:platform.billing.read')->name('plans.index');
         Route::post('plans', [PlanController::class, 'store'])->middleware('platform.can:platform.billing.manage')->name('plans.store');
         Route::patch('plans/{plan}', [PlanController::class, 'update'])->middleware('platform.can:platform.billing.manage')->name('plans.update');

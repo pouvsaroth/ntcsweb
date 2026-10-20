@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-/** Billing: plans, payments and settings, each tab its own route. */
+/** Billing: systems, plans, payments, sign-ups and settings, each tab its own route. */
 const { t } = useI18n()
 
 const tabs = [
+  { to: '/billing/systems', key: 'systems' },
   { to: '/billing/plans', key: 'plans' },
   { to: '/billing/payments', key: 'payments' },
   { to: '/billing/signups', key: 'signups' },

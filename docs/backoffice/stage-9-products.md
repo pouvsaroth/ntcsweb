@@ -49,6 +49,15 @@ use = every module/menu of all its live subscriptions together.
 - Back office: **Billing → Systems** (list, add, edit). New systems later
   need only data, unless they need new modules (code).
 
+**As built (2026-10-20):** `bo_products` (`App\Platform\Models\Product`),
+seeded `school` (all modules) and `erp`; `bo_plans.product_id` (every plan
+until now → school; a plan created without one → school). Plans reject
+modules outside their system; a system's module still used by a plan cannot
+be removed; the school system cannot be deleted or re-coded. Back office:
+Billing → **Systems** (`ProductController`, logo on the public disk) and a
+System choice on the plan form; the plans list filters by system. Tests:
+`tests/Feature/Platform/ProductsTest.php`.
+
 ### 9b. Customers with several systems
 - One live subscription **per customer per system** (the database rule changes).
 - Access = union of all live subscriptions' modules/menus (`SchoolModules`).
