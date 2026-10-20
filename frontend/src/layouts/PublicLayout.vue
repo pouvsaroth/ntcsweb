@@ -62,6 +62,8 @@ onMounted(async () => {
       <!-- Icon only; its name shows on hover (and to screen readers). -->
       <a
         :href="backOfficeUrl"
+        target="_blank"
+        rel="noopener"
         class="group relative flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-300 bg-white/80 text-secondary-800 shadow-sm hover:bg-white focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:outline-none"
         :aria-label="t('servicesPage.backOffice')"
       >
