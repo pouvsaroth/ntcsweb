@@ -692,6 +692,8 @@ const ja: MessageSchema = {
     phoneRule: 'Enter a valid phone number.',
     required: 'Required.',
     howLong: 'How long?',
+    changePlan: 'Change plan',
+    oneMonth: '1 month',
     months: '{n} months',
     total: 'Total',
     trialNote: 'Your school is created now and you can sign in in about a minute. No payment needed.',

@@ -14,7 +14,8 @@ import { formatMoney } from '@/utils/currency'
 
 /**
  * Self-service sign-up (/signup?plan=…, docs/backoffice/stage-8-signup.md, 8b),
- * four steps: the school, its owner, the plan, then a last check. A free
+ * steps: the school, its owner, the plan (skipped when the link names one,
+ * as the plan cards do), then a last check. A free
  * trial's school is created at once; a paid plan goes on to payment.
  */
 const { t, te, locale } = useI18n()
@@ -23,6 +24,8 @@ const router = useRouter()
 
 const plans = ref<PublicPlans | null>(null)
 const loadFailed = ref(false)
+/** The customer came from a plan card: the plan is already chosen, so there is no plan step. */
+const planChosen = ref(false)
 
 const systemCode = typeof route.query.system === 'string' && route.query.system ? route.query.system : null
 
@@ -47,6 +50,8 @@ onMounted(async () => {
     plans.value = await publicPlansService.list(systemCode)
     // An unknown plan in the link: start from the free trial (or the first plan).
     const codes = plans.value.plans.map((p) => p.code)
+    const asked = route.query.plan
+    planChosen.value = typeof asked === 'string' && (codes.includes(asked) || (asked === 'trial' && plans.value.trial_days > 0))
     if (form.value.plan !== 'trial' && !codes.includes(form.value.plan)) form.value.plan = plans.value.trial_days > 0 ? 'trial' : (codes[0] ?? 'trial')
     if (form.value.plan === 'trial' && plans.value.trial_days < 1 && codes.length) form.value.plan = codes[0]
   } catch {
@@ -81,6 +86,7 @@ watch(
   () => form.value.plan,
   () => (form.value.periods = 1),
 )
+const monthsLabel = (n: number) => (n === 1 ? w('signupPage.oneMonth') : w('signupPage.months', { n }))
 const total = computed(() => (plan.value ? price(plan.value, plan.value.period_months === null ? 1 : (form.value.periods ?? 1)) : ''))
 
 // ── The web address (school code) ───────────────────────────────────────────
@@ -114,8 +120,11 @@ watch(
 )
 
 // ── Steps ───────────────────────────────────────────────────────────────────
-const STEPS = ['school', 'owner', 'plan', 'confirm'] as const
+type Step = 'school' | 'owner' | 'plan' | 'confirm'
+const STEPS = computed<Step[]>(() => (planChosen.value ? ['school', 'owner', 'confirm'] : ['school', 'owner', 'plan', 'confirm']))
 const step = ref(0)
+const current = computed<Step>(() => STEPS.value[step.value])
+const isLast = computed(() => step.value === STEPS.value.length - 1)
 const localErrors = ref<Record<string, string>>({})
 const serverError = ref<ApiRequestError | null>(null)
 const fieldError = (f: string) => localErrors.value[f] ?? serverError.value?.fieldError(f)
@@ -134,22 +143,22 @@ for (const key of Object.keys(form.value) as (keyof SignupForm)[]) {
   )
 }
 
-const STEP_FIELDS: Record<number, string[]> = {
-  0: ['school_name', 'school_name_en', 'slug'],
-  1: ['owner_name', 'owner_email', 'owner_phone', 'password'],
-  2: ['plan', 'periods'],
+const STEP_FIELDS: Partial<Record<Step, string[]>> = {
+  school: ['school_name', 'school_name_en', 'slug'],
+  owner: ['owner_name', 'owner_email', 'owner_phone', 'password'],
+  plan: ['plan'],
 }
 
-function check(n: number): boolean {
+function check(n: Step): boolean {
   const e: Record<string, string> = {}
   const f = form.value
   const required = w('signupPage.required')
-  if (n === 0) {
+  if (n === 'school') {
     if (!f.school_name.trim()) e.school_name = required
     if (!/^[a-z0-9][a-z0-9-]{1,30}[a-z0-9]$/.test(f.slug)) e.slug = w('signupPage.slugRule')
     else if (slugState.value.available === false) e.slug = slugState.value.message ?? w('signupPage.slugTaken')
   }
-  if (n === 1) {
+  if (n === 'owner') {
     if (!f.owner_name.trim()) e.owner_name = required
     if (!/^\S+@\S+\.\S+$/.test(f.owner_email.trim())) e.owner_email = w('signupPage.emailRule')
     if (!/^[0-9+\s()-]{6,}$/.test(f.owner_phone.trim())) e.owner_phone = w('signupPage.phoneRule')
@@ -161,9 +170,9 @@ function check(n: number): boolean {
 }
 
 function next(): void {
-  if (!check(step.value)) return
+  if (!check(current.value)) return
   serverError.value = null
-  step.value = Math.min(step.value + 1, STEPS.length - 1)
+  step.value = Math.min(step.value + 1, STEPS.value.length - 1)
   window.scrollTo({ top: 0 })
 }
 function back(): void {
@@ -183,7 +192,9 @@ async function submit(): Promise<void> {
     // Back to the step of the first field the server refused.
     const bad = Object.keys(serverError.value.errors ?? {})
     const at = Object.entries(STEP_FIELDS).find(([, fields]) => fields.some((f) => bad.includes(f) || bad.includes(`${f}_confirmation`)))
-    if (at) step.value = Number(at[0])
+    // The plan itself refused (e.g. no longer sold): show the plan step so another can be picked.
+    if (at?.[0] === 'plan') planChosen.value = false
+    if (at) step.value = STEPS.value.indexOf(at[0] as Step)
   } finally {
     submitting.value = false
   }
@@ -200,7 +211,7 @@ const card = 'rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-
       <p v-if="systemName" class="mt-1 text-neutral-600">{{ systemName }}</p>
 
       <!-- Step bar -->
-      <ol class="mt-6 grid grid-cols-4 gap-2" :aria-label="w('signupPage.steps')">
+      <ol class="mt-6 grid gap-2" :class="STEPS.length === 3 ? 'grid-cols-3' : 'grid-cols-4'" :aria-label="w('signupPage.steps')">
         <li v-for="(s, i) in STEPS" :key="s" class="min-w-0">
           <div class="h-1.5 rounded-full" :class="i <= step ? 'bg-primary-500' : 'bg-neutral-200'" />
           <p class="mt-1.5 truncate text-xs" :class="i === step ? 'font-semibold text-neutral-900' : 'text-neutral-500'" :aria-current="i === step ? 'step' : undefined">
@@ -212,14 +223,14 @@ const card = 'rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-
       <div v-if="!plans && !loadFailed" class="flex justify-center py-16"><BaseSpinner /></div>
       <BaseAlert v-else-if="loadFailed" variant="danger" class="mt-6">{{ w('signupPage.failed') }}</BaseAlert>
 
-      <form v-else class="mt-6" novalidate @submit.prevent="step < 3 ? next() : submit()">
+      <form v-else class="mt-6" novalidate @submit.prevent="isLast ? submit() : next()">
         <!-- Never shown to people. -->
         <input v-model="form.website" type="text" name="website" tabindex="-1" autocomplete="off" class="absolute -left-[9999px] h-0 w-0 opacity-0" aria-hidden="true" />
 
         <BaseAlert v-if="serverError && !serverError.errors" variant="danger" class="mb-4">{{ serverError.message }}</BaseAlert>
 
         <!-- 1. The school -->
-        <div v-show="step === 0" :class="card" class="space-y-4">
+        <div v-show="current === 'school'" :class="card" class="space-y-4">
           <BaseInput v-model="form.school_name" :label="w('signupPage.schoolName')" :placeholder="w('signupPage.schoolNameHint')" :error="fieldError('school_name')" required />
           <BaseInput
             v-model="form.school_name_en"
@@ -251,7 +262,7 @@ const card = 'rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-
         </div>
 
         <!-- 2. The owner -->
-        <div v-show="step === 1" :class="card" class="space-y-4">
+        <div v-show="current === 'owner'" :class="card" class="space-y-4">
           <p class="text-sm text-neutral-600">{{ w('signupPage.ownerHint') }}</p>
           <BaseInput v-model="form.owner_name" :label="w('signupPage.ownerName')" :error="fieldError('owner_name')" autocomplete="name" required />
           <div class="grid gap-4 sm:grid-cols-2">
@@ -277,8 +288,8 @@ const card = 'rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-
           </div>
         </div>
 
-        <!-- 3. The plan -->
-        <div v-show="step === 2" class="space-y-3">
+        <!-- The plan (only when the link did not name one) -->
+        <div v-show="current === 'plan'" class="space-y-3">
           <p v-if="fieldError('plan')" class="text-sm text-red-600">{{ fieldError('plan') }}</p>
           <label
             v-if="plans && plans.trial_days > 0"
@@ -306,8 +317,12 @@ const card = 'rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-
               <span class="block text-sm text-neutral-600">{{ price(p) }} {{ periodWord(p) }}</span>
             </span>
           </label>
+        </div>
 
-          <div v-if="!isTrial && periodOptions.length" :class="card">
+        <!-- Check and confirm (and how long to buy) -->
+        <div v-show="current === 'confirm'" :class="card">
+          <p v-if="fieldError('plan')" class="mb-3 text-sm text-red-600">{{ fieldError('plan') }}</p>
+          <div v-if="!isTrial && periodOptions.length" class="mb-4 border-b border-neutral-100 pb-4">
             <p class="text-sm font-medium text-neutral-700">{{ w('signupPage.howLong') }}</p>
             <div class="mt-2 flex flex-wrap gap-2">
               <button
@@ -318,14 +333,10 @@ const card = 'rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-
                 :class="form.periods === o.n ? 'border-primary-500 bg-primary-50 font-semibold text-neutral-900' : 'border-neutral-300 text-neutral-700 hover:bg-neutral-50'"
                 @click="form.periods = o.n"
               >
-                {{ w('signupPage.months', { n: o.months }) }}
+                {{ monthsLabel(o.months) }}
               </button>
             </div>
           </div>
-        </div>
-
-        <!-- 4. Check and confirm -->
-        <div v-show="step === 3" :class="card">
           <dl class="divide-y divide-neutral-100 text-sm">
             <div class="flex justify-between gap-4 py-2">
               <dt class="text-neutral-500">{{ w('signupPage.schoolName') }}</dt>
@@ -344,8 +355,15 @@ const card = 'rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-
               <dd class="text-right text-neutral-900">
                 <template v-if="isTrial">{{ t('plansPage.trial') }} · {{ t('plansPage.trialDays', { n: plans?.trial_days ?? 0 }) }}</template>
                 <template v-else-if="plan">
-                  {{ planName(plan) }}<template v-if="plan.period_months !== null"> · {{ w('signupPage.months', { n: (form.periods ?? 1) * plan.period_months }) }}</template>
+                  {{ planName(plan) }}<template v-if="plan.period_months !== null"> · {{ monthsLabel((form.periods ?? 1) * plan.period_months) }}</template>
                 </template>
+                <RouterLink
+                  v-if="planChosen"
+                  :to="systemCode ? `/plans/${systemCode}` : '/plans'"
+                  class="block text-xs font-medium text-secondary-700 hover:underline"
+                >
+                  {{ w('signupPage.changePlan') }}
+                </RouterLink>
               </dd>
             </div>
             <div v-if="!isTrial && plan" class="flex justify-between gap-4 py-2">
@@ -359,7 +377,7 @@ const card = 'rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-
         <div class="mt-6 flex items-center justify-between gap-3">
           <BaseButton v-if="step > 0" variant="ghost" @click="back">← {{ w('signupPage.back') }}</BaseButton>
           <span v-else />
-          <BaseButton v-if="step < 3" type="submit">{{ w('signupPage.next') }} →</BaseButton>
+          <BaseButton v-if="!isLast" type="submit">{{ w('signupPage.next') }} →</BaseButton>
           <BaseButton v-else type="submit" :loading="submitting">{{ isTrial ? w('signupPage.createSchool') : w('signupPage.continueToPay') }}</BaseButton>
         </div>
       </form>
