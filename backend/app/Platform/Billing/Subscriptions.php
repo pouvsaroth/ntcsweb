@@ -323,6 +323,11 @@ final class Subscriptions
                 'end_on' => $end?->toDateString(),
             ], tenantId: $tenant->getKey(), actor: $actor);
 
+            // A customer already running that gets new modules gets their starting data.
+            if (in_array($tenant->status, [Tenant::STATUS_ACTIVE, Tenant::STATUS_SUSPENDED], true)) {
+                \App\Platform\Jobs\EnsureModuleData::dispatch((int) $tenant->getKey())->afterCommit();
+            }
+
             return $sub->load(['plan', 'creator:id,name', 'product']);
         });
     }

@@ -107,7 +107,7 @@ class PlanModulesTest extends TestCase
     public function test_every_module_menu_has_a_label(): void
     {
         foreach (Modules::groups() as $group) {
-            $this->assertArrayHasKey($group, Modules::MENU_LABELS, "No label for menu {$group}");
+            $this->assertArrayHasKey($group, Modules::menuLabels(), "No label for menu {$group}");
         }
     }
 
@@ -127,7 +127,7 @@ class PlanModulesTest extends TestCase
     public function test_every_module_slug_is_a_real_permission(): void
     {
         $all = collect(Permissions::catalog())->flatMap(fn ($group) => array_keys($group))->all();
-        foreach (array_keys(Modules::SLUG_MODULES) as $slug) {
+        foreach (array_keys(Modules::slugModules()) as $slug) {
             $this->assertContains($slug, $all, "{$slug} is not a permission");
         }
     }
@@ -189,7 +189,7 @@ class PlanModulesTest extends TestCase
             ->map(fn (string $slug) => strstr($slug, '.', true))
             ->unique();
 
-        foreach (Modules::CATALOG as $code => $module) {
+        foreach (Modules::catalog() as $code => $module) {
             foreach ($module['groups'] as $group) {
                 $this->assertTrue($groups->contains($group), "Module {$code} lists '{$group}', which no permission uses.");
             }

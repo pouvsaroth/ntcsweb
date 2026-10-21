@@ -82,7 +82,7 @@ final class SchoolModules
                 $mods = $plan?->modules ?? [];
                 $modules = array_merge($modules, $mods);
                 // A plan's menus; null = every menu of its modules.
-                $menus = array_merge($menus, $plan?->menus ?? array_merge([], ...array_map(fn ($m) => Modules::CATALOG[$m]['groups'] ?? [], $mods)));
+                $menus = array_merge($menus, $plan?->menus ?? array_merge([], ...array_map(fn ($m) => Modules::catalog()[$m]['groups'] ?? [], $mods)));
                 $limits[] = $plan?->max_students;
             }
 
@@ -121,8 +121,8 @@ final class SchoolModules
 
         return array_values(array_filter($slugs, function (string $slug) use ($enabled, $menus) {
             // A single permission tied to a module (the dashboard's school tiles): the module decides.
-            if (isset(Modules::SLUG_MODULES[$slug])) {
-                return in_array(Modules::SLUG_MODULES[$slug], $enabled, true);
+            if (isset(Modules::slugModules()[$slug])) {
+                return in_array(Modules::slugModules()[$slug], $enabled, true);
             }
             $group = strstr($slug, '.', true) ?: $slug;
             $module = Modules::moduleOfGroup($group);

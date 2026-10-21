@@ -14,7 +14,6 @@ use App\Support\Tenancy\TenantContext;
 use Database\Seeders\BaseDataSeeder;
 use Database\Seeders\ChartOfAccountsSeeder;
 use Database\Seeders\RolePermissionSeeder;
-use Database\Seeders\TeacherPositionSeeder;
 
 /**
  * Sets a new school up, step by step, logging each one. Runs in the
@@ -104,10 +103,13 @@ final class SchoolProvisioner
     private function seed(Tenant $tenant): void
     {
         // Roles live in the central database; the rest in the school's own.
+        // Core: every customer, whatever its systems.
         (new RolePermissionSeeder)->seedTenant($tenant);
-        (new TeacherPositionSeeder)->ensureTeacherPosition($tenant);
         (new ChartOfAccountsSeeder)->seedForTenant($tenant);
         (new BaseDataSeeder)->seedTenant($tenant);
+        // Then each of its modules' own starting data (e.g. Academics: the
+        // "Teacher" position) — docs/architecture/multi-product.md.
+        app(\App\Modules\ModuleSetup::class)->seedFor($tenant);
     }
 
     private function healthCheck(Tenant $tenant): void
