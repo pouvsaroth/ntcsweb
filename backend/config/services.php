@@ -49,6 +49,9 @@ return [
     // the request/NotificationLog row.
     'telegram' => [
         'bot_token' => env('TELEGRAM_BOT_TOKEN'),
+        // NewTech's notification bot (stage 11; its token is in back office
+        // Support settings), named to schools: "add @newtechkh_bot to your group".
+        'bot_username' => env('TELEGRAM_BOT_USERNAME', 'newtechkh_bot'),
     ],
 
     // See App\Services\Billing\InvoicePdfService. Browsershot drives a

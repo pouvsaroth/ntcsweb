@@ -22,4 +22,6 @@ Schedule::command('platform:backups-tick')->everyMinute()->withoutOverlapping();
 // suspend schools unpaid past the grace days. Just after midnight, Phnom Penh.
 // Website sign-ups (stage 8c): look up KHQR payments the visitor's page did not wait for.
 Schedule::command('platform:signups-tick')->everyMinute()->withoutOverlapping();
+// Notification groups (stage 11): link Telegram groups from "/link CODE" messages.
+Schedule::command('platform:telegram-tick')->everyMinute()->withoutOverlapping();
 Schedule::command('platform:billing-tick')->timezone('Asia/Phnom_Penh')->dailyAt('00:15')->withoutOverlapping();

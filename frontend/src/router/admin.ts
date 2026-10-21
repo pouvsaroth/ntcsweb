@@ -580,6 +580,12 @@ const adminRoutes: RouteRecordRaw[] = [
   { path: 'school-settings', redirect: '/admin/organization/school' },
   { path: 'positions', redirect: '/admin/organization/positions' },
   {
+    path: 'telegram-notifications',
+    name: 'admin.telegram-notifications',
+    component: () => import('@/pages/admin/TelegramGroups.vue'),
+    meta: { titleKey: 'adminNav.items.telegramGroups', permission: 'tenant-settings.update' },
+  },
+  {
     path: 'school-documents',
     name: 'admin.school-documents',
     component: () => import('@/pages/admin/SchoolDocuments.vue'),

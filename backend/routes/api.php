@@ -108,6 +108,7 @@ use App\Http\Controllers\Api\V1\Admin\ResignationRequestController;
 use App\Http\Controllers\Api\V1\Admin\RoleController;
 use App\Http\Controllers\Api\V1\Admin\SchoolClassController;
 use App\Http\Controllers\Api\V1\Admin\SchoolDocumentsController;
+use App\Http\Controllers\Api\V1\Admin\NotificationGroupController;
 use App\Http\Controllers\Api\V1\Admin\SchoolSettingsController;
 use App\Http\Controllers\Api\V1\Admin\ShiftController;
 use App\Http\Controllers\Api\V1\Admin\StaffAttendanceController;
@@ -877,6 +878,19 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         // tenants table's own name/email/phone/address/logo columns; this is
         // what the public site's header/footer branding reads back.
         Route::get('settings/school', [SchoolSettingsController::class, 'show'])->name('settings.school.show');
+
+        // Telegram notification groups (docs/backoffice/stage-11-telegram-notifications.md).
+        Route::prefix('settings/notification-groups')->name('settings.notification-groups.')->group(function () {
+            Route::get('/', [NotificationGroupController::class, 'index'])->name('index');
+            Route::get('users', [NotificationGroupController::class, 'users'])->name('users');
+            Route::post('/', [NotificationGroupController::class, 'store'])->name('store');
+            Route::put('{group}', [NotificationGroupController::class, 'update'])->whereNumber('group')->name('update');
+            Route::delete('{group}', [NotificationGroupController::class, 'destroy'])->whereNumber('group')->name('destroy');
+            Route::post('{group}/link-code', [NotificationGroupController::class, 'linkCode'])->whereNumber('group')->name('link-code');
+            Route::post('{group}/check', [NotificationGroupController::class, 'check'])->whereNumber('group')->middleware('throttle:10,1')->name('check');
+            Route::post('{group}/test', [NotificationGroupController::class, 'test'])->whereNumber('group')->middleware('throttle:10,1')->name('test');
+            Route::post('{group}/unlink', [NotificationGroupController::class, 'unlink'])->whereNumber('group')->name('unlink');
+        });
         Route::post('settings/school', [SchoolSettingsController::class, 'update'])->name('settings.school.update');
 
         // Singleton, not a resource — see SchoolDocumentsController.

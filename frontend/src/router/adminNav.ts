@@ -257,6 +257,8 @@ export const adminNav: AdminNavGroup[] = [
       // School regulation and student attendance policy: an Academics item (stage 9d).
       { labelKey: 'adminNav.items.schoolDocuments', to: '/admin/school-documents', permission: 'tenant-settings.view', module: 'academics' },
       { labelKey: 'adminNav.items.settings', to: '/admin/settings', permission: 'tenant-settings.view' },
+      // Bell notifications to Telegram groups (stage 11).
+      { labelKey: 'adminNav.items.telegramGroups', to: '/admin/telegram-notifications', permission: 'tenant-settings.update' },
       { labelKey: 'adminNav.items.users', to: '/admin/users', permission: 'users.view' },
       { labelKey: 'adminNav.items.roles', to: '/admin/roles', permission: 'roles.view' },
       { labelKey: 'adminNav.items.auditLogs', to: '/admin/audit-logs', permission: 'audit-logs.view' },

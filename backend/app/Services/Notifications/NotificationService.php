@@ -41,6 +41,14 @@ final class NotificationService
             SendPushNotificationJob::dispatch($notification->id, $this->context->idOrFail())->afterCommit();
         }
 
+        // And to the Telegram groups the recipient belongs to (stage 11). Never
+        // a reason for the notification itself to fail.
+        try {
+            app(\App\Platform\Telegram\NotificationTelegram::class)->forNotification($recipient, $type, $data, $link);
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
         return $notification;
     }
 
