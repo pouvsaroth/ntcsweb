@@ -120,6 +120,7 @@ use App\Http\Controllers\Api\V1\Admin\StudentController;
 use App\Http\Controllers\Api\V1\Admin\StudentFeedbackController;
 use App\Http\Controllers\Api\V1\Admin\StudentImportController;
 use App\Http\Controllers\Api\V1\Admin\StudentPromotionController;
+use App\Http\Controllers\Api\V1\Admin\StudentRecordController;
 use App\Http\Controllers\Api\V1\Admin\StudentRegistrationController;
 use App\Http\Controllers\Api\V1\Admin\SupplierController;
 use App\Http\Controllers\Api\V1\Admin\TeacherController;
@@ -276,6 +277,10 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::get('files/{message}/{index}', [SupportChatController::class, 'file'])->whereNumber(['message', 'index'])->name('file');
         });
 
+        // Student record (docs/academics/student-record.md).
+        Route::get('students/{student}/record', [StudentRecordController::class, 'show'])->name('students.record');
+        Route::post('students/{student}/status', [StudentRecordController::class, 'changeStatus'])->name('students.status');
+        Route::post('classes/{class}/assign-students', [StudentRecordController::class, 'assignToClass'])->name('classes.assign-students');
         Route::apiResource('students', StudentController::class);
 
         // Bulk CSV import from the legacy `t_student` system — a separate

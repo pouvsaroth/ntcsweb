@@ -53,6 +53,9 @@ class Student extends Model
 
     public const STATUS_WITHDRAWN = 'withdrawn';
 
+    /** Moved to another school (Student record > Change status). */
+    public const STATUS_TRANSFERRED = 'transferred';
+
     public const STATUS_INACTIVE = 'inactive';
 
     /** A self-registered student awaiting admin approval — see StudentRegistrationService. */

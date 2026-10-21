@@ -12,6 +12,7 @@ use App\Models\Tenant;
 use App\Support\Tenancy\SchoolDefaults;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Collection;
 use Stancl\Tenancy\Database\DatabaseManager;
 
 /**
@@ -52,7 +53,7 @@ class BaseDataSeeder extends Seeder
      * ResolveTenant/ProcessStudentImport make. Skipped under the test
      * runner for the same reason those skip it.
      *
-     * @param  \Illuminate\Support\Collection<string, Language>  $languagesByCode
+     * @param  Collection<string, Language>  $languagesByCode
      */
     private function seedForTenant(Tenant $tenant, $languagesByCode): void
     {
@@ -187,6 +188,7 @@ class BaseDataSeeder extends Seeder
                     'inactive' => ['en' => ['name' => 'Inactive'], 'km' => ['name' => 'អសកម្ម'], 'zh' => ['name' => '停用'], 'ko' => ['name' => '비활성'], 'ja' => ['name' => '非アクティブ']],
                     'graduated' => ['en' => ['name' => 'Graduated'], 'km' => ['name' => 'បញ្ចប់ការសិក្សា'], 'zh' => ['name' => '毕业'], 'ko' => ['name' => '졸업'], 'ja' => ['name' => '卒業']],
                     'withdrawn' => ['en' => ['name' => 'Withdrawn'], 'km' => ['name' => 'ដកខ្លួន'], 'zh' => ['name' => '退学'], 'ko' => ['name' => '자퇴'], 'ja' => ['name' => '退学']],
+                    'transferred' => ['en' => ['name' => 'Transferred out'], 'km' => ['name' => 'ផ្ទេរចេញ'], 'zh' => ['name' => '转出'], 'ko' => ['name' => '전학'], 'ja' => ['name' => '転校']],
                 ],
             ],
             'ENROLLMENT_STATUS' => [

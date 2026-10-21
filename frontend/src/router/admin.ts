@@ -105,6 +105,13 @@ const adminRoutes: RouteRecordRaw[] = [
     meta: { titleKey: 'adminNav.items.studentsList', pageTitleKey: 'admin.students.registerTitle' },
   },
   {
+    // Student record (docs/academics/student-record.md).
+    path: 'students/:id(\\d+)',
+    name: 'admin.students.record',
+    component: () => import('@/pages/admin/StudentRecord.vue'),
+    meta: { titleKey: 'adminNav.items.studentsList', pageTitleKey: 'studentRecord.title' },
+  },
+  {
     path: 'students/:id/edit',
     name: 'admin.students.edit',
     component: () => import('@/pages/admin/StudentForm.vue'),

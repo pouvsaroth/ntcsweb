@@ -1,4 +1,4 @@
-import { apiGetWithMeta, apiPost } from '@/services/http'
+import { apiGet, apiGetWithMeta, apiPost } from '@/services/http'
 import type { PaginatedQuery } from '@/composables/usePaginatedResource'
 import type { LengthAwarePaginationMeta, PaginatedResult } from '@/types/api'
 
@@ -22,7 +22,7 @@ export interface StudentEducation {
   detail: string
 }
 
-export type StudentStatus = 'active' | 'graduated' | 'withdrawn' | 'inactive'
+export type StudentStatus = 'active' | 'graduated' | 'withdrawn' | 'inactive' | 'transferred'
 
 export interface Student {
   id: number
@@ -123,6 +123,48 @@ function toFormData(input: StudentInput, methodOverride?: 'PUT'): FormData {
   if (methodOverride) form.append('_method', methodOverride)
 
   return form
+}
+
+/** Students > Student record (docs/academics/student-record.md). */
+export interface StudentRecord {
+  student: {
+    id: number
+    student_code: string | null
+    name: string
+    english_name: string | null
+    gender: string | null
+    date_of_birth: string | null
+    phone: string | null
+    email: string | null
+    status: StudentStatus | 'pending'
+    enrollment_date: string | null
+    guardians: { name: string; type: string | null; phone: string | null; email: string | null; address: string | null }[]
+  }
+  classes: {
+    enrollment_id: number
+    enrollments_code: string | null
+    class_id: number
+    class: string | null
+    grade_level: string | null
+    academic_year: string | null
+    course: string | null
+    status: string
+    enrolled_at: string | null
+    subjects: { subject: string | null; score: number; exam_date: string | null }[]
+    average: number | null
+    attendance_rate: number | null
+    absent_days: number
+    promotion: { result: string; to_class: string | null; at: string | null } | null
+  }[]
+  status_history: { from: string | null; to: string; date: string | null; reason: string | null; to_school: string | null }[]
+  transfers: { kind: 'class' | 'school'; date: string | null; from: string | null; to: string | null; reason: string | null }[]
+}
+
+export const studentRecordService = {
+  get: (id: number) => apiGet<StudentRecord>(`/students/${id}/record`),
+  changeStatus: (id: number, input: { status: StudentStatus; effective_date: string; reason: string | null; to_school: string | null; end_classes: boolean }) =>
+    apiPost<{ status: StudentStatus; ended_classes: number }>(`/students/${id}/status`, input),
+  assignToClass: (classId: number, studentIds: number[]) => apiPost<{ added: number; skipped: number }>(`/classes/${classId}/assign-students`, { student_ids: studentIds }),
 }
 
 export const studentsService = {

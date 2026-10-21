@@ -11,10 +11,12 @@ import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
+import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import EditIconButton from '@/components/ui/EditIconButton.vue'
 import BasePagination from '@/components/ui/BasePagination.vue'
 import DataTable from '@/components/ui/DataTable.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
+import { academicYearsService, type AcademicYear } from '@/services/academicYears'
 import { enrollmentsService, type Enrollment, type EnrollmentStatus } from '@/services/enrollments'
 import { type LookupOption, lookupsService } from '@/services/lookups'
 import { studentsService, type Student } from '@/services/students'
@@ -145,9 +147,19 @@ async function remove(enrollment: Enrollment) {
   await fetch()
 }
 
+// Enrollment by academic year (the class's year, School setup).
+const years = ref<AcademicYear[]>([])
+const selectedYear = ref('')
+const yearOptions = computed(() => [{ value: '', label: t('studentRecord.allYears') }, ...years.value.map((y) => ({ value: String(y.id), label: y.name }))])
+function onYearFilterChange(value: string) {
+  selectedYear.value = value
+  setFilter('academic_year_id', value || undefined)
+}
+
 onMounted(() => {
   void fetch()
   void lookupsService.values('ENROLLMENT_STATUS', locale.value).then((result) => (statusLookup.value = result))
+  academicYearsService.listAll().then((r) => (years.value = r)).catch(() => undefined)
 })
 </script>
 
@@ -194,6 +206,7 @@ onMounted(() => {
             </ul>
           </template>
         </div>
+        <BaseSelect v-if="years.length" :model-value="selectedYear" :options="yearOptions" class="w-40" @update:model-value="onYearFilterChange" />
         <BaseSelect
           :model-value="selectedStatus"
           :options="statusFilterOptions"
@@ -206,7 +219,29 @@ onMounted(() => {
 
     <BaseAlert v-if="error" variant="danger" class="mb-4">{{ error }}</BaseAlert>
 
+    <!-- Cards on a phone (below sm) -->
+    <div class="sm:hidden">
+      <div v-if="loading" class="flex justify-center py-10"><BaseSpinner /></div>
+      <p v-else-if="items.length === 0" class="rounded-[--radius-card] border border-dashed border-neutral-300 py-10 text-center text-sm text-neutral-500">
+        {{ t('admin.enrollments.emptyMessage') }}
+      </p>
+      <div v-else class="space-y-2">
+        <div v-for="row in items" :key="row.id" class="rounded-[--radius-card] border border-neutral-200 bg-white p-3 shadow-[--shadow-card]">
+          <div class="flex items-start justify-between gap-2">
+            <RouterLink :to="`/admin/students/${row.student.id}`" class="text-sm font-semibold text-primary-700">{{ row.student.full_name }}</RouterLink>
+            <BaseBadge :variant="statusBadgeVariant[row.status]">{{ t(`admin.enrollments.status${statusKey(row.status)}`) }}</BaseBadge>
+          </div>
+          <p class="text-xs text-neutral-500">{{ [row.class.name, row.course_package?.name, formatDate(row.enrolled_at)].filter(Boolean).join(' · ') }}</p>
+          <div class="mt-2 flex justify-end gap-3">
+            <EditIconButton @click="openEdit(row)" />
+            <button v-if="row.status !== 'dropped'" type="button" class="text-sm font-medium text-secondary-700" @click="openStatus(row)">{{ t('admin.enrollments.changeStatus') }}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <DataTable
+      class="hidden sm:block"
       :columns="columns"
       :rows="items"
       row-key="id"
@@ -217,7 +252,7 @@ onMounted(() => {
     >
       <template #cell-code="{ row }">{{ row.enrollments_code ?? '—' }}</template>
       <template #cell-student="{ row }">
-        <p class="font-medium text-neutral-800">{{ row.student.full_name }}</p>
+        <RouterLink :to="`/admin/students/${row.student.id}`" class="font-medium text-primary-700 hover:underline">{{ row.student.full_name }}</RouterLink>
         <p class="text-xs text-neutral-500">{{ row.student.student_code }}</p>
       </template>
       <template #cell-class="{ row }">{{ row.class.name }}</template>

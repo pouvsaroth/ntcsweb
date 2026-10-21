@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 
+import AssignStudentsModal from '@/components/admin/AssignStudentsModal.vue'
 import ChangeTableModal from '@/components/admin/ChangeTableModal.vue'
 import EnrollmentStatusModal from '@/components/admin/EnrollmentStatusModal.vue'
 import EnrollmentTransferModal from '@/components/admin/EnrollmentTransferModal.vue'
@@ -58,6 +59,15 @@ const isSingleClass = computed(() => classIds.value.length === 1)
 
 /** Only fetched (and only shown) in single-class mode — see isSingleClass. */
 const schoolClass = ref<SchoolClass | null>(null)
+
+// Class assignment with no course package (Grade 1–12), single class only.
+const canAssign = computed(() => auth.can('enrollments.create'))
+const assignOpen = ref(false)
+const assignNotice = ref<string | null>(null)
+function onAssigned(message: string) {
+  assignNotice.value = message
+  void load()
+}
 const roster = ref<Enrollment[]>([])
 const loading = ref(true)
 const loadError = ref<string | null>(null)
@@ -263,8 +273,10 @@ onMounted(() => {
       </div>
       <p v-else class="mb-4 text-sm text-neutral-500">{{ t('admin.classStudents.multiSubtitle', { count: classIds.length }) }}</p>
 
+      <BaseAlert v-if="assignNotice" variant="success" class="mb-4">{{ assignNotice }}</BaseAlert>
       <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div class="flex flex-wrap items-center gap-2">
+          <BaseButton v-if="canAssign && schoolClass" @click="assignOpen = true">{{ t('studentRecord.assign.button') }}</BaseButton>
           <BaseButton :to="attendanceLink" variant="outline">{{ t('admin.classStudents.attendance') }}</BaseButton>
           <BaseButton v-if="canSendToExam" variant="outline" :disabled="selectedIds.length === 0" @click="openSendToExam">
             {{ t('admin.classStudents.sendToExam') }}
@@ -331,5 +343,6 @@ onMounted(() => {
     <EnrollmentStatusModal v-model="statusModalOpen" :enrollment="activeEnrollment" @saved="load" />
     <ChangeTableModal v-model="tableModalOpen" :enrollment="activeEnrollment" @saved="load" />
     <SendToExamModal v-model="sendToExamModalOpen" :enrollment-ids="selectedIds" @saved="onSentToExam" />
+    <AssignStudentsModal v-if="schoolClass" v-model="assignOpen" :class-id="schoolClass.id" :class-name="schoolClass.name" @saved="onAssigned" />
   </div>
 </template>

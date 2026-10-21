@@ -1,16 +1,19 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
+import BaseSelect from '@/components/ui/BaseSelect.vue'
 import EditIconButton from '@/components/ui/EditIconButton.vue'
 import BasePagination from '@/components/ui/BasePagination.vue'
 import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import DataTable from '@/components/ui/DataTable.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
+import { academicYearsService, type AcademicYear } from '@/services/academicYears'
+import { classesService, type SchoolClass } from '@/services/classes'
 import { lookupsService } from '@/services/lookups'
 import { studentsService, type Student, type StudentStatus } from '@/services/students'
 import { useAdminUiStore } from '@/stores/adminUi'
@@ -41,7 +44,7 @@ function openPhotoPreview(row: Student) {
   previewStudent.value = row
 }
 
-const { items, meta, loading, error, perPage, sort, setPage, setSearch, setSort, fetch } = usePaginatedResource<Student>((query) =>
+const { items, meta, loading, error, perPage, sort, setPage, setSearch, setSort, setFilter, fetch } = usePaginatedResource<Student>((query) =>
   studentsService.list(query),
 )
 
@@ -64,6 +67,31 @@ const statusBadgeVariant: Record<StudentStatus, 'success' | 'neutral' | 'danger'
   graduated: 'neutral',
   withdrawn: 'danger',
   inactive: 'warning',
+  transferred: 'warning',
+}
+
+// Student search: also by status, academic year and class (docs/academics/student-record.md).
+const years = ref<AcademicYear[]>([])
+const classes = ref<SchoolClass[]>([])
+const filters = ref({ status: '', academic_year_id: '', class_id: '' })
+const statusOptions = computed(() => [
+  { value: '', label: t('studentRecord.allStatuses') },
+  ...(['active', 'transferred', 'withdrawn', 'graduated', 'inactive'] as StudentStatus[]).map((s) => ({ value: s, label: statusLabel(s) })),
+])
+const yearOptions = computed(() => [{ value: '', label: t('studentRecord.allYears') }, ...years.value.map((y) => ({ value: String(y.id), label: y.name }))])
+const classOptions = computed(() => [
+  { value: '', label: t('studentRecord.allClasses') },
+  ...classes.value
+    .filter((c) => !filters.value.academic_year_id || String(c.academic_year_id ?? '') === filters.value.academic_year_id)
+    .map((c) => ({ value: String(c.id), label: c.name })),
+])
+function onFilter(key: 'status' | 'academic_year_id' | 'class_id', value: string) {
+  filters.value[key] = value
+  if (key === 'academic_year_id' && filters.value.class_id && !classOptions.value.some((o) => o.value === filters.value.class_id)) {
+    filters.value.class_id = ''
+    setFilter('class_id', undefined)
+  }
+  setFilter(key, value || undefined)
 }
 
 function statusLabel(status: StudentStatus): string {
@@ -73,19 +101,24 @@ function statusLabel(status: StudentStatus): string {
 onMounted(() => {
   fetch()
   loadGenderLabels()
+  academicYearsService.listAll().then((r) => (years.value = r)).catch(() => undefined)
+  classesService.list({ page: 1, per_page: 200, sort: 'name', filter: {} }).then((r) => (classes.value = r.data)).catch(() => undefined)
 })
 </script>
 
 <template>
   <div>
-    <div class="mb-6 flex items-center justify-between">
+    <div class="mb-6 flex flex-wrap items-center gap-2">
       <input
         type="search"
         :placeholder="t('common.searchPlaceholder')"
         class="block w-full max-w-sm rounded-lg border border-neutral-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
         @input="setSearch(($event.target as HTMLInputElement).value)"
       />
-      <BaseButton to="/admin/students/new">{{ t('admin.students.registerTitle') }}</BaseButton>
+      <BaseSelect class="w-40" :model-value="filters.status" :options="statusOptions" @update:model-value="onFilter('status', $event)" />
+      <BaseSelect v-if="years.length" class="w-40" :model-value="filters.academic_year_id" :options="yearOptions" @update:model-value="onFilter('academic_year_id', $event)" />
+      <BaseSelect v-if="classes.length" class="w-48" :model-value="filters.class_id" :options="classOptions" @update:model-value="onFilter('class_id', $event)" />
+      <BaseButton class="ml-auto" to="/admin/students/new">{{ t('admin.students.registerTitle') }}</BaseButton>
     </div>
 
     <BaseAlert v-if="error" variant="danger" class="mb-4">{{ error }}</BaseAlert>
@@ -108,7 +141,7 @@ onMounted(() => {
             <img v-if="row.photo_url" :src="row.photo_url" alt="" class="h-full w-full object-cover" />
           </button>
           <div class="min-w-0 flex-1">
-            <p class="truncate text-sm font-medium text-neutral-800">{{ row.full_name }}</p>
+            <RouterLink :to="`/admin/students/${row.id}`" class="block truncate text-sm font-medium text-primary-700 hover:underline">{{ row.full_name }}</RouterLink>
             <p class="truncate text-xs text-neutral-500">{{ row.phone || '—' }}</p>
           </div>
           <EditIconButton :to="`/admin/students/${row.id}/edit`" />
@@ -137,7 +170,7 @@ onMounted(() => {
           </button>
         </template>
         <template #cell-full_name="{ row }">
-          <p class="font-medium text-neutral-800">{{ row.full_name }}</p>
+          <RouterLink :to="`/admin/students/${row.id}`" class="font-medium text-primary-700 hover:underline">{{ row.full_name }}</RouterLink>
           <p v-if="row.english_name" class="text-xs text-neutral-500">{{ row.english_name }}</p>
         </template>
         <template #cell-gender="{ row }">

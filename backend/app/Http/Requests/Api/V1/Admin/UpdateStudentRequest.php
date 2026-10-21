@@ -53,7 +53,7 @@ class UpdateStudentRequest extends FormRequest
 
             'enrollment_date' => ['nullable', 'date'],
             'status' => ['sometimes', Rule::in([
-                Student::STATUS_ACTIVE, Student::STATUS_GRADUATED, Student::STATUS_WITHDRAWN, Student::STATUS_INACTIVE,
+                Student::STATUS_ACTIVE, Student::STATUS_GRADUATED, Student::STATUS_WITHDRAWN, Student::STATUS_INACTIVE, Student::STATUS_TRANSFERRED,
             ])],
             'user_id' => [
                 'nullable',

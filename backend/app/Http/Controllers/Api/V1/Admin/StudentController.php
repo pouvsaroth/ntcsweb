@@ -9,6 +9,7 @@ use App\Http\Requests\Api\V1\Admin\StoreStudentRequest;
 use App\Http\Requests\Api\V1\Admin\UpdateStudentRequest;
 use App\Http\Resources\StudentResource;
 use App\Http\Responses\ApiResponse;
+use App\Models\Enrollment;
 use App\Models\Role;
 use App\Models\Student;
 use App\Services\Academic\StudentIdGenerator;
@@ -44,7 +45,12 @@ final class StudentController extends Controller
         // millions), where offset pagination's COUNT(*)/OFFSET cost is
         // negligible. Revisit if a tenant's real row count ever approaches
         // the point where that trade stops being negligible.
-        $students = ApiQuery::for(Student::query()->withCount(['guardians', 'educations'])->with('village.commune.district.province'), $request)
+        // Student search (docs/academics/student-record.md): also by class and academic year.
+        $inClasses = fn ($q) => $q->whereNotIn('status', [Enrollment::STATUS_DROPPED]);
+        $query = Student::query()->withCount(['guardians', 'educations'])->with('village.commune.district.province')
+            ->when($request->filled('filter.class_id'), fn ($q) => $q->whereHas('enrollments', fn ($e) => $inClasses($e)->where('class_id', $request->integer('filter.class_id'))))
+            ->when($request->filled('filter.academic_year_id'), fn ($q) => $q->whereHas('enrollments', fn ($e) => $inClasses($e)->whereHas('schoolClass', fn ($c) => $c->where('academic_year_id', $request->integer('filter.academic_year_id')))));
+        $students = ApiQuery::for($query, $request)
             ->searchable('first_name', 'last_name', 'english_name', 'student_code', 'email')
             ->filterable(['status'])
             ->sortable(['first_name', 'last_name', 'student_code', 'created_at'], default: '-created_at')
