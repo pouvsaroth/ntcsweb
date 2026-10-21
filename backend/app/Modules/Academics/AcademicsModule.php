@@ -34,6 +34,12 @@ final class AcademicsModule extends Module
         return [
             'academic-programs' => ['Academic programs', 'កម្មវិធីសិក្សា'],
             'academic-years' => ['Academic years', 'ឆ្នាំសិក្សា'],
+            'academic-terms' => ['Terms / semesters', 'ឆមាស'],
+            'grade-levels' => ['Grade levels', 'កម្រិតថ្នាក់'],
+            'curriculum' => ['Curriculum', 'ការរៀបចំកម្មវិធីសិក្សា'],
+            'school-calendar' => ['School calendar', 'ប្រតិទិនសាលា'],
+            'promotion-rules' => ['Promotion rules', 'លក្ខខណ្ឌឡើងថ្នាក់'],
+            'student-promotions' => ['Promote students', 'ដំឡើងថ្នាក់សិស្ស'],
             'academic-reports' => ['Academic reports', 'របាយការណ៍សិក្សា'],
             'programs' => ['Programs', 'កម្មវិធី'],
             'course-packages' => ['Course packages', 'កញ្ចប់វគ្គសិក្សា'],

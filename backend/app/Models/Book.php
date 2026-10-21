@@ -61,6 +61,12 @@ class Book extends Model
             ->orderByPivot('sort_order');
     }
 
+    /** The grade levels this book is taught at as a subject, with weekly hours (the curriculum). */
+    public function gradeLevels(): BelongsToMany
+    {
+        return $this->belongsToMany(GradeLevel::class, 'book_grade_level')->withPivot('hours_per_week')->withTimestamps();
+    }
+
     /**
      * @param  Builder<static>  $query
      */

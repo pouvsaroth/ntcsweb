@@ -377,6 +377,26 @@ final class EnrollmentService
      * a code that already exists, which fails the whole enrollment with a
      * raw unique-constraint 500 instead of just skipping the taken number.
      */
+    /**
+     * A student moved up a grade (or kept in it) by Promote students
+     * (docs/academics/school-setup.md): enrolled in the new class with no
+     * course package and no invoice — the school bills the new year itself.
+     */
+    public function enrollForPromotion(int $studentId, SchoolClass $class): Enrollment
+    {
+        $enrollment = Enrollment::query()->create([
+            'student_id' => $studentId,
+            'class_id' => $class->getKey(),
+            'academic_program_id' => $class->academic_program_id,
+            'enrolled_at' => now()->toDateString(),
+            'enrollments_code' => $this->generateEnrollmentCode($studentId),
+            'status' => Enrollment::STATUS_ACTIVE,
+        ]);
+
+        // The Auditable trait records the new enrollment.
+        return $enrollment;
+    }
+
     private function generateEnrollmentCode(int $studentId): string
     {
         $student = Student::query()->whereKey($studentId)->lockForUpdate()->firstOrFail();
@@ -384,6 +404,7 @@ final class EnrollmentService
         $lastSequence = Enrollment::query()
             ->where('student_id', $studentId)
             ->pluck('enrollments_code')
+            ->filter()
             ->map(fn (string $code) => (int) Str::afterLast($code, '-'))
             ->max() ?? 0;
 

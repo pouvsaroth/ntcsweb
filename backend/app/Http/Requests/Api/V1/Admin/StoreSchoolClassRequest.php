@@ -40,6 +40,8 @@ class StoreSchoolClassRequest extends FormRequest
             'assistant_teacher_ids.*' => [Rule::exists('tenant.staff', 'id')->where($isTeacherStaff)],
             'classroom_id' => ['nullable', Rule::exists('tenant.classrooms', 'id')],
             'academic_program_id' => ['nullable', Rule::exists('tenant.academic_programs', 'id')],
+            'grade_level_id' => ['nullable', Rule::exists('tenant.grade_levels', 'id')],
+            'academic_year_id' => ['nullable', Rule::exists('tenant.academic_years', 'id')->whereNull('deleted_at')],
             'capacity' => ['nullable', 'integer', 'min:1', 'max:100000'],
             'start_date' => ['nullable', 'date'],
             'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],

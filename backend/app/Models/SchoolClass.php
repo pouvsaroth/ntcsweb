@@ -33,7 +33,7 @@ use Illuminate\Support\Carbon;
  * @property string $name
  * @property string $status
  */
-#[Fillable(['classroom_id', 'academic_program_id', 'name', 'code', 'capacity', 'start_date', 'end_date', 'status'])]
+#[Fillable(['classroom_id', 'academic_program_id', 'grade_level_id', 'academic_year_id', 'name', 'code', 'capacity', 'start_date', 'end_date', 'status'])]
 class SchoolClass extends Model
 {
     use HasFactory, SoftDeletes;
@@ -98,6 +98,18 @@ class SchoolClass extends Model
     public function academicProgram(): BelongsTo
     {
         return $this->belongsTo(AcademicProgram::class);
+    }
+
+    /** The grade level (Grade 1–12 …) this class teaches, if any. */
+    public function gradeLevel(): BelongsTo
+    {
+        return $this->belongsTo(GradeLevel::class);
+    }
+
+    /** The academic year this class runs in, if set. */
+    public function academicYear(): BelongsTo
+    {
+        return $this->belongsTo(AcademicYear::class);
     }
 
     public function schedules(): HasMany

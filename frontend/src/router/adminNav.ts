@@ -1,5 +1,6 @@
 import { organizationTabs } from '@/router/organizationTabs'
 import { attendanceTabs } from '@/router/attendanceTabs'
+import { schoolSetupTabs } from '@/router/schoolSetupTabs'
 import { leaveTabs } from '@/router/leaveTabs'
 import { payrollTabs } from '@/router/payrollTabs'
 import { performanceTabs } from '@/router/performanceTabs'
@@ -127,6 +128,8 @@ export const adminNav: AdminNavGroup[] = [
       // from this one "Programs" item (see ProgramsTabs.vue), landing on
       // the Academic Programs list itself.
       { labelKey: 'adminNav.items.programs', to: '/admin/academic-programs', permission: 'academic-programs.view' },
+      // Terms, grade levels, curriculum, school calendar, promotion rules, promoting students (SchoolSetupLayout.vue).
+      { labelKey: 'adminNav.items.schoolSetup', to: '/admin/school-setup', permission: schoolSetupTabs.map((tab) => tab.permission) },
       { labelKey: 'adminNav.items.videos', to: '/admin/videos', permission: 'videos.view' },
       // Buildings and Classrooms used to be separate sidebar entries — now
       // reached as tabs from this one "Study Building" item (see

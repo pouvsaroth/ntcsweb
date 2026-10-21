@@ -207,6 +207,32 @@ final class Permissions
 
     public const ACADEMIC_YEARS_DELETE = 'academic-years.delete';
 
+    // School setup (docs/academics/school-setup.md): terms, grade levels,
+    // curriculum, school calendar, promotion rules and promoting students.
+    public const ACADEMIC_TERMS_VIEW = 'academic-terms.view';
+
+    public const ACADEMIC_TERMS_MANAGE = 'academic-terms.manage';
+
+    public const GRADE_LEVELS_VIEW = 'grade-levels.view';
+
+    public const GRADE_LEVELS_MANAGE = 'grade-levels.manage';
+
+    public const CURRICULUM_VIEW = 'curriculum.view';
+
+    public const CURRICULUM_MANAGE = 'curriculum.manage';
+
+    public const SCHOOL_CALENDAR_VIEW = 'school-calendar.view';
+
+    public const SCHOOL_CALENDAR_MANAGE = 'school-calendar.manage';
+
+    public const PROMOTION_RULES_VIEW = 'promotion-rules.view';
+
+    public const PROMOTION_RULES_MANAGE = 'promotion-rules.manage';
+
+    public const STUDENT_PROMOTIONS_VIEW = 'student-promotions.view';
+
+    public const STUDENT_PROMOTIONS_RUN = 'student-promotions.run';
+
     public const ACADEMIC_REPORTS_VIEW = 'academic-reports.view';
 
     public const ACADEMIC_REPORTS_EXPORT = 'academic-reports.export';
@@ -770,6 +796,30 @@ final class Permissions
                 self::ACADEMIC_YEARS_UPDATE => 'Update academic years',
                 self::ACADEMIC_YEARS_DELETE => 'Delete academic years',
             ],
+            'Academic Terms' => [
+                self::ACADEMIC_TERMS_VIEW => 'View terms / semesters',
+                self::ACADEMIC_TERMS_MANAGE => 'Add, edit and delete terms / semesters',
+            ],
+            'Grade Levels' => [
+                self::GRADE_LEVELS_VIEW => 'View grade levels',
+                self::GRADE_LEVELS_MANAGE => 'Add, edit and delete grade levels',
+            ],
+            'Curriculum' => [
+                self::CURRICULUM_VIEW => 'View the curriculum (subjects, hours, lessons per grade)',
+                self::CURRICULUM_MANAGE => 'Set up the curriculum',
+            ],
+            'School Calendar' => [
+                self::SCHOOL_CALENDAR_VIEW => 'View the school calendar',
+                self::SCHOOL_CALENDAR_MANAGE => 'Add, edit and delete school calendar days',
+            ],
+            'Promotion Rules' => [
+                self::PROMOTION_RULES_VIEW => 'View promotion rules',
+                self::PROMOTION_RULES_MANAGE => 'Set promotion rules',
+            ],
+            'Student Promotions' => [
+                self::STUDENT_PROMOTIONS_VIEW => 'View who passes to the next grade',
+                self::STUDENT_PROMOTIONS_RUN => 'Promote students to the next grade',
+            ],
             'Academic Reports' => [
                 self::ACADEMIC_REPORTS_VIEW => 'View academic/enrollment reports',
                 self::ACADEMIC_REPORTS_EXPORT => 'Export academic/enrollment reports',
@@ -1005,6 +1055,12 @@ final class Permissions
             self::COURSE_PACKAGES_VIEW, self::COURSE_PACKAGES_CREATE, self::COURSE_PACKAGES_UPDATE, self::COURSE_PACKAGES_DELETE,
             self::VIDEOS_VIEW, self::VIDEOS_CREATE, self::VIDEOS_UPDATE, self::VIDEOS_DELETE,
             self::ACADEMIC_YEARS_VIEW, self::ACADEMIC_YEARS_CREATE, self::ACADEMIC_YEARS_UPDATE, self::ACADEMIC_YEARS_DELETE,
+            self::ACADEMIC_TERMS_VIEW, self::ACADEMIC_TERMS_MANAGE,
+            self::GRADE_LEVELS_VIEW, self::GRADE_LEVELS_MANAGE,
+            self::CURRICULUM_VIEW, self::CURRICULUM_MANAGE,
+            self::SCHOOL_CALENDAR_VIEW, self::SCHOOL_CALENDAR_MANAGE,
+            self::PROMOTION_RULES_VIEW, self::PROMOTION_RULES_MANAGE,
+            self::STUDENT_PROMOTIONS_VIEW, self::STUDENT_PROMOTIONS_RUN,
             self::ACADEMIC_REPORTS_VIEW, self::ACADEMIC_REPORTS_EXPORT,
             self::PROGRAMS_VIEW, self::PROGRAMS_CREATE, self::PROGRAMS_UPDATE, self::PROGRAMS_DELETE,
             self::POSITIONS_VIEW, self::POSITIONS_CREATE, self::POSITIONS_UPDATE, self::POSITIONS_DELETE,
@@ -1212,6 +1268,10 @@ final class Permissions
                 self::COURSE_PACKAGES_VIEW,
                 self::VIDEOS_VIEW,
                 self::ACADEMIC_YEARS_VIEW,
+                self::ACADEMIC_TERMS_VIEW,
+                self::GRADE_LEVELS_VIEW,
+                self::CURRICULUM_VIEW,
+                self::SCHOOL_CALENDAR_VIEW,
                 self::POSITIONS_VIEW,
                 self::ORGANIZATION_VIEW,
                 self::STAFF_VIEW,
@@ -1265,6 +1325,10 @@ final class Permissions
                 self::COURSE_PACKAGES_VIEW,
                 self::VIDEOS_VIEW,
                 self::ACADEMIC_YEARS_VIEW,
+                self::ACADEMIC_TERMS_VIEW,
+                self::GRADE_LEVELS_VIEW,
+                self::CURRICULUM_VIEW,
+                self::SCHOOL_CALENDAR_VIEW,
                 self::LEAVE_REQUESTS_VIEW,
                 ...$projectsForEveryone,
             ],

@@ -18,6 +18,8 @@ export interface Book {
   book_category_id: number | null
   book_category?: { id: number; name: string } | null
   classes_count?: number
+  /** As a subject: the grade levels it is taught at, with hours per week (School setup > Curriculum). */
+  grade_levels?: { id: number; code: string; name: string; hours_per_week: number | null }[]
   created_at: string
 }
 
@@ -35,7 +37,7 @@ export interface BookInput {
 export const booksService = {
   async list(query: PaginatedQuery): Promise<PaginatedResult<Book>> {
     const result = await apiGetWithMeta<Book[]>('/books', {
-      params: { page: query.page, per_page: query.per_page, search: query.search, sort: query.sort },
+      params: { page: query.page, per_page: query.per_page, search: query.search, sort: query.sort, filter: query.filter },
     })
 
     return { data: result.data, pagination: result.meta?.pagination as LengthAwarePaginationMeta }

@@ -33,6 +33,11 @@ export interface SchoolClass {
   /** Which Academic Program this session belongs to — required before a package-based enrollment can target this class. */
   academic_program_id: number | null
   academic_program: AcademicProgram | null
+  /** School setup: the grade level and academic year this class belongs to (both optional). */
+  grade_level_id: number | null
+  grade_level: { id: number; name: string; code: string } | null
+  academic_year_id: number | null
+  academic_year: { id: number; name: string } | null
   active_students_count?: number
   created_at: string
 }
@@ -44,6 +49,8 @@ export interface ClassInput {
   assistant_teacher_ids: number[]
   classroom_id: number | null
   academic_program_id: number | null
+  grade_level_id: number | null
+  academic_year_id: number | null
   start_date: string
   end_date: string
   status: ClassStatus

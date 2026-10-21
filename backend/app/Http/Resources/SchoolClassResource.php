@@ -30,6 +30,10 @@ class SchoolClassResource extends JsonResource
             'schedules' => ClassScheduleResource::collection($this->whenLoaded('schedules')),
             'academic_program_id' => $this->academic_program_id,
             'academic_program' => new AcademicProgramResource($this->whenLoaded('academicProgram')),
+            'grade_level_id' => $this->grade_level_id,
+            'grade_level' => $this->whenLoaded('gradeLevel', fn () => $this->gradeLevel ? ['id' => $this->gradeLevel->id, 'name' => $this->gradeLevel->name, 'code' => $this->gradeLevel->code] : null),
+            'academic_year_id' => $this->academic_year_id,
+            'academic_year' => $this->whenLoaded('academicYear', fn () => $this->academicYear ? ['id' => $this->academicYear->id, 'name' => $this->academicYear->name] : null),
             'active_students_count' => $this->whenCounted('active_students'),
 
             'created_at' => $this->created_at?->toIso8601String(),

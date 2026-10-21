@@ -7,6 +7,7 @@ import { leaveTabs } from '@/router/leaveTabs'
 import { payrollTabs } from '@/router/payrollTabs'
 import { performanceTabs } from '@/router/performanceTabs'
 import { recruitmentTabs } from '@/router/recruitmentTabs'
+import { schoolSetupTabs } from '@/router/schoolSetupTabs'
 import { useAuthStore } from '@/stores/auth'
 
 const authRoutes: RouteRecordRaw[] = [
@@ -460,6 +461,28 @@ const adminRoutes: RouteRecordRaw[] = [
       { path: 'selection', name: 'admin.recruitment.selection', component: () => import('@/pages/admin/recruitment/CandidateSelection.vue') },
       { path: 'offers', name: 'admin.recruitment.offers', component: () => import('@/pages/admin/recruitment/OfferLetters.vue') },
       { path: 'pipeline', name: 'admin.recruitment.pipeline', component: () => import('@/pages/admin/recruitment/Pipeline.vue') },
+    ],
+  },
+  {
+    // Academics > School setup: tabs as child routes (see SchoolSetupLayout.vue / schoolSetupTabs.ts).
+    path: 'school-setup',
+    component: () => import('@/pages/admin/schoolSetup/SchoolSetupLayout.vue'),
+    meta: { titleKey: 'adminNav.items.schoolSetup' },
+    children: [
+      {
+        path: '',
+        name: 'admin.school-setup',
+        redirect: () => {
+          const auth = useAuthStore()
+          return (schoolSetupTabs.find((tab) => auth.can(tab.permission)) ?? schoolSetupTabs[0]!).to
+        },
+      },
+      { path: 'terms', name: 'admin.school-setup.terms', component: () => import('@/pages/admin/schoolSetup/Terms.vue') },
+      { path: 'grade-levels', name: 'admin.school-setup.grade-levels', component: () => import('@/pages/admin/schoolSetup/GradeLevels.vue') },
+      { path: 'curriculum', name: 'admin.school-setup.curriculum', component: () => import('@/pages/admin/schoolSetup/Curriculum.vue') },
+      { path: 'calendar', name: 'admin.school-setup.calendar', component: () => import('@/pages/admin/schoolSetup/SchoolCalendar.vue') },
+      { path: 'promotion-rules', name: 'admin.school-setup.promotion-rules', component: () => import('@/pages/admin/schoolSetup/PromotionRules.vue') },
+      { path: 'promote', name: 'admin.school-setup.promote', component: () => import('@/pages/admin/schoolSetup/PromoteStudents.vue') },
     ],
   },
   {

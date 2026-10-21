@@ -35,6 +35,10 @@ class BookResource extends JsonResource
                 'id' => $this->bookCategory->id,
                 'name' => $this->bookCategory->name,
             ] : null),
+            // Subject by grade level (the curriculum, docs/academics/school-setup.md).
+            'grade_levels' => $this->whenLoaded('gradeLevels', fn () => $this->gradeLevels->sortBy('level_order')->map(fn ($g) => [
+                'id' => $g->id, 'code' => $g->code, 'name' => $g->name, 'hours_per_week' => $g->pivot->hours_per_week,
+            ])->values()),
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }

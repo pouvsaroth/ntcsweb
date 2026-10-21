@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\DB;
 
 final class SchoolClassController extends Controller
 {
-    private const WITH = ['teachers', 'assistantTeachers', 'classroom', 'schedules', 'academicProgram'];
+    private const WITH = ['teachers', 'assistantTeachers', 'classroom', 'schedules', 'academicProgram', 'gradeLevel', 'academicYear'];
 
     public function index(Request $request): JsonResponse
     {
@@ -36,7 +36,7 @@ final class SchoolClassController extends Controller
 
         $classes = ApiQuery::for($query, $request)
             ->searchable('name', 'code')
-            ->filterable(['status', 'classroom_id', 'academic_program_id'])
+            ->filterable(['status', 'classroom_id', 'academic_program_id', 'grade_level_id', 'academic_year_id'])
             ->sortable(['name', 'start_date', 'created_at'], default: '-created_at')
             ->paginate();
 

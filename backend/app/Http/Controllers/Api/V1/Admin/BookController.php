@@ -20,7 +20,8 @@ final class BookController extends Controller
     {
         $this->authorize('viewAny', Book::class);
 
-        $books = ApiQuery::for(Book::query()->with(['academicProgram', 'bookCategory']), $request)
+        $books = ApiQuery::for(Book::query()->with(['academicProgram', 'bookCategory', 'gradeLevels'])
+            ->when($request->filled('filter.grade_level_id'), fn ($q) => $q->whereHas('gradeLevels', fn ($g) => $g->whereKey($request->integer('filter.grade_level_id')))), $request)
             ->searchable('title', 'author', 'isbn')
             ->filterable(['status', 'academic_program_id'])
             ->sortable(['title', 'author', 'created_at'], default: 'title')

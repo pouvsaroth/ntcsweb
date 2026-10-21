@@ -9,9 +9,11 @@ import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
 import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import { academicProgramsService, type AcademicProgram } from '@/services/academicPrograms'
+import { academicYearsService, type AcademicYear } from '@/services/academicYears'
 import { classesService, type ClassInput } from '@/services/classes'
 import { classroomsService, type Classroom } from '@/services/classrooms'
 import { positionsService } from '@/services/positions'
+import { gradeLevelsService, type GradeLevel } from '@/services/schoolSetup'
 import { staffService, type Staff } from '@/services/staff'
 import { ApiRequestError } from '@/types/api'
 
@@ -33,6 +35,8 @@ const form = reactive<ClassInput>({
   assistant_teacher_ids: [],
   classroom_id: null,
   academic_program_id: null,
+  grade_level_id: null,
+  academic_year_id: null,
   start_date: '',
   end_date: '',
   status: 'active',
@@ -42,6 +46,9 @@ const form = reactive<ClassInput>({
 const teachers = ref<Staff[]>([])
 const classrooms = ref<Classroom[]>([])
 const programs = ref<AcademicProgram[]>([])
+// School setup: the grade level and academic year a class belongs to (both optional).
+const gradeLevels = ref<GradeLevel[]>([])
+const academicYears = ref<AcademicYear[]>([])
 
 const loading = ref(true)
 const loadError = ref<string | null>(null)
@@ -69,6 +76,15 @@ const statusOptions = computed(() => [
 const classroomOptions = computed(() => [
   { value: '', label: t('admin.classes.noClassroom') },
   ...classrooms.value.map((classroom) => ({ value: String(classroom.id), label: classroom.name })),
+])
+
+const gradeLevelOptions = computed(() => [
+  { value: '', label: t('schoolSetup.classForm.noGrade') },
+  ...gradeLevels.value.map((g) => ({ value: String(g.id), label: g.name })),
+])
+const academicYearOptions = computed(() => [
+  { value: '', label: t('schoolSetup.classForm.noYear') },
+  ...academicYears.value.map((y) => ({ value: String(y.id), label: y.name })),
 ])
 
 const programOptions = computed(() => [
@@ -110,13 +126,18 @@ async function load() {
   loadError.value = null
 
   try {
-    const [positions, loadedClassrooms, loadedPrograms] = await Promise.all([
+    const [positions, loadedClassrooms, loadedPrograms, loadedGrades, loadedYears] = await Promise.all([
       positionsService.listAll(),
       classroomsService.listAll(),
       academicProgramsService.listAll(),
+      gradeLevelsService.list(true).catch(() => [] as GradeLevel[]),
+      academicYearsService.listAll().catch(() => [] as AcademicYear[]),
     ])
     classrooms.value = loadedClassrooms
     programs.value = loadedPrograms
+    gradeLevels.value = loadedGrades
+    academicYears.value = loadedYears
+    if (!classId.value) form.academic_year_id = loadedYears.find((y) => y.is_current)?.id ?? null
 
     // A "teacher" is a Staff member holding a position that carries the
     // Teacher role — not necessarily named "Teacher" (a school's position
@@ -135,6 +156,8 @@ async function load() {
     form.assistant_teacher_ids = schoolClass.assistant_teachers.map((t) => t.id)
     form.classroom_id = schoolClass.classroom?.id ?? null
     form.academic_program_id = schoolClass.academic_program?.id ?? null
+    form.grade_level_id = schoolClass.grade_level_id ?? null
+    form.academic_year_id = schoolClass.academic_year_id ?? null
     form.start_date = schoolClass.start_date ?? ''
     form.end_date = schoolClass.end_date ?? ''
     form.status = schoolClass.status
@@ -206,6 +229,22 @@ onMounted(load)
             :label="t('admin.classes.program')"
             :hint="t('admin.classes.programHint')"
             @update:model-value="form.academic_program_id = $event ? Number($event) : null"
+          />
+          <BaseSelect
+            v-if="gradeLevels.length"
+            :model-value="form.grade_level_id !== null ? String(form.grade_level_id) : ''"
+            :options="gradeLevelOptions"
+            :label="t('schoolSetup.classForm.gradeLevel')"
+            :error="errors.grade_level_id?.[0]"
+            @update:model-value="form.grade_level_id = $event ? Number($event) : null"
+          />
+          <BaseSelect
+            v-if="academicYears.length"
+            :model-value="form.academic_year_id !== null ? String(form.academic_year_id) : ''"
+            :options="academicYearOptions"
+            :label="t('schoolSetup.academicYear')"
+            :error="errors.academic_year_id?.[0]"
+            @update:model-value="form.academic_year_id = $event ? Number($event) : null"
           />
           <BaseSelect v-model="form.status" :options="statusOptions" :label="t('admin.classes.status')" />
           <BaseInput v-model="form.start_date" type="date" :label="t('admin.classes.startDate')" :error="errors.start_date?.[0]" />

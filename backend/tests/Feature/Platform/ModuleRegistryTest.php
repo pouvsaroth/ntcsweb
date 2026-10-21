@@ -50,7 +50,7 @@ class ModuleRegistryTest extends TestCase
     public function test_the_registry_is_the_module_list_plans_use(): void
     {
         $this->assertSame(['academics', 'finance', 'accounting', 'hrm', 'payroll', 'assets', 'library', 'website', 'projects'], Modules::codes());
-        $this->assertSame('students', Modules::list()[0]['menus'][8]['code']);
+        $this->assertContains('students', array_column(Modules::list()[0]['menus'], 'code'));
         $this->assertSame('academics', Modules::slugModules()['dashboard.cards.enrollment']);
         $this->assertSame(['Payroll', 'បើកប្រាក់បៀវត្សរ៍'], Modules::menuLabels()['payroll']);
         foreach (ModuleRegistry::all() as $code => $module) {
