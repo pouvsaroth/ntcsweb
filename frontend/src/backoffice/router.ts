@@ -9,6 +9,8 @@ declare module 'vue-router' {
     guest?: boolean
     /** The platform.* permission the page needs — hidden from the menu and refused here without it. */
     permission?: string
+    /** The start page: sends you to the first menu you may see. */
+    home?: boolean
   }
 }
 
@@ -35,7 +37,9 @@ const routes: RouteRecordRaw[] = [
     path: '/',
     component: () => import('./ShellLayout.vue'),
     children: [
-      { path: '', redirect: () => firstAllowedPage() },
+      // The start page: decided in beforeEach, once the session (and so the permissions) has loaded —
+      // a route redirect runs before that and always fell back to /account.
+      { path: '', component: { render: () => null }, meta: { home: true } },
       { path: 'schools', component: () => import('./pages/SchoolsPage.vue'), meta: { permission: 'platform.school.read' } },
       { path: 'schools/:id(\\d+)', component: () => import('./pages/SchoolDetailPage.vue'), meta: { permission: 'platform.school.read' } },
       {
@@ -133,6 +137,8 @@ router.beforeEach(async (to) => {
 
   // The server refuses every other route until a temporary password is replaced.
   if (current.must_change_password && to.path !== '/account') return '/account'
+  // Signed in: open on the first menu you may see (Customers for most staff).
+  if (to.meta.home) return firstAllowedPage()
   if (to.meta.permission && !session.can(to.meta.permission)) return firstAllowedPage()
 
   return true
