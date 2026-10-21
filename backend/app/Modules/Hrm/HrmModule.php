@@ -31,6 +31,7 @@ final class HrmModule extends Module
     {
         return [
             'staff' => ['Staff', 'បុគ្គលិក'],
+            'teachers' => ['Teachers', 'គ្រូ'],
             'staff-attendance' => ['Staff attendance', 'វត្តមានបុគ្គលិក'],
             'positions' => ['Positions', 'មុខតំណែង'],
             'leave-management' => ['Leave management', 'គ្រប់គ្រងការឈប់សម្រាក'],

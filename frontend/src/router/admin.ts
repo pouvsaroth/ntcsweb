@@ -8,6 +8,7 @@ import { payrollTabs } from '@/router/payrollTabs'
 import { performanceTabs } from '@/router/performanceTabs'
 import { recruitmentTabs } from '@/router/recruitmentTabs'
 import { schoolSetupTabs } from '@/router/schoolSetupTabs'
+import { teacherTabs } from '@/router/teacherTabs'
 import { useAuthStore } from '@/stores/auth'
 
 const authRoutes: RouteRecordRaw[] = [
@@ -461,6 +462,29 @@ const adminRoutes: RouteRecordRaw[] = [
       { path: 'selection', name: 'admin.recruitment.selection', component: () => import('@/pages/admin/recruitment/CandidateSelection.vue') },
       { path: 'offers', name: 'admin.recruitment.offers', component: () => import('@/pages/admin/recruitment/OfferLetters.vue') },
       { path: 'pipeline', name: 'admin.recruitment.pipeline', component: () => import('@/pages/admin/recruitment/Pipeline.vue') },
+    ],
+  },
+  {
+    // HRM > Teacher: tabs as child routes (see TeachersLayout.vue / teacherTabs.ts).
+    path: 'teachers',
+    component: () => import('@/pages/admin/teachers/TeachersLayout.vue'),
+    meta: { titleKey: 'adminNav.items.teachers' },
+    children: [
+      {
+        path: '',
+        name: 'admin.teachers',
+        redirect: () => {
+          const auth = useAuthStore()
+          return (teacherTabs.find((tab) => auth.can(tab.permission)) ?? teacherTabs[0]!).to
+        },
+      },
+      { path: 'qualifications', name: 'admin.teachers.qualifications', component: () => import('@/pages/admin/teachers/Qualifications.vue') },
+      { path: 'assignments', name: 'admin.teachers.assignments', component: () => import('@/pages/admin/teachers/Assignments.vue') },
+      { path: 'homeroom', name: 'admin.teachers.homeroom', component: () => import('@/pages/admin/teachers/Homeroom.vue') },
+      { path: 'load', name: 'admin.teachers.load', component: () => import('@/pages/admin/teachers/TeachingLoad.vue') },
+      { path: 'availability', name: 'admin.teachers.availability', component: () => import('@/pages/admin/teachers/Availability.vue') },
+      { path: 'substitutes', name: 'admin.teachers.substitutes', component: () => import('@/pages/admin/teachers/Substitutes.vue') },
+      { path: 'documents', name: 'admin.teachers.documents', component: () => import('@/pages/admin/teachers/Documents.vue') },
     ],
   },
   {

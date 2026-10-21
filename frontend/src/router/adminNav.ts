@@ -1,6 +1,7 @@
 import { organizationTabs } from '@/router/organizationTabs'
 import { attendanceTabs } from '@/router/attendanceTabs'
 import { schoolSetupTabs } from '@/router/schoolSetupTabs'
+import { teacherTabs } from '@/router/teacherTabs'
 import { leaveTabs } from '@/router/leaveTabs'
 import { payrollTabs } from '@/router/payrollTabs'
 import { performanceTabs } from '@/router/performanceTabs'
@@ -162,6 +163,8 @@ export const adminNav: AdminNavGroup[] = [
     labelKey: 'adminNav.groups.staff',
     items: [
       { labelKey: 'adminNav.items.staffList', to: '/admin/staff', permission: 'staff.view' },
+      // Staff in a teacher position: qualifications, assignments, homeroom, load, ... (teacherTabs.ts).
+      { labelKey: 'adminNav.items.teachers', to: '/admin/teachers', permission: teacherTabs.map((tab) => tab.permission), module: 'hrm' },
       { labelKey: 'adminNav.items.staffStatusHistory', to: '/admin/staff-status-history', permission: 'staff.view' },
       // One link; School, Branch, Department, ... are tabs on the page itself
       // (see organizationTabs.ts). Shown to anyone who can open any one tab.

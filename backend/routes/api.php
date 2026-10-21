@@ -122,6 +122,9 @@ use App\Http\Controllers\Api\V1\Admin\StudentImportController;
 use App\Http\Controllers\Api\V1\Admin\StudentPromotionController;
 use App\Http\Controllers\Api\V1\Admin\StudentRegistrationController;
 use App\Http\Controllers\Api\V1\Admin\SupplierController;
+use App\Http\Controllers\Api\V1\Admin\TeacherController;
+use App\Http\Controllers\Api\V1\Admin\TeacherDocumentController;
+use App\Http\Controllers\Api\V1\Admin\TeacherScheduleController;
 use App\Http\Controllers\Api\V1\Admin\TeamController;
 use App\Http\Controllers\Api\V1\Admin\UserController;
 use App\Http\Controllers\Api\V1\Admin\VideoController;
@@ -482,6 +485,35 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         // HRM > Attendance & Time — staff attendance set-up.
         Route::apiResource('shifts', ShiftController::class);
         Route::apiResource('work-schedules', WorkScheduleController::class);
+        // HRM > Teacher (docs/hrm/teachers.md).
+        Route::prefix('teachers')->name('teachers.')->group(function () {
+            Route::get('/', [TeacherController::class, 'index'])->name('index');
+            Route::get('options', [TeacherController::class, 'options'])->name('options');
+            Route::get('qualifications', [TeacherController::class, 'qualifications'])->name('qualifications.index');
+            Route::post('qualifications', [TeacherController::class, 'storeQualification'])->name('qualifications.store');
+            Route::put('qualifications/{qualification}', [TeacherController::class, 'updateQualification'])->name('qualifications.update');
+            Route::delete('qualifications/{qualification}', [TeacherController::class, 'destroyQualification'])->name('qualifications.destroy');
+            Route::put('subjects', [TeacherController::class, 'saveSubjects'])->name('subjects.save');
+            Route::get('assignments', [TeacherController::class, 'assignments'])->name('assignments.index');
+            Route::post('assignments', [TeacherController::class, 'storeAssignment'])->name('assignments.store');
+            Route::put('assignments/{assignment}', [TeacherController::class, 'updateAssignment'])->name('assignments.update');
+            Route::delete('assignments/{assignment}', [TeacherController::class, 'destroyAssignment'])->name('assignments.destroy');
+            Route::get('homerooms', [TeacherController::class, 'homerooms'])->name('homerooms.index');
+            Route::put('homerooms/{class}', [TeacherController::class, 'saveHomeroom'])->name('homerooms.save');
+            Route::get('load', [TeacherController::class, 'load'])->name('load');
+            Route::get('availability', [TeacherScheduleController::class, 'availability'])->name('availability.index');
+            Route::post('unavailability', [TeacherScheduleController::class, 'storeUnavailability'])->name('unavailability.store');
+            Route::put('unavailability/{unavailability}', [TeacherScheduleController::class, 'updateUnavailability'])->name('unavailability.update');
+            Route::delete('unavailability/{unavailability}', [TeacherScheduleController::class, 'destroyUnavailability'])->name('unavailability.destroy');
+            Route::get('substitutions', [TeacherScheduleController::class, 'substitutions'])->name('substitutions.index');
+            Route::get('substitutions/candidates', [TeacherScheduleController::class, 'candidates'])->name('substitutions.candidates');
+            Route::post('substitutions', [TeacherScheduleController::class, 'storeSubstitution'])->name('substitutions.store');
+            Route::delete('substitutions/{substitution}', [TeacherScheduleController::class, 'destroySubstitution'])->name('substitutions.destroy');
+            Route::get('documents', [TeacherDocumentController::class, 'index'])->name('documents.index');
+            Route::post('documents', [TeacherDocumentController::class, 'store'])->name('documents.store');
+            Route::get('documents/{document}/file', [TeacherDocumentController::class, 'download'])->name('documents.download');
+            Route::delete('documents/{document}', [TeacherDocumentController::class, 'destroy'])->name('documents.destroy');
+        });
         Route::apiResource('holidays', HolidayController::class);
         Route::get('staff-attendance/sheet', [StaffAttendanceController::class, 'sheet'])->name('staff-attendance.sheet');
         Route::get('staff-attendance/report', [StaffAttendanceController::class, 'report'])->name('staff-attendance.report');

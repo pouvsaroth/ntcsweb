@@ -233,6 +233,12 @@ final class Permissions
 
     public const STUDENT_PROMOTIONS_RUN = 'student-promotions.run';
 
+    // HRM > Teacher (docs/hrm/teachers.md): qualifications, assignments,
+    // homeroom, teaching load, availability, substitutes, documents.
+    public const TEACHERS_VIEW = 'teachers.view';
+
+    public const TEACHERS_MANAGE = 'teachers.manage';
+
     public const ACADEMIC_REPORTS_VIEW = 'academic-reports.view';
 
     public const ACADEMIC_REPORTS_EXPORT = 'academic-reports.export';
@@ -820,6 +826,10 @@ final class Permissions
                 self::STUDENT_PROMOTIONS_VIEW => 'View who passes to the next grade',
                 self::STUDENT_PROMOTIONS_RUN => 'Promote students to the next grade',
             ],
+            'Teachers' => [
+                self::TEACHERS_VIEW => 'View teachers (qualifications, assignments, load, availability, substitutes, documents)',
+                self::TEACHERS_MANAGE => 'Manage teachers (qualifications, assignments, homeroom, availability, substitutes, documents)',
+            ],
             'Academic Reports' => [
                 self::ACADEMIC_REPORTS_VIEW => 'View academic/enrollment reports',
                 self::ACADEMIC_REPORTS_EXPORT => 'Export academic/enrollment reports',
@@ -1061,6 +1071,7 @@ final class Permissions
             self::SCHOOL_CALENDAR_VIEW, self::SCHOOL_CALENDAR_MANAGE,
             self::PROMOTION_RULES_VIEW, self::PROMOTION_RULES_MANAGE,
             self::STUDENT_PROMOTIONS_VIEW, self::STUDENT_PROMOTIONS_RUN,
+            self::TEACHERS_VIEW, self::TEACHERS_MANAGE,
             self::ACADEMIC_REPORTS_VIEW, self::ACADEMIC_REPORTS_EXPORT,
             self::PROGRAMS_VIEW, self::PROGRAMS_CREATE, self::PROGRAMS_UPDATE, self::PROGRAMS_DELETE,
             self::POSITIONS_VIEW, self::POSITIONS_CREATE, self::POSITIONS_UPDATE, self::POSITIONS_DELETE,
