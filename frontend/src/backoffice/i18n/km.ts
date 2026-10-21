@@ -469,6 +469,7 @@ const km: BackofficeMessages = {
       systemHint: 'ប្រព័ន្ធដែលគម្រោងនេះលក់ វាផ្តល់តែម៉ូឌុលរបស់ប្រព័ន្ធនោះ។',
       allSystems: 'ប្រព័ន្ធទាំងអស់',
       menusOf: '{n} ក្នុងចំណោម {total} ម៉ឺនុយ',
+      includes: 'រួមមាន',
       allModules: 'ម៉ូឌុលទាំងអស់',
       noModules: 'តែស្នូល',
       legacy: 'ចាស់',

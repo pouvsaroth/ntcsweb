@@ -463,6 +463,7 @@ const en = {
       noLimit: 'No student limit',
       modules: 'Modules',
       modulesHint: 'Core features (dashboard, users, roles, settings, notifications) are always on.',
+      includes: 'Includes',
       allModules: 'All modules',
       system: 'System',
       systemHint: 'The system this plan sells. Only its modules can be chosen.',

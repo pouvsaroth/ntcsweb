@@ -6,16 +6,23 @@ type T = (key: string, values?: Record<string, unknown>) => string
 
 /** "$50.00 per month", "៛200,000 every 3 months", "$0.00 once, no end". */
 export function priceLabel(plan: Pick<Plan, 'price' | 'currency' | 'period_months'>, t: T): string {
-  const money = formatMoney(Number(plan.price), plan.currency)
-  const period =
-    plan.period_months === null
-      ? t('bo.billing.plans.once')
-      : plan.period_months === 1
-        ? t('bo.billing.plans.monthly')
-        : plan.period_months === 12
-          ? t('bo.billing.plans.yearly')
-          : t('bo.billing.plans.every', { n: plan.period_months })
-  return `${money} ${period}`
+  return `${formatMoney(Number(plan.price), plan.currency)} ${periodLabel(plan, t)}`
+}
+
+/** "per month", "every 3 months", "once, no end". */
+export function periodLabel(plan: Pick<Plan, 'period_months'>, t: T): string {
+  return plan.period_months === null
+    ? t('bo.billing.plans.once')
+    : plan.period_months === 1
+      ? t('bo.billing.plans.monthly')
+      : plan.period_months === 12
+        ? t('bo.billing.plans.yearly')
+        : t('bo.billing.plans.every', { n: plan.period_months })
+}
+
+/** "$15", "60,000 ៛" — the big price of a plan card, as the website shows it. */
+export function bigPrice(plan: Pick<Plan, 'price' | 'currency'>): string {
+  return formatMoney(Number(plan.price), plan.currency).replace(/\.00$/, '')
 }
 
 export function studentsLabel(max: number | null, t: T): string {

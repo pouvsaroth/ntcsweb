@@ -12,7 +12,7 @@ import { ApiRequestError } from '@/types/api'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
 
 import { billingApi, type Plan, type PlanModule, type ProductChoice } from '../../api'
-import { moduleLabel, priceLabel, studentsLabel } from '../../billing'
+import { bigPrice, moduleLabel, periodLabel, studentsLabel } from '../../billing'
 import PlanFormModal from '../../components/PlanFormModal.vue'
 import { useSession } from '../../session'
 
@@ -59,18 +59,28 @@ function openForm(plan: Plan | null): void {
   formOpen.value = true
 }
 
-function modulesOf(plan: Plan): string {
-  const ofSystem = products.value.find((p) => p.id === plan.product?.id)?.modules.length ?? modules.value.length
-  if (plan.modules.length === ofSystem && plan.menus === null) return t('bo.billing.plans.allModules')
-  if (plan.modules.length === 0) return t('bo.billing.plans.noModules')
+/** The card as the website shows it: Khmer to a Khmer reader, falling back to the other language. */
+const km = computed(() => locale.value === 'km')
+const nameOf = (plan: Plan) => (km.value ? plan.name_km || plan.name : plan.name)
+const taglineOf = (plan: Plan) => (km.value ? plan.tagline_km || plan.tagline_en : plan.tagline_en || plan.tagline_km)
+const lines = (text: string | null) =>
+  (text ?? '')
+    .split('\n')
+    .map((l) => l.replace(/^[\s\-•·*]+/, '').trim())
+    .filter(Boolean)
+function featuresOf(plan: Plan): string[] {
+  const kmLines = lines(plan.features_km)
+  const enLines = lines(plan.features_en)
+  return km.value ? (kmLines.length ? kmLines : enLines) : enLines.length ? enLines : kmLines
+}
+/** Its modules as chips; "Academics 8/16" when only some of a module's menus are in. */
+function chipsOf(plan: Plan): string[] {
   return modules.value
     .filter((m) => plan.modules.includes(m.code))
     .map((m) => {
-      // Some menus only: "Academics (8/16)".
       const kept = plan.menus === null ? m.groups.length : m.groups.filter((g) => plan.menus!.includes(g)).length
-      return kept < m.groups.length ? `${moduleLabel(m, locale.value)} (${kept}/${m.groups.length})` : moduleLabel(m, locale.value)
+      return kept < m.groups.length ? `${moduleLabel(m, locale.value)} ${kept}/${m.groups.length}` : moduleLabel(m, locale.value)
     })
-    .join(' · ')
 }
 
 async function remove(plan: Plan): Promise<void> {
@@ -112,32 +122,61 @@ onMounted(load)
       {{ t('bo.billing.plans.empty') }}
     </p>
 
-    <div v-else class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+    <div v-else class="grid gap-x-4 gap-y-6 pt-3 md:grid-cols-2 xl:grid-cols-3">
+      <!-- The card as visitors see it on the website, then the staff-only details. -->
       <section
         v-for="plan in shown"
         :key="plan.id"
-        class="flex flex-col rounded-[--radius-card] border border-neutral-200 bg-white p-5 shadow-[--shadow-card]"
-        :class="{ 'opacity-60': plan.status === 'inactive' }"
+        class="relative flex flex-col rounded-2xl border bg-white p-5 shadow-sm"
+        :class="[plan.recommended ? 'border-primary-500 ring-2 ring-primary-500' : 'border-neutral-200', { 'opacity-60': plan.status === 'inactive' }]"
       >
-        <div class="mb-1 flex flex-wrap items-center gap-2">
-          <h2 class="font-semibold text-neutral-900">{{ plan.name }}</h2>
-          <BaseBadge v-if="plan.is_legacy">{{ t('bo.billing.plans.legacy') }}</BaseBadge>
-          <BaseBadge v-if="plan.status === 'inactive'" variant="warning">{{ t('bo.billing.plans.inactive') }}</BaseBadge>
-          <BaseBadge :variant="plan.placement === 'dedicated' ? 'warning' : 'neutral'">{{ t(`bo.billing.plans.form.db.${plan.placement}`) }}</BaseBadge>
-          <BaseBadge v-if="plan.show_on_website" variant="primary">{{ t('bo.billing.plans.web.shown') }}</BaseBadge>
-          <BaseBadge v-if="plan.recommended" variant="success">{{ t('bo.billing.plans.web.recommended') }}</BaseBadge>
-        </div>
-        <p class="font-mono text-xs text-neutral-400">{{ plan.code }}<span v-if="plan.product" class="ml-2 font-sans text-secondary-700">· {{ systemName(plan) }}</span></p>
-        <p class="mt-3 text-lg font-semibold text-neutral-900">{{ priceLabel(plan, t) }}</p>
-        <p class="text-sm text-neutral-600">{{ studentsLabel(plan.max_students, t) }}</p>
-        <p v-if="plan.description" class="mt-2 text-sm text-neutral-600">{{ plan.description }}</p>
-        <p class="mt-3 text-xs font-medium tracking-wide text-neutral-500 uppercase">{{ t('bo.billing.plans.modules') }}</p>
-        <p class="text-sm text-neutral-700">{{ modulesOf(plan) }}</p>
-        <p class="mt-3 text-xs text-neutral-500">
-          {{ t('bo.billing.plans.liveCount', { n: plan.live_count }) }}<template v-if="plan.used_count === 0"> · {{ t('bo.billing.plans.neverUsed') }}</template>
-        </p>
+        <span
+          v-if="plan.recommended"
+          class="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary-500 px-3 py-0.5 text-xs font-semibold whitespace-nowrap text-secondary-900"
+        >
+          {{ t('bo.billing.plans.web.recommended') }}
+        </span>
 
-        <div v-if="canManage" class="mt-4 flex flex-wrap gap-2 border-t border-neutral-100 pt-4">
+        <h2 class="text-lg font-semibold text-neutral-900">{{ nameOf(plan) }}</h2>
+        <p class="mt-2 text-3xl font-bold text-neutral-900">{{ bigPrice(plan) }}</p>
+        <p class="text-sm text-neutral-500">{{ periodLabel(plan, t) }}</p>
+        <p v-if="taglineOf(plan)" class="mt-2 text-sm text-neutral-600">{{ taglineOf(plan) }}</p>
+
+        <div class="mt-4 border-t border-neutral-100 pt-3">
+          <p class="text-xs font-medium tracking-wide text-neutral-500 uppercase">{{ t('bo.billing.plans.includes') }}</p>
+          <div class="mt-2 flex flex-wrap gap-1.5">
+            <span v-for="c in chipsOf(plan)" :key="c" class="rounded-full bg-secondary-50 px-2.5 py-0.5 text-xs font-medium text-secondary-800">{{ c }}</span>
+            <span v-if="chipsOf(plan).length === 0" class="text-xs text-neutral-400">{{ t('bo.billing.plans.noModules') }}</span>
+          </div>
+        </div>
+        <ul v-if="featuresOf(plan).length" class="mt-3 space-y-1.5 border-t border-neutral-100 pt-3">
+          <li v-for="(f, i) in featuresOf(plan)" :key="i" class="flex items-start gap-2 text-sm text-neutral-800">
+            <span class="mt-0.5 text-primary-600" aria-hidden="true">✓</span><span>{{ f }}</span>
+          </li>
+        </ul>
+
+        <!-- Staff only -->
+        <div class="mt-auto pt-4">
+          <div class="space-y-1.5 rounded-lg bg-neutral-50 p-3 text-xs text-neutral-600">
+            <p>
+              <span class="font-mono text-neutral-500">{{ plan.code }}</span><template v-if="plan.product"> · {{ systemName(plan) }}</template>
+            </p>
+            <div class="flex flex-wrap gap-1">
+              <BaseBadge v-if="plan.is_legacy">{{ t('bo.billing.plans.legacy') }}</BaseBadge>
+              <BaseBadge v-if="plan.status === 'inactive'" variant="warning">{{ t('bo.billing.plans.inactive') }}</BaseBadge>
+              <BaseBadge :variant="plan.placement === 'dedicated' ? 'warning' : 'neutral'">{{ t(`bo.billing.plans.form.db.${plan.placement}`) }}</BaseBadge>
+              <BaseBadge :variant="plan.show_on_website ? 'primary' : 'neutral'">
+                {{ plan.show_on_website ? t('bo.billing.plans.web.shown') : t('bo.billing.plans.form.notShown') }}
+              </BaseBadge>
+            </div>
+            <p>{{ studentsLabel(plan.max_students, t) }}</p>
+            <p>
+              {{ t('bo.billing.plans.liveCount', { n: plan.live_count }) }}<template v-if="plan.used_count === 0"> · {{ t('bo.billing.plans.neverUsed') }}</template>
+            </p>
+          </div>
+        </div>
+
+        <div v-if="canManage" class="mt-3 flex flex-wrap gap-2">
           <BaseButton size="sm" variant="outline" @click="openForm(plan)">{{ t('bo.billing.plans.edit') }}</BaseButton>
           <BaseButton v-if="plan.status === 'inactive'" size="sm" variant="outline" @click="reactivate(plan)">{{ t('bo.billing.plans.reactivate') }}</BaseButton>
           <!-- Never used by a customer: deleted for good (active or not). Used: only deactivated. -->
