@@ -10,6 +10,7 @@ import { recruitmentTabs } from '@/router/recruitmentTabs'
 import { schoolSetupTabs } from '@/router/schoolSetupTabs'
 import { teacherTabs } from '@/router/teacherTabs'
 import { timetableTabs } from '@/router/timetableTabs'
+import { lessonTabs } from '@/router/lessonTabs'
 import { useAuthStore } from '@/stores/auth'
 
 const authRoutes: RouteRecordRaw[] = [
@@ -470,6 +471,28 @@ const adminRoutes: RouteRecordRaw[] = [
       { path: 'selection', name: 'admin.recruitment.selection', component: () => import('@/pages/admin/recruitment/CandidateSelection.vue') },
       { path: 'offers', name: 'admin.recruitment.offers', component: () => import('@/pages/admin/recruitment/OfferLetters.vue') },
       { path: 'pipeline', name: 'admin.recruitment.pipeline', component: () => import('@/pages/admin/recruitment/Pipeline.vue') },
+    ],
+  },
+  {
+    // Academic > Lesson plans: tabs as child routes (see LessonsLayout.vue / lessonTabs.ts).
+    path: 'lessons',
+    component: () => import('@/pages/admin/lessons/LessonsLayout.vue'),
+    meta: { titleKey: 'adminNav.items.lessonPlans' },
+    children: [
+      {
+        path: '',
+        name: 'admin.lessons',
+        redirect: () => {
+          const auth = useAuthStore()
+          return (lessonTabs.find((tab) => tab.permission.some((p) => auth.can(p))) ?? lessonTabs[0]!).to
+        },
+      },
+      { path: 'plans', name: 'admin.lessons.plans', component: () => import('@/pages/admin/lessons/Plans.vue') },
+      { path: 'week', name: 'admin.lessons.week', component: () => import('@/pages/admin/lessons/WeekPlan.vue') },
+      { path: 'log', name: 'admin.lessons.log', component: () => import('@/pages/admin/lessons/TeachingLog.vue') },
+      { path: 'review', name: 'admin.lessons.review', component: () => import('@/pages/admin/lessons/Review.vue') },
+      { path: 'progress', name: 'admin.lessons.progress', component: () => import('@/pages/admin/lessons/Progress.vue') },
+      { path: 'delays', name: 'admin.lessons.delays', component: () => import('@/pages/admin/lessons/Delays.vue') },
     ],
   },
   {

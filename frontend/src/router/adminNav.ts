@@ -3,6 +3,7 @@ import { attendanceTabs } from '@/router/attendanceTabs'
 import { schoolSetupTabs } from '@/router/schoolSetupTabs'
 import { teacherTabs } from '@/router/teacherTabs'
 import { timetableTabs } from '@/router/timetableTabs'
+import { lessonTabs } from '@/router/lessonTabs'
 import { leaveTabs } from '@/router/leaveTabs'
 import { payrollTabs } from '@/router/payrollTabs'
 import { performanceTabs } from '@/router/performanceTabs'
@@ -144,6 +145,8 @@ export const adminNav: AdminNavGroup[] = [
       { labelKey: 'adminNav.items.classes', to: '/admin/classes', permission: 'classes.view' },
       // Class / teacher / room timetables, subject hours, conflicts, schedule changes (timetableTabs.ts).
       { labelKey: 'adminNav.items.timetable', to: '/admin/timetable', permission: timetableTabs.map((tab) => tab.permission) },
+      // Plans, week, teaching log, review, curriculum progress, delays (lessonTabs.ts).
+      { labelKey: 'adminNav.items.lessonPlans', to: '/admin/lessons', permission: [...new Set(lessonTabs.flatMap((tab) => tab.permission))] },
       { labelKey: 'adminNav.items.attendance', to: '/admin/attendance', permission: 'attendance.view' },
       // Exams and Grades used to be separate sidebar entries under Academic
       // Records — now reached as tabs from this one "Examination" item (see

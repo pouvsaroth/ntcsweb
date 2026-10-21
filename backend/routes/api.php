@@ -69,6 +69,7 @@ use App\Http\Controllers\Api\V1\Admin\LeavePolicyController;
 use App\Http\Controllers\Api\V1\Admin\LeaveReportController;
 use App\Http\Controllers\Api\V1\Admin\LeaveRequestController;
 use App\Http\Controllers\Api\V1\Admin\LeaveTypeController;
+use App\Http\Controllers\Api\V1\Admin\LessonPlanController;
 use App\Http\Controllers\Api\V1\Admin\LookupCategoryController;
 use App\Http\Controllers\Api\V1\Admin\LookupValueController;
 use App\Http\Controllers\Api\V1\Admin\MakeUpClassRequestController;
@@ -492,6 +493,28 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         // HRM > Attendance & Time — staff attendance set-up.
         Route::apiResource('shifts', ShiftController::class);
         Route::apiResource('work-schedules', WorkScheduleController::class);
+        // Academic > Lesson plans (docs/academics/lesson-plans.md).
+        Route::prefix('lesson-plans')->name('lesson-plans.')->group(function () {
+            Route::get('options', [LessonPlanController::class, 'options'])->name('options');
+            Route::get('curriculum-lessons', [LessonPlanController::class, 'curriculumLessons'])->name('curriculum-lessons');
+            Route::get('plans', [LessonPlanController::class, 'plans'])->name('plans.index');
+            Route::post('plans', [LessonPlanController::class, 'store'])->name('plans.store');
+            Route::get('plans/{plan}', [LessonPlanController::class, 'show'])->name('plans.show');
+            Route::put('plans/{plan}', [LessonPlanController::class, 'update'])->name('plans.update');
+            Route::delete('plans/{plan}', [LessonPlanController::class, 'destroy'])->name('plans.destroy');
+            Route::post('plans/{plan}/submit', [LessonPlanController::class, 'submit'])->name('plans.submit');
+            Route::post('plans/{plan}/review', [LessonPlanController::class, 'review'])->name('plans.review');
+            Route::post('plans/{plan}/files', [LessonPlanController::class, 'upload'])->name('plans.files.store');
+            Route::get('files/{file}', [LessonPlanController::class, 'download'])->name('files.show');
+            Route::delete('files/{file}', [LessonPlanController::class, 'removeFile'])->name('files.destroy');
+            Route::get('logs', [LessonPlanController::class, 'logs'])->name('logs.index');
+            Route::post('logs', [LessonPlanController::class, 'storeLog'])->name('logs.store');
+            Route::put('logs/{log}', [LessonPlanController::class, 'updateLog'])->name('logs.update');
+            Route::delete('logs/{log}', [LessonPlanController::class, 'destroyLog'])->name('logs.destroy');
+            Route::get('progress', [LessonPlanController::class, 'progress'])->name('progress');
+            Route::get('delays', [LessonPlanController::class, 'delays'])->name('delays');
+        });
+
         // Academic > Timetable (docs/academics/timetable.md).
         Route::prefix('timetable')->name('timetable.')->group(function () {
             Route::get('options', [TimetableController::class, 'options'])->name('options');

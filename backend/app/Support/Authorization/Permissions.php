@@ -240,6 +240,14 @@ final class Permissions
     // Academic > Timetable (docs/academics/timetable.md).
     public const TIMETABLE_VIEW = 'timetable.view';
 
+    // Academic > Lesson plans (docs/academics/lesson-plans.md): view = everyone's;
+    // write = one's own plans and teaching log; review = approve / return plans.
+    public const LESSON_PLANS_VIEW = 'lesson-plans.view';
+
+    public const LESSON_PLANS_WRITE = 'lesson-plans.write';
+
+    public const LESSON_PLANS_REVIEW = 'lesson-plans.review';
+
     public const TIMETABLE_MANAGE = 'timetable.manage';
 
     public const TIMETABLE_REQUEST = 'timetable.request';
@@ -833,6 +841,11 @@ final class Permissions
                 self::STUDENT_PROMOTIONS_VIEW => 'View who passes to the next grade',
                 self::STUDENT_PROMOTIONS_RUN => 'Promote students to the next grade',
             ],
+            'Lesson Plans' => [
+                self::LESSON_PLANS_VIEW => 'View all lesson plans, teaching logs, progress and delays',
+                self::LESSON_PLANS_WRITE => 'Write lesson plans and the teaching log',
+                self::LESSON_PLANS_REVIEW => 'Review lesson plans (approve or return)',
+            ],
             'Timetable' => [
                 self::TIMETABLE_VIEW => 'View class, teacher and room timetables',
                 self::TIMETABLE_MANAGE => 'Edit the timetable and decide schedule change requests',
@@ -1085,6 +1098,7 @@ final class Permissions
             self::STUDENT_PROMOTIONS_VIEW, self::STUDENT_PROMOTIONS_RUN,
             self::TEACHERS_VIEW, self::TEACHERS_MANAGE,
             self::TIMETABLE_VIEW, self::TIMETABLE_MANAGE, self::TIMETABLE_REQUEST,
+            self::LESSON_PLANS_VIEW, self::LESSON_PLANS_WRITE, self::LESSON_PLANS_REVIEW,
             self::ACADEMIC_REPORTS_VIEW, self::ACADEMIC_REPORTS_EXPORT,
             self::PROGRAMS_VIEW, self::PROGRAMS_CREATE, self::PROGRAMS_UPDATE, self::PROGRAMS_DELETE,
             self::POSITIONS_VIEW, self::POSITIONS_CREATE, self::POSITIONS_UPDATE, self::POSITIONS_DELETE,
@@ -1298,6 +1312,7 @@ final class Permissions
                 self::SCHOOL_CALENDAR_VIEW,
                 self::TIMETABLE_VIEW,
                 self::TIMETABLE_REQUEST,
+                self::LESSON_PLANS_WRITE,
                 self::POSITIONS_VIEW,
                 self::ORGANIZATION_VIEW,
                 self::STAFF_VIEW,
