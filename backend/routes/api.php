@@ -105,6 +105,7 @@ use App\Http\Controllers\Api\V1\Admin\RepairShopController;
 use App\Http\Controllers\Api\V1\Admin\ResignationRequestController;
 use App\Http\Controllers\Api\V1\Admin\RoleController;
 use App\Http\Controllers\Api\V1\Admin\SalaryStructureController;
+use App\Http\Controllers\Api\V1\Admin\ScheduleChangeController;
 use App\Http\Controllers\Api\V1\Admin\SchoolCalendarController;
 use App\Http\Controllers\Api\V1\Admin\SchoolClassController;
 use App\Http\Controllers\Api\V1\Admin\SchoolDocumentsController;
@@ -127,6 +128,7 @@ use App\Http\Controllers\Api\V1\Admin\TeacherController;
 use App\Http\Controllers\Api\V1\Admin\TeacherDocumentController;
 use App\Http\Controllers\Api\V1\Admin\TeacherScheduleController;
 use App\Http\Controllers\Api\V1\Admin\TeamController;
+use App\Http\Controllers\Api\V1\Admin\TimetableController;
 use App\Http\Controllers\Api\V1\Admin\UserController;
 use App\Http\Controllers\Api\V1\Admin\VideoController;
 use App\Http\Controllers\Api\V1\Admin\WorkScheduleController;
@@ -490,6 +492,24 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         // HRM > Attendance & Time — staff attendance set-up.
         Route::apiResource('shifts', ShiftController::class);
         Route::apiResource('work-schedules', WorkScheduleController::class);
+        // Academic > Timetable (docs/academics/timetable.md).
+        Route::prefix('timetable')->name('timetable.')->group(function () {
+            Route::get('options', [TimetableController::class, 'options'])->name('options');
+            Route::get('class', [TimetableController::class, 'forClass'])->name('class');
+            Route::get('teacher', [TimetableController::class, 'forTeacher'])->name('teacher');
+            Route::get('room', [TimetableController::class, 'forRoom'])->name('room');
+            Route::get('subjects', [TimetableController::class, 'subjects'])->name('subjects');
+            Route::get('conflicts', [TimetableController::class, 'conflicts'])->name('conflicts');
+            Route::post('slots', [TimetableController::class, 'storeSlot'])->name('slots.store');
+            Route::put('slots/{schedule}', [TimetableController::class, 'updateSlot'])->name('slots.update');
+            Route::delete('slots/{schedule}', [TimetableController::class, 'destroySlot'])->name('slots.destroy');
+            Route::get('changes', [ScheduleChangeController::class, 'index'])->name('changes.index');
+            Route::post('changes', [ScheduleChangeController::class, 'store'])->name('changes.store');
+            Route::post('changes/{changeRequest}/approve', [ScheduleChangeController::class, 'approve'])->whereNumber('changeRequest')->name('changes.approve');
+            Route::post('changes/{changeRequest}/reject', [ScheduleChangeController::class, 'reject'])->whereNumber('changeRequest')->name('changes.reject');
+            Route::post('changes/{changeRequest}/cancel', [ScheduleChangeController::class, 'cancel'])->whereNumber('changeRequest')->name('changes.cancel');
+        });
+
         // HRM > Teacher (docs/hrm/teachers.md).
         Route::prefix('teachers')->name('teachers.')->group(function () {
             Route::get('/', [TeacherController::class, 'index'])->name('index');

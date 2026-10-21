@@ -20,7 +20,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $start_time
  * @property string $end_time
  */
-#[Fillable(['class_id', 'day_of_week', 'start_time', 'end_time'])]
+#[Fillable(['class_id', 'day_of_week', 'start_time', 'end_time', 'book_id', 'staff_id', 'classroom_id', 'note'])]
 class ClassSchedule extends Model
 {
     use HasFactory;
@@ -63,6 +63,24 @@ class ClassSchedule extends Model
     public function schoolClass(): BelongsTo
     {
         return $this->belongsTo(SchoolClass::class, 'class_id');
+    }
+
+    /** The subject taught at this time (timetable), if set. */
+    public function book(): BelongsTo
+    {
+        return $this->belongsTo(Book::class);
+    }
+
+    /** The teacher of this time (timetable); empty = the class's teachers. */
+    public function staff(): BelongsTo
+    {
+        return $this->belongsTo(Staff::class);
+    }
+
+    /** The room of this time (timetable); empty = the class's room. */
+    public function classroom(): BelongsTo
+    {
+        return $this->belongsTo(Classroom::class);
     }
 
     public function dayName(): string

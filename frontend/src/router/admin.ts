@@ -9,6 +9,7 @@ import { performanceTabs } from '@/router/performanceTabs'
 import { recruitmentTabs } from '@/router/recruitmentTabs'
 import { schoolSetupTabs } from '@/router/schoolSetupTabs'
 import { teacherTabs } from '@/router/teacherTabs'
+import { timetableTabs } from '@/router/timetableTabs'
 import { useAuthStore } from '@/stores/auth'
 
 const authRoutes: RouteRecordRaw[] = [
@@ -469,6 +470,28 @@ const adminRoutes: RouteRecordRaw[] = [
       { path: 'selection', name: 'admin.recruitment.selection', component: () => import('@/pages/admin/recruitment/CandidateSelection.vue') },
       { path: 'offers', name: 'admin.recruitment.offers', component: () => import('@/pages/admin/recruitment/OfferLetters.vue') },
       { path: 'pipeline', name: 'admin.recruitment.pipeline', component: () => import('@/pages/admin/recruitment/Pipeline.vue') },
+    ],
+  },
+  {
+    // Academic > Timetable: tabs as child routes (see TimetableLayout.vue / timetableTabs.ts).
+    path: 'timetable',
+    component: () => import('@/pages/admin/timetable/TimetableLayout.vue'),
+    meta: { titleKey: 'adminNav.items.timetable' },
+    children: [
+      {
+        path: '',
+        name: 'admin.timetable',
+        redirect: () => {
+          const auth = useAuthStore()
+          return (timetableTabs.find((tab) => auth.can(tab.permission)) ?? timetableTabs[0]!).to
+        },
+      },
+      { path: 'class', name: 'admin.timetable.class', component: () => import('@/pages/admin/timetable/ClassTimetable.vue') },
+      { path: 'teacher', name: 'admin.timetable.teacher', component: () => import('@/pages/admin/timetable/TeacherTimetable.vue') },
+      { path: 'room', name: 'admin.timetable.room', component: () => import('@/pages/admin/timetable/RoomTimetable.vue') },
+      { path: 'subjects', name: 'admin.timetable.subjects', component: () => import('@/pages/admin/timetable/SubjectHours.vue') },
+      { path: 'conflicts', name: 'admin.timetable.conflicts', component: () => import('@/pages/admin/timetable/Conflicts.vue') },
+      { path: 'changes', name: 'admin.timetable.changes', component: () => import('@/pages/admin/timetable/ScheduleChanges.vue') },
     ],
   },
   {

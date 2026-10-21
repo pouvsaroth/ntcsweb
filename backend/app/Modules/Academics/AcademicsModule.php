@@ -44,6 +44,7 @@ final class AcademicsModule extends Module
             'programs' => ['Programs', 'កម្មវិធី'],
             'course-packages' => ['Course packages', 'កញ្ចប់វគ្គសិក្សា'],
             'classes' => ['Classes', 'ថ្នាក់'],
+            'timetable' => ['Timetable', 'កាលវិភាគ'],
             'classrooms' => ['Classrooms', 'បន្ទប់រៀន'],
             'buildings' => ['Buildings', 'អគារ'],
             'students' => ['Students', 'សិស្ស'],

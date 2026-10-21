@@ -237,6 +237,13 @@ final class Permissions
     // homeroom, teaching load, availability, substitutes, documents.
     public const TEACHERS_VIEW = 'teachers.view';
 
+    // Academic > Timetable (docs/academics/timetable.md).
+    public const TIMETABLE_VIEW = 'timetable.view';
+
+    public const TIMETABLE_MANAGE = 'timetable.manage';
+
+    public const TIMETABLE_REQUEST = 'timetable.request';
+
     public const TEACHERS_MANAGE = 'teachers.manage';
 
     public const ACADEMIC_REPORTS_VIEW = 'academic-reports.view';
@@ -826,6 +833,11 @@ final class Permissions
                 self::STUDENT_PROMOTIONS_VIEW => 'View who passes to the next grade',
                 self::STUDENT_PROMOTIONS_RUN => 'Promote students to the next grade',
             ],
+            'Timetable' => [
+                self::TIMETABLE_VIEW => 'View class, teacher and room timetables',
+                self::TIMETABLE_MANAGE => 'Edit the timetable and decide schedule change requests',
+                self::TIMETABLE_REQUEST => 'Ask for a schedule change',
+            ],
             'Teachers' => [
                 self::TEACHERS_VIEW => 'View teachers (qualifications, assignments, load, availability, substitutes, documents)',
                 self::TEACHERS_MANAGE => 'Manage teachers (qualifications, assignments, homeroom, availability, substitutes, documents)',
@@ -1072,6 +1084,7 @@ final class Permissions
             self::PROMOTION_RULES_VIEW, self::PROMOTION_RULES_MANAGE,
             self::STUDENT_PROMOTIONS_VIEW, self::STUDENT_PROMOTIONS_RUN,
             self::TEACHERS_VIEW, self::TEACHERS_MANAGE,
+            self::TIMETABLE_VIEW, self::TIMETABLE_MANAGE, self::TIMETABLE_REQUEST,
             self::ACADEMIC_REPORTS_VIEW, self::ACADEMIC_REPORTS_EXPORT,
             self::PROGRAMS_VIEW, self::PROGRAMS_CREATE, self::PROGRAMS_UPDATE, self::PROGRAMS_DELETE,
             self::POSITIONS_VIEW, self::POSITIONS_CREATE, self::POSITIONS_UPDATE, self::POSITIONS_DELETE,
@@ -1283,6 +1296,8 @@ final class Permissions
                 self::GRADE_LEVELS_VIEW,
                 self::CURRICULUM_VIEW,
                 self::SCHOOL_CALENDAR_VIEW,
+                self::TIMETABLE_VIEW,
+                self::TIMETABLE_REQUEST,
                 self::POSITIONS_VIEW,
                 self::ORGANIZATION_VIEW,
                 self::STAFF_VIEW,
@@ -1340,6 +1355,7 @@ final class Permissions
                 self::GRADE_LEVELS_VIEW,
                 self::CURRICULUM_VIEW,
                 self::SCHOOL_CALENDAR_VIEW,
+                self::TIMETABLE_VIEW,
                 self::LEAVE_REQUESTS_VIEW,
                 ...$projectsForEveryone,
             ],

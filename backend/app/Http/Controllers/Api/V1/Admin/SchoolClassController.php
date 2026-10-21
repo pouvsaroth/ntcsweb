@@ -138,26 +138,36 @@ final class SchoolClassController extends Controller
      *
      * @param  list<array{day_of_week: int, start_time: string, end_time: string}>  $schedules
      */
+    /**
+     * The class form's weekly times. A time that stays (same day and start)
+     * keeps its timetable details — subject, teacher, room
+     * (docs/academics/timetable.md); only its end time is updated. Others are
+     * removed or added.
+     */
     private function syncSchedules(SchoolClass $class, array $schedules): void
     {
-        $class->schedules()->delete();
-
-        if ($schedules === []) {
-            return;
+        $key = fn ($day, $start) => $day.'|'.substr((string) $start, 0, 5);
+        $wanted = [];
+        foreach ($schedules as $schedule) {
+            $wanted[$key($schedule['day_of_week'], $schedule['start_time'])] = $schedule;
         }
 
-        $now = now();
+        foreach ($class->schedules()->get() as $existing) {
+            $k = $key($existing->day_of_week, $existing->start_time);
+            if (isset($wanted[$k])) {
+                $existing->update(['end_time' => $wanted[$k]['end_time']]);
+                unset($wanted[$k]);
+            } else {
+                $existing->delete();
+            }
+        }
 
-        $class->schedules()->insert(array_map(
-            fn (array $schedule) => [
-                'class_id' => $class->id,
+        foreach ($wanted as $schedule) {
+            $class->schedules()->create([
                 'day_of_week' => $schedule['day_of_week'],
                 'start_time' => $schedule['start_time'],
                 'end_time' => $schedule['end_time'],
-                'created_at' => $now,
-                'updated_at' => $now,
-            ],
-            $schedules,
-        ));
+            ]);
+        }
     }
 }
