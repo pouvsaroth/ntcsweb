@@ -631,6 +631,8 @@ const km: MessageSchema = {
     features: 'មុខងារ',
   },
   plansPage: {
+    haveAccount: 'ជាអតិថិជនរួចហើយ?',
+    login: 'ចូលប្រើ',
     title: 'ប្រព័ន្ធគ្រប់គ្រងសាលា',
     subtitle: 'ជ្រើសរើសកញ្ចប់ដែលសមស្របនឹងសាលារបស់អ្នក។',
     trial: 'សាកល្បងឥតគិតថ្លៃ',

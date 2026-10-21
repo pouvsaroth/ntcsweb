@@ -630,6 +630,8 @@ const zh: MessageSchema = {
     features: '主要功能',
   },
   plansPage: {
+    haveAccount: 'Already a customer?',
+    login: 'Login',
     title: 'School Management System',
     subtitle: 'Choose the plan that fits your school.',
     trial: 'Free trial',

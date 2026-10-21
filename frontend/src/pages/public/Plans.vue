@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { RouterLink, useRoute } from 'vue-router'
 
 import BaseSpinner from '@/components/ui/BaseSpinner.vue'
+import { ERP_HOST } from '@/config'
 import { publicPlansService, type PublicPlan, type PublicPlans } from '@/services/plans'
 import { formatMoney } from '@/utils/currency'
 
@@ -18,6 +19,8 @@ const { t, locale } = useI18n()
 const route = useRoute()
 /** /plans/{system}; /plans = the school system. */
 const systemCode = computed(() => (typeof route.params.system === 'string' && route.params.system ? route.params.system : null))
+
+const loginUrl = `https://${ERP_HOST}/login`
 
 const data = ref<PublicPlans | null>(null)
 const failed = ref(false)
@@ -65,7 +68,19 @@ const cards = computed(() =>
 <template>
   <section class="bg-gradient-to-b from-secondary-50 to-white px-4 pt-16 pb-12 sm:px-6 sm:py-14 lg:px-8">
     <div class="mx-auto max-w-6xl">
-      <RouterLink to="/" class="text-sm font-medium text-secondary-700 hover:underline">← {{ t('servicesPage.backToServices') }}</RouterLink>
+      <div class="flex items-center justify-between gap-3">
+        <RouterLink to="/" class="text-sm font-medium text-secondary-700 hover:underline">← {{ t('servicesPage.backToServices') }}</RouterLink>
+        <!-- Existing customers: the shared sign-in page (every customer's system). -->
+        <span class="flex items-center gap-2 text-sm">
+          <span class="hidden text-neutral-500 sm:inline">{{ t('plansPage.haveAccount') }}</span>
+          <a
+            :href="loginUrl"
+            class="inline-flex items-center rounded-lg border border-secondary-200 bg-white px-3 py-1.5 font-semibold text-secondary-800 shadow-sm hover:bg-secondary-50"
+          >
+            {{ t('plansPage.login') }}
+          </a>
+        </span>
+      </div>
       <h1 class="mt-3 text-center text-2xl font-bold text-neutral-900 sm:text-3xl">{{ title }}</h1>
       <p class="mx-auto mt-2 max-w-2xl text-center text-neutral-600">{{ t('plansPage.subtitle') }}</p>
 

@@ -634,6 +634,8 @@ const en = {
     features: 'What it does',
   },
   plansPage: {
+    haveAccount: 'Already a customer?',
+    login: 'Login',
     title: 'School Management System',
     subtitle: 'Choose the plan that fits your school.',
     trial: 'Free trial',

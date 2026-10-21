@@ -631,6 +631,8 @@ const ja: MessageSchema = {
     features: '主な機能',
   },
   plansPage: {
+    haveAccount: 'Already a customer?',
+    login: 'Login',
     title: 'School Management System',
     subtitle: 'Choose the plan that fits your school.',
     trial: 'Free trial',

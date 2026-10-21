@@ -631,6 +631,8 @@ const ko: MessageSchema = {
     features: '주요 기능',
   },
   plansPage: {
+    haveAccount: 'Already a customer?',
+    login: 'Login',
     title: 'School Management System',
     subtitle: 'Choose the plan that fits your school.',
     trial: 'Free trial',
