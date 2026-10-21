@@ -145,6 +145,54 @@ class SignupPaymentTest extends TestCase
         $this->postJson('/api/v1/platform/billing/signups/'.$row['id'].'/retry')->assertStatus(409);
     }
 
+    public function test_staff_confirm_a_payment_the_bank_kept_to_itself(): void
+    {
+        $this->bakongNotYet(); // e.g. ACLEDA app to an ACLEDA QR: Bakong never sees it
+        $s = $this->signUp();
+        $this->assertSame('pending_payment', $this->stateOf($s['token'])['status']);
+        $id = Signup::query()->value('id');
+
+        $this->actingAsStaff($staff = $this->platformStaff());
+        $this->getJson('/api/v1/platform/billing/signups')->assertJsonPath('data.0.can_confirm', true);
+        $this->postJson("/api/v1/platform/billing/signups/{$id}/confirm-payment", ['method' => 'bank', 'reference' => 'ACLEDA-123'])->assertOk()
+            ->assertJsonPath('data.status', 'created')
+            ->assertJsonPath('data.owner_needs_invite', false);
+
+        $tenant = Tenant::query()->where('slug', 'angkor')->firstOrFail();
+        $payment = SchoolPayment::query()->where('tenant_id', $tenant->id)->firstOrFail();
+        $this->assertSame('bank', $payment->method);
+        $this->assertSame('ACLEDA-123', $payment->reference);
+        $this->assertSame($staff->id, $payment->recorded_by);
+        $this->assertSame(SchoolSubscription::ACTIVE, SchoolSubscription::query()->where('tenant_id', $tenant->id)->value('status'));
+        $this->assertSame(User::STATUS_ACTIVE, User::query()->inTenant($tenant->id)->where('email', 'dara@example.com')->value('status'));
+        $this->assertDatabaseHas('bo_audit_logs', ['action' => 'signup.payment_confirmed', 'staff_id' => $staff->id]);
+
+        // Once is enough.
+        $this->postJson("/api/v1/platform/billing/signups/{$id}/confirm-payment")->assertUnprocessable();
+    }
+
+    public function test_an_expired_sign_up_can_still_be_confirmed_within_a_week_with_the_owners_password(): void
+    {
+        $this->bakongNotYet();
+        $this->signUp();
+        Carbon::setTestNow(now()->addHour());
+        $this->artisan('platform:signups-tick')->assertSuccessful();
+        $signup = Signup::query()->firstOrFail();
+        $this->assertSame(Signup::EXPIRED, $signup->status);
+        $this->assertNotNull($signup->owner_password, 'kept a week for a late confirmation');
+
+        $this->actingAsStaff($this->platformStaff());
+        $this->postJson("/api/v1/platform/billing/signups/{$signup->id}/confirm-payment", ['amount' => 87])->assertOk()->assertJsonPath('data.status', 'created');
+
+        // An expired one left alone loses the password after 7 days.
+        $this->signUp(['slug' => 'bayon', 'owner_email' => 'b@example.com']);
+        Carbon::setTestNow(now()->addHour());
+        $this->artisan('platform:signups-tick')->assertSuccessful();
+        Carbon::setTestNow(now()->addDays(8));
+        $this->artisan('platform:signups-tick')->assertSuccessful();
+        $this->assertNull(Signup::query()->where('slug', 'bayon')->value('owner_password'));
+    }
+
     public function test_the_tick_finds_a_payment_after_the_page_was_closed_and_expires_unpaid_ones(): void
     {
         $paid = $this->signUp();
@@ -163,7 +211,8 @@ class SignupPaymentTest extends TestCase
         Carbon::setTestNow(now()->addMinutes(Signup::HOLD_MINUTES + (int) config('platform.bakong.late_minutes') + 1));
         $this->artisan('platform:signups-tick')->assertSuccessful();
         $this->assertSame(Signup::EXPIRED, Signup::query()->where('slug', 'bayon')->value('status'));
-        $this->assertNull(Signup::query()->where('slug', 'bayon')->value('owner_password'));
+        // Kept a week, so staff can still confirm a late payment (then erased).
+        $this->assertNotNull(Signup::query()->where('slug', 'bayon')->value('owner_password'));
     }
 
     public function test_bakong_is_asked_at_most_every_few_seconds_per_sign_up(): void

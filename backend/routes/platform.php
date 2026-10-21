@@ -130,6 +130,7 @@ Route::middleware('platform.staff')->group(function () {
         // Self-service sign-ups from the website (stage 8).
         Route::get('signups', [SignupController::class, 'index'])->middleware('platform.can:platform.billing.read')->name('signups.index');
         Route::post('signups/{signup}/retry', [SignupController::class, 'retry'])->middleware('platform.can:platform.billing.manage')->name('signups.retry');
+        Route::post('signups/{signup}/confirm-payment', [SignupController::class, 'confirmPayment'])->middleware('platform.can:platform.billing.manage')->name('signups.confirm-payment');
         Route::put('settings/payment', [BillingSettingsController::class, 'updatePayment'])->middleware('platform.can:platform.billing.manage')->name('settings.payment.update');
         Route::post('settings/payment/test', [BillingSettingsController::class, 'testBakong'])->middleware('platform.can:platform.billing.manage')->name('settings.payment.test');
         Route::post('payments/{payment}/void', [PaymentController::class, 'void'])->middleware('platform.can:platform.billing.manage')->name('payments.void');

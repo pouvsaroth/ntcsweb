@@ -208,22 +208,24 @@ final class Signups
     }
 
     /** A paid sign-up becomes its school: on the plan, active for the months bought, the payment recorded with a receipt. */
-    public function createPaidSchool(Signup $signup): Signup
+    public function createPaidSchool(Signup $signup, string $method = 'khqr', ?\App\Platform\Models\PlatformStaff $staff = null): Signup
     {
         $plan = $signup->plan ?? throw new \RuntimeException('The plan of this sign-up no longer exists.');
 
         try {
-            return $this->createSchool($signup, function (Tenant $tenant) use ($signup, $plan) {
+            return $this->createSchool($signup, function (Tenant $tenant) use ($signup, $plan, $method, $staff) {
                 $today = SchoolSubscription::today();
                 // Opened for today, then the payment makes it active from today for the months bought.
                 $this->subscriptions->subscribe($tenant, $plan, SchoolSubscription::TRIAL, $today, $today, __('Signed up on the website.'), null);
                 $payment = $this->payments->record($tenant, [
                     'periods' => max(1, (int) $signup->periods),
                     'amount' => $signup->paid_amount ?? $signup->amount,
-                    'method' => 'khqr',
+                    'method' => $method,
                     'reference' => $signup->bakong_hash,
-                    'notes' => __('Paid by KHQR on the website (sign-up #:id).', ['id' => $signup->getKey()]),
-                ], null);
+                    'notes' => $staff === null
+                        ? __('Paid by KHQR on the website (sign-up #:id).', ['id' => $signup->getKey()])
+                        : __('Website sign-up #:id: payment confirmed by staff.', ['id' => $signup->getKey()]),
+                ], $staff);
                 $signup->forceFill(['payment_id' => $payment->getKey()])->save();
             }, $plan);
         } catch (\Throwable $e) {
@@ -234,12 +236,56 @@ final class Signups
         }
     }
 
-    /** Unpaid sign-ups past their hold (and the late window) are closed. */
+    /**
+     * Unpaid sign-ups past their hold (and the late window) are closed. The
+     * password the owner chose is kept 7 more days, so staff can still confirm
+     * a payment the automatic check missed (confirmPayment); then it is erased.
+     */
     public function expireStale(): int
     {
-        return Signup::query()->where('status', Signup::PENDING_PAYMENT)
+        $expired = Signup::query()->where('status', Signup::PENDING_PAYMENT)
             ->where('expires_at', '<', now()->subMinutes((int) config('platform.bakong.late_minutes', 10)))
-            ->update(['status' => Signup::EXPIRED, 'owner_password' => null]);
+            ->update(['status' => Signup::EXPIRED]);
+        Signup::query()->where('status', Signup::EXPIRED)->whereNotNull('owner_password')
+            ->where('updated_at', '<', now()->subDays(7))
+            ->update(['owner_password' => null]);
+
+        return $expired;
+    }
+
+    /** Statuses staff may confirm a payment for: no school yet. */
+    public const CONFIRMABLE = [Signup::PENDING_PAYMENT, Signup::EXPIRED, Signup::FAILED, Signup::PAID];
+
+    /**
+     * Staff saw the money arrive (e.g. paid inside one bank, which Bakong never
+     * sees): the sign-up becomes its school, exactly as an automatic payment
+     * would — on its plan for the months bought, the payment recorded with a
+     * receipt. Optional; the automatic check stays.
+     *
+     * @param  array{amount?: float|string|null, method?: string|null, reference?: string|null}  $data
+     */
+    public function confirmPayment(Signup $signup, \App\Platform\Models\PlatformStaff $staff, array $data): Signup
+    {
+        if ($signup->tenant_id !== null || ! in_array($signup->status, self::CONFIRMABLE, true) || $signup->kind !== Signup::KIND_PAID) {
+            throw ValidationException::withMessages(['signup' => __('This sign-up already has its school, or is not a paid plan.')]);
+        }
+        if (Tenant::query()->withTrashed()->where('slug', $signup->slug)->exists()) {
+            throw ValidationException::withMessages(['signup' => __('Its school code :slug is now used by another customer. Create the school by hand in Customers.', ['slug' => $signup->slug])]);
+        }
+
+        $signup->forceFill([
+            'status' => Signup::PAID,
+            'paid_at' => now(),
+            'paid_amount' => isset($data['amount']) && $data['amount'] !== '' ? round((float) $data['amount'], 2) : $signup->amount,
+            'paid_currency' => $signup->currency,
+            'bakong_hash' => filled($data['reference'] ?? null) ? trim((string) $data['reference']) : $signup->bakong_hash,
+            'failure' => null,
+        ])->save();
+        $this->audit->record('signup.payment_confirmed', $signup, new: [
+            'amount' => $signup->paid_amount, 'currency' => $signup->currency, 'method' => $data['method'] ?? 'khqr', 'reference' => $signup->bakong_hash,
+        ], actor: $staff);
+
+        return $this->createPaidSchool($signup->fresh(), (string) ($data['method'] ?? 'khqr'), $staff);
     }
 
     /**

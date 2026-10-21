@@ -4,6 +4,8 @@ import { useI18n } from 'vue-i18n'
 
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
+import BaseButton from '@/components/ui/BaseButton.vue'
+import BaseModal from '@/components/ui/BaseModal.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BasePagination from '@/components/ui/BasePagination.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
@@ -15,7 +17,7 @@ import { formatDateTime } from '@/utils/date'
 
 import { ApiRequestError } from '@/types/api'
 
-import { signupsApi, type SignupRow, type SignupStatus } from '../../api'
+import { signupsApi, type PaymentMethod, type SignupRow, type SignupStatus } from '../../api'
 import { useSession } from '../../session'
 
 /** Billing → Sign-ups: schools that signed up themselves on the website (docs/backoffice/stage-8-signup.md). */
@@ -60,6 +62,44 @@ const session = useSession()
 const canManage = computed(() => session.can('platform.billing.manage'))
 const retrying = ref<number | null>(null)
 const retryError = ref<string | null>(null)
+// "Payment received": staff saw the money arrive (e.g. paid inside one bank, which Bakong never sees).
+const confirming = ref<SignupRow | null>(null)
+const confirmForm = ref({ amount: '', method: 'khqr' as PaymentMethod, reference: '' })
+const confirmBusy = ref(false)
+const confirmError = ref<ApiRequestError | null>(null)
+const confirmed = ref<string | null>(null)
+const methodOptions = computed(() =>
+  (['khqr', 'bank', 'cash', 'other'] as PaymentMethod[]).map((m) => ({ value: m, label: t(`bo.billing.payments.methods.${m}`) })),
+)
+function openConfirm(row: SignupRow): void {
+  confirming.value = row
+  confirmForm.value = { amount: String(Number(row.amount)), method: 'khqr', reference: '' }
+  confirmError.value = null
+}
+async function confirmPayment(): Promise<void> {
+  if (!confirming.value) return
+  confirmBusy.value = true
+  confirmError.value = null
+  try {
+    const r = await signupsApi.confirmPayment(confirming.value.id, {
+      amount: confirmForm.value.amount || null,
+      method: confirmForm.value.method,
+      reference: confirmForm.value.reference.trim() || null,
+    })
+    if (r.failure) {
+      confirmError.value = new ApiRequestError(r.failure, 0)
+    } else {
+      confirmed.value = r.owner_needs_invite ? t('bo.billing.signups.confirmedInvite') : t('bo.billing.signups.confirmed')
+      confirming.value = null
+    }
+    await fetch()
+  } catch (e) {
+    confirmError.value = e instanceof ApiRequestError ? e : new ApiRequestError(t('bo.common.failed'), 0)
+  } finally {
+    confirmBusy.value = false
+  }
+}
+
 async function retry(row: SignupRow): Promise<void> {
   retrying.value = row.id
   retryError.value = null
@@ -89,6 +129,7 @@ onMounted(() => fetch())
 
     <BaseAlert v-if="error" variant="danger" class="mb-4">{{ error }}</BaseAlert>
     <BaseAlert v-if="retryError" variant="danger" class="mb-4">{{ retryError }}</BaseAlert>
+    <BaseAlert v-if="confirmed" variant="success" class="mb-4">{{ confirmed }}</BaseAlert>
 
     <!-- Phone: cards -->
     <div class="sm:hidden">
@@ -112,6 +153,9 @@ onMounted(() => fetch())
           <RouterLink v-if="row.school" :to="`/schools/${row.school.id}`" class="mt-2 inline-block text-sm text-secondary-700 hover:underline">
             {{ t('bo.billing.signups.openSchool') }}
           </RouterLink>
+          <button v-if="canManage && row.can_confirm" type="button" class="mt-2 mr-3 text-sm font-medium text-green-700 hover:underline" @click="openConfirm(row)">
+            {{ t('bo.billing.signups.confirm') }}
+          </button>
           <button
             v-if="canManage && row.can_retry"
             type="button"
@@ -156,6 +200,9 @@ onMounted(() => fetch())
           <BaseBadge :variant="variant[row.status]">{{ t(`bo.billing.signups.statuses.${row.status}`) }}</BaseBadge>
           <p v-if="row.failure" class="mt-1 text-xs text-red-600">{{ row.failure }}</p>
           <p v-if="row.bakong_hash" class="mt-1 font-mono text-[11px] break-all text-neutral-400">{{ row.bakong_hash }}</p>
+          <button v-if="canManage && row.can_confirm" type="button" class="mt-1 block text-sm font-medium text-green-700 hover:underline" @click="openConfirm(row)">
+            {{ t('bo.billing.signups.confirm') }}
+          </button>
           <button
             v-if="canManage && row.can_retry"
             type="button"
@@ -170,5 +217,29 @@ onMounted(() => fetch())
     </div>
 
     <BasePagination v-if="meta" :meta="meta" class="mt-4" @update:page="setPage" />
+
+    <BaseModal :model-value="confirming !== null" :title="t('bo.billing.signups.confirmTitle')" size="sm" @update:model-value="confirming = null">
+      <form v-if="confirming" id="bo-confirm-signup" class="space-y-4" @submit.prevent="confirmPayment">
+        <p class="text-sm text-neutral-600">{{ t('bo.billing.signups.confirmHint', { school: confirming.school_name, plan: planLabel(confirming) }) }}</p>
+        <BaseAlert v-if="confirmError && !confirmError.errors" variant="danger">{{ confirmError.message }}</BaseAlert>
+        <BaseInput
+          v-model="confirmForm.amount"
+          type="number"
+          :label="`${t('bo.billing.signups.amount')} (${confirming.currency})`"
+          :error="confirmError?.fieldError('amount')"
+        />
+        <BaseSelect v-model="confirmForm.method" :options="methodOptions" :label="t('bo.billing.payments.method')" />
+        <BaseInput
+          v-model="confirmForm.reference"
+          :label="t('bo.billing.payments.reference')"
+          :hint="t('bo.billing.payments.referenceHint')"
+          :error="confirmError?.fieldError('reference')"
+        />
+      </form>
+      <template #footer>
+        <BaseButton variant="ghost" @click="confirming = null">{{ t('bo.common.cancel') }}</BaseButton>
+        <BaseButton type="submit" form="bo-confirm-signup" :loading="confirmBusy">{{ t('bo.billing.signups.confirmButton') }}</BaseButton>
+      </template>
+    </BaseModal>
   </div>
 </template>

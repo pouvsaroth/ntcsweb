@@ -587,12 +587,16 @@ export interface SignupRow {
   bakong_hash: string | null
   /** Paid the right amount, but the school was not created: staff may try again. */
   can_retry: boolean
+  /** Paid plan with no school yet: staff may confirm the payment by hand. */
+  can_confirm: boolean
   created_at: string
 }
 
 export const signupsApi = {
   list: (query: ListQuery) => page<SignupRow>('/billing/signups', query),
   retry: (id: number) => send<{ status: SignupStatus; failure: string | null; school_id: number | null }>('post', `/billing/signups/${id}/retry`),
+  confirmPayment: (id: number, body: { amount: string | null; method: PaymentMethod; reference: string | null }) =>
+    send<{ status: SignupStatus; failure: string | null; school_id: number | null; owner_needs_invite: boolean }>('post', `/billing/signups/${id}/confirm-payment`, body),
 }
 
 export const paymentsApi = {

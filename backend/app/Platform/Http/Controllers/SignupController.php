@@ -17,6 +17,26 @@ final class SignupController extends Controller
 {
     public function __construct(private readonly Signups $signups) {}
 
+    /** Staff confirm a payment the automatic check could not see; the school is created. */
+    public function confirmPayment(Request $request, Signup $signup): JsonResponse
+    {
+        $data = $request->validate([
+            'amount' => ['nullable', 'numeric', 'min:0', 'max:999999999'],
+            'method' => ['nullable', \Illuminate\Validation\Rule::in(\App\Platform\Models\SchoolPayment::METHODS)],
+            'reference' => ['nullable', 'string', 'max:100'],
+        ]);
+        $hadPassword = $signup->owner_password !== null;
+        $signup = $this->signups->confirmPayment($signup, $request->user('staff'), $data);
+
+        return ApiResponse::success([
+            'status' => $signup->status,
+            'failure' => $signup->failure,
+            'school_id' => $signup->tenant_id,
+            // The chosen password was already erased: the owner needs an invite link (Customers → Owner).
+            'owner_needs_invite' => ! $hadPassword,
+        ]);
+    }
+
     /** Paid (the right amount), but the school could not be created: try again once the cause is fixed. */
     public function retry(Signup $signup): JsonResponse
     {
@@ -60,6 +80,7 @@ final class SignupController extends Controller
             'paid_at' => $s->paid_at?->toIso8601String(),
             'paid_amount' => $s->paid_amount,
             'bakong_hash' => $s->bakong_hash,
+            'can_confirm' => $s->kind === Signup::KIND_PAID && $s->tenant_id === null && in_array($s->status, Signups::CONFIRMABLE, true),
             'can_retry' => $s->status === Signup::FAILED && $s->bakong_hash !== null && $s->tenant_id === null
                 && $s->paid_currency === $s->currency && (float) $s->paid_amount + 0.001 >= (float) $s->amount,
             'created_at' => $s->created_at?->toIso8601String(),
