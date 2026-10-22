@@ -29,6 +29,9 @@ const authRoutes: RouteRecordRaw[] = [
   // A back office support view's landing page (and where an ended view goes).
   // Neither guestOnly nor requiresAuth: it works whoever is signed in.
   { path: 'support-view', name: 'support-view', component: () => import('@/pages/auth/SupportViewEnter.vue') },
+  // "Try the demo" from the website (docs/backoffice/stage-12-demo.md): the
+  // one-time ticket signs this browser in. Works whoever is signed in.
+  { path: 'demo', name: 'demo-enter', component: () => import('@/pages/auth/DemoEnter.vue') },
   {
     path: 'reset-password',
     name: 'reset-password',

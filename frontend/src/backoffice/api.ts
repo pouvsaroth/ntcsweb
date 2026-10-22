@@ -592,6 +592,34 @@ export interface SignupRow {
   created_at: string
 }
 
+/** "Try the demo" from the website (docs/backoffice/stage-12-demo.md). */
+export type DemoRole = 'director' | 'teacher' | 'student'
+
+export interface DemoRow {
+  id: number
+  name: string
+  phone: string | null
+  email: string | null
+  role: DemoRole
+  school: { id: number; name: string; slug: string } | null
+  user_id: number | null
+  staff_id: number | null
+  student_id: number | null
+  /** Still usable: not switched off and within its days. */
+  live: boolean
+  sign_ins: number
+  last_sign_in_at: string | null
+  expires_at: string
+  ended_at: string | null
+  locale: string | null
+  ip_address: string | null
+  created_at: string
+}
+
+export const demosApi = {
+  list: (query: ListQuery) => page<DemoRow>('/billing/demos', query),
+}
+
 export const signupsApi = {
   list: (query: ListQuery) => page<SignupRow>('/billing/signups', query),
   retry: (id: number) => send<{ status: SignupStatus; failure: string | null; school_id: number | null }>('post', `/billing/signups/${id}/retry`),

@@ -10,6 +10,7 @@ use App\Platform\Http\Controllers\PaymentController;
 use App\Platform\Http\Controllers\PlanController;
 use App\Platform\Http\Controllers\ProductController;
 use App\Platform\Http\Controllers\SignupController;
+use App\Platform\Http\Controllers\DemoVisitController;
 use App\Platform\Http\Controllers\RoleController;
 use App\Platform\Http\Controllers\SchoolBillingController;
 use App\Platform\Http\Controllers\SchoolController;
@@ -131,6 +132,8 @@ Route::middleware('platform.staff')->group(function () {
         Route::get('signups', [SignupController::class, 'index'])->middleware('platform.can:platform.billing.read')->name('signups.index');
         Route::post('signups/{signup}/retry', [SignupController::class, 'retry'])->middleware('platform.can:platform.billing.manage')->name('signups.retry');
         Route::post('signups/{signup}/confirm-payment', [SignupController::class, 'confirmPayment'])->middleware('platform.can:platform.billing.manage')->name('signups.confirm-payment');
+        // Try the demo from the website (stage 12).
+        Route::get('demos', [DemoVisitController::class, 'index'])->middleware('platform.can:platform.billing.read')->name('demos.index');
         Route::put('settings/payment', [BillingSettingsController::class, 'updatePayment'])->middleware('platform.can:platform.billing.manage')->name('settings.payment.update');
         Route::post('settings/payment/test', [BillingSettingsController::class, 'testBakong'])->middleware('platform.can:platform.billing.manage')->name('settings.payment.test');
         Route::post('payments/{payment}/void', [PaymentController::class, 'void'])->middleware('platform.can:platform.billing.manage')->name('payments.void');

@@ -145,6 +145,11 @@ return [
     */
     'website_school' => env('PLATFORM_WEBSITE_SCHOOL', 'newtech'),
 
+    // "Try the demo" on the website's Plans page (docs/backoffice/stage-12-demo.md):
+    // the school visitors are signed in to, and how long their account works.
+    'demo_school' => env('PLATFORM_DEMO_SCHOOL', 'demo'),
+    'demo_days' => (int) env('PLATFORM_DEMO_DAYS', 7),
+
     // Where a new school's data lives unless staff choose otherwise (as SmartGPS).
     'default_placement' => env('PLATFORM_DEFAULT_PLACEMENT', 'shared'),
 

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-/** Billing: systems, plans, payments, sign-ups and settings, each tab its own route. */
+/** Billing: systems, plans, payments, sign-ups, demos and settings, each tab its own route. */
 const { t } = useI18n()
 
 const tabs = [
@@ -9,6 +9,7 @@ const tabs = [
   { to: '/billing/plans', key: 'plans' },
   { to: '/billing/payments', key: 'payments' },
   { to: '/billing/signups', key: 'signups' },
+  { to: '/billing/demos', key: 'demos' },
   { to: '/billing/settings', key: 'settings' },
 ] as const
 </script>

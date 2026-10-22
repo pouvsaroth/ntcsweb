@@ -137,6 +137,7 @@ use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\V1\Auth\EmailVerificationController;
 use App\Http\Controllers\Api\V1\Auth\PasswordController;
 use App\Http\Controllers\Api\V1\Auth\SupportViewController;
+use App\Http\Controllers\Api\V1\Auth\DemoSignInController;
 use App\Http\Controllers\Api\V1\GeographyController;
 use App\Http\Controllers\Api\V1\LookupController;
 use App\Http\Controllers\Api\V1\MyApprovalRequestController;
@@ -169,6 +170,7 @@ use App\Http\Controllers\Api\V1\Public\ProgramController as PublicProgramControl
 use App\Http\Controllers\Api\V1\Public\PromotionController as PublicPromotionController;
 use App\Http\Controllers\Api\V1\Public\ScheduleController as PublicScheduleController;
 use App\Http\Controllers\Api\V1\Public\SignupController as PublicSignupController;
+use App\Http\Controllers\Api\V1\Public\DemoController as PublicDemoController;
 use App\Http\Controllers\Api\V1\Public\SiteSettingsController;
 use App\Http\Controllers\Api\V1\Public\StudentRegistrationController as PublicStudentRegistrationController;
 use App\Http\Controllers\Api\V1\Public\VideoLessonController;
@@ -232,6 +234,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::post('login/select-tenant', [AuthController::class, 'selectTenant'])->name('login.select-tenant');
             // A back office support view's one-time ticket (docs/backoffice/stage-6-support.md).
             Route::post('support-view', [SupportViewController::class, 'enter'])->name('support-view');
+            // A website demo's one-time ticket (docs/backoffice/stage-12-demo.md).
+            Route::post('demo', [DemoSignInController::class, 'enter'])->name('demo');
             Route::post('forgot-password', [PasswordController::class, 'forgot'])->name('forgot-password');
             Route::post('reset-password', [PasswordController::class, 'reset'])->name('reset-password');
         });
@@ -1091,6 +1095,9 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('signup/slug', [PublicSignupController::class, 'slug'])->middleware('throttle:signup-checks')->name('signup.slug');
         Route::post('signup', [PublicSignupController::class, 'store'])->middleware('throttle:signups')->name('signup.store');
         Route::get('signup/{token}', [PublicSignupController::class, 'show'])->whereUuid('token')->middleware('throttle:signup-checks')->name('signup.show');
+        // Try the demo (docs/backoffice/stage-12-demo.md): start one, or continue your own.
+        Route::post('demo', [PublicDemoController::class, 'store'])->middleware('throttle:demos')->name('demo.store');
+        Route::post('demo/{token}/enter', [PublicDemoController::class, 'resume'])->whereUuid('token')->middleware('throttle:signup-checks')->name('demo.resume');
 
         // Cambodia's administrative hierarchy, for the registration wizard's
         // cascading address selects — same platform-wide reference data and

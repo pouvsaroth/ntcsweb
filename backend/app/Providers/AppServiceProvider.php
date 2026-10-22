@@ -154,6 +154,7 @@ class AppServiceProvider extends ServiceProvider
         // a few sign-ups per visitor, and enough status/address checks to type and wait.
         RateLimiter::for('signups', fn (Request $request) => Limit::perMinutes(60, 5)->by("signups:{$request->ip()}"));
         RateLimiter::for('signup-checks', fn (Request $request) => Limit::perMinute(60)->by("signup-checks:{$request->ip()}"));
+        RateLimiter::for('demos', fn (Request $request) => Limit::perMinutes(60, 10)->by("demos:{$request->ip()}"));
 
         RateLimiter::for('job-applications', function (Request $request) {
             $tenantId = app(TenantContext::class)->id() ?? 'platform';

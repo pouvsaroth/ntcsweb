@@ -52,6 +52,7 @@ const routes: RouteRecordRaw[] = [
           { path: 'plans', component: () => import('./pages/billing/PlansTab.vue') },
           { path: 'payments', component: () => import('./pages/billing/PaymentsTab.vue') },
           { path: 'signups', component: () => import('./pages/billing/SignupsTab.vue') },
+          { path: 'demos', component: () => import('./pages/billing/DemosTab.vue') },
           { path: 'settings', component: () => import('./pages/billing/SettingsTab.vue') },
         ],
       },

@@ -3,6 +3,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink, useRoute } from 'vue-router'
 
+import DemoDialog from '@/components/public/DemoDialog.vue'
 import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import { ERP_HOST } from '@/config'
 import { publicPlansService, type PublicPlan, type PublicPlans } from '@/services/plans'
@@ -21,6 +22,10 @@ const route = useRoute()
 const systemCode = computed(() => (typeof route.params.system === 'string' && route.params.system ? route.params.system : null))
 
 const loginUrl = `https://${ERP_HOST}/login`
+
+/** "Try the demo" (docs/backoffice/stage-12-demo.md): the school system only. */
+const demoOpen = ref(false)
+const showDemo = computed(() => (data.value ? data.value.system.is_school : systemCode.value === null))
 
 const data = ref<PublicPlans | null>(null)
 const failed = ref(false)
@@ -83,6 +88,22 @@ const cards = computed(() =>
       </div>
       <h1 class="mt-3 text-center text-2xl font-bold text-neutral-900 sm:text-3xl">{{ title }}</h1>
       <p class="mx-auto mt-2 max-w-2xl text-center text-neutral-600">{{ t('plansPage.subtitle') }}</p>
+
+      <!-- Try it first, signed in as a director, teacher or student. -->
+      <div v-if="showDemo" class="mt-5 flex flex-col items-center gap-1.5">
+        <button
+          type="button"
+          class="inline-flex items-center gap-2 rounded-lg bg-primary-500 px-5 py-2.5 text-sm font-semibold text-secondary-900 shadow-sm hover:bg-primary-400"
+          @click="demoOpen = true"
+        >
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.65c0-.86.92-1.4 1.67-.98l11.54 6.35c.78.43.78 1.53 0 1.96L6.92 19.33c-.75.42-1.67-.12-1.67-.98V5.65z" />
+          </svg>
+          {{ t('demo.button') }}
+        </button>
+        <p class="text-xs text-neutral-500">{{ t('demo.buttonHint') }}</p>
+      </div>
+      <DemoDialog v-model="demoOpen" />
 
       <div v-if="!data && !failed" class="flex justify-center py-16"><BaseSpinner /></div>
       <p v-else-if="failed || (data && data.plans.length === 0 && data.trial_days < 1)" class="py-16 text-center text-neutral-500">

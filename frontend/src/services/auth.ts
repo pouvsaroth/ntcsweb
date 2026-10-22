@@ -119,6 +119,11 @@ export const authService = {
     return withCsrf(() => apiPost<{ support_view: SupportView }>('/auth/support-view', { ticket }))
   },
 
+  /** Exchanges the website demo's one-time ticket for a session as the visitor's demo account. */
+  enterDemo(ticket: string) {
+    return withCsrf(() => apiPost<null>('/auth/demo', { ticket }))
+  },
+
   /** Returns null on 401 rather than throwing — "am I logged in?" is a query, not an error. */
   async me(): Promise<MeResult | null> {
     try {
