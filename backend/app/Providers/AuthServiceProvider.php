@@ -17,6 +17,8 @@ use App\Models\ApplicantDocument;
 use App\Models\ApprovalRequest;
 use App\Models\AssetRepair;
 use App\Models\AttendanceCorrection;
+use App\Models\GradeCorrection;
+use App\Models\ResultSheet;
 use App\Models\AttendanceRecord;
 use App\Models\AuditLog;
 use App\Models\Book;
@@ -115,6 +117,8 @@ use App\Policies\DepartmentPolicy;
 use App\Policies\ManpowerRequestPolicy;
 use App\Policies\OrganizationUnitPolicy;
 use App\Policies\AttendanceCorrectionPolicy;
+use App\Policies\GradeCorrectionPolicy;
+use App\Policies\ResultSheetPolicy;
 use App\Policies\OvertimeRequestPolicy;
 use App\Policies\RecruitmentPolicy;
 use App\Policies\StaffAttendancePolicy;
@@ -222,6 +226,8 @@ class AuthServiceProvider extends ServiceProvider
         StaffAttendance::class => StaffAttendancePolicy::class,
         OvertimeRequest::class => OvertimeRequestPolicy::class,
         AttendanceCorrection::class => AttendanceCorrectionPolicy::class,
+        ResultSheet::class => ResultSheetPolicy::class,
+        GradeCorrection::class => GradeCorrectionPolicy::class,
         LeaveType::class => LeaveManagementPolicy::class,
         LeavePolicy::class => LeaveManagementPolicy::class,
         LeaveBalanceEntry::class => LeaveManagementPolicy::class,

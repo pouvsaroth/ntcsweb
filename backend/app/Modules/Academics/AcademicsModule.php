@@ -55,6 +55,9 @@ final class AcademicsModule extends Module
             'exam-applications' => ['Exam applications', 'ពាក្យប្រឡង'],
             'exam-scores' => ['Exam scores', 'ពិន្ទុប្រឡង'],
             'examination' => ['Examination', 'ការប្រឡង'],
+            'assessment' => ['Assessment setup', 'ការកំណត់ការវាយតម្លៃ'],
+            'exam-schedules' => ['Exam schedule', 'កាលវិភាគប្រឡង'],
+            'gradebook' => ['Gradebook', 'សៀវភៅពិន្ទុ'],
             'student-feedback' => ['Student feedback', 'មតិសិស្ស'],
         ];
     }

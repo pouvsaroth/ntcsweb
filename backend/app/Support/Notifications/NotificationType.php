@@ -97,4 +97,17 @@ final class NotificationType
     public const ATTENDANCE_CORRECTION_APPROVED = 'attendance_correction_approved';
 
     public const ATTENDANCE_CORRECTION_REJECTED = 'attendance_correction_rejected';
+
+    // Examination results (docs/academics/gradebook.md, 7c).
+    public const RESULT_SHEET_SUBMITTED = 'result_sheet_submitted';
+
+    public const RESULT_SHEET_APPROVED = 'result_sheet_approved';
+
+    public const RESULT_SHEET_RETURNED = 'result_sheet_returned';
+
+    public const GRADE_CORRECTION_SUBMITTED = 'grade_correction_submitted';
+
+    public const GRADE_CORRECTION_APPROVED = 'grade_correction_approved';
+
+    public const GRADE_CORRECTION_REJECTED = 'grade_correction_rejected';
 }

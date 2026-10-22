@@ -25,6 +25,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useConfirmDialogStore } from '@/stores/confirmDialog'
 import type { ApprovalFlowProgress } from '@/services/approvalFlows'
 import { expensesService, type Expense, type ExpenseStatus } from '@/services/expenses'
+import { resultApprovalsService, type GradeCorrectionRow, type ResultSheetRow } from '@/services/gradebook'
 import { ApiRequestError } from '@/types/api'
 import { formatDate } from '@/utils/date'
 import { genderLabel } from '@/utils/gender'
@@ -44,7 +45,7 @@ import { genderLabel } from '@/utils/gender'
 type RowStatus = ApprovalRequestStatus | MakeUpClassRequestStatus | 'cancelled'
 
 type MergedRow = {
-  kind: 'approval' | 'leave' | 'resignation' | 'makeUp' | 'exam' | 'registration' | 'manpower' | 'overtime' | 'correction' | 'expense'
+  kind: 'approval' | 'leave' | 'resignation' | 'makeUp' | 'exam' | 'registration' | 'manpower' | 'overtime' | 'correction' | 'expense' | 'resultSheet' | 'gradeCorrection'
   id: number
   reference: string
   requestor: string
@@ -63,6 +64,8 @@ type MergedRow = {
   overtime?: OvertimeRequest
   correction?: AttendanceCorrection
   expense?: Expense
+  resultSheet?: ResultSheetRow
+  gradeCorrection?: GradeCorrectionRow
 }
 
 const { t } = useI18n()
@@ -91,6 +94,8 @@ const canViewManpower = computed(() => auth.can('recruitment.view') || auth.isFl
 const canViewOvertime = computed(() => auth.can('staff-attendance.view') || auth.isFlowApprover(['overtime_request']))
 const canViewCorrections = computed(() => auth.can('staff-attendance.view') || auth.isFlowApprover(['attendance_correction']))
 // Accounting's expenses — whoever approves them, or a member of an Expense flow step's group.
+// Examination results and grade corrections (docs/academics/gradebook.md, 7c).
+const canViewResults = computed(() => auth.can('gradebook.approve') || auth.can('gradebook.manage-all') || auth.isFlowApprover(['result_sheet', 'grade_correction']))
 const canViewExpenses = computed(() => (auth.can('expense.view') && auth.can('expense.approve')) || auth.isFlowApprover(['expense']))
 
 /** An expense's status in this queue's own terms — paid counts as approved; draft/cancelled never reach it. */
@@ -181,6 +186,8 @@ const approvePermission: Record<MergedRow['kind'], string> = {
   overtime: 'overtime-requests.approve',
   correction: 'attendance-corrections.approve',
   expense: 'expense.approve',
+  resultSheet: 'gradebook.approve',
+  gradeCorrection: 'gradebook.approve',
 }
 
 const rejectPermission: Record<MergedRow['kind'], string> = {
@@ -194,6 +201,8 @@ const rejectPermission: Record<MergedRow['kind'], string> = {
   overtime: 'overtime-requests.reject',
   correction: 'attendance-corrections.reject',
   expense: 'expense.reject',
+  resultSheet: 'gradebook.approve',
+  gradeCorrection: 'gradebook.approve',
 }
 
 // With an approval flow, only the group the request waits on decides it —
@@ -224,7 +233,7 @@ async function load() {
   error.value = null
 
   try {
-    const [approvals, leaves, resignations, makeUps, exams, registrations, manpowers, overtimes, corrections, expenses] = await Promise.all([
+    const [approvals, leaves, resignations, makeUps, exams, registrations, manpowers, overtimes, corrections, expenses, resultSheets, gradeCorrections] = await Promise.all([
       canViewApprovals.value ? approvalRequestsService.list({}, { approvalQueue: true }) : Promise.resolve({ data: [] as ApprovalRequest[], pagination: undefined }),
       canViewLeave.value
         ? leaveRequestsService.list({ page: 1, per_page: 100, filter: {} }, { approvalQueue: true })
@@ -259,6 +268,8 @@ async function load() {
       canViewExpenses.value
         ? expensesService.list({ page: 1, per_page: 100, filter: { status: 'PENDING_APPROVAL,APPROVED,PAID,REJECTED' } }, { approvalQueue: true })
         : Promise.resolve({ data: [] as Expense[], pagination: undefined }),
+      canViewResults.value ? resultApprovalsService.sheets({ approval_queue: 1 }).catch(() => [] as ResultSheetRow[]) : Promise.resolve([] as ResultSheetRow[]),
+      canViewResults.value ? resultApprovalsService.corrections({ approval_queue: 1 }).catch(() => [] as GradeCorrectionRow[]) : Promise.resolve([] as GradeCorrectionRow[]),
     ])
 
     const approvalRows: MergedRow[] = approvals.data.map((r) => ({
@@ -392,7 +403,36 @@ async function load() {
           }]
     })
 
-    rows.value = [...approvalRows, ...leaveRows, ...resignationRows, ...makeUpRows, ...examRows, ...registrationRows, ...manpowerRows, ...overtimeRows, ...correctionRows, ...expenseRows].sort((a, b) =>
+    // A returned sheet sits under Rejected; drafts never reach this queue.
+    const resultRows: MergedRow[] = resultSheets.flatMap((r) => {
+      const status: RowStatus | null = r.status === 'pending' ? 'pending' : r.status === 'approved' ? 'approved' : r.status === 'returned' ? 'rejected' : null
+      return status === null
+        ? []
+        : [{
+            kind: 'resultSheet' as const,
+            id: r.id,
+            reference: `RS-${String(r.id).padStart(6, '0')}`,
+            requestor: r.requested_by ?? '—',
+            subject: t('admin.approvals.resultSheetSubject', { class: r.class?.name ?? '', subject: r.subject?.title ?? '', term: r.term?.name ?? '' }),
+            status,
+            createdAt: r.submitted_at ?? r.created_at,
+            flow: r.approval_flow ?? null,
+            resultSheet: r,
+          }]
+    })
+    const gradeCorrectionRows: MergedRow[] = gradeCorrections.map((r) => ({
+      kind: 'gradeCorrection',
+      id: r.id,
+      reference: r.reference,
+      requestor: r.requested_by ?? '—',
+      subject: t('admin.approvals.gradeCorrectionSubject', { student: r.student?.name ?? '', subject: r.subject?.title ?? '', old: r.old, new: r.new }),
+      status: r.status,
+      createdAt: r.created_at,
+      flow: r.approval_flow ?? null,
+      gradeCorrection: r,
+    }))
+
+    rows.value = [...approvalRows, ...leaveRows, ...resignationRows, ...makeUpRows, ...examRows, ...registrationRows, ...manpowerRows, ...overtimeRows, ...correctionRows, ...expenseRows, ...resultRows, ...gradeCorrectionRows].sort((a, b) =>
       b.createdAt.localeCompare(a.createdAt),
     )
   } catch (e) {
@@ -446,6 +486,10 @@ async function approve(row: MergedRow) {
       await attendanceCorrectionsService.approve(row.id)
     } else if (row.kind === 'expense') {
       await expensesService.approve(row.id)
+    } else if (row.kind === 'resultSheet') {
+      await resultApprovalsService.approve(row.id)
+    } else if (row.kind === 'gradeCorrection') {
+      await resultApprovalsService.approveCorrection(row.id)
     } else {
       await examApplicationsService.approve(row.id)
     }
@@ -484,6 +528,10 @@ async function confirmReject(reason: string) {
       await attendanceCorrectionsService.reject(row.id, reason)
     } else if (row.kind === 'expense') {
       await expensesService.reject(row.id, reason)
+    } else if (row.kind === 'resultSheet') {
+      await resultApprovalsService.return(row.id, reason)
+    } else if (row.kind === 'gradeCorrection') {
+      await resultApprovalsService.rejectCorrection(row.id, reason)
     } else {
       await examApplicationsService.reject(row.id, reason)
     }
@@ -658,6 +706,17 @@ function leaveSubject(r: LeaveRequest): string {
           <div><dt class="text-neutral-500">{{ t('admin.recruitment.manpower.reason') }}</dt><dd class="whitespace-pre-line font-medium text-neutral-900">{{ detail.manpower.reason }}</dd></div>
           <div v-if="detail.manpower.requirements"><dt class="text-neutral-500">{{ t('admin.recruitment.manpower.requirements') }}</dt><dd class="whitespace-pre-line font-medium text-neutral-900">{{ detail.manpower.requirements }}</dd></div>
           <div v-if="detail.manpower.decision_reason"><dt class="text-neutral-500">{{ t('admin.leaveRequests.decisionReason') }}</dt><dd class="font-medium text-neutral-900">{{ detail.manpower.decision_reason }}</dd></div>
+        </dl>
+        <dl v-else-if="detail.kind === 'resultSheet' && detail.resultSheet" class="grid gap-y-2 text-sm">
+          <div><dt class="text-neutral-500">{{ t('gradebook.class') }}</dt><dd class="font-medium text-neutral-900">{{ detail.resultSheet.class?.name }} · {{ detail.resultSheet.subject?.title }} · {{ detail.resultSheet.term?.name }}</dd></div>
+          <div v-if="detail.resultSheet.decision_note"><dt class="text-neutral-500">{{ t('admin.leaveRequests.decisionReason') }}</dt><dd class="font-medium text-neutral-900">{{ detail.resultSheet.decision_note }}</dd></div>
+          <div><RouterLink :to="{ path: '/admin/examination/entry', query: { term: detail.resultSheet.term?.id, class: detail.resultSheet.class?.id, subject: detail.resultSheet.subject?.id } }" class="text-sm font-medium text-secondary-700 hover:underline">{{ t('gradebook.approval.openScores') }}</RouterLink></div>
+        </dl>
+        <dl v-else-if="detail.kind === 'gradeCorrection' && detail.gradeCorrection" class="grid gap-y-2 text-sm">
+          <div><dt class="text-neutral-500">{{ t('gradebook.entry.student') }}</dt><dd class="font-medium text-neutral-900">{{ detail.gradeCorrection.student?.name }} · {{ detail.gradeCorrection.class?.name }} · {{ detail.gradeCorrection.subject?.title }}</dd></div>
+          <div><dt class="text-neutral-500">{{ t('gradebook.corrections.what') }}</dt><dd class="font-medium text-neutral-900">{{ detail.gradeCorrection.what.name }}<template v-if="(detail.gradeCorrection.what.occurrences ?? 0) > 1"> {{ detail.gradeCorrection.what.occurrence }}</template>: <span class="line-through">{{ detail.gradeCorrection.old }}</span> → <span class="text-primary-700">{{ detail.gradeCorrection.new }}</span></dd></div>
+          <div><dt class="text-neutral-500">{{ t('gradebook.corrections.reason') }}</dt><dd class="whitespace-pre-line font-medium text-neutral-900">{{ detail.gradeCorrection.reason }}</dd></div>
+          <div v-if="detail.gradeCorrection.decision_reason"><dt class="text-neutral-500">{{ t('admin.leaveRequests.decisionReason') }}</dt><dd class="font-medium text-neutral-900">{{ detail.gradeCorrection.decision_reason }}</dd></div>
         </dl>
         <dl v-else-if="detail.kind === 'correction' && detail.correction" class="grid gap-y-2 text-sm">
           <div><dt class="text-neutral-500">{{ t('admin.timeAttendance.holidays.date') }}</dt><dd class="font-medium text-neutral-900">{{ formatDate(detail.correction.date) }}</dd></div>

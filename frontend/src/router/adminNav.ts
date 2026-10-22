@@ -8,6 +8,7 @@ import { leaveTabs } from '@/router/leaveTabs'
 import { payrollTabs } from '@/router/payrollTabs'
 import { performanceTabs } from '@/router/performanceTabs'
 import { documentLinks } from '@/router/publicNav'
+import { examinationPermissions } from '@/router/examinationTabs'
 import { recruitmentTabs } from '@/router/recruitmentTabs'
 
 export interface AdminNavItem {
@@ -154,7 +155,7 @@ export const adminNav: AdminNavGroup[] = [
       // unbuilt "coming soon" placeholder (see ComingSoon.vue) — this
       // permission exists purely to gate sidebar visibility until a real
       // feature (and its own permission) lands behind it.
-      { labelKey: 'adminNav.items.examination', to: '/admin/exams', permission: 'examination.view' },
+      { labelKey: 'adminNav.items.examination', to: '/admin/examination', permission: ['examination.view', ...examinationPermissions] },
     ],
   },
   {
@@ -292,7 +293,7 @@ export const adminNav: AdminNavGroup[] = [
       { labelKey: 'adminNav.items.myRequests', to: '/admin/approvals/my-requests', permission: 'my-requests.view' },
       // Pending student self-registrations are decided here too (they used
       // to have their own Students > Registrations page).
-      { labelKey: 'adminNav.items.approvals', to: '/admin/approvals/queue', permission: ['approval-requests.view', 'leave-requests.view', 'make-up-class-requests.view', 'students.approve-registration'], flowApprover: true },
+      { labelKey: 'adminNav.items.approvals', to: '/admin/approvals/queue', permission: ['approval-requests.view', 'leave-requests.view', 'make-up-class-requests.view', 'students.approve-registration', 'gradebook.approve'], flowApprover: true },
       { labelKey: 'adminNav.items.formCategories', to: '/admin/form-categories', permission: 'form-categories.manage' },
       { labelKey: 'adminNav.items.formTemplates', to: '/admin/form-templates', permission: 'form-templates.manage' },
     ],

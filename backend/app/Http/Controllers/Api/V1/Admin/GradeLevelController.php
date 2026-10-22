@@ -22,10 +22,11 @@ final class GradeLevelController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        // Also the grade picker of the class form, the curriculum, rules and promotions.
+        // Also the grade picker of the class form, the curriculum, rules, promotions, assessment setup and exam schedule.
         abort_unless($request->user()->hasAnyPermission(
             Permissions::GRADE_LEVELS_VIEW, Permissions::CLASSES_VIEW, Permissions::CURRICULUM_VIEW,
             Permissions::PROMOTION_RULES_VIEW, Permissions::STUDENT_PROMOTIONS_VIEW, Permissions::BOOKS_VIEW,
+            Permissions::ASSESSMENT_VIEW, Permissions::EXAM_SCHEDULES_VIEW,
         ), 403);
 
         $levels = GradeLevel::query()->withCount('classes')->ordered()

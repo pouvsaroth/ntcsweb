@@ -11,6 +11,7 @@ import { schoolSetupTabs } from '@/router/schoolSetupTabs'
 import { teacherTabs } from '@/router/teacherTabs'
 import { timetableTabs } from '@/router/timetableTabs'
 import { lessonTabs } from '@/router/lessonTabs'
+import { examinationTabs } from '@/router/examinationTabs'
 import { useAuthStore } from '@/stores/auth'
 
 const authRoutes: RouteRecordRaw[] = [
@@ -244,6 +245,62 @@ const adminRoutes: RouteRecordRaw[] = [
     name: 'admin.attendance.summary',
     component: () => import('@/pages/admin/AttendanceSummary.vue'),
     meta: { titleKey: 'adminNav.items.attendance' },
+  },
+  // Academic > Examination (docs/academics/gradebook.md): one page of tabs in the
+  // header (examinationTabs.ts) — the gradebook's, then the Computer School's.
+  {
+    // Decided in beforeEnter, not `redirect`: a redirect runs before the global
+    // guard has loaded the session, so on a fresh page load every tab looked
+    // closed and everyone landed on Exams.
+    path: 'examination',
+    name: 'admin.examination',
+    component: { render: () => null },
+    beforeEnter: () => {
+      const auth = useAuthStore()
+      return (examinationTabs.find((tab) => tab.permission.some((p) => auth.can(p))) ?? examinationTabs.find((tab) => tab.to === '/admin/exams')!).to
+    },
+  },
+  {
+    path: 'examination/setup',
+    name: 'admin.examination.setup',
+    component: () => import('@/pages/admin/examination/AssessmentSetup.vue'),
+    meta: { titleKey: 'gradebook.tabs.setup', headerTabs: 'examination' },
+  },
+  {
+    path: 'examination/schedule',
+    name: 'admin.examination.schedule',
+    component: () => import('@/pages/admin/examination/ExamSchedule.vue'),
+    meta: { titleKey: 'gradebook.tabs.schedule', headerTabs: 'examination' },
+  },
+  {
+    path: 'examination/entry',
+    name: 'admin.examination.entry',
+    component: () => import('@/pages/admin/examination/GradeEntry.vue'),
+    meta: { titleKey: 'gradebook.tabs.entry', headerTabs: 'examination' },
+  },
+  {
+    path: 'examination/validation',
+    name: 'admin.examination.validation',
+    component: () => import('@/pages/admin/examination/GradeValidation.vue'),
+    meta: { titleKey: 'gradebook.tabs.validation', headerTabs: 'examination' },
+  },
+  {
+    path: 'examination/calculation',
+    name: 'admin.examination.calculation',
+    component: () => import('@/pages/admin/examination/ScoreCalculation.vue'),
+    meta: { titleKey: 'gradebook.tabs.calculation', headerTabs: 'examination' },
+  },
+  {
+    path: 'examination/approval',
+    name: 'admin.examination.approval',
+    component: () => import('@/pages/admin/examination/ResultApproval.vue'),
+    meta: { titleKey: 'gradebook.tabs.approval', headerTabs: 'examination' },
+  },
+  {
+    path: 'examination/corrections',
+    name: 'admin.examination.corrections',
+    component: () => import('@/pages/admin/examination/GradeCorrections.vue'),
+    meta: { titleKey: 'gradebook.tabs.corrections', headerTabs: 'examination' },
   },
   {
     path: 'exams',

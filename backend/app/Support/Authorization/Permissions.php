@@ -233,6 +233,28 @@ final class Permissions
 
     public const STUDENT_PROMOTIONS_RUN = 'student-promotions.run';
 
+    // Academic > Examination (docs/academics/gradebook.md): how each grade is
+    // assessed (components, weights, bands / competency levels) and the exam schedule.
+    public const ASSESSMENT_VIEW = 'assessment.view';
+
+    public const ASSESSMENT_MANAGE = 'assessment.manage';
+
+    public const EXAM_SCHEDULES_VIEW = 'exam-schedules.view';
+
+    public const EXAM_SCHEDULES_MANAGE = 'exam-schedules.manage';
+
+    // Gradebook (7b): view = own classes (teacher list, assignment or
+    // homeroom), enter = own subjects, manage-all = every class and subject.
+    public const GRADEBOOK_VIEW = 'gradebook.view';
+
+    public const GRADEBOOK_ENTER = 'gradebook.enter';
+
+    public const GRADEBOOK_MANAGE_ALL = 'gradebook.manage-all';
+
+    // 7c: approve or return submitted results, approve or reject grade
+    // corrections — when the item has no Approval Flow of its own.
+    public const GRADEBOOK_APPROVE = 'gradebook.approve';
+
     // HRM > Teacher (docs/hrm/teachers.md): qualifications, assignments,
     // homeroom, teaching load, availability, substitutes, documents.
     public const TEACHERS_VIEW = 'teachers.view';
@@ -841,6 +863,20 @@ final class Permissions
                 self::STUDENT_PROMOTIONS_VIEW => 'View who passes to the next grade',
                 self::STUDENT_PROMOTIONS_RUN => 'Promote students to the next grade',
             ],
+            'Assessment Setup' => [
+                self::ASSESSMENT_VIEW => 'View how each grade is assessed',
+                self::ASSESSMENT_MANAGE => 'Set up assessment (components, weights, bands, competency levels)',
+            ],
+            'Exam Schedule' => [
+                self::EXAM_SCHEDULES_VIEW => 'View the exam schedule',
+                self::EXAM_SCHEDULES_MANAGE => 'Add, edit and delete exams in the schedule',
+            ],
+            'Gradebook' => [
+                self::GRADEBOOK_VIEW => 'View scores and results of your own classes',
+                self::GRADEBOOK_ENTER => 'Enter scores for the subjects you teach',
+                self::GRADEBOOK_MANAGE_ALL => 'View and enter scores for every class and subject',
+                self::GRADEBOOK_APPROVE => 'Approve or return results and grade corrections',
+            ],
             'Lesson Plans' => [
                 self::LESSON_PLANS_VIEW => 'View all lesson plans, teaching logs, progress and delays',
                 self::LESSON_PLANS_WRITE => 'Write lesson plans and the teaching log',
@@ -1096,6 +1132,9 @@ final class Permissions
             self::SCHOOL_CALENDAR_VIEW, self::SCHOOL_CALENDAR_MANAGE,
             self::PROMOTION_RULES_VIEW, self::PROMOTION_RULES_MANAGE,
             self::STUDENT_PROMOTIONS_VIEW, self::STUDENT_PROMOTIONS_RUN,
+            self::ASSESSMENT_VIEW, self::ASSESSMENT_MANAGE,
+            self::EXAM_SCHEDULES_VIEW, self::EXAM_SCHEDULES_MANAGE,
+            self::GRADEBOOK_VIEW, self::GRADEBOOK_ENTER, self::GRADEBOOK_MANAGE_ALL, self::GRADEBOOK_APPROVE,
             self::TEACHERS_VIEW, self::TEACHERS_MANAGE,
             self::TIMETABLE_VIEW, self::TIMETABLE_MANAGE, self::TIMETABLE_REQUEST,
             self::LESSON_PLANS_VIEW, self::LESSON_PLANS_WRITE, self::LESSON_PLANS_REVIEW,
@@ -1310,6 +1349,10 @@ final class Permissions
                 self::GRADE_LEVELS_VIEW,
                 self::CURRICULUM_VIEW,
                 self::SCHOOL_CALENDAR_VIEW,
+                self::ASSESSMENT_VIEW,
+                self::EXAM_SCHEDULES_VIEW,
+                self::GRADEBOOK_VIEW,
+                self::GRADEBOOK_ENTER,
                 self::TIMETABLE_VIEW,
                 self::TIMETABLE_REQUEST,
                 self::LESSON_PLANS_WRITE,

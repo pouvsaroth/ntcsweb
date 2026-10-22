@@ -7,6 +7,7 @@ namespace App\Support\Approvals;
 use App\Models\ApprovalRequest;
 use App\Models\AttendanceCorrection;
 use App\Models\ExamApplication;
+use App\Models\GradeCorrection;
 use App\Models\Expense;
 use App\Models\LeaveRequest;
 use App\Models\MakeUpClassRequest;
@@ -15,6 +16,7 @@ use App\Models\OvertimeRequest;
 use App\Models\PayrollRun;
 use App\Models\PromotionRecommendation;
 use App\Models\ResignationRequest;
+use App\Models\ResultSheet;
 use App\Support\Accounting\ExpenseStatus;
 use App\Support\Authorization\Permissions;
 use Illuminate\Database\Eloquent\Builder;
@@ -53,6 +55,12 @@ final class DocumentType
 
     public const EXPENSE = 'expense';
 
+    /** A class's results for one subject and term (Examination, docs/academics/gradebook.md). */
+    public const RESULT_SHEET = 'result_sheet';
+
+    /** A change to one score of approved results. */
+    public const GRADE_CORRECTION = 'grade_correction';
+
     /** @var array<string, class-string<Model>> */
     private const MODELS = [
         self::STUDENT_LEAVE => LeaveRequest::class,
@@ -67,6 +75,8 @@ final class DocumentType
         self::PAYROLL_RUN => PayrollRun::class,
         self::PROMOTION => PromotionRecommendation::class,
         self::EXPENSE => Expense::class,
+        self::RESULT_SHEET => ResultSheet::class,
+        self::GRADE_CORRECTION => GradeCorrection::class,
     ];
 
     /** @return list<string> */
@@ -136,6 +146,7 @@ final class DocumentType
             self::PAYROLL_RUN => Permissions::PAYROLL_APPROVE,
             self::PROMOTION => Permissions::PERFORMANCE_APPROVE_PROMOTION,
             self::EXPENSE => Permissions::EXPENSE_APPROVE,
+            self::RESULT_SHEET, self::GRADE_CORRECTION => Permissions::GRADEBOOK_APPROVE,
         };
     }
 }

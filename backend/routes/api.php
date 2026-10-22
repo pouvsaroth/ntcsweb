@@ -53,6 +53,10 @@ use App\Http\Controllers\Api\V1\Admin\FormCategoryController;
 use App\Http\Controllers\Api\V1\Admin\FormTemplateController;
 use App\Http\Controllers\Api\V1\Admin\GeneralSettingsController;
 use App\Http\Controllers\Api\V1\Admin\GradeLevelController;
+use App\Http\Controllers\Api\V1\Admin\AssessmentSchemeController;
+use App\Http\Controllers\Api\V1\Admin\ExamScheduleController;
+use App\Http\Controllers\Api\V1\Admin\GradebookController;
+use App\Http\Controllers\Api\V1\Admin\ResultApprovalController;
 use App\Http\Controllers\Api\V1\Admin\HolidayController;
 use App\Http\Controllers\Api\V1\Admin\IncomeController;
 use App\Http\Controllers\Api\V1\Admin\InterviewController;
@@ -368,6 +372,26 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('promotion-rules', [StudentPromotionController::class, 'rules'])->name('promotion-rules.index');
         Route::put('promotion-rules', [StudentPromotionController::class, 'saveRule'])->name('promotion-rules.save');
         Route::delete('promotion-rules/{promotionRule}', [StudentPromotionController::class, 'destroyRule'])->name('promotion-rules.destroy');
+        // Examination: assessment setup and exam schedule (docs/academics/gradebook.md).
+        Route::post('assessment-schemes/{assessmentScheme}/starter', [AssessmentSchemeController::class, 'starter'])->name('assessment-schemes.starter');
+        Route::apiResource('assessment-schemes', AssessmentSchemeController::class)->except(['show']);
+        Route::apiResource('exam-schedules', ExamScheduleController::class)->except(['show']);
+        Route::get('gradebook/classes', [GradebookController::class, 'classes'])->name('gradebook.classes');
+        Route::get('gradebook/sheet', [GradebookController::class, 'sheet'])->name('gradebook.sheet');
+        Route::put('gradebook/sheet', [GradebookController::class, 'save'])->name('gradebook.save');
+        Route::get('gradebook/validation', [GradebookController::class, 'validation'])->name('gradebook.validation');
+        Route::get('gradebook/results', [GradebookController::class, 'results'])->name('gradebook.results');
+        // Result approval and grade corrections (7c), decided through eApprovals.
+        Route::get('gradebook/sheets', [ResultApprovalController::class, 'sheets'])->name('gradebook.sheets');
+        Route::post('gradebook/sheets/submit', [ResultApprovalController::class, 'submit'])->name('gradebook.sheets.submit');
+        Route::post('gradebook/sheets/{resultSheet}/approve', [ResultApprovalController::class, 'approve'])->name('gradebook.sheets.approve');
+        Route::post('gradebook/sheets/{resultSheet}/return', [ResultApprovalController::class, 'return'])->name('gradebook.sheets.return');
+        Route::get('gradebook/corrections', [ResultApprovalController::class, 'corrections'])->name('gradebook.corrections');
+        Route::post('gradebook/corrections', [ResultApprovalController::class, 'storeCorrection'])->name('gradebook.corrections.store');
+        Route::post('gradebook/corrections/{gradeCorrection}/approve', [ResultApprovalController::class, 'approveCorrection'])->name('gradebook.corrections.approve');
+        Route::post('gradebook/corrections/{gradeCorrection}/reject', [ResultApprovalController::class, 'rejectCorrection'])->name('gradebook.corrections.reject');
+        Route::delete('gradebook/corrections/{gradeCorrection}', [ResultApprovalController::class, 'destroyCorrection'])->name('gradebook.corrections.destroy');
+        Route::get('gradebook/history', [ResultApprovalController::class, 'history'])->name('gradebook.history');
         Route::get('student-promotions/classes', [StudentPromotionController::class, 'classes'])->name('student-promotions.classes');
         Route::get('student-promotions', [StudentPromotionController::class, 'show'])->name('student-promotions.show');
         Route::post('student-promotions', [StudentPromotionController::class, 'apply'])->name('student-promotions.apply');
