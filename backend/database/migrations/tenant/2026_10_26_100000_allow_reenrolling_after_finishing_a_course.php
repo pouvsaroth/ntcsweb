@@ -25,6 +25,7 @@ return new class extends Migration
     {
         // (The old book_id index went with that column in 2026_09_09_010000.)
         DB::statement('DROP INDEX IF EXISTS enrollments_student_class_package_active_unique');
-        DB::statement("CREATE UNIQUE INDEX enrollments_student_class_package_active_unique ON enrollments (student_id, class_id, course_package_id) WHERE {$where}");
+        // Per school, like every unique index on a shared database (SchoolTables::secure()).
+        DB::statement("CREATE UNIQUE INDEX enrollments_student_class_package_active_unique ON enrollments (tenant_id, student_id, class_id, course_package_id) WHERE {$where}");
     }
 };
