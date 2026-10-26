@@ -5,7 +5,8 @@ import { RouterLink, useRoute, useRouter } from 'vue-router'
 
 import ChangePasswordModal from '@/components/layout/ChangePasswordModal.vue'
 import EditProfileModal from '@/components/layout/EditProfileModal.vue'
-import { adminNav, isNavItemVisible } from '@/router/adminNav'
+import NavIcon from '@/components/layout/NavIcon.vue'
+import { adminNav, isNavItemVisible, type AdminNavGroup, type AdminNavItem } from '@/router/adminNav'
 import { useAdminUiStore } from '@/stores/adminUi'
 import { useAuthStore } from '@/stores/auth'
 import { useSiteStore } from '@/stores/site'
@@ -117,6 +118,80 @@ function toggleGroup(labelKey: string): void {
   expanded[labelKey] = !expanded[labelKey]
   persist()
 }
+
+/**
+ * Collapsed sidebar (desktop): only icons. Hovering (or tapping) one opens a
+ * small panel beside it with the menu name and its sub-menus. The panel is
+ * teleported to <body> with fixed coordinates; the aside's `transform` and
+ * its scrolling list would otherwise trap or clip it.
+ */
+interface Flyout {
+  key: string
+  title: string
+  /** A single link (Dashboard, a student's own item): the title is the link. */
+  to?: string
+  href?: string
+  items: AdminNavItem[]
+  top: number
+  left: number
+}
+const flyout = ref<Flyout | null>(null)
+let closeTimer: ReturnType<typeof setTimeout> | null = null
+
+function cancelClose(): void {
+  if (closeTimer !== null) clearTimeout(closeTimer)
+  closeTimer = null
+}
+
+function scheduleClose(): void {
+  cancelClose()
+  closeTimer = setTimeout(() => (flyout.value = null), 150)
+}
+
+function openFlyout(event: Event, key: string, title: string, items: AdminNavItem[], single?: AdminNavItem): void {
+  cancelClose()
+  const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
+  const height = 48 + items.length * 36
+  flyout.value = {
+    key,
+    title,
+    to: single?.to,
+    href: single?.urlKey ? (site.info.documents[single.urlKey] ?? undefined) : undefined,
+    items,
+    left: rect.right + 6,
+    top: Math.max(8, Math.min(rect.top, window.innerHeight - height - 8)),
+  }
+}
+
+/** Tapping an icon (no hover on a touch screen) toggles its panel. */
+function toggleFlyout(event: Event, key: string, title: string, items: AdminNavItem[]): void {
+  if (flyout.value?.key === key) flyout.value = null
+  else openFlyout(event, key, title, items)
+}
+
+function closeFlyout(): void {
+  cancelClose()
+  flyout.value = null
+}
+
+function groupActive(group: AdminNavGroup): boolean {
+  return group.items.some((item) => item.to !== undefined && isStandaloneActive(item.to.split('?')[0]))
+}
+
+/** The icons the collapsed sidebar shows: one per group, or one per link for a standalone/flat group. */
+const railEntries = computed(() =>
+  visibleGroups.value.flatMap((group) =>
+    group.standalone || group.flat
+      ? group.items.map((item) => ({ key: `${group.labelKey}:${item.to ?? item.urlKey}`, icon: item.icon, title: t(item.labelKey), single: item as AdminNavItem | undefined, group }))
+      : [{ key: group.labelKey, icon: group.icon, title: t(group.labelKey), single: undefined as AdminNavItem | undefined, group }],
+  ),
+)
+
+watch(
+  () => route.fullPath,
+  () => closeFlyout(),
+)
+onBeforeUnmount(cancelClose)
 
 // Navigating to a page (e.g. via a dashboard shortcut, not the sidebar
 // itself) should reveal its group without collapsing whatever else the user
@@ -252,17 +327,19 @@ watch(
                 :href="site.info.documents[item.urlKey] ?? undefined"
                 target="_blank"
                 rel="noopener"
-                class="block rounded-lg px-3 py-2 text-sm font-medium text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
+                class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
               >
+                <NavIcon :name="item.icon" />
                 {{ t(item.labelKey) }}
               </a>
               <RouterLink
                 v-else
                 :to="item.to!"
-                class="block rounded-lg px-3 py-2 text-sm font-medium text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
+                class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
                 :class="isStandaloneActive(item.to!) ? 'bg-primary-50 text-primary-800' : ''"
                 @click="emit('close')"
               >
+                <NavIcon :name="item.icon" />
                 {{ t(item.labelKey) }}
               </RouterLink>
             </template>
@@ -272,10 +349,11 @@ watch(
               v-for="item in group.items"
               :key="item.to"
               :to="item.to!"
-              class="block rounded-lg px-3 py-2 text-base font-bold text-primary-800 hover:bg-primary-50"
+              class="flex items-center gap-3 rounded-lg px-3 py-2 text-base font-bold text-primary-800 hover:bg-primary-50"
               :class="isStandaloneActive(item.to!) ? 'bg-primary-50' : ''"
               @click="emit('close')"
             >
+              <NavIcon :name="item.icon" />
               {{ t(item.labelKey) }}
             </RouterLink>
           </template>
@@ -286,7 +364,7 @@ watch(
               :aria-expanded="expanded[group.labelKey]"
               @click="toggleGroup(group.labelKey)"
             >
-              {{ t(group.labelKey) }}
+              <span class="flex items-center gap-3"><NavIcon :name="group.icon" />{{ t(group.labelKey) }}</span>
               <svg
                 class="h-4 w-4 shrink-0 transition-transform duration-200"
                 :class="expanded[group.labelKey] ? 'rotate-180' : ''"
@@ -311,17 +389,19 @@ watch(
                       :href="site.info.documents[item.urlKey] ?? undefined"
                       target="_blank"
                       rel="noopener"
-                      class="block rounded-lg px-3 py-2 text-sm font-medium text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
+                      class="flex items-center gap-3 rounded-lg py-2 pl-5 pr-3 text-sm font-medium text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
                     >
+                      <NavIcon :name="item.icon" size="h-4 w-4" />
                       {{ t(item.labelKey) }}
                     </a>
                     <RouterLink
                       v-else
                       :to="item.to!"
-                      class="block rounded-lg px-3 py-2 text-sm font-medium text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
+                      class="flex items-center gap-3 rounded-lg py-2 pl-5 pr-3 text-sm font-medium text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
                       active-class="bg-primary-50 text-primary-800"
                       @click="emit('close')"
                     >
+                      <NavIcon :name="item.icon" size="h-4 w-4" />
                       {{ t(item.labelKey) }}
                     </RouterLink>
                   </template>
@@ -330,6 +410,48 @@ watch(
             </div>
           </template>
         </div>
+      </nav>
+
+      <!-- Collapsed (desktop): one icon per menu; hover or tap shows its name and sub-menus. -->
+      <nav v-if="adminUi.sidebarCollapsed" class="hidden flex-col items-center gap-1 py-3 lg:flex" :aria-label="t('common.primaryNav')">
+        <template v-for="entry in railEntries" :key="entry.key">
+          <a
+            v-if="entry.single?.urlKey"
+            :href="site.info.documents[entry.single.urlKey] ?? undefined"
+            target="_blank"
+            rel="noopener"
+            class="flex h-10 w-10 items-center justify-center rounded-lg text-neutral-500 hover:bg-primary-50 hover:text-primary-800"
+            :aria-label="entry.title"
+            @mouseenter="openFlyout($event, entry.key, entry.title, [], entry.single)"
+            @mouseleave="scheduleClose"
+          >
+            <NavIcon :name="entry.icon" />
+          </a>
+          <RouterLink
+            v-else-if="entry.single"
+            :to="entry.single.to!"
+            class="flex h-10 w-10 items-center justify-center rounded-lg text-neutral-500 hover:bg-primary-50 hover:text-primary-800"
+            :class="isStandaloneActive(entry.single.to!) ? 'bg-primary-50 text-primary-800' : ''"
+            :aria-label="entry.title"
+            @mouseenter="openFlyout($event, entry.key, entry.title, [], entry.single)"
+            @mouseleave="scheduleClose"
+          >
+            <NavIcon :name="entry.icon" />
+          </RouterLink>
+          <button
+            v-else
+            type="button"
+            class="flex h-10 w-10 items-center justify-center rounded-lg text-neutral-500 hover:bg-primary-50 hover:text-primary-800"
+            :class="groupActive(entry.group) || flyout?.key === entry.key ? 'bg-primary-50 text-primary-800' : ''"
+            :aria-label="entry.title"
+            :aria-expanded="flyout?.key === entry.key"
+            @mouseenter="openFlyout($event, entry.key, entry.title, entry.group.items)"
+            @mouseleave="scheduleClose"
+            @click="toggleFlyout($event, entry.key, entry.title, entry.group.items)"
+          >
+            <NavIcon :name="entry.icon" />
+          </button>
+        </template>
       </nav>
     </div>
 
@@ -349,6 +471,50 @@ watch(
       </button>
     </div>
   </aside>
+
+  <Teleport to="body">
+    <div
+      v-if="flyout && adminUi.sidebarCollapsed"
+      class="fixed z-[60] min-w-[12rem] rounded-lg border border-neutral-200 bg-white py-1 shadow-lg"
+      :style="{ top: `${flyout.top}px`, left: `${flyout.left}px` }"
+      role="menu"
+      @mouseenter="cancelClose"
+      @mouseleave="scheduleClose"
+    >
+      <a v-if="flyout.href" :href="flyout.href" target="_blank" rel="noopener" class="block px-3 py-2 text-sm font-bold text-primary-800 hover:bg-primary-50" @click="closeFlyout">
+        {{ flyout.title }}
+      </a>
+      <RouterLink v-else-if="flyout.to" :to="flyout.to" class="block px-3 py-2 text-sm font-bold text-primary-800 hover:bg-primary-50" @click="closeFlyout">
+        {{ flyout.title }}
+      </RouterLink>
+      <template v-else>
+        <p class="border-b border-neutral-100 px-3 py-2 text-sm font-bold text-primary-800">{{ flyout.title }}</p>
+        <template v-for="item in flyout.items" :key="item.to ?? item.urlKey">
+          <a
+            v-if="item.urlKey"
+            :href="site.info.documents[item.urlKey] ?? undefined"
+            target="_blank"
+            rel="noopener"
+            class="flex items-center gap-2 px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100"
+            role="menuitem"
+            @click="closeFlyout"
+          >
+            <NavIcon :name="item.icon" size="h-4 w-4" />{{ t(item.labelKey) }}
+          </a>
+          <RouterLink
+            v-else
+            :to="item.to!"
+            class="flex items-center gap-2 px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100"
+            active-class="bg-primary-50 text-primary-800"
+            role="menuitem"
+            @click="closeFlyout"
+          >
+            <NavIcon :name="item.icon" size="h-4 w-4" />{{ t(item.labelKey) }}
+          </RouterLink>
+        </template>
+      </template>
+    </div>
+  </Teleport>
 
   <EditProfileModal v-model="editProfileOpen" />
   <ChangePasswordModal v-model="changePasswordOpen" />
