@@ -251,7 +251,7 @@ onMounted(async () => {
          comment for why the whole bar is `fixed`, not just the pager. -->
     <div
       v-if="meta"
-      class="fixed inset-x-0 bottom-0 z-10 mt-4 flex flex-col items-center gap-3 border-t border-neutral-200 bg-white/95 px-4 py-3 backdrop-blur sm:flex-row sm:justify-between sm:px-6"
+      class="fixed inset-x-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-10 lg:bottom-0 mt-4 flex flex-col items-center gap-3 border-t border-neutral-200 bg-white/95 px-4 py-3 backdrop-blur sm:flex-row sm:justify-between sm:px-6"
       :class="adminUi.sidebarCollapsed ? 'lg:left-16' : 'lg:left-64'"
     >
       <label class="flex items-center gap-2 text-sm text-neutral-500">

@@ -63,6 +63,8 @@ export interface Enrollment {
   enrollments_code: string | null
   enrolled_at: string
   status: EnrollmentStatus
+  /** The day the current status started (completed on, abandoned on, ...); null when it never changed. List only. */
+  status_date?: string | null
   /** Whether any money has been received against this enrollment — gates changing the course (not the class) via transfer(). */
   is_paid: boolean
   student: EnrollmentStudent

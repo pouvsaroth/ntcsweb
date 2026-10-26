@@ -167,7 +167,7 @@ onBeforeRouteLeave(async () => changes.value.length === 0 || (await confirmDialo
     <!-- Save bar: always reachable, however deep in the tree you are. -->
     <div
       v-if="changes.length > 0 || savedMessage"
-      class="fixed inset-x-0 bottom-0 z-10 flex items-center justify-end gap-3 border-t border-neutral-200 bg-white/95 px-4 py-3 backdrop-blur sm:px-6"
+      class="fixed inset-x-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-10 lg:bottom-0 flex items-center justify-end gap-3 border-t border-neutral-200 bg-white/95 px-4 py-3 backdrop-blur sm:px-6"
       :class="adminUi.sidebarCollapsed ? 'lg:left-16' : 'lg:left-64'"
     >
       <span v-if="savedMessage && changes.length === 0" class="text-sm text-success-600">{{ t('admin.translations.saved') }}</span>

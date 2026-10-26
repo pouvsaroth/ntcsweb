@@ -52,7 +52,7 @@ const pages = computed<(number | '…')[]>(() => {
     :class="
       sticky
         ? [
-            'fixed inset-x-0 bottom-0 z-10 border-t border-neutral-200 bg-white/95 px-4 py-3 backdrop-blur sm:px-6',
+            'fixed inset-x-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-10 lg:bottom-0 border-t border-neutral-200 bg-white/95 px-4 py-3 backdrop-blur sm:px-6',
             adminUi.sidebarCollapsed ? 'lg:left-16' : 'lg:left-64',
           ]
         : ''

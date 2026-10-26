@@ -3282,6 +3282,7 @@ const zh: MessageSchema = {
       columnBook: '套餐',
       columnTable: '座位',
       columnEnrolledAt: '报名日期',
+      columnStatusDate: 'Status Date',
       columnStatus: '状态',
       columnActions: '操作',
       edit: '编辑',

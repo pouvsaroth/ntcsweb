@@ -3283,6 +3283,7 @@ const ko: MessageSchema = {
       columnBook: '패키지',
       columnTable: '좌석',
       columnEnrolledAt: '등록일',
+      columnStatusDate: 'Status Date',
       columnStatus: '상태',
       columnActions: '작업',
       edit: '수정',

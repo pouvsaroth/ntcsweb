@@ -95,6 +95,7 @@ const columns = [
   { key: 'table', label: t('admin.enrollments.columnTable'), sortable: true, sortKey: 'table_id' },
   { key: 'enrolled_at', label: t('admin.enrollments.columnEnrolledAt'), sortable: true },
   { key: 'status', label: t('admin.enrollments.columnStatus'), sortable: true },
+  { key: 'status_date', label: t('admin.enrollments.columnStatusDate') },
   { key: 'actions', label: t('admin.enrollments.columnActions'), align: 'text-right' },
 ]
 
@@ -240,7 +241,11 @@ onMounted(() => {
             <RouterLink :to="`/admin/students/${row.student.id}`" class="text-sm font-semibold text-primary-700">{{ row.student.full_name }}</RouterLink>
             <BaseBadge :variant="statusBadgeVariant[row.status]">{{ t(`admin.enrollments.status${statusKey(row.status)}`) }}</BaseBadge>
           </div>
-          <p class="text-xs text-neutral-500">{{ [row.class.name, row.course_package?.name, formatDate(row.enrolled_at)].filter(Boolean).join(' · ') }}</p>
+          <p class="text-xs text-neutral-500">{{ [row.class.name, row.course_package?.name].filter(Boolean).join(' · ') }}</p>
+          <dl class="mt-1 flex flex-wrap gap-x-4 text-xs">
+            <div class="flex gap-1"><dt class="text-neutral-500">{{ t('admin.enrollments.columnEnrolledAt') }}:</dt><dd class="font-medium text-neutral-800">{{ formatDate(row.enrolled_at) }}</dd></div>
+            <div v-if="row.status_date" class="flex gap-1"><dt class="text-neutral-500">{{ t('admin.enrollments.columnStatusDate') }}:</dt><dd class="font-medium text-neutral-800">{{ formatDate(row.status_date) }}</dd></div>
+          </dl>
           <div class="mt-2 flex justify-end gap-3">
             <EditIconButton @click="openEdit(row)" />
             <button v-if="row.status !== 'dropped'" type="button" class="text-sm font-medium text-secondary-700" @click="openStatus(row)">{{ t('admin.enrollments.changeStatus') }}</button>
@@ -268,6 +273,7 @@ onMounted(() => {
       <template #cell-book="{ row }">{{ row.course_package?.name ?? '—' }}</template>
       <template #cell-table="{ row }">{{ row.table?.name ?? '—' }}</template>
       <template #cell-enrolled_at="{ row }">{{ formatDate(row.enrolled_at) }}</template>
+      <template #cell-status_date="{ row }">{{ row.status_date ? formatDate(row.status_date) : '—' }}</template>
       <template #cell-status="{ row }">
         <BaseBadge :variant="statusBadgeVariant[row.status]">
           {{ t(`admin.enrollments.status${statusKey(row.status)}`) }}

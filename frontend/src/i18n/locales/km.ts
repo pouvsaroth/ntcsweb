@@ -3283,6 +3283,7 @@ const km: MessageSchema = {
       columnBook: 'កញ្ចប់',
       columnTable: 'តុ',
       columnEnrolledAt: 'ថ្ងៃចុះឈ្មោះ',
+      columnStatusDate: 'ថ្ងៃប្តូរស្ថានភាព',
       columnStatus: 'ស្ថានភាព',
       columnActions: 'សកម្មភាព',
       edit: 'កែសម្រួល',

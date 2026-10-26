@@ -93,4 +93,19 @@ class EnrollmentHistoryTest extends TestCase
         $row = EnrollmentTransferHistory::query()->where('enrollment_id', $enrollment->id)->sole();
         $this->assertSame([$class->id, $class->id, $table->id, null], [$row->from_class_id, $row->to_class_id, $row->from_table_id, $row->to_table_id]);
     }
+
+    public function test_the_list_shows_the_date_the_current_status_started(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_VIEW, Permissions::ENROLLMENTS_CHANGE_STATUS]);
+        $never = $this->enrollment(['enrolled_at' => '2026-09-01']);
+        $abandoned = $this->enrollment();
+        $this->postJson("/api/v1/enrollments/{$abandoned->id}/status", [
+            'status' => Enrollment::STATUS_ABANDONED, 'reason' => 'Stopped coming', 'effective_date' => '2026-10-15',
+        ])->assertOk();
+
+        $rows = collect($this->getJson('/api/v1/enrollments?per_page=50')->assertOk()->json('data'))->keyBy('id');
+        $this->assertSame('2026-10-15', $rows[$abandoned->id]['status_date']);
+        $this->assertNull($rows[$never->id]['status_date']);
+        $this->assertSame('2026-09-01', $rows[$never->id]['enrolled_at']);
+    }
 }

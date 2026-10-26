@@ -3283,6 +3283,7 @@ const ja: MessageSchema = {
       columnBook: 'パッケージ',
       columnTable: '席',
       columnEnrolledAt: '登録日',
+      columnStatusDate: 'Status Date',
       columnStatus: 'ステータス',
       columnActions: '操作',
       edit: '編集',

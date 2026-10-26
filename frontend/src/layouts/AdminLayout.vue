@@ -68,8 +68,9 @@ onBeforeUnmount(() => applyTranslationOverrides({}))
            `sticky` prop, or Students.vue's own bar) is `fixed`, so it no
            longer reserves its own space in normal flow — without this, it
            would sit on top of the last row instead of below it. Harmless on
-           pages with no pagination, just a little empty space at the end. -->
-      <main class="flex-1 p-4 pb-20 sm:p-6 sm:pb-20">
+           pages with no pagination, just a little empty space at the end. Below lg
+           the bar sits above MobileBottomNav, so the space is larger there. -->
+      <main class="flex-1 p-4 pb-44 sm:p-6 sm:pb-36 lg:pb-20">
         <RouterView />
       </main>
     </div>

@@ -3287,6 +3287,7 @@ const en = {
       columnBook: 'Package',
       columnTable: 'Table',
       columnEnrolledAt: 'Enrolled At',
+      columnStatusDate: 'Status Date',
       columnStatus: 'Status',
       columnActions: 'Actions',
       edit: 'Edit',

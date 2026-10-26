@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Facades\DB;
 
@@ -203,6 +204,12 @@ class Enrollment extends Model
     public function attendanceRecords(): HasMany
     {
         return $this->hasMany(AttendanceRecord::class);
+    }
+
+    /** The newest status change — its date is the list's "status date" (completed on, abandoned on, ...). */
+    public function latestStatusChange(): HasOne
+    {
+        return $this->hasOne(EnrollmentStatusHistory::class)->latestOfMany();
     }
 
     public function statusHistories(): HasMany

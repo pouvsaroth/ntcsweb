@@ -35,7 +35,7 @@ final class EnrollmentController extends Controller
         $this->authorize('viewAny', Enrollment::class);
 
         $enrollments = ApiQuery::for(
-            Enrollment::query()->with(self::WITH)
+            Enrollment::query()->with([...self::WITH, 'latestStatusChange'])
                 // Enrollment by academic year: the year of the class (School setup).
                 ->when($request->filled('filter.academic_year_id'), fn ($q) => $q->whereHas('schoolClass', fn ($c) => $c->where('academic_year_id', $request->integer('filter.academic_year_id')))),
             $request,
