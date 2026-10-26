@@ -41,11 +41,9 @@ class StoreEnrollmentPackageRequest extends FormRequest
             'student_id' => ['required', Rule::exists('tenant.students', 'id')],
             'class_id' => ['required', Rule::exists('tenant.classes', 'id')],
 
-            // Mirrors StoreEnrollmentRequest's own book_id uniqueness check —
-            // scoped to non-dropped rows so a student may re-enroll in the
-            // same class+package after dropping (the DB's partial unique
-            // index allows exactly this); without the status exclusion here
-            // a re-enrollment would 422 even though the DB would accept it.
+            // Scoped to unfinished rows so a student may re-enroll in the same
+            // class+package after completing, abandoning or dropping it (the
+            // DB's partial unique index allows exactly this).
             'course_package_id' => [
                 'required',
                 Rule::exists('tenant.course_packages', 'id'),
@@ -53,7 +51,7 @@ class StoreEnrollmentPackageRequest extends FormRequest
                     fn ($query) => $query
                         ->where('student_id', $this->input('student_id'))
                         ->where('class_id', $this->input('class_id'))
-                        ->where('status', '!=', Enrollment::STATUS_DROPPED)
+                        ->whereNotIn('status', Enrollment::STATUSES_FINISHED)
                 ),
             ],
             // Uniqueness/room-membership is checked in withValidator() below

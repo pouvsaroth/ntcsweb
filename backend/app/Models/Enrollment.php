@@ -73,6 +73,13 @@ class Enrollment extends Model
     public const STATUS_DROPPED = 'dropped';
 
     /**
+     * Finished enrollments: the student may be enrolled into the same class
+     * and course again (a retake). The enrollment form's unique rule and the
+     * enrollments_student_class_package_active_unique DB index use this list.
+     */
+    public const STATUSES_FINISHED = [self::STATUS_COMPLETED, self::STATUS_ABANDONED, self::STATUS_DROPPED];
+
+    /**
      * The statuses selectable from the "manage status" menu — everything
      * except STATUS_DROPPED, which only ever happens as a side effect of
      * cancelling, never a direct choice.

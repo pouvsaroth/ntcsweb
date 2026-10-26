@@ -96,6 +96,41 @@ class EnrollmentReEnrollmentTest extends TestCase
         $this->assertSame(1, Invoice::where('student_id', $student->id)->count());
     }
 
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function finishedStatuses(): array
+    {
+        return [
+            'completed' => ['completed'],
+            'abandoned' => ['abandoned'],
+        ];
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('finishedStatuses')]
+    public function test_a_student_may_re_enroll_in_the_same_class_and_package_after_finishing_it(string $status): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE]);
+        $this->setUpAcademicCatalog();
+        $student = Student::factory()->create();
+
+        $payload = [
+            'student_id' => $student->id,
+            'class_id' => $this->computerEveningClass->id,
+            'course_package_id' => $this->msWordPackage->id,
+            'fee_type' => 'term',
+        ];
+
+        $first = $this->postJson('/api/v1/enrollments/package', $payload)->assertCreated()->json('data.id');
+        Enrollment::whereKey($first)->update(['status' => $status]);
+
+        $second = $this->postJson('/api/v1/enrollments/package', $payload)->assertCreated()->json('data.id');
+
+        $this->assertNotSame($first, $second);
+        $this->assertSame(2, Enrollment::where('student_id', $student->id)->count());
+        $this->assertSame($status, Enrollment::findOrFail($first)->status);
+    }
+
     public function test_a_student_may_enroll_in_the_same_package_in_another_class_after_completing_it(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE]);
