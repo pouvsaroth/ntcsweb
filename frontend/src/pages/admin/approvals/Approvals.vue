@@ -13,6 +13,7 @@ import DataTable from '@/components/ui/DataTable.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import { approvalRequestsService, type ApprovalRequest, type ApprovalRequestStatus } from '@/services/approvalRequests'
 import { examApplicationsService, type ExamApplication } from '@/services/examApplications'
+import { examPaymentLabelKey } from '@/services/myExamApplications'
 import { leaveRequestsService, type LeaveRequest } from '@/services/leaveRequests'
 import { formatDays } from '@/services/leaveManagement'
 import { makeUpClassCourseLabel, makeUpClassRequestsService, type MakeUpClassRequest, type MakeUpClassRequestStatus } from '@/services/makeUpClassRequests'
@@ -338,7 +339,8 @@ async function load() {
         id: r.id,
         reference: r.enrollment_code ?? `EX-${String(r.id).padStart(6, '0')}`,
         requestor: r.student.name,
-        subject: t('admin.approvals.examSubject', { date: formatDate(r.exam_date) }),
+        // The fee: Paid (QR) / Not paid (QR) / Not paid (Cash).
+        subject: `${t('admin.approvals.examSubject', { date: formatDate(r.exam_date) })} · ${t(examPaymentLabelKey(r))}`,
         status: r.status,
         createdAt: r.created_at,
         flow: r.approval_flow ?? null,
@@ -722,6 +724,12 @@ function leaveSubject(r: LeaveRequest): string {
           <div><dt class="text-neutral-500">{{ t('admin.exams.columnExamDate') }}</dt><dd class="font-medium text-neutral-900">{{ formatDate(detail.exam.exam_date) }}</dd></div>
           <div><dt class="text-neutral-500">{{ t('admin.exams.columnTimeExam') }}</dt><dd class="font-medium text-neutral-900">{{ detail.exam.exam_time?.slice(0, 5) ?? '—' }} – {{ detail.exam.exam_time_out?.slice(0, 5) ?? '—' }}</dd></div>
           <div><dt class="text-neutral-500">{{ t('admin.exams.columnTableNumber') }}</dt><dd class="font-medium text-neutral-900">{{ detail.exam.table?.name ?? detail.exam.table_no ?? '—' }}</dd></div>
+          <div>
+            <dt class="text-neutral-500">{{ t('examFeePayment.payment') }}</dt>
+            <dd class="font-medium" :class="detail.exam.paid_at ? 'text-success-600' : 'text-neutral-900'">
+              {{ t(examPaymentLabelKey(detail.exam)) }}<template v-if="detail.exam.paid_at"> · {{ formatDate(detail.exam.paid_at) }}</template>
+            </dd>
+          </div>
           <div v-if="detail.exam.decision_reason"><dt class="text-neutral-500">{{ t('admin.leaveRequests.decisionReason') }}</dt><dd class="font-medium text-neutral-900">{{ detail.exam.decision_reason }}</dd></div>
         </dl>
         <dl v-else-if="detail.kind === 'manpower' && detail.manpower" class="grid gap-y-2 text-sm">

@@ -57,6 +57,12 @@ class ExamApplicationResource extends JsonResource
             'fee_amount' => $this->fee_amount,
             'fee_currency' => $this->fee_currency,
             'student_marked_paid_at' => $this->student_marked_paid_at?->toIso8601String(),
+            // The exam fee: how the student chose to pay (cash | qr), and
+            // when a QR payment was found through Bakong.
+            'payment_method' => $this->payment_method,
+            'paid_at' => $this->paid_at?->toIso8601String(),
+            'paid_amount' => $this->paid_amount,
+            'paid_currency' => $this->paid_currency,
             'status' => $this->status,
             // Approvals queue only — see ApprovalFlow::progress().
             'approval_flow' => $this->whenLoaded('approvalFlow'),

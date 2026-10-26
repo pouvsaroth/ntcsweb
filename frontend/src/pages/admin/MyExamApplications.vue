@@ -10,7 +10,10 @@ import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import DataTable from '@/components/ui/DataTable.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import ExamApplicationRequestModal from '@/components/layout/ExamApplicationRequestModal.vue'
+import ExamFeeQrModal from '@/components/layout/ExamFeeQrModal.vue'
 import {
+  examCanPay,
+  examPaymentLabelKey,
   myExamApplicationsService,
   type ExamApplicationStatus,
   type MyExamApplication,
@@ -53,6 +56,8 @@ const visibleRows = computed(() => rows.value.filter((r) => r.status === activeT
 // Same columns the admin's Examination tab shows (see Exams.vue) — just
 // scoped to this student's own rows and read-only, no room/table/book
 // reassignment or student-record editing.
+const payingId = ref<number | null>(null)
+
 const columns = [
   { key: 'status', label: t('admin.myExamApplications.columnStatus') },
   { key: 'date', label: t('admin.myExamApplications.columnDate') },
@@ -62,6 +67,7 @@ const columns = [
   { key: 'timeExam', label: t('admin.exams.columnTimeExam') },
   { key: 'room', label: t('admin.exams.columnRoomNumber') },
   { key: 'table', label: t('admin.myExamApplications.columnTable') },
+  { key: 'payment', label: t('examFeePayment.payment') },
 ]
 
 function timeRange(row: MyExamApplication): string {
@@ -151,9 +157,16 @@ onMounted(() => load())
       <template #cell-timeExam="{ row }">{{ timeRange(row) }}</template>
       <template #cell-room="{ row }">{{ row.classroom?.name ?? '—' }}</template>
       <template #cell-table="{ row }">{{ row.table?.name ?? row.table_no ?? '—' }}</template>
+      <template #cell-payment="{ row }">
+        <div class="flex items-center gap-2">
+          <BaseBadge :variant="row.paid_at ? 'success' : 'neutral'">{{ t(examPaymentLabelKey(row)) }}</BaseBadge>
+          <BaseButton v-if="examCanPay(row)" size="sm" @click="payingId = row.id">{{ t('examFeePayment.pay') }}</BaseButton>
+        </div>
+      </template>
     </DataTable>
 
     <ExamApplicationRequestModal v-model="createOpen" @submitted="load" />
+    <ExamFeeQrModal :application-id="payingId" @close="payingId = null" @paid="load" />
 
     <!-- Detail -->
     <BaseModal :model-value="detail !== null" :title="t('admin.myExamApplications.detailTitle')" @update:model-value="detail = null">

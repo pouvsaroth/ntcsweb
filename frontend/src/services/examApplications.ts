@@ -46,6 +46,8 @@ export interface ExamApplication {
   fee_amount: string | null
   fee_currency: string | null
   student_marked_paid_at: string | null
+  payment_method: 'cash' | 'qr' | null
+  paid_at: string | null
   status: ExamApplicationStatus
   /** Approvals queue only — see ApprovalFlowProgress. */
   approval_flow?: ApprovalFlowProgress | null

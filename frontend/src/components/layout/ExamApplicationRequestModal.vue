@@ -9,6 +9,7 @@ import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
 import BaseSpinner from '@/components/ui/BaseSpinner.vue'
+import ExamFeeQrModal from '@/components/layout/ExamFeeQrModal.vue'
 import WebcamCaptureModal from '@/components/ui/WebcamCaptureModal.vue'
 import {
   myExamApplicationsService,
@@ -51,8 +52,10 @@ const createForm = reactive({
   date_of_birth: '',
   phone: '',
   village_code: '',
-  has_paid: false,
+  payment_method: '' as '' | 'cash' | 'qr',
 })
+// Picked QR: the QR to pay opens once the application is in.
+const payingId = ref<number | null>(null)
 const enrollments = ref<MyExamApplicationEnrollment[]>([])
 const enrollmentsLoading = ref(false)
 const enrollmentsError = ref<string | null>(null)
@@ -93,7 +96,7 @@ async function reset() {
   createForm.date_of_birth = ''
   createForm.phone = ''
   createForm.village_code = ''
-  createForm.has_paid = false
+  createForm.payment_method = ''
   createErrors.value = {}
   createGeneralError.value = null
   lookup.value = null
@@ -175,7 +178,8 @@ async function submitCreate() {
   createGeneralError.value = null
 
   try {
-    await myExamApplicationsService.submit({
+    if (createForm.payment_method === '') return
+    const created = await myExamApplicationsService.submit({
       enrollment_id: Number(createForm.enrollment_id),
       first_name: createForm.first_name,
       last_name: createForm.last_name,
@@ -185,10 +189,11 @@ async function submitCreate() {
       phone: createForm.phone,
       village_code: createForm.village_code,
       photo: photoFile.value,
-      has_paid: createForm.has_paid,
+      payment_method: createForm.payment_method,
     })
     emit('update:modelValue', false)
     emit('submitted')
+    if (createForm.payment_method === 'qr') payingId.value = created.id
   } catch (e) {
     if (e instanceof ApiRequestError && e.errors) {
       createErrors.value = e.errors
@@ -200,7 +205,7 @@ async function submitCreate() {
       // visibly wrong. Anything on an unrendered key surfaces here instead.
       const renderedFields = new Set([
         'enrollment_id', 'first_name', 'last_name', 'english_name', 'gender',
-        'date_of_birth', 'phone', 'village_code', 'photo', 'has_paid',
+        'date_of_birth', 'phone', 'village_code', 'photo', 'payment_method',
       ])
       const unmapped = Object.entries(e.errors)
         .filter(([field]) => !renderedFields.has(field))
@@ -338,17 +343,36 @@ watch(
           </span>
         </div>
 
-        <label class="flex items-center gap-2 text-sm text-neutral-700">
-          <input v-model="createForm.has_paid" type="checkbox" class="rounded border-neutral-300 text-primary-600 focus:ring-primary-500" />
-          {{ t('admin.myExamApplications.hasPaidLabel') }}
-        </label>
-        <p v-if="createErrors.has_paid?.[0]" class="text-sm text-danger-600">{{ createErrors.has_paid[0] }}</p>
+        <div>
+          <p class="mb-1.5 text-sm font-medium text-neutral-700">{{ t('examFeePayment.method') }} <span class="text-danger-600">*</span></p>
+          <div class="flex gap-3">
+            <label
+              class="flex flex-1 cursor-pointer items-center gap-2 rounded-lg border border-neutral-300 p-3 text-sm"
+              :class="createForm.payment_method === 'cash' ? 'border-primary-500 bg-primary-50' : ''"
+            >
+              <input v-model="createForm.payment_method" type="radio" value="cash" class="text-primary-600 focus:ring-primary-500" />
+              {{ t('examFeePayment.cash') }}
+            </label>
+            <label
+              v-if="fee?.qr_available"
+              class="flex flex-1 cursor-pointer items-center gap-2 rounded-lg border border-neutral-300 p-3 text-sm"
+              :class="createForm.payment_method === 'qr' ? 'border-primary-500 bg-primary-50' : ''"
+            >
+              <input v-model="createForm.payment_method" type="radio" value="qr" class="text-primary-600 focus:ring-primary-500" />
+              {{ t('examFeePayment.qr') }}
+            </label>
+          </div>
+          <p class="mt-1 text-xs text-neutral-500">{{ createForm.payment_method === 'qr' ? t('examFeePayment.qrHintOnSubmit') : createForm.payment_method === 'cash' ? t('examFeePayment.cashHint') : '' }}</p>
+          <p v-if="createErrors.payment_method?.[0]" class="text-sm text-danger-600">{{ createErrors.payment_method[0] }}</p>
+        </div>
       </template>
     </form>
 
     <template #footer>
       <BaseButton variant="outline" @click="emit('update:modelValue', false)">{{ t('common.cancel') }}</BaseButton>
-      <BaseButton :disabled="!lookup" :loading="creating" @click="submitCreate">{{ t('admin.myExamApplications.submit') }}</BaseButton>
+      <BaseButton :disabled="!lookup || !createForm.payment_method" :loading="creating" @click="submitCreate">{{ t('admin.myExamApplications.submit') }}</BaseButton>
     </template>
   </BaseModal>
+
+  <ExamFeeQrModal :application-id="payingId" @close="payingId = null" @paid="emit('submitted')" />
 </template>

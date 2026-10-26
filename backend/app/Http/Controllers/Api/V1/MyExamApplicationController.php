@@ -11,6 +11,7 @@ use App\Http\Responses\ApiResponse;
 use App\Models\ExamApplication;
 use App\Models\Student;
 use App\Services\Academic\ExamApplicationService;
+use App\Services\Academic\ExamFeePayment;
 use App\Support\Query\ApiQuery;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
@@ -29,6 +30,7 @@ final class MyExamApplicationController extends Controller
     public function __construct(
         private readonly ExamApplicationService $examApplications,
         private readonly TenantContext $context,
+        private readonly ExamFeePayment $payments,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -52,7 +54,39 @@ final class MyExamApplicationController extends Controller
             ->sortable(['exam_date', 'created_at'], default: '-created_at')
             ->paginate();
 
+        // A QR paid a moment ago shows as paid.
+        $this->payments->checkWaiting($applications->getCollection());
+
         return ApiResponse::success(ExamApplicationResource::collection($applications));
+    }
+
+    /**
+     * POST /my-exam-applications/{id}/qr — the QR to pay this exam fee
+     * (with the amount), valid for a few minutes.
+     */
+    public function qr(Request $request, int $application): JsonResponse
+    {
+        $model = $this->ownApplication($request, $application);
+
+        return ApiResponse::success($this->payments->qrFor($model));
+    }
+
+    /** GET /my-exam-applications/{id}/payment — asks Bakong whether the QR was paid (the QR screen polls this). */
+    public function payment(Request $request, int $application): JsonResponse
+    {
+        $model = $this->payments->check($this->ownApplication($request, $application));
+
+        return ApiResponse::success([
+            'paid' => $model->paid_at !== null,
+            'paid_at' => $model->paid_at?->toIso8601String(),
+        ]);
+    }
+
+    private function ownApplication(Request $request, int $id): ExamApplication
+    {
+        return ExamApplication::query()
+            ->where('student_id', $this->studentOrFail($request)->id)
+            ->findOrFail($id);
     }
 
     public function store(StoreMyExamApplicationRequest $request): JsonResponse
@@ -64,6 +98,7 @@ final class MyExamApplicationController extends Controller
             (int) $request->validated('enrollment_id'),
             $request->safe()->only(['first_name', 'last_name', 'english_name', 'gender', 'date_of_birth', 'phone', 'village_code']),
             $request->file('photo'),
+            (string) ($request->validated('payment_method') ?? 'cash'),
         );
 
         return ApiResponse::created(new ExamApplicationResource(
@@ -169,6 +204,8 @@ final class MyExamApplicationController extends Controller
         return ApiResponse::success([
             'amount' => $tenant->exam_fee_amount,
             'currency' => $tenant->default_currency,
+            // Whether "QR code" can be picked (the school has set its KHQR).
+            'qr_available' => $this->payments->qrAvailable(),
         ]);
     }
 

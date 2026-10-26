@@ -128,6 +128,27 @@ const en = {
     approveHint: 'Approving moves the student to the new class (same enrollment) and saves the history.',
   },
 
+  examFeePayment: {
+    method: 'Payment method',
+    cash: 'Cash',
+    qr: 'QR code',
+    cashHint: 'Pay the exam fee in cash at the school.',
+    qrHintOnSubmit: 'After you submit, a QR code with the exam fee opens. You can pay now or later.',
+    title: 'Pay exam fee',
+    amount: 'Amount',
+    hint: 'Scan with your bank app (KHQR) and pay the exact amount.',
+    waiting: 'Waiting for your payment…',
+    paid: 'Payment received. Thank you!',
+    payLater: 'Pay later',
+    pay: 'Pay',
+    payment: 'Payment',
+    loadFailed: 'Could not load the QR code.',
+    statusPaidQr: 'Paid (QR)',
+    statusNotPaidQr: 'Not paid (QR)',
+    statusNotPaidCash: 'Not paid (Cash)',
+    statusNotPaid: 'Not paid',
+  },
+
   makeUpClassRequest: {
     title: 'Make-up Class Request',
     course: 'Course',

@@ -29,6 +29,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
 </script>
 
 <template>
+  <!-- z-[70]: above BaseModal (z-50), since a confirm is often asked from inside a popup (e.g. Approve in an Approvals detail). -->
   <Teleport to="body">
     <Transition
       enter-active-class="transition ease-out duration-150"
@@ -38,7 +39,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
       leave-from-class="opacity-100"
       leave-to-class="opacity-0"
     >
-      <div v-if="store.open" class="fixed inset-0 z-50 flex items-center justify-center bg-neutral-900/50 p-4" @pointerdown="pressedOutside = $event.target === $event.currentTarget" @pointerup="releasedOutside = $event.target === $event.currentTarget" @click.self="pressedOutside && releasedOutside && store.settle(false)">
+      <div v-if="store.open" class="fixed inset-0 z-[70] flex items-center justify-center bg-neutral-900/50 p-4" @pointerdown="pressedOutside = $event.target === $event.currentTarget" @pointerup="releasedOutside = $event.target === $event.currentTarget" @click.self="pressedOutside && releasedOutside && store.settle(false)">
         <div role="alertdialog" aria-modal="true" class="w-full max-w-[300px] overflow-hidden rounded-2xl bg-white shadow-xl">
           <div class="px-5 pb-5 pt-6 text-center">
             <h2 class="text-base font-semibold text-neutral-900">{{ store.options.title ?? t('common.confirm') }}</h2>

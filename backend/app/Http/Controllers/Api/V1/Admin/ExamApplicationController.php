@@ -14,6 +14,7 @@ use App\Http\Responses\ApiResponse;
 use App\Models\ExamApplication;
 use App\Models\Tenant;
 use App\Services\Academic\ExamApplicationService;
+use App\Services\Academic\ExamFeePayment;
 use App\Services\Approvals\ApprovalFlow;
 use App\Support\Approvals\DocumentType;
 use App\Support\Query\ApiQuery;
@@ -119,6 +120,10 @@ final class ExamApplicationController extends Controller
             ->paginate();
 
         $this->flow->attachProgress($applications->getCollection(), $user);
+        // The Approvals queue shows Paid / Not paid: a QR paid a moment ago counts.
+        if ($request->boolean('approval_queue')) {
+            app(ExamFeePayment::class)->checkWaiting($applications->getCollection());
+        }
 
         return ApiResponse::success(ExamApplicationResource::collection($applications));
     }

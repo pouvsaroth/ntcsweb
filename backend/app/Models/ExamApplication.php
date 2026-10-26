@@ -41,7 +41,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 #[Fillable([
     'student_id', 'enrollment_id', 'book_id', 'retake_of_id', 'file_code', 'exam_date', 'exam_time', 'exam_time_out',
-    'table_no', 'classroom_id', 'table_id', 'fee_amount', 'fee_currency', 'student_marked_paid_at',
+    'table_no', 'classroom_id', 'table_id', 'fee_amount', 'fee_currency', 'student_marked_paid_at', 'payment_method',
     'status', 'decision_reason', 'remark', 'decided_by', 'decided_at', 'sold_at', 'received_at', 'paid_back_at',
     'photo_received_date', 'photo_received_remark', 'photo_received_by',
     'certificate_issued_date', 'certificate_issued_remark', 'certificate_issued_by',
@@ -90,6 +90,10 @@ class ExamApplication extends Model
             'exam_date' => 'date',
             'fee_amount' => 'decimal:2',
             'student_marked_paid_at' => 'datetime',
+            'khqr_expires_at' => 'datetime',
+            'khqr_checked_at' => 'datetime',
+            'paid_at' => 'datetime',
+            'paid_amount' => 'decimal:2',
             'decided_at' => 'datetime',
             'sold_at' => 'datetime',
             'received_at' => 'datetime',

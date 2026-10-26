@@ -985,6 +985,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('my-exam-applications/fee', [MyExamApplicationController::class, 'fee'])->name('my-exam-applications.fee');
         Route::get('my-exam-applications', [MyExamApplicationController::class, 'index'])->name('my-exam-applications.index');
         Route::post('my-exam-applications', [MyExamApplicationController::class, 'store'])->name('my-exam-applications.store');
+        Route::post('my-exam-applications/{application}/qr', [MyExamApplicationController::class, 'qr'])->whereNumber('application')->name('my-exam-applications.qr');
+        Route::get('my-exam-applications/{application}/payment', [MyExamApplicationController::class, 'payment'])->whereNumber('application')->name('my-exam-applications.payment');
 
         // Self-service — identity-gated (Staff/Student/User's own assignments), same pattern as my-invoices.
         Route::get('my-assets', [MyAssetController::class, 'index'])->name('my-assets.index');

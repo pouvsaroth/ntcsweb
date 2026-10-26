@@ -37,6 +37,10 @@ export interface MyExamApplication {
   remark: string | null
   fee_amount: string | number | null
   fee_currency: string | null
+  /** How the student chose to pay the fee — see examPaymentLabelKey(). */
+  payment_method: ExamPaymentMethod | null
+  /** When a QR payment was found through Bakong; null = not paid yet. */
+  paid_at: string | null
   status: ExamApplicationStatus
   decision_reason: string | null
   sold_at: string | null
@@ -79,12 +83,36 @@ export interface MyExamApplicationInput {
   phone: string
   village_code: string
   photo?: File | null
-  has_paid: boolean
+  payment_method: ExamPaymentMethod
 }
+
+export type ExamPaymentMethod = 'cash' | 'qr'
 
 export interface ExamFee {
   amount: string | number | null
   currency: string | null
+  /** The school has set its KHQR code, so "QR code" can be picked. */
+  qr_available?: boolean
+}
+
+export interface ExamFeeQr {
+  khqr: string
+  expires_at: string
+  amount: number
+  currency: string
+}
+
+/** Paid (QR) / Not paid (QR) / Not paid (Cash) — for the student's rows and the Approvals queue. */
+export function examPaymentLabelKey(application: { payment_method?: string | null; paid_at?: string | null }): string {
+  if (application.paid_at) return 'examFeePayment.statusPaidQr'
+  if (application.payment_method === 'qr') return 'examFeePayment.statusNotPaidQr'
+  if (application.payment_method === 'cash') return 'examFeePayment.statusNotPaidCash'
+  return 'examFeePayment.statusNotPaid'
+}
+
+/** A Pay button is offered while the fee is unpaid and the application is still open. */
+export function examCanPay(application: { status: string; paid_at?: string | null }): boolean {
+  return !application.paid_at && (application.status === 'pending' || application.status === 'approved')
 }
 
 /** Student self-service — own applications only, scoped server-side. */
@@ -107,7 +135,7 @@ export const myExamApplicationsService = {
     form.append('date_of_birth', input.date_of_birth)
     form.append('phone', input.phone)
     form.append('village_code', input.village_code)
-    form.append('has_paid', input.has_paid ? '1' : '0')
+    form.append('payment_method', input.payment_method)
     if (input.photo) form.append('photo', input.photo)
 
     return apiPost<MyExamApplication>('/my-exam-applications', form)
@@ -118,4 +146,10 @@ export const myExamApplicationsService = {
   lookup: (enrollmentId: number) => apiGet<MyExamApplicationLookup>(`/my-exam-applications/lookup/${enrollmentId}`),
 
   fee: () => apiGet<ExamFee>('/my-exam-applications/fee'),
+
+  /** The QR (with the fee amount) to pay this application — see ExamFeeQrModal. */
+  qr: (id: number) => apiPost<ExamFeeQr>(`/my-exam-applications/${id}/qr`, {}),
+
+  /** Asks whether the QR was paid (the QR screen polls this). */
+  payment: (id: number) => apiGet<{ paid: boolean; paid_at: string | null }>(`/my-exam-applications/${id}/payment`),
 }

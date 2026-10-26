@@ -61,7 +61,7 @@ final class ExamApplicationService
      *
      * @param  array{first_name:string, last_name:string, english_name:?string, gender:?string, date_of_birth:?string, phone:?string, village_code:?string}  $studentFields
      */
-    public function applyOnline(Student $student, int $enrollmentId, array $studentFields, ?UploadedFile $photo): ExamApplication
+    public function applyOnline(Student $student, int $enrollmentId, array $studentFields, ?UploadedFile $photo, string $paymentMethod = 'cash'): ExamApplication
     {
         $tenant = $this->context->getOrFail();
 
@@ -71,7 +71,7 @@ final class ExamApplicationService
             ]);
         }
 
-        $application = DB::transaction(function () use ($student, $enrollmentId, $studentFields, $photo, $tenant) {
+        $application = DB::transaction(function () use ($student, $enrollmentId, $studentFields, $photo, $tenant, $paymentMethod) {
             $existing = ExamApplication::query()
                 ->where('enrollment_id', $enrollmentId)
                 ->lockForUpdate()
@@ -104,6 +104,7 @@ final class ExamApplicationService
                 'fee_amount' => $tenant->exam_fee_amount,
                 'fee_currency' => $tenant->default_currency,
                 'student_marked_paid_at' => now(),
+                'payment_method' => $paymentMethod,
                 'status' => ExamApplication::STATUS_PENDING,
             ]);
 
@@ -406,6 +407,14 @@ final class ExamApplicationService
             /** @var ExamApplication $application */
             $application = ExamApplication::query()->whereKey($application->getKey())->lockForUpdate()->firstOrFail();
             $application->loadMissing('student');
+
+            // Already paid by the student's QR (found through Bakong): the
+            // payment is recorded as that QR payment, whatever was picked.
+            if ($application->paid_at !== null) {
+                $paymentMethod = PaymentMethod::QR;
+                $fee = (float) ($application->paid_amount ?? $fee);
+                $currency = $application->paid_currency ?? $currency;
+            }
 
             $product = $this->examFeeProduct();
 
