@@ -12,6 +12,7 @@
         "laravel/sanctum": "^4.3",
         "laravel/tinker": "^3.0",
         "minishlink/web-push": "^11.0",
+        "openspout/openspout": "^4.28",
         "spatie/browsershot": "^5.4",
         "stancl/tenancy": "^3.10"
     },

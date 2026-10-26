@@ -57,6 +57,7 @@ use App\Http\Controllers\Api\V1\Admin\AssessmentSchemeController;
 use App\Http\Controllers\Api\V1\Admin\ExamScheduleController;
 use App\Http\Controllers\Api\V1\Admin\GradebookController;
 use App\Http\Controllers\Api\V1\Admin\ResultApprovalController;
+use App\Http\Controllers\Api\V1\Admin\StudentResultsController;
 use App\Http\Controllers\Api\V1\Admin\HolidayController;
 use App\Http\Controllers\Api\V1\Admin\IncomeController;
 use App\Http\Controllers\Api\V1\Admin\InterviewController;
@@ -392,6 +393,14 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::post('gradebook/corrections/{gradeCorrection}/reject', [ResultApprovalController::class, 'rejectCorrection'])->name('gradebook.corrections.reject');
         Route::delete('gradebook/corrections/{gradeCorrection}', [ResultApprovalController::class, 'destroyCorrection'])->name('gradebook.corrections.destroy');
         Route::get('gradebook/history', [ResultApprovalController::class, 'history'])->name('gradebook.history');
+        // Transcript, progress and exports (7d).
+        Route::get('gradebook/students', [StudentResultsController::class, 'students'])->name('gradebook.students');
+        Route::get('gradebook/transcript', [StudentResultsController::class, 'transcript'])->name('gradebook.transcript');
+        Route::get('gradebook/transcript/pdf', [StudentResultsController::class, 'transcriptPdf'])->name('gradebook.transcript.pdf');
+        Route::get('gradebook/progress/student', [StudentResultsController::class, 'studentProgress'])->name('gradebook.progress.student');
+        Route::get('gradebook/progress/class', [StudentResultsController::class, 'classProgress'])->name('gradebook.progress.class');
+        Route::get('gradebook/export/report-cards', [StudentResultsController::class, 'reportCards'])->name('gradebook.export.report-cards');
+        Route::get('gradebook/export/score-sheet', [StudentResultsController::class, 'scoreSheet'])->name('gradebook.export.score-sheet');
         Route::get('student-promotions/classes', [StudentPromotionController::class, 'classes'])->name('student-promotions.classes');
         Route::get('student-promotions', [StudentPromotionController::class, 'show'])->name('student-promotions.show');
         Route::post('student-promotions', [StudentPromotionController::class, 'apply'])->name('student-promotions.apply');
@@ -917,6 +926,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         // Student self-service — identity-gated, same pattern as my-invoices.
         // Student self-service — identity-gated, same pattern as my-attendance.
         Route::get('my-scores', [MyExamScoreController::class, 'index'])->name('my-scores.index');
+        // A student's own approved school results (Examination, docs/academics/gradebook.md 7d).
+        Route::get('my-results', [StudentResultsController::class, 'mine'])->name('my-results.index');
 
         Route::get('my-attendance/hours-summary', [MyAttendanceController::class, 'hoursSummary'])->name('my-attendance.hours-summary');
         Route::get('my-attendance', [MyAttendanceController::class, 'index'])->name('my-attendance.index');

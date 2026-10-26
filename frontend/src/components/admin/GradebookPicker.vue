@@ -15,7 +15,7 @@ import { academicTermsService, type AcademicTerm } from '@/services/schoolSetup'
  * Grade Entry and a reload keeps the place. Classes are only those this
  * account may open (GET /gradebook/classes).
  */
-const props = withDefaults(defineProps<{ withSubject?: boolean; classOptional?: boolean }>(), { withSubject: false, classOptional: false })
+const props = withDefaults(defineProps<{ withSubject?: boolean; classOptional?: boolean; noTerm?: boolean }>(), { withSubject: false, classOptional: false, noTerm: false })
 
 const emit = defineEmits<{ change: [pick: GradebookPick]; ready: [classes: GradebookClass[]] }>()
 
@@ -118,9 +118,9 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="grid gap-2 sm:grid-cols-2" :class="withSubject ? 'lg:grid-cols-4' : 'lg:grid-cols-3'">
+  <div class="grid gap-2 sm:grid-cols-2" :class="withSubject ? 'lg:grid-cols-4' : noTerm ? '' : 'lg:grid-cols-3'">
     <BaseSelect :model-value="year" :options="yearOptions" :label="t('gradebook.academicYear')" @update:model-value="onYear" />
-    <BaseSelect :model-value="term" :options="termOptions" :label="t('gradebook.term')" @update:model-value="onTerm" />
+    <BaseSelect v-if="!noTerm" :model-value="term" :options="termOptions" :label="t('gradebook.term')" @update:model-value="onTerm" />
     <BaseSelect :model-value="klass" :options="classOptions" :label="t('gradebook.class')" @update:model-value="onClass" />
     <BaseSelect v-if="withSubject" :model-value="subject" :options="subjectOptions" :label="t('gradebook.subject')" @update:model-value="onSubject" />
   </div>

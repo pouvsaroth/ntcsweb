@@ -2,9 +2,11 @@
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import TranscriptView from '@/components/admin/TranscriptView.vue'
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
 import BaseSpinner from '@/components/ui/BaseSpinner.vue'
+import { studentResultsService, type Transcript } from '@/services/gradebook'
 import { myScoresService, type ExamMention, type MyScore } from '@/services/myScores'
 import { ApiRequestError } from '@/types/api'
 import { formatDate } from '@/utils/date'
@@ -12,11 +14,13 @@ import { formatDate } from '@/utils/date'
 /**
  * The student's Score card (Dashboard.vue) — one card per exam score
  * entered for them: book, exam date, score, mention, and "Make-up exam" when
- * that score is from a retake.
+ * that score is from a retake. Above them, the student's approved school
+ * results (Examination gradebook, docs/academics/gradebook.md 7d), when any.
  */
 const { t } = useI18n()
 
 const scores = ref<MyScore[]>([])
+const results = ref<Transcript | null>(null)
 const loading = ref(true)
 const error = ref<string | null>(null)
 
@@ -33,7 +37,7 @@ function formatScore(score: number): string {
 
 onMounted(async () => {
   try {
-    scores.value = await myScoresService.list()
+    ;[scores.value, results.value] = await Promise.all([myScoresService.list(), studentResultsService.mine().catch(() => null)])
   } catch (e) {
     error.value = e instanceof ApiRequestError ? e.message : t('admin.myScores.loadFailed')
   } finally {
@@ -52,14 +56,19 @@ onMounted(async () => {
 
     <div v-if="loading" class="flex justify-center py-10"><BaseSpinner /></div>
 
+    <section v-if="!loading && results && results.years.length" class="mb-6">
+      <h2 class="mb-2 text-base font-semibold text-neutral-900">{{ t('gradebook.transcript.myResults') }}</h2>
+      <TranscriptView :transcript="results" />
+    </section>
+
     <p
-      v-else-if="!error && scores.length === 0"
+      v-if="!loading && !error && scores.length === 0 && !(results && results.years.length)"
       class="rounded-[--radius-card] border border-dashed border-neutral-300 py-10 text-center text-sm text-neutral-500"
     >
       {{ t('admin.myScores.emptyMessage') }}
     </p>
 
-    <div v-else class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div v-else-if="!loading && scores.length" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       <div
         v-for="item in scores"
         :key="item.exam_application_id"

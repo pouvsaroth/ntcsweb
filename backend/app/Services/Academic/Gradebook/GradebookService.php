@@ -73,7 +73,7 @@ final class GradebookService
     }
 
     /** Everything the Grade Entry screen shows for one class + subject + term. @return array<string, mixed> */
-    public function sheet(User $user, SchoolClass $class, Book $book, AcademicTerm $term): array
+    public function sheet(?User $user, SchoolClass $class, Book $book, AcademicTerm $term): array
     {
         $sheet = $this->sheetFor($class, $book->getKey(), $term);
         $scheme = $this->schemeFor($class, $sheet);
@@ -97,7 +97,8 @@ final class GradebookService
             }
         }
 
-        $teaches = $this->access->canEnter($user, $class, $book->getKey());
+        // No user: a read-only copy (exports).
+        $teaches = $user !== null && $this->access->canEnter($user, $class, $book->getKey());
         $canEnter = $teaches && ($sheet === null || $sheet->isEditable());
         $pending = $sheet ? GradeCorrection::query()->where('result_sheet_id', $sheet->id)->where('status', GradeCorrection::STATUS_PENDING)->get()
             ->map(fn (GradeCorrection $c) => $c->student_id.'|'.($c->competency_criterion_id ? "k{$c->competency_criterion_id}" : "{$c->assessment_component_id}-{$c->occurrence}"))->values() : collect();
@@ -315,16 +316,19 @@ final class GradebookService
 
     /**
      * Score Calculation: one class's term results — each subject, the
-     * average of the subjects, the overall score, band and rank.
+     * average of the subjects, the overall score, band and rank. With
+     * $approvedOnly (transcripts, report cards, the student's own view) only
+     * approved sheets count.
      *
      * @return array<string, mixed>
      */
-    public function overview(SchoolClass $class, AcademicTerm $term): array
+    public function overview(SchoolClass $class, AcademicTerm $term, bool $approvedOnly = false): array
     {
         $roster = $this->roster($class);
         $scheme = AssessmentScheme::for($class->grade_level_id)?->load('bands');
         $subjects = $this->access->subjects($class);
-        $sheets = ResultSheet::query()->where('class_id', $class->getKey())->where('academic_term_id', $term->getKey())->get()->keyBy('book_id');
+        $sheets = ResultSheet::query()->where('class_id', $class->getKey())->where('academic_term_id', $term->getKey())
+            ->when($approvedOnly, fn ($q) => $q->where('status', ResultSheet::STATUS_APPROVED))->get()->keyBy('book_id');
         $results = SubjectResult::query()->whereIn('result_sheet_id', $sheets->pluck('id')->all() ?: [0])->get()->groupBy('student_id');
         $sheetBook = $sheets->mapWithKeys(fn ($s) => [$s->id => $s->book_id]);
         $passMark = (float) (PromotionRule::for($class->grade_level_id)?->pass_mark ?? 50);
@@ -375,7 +379,7 @@ final class GradebookService
         return [
             'class' => ['id' => $class->id, 'name' => $class->name],
             'term' => ['id' => $term->id, 'name' => $term->name],
-            'scheme' => $scheme ? ['name' => $scheme->name, 'mode' => $scheme->mode, 'max_score' => (float) $scheme->max_score] : null,
+            'scheme' => $scheme ? ['name' => $scheme->name, 'mode' => $scheme->mode, 'max_score' => (float) $scheme->max_score, 'decimals' => $scheme->decimals] : null,
             'pass_mark' => $passMark,
             'subjects' => $subjects->map(fn ($b) => ['id' => $b->id, 'title' => $b->title, 'status' => $sheets->get($b->id)?->status])->values(),
             'students' => $rows,

@@ -1,4 +1,4 @@
-import { apiDelete, apiGet, apiPost, apiPut } from '@/services/http'
+import { apiDelete, apiDownload, apiGet, apiPost, apiPut } from '@/services/http'
 
 /**
  * Academic > Examination — gradebook & assessment (docs/academics/gradebook.md).
@@ -376,4 +376,79 @@ export const resultApprovalsService = {
   rejectCorrection: (id: number, reason: string) => apiPost<{ id: number; status: CorrectionStatus }>(`/gradebook/corrections/${id}/reject`, { reason }),
   withdrawCorrection: (id: number) => apiDelete(`/gradebook/corrections/${id}`),
   history: (target: SheetTarget) => apiGet<HistoryRow[]>('/gradebook/history', { params: target }),
+}
+
+// --- Step 7d: transcript, progress, exports, my results --------------------------
+
+export interface TranscriptSubject {
+  id: number
+  title: string
+  status: SheetStatus | null
+  percent: number | null
+  score: number | null
+  band: string | null
+  passed: boolean | null
+  complete: boolean
+}
+
+export interface TranscriptTerm {
+  term: { id: number; name: string }
+  class: { id: number; name: string }
+  scheme: { name: string; mode: AssessmentMode; max_score: number; decimals: number } | null
+  subjects: TranscriptSubject[]
+  average: number | null
+  score: number | null
+  band: string | null
+  passed: boolean | null
+  rank: number | null
+  class_size: number
+  complete: boolean
+}
+
+export interface TranscriptYear {
+  academic_year: { id: number; name: string | null }
+  class: { id: number; name: string; grade_level: string | null }
+  terms: TranscriptTerm[]
+  year: {
+    subjects: { id: number; title: string; percent: number; score: number | null }[]
+    average: number | null
+    score: number | null
+    band: string | null
+    passed: boolean | null
+    complete: boolean
+  }
+}
+
+export interface Transcript {
+  student: { id: number; code: string; name: string; english_name: string | null } | null
+  approved_only: boolean
+  years: TranscriptYear[]
+}
+
+export interface ProgressData {
+  subjects: { id: number; title: string }[]
+  points: { label: string; average: number | null; pass_rate?: number | null; values: Record<string, number | null> }[]
+}
+
+export interface RosterStudent {
+  id: number
+  code: string
+  name: string
+}
+
+const q = (params: Record<string, string | number | boolean | null | undefined>) =>
+  new URLSearchParams(Object.entries(params).filter(([, v]) => v !== null && v !== undefined && v !== '').map(([k, v]) => [k, String(v)])).toString()
+
+export const studentResultsService = {
+  students: (classId: number) => apiGet<RosterStudent[]>('/gradebook/students', { params: { class_id: classId } }),
+  transcript: (studentId: number, approvedOnly: boolean) =>
+    apiGet<Transcript>('/gradebook/transcript', { params: { student_id: studentId, approved_only: approvedOnly ? 1 : undefined } }),
+  downloadTranscript: (studentId: number, filename: string) => apiDownload(`/gradebook/transcript/pdf?${q({ student_id: studentId })}`, filename),
+  studentProgress: (studentId: number) => apiGet<ProgressData & { student: Transcript['student'] }>('/gradebook/progress/student', { params: { student_id: studentId } }),
+  classProgress: (classId: number) => apiGet<ProgressData & { class: { id: number; name: string } }>('/gradebook/progress/class', { params: { class_id: classId } }),
+  downloadReportCards: (classId: number, termId: number, filename: string, studentId?: number) =>
+    apiDownload(`/gradebook/export/report-cards?${q({ class_id: classId, academic_term_id: termId, student_id: studentId })}`, filename),
+  downloadScoreSheet: (classId: number, termId: number, filename: string) =>
+    apiDownload(`/gradebook/export/score-sheet?${q({ class_id: classId, academic_term_id: termId })}`, filename),
+  mine: () => apiGet<Transcript>('/my-results'),
 }

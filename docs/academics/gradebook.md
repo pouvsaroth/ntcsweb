@@ -198,3 +198,29 @@ in place).
   withdraw). Both items are in eApprovals → Approvals (Approved / Rejected
   tabs; a returned sheet shows under Rejected) and in Flow Setting.
 - Tests: `tests/Feature/Academic/ResultApprovalTest.php` (5).
+
+## As built — 7d (2026-10-22, checked 2026-10-26)
+
+- No new tables: everything reads the result sheets' calculated subject
+  results (`StudentResults`, `ResultDocuments`).
+- Access: a student's results are open to whoever may open one of the classes
+  the student is (or was) in, or every class (`manage-all` / `gradebook.approve`).
+  A student sees only their own approved results.
+- API: `GET gradebook/students` (picker), `GET gradebook/transcript`
+  (`approved_only=1` optional), `GET gradebook/transcript/pdf` (approved only),
+  `GET gradebook/progress/student|class`, `GET gradebook/export/report-cards`
+  (PDF, one A4 page per student, approved results of one class + term),
+  `GET gradebook/export/score-sheet` (Excel via `openspout/openspout`: a summary
+  sheet with every subject, average, band, rank and result, then one sheet per
+  subject with every score; all results, each subject's status shown),
+  `GET my-results` (the signed-in student).
+- Transcript: year by year, term by term — each subject's score, band and
+  rank in the class, the term average, then a year line (each subject's
+  average over the terms and the year average).
+- Console: new tabs Academic Transcript, Student Progress (one student or the
+  whole class, `ProgressChart`) and Result Export, after Grade Correction.
+  My Scores shows the student's approved school results (`TranscriptView`)
+  above the computer-school exam cards.
+- PDF views `pdf/transcript`, `pdf/report-cards` (shared
+  `pdf/partials/gradebook-style`).
+- Tests: `tests/Feature/Academic/StudentResultsTest.php` (5).

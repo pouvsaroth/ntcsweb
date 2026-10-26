@@ -303,6 +303,24 @@ const adminRoutes: RouteRecordRaw[] = [
     meta: { titleKey: 'gradebook.tabs.corrections', headerTabs: 'examination' },
   },
   {
+    path: 'examination/transcript',
+    name: 'admin.examination.transcript',
+    component: () => import('@/pages/admin/examination/AcademicTranscript.vue'),
+    meta: { titleKey: 'gradebook.tabs.transcript', headerTabs: 'examination' },
+  },
+  {
+    path: 'examination/progress',
+    name: 'admin.examination.progress',
+    component: () => import('@/pages/admin/examination/StudentProgress.vue'),
+    meta: { titleKey: 'gradebook.tabs.progress', headerTabs: 'examination' },
+  },
+  {
+    path: 'examination/export',
+    name: 'admin.examination.export',
+    component: () => import('@/pages/admin/examination/ResultExport.vue'),
+    meta: { titleKey: 'gradebook.tabs.export', headerTabs: 'examination' },
+  },
+  {
     path: 'exams',
     name: 'admin.exams',
     component: () => import('@/pages/admin/Exams.vue'),
