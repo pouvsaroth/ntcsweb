@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
 
@@ -11,12 +11,12 @@ import { approvalRequestsService } from '@/services/approvalRequests'
 import { type AttendanceRecord, attendanceService, type AttendanceStatusValue, type MyAttendanceHoursRow } from '@/services/attendance'
 import { enrollmentsService } from '@/services/enrollments'
 import { examApplicationsService } from '@/services/examApplications'
+import { type Invoice, invoicesService, type InvoiceStatusValue } from '@/services/invoices'
 import { leaveRequestsService } from '@/services/leaveRequests'
 import { makeUpClassCourseLabel, makeUpClassRequestsService } from '@/services/makeUpClassRequests'
 import type { MonthlyInvoice } from '@/services/monthlyInvoices'
 import { monthlyPaymentAlertsService } from '@/services/monthlyPaymentAlerts'
 import { resignationRequestsService } from '@/services/resignationRequests'
-import { studentsService } from '@/services/students'
 import { useAuthStore } from '@/stores/auth'
 import { formatMoney } from '@/utils/currency'
 import { formatDate } from '@/utils/date'
@@ -183,7 +183,6 @@ function formatHours(hours: number): string {
   return t('admin.dashboard.hoursValue', { hours: Number.isInteger(hours) ? hours : hours.toFixed(1) })
 }
 
-const studyingCount = ref<string>('—')
 /** Active enrollments right now — same "studying" definition as the Classes list's active-student count/filter, not Student.status. */
 const studyingEnrollmentsCount = ref<string>('—')
 const monthlyIncome = ref<string>('—')
@@ -203,11 +202,88 @@ function absenceStatusLabel(status: AttendanceStatusValue): string {
 const absentYesterday = ref<AttendanceRecord[]>([])
 const monthlyPaymentAlerts = ref<MonthlyInvoice[]>([])
 
+/**
+ * Invoices not yet fully paid (Unpaid, Partially Paid, Overdue — the same set
+ * as Invoice::scopeOutstanding), oldest due date first.
+ */
+const UNPAID_STATUSES = 'ISSUED,PARTIALLY_PAID,OVERDUE'
+const UNPAID_LIMIT = 10
+const unpaidInvoices = ref<Invoice[]>([])
+const unpaidInvoicesTotal = ref(0)
+const unpaidStatusVariant: Partial<Record<InvoiceStatusValue, 'primary' | 'warning' | 'danger'>> = {
+  ISSUED: 'primary',
+  PARTIALLY_PAID: 'warning',
+  OVERDUE: 'danger',
+}
+
+function invoiceStatusLabel(status: InvoiceStatusValue): string {
+  const key = status
+    .toLowerCase()
+    .split('_')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join('')
+  return t(`admin.invoices.status${key}`)
+}
+
+async function loadUnpaidInvoices(): Promise<void> {
+  try {
+    const result = await invoicesService.list({ page: 1, per_page: UNPAID_LIMIT, sort: 'due_date', filter: { status: UNPAID_STATUSES } })
+    unpaidInvoices.value = result.data
+    unpaidInvoicesTotal.value = result.pagination.type === 'length_aware' ? result.pagination.total : result.data.length
+  } catch {
+    // Left empty — most likely the signed-in admin just lacks invoices.view.
+  }
+}
+
 let currency: 'USD' | 'KHR' = 'USD'
 
 function money(amount: number): string {
   return formatMoney(amount, currency)
 }
+
+/**
+ * The eye toggle: hides every money figure on this page (e.g. when the screen
+ * is in view of students or parents). Remembered per user in this browser.
+ */
+const MASK = '••••••'
+const showMoney = ref(true)
+
+function moneyPrefKey(): string | null {
+  return auth.user ? `dashboard.showMoney.${auth.user.id}` : null
+}
+
+function loadMoneyPref(): void {
+  const key = moneyPrefKey()
+  if (!key) return
+  try {
+    showMoney.value = localStorage.getItem(key) !== '0'
+  } catch {
+    // Storage blocked — keep the default (shown).
+  }
+}
+
+function toggleMoney(): void {
+  showMoney.value = !showMoney.value
+  const key = moneyPrefKey()
+  if (!key) return
+  try {
+    localStorage.setItem(key, showMoney.value ? '1' : '0')
+  } catch {
+    // Storage blocked — the choice just lasts until reload.
+  }
+}
+
+/** A money figure, or the mask while amounts are hidden. */
+function amount(value: number, cur: 'USD' | 'KHR'): string {
+  return showMoney.value ? formatMoney(value, cur) : MASK
+}
+
+function maskedText(text: string): string {
+  return showMoney.value || text === '—' ? text : MASK
+}
+
+const EYE_OPEN = 'M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178zM15 12a3 3 0 11-6 0 3 3 0 016 0z'
+const EYE_CLOSED = 'M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88'
 
 function firstOfMonth(): string {
   const now = new Date()
@@ -273,13 +349,6 @@ async function loadStats(): Promise<void> {
 
   if (auth.can('dashboard.finance.view')) {
     try {
-      const result = await studentsService.list({ per_page: 1, filter: { status: 'active' } })
-      if (result.pagination.type === 'length_aware') studyingCount.value = String(result.pagination.total)
-    } catch {
-      // Left as '—' — most likely the signed-in admin just lacks students.view.
-    }
-
-    try {
       const result = await enrollmentsService.list({ page: 1, per_page: 1, filter: { status: 'active' } })
       if (result.pagination.type === 'length_aware') studyingEnrollmentsCount.value = String(result.pagination.total)
     } catch {
@@ -313,6 +382,7 @@ async function loadStats(): Promise<void> {
     } catch {
       // Left empty — most likely the signed-in admin just lacks invoices.view.
     }
+    void loadUnpaidInvoices()
   }
 }
 
@@ -344,7 +414,11 @@ function reloadIfNewDay(): void {
 
 let dayTimer: ReturnType<typeof setInterval> | undefined
 
+// auth.user can arrive after this page mounts (first load after sign-in).
+watch(() => auth.user?.id, loadMoneyPref)
+
 onMounted(() => {
+  loadMoneyPref()
   loadAll()
   document.addEventListener('visibilitychange', reloadIfStale)
   window.addEventListener('focus', reloadIfStale)
@@ -535,30 +609,127 @@ onBeforeUnmount(() => {
         </BaseCard>
       </template>
 
+      <template v-if="auth.can('dashboard.payment-alerts.view') && unpaidInvoices.length > 0">
+        <div class="mt-8 flex items-center gap-2">
+          <h2 class="text-sm font-semibold uppercase tracking-wide text-neutral-500">
+            {{ t('admin.dashboard.unpaidInvoicesSection') }} ({{ unpaidInvoicesTotal }})
+          </h2>
+          <button
+            type="button"
+            class="rounded-full p-1 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+            :title="showMoney ? t('admin.dashboard.hideAmounts') : t('admin.dashboard.showAmounts')"
+            :aria-label="showMoney ? t('admin.dashboard.hideAmounts') : t('admin.dashboard.showAmounts')"
+            :aria-pressed="!showMoney"
+            @click="toggleMoney"
+          >
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" :d="showMoney ? EYE_OPEN : EYE_CLOSED" />
+            </svg>
+          </button>
+        </div>
+        <BaseCard class="mt-3">
+          <!-- Phones: cards. -->
+          <ul class="divide-y divide-neutral-100 sm:hidden">
+            <li v-for="row in unpaidInvoices" :key="row.id" class="py-2">
+              <RouterLink :to="`/admin/invoices/${row.id}`" class="block">
+                <div class="flex items-center justify-between gap-2">
+                  <p class="font-medium text-neutral-800">{{ row.student?.name ?? '—' }}</p>
+                  <BaseBadge :variant="unpaidStatusVariant[row.status] ?? 'primary'">{{ invoiceStatusLabel(row.status) }}</BaseBadge>
+                </div>
+                <p class="text-xs text-neutral-500">{{ [row.invoice_number, row.course, formatDate(row.due_date)].filter(Boolean).join(' · ') }}</p>
+                <p class="mt-1 text-sm">
+                  <span class="text-neutral-500">{{ t('admin.invoices.columnBalance') }}:</span>
+                  <span class="font-semibold text-danger-600"> {{ amount(row.balance, row.currency) }}</span>
+                  <span class="text-neutral-400"> / {{ amount(row.total, row.currency) }}</span>
+                </p>
+              </RouterLink>
+            </li>
+          </ul>
+          <div class="hidden overflow-x-auto sm:block">
+            <table class="w-full text-left text-sm">
+              <thead class="text-neutral-500">
+                <tr>
+                  <th class="py-1.5 pr-4 font-medium">{{ t('admin.invoices.columnStudent') }}</th>
+                  <th class="py-1.5 pr-4 font-medium">{{ t('admin.invoices.columnNumber') }}</th>
+                  <th class="py-1.5 pr-4 font-medium">{{ t('admin.invoices.monthlyColumnCourse') }}</th>
+                  <th class="py-1.5 pr-4 text-right font-medium">{{ t('admin.invoices.columnTotal') }}</th>
+                  <th class="py-1.5 pr-4 text-right font-medium">{{ t('admin.dashboard.unpaidInvoicesColumnPaid') }}</th>
+                  <th class="py-1.5 pr-4 text-right font-medium">{{ t('admin.invoices.columnBalance') }}</th>
+                  <th class="py-1.5 pr-4 font-medium">{{ t('admin.invoices.columnStatus') }}</th>
+                  <th class="py-1.5 pr-4 font-medium">{{ t('admin.invoices.columnDueDate') }}</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-neutral-100">
+                <tr v-for="row in unpaidInvoices" :key="row.id">
+                  <td class="py-1.5 pr-4 text-neutral-800">{{ row.student?.name ?? '—' }}</td>
+                  <td class="py-1.5 pr-4">
+                    <RouterLink :to="`/admin/invoices/${row.id}`" class="font-medium text-primary-700 hover:text-primary-800">{{ row.invoice_number }}</RouterLink>
+                  </td>
+                  <td class="py-1.5 pr-4 text-neutral-700">{{ row.course ?? '—' }}</td>
+                  <td class="whitespace-nowrap py-1.5 pr-4 text-right text-neutral-700">{{ amount(row.total, row.currency) }}</td>
+                  <td class="whitespace-nowrap py-1.5 pr-4 text-right text-neutral-700">{{ amount(row.paid_amount, row.currency) }}</td>
+                  <td class="whitespace-nowrap py-1.5 pr-4 text-right font-semibold text-danger-600">{{ amount(row.balance, row.currency) }}</td>
+                  <td class="py-1.5 pr-4">
+                    <BaseBadge :variant="unpaidStatusVariant[row.status] ?? 'primary'">{{ invoiceStatusLabel(row.status) }}</BaseBadge>
+                  </td>
+                  <td class="whitespace-nowrap py-1.5 pr-4 text-neutral-700">{{ formatDate(row.due_date) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p v-if="unpaidInvoicesTotal > unpaidInvoices.length" class="mt-2 text-xs text-neutral-400">
+            {{ t('admin.dashboard.unpaidInvoicesShowing', { shown: unpaidInvoices.length, total: unpaidInvoicesTotal }) }}
+          </p>
+          <RouterLink to="/admin/invoices" class="mt-3 inline-block text-sm font-medium text-primary-700 hover:text-primary-800">
+            {{ t('admin.dashboard.unpaidInvoicesViewAll') }}
+          </RouterLink>
+        </BaseCard>
+      </template>
+
       <template v-if="auth.can('dashboard.finance.view')">
-        <h2 class="mt-8 text-sm font-semibold uppercase tracking-wide text-neutral-500">{{ t('admin.dashboard.title') }}</h2>
+        <div class="mt-8 flex items-center gap-2">
+          <h2 class="text-sm font-semibold uppercase tracking-wide text-neutral-500">{{ t('admin.dashboard.title') }}</h2>
+          <button
+            type="button"
+            class="rounded-full p-1 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+            :title="showMoney ? t('admin.dashboard.hideAmounts') : t('admin.dashboard.showAmounts')"
+            :aria-label="showMoney ? t('admin.dashboard.hideAmounts') : t('admin.dashboard.showAmounts')"
+            :aria-pressed="!showMoney"
+            @click="toggleMoney"
+          >
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" :d="showMoney ? EYE_OPEN : EYE_CLOSED" />
+            </svg>
+          </button>
+        </div>
         <div class="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
-          <BaseCard>
-            <p class="text-sm font-medium text-neutral-500">{{ t('admin.dashboard.statStudentsStudying') }}</p>
-            <p class="mt-1 text-3xl font-bold text-neutral-900">{{ studyingCount }}</p>
-          </BaseCard>
+          <!-- Counts active enrollments, so the number matches the list it opens. -->
+          <RouterLink
+            to="/admin/enrollments?status=active"
+            class="rounded-[--radius-card] transition hover:ring-2 hover:ring-primary-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+          >
+            <BaseCard class="h-full">
+              <p class="text-sm font-medium text-neutral-500">{{ t('admin.dashboard.statStudentsStudying') }}</p>
+              <p class="mt-1 text-3xl font-bold text-neutral-900">{{ studyingEnrollmentsCount }}</p>
+            </BaseCard>
+          </RouterLink>
           <button type="button" class="rounded-[--radius-card] text-left transition hover:ring-2 hover:ring-primary-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500" @click="openIncomeDetail">
             <BaseCard class="h-full">
               <p class="text-sm font-medium text-neutral-500">{{ t('admin.dashboard.statMonthlyIncome') }}</p>
-              <p class="mt-1 text-3xl font-bold text-neutral-900">{{ monthlyIncome }}</p>
+              <p class="mt-1 text-3xl font-bold text-neutral-900">{{ maskedText(monthlyIncome) }}</p>
             </BaseCard>
           </button>
           <BaseCard>
             <p class="text-sm font-medium text-neutral-500">{{ t('admin.dashboard.statDailyIncome') }}</p>
-            <p class="mt-1 text-3xl font-bold text-neutral-900">{{ dailyIncome }}</p>
+            <p class="mt-1 text-3xl font-bold text-neutral-900">{{ maskedText(dailyIncome) }}</p>
           </BaseCard>
           <BaseCard>
             <p class="text-sm font-medium text-neutral-500">{{ t('admin.dashboard.statMonthlyExpense') }}</p>
-            <p class="mt-1 text-3xl font-bold text-neutral-900">{{ monthlyExpense }}</p>
+            <p class="mt-1 text-3xl font-bold text-neutral-900">{{ maskedText(monthlyExpense) }}</p>
           </BaseCard>
           <BaseCard>
             <p class="text-sm font-medium text-neutral-500">{{ t('admin.dashboard.statDailyExpense') }}</p>
-            <p class="mt-1 text-3xl font-bold text-neutral-900">{{ dailyExpense }}</p>
+            <p class="mt-1 text-3xl font-bold text-neutral-900">{{ maskedText(dailyExpense) }}</p>
           </BaseCard>
         </div>
       </template>
@@ -584,14 +755,14 @@ onBeforeUnmount(() => {
               <td class="whitespace-nowrap px-3 py-2 text-neutral-700">{{ formatDate(item.date) }}</td>
               <td class="px-3 py-2 text-neutral-700">{{ item.description ?? '—' }}</td>
               <td class="whitespace-nowrap px-3 py-2 text-right font-medium" :class="item.amount < 0 ? 'text-danger-600' : 'text-neutral-900'">
-                {{ item.amount < 0 ? '-' : '' }}{{ formatMoney(Math.abs(item.amount), item.currency) }}
+                {{ showMoney && item.amount < 0 ? '-' : '' }}{{ amount(Math.abs(item.amount), item.currency) }}
               </td>
             </tr>
           </tbody>
           <tfoot class="sticky bottom-0 bg-white">
             <tr class="border-t border-neutral-200 font-semibold text-neutral-900">
               <td class="px-3 py-2" colspan="2">{{ t('admin.dashboard.incomeDetailTotal') }}</td>
-              <td class="whitespace-nowrap px-3 py-2 text-right">{{ formatMoney(incomeDetail.total, incomeDetail.currency) }}</td>
+              <td class="whitespace-nowrap px-3 py-2 text-right">{{ amount(incomeDetail.total, incomeDetail.currency) }}</td>
             </tr>
           </tfoot>
         </table>

@@ -1687,6 +1687,12 @@ const ko: MessageSchema = {
       absentEmptyMessage: '결석한 학생이 없습니다.',
       monthlyPaymentAlertsSection: '곧 월별 결제 마감',
       monthlyPaymentAlertsViewAll: '월별 청구서에서 모두 보기',
+      unpaidInvoicesSection: '미납 및 부분 납부 청구서',
+      unpaidInvoicesViewAll: '모든 청구서 보기',
+      unpaidInvoicesColumnPaid: '납부액',
+      unpaidInvoicesShowing: '{total}건 중 오래된 {shown}건을 표시합니다.',
+      showAmounts: '금액 표시',
+      hideAmounts: '금액 숨기기',
     },
     users: {
       title: '사용자 관리',

@@ -1687,6 +1687,12 @@ const ja: MessageSchema = {
       absentEmptyMessage: '欠席した生徒はいません。',
       monthlyPaymentAlertsSection: 'まもなく月謝支払期日',
       monthlyPaymentAlertsViewAll: '月謝請求書ですべて見る',
+      unpaidInvoicesSection: '未払い・一部支払いの請求書',
+      unpaidInvoicesViewAll: 'すべての請求書を見る',
+      unpaidInvoicesColumnPaid: '支払済',
+      unpaidInvoicesShowing: '{total}件中、古い順に{shown}件を表示しています。',
+      showAmounts: '金額を表示',
+      hideAmounts: '金額を隠す',
     },
     users: {
       title: 'ユーザー管理',

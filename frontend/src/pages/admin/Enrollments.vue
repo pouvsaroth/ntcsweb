@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRoute } from 'vue-router'
 
 import EnrollmentEditModal from '@/components/admin/EnrollmentEditModal.vue'
 import EnrollmentStatusHistoryModal from '@/components/admin/EnrollmentStatusHistoryModal.vue'
@@ -156,8 +157,16 @@ function onYearFilterChange(value: string) {
   setFilter('academic_year_id', value || undefined)
 }
 
+const route = useRoute()
+
 onMounted(() => {
-  void fetch()
+  // ?status=active — the dashboard's Students Studying card links here.
+  const initialStatus = typeof route.query.status === 'string' ? route.query.status : ''
+  if (initialStatus) {
+    onStatusFilterChange(initialStatus)
+  } else {
+    void fetch()
+  }
   void lookupsService.values('ENROLLMENT_STATUS', locale.value).then((result) => (statusLookup.value = result))
   academicYearsService.listAll().then((r) => (years.value = r)).catch(() => undefined)
 })

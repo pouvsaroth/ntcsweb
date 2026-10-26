@@ -1687,6 +1687,12 @@ const km: MessageSchema = {
       absentEmptyMessage: 'មិនមានសិស្សអវត្តមានទេ។',
       monthlyPaymentAlertsSection: 'ជិតដល់កំណត់ទូទាត់ប្រចាំខែ',
       monthlyPaymentAlertsViewAll: 'មើលទាំងអស់នៅក្នុងវិក្កយបត្រប្រចាំខែ',
+      unpaidInvoicesSection: 'វិក្កយបត្រមិនទាន់បង់ និងបង់ខ្លះ',
+      unpaidInvoicesViewAll: 'មើលវិក្កយបត្រទាំងអស់',
+      unpaidInvoicesColumnPaid: 'បានបង់',
+      unpaidInvoicesShowing: 'បង្ហាញ {shown} ចាស់ជាងគេ ក្នុងចំណោម {total}។',
+      showAmounts: 'បង្ហាញចំនួនទឹកប្រាក់',
+      hideAmounts: 'លាក់ចំនួនទឹកប្រាក់',
     },
     users: {
       title: 'អ្នកប្រើប្រាស់',

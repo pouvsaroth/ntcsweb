@@ -1690,6 +1690,12 @@ const en = {
       absentEmptyMessage: 'No students absent.',
       monthlyPaymentAlertsSection: 'Monthly Payment Due Soon',
       monthlyPaymentAlertsViewAll: 'View all in Monthly Invoice',
+      unpaidInvoicesSection: 'Unpaid & Partially Paid Invoices',
+      unpaidInvoicesViewAll: 'View all invoices',
+      unpaidInvoicesColumnPaid: 'Paid',
+      unpaidInvoicesShowing: 'Showing the {shown} oldest of {total}.',
+      showAmounts: 'Show amounts',
+      hideAmounts: 'Hide amounts',
     },
     users: {
       title: 'Users',

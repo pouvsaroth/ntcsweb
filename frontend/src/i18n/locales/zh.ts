@@ -1686,6 +1686,12 @@ const zh: MessageSchema = {
       absentEmptyMessage: '没有学生缺勤。',
       monthlyPaymentAlertsSection: '即将到期的月付款',
       monthlyPaymentAlertsViewAll: '在月付账单中查看全部',
+      unpaidInvoicesSection: '未付及部分付款账单',
+      unpaidInvoicesViewAll: '查看全部账单',
+      unpaidInvoicesColumnPaid: '已付',
+      unpaidInvoicesShowing: '显示 {total} 条中最早的 {shown} 条。',
+      showAmounts: '显示金额',
+      hideAmounts: '隐藏金额',
     },
     users: {
       title: '用户管理',
