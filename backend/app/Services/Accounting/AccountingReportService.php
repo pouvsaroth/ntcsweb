@@ -151,7 +151,9 @@ final class AccountingReportService
 
         $sign = AccountType::isDebitNormal($accountType) ? 1 : -1;
 
-        return $sign * $this->netDebit($ids, $dateFrom, $dateTo);
+        // + 0.0 turns -1 * 0.0 (negative zero) into plain 0.0 — otherwise a
+        // day with no revenue is sent as -0.0 and shows as "-0" on screen.
+        return $sign * $this->netDebit($ids, $dateFrom, $dateTo) + 0.0;
     }
 
     /**

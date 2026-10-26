@@ -68,7 +68,9 @@ class AccountingDashboardTest extends TestCase
         $dayAfter = \Carbon\CarbonImmutable::parse($paidOn)->addDay()->toDateString();
 
         $this->getJson("/api/v1/accounting/dashboard?today={$paidOn}")->assertOk()->assertJsonPath('data.todays_income', 100);
-        $this->getJson("/api/v1/accounting/dashboard?today={$dayAfter}")->assertOk()->assertJsonPath('data.todays_income', 0);
+        $quietDay = $this->getJson("/api/v1/accounting/dashboard?today={$dayAfter}")->assertOk()->assertJsonPath('data.todays_income', 0);
+        // Revenue is -1 * the net debit; with nothing posted that must be 0, not -0 (shown as "-0" on the dashboard).
+        $this->assertStringNotContainsString('"todays_income":-0', $quietDay->getContent());
         $this->getJson('/api/v1/accounting/dashboard?today=not-a-date')->assertUnprocessable();
     }
 

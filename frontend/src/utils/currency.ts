@@ -6,11 +6,14 @@
  * its usual two decimal places.
  */
 export function formatMoney(amount: number, currency: 'USD' | 'KHR'): string {
+  // `|| 0` / the '-0.00' check: a value that rounds to zero (including
+  // negative zero) shows as 0, never "-0".
   if (currency === 'KHR') {
-    return `${Math.round(amount).toLocaleString()} ៛`
+    return `${(Math.round(amount) || 0).toLocaleString()} ៛`
   }
 
-  return `$${amount.toFixed(2)}`
+  const fixed = amount.toFixed(2)
+  return `$${fixed === '-0.00' ? '0.00' : fixed}`
 }
 
 /**
