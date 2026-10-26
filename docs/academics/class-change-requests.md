@@ -11,6 +11,7 @@ school decides it in Approvals; approving moves the student.
 | Which classes | **Every open class** (upcoming or active), except the current one — any course or program |
 | When the class changes | **On approval** — the start date is kept on the request and in the history |
 | Who approves | An Approval Flow if the school sets one up ("Class change request (student)"), else holders of the new `class-change-requests.approve` / `.reject` (School Admin by default) |
+| Reason | **Required** on the request (added 2026-10-26) |
 | What changes | **Only the class**, on the same enrollment: no new enrollment; the enrollment date, code, course, fee and the course start date stay. The seat (table) is cleared, since it belonged to the old room. A transfer history row is saved |
 
 ## As built

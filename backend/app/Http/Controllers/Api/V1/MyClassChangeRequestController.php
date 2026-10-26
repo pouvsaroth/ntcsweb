@@ -45,7 +45,7 @@ final class MyClassChangeRequestController extends Controller
             'enrollment_id' => ['required', 'integer'],
             'to_class_id' => ['required', 'integer'],
             'start_date' => ['required', 'date'],
-            'reason' => ['nullable', 'string', 'max:2000'],
+            'reason' => ['required', 'string', 'max:2000'],
         ]);
 
         return ApiResponse::created($this->requests->present($this->requests->submit($student, $data, $request->user())));

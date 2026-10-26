@@ -28,10 +28,16 @@ final class CoursePackageController extends Controller
     {
         $this->authorize('viewAny', CoursePackage::class);
 
-        $packages = ApiQuery::for(CoursePackage::query()->with(['academicProgram', 'books']), $request)
+        $query = CoursePackage::query()->with(['academicProgram', 'books']);
+        // No sort picked: the school's own order (every dropdown reads this).
+        if (! $request->filled('sort')) {
+            $query->ordered();
+        }
+
+        $packages = ApiQuery::for($query, $request)
             ->searchable('code', 'name')
             ->filterable(['is_active', 'academic_program_id'])
-            ->sortable(['name', 'price', 'created_at'], default: 'name')
+            ->sortable(['sort_order', 'name', 'price', 'created_at'])
             ->paginate();
 
         return ApiResponse::success(CoursePackageResource::collection($packages));

@@ -78,7 +78,7 @@ async function submit() {
       enrollment_id: Number(form.enrollment_id),
       to_class_id: Number(form.to_class_id),
       start_date: form.start_date,
-      reason: form.reason.trim() || null,
+      reason: form.reason.trim(),
     })
     submitted.value = true
     emit('submitted')
@@ -127,14 +127,14 @@ async function submit() {
           :placeholder="t('classChangeRequest.newClassPlaceholder')"
           :error="errors.to_class_id?.[0]"
         />
-        <BaseInput v-model="form.reason" :label="t('classChangeRequest.reason')" :error="errors.reason?.[0]" />
+        <BaseInput v-model="form.reason" required :label="t('classChangeRequest.reason')" :error="errors.reason?.[0]" />
         <p class="text-xs text-neutral-500">{{ t('classChangeRequest.hint') }}</p>
       </form>
     </template>
 
     <template #footer>
       <BaseButton variant="outline" @click="emit('update:modelValue', false)">{{ t('common.close') }}</BaseButton>
-      <BaseButton v-if="!submitted" :loading="submitting" :disabled="!form.enrollment_id || !form.to_class_id || !form.start_date" @click="submit">
+      <BaseButton v-if="!submitted" :loading="submitting" :disabled="!form.enrollment_id || !form.to_class_id || !form.start_date || !form.reason.trim()" @click="submit">
         {{ t('classChangeRequest.submit') }}
       </BaseButton>
     </template>

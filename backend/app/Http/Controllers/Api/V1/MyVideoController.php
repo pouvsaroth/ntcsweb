@@ -34,7 +34,7 @@ final class MyVideoController extends Controller
             ->where('show_videos', true)
             ->whereHas('videos', fn ($query) => $query->active())
             ->with(['videos' => fn ($query) => $query->active()->orderBy('sort_order')->orderBy('id')])
-            ->orderBy('name')
+            ->ordered()
             ->get();
 
         return ApiResponse::success($packages->map(fn (CoursePackage $package) => [

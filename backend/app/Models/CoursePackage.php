@@ -30,7 +30,7 @@ use Illuminate\Support\Facades\Storage;
  * `Enrollment`'s own existing override for status changes.
  */
 #[Fillable([
-    'code', 'name', 'academic_program_id', 'description', 'thumbnail_path', 'price',
+    'code', 'name', 'sort_order', 'academic_program_id', 'description', 'thumbnail_path', 'price',
     'fee_monthly', 'fee_term', 'fee_video', 'fee_monthly_online', 'fee_term_online', 'currency',
     'duration', 'product_id', 'is_active', 'show_on_website', 'show_in_popular', 'show_videos',
 ])]
@@ -54,6 +54,7 @@ class CoursePackage extends Model
     protected function casts(): array
     {
         return [
+            'sort_order' => 'integer',
             'price' => 'decimal:2',
             'fee_monthly' => 'decimal:2',
             'fee_term' => 'decimal:2',
@@ -77,6 +78,12 @@ class CoursePackage extends Model
                 Storage::disk('public')->delete($package->thumbnail_path);
             }
         });
+    }
+
+    /** The school's own order (Course Package > Order), then by name. */
+    public function scopeOrdered(Builder $query): Builder
+    {
+        return $query->orderBy('sort_order')->orderBy('name');
     }
 
     public function thumbnailUrl(): ?string

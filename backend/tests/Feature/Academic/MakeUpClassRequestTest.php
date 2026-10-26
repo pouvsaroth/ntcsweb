@@ -62,6 +62,18 @@ class MakeUpClassRequestTest extends TestCase
         $this->assertSame(1, MakeUpClassRequest::where('student_id', $student->id)->count());
     }
 
+    public function test_the_remark_is_optional_and_saved_when_given(): void
+    {
+        $this->actingAsAdminWithPermissions([]);
+        [$student, $user] = $this->studentWithUser();
+        $this->actingAsTenantUser($user);
+
+        $this->postJson('/api/v1/my-make-up-class-requests', $this->payload($student))
+            ->assertCreated()->assertJsonPath('data.remark', null);
+        $this->postJson('/api/v1/my-make-up-class-requests', $this->payload($student, ['from_time' => '13:00', 'to_time' => '14:00', 'remark' => '  At school, up to lesson 5  ']))
+            ->assertCreated()->assertJsonPath('data.remark', 'At school, up to lesson 5');
+    }
+
     public function test_submitting_requires_a_linked_student_record(): void
     {
         $this->actingAsAdminWithPermissions([]);

@@ -149,4 +149,22 @@ class CoursePackageTest extends TestCase
         $this->assertSame('20.00', (string) $package->price);
         $this->assertSame('20.00', (string) $package->fee_monthly);
     }
+
+    public function test_packages_list_in_the_schools_order_then_by_name(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::COURSE_PACKAGES_VIEW, Permissions::COURSE_PACKAGES_CREATE, Permissions::COURSE_PACKAGES_UPDATE]);
+        $program = AcademicProgram::factory()->create();
+        CoursePackage::factory()->create(['name' => 'Excel', 'sort_order' => 2, 'academic_program_id' => $program->id]);
+        CoursePackage::factory()->create(['name' => 'Word', 'sort_order' => 1, 'academic_program_id' => $program->id]);
+        CoursePackage::factory()->create(['name' => 'Access', 'sort_order' => 2, 'academic_program_id' => $program->id]);
+        $last = CoursePackage::factory()->create(['name' => 'AutoCAD', 'sort_order' => 9, 'academic_program_id' => $program->id]);
+
+        $names = fn () => array_column($this->getJson('/api/v1/course-packages?per_page=200&filter[is_active]=true')->assertOk()->json('data'), 'name');
+        $this->assertSame(['Word', 'Access', 'Excel', 'AutoCAD'], $names());
+
+        // Changing the order from the form moves it.
+        $this->putJson("/api/v1/course-packages/{$last->id}", ['sort_order' => 0])->assertOk()->assertJsonPath('data.sort_order', 0);
+        $this->assertSame(['AutoCAD', 'Word', 'Access', 'Excel'], $names());
+        $this->putJson("/api/v1/course-packages/{$last->id}", ['sort_order' => -1])->assertUnprocessable();
+    }
 }

@@ -28,7 +28,7 @@ final class CoursePackageController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $query = CoursePackage::query()->active()->with('academicProgram')->orderBy('name');
+        $query = CoursePackage::query()->active()->with('academicProgram')->ordered();
 
         $query->where($request->boolean('featured') ? 'show_in_popular' : 'show_on_website', true);
 

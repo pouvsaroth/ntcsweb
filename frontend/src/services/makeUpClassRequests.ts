@@ -26,6 +26,7 @@ export interface MakeUpClassRequest {
   to_date: string
   from_time: string
   to_time: string
+  remark: string | null
   status: MakeUpClassRequestStatus
   /** Approvals queue only — see ApprovalFlowProgress. */
   approval_flow?: ApprovalFlowProgress | null
@@ -41,6 +42,7 @@ export interface MakeUpClassRequestInput {
   to_date: string
   from_time: string
   to_time: string
+  remark?: string | null
 }
 
 /** One of the student's active enrollments, for the form's Course picker — see MyMakeUpClassRequestController::enrollments(). */

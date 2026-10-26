@@ -39,6 +39,7 @@ class StoreCoursePackageRequest extends FormRequest
             'fee_monthly_online' => ['nullable', 'numeric', 'min:0', 'max:999999.99'],
             'fee_term_online' => ['nullable', 'numeric', 'min:0', 'max:999999.99'],
             'duration' => ['nullable', 'string', 'max:50'],
+            'sort_order' => ['sometimes', 'integer', 'min:0', 'max:99999'],
             'is_active' => ['sometimes', 'boolean'],
             'show_on_website' => ['sometimes', 'boolean'],
             'show_in_popular' => ['sometimes', 'boolean'],

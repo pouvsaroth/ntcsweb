@@ -21,6 +21,7 @@ const { items, meta, loading, error, setPage, setSearch, fetch } = usePaginatedR
 )
 
 const columns = [
+  { key: 'sort_order', label: t('admin.coursePackages.columnSortOrder') },
   { key: 'code', label: t('admin.coursePackages.columnCode') },
   { key: 'name', label: t('admin.coursePackages.columnName') },
   { key: 'program', label: t('admin.coursePackages.columnProgram') },

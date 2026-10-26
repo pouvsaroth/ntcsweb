@@ -31,6 +31,7 @@ class StoreMyMakeUpClassRequestRequest extends FormRequest
             'to_date' => ['required', 'date', 'after_or_equal:from_date'],
             'from_time' => ['required', 'date_format:H:i'],
             'to_time' => ['required', 'date_format:H:i', 'after:from_time'],
+            'remark' => ['nullable', 'string', 'max:2000'],
         ];
     }
 }

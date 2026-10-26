@@ -129,6 +129,9 @@ class ClassChangeRequestTest extends TestCase
         $this->submit(['to_class_id' => $closed->id])->assertUnprocessable()->assertJsonValidationErrors('to_class_id');
         $someoneElses = Enrollment::factory()->forClass($this->from)->create(['status' => Enrollment::STATUS_ACTIVE]);
         $this->submit(['enrollment_id' => $someoneElses->id])->assertUnprocessable()->assertJsonValidationErrors('enrollment_id');
+        // The reason is required.
+        $this->submit(['reason' => ''])->assertUnprocessable()->assertJsonValidationErrors('reason');
+        $this->submit(['reason' => null])->assertUnprocessable()->assertJsonValidationErrors('reason');
 
         $id = $this->submit()->assertCreated()->json('data.id');
 

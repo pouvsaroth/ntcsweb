@@ -64,6 +64,7 @@ final class MakeUpClassRequestService
                 'to_date' => $data['to_date'],
                 'from_time' => $data['from_time'],
                 'to_time' => $data['to_time'],
+                'remark' => filled($data['remark'] ?? null) ? trim((string) $data['remark']) : null,
                 'status' => MakeUpClassRequest::STATUS_PENDING,
             ]);
         });

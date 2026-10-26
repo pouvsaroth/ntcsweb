@@ -35,6 +35,7 @@ const form = reactive({
   fee_term_online: null as number | null,
   currency: 'USD' as 'USD' | 'KHR',
   duration: '',
+  sort_order: 0,
   is_active: true,
   show_on_website: false,
   show_in_popular: false,
@@ -116,6 +117,7 @@ watch(
     form.fee_term_online = props.coursePackage?.fee_term_online ?? null
     form.currency = props.coursePackage?.currency ?? 'USD'
     form.duration = props.coursePackage?.duration ?? ''
+    form.sort_order = props.coursePackage?.sort_order ?? 0
     form.is_active = props.coursePackage?.is_active ?? true
     form.show_on_website = props.coursePackage?.show_on_website ?? false
     form.show_in_popular = props.coursePackage?.show_in_popular ?? false
@@ -251,6 +253,15 @@ async function submit() {
         />
         <BaseInput v-model="form.duration" :label="t('admin.coursePackages.duration')" :error="errors.duration?.[0]" />
       </div>
+
+      <BaseInput
+        :model-value="String(form.sort_order)"
+        type="number"
+        :label="t('admin.coursePackages.sortOrder')"
+        :hint="t('admin.coursePackages.sortOrderHint')"
+        :error="errors.sort_order?.[0]"
+        @update:model-value="form.sort_order = $event ? Math.max(0, Math.trunc(Number($event))) : 0"
+      />
 
       <div>
         <label class="mb-1.5 block text-sm font-medium text-neutral-700">{{ t('admin.coursePackages.thumbnail') }}</label>

@@ -33,7 +33,7 @@ const enrollments = ref<MakeUpClassEnrollmentOption[]>([])
 const enrollmentsLoading = ref(false)
 const enrollmentsError = ref<string | null>(null)
 
-const form = reactive({ enrollment_id: '', from_date: '', to_date: '', from_time: '', to_time: '' })
+const form = reactive({ enrollment_id: '', from_date: '', to_date: '', from_time: '', to_time: '', remark: '' })
 const errors = ref<Record<string, string[]>>({})
 const generalError = ref<string | null>(null)
 const submitting = ref(false)
@@ -53,6 +53,7 @@ watch(
     form.to_date = today()
     form.from_time = ''
     form.to_time = ''
+    form.remark = ''
     errors.value = {}
     generalError.value = null
     submitted.value = false
@@ -82,6 +83,7 @@ async function submit() {
       to_date: form.to_date,
       from_time: form.from_time,
       to_time: form.to_time,
+      remark: form.remark.trim() || null,
     })
     submitted.value = true
     emit('submitted')
@@ -128,6 +130,12 @@ async function submit() {
           <BaseInput v-model="form.from_time" type="time" required :label="t('makeUpClassRequest.fromTime')" :error="errors.from_time?.[0]" />
           <BaseInput v-model="form.to_time" type="time" required :label="t('makeUpClassRequest.toTime')" :error="errors.to_time?.[0]" />
         </div>
+        <BaseInput
+          v-model="form.remark"
+          :label="t('makeUpClassRequest.remark')"
+          :placeholder="t('makeUpClassRequest.remarkPlaceholder')"
+          :error="errors.remark?.[0]"
+        />
       </form>
     </template>
 

@@ -36,6 +36,7 @@ class MakeUpClassRequestResource extends JsonResource
             'to_date' => $this->to_date?->toDateString(),
             'from_time' => $this->from_time !== null ? substr((string) $this->from_time, 0, 5) : null,
             'to_time' => $this->to_time !== null ? substr((string) $this->to_time, 0, 5) : null,
+            'remark' => $this->remark,
             'status' => $this->status,
             // Approvals queue only — see ApprovalFlow::progress().
             'approval_flow' => $this->whenLoaded('approvalFlow'),

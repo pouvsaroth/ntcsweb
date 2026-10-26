@@ -47,9 +47,9 @@ final class VideoLessonController extends Controller
 
         $freeVideoIds = Video::query()->active()
             ->whereHas('coursePackage', fn ($query) => $query->where('show_videos', true)->where('is_active', true))
-            ->with('coursePackage:id,name')
+            ->with('coursePackage:id,name,sort_order')
             ->get()
-            ->sortBy(fn (Video $video) => sprintf('%s|%05d|%05d', $video->coursePackage->name, $video->sort_order, $video->id))
+            ->sortBy(fn (Video $video) => sprintf('%05d|%s|%05d|%05d', $video->coursePackage->sort_order, $video->coursePackage->name, $video->sort_order, $video->id))
             ->take(self::FREE_PREVIEW_COUNT)
             ->pluck('id');
 
@@ -58,7 +58,7 @@ final class VideoLessonController extends Controller
             ->active()
             ->whereHas('videos', fn ($query) => $query->active())
             ->with(['videos' => fn ($query) => $query->active()->orderBy('sort_order')->orderBy('id')])
-            ->orderBy('name')
+            ->ordered()
             ->get();
 
         return ApiResponse::success($packages->map(function (CoursePackage $package) use ($isSchoolAdmin, $enrolledPackageIds, $freeVideoIds) {

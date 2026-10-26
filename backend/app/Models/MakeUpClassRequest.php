@@ -27,7 +27,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int $enrollment_id
  * @property string $status
  */
-#[Fillable(['student_id', 'enrollment_id', 'from_date', 'to_date', 'from_time', 'to_time', 'status', 'decision_reason', 'decided_by', 'decided_at'])]
+#[Fillable(['student_id', 'enrollment_id', 'from_date', 'to_date', 'from_time', 'to_time', 'remark', 'status', 'decision_reason', 'decided_by', 'decided_at'])]
 class MakeUpClassRequest extends Model
 {
     use Auditable, HasFactory, SoftDeletes;

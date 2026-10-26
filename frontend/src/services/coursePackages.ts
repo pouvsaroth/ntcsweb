@@ -29,6 +29,8 @@ export interface CoursePackage {
   fee_term_online: number | null
   currency: CoursePackageCurrency
   duration: string | null
+  /** The school's order in every dropdown and list (lower first, then by name). */
+  sort_order: number
   product_id: number | null
   is_active: boolean
   /** Independent of `is_active` — a package can be sold in-house but kept off the public site, or vice versa. */
@@ -55,6 +57,7 @@ export interface CoursePackageInput {
   fee_term_online: number | null
   currency: CoursePackageCurrency
   duration: string
+  sort_order: number
   is_active: boolean
   show_on_website: boolean
   show_in_popular: boolean
@@ -84,6 +87,7 @@ function toFormData(input: Partial<CoursePackageInput>, methodOverride?: 'PUT'):
   if (input.fee_term_online !== undefined && input.fee_term_online !== null) form.append('fee_term_online', String(input.fee_term_online))
   if (input.currency !== undefined) form.append('currency', input.currency)
   if (input.duration !== undefined) form.append('duration', input.duration)
+  if (input.sort_order !== undefined) form.append('sort_order', String(input.sort_order))
   if (input.is_active !== undefined) form.append('is_active', input.is_active ? '1' : '0')
   if (input.show_on_website !== undefined) form.append('show_on_website', input.show_on_website ? '1' : '0')
   if (input.show_in_popular !== undefined) form.append('show_in_popular', input.show_in_popular ? '1' : '0')

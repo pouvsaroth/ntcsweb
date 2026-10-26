@@ -31,6 +31,7 @@ class CoursePackageResource extends JsonResource
             'fee_term_online' => $this->fee_term_online !== null ? (float) $this->fee_term_online : null,
             'currency' => $this->currency,
             'duration' => $this->duration,
+            'sort_order' => $this->sort_order,
             'product_id' => $this->product_id,
             'is_active' => $this->is_active,
             'show_on_website' => $this->show_on_website,
