@@ -41,6 +41,9 @@ export interface EnrollmentTransferHistoryEntry {
   to_table: string | null
   from_course_package: string | null
   to_course_package: string | null
+  /** Set when the move came from a student's class change request. */
+  start_date: string | null
+  class_change_request_id: number | null
   changed_by: string | null
   created_at: string
 }

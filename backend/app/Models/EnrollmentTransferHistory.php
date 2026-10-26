@@ -23,7 +23,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 #[Fillable([
     'enrollment_id', 'from_class_id', 'to_class_id', 'from_table_id', 'to_table_id',
-    'from_course_package_id', 'to_course_package_id', 'changed_by',
+    'from_course_package_id', 'to_course_package_id', 'start_date', 'class_change_request_id', 'changed_by',
 ])]
 class EnrollmentTransferHistory extends Model
 {

@@ -24,6 +24,7 @@ import { studentRegistrationsService, type StudentRegistration } from '@/service
 import { useAuthStore } from '@/stores/auth'
 import { useConfirmDialogStore } from '@/stores/confirmDialog'
 import type { ApprovalFlowProgress } from '@/services/approvalFlows'
+import { classChangeLabel, classChangeRequestsService, type ClassChangeRequest } from '@/services/classChangeRequests'
 import { expensesService, type Expense, type ExpenseStatus } from '@/services/expenses'
 import { resultApprovalsService, type GradeCorrectionRow, type ResultSheetRow } from '@/services/gradebook'
 import { ApiRequestError } from '@/types/api'
@@ -45,7 +46,7 @@ import { genderLabel } from '@/utils/gender'
 type RowStatus = ApprovalRequestStatus | MakeUpClassRequestStatus | 'cancelled'
 
 type MergedRow = {
-  kind: 'approval' | 'leave' | 'resignation' | 'makeUp' | 'exam' | 'registration' | 'manpower' | 'overtime' | 'correction' | 'expense' | 'resultSheet' | 'gradeCorrection'
+  kind: 'approval' | 'leave' | 'resignation' | 'makeUp' | 'exam' | 'registration' | 'manpower' | 'overtime' | 'correction' | 'expense' | 'resultSheet' | 'gradeCorrection' | 'classChange'
   id: number
   reference: string
   requestor: string
@@ -66,6 +67,7 @@ type MergedRow = {
   expense?: Expense
   resultSheet?: ResultSheetRow
   gradeCorrection?: GradeCorrectionRow
+  classChange?: ClassChangeRequest
 }
 
 const { t } = useI18n()
@@ -85,6 +87,8 @@ const canViewApprovals = computed(() => auth.can('approval-requests.view') || au
 const canViewLeave = computed(() => auth.can('leave-requests.view') || auth.isFlowApprover(['student_leave', 'staff_leave']))
 const canViewResignation = computed(() => auth.can('resignation-requests.view') || auth.isFlowApprover(['resignation']))
 const canViewMakeUp = computed(() => auth.can('make-up-class-requests.view') || auth.isFlowApprover(['make_up_class']))
+// A student's request to change class.
+const canViewClassChange = computed(() => auth.can('class-change-requests.view') || auth.isFlowApprover(['class_change']))
 const canViewExams = computed(() => auth.can('exam-applications.view') || auth.isFlowApprover(['exam_application']))
 // No approval flow for registrations — only whoever may approve them.
 const canViewRegistrations = computed(() => auth.can('students.approve-registration'))
@@ -188,6 +192,7 @@ const approvePermission: Record<MergedRow['kind'], string> = {
   expense: 'expense.approve',
   resultSheet: 'gradebook.approve',
   gradeCorrection: 'gradebook.approve',
+  classChange: 'class-change-requests.approve',
 }
 
 const rejectPermission: Record<MergedRow['kind'], string> = {
@@ -203,6 +208,7 @@ const rejectPermission: Record<MergedRow['kind'], string> = {
   expense: 'expense.reject',
   resultSheet: 'gradebook.approve',
   gradeCorrection: 'gradebook.approve',
+  classChange: 'class-change-requests.reject',
 }
 
 // With an approval flow, only the group the request waits on decides it —
@@ -233,7 +239,7 @@ async function load() {
   error.value = null
 
   try {
-    const [approvals, leaves, resignations, makeUps, exams, registrations, manpowers, overtimes, corrections, expenses, resultSheets, gradeCorrections] = await Promise.all([
+    const [approvals, leaves, resignations, makeUps, exams, registrations, manpowers, overtimes, corrections, expenses, resultSheets, gradeCorrections, classChanges] = await Promise.all([
       canViewApprovals.value ? approvalRequestsService.list({}, { approvalQueue: true }) : Promise.resolve({ data: [] as ApprovalRequest[], pagination: undefined }),
       canViewLeave.value
         ? leaveRequestsService.list({ page: 1, per_page: 100, filter: {} }, { approvalQueue: true })
@@ -270,6 +276,7 @@ async function load() {
         : Promise.resolve({ data: [] as Expense[], pagination: undefined }),
       canViewResults.value ? resultApprovalsService.sheets({ approval_queue: 1 }).catch(() => [] as ResultSheetRow[]) : Promise.resolve([] as ResultSheetRow[]),
       canViewResults.value ? resultApprovalsService.corrections({ approval_queue: 1 }).catch(() => [] as GradeCorrectionRow[]) : Promise.resolve([] as GradeCorrectionRow[]),
+      canViewClassChange.value ? classChangeRequestsService.list().catch(() => [] as ClassChangeRequest[]) : Promise.resolve([] as ClassChangeRequest[]),
     ])
 
     const approvalRows: MergedRow[] = approvals.data.map((r) => ({
@@ -432,7 +439,19 @@ async function load() {
       gradeCorrection: r,
     }))
 
-    rows.value = [...approvalRows, ...leaveRows, ...resignationRows, ...makeUpRows, ...examRows, ...registrationRows, ...manpowerRows, ...overtimeRows, ...correctionRows, ...expenseRows, ...resultRows, ...gradeCorrectionRows].sort((a, b) =>
+    const classChangeRows: MergedRow[] = classChanges.map((r) => ({
+      kind: 'classChange',
+      id: r.id,
+      reference: r.reference,
+      requestor: r.student?.name ?? '—',
+      subject: t('classChangeRequest.subject', { classes: classChangeLabel(r), date: formatDate(r.start_date) }),
+      status: r.status,
+      createdAt: r.created_at,
+      flow: r.approval_flow ?? null,
+      classChange: r,
+    }))
+
+    rows.value = [...approvalRows, ...leaveRows, ...resignationRows, ...makeUpRows, ...examRows, ...registrationRows, ...manpowerRows, ...overtimeRows, ...correctionRows, ...expenseRows, ...resultRows, ...gradeCorrectionRows, ...classChangeRows].sort((a, b) =>
       b.createdAt.localeCompare(a.createdAt),
     )
   } catch (e) {
@@ -460,7 +479,9 @@ async function approve(row: MergedRow) {
             ? 'admin.approvals.approveToStudyConfirm'
             : row.kind === 'makeUp'
               ? 'admin.approvals.approveMakeUpCameConfirm'
-              : 'admin.approvals.approveConfirm',
+              : row.kind === 'classChange'
+                ? 'classChangeRequest.approveConfirm'
+                : 'admin.approvals.approveConfirm',
         )
   if (!(await confirmDialog.confirm(message))) return
 
@@ -490,6 +511,8 @@ async function approve(row: MergedRow) {
       await resultApprovalsService.approve(row.id)
     } else if (row.kind === 'gradeCorrection') {
       await resultApprovalsService.approveCorrection(row.id)
+    } else if (row.kind === 'classChange') {
+      await classChangeRequestsService.approve(row.id)
     } else {
       await examApplicationsService.approve(row.id)
     }
@@ -532,6 +555,8 @@ async function confirmReject(reason: string) {
       await resultApprovalsService.return(row.id, reason)
     } else if (row.kind === 'gradeCorrection') {
       await resultApprovalsService.rejectCorrection(row.id, reason)
+    } else if (row.kind === 'classChange') {
+      await classChangeRequestsService.reject(row.id, reason)
     } else {
       await examApplicationsService.reject(row.id, reason)
     }
@@ -711,6 +736,15 @@ function leaveSubject(r: LeaveRequest): string {
           <div><dt class="text-neutral-500">{{ t('gradebook.class') }}</dt><dd class="font-medium text-neutral-900">{{ detail.resultSheet.class?.name }} · {{ detail.resultSheet.subject?.title }} · {{ detail.resultSheet.term?.name }}</dd></div>
           <div v-if="detail.resultSheet.decision_note"><dt class="text-neutral-500">{{ t('admin.leaveRequests.decisionReason') }}</dt><dd class="font-medium text-neutral-900">{{ detail.resultSheet.decision_note }}</dd></div>
           <div><RouterLink :to="{ path: '/admin/examination/entry', query: { term: detail.resultSheet.term?.id, class: detail.resultSheet.class?.id, subject: detail.resultSheet.subject?.id } }" class="text-sm font-medium text-secondary-700 hover:underline">{{ t('gradebook.approval.openScores') }}</RouterLink></div>
+        </dl>
+        <dl v-else-if="detail.kind === 'classChange' && detail.classChange" class="grid gap-y-2 text-sm">
+          <div><dt class="text-neutral-500">{{ t('gradebook.entry.student') }}</dt><dd class="font-medium text-neutral-900">{{ detail.classChange.student?.name }}<template v-if="detail.classChange.student?.code"> ({{ detail.classChange.student.code }})</template></dd></div>
+          <div><dt class="text-neutral-500">{{ t('classChangeRequest.currentClass') }}</dt><dd class="font-medium text-neutral-900">{{ detail.classChange.from_class?.name ?? '—' }}<template v-if="detail.classChange.enrollment.course"> — {{ detail.classChange.enrollment.course }}</template></dd></div>
+          <div><dt class="text-neutral-500">{{ t('classChangeRequest.newClass') }}</dt><dd class="font-medium text-primary-700">{{ detail.classChange.to_class?.name ?? '—' }}</dd></div>
+          <div><dt class="text-neutral-500">{{ t('classChangeRequest.startDate') }}</dt><dd class="font-medium text-neutral-900">{{ formatDate(detail.classChange.start_date) }}</dd></div>
+          <div v-if="detail.classChange.reason"><dt class="text-neutral-500">{{ t('classChangeRequest.reason') }}</dt><dd class="font-medium text-neutral-900">{{ detail.classChange.reason }}</dd></div>
+          <div v-if="detail.classChange.decision_reason"><dt class="text-neutral-500">{{ t('admin.leaveRequests.decisionReason') }}</dt><dd class="font-medium text-neutral-900">{{ detail.classChange.decision_reason }}</dd></div>
+          <p v-if="detail.classChange.status === 'pending'" class="text-xs text-neutral-500">{{ t('classChangeRequest.approveHint') }}</p>
         </dl>
         <dl v-else-if="detail.kind === 'gradeCorrection' && detail.gradeCorrection" class="grid gap-y-2 text-sm">
           <div><dt class="text-neutral-500">{{ t('gradebook.entry.student') }}</dt><dd class="font-medium text-neutral-900">{{ detail.gradeCorrection.student?.name }} · {{ detail.gradeCorrection.class?.name }} · {{ detail.gradeCorrection.subject?.title }}</dd></div>

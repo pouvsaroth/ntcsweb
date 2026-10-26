@@ -23,6 +23,9 @@ class EnrollmentTransferHistoryResource extends JsonResource
             'to_table' => $this->toTable?->name,
             'from_course_package' => $this->fromCoursePackage?->name,
             'to_course_package' => $this->toCoursePackage?->name,
+            // Set when the move came from a student's class change request.
+            'start_date' => $this->start_date,
+            'class_change_request_id' => $this->class_change_request_id,
             'changed_by' => $this->whenLoaded('changedBy', fn () => $this->changedBy?->name),
             'created_at' => $this->created_at?->toIso8601String(),
         ];

@@ -254,6 +254,13 @@ final class EnrollmentService
      * been paid yet (Enrollment::isPaid()). A paid enrollment may still move
      * to a different class/room of the *same* course; changing the course
      * itself at that point would need a refund/re-invoice, not a transfer.
+     *
+     * $anyProgram (a student's approved class change request, which may pick
+     * any open class): skip the same-program check — only the class moves,
+     * the course and fee stay. $history adds `start_date` /
+     * `class_change_request_id` to the history row.
+     *
+     * @param  array{start_date?: string|null, class_change_request_id?: int|null}  $history
      */
     public function transferClass(
         Enrollment $enrollment,
@@ -262,8 +269,10 @@ final class EnrollmentService
         ?int $tableId = null,
         ?CoursePackage $newPackage = null,
         ?string $feeType = null,
+        bool $anyProgram = false,
+        array $history = [],
     ): Enrollment {
-        return DB::connection('tenant')->transaction(function () use ($enrollment, $newClass, $actor, $tableId, $newPackage, $feeType) {
+        return DB::connection('tenant')->transaction(function () use ($enrollment, $newClass, $actor, $tableId, $newPackage, $feeType, $anyProgram, $history) {
             /** @var Enrollment $enrollment */
             $enrollment = Enrollment::query()->whereKey($enrollment->getKey())->lockForUpdate()->firstOrFail();
 
@@ -292,7 +301,7 @@ final class EnrollmentService
                 $packageId = $newPackage->getKey();
                 $programId = $newPackage->academic_program_id;
             } else {
-                if ($enrollment->course_package_id !== null) {
+                if ($enrollment->course_package_id !== null && ! $anyProgram) {
                     if ($newClass->academic_program_id === null || (int) $newClass->academic_program_id !== (int) $enrollment->academic_program_id) {
                         throw ValidationException::withMessages(['class_id' => "The target class does not belong to this enrollment's program."]);
                     }
@@ -309,7 +318,7 @@ final class EnrollmentService
                 'table_id' => $tableId,
                 'course_package_id' => $packageId,
                 'academic_program_id' => $programId,
-            ], $actor);
+            ], $actor, $history);
 
             return $enrollment->load(['student', 'schoolClass', 'table', 'coursePackage']);
         });
@@ -339,8 +348,9 @@ final class EnrollmentService
      * move. A no-op (nothing actually different) writes no history row.
      *
      * @param  array{class_id?:int, table_id?:int|null, course_package_id?:int|null, academic_program_id?:int|null}  $changes
+     * @param  array{start_date?: string|null, class_change_request_id?: int|null}  $history
      */
-    private function recordTransfer(Enrollment $enrollment, array $changes, User $actor): void
+    private function recordTransfer(Enrollment $enrollment, array $changes, User $actor, array $history = []): void
     {
         $enrollment->fill($changes);
 
@@ -356,6 +366,8 @@ final class EnrollmentService
             'to_table_id' => $enrollment->table_id,
             'from_course_package_id' => $enrollment->getOriginal('course_package_id'),
             'to_course_package_id' => $enrollment->course_package_id,
+            'start_date' => $history['start_date'] ?? null,
+            'class_change_request_id' => $history['class_change_request_id'] ?? null,
             'changed_by' => $actor->getKey(),
         ]);
 

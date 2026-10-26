@@ -181,6 +181,7 @@ const MODULES: ModuleEntry[] = [
   { name: 'Leave requests', group: 'Other', actions: { view: 'leave-requests.view', approve: 'leave-requests.approve', reject: 'leave-requests.reject' } },
   { name: 'Backup (own school database)', group: 'Settings', actions: { view: 'database-backups.download' } },
   { name: 'Make-up class requests', group: 'Other', actions: { view: 'make-up-class-requests.view', approve: 'make-up-class-requests.approve', reject: 'make-up-class-requests.reject' } },
+  { name: 'Class change requests', group: 'Other', actions: { view: 'class-change-requests.view', approve: 'class-change-requests.approve', reject: 'class-change-requests.reject' } },
   { name: 'Resignation requests', group: 'Staff', actions: { view: 'resignation-requests.view', approve: 'resignation-requests.approve', reject: 'resignation-requests.reject' } },
   {
     name: 'Students',

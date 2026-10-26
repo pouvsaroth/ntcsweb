@@ -110,4 +110,11 @@ final class NotificationType
     public const GRADE_CORRECTION_APPROVED = 'grade_correction_approved';
 
     public const GRADE_CORRECTION_REJECTED = 'grade_correction_rejected';
+
+    // A student's request to change class.
+    public const CLASS_CHANGE_REQUEST_SUBMITTED = 'class_change_request_submitted';
+
+    public const CLASS_CHANGE_REQUEST_APPROVED = 'class_change_request_approved';
+
+    public const CLASS_CHANGE_REQUEST_REJECTED = 'class_change_request_rejected';
 }

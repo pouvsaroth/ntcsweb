@@ -115,6 +115,9 @@ watch(
                 <span class="text-neutral-500">{{ line.label }}:</span>
                 <span class="font-medium">{{ line.from }} → {{ line.to }}</span>
               </p>
+              <p v-if="item.entry.start_date" class="text-xs text-neutral-500">
+                {{ t('classChangeRequest.startDate') }}: {{ formatDate(item.entry.start_date) }}<template v-if="item.entry.class_change_request_id"> · {{ t('classChangeRequest.fromRequest', { ref: `CC-${String(item.entry.class_change_request_id).padStart(6, '0')}` }) }}</template>
+              </p>
             </div>
             <span class="shrink-0 text-xs text-neutral-400">{{ formatDateTime(item.created_at) }}</span>
           </div>

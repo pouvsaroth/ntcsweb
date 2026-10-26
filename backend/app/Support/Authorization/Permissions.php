@@ -193,6 +193,14 @@ final class Permissions
 
     public const MAKE_UP_CLASS_REQUESTS_REJECT = 'make-up-class-requests.reject';
 
+    // Class change requests — a student asks to move to another class from a
+    // start date (eApprovals > My Request); approving moves the enrollment.
+    public const CLASS_CHANGE_REQUESTS_VIEW = 'class-change-requests.view';
+
+    public const CLASS_CHANGE_REQUESTS_APPROVE = 'class-change-requests.approve';
+
+    public const CLASS_CHANGE_REQUESTS_REJECT = 'class-change-requests.reject';
+
     // Settings > Backup for a school's own staff: download a backup of
     // *their own* school's database only — a Super Admin can back up any
     // database without it (see DatabaseBackupController).
@@ -830,6 +838,11 @@ final class Permissions
                 self::MAKE_UP_CLASS_REQUESTS_APPROVE => 'Approve make-up class requests',
                 self::MAKE_UP_CLASS_REQUESTS_REJECT => 'Reject make-up class requests',
             ],
+            'Class Change Requests' => [
+                self::CLASS_CHANGE_REQUESTS_VIEW => 'View class change requests',
+                self::CLASS_CHANGE_REQUESTS_APPROVE => 'Approve class change requests (moves the student)',
+                self::CLASS_CHANGE_REQUESTS_REJECT => 'Reject class change requests',
+            ],
             'Database Backups' => [
                 self::DATABASE_BACKUPS_DOWNLOAD => "Back up this school's database",
             ],
@@ -1289,6 +1302,9 @@ final class Permissions
                 self::MAKE_UP_CLASS_REQUESTS_VIEW,
                 self::MAKE_UP_CLASS_REQUESTS_APPROVE,
                 self::MAKE_UP_CLASS_REQUESTS_REJECT,
+                self::CLASS_CHANGE_REQUESTS_VIEW,
+                self::CLASS_CHANGE_REQUESTS_APPROVE,
+                self::CLASS_CHANGE_REQUESTS_REJECT,
                 self::DATABASE_BACKUPS_DOWNLOAD,
                 self::STUDENT_FEEDBACK_VIEW,
                 self::STUDENT_FEEDBACK_REPLY,

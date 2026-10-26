@@ -6,6 +6,7 @@ namespace App\Support\Approvals;
 
 use App\Models\ApprovalRequest;
 use App\Models\AttendanceCorrection;
+use App\Models\ClassChangeRequest;
 use App\Models\ExamApplication;
 use App\Models\GradeCorrection;
 use App\Models\Expense;
@@ -61,6 +62,9 @@ final class DocumentType
     /** A change to one score of approved results. */
     public const GRADE_CORRECTION = 'grade_correction';
 
+    /** A student's request to move to another class (approving moves the enrollment). */
+    public const CLASS_CHANGE = 'class_change';
+
     /** @var array<string, class-string<Model>> */
     private const MODELS = [
         self::STUDENT_LEAVE => LeaveRequest::class,
@@ -77,6 +81,7 @@ final class DocumentType
         self::EXPENSE => Expense::class,
         self::RESULT_SHEET => ResultSheet::class,
         self::GRADE_CORRECTION => GradeCorrection::class,
+        self::CLASS_CHANGE => ClassChangeRequest::class,
     ];
 
     /** @return list<string> */
@@ -147,6 +152,7 @@ final class DocumentType
             self::PROMOTION => Permissions::PERFORMANCE_APPROVE_PROMOTION,
             self::EXPENSE => Permissions::EXPENSE_APPROVE,
             self::RESULT_SHEET, self::GRADE_CORRECTION => Permissions::GRADEBOOK_APPROVE,
+            self::CLASS_CHANGE => Permissions::CLASS_CHANGE_REQUESTS_APPROVE,
         };
     }
 }

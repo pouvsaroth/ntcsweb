@@ -35,6 +35,7 @@ use App\Http\Controllers\Api\V1\Admin\BookController;
 use App\Http\Controllers\Api\V1\Admin\BranchController;
 use App\Http\Controllers\Api\V1\Admin\BuildingController;
 use App\Http\Controllers\Api\V1\Admin\CandidateSelectionController;
+use App\Http\Controllers\Api\V1\Admin\ClassChangeRequestController;
 use App\Http\Controllers\Api\V1\Admin\ClassroomController;
 use App\Http\Controllers\Api\V1\Admin\ClassroomTableController;
 use App\Http\Controllers\Api\V1\Admin\CoursePackageController;
@@ -150,6 +151,7 @@ use App\Http\Controllers\Api\V1\MyApprovalRequestController;
 use App\Http\Controllers\Api\V1\MyAssetController;
 use App\Http\Controllers\Api\V1\MyAttendanceController;
 use App\Http\Controllers\Api\V1\MyAttendanceCorrectionController;
+use App\Http\Controllers\Api\V1\MyClassChangeRequestController;
 use App\Http\Controllers\Api\V1\MyExamApplicationController;
 use App\Http\Controllers\Api\V1\MyExamScoreController;
 use App\Http\Controllers\Api\V1\MyInvoiceController;
@@ -625,6 +627,11 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::post('make-up-class-requests/{make_up_class_request}/approve', [MakeUpClassRequestController::class, 'approve'])->name('make-up-class-requests.approve');
         Route::post('make-up-class-requests/{make_up_class_request}/reject', [MakeUpClassRequestController::class, 'reject'])->name('make-up-class-requests.reject');
 
+        // Students' requests to change class — see ClassChangeRequestService.
+        Route::get('class-change-requests', [ClassChangeRequestController::class, 'index'])->name('class-change-requests.index');
+        Route::post('class-change-requests/{classChangeRequest}/approve', [ClassChangeRequestController::class, 'approve'])->name('class-change-requests.approve');
+        Route::post('class-change-requests/{classChangeRequest}/reject', [ClassChangeRequestController::class, 'reject'])->name('class-change-requests.reject');
+
         // Student-submitted requests/comments about the school or a
         // teacher, with a reply thread. See StudentFeedbackPolicy.
         Route::apiResource('student-feedback', StudentFeedbackController::class)->only(['index', 'show']);
@@ -952,7 +959,11 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::post('my-resignation-requests', [MyResignationRequestController::class, 'store'])->name('my-resignation-requests.store');
 
         // Student self-service — identity-gated, same pattern as my-leave-requests.
-        Route::get('my-make-up-class-requests/enrollments', [MyMakeUpClassRequestController::class, 'enrollments'])->name('my-make-up-class-requests.enrollments');
+        Route::get('my-class-change-requests/options', [MyClassChangeRequestController::class, 'options'])->name('my-class-change-requests.options');
+        Route::get('my-class-change-requests', [MyClassChangeRequestController::class, 'index'])->name('my-class-change-requests.index');
+        Route::post('my-class-change-requests', [MyClassChangeRequestController::class, 'store'])->name('my-class-change-requests.store');
+        Route::delete('my-class-change-requests/{classChangeRequest}', [MyClassChangeRequestController::class, 'destroy'])->whereNumber('classChangeRequest')->name('my-class-change-requests.destroy');
+        Route::get('my-make-up-class-requests/enrollments',[MyMakeUpClassRequestController::class, 'enrollments'])->name('my-make-up-class-requests.enrollments');
         Route::get('my-make-up-class-requests', [MyMakeUpClassRequestController::class, 'index'])->name('my-make-up-class-requests.index');
         Route::post('my-make-up-class-requests', [MyMakeUpClassRequestController::class, 'store'])->name('my-make-up-class-requests.store');
         Route::delete('my-make-up-class-requests/{makeUpClassRequest}', [MyMakeUpClassRequestController::class, 'destroy'])->whereNumber('makeUpClassRequest')->name('my-make-up-class-requests.destroy');

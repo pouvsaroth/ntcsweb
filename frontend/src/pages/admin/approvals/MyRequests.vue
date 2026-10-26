@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import AskForPermissionModal from '@/components/layout/AskForPermissionModal.vue'
+import ClassChangeRequestModal from '@/components/layout/ClassChangeRequestModal.vue'
 import ExamApplicationRequestModal from '@/components/layout/ExamApplicationRequestModal.vue'
 import MakeUpClassRequestModal from '@/components/layout/MakeUpClassRequestModal.vue'
 import ResignationFormModal from '@/components/layout/ResignationFormModal.vue'
@@ -14,6 +15,7 @@ import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import DataTable from '@/components/ui/DataTable.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import { myApprovalRequestsService, type ApprovalRequest, type ApprovalRequestStatus } from '@/services/approvalRequests'
+import { classChangeLabel, myClassChangeRequestsService, type ClassChangeRequest } from '@/services/classChangeRequests'
 import { myLeaveRequestsService, type LeaveRequest } from '@/services/leaveRequests'
 import { formatDays } from '@/services/leaveManagement'
 import { makeUpClassCourseLabel, myMakeUpClassRequestsService, type MakeUpClassRequest, type MakeUpClassRequestStatus } from '@/services/makeUpClassRequests'
@@ -38,7 +40,7 @@ import { formatDate } from '@/utils/date'
 type RowStatus = ApprovalRequestStatus | MakeUpClassRequestStatus | 'cancelled'
 
 type MergedRow = {
-  kind: 'approval' | 'leave' | 'resignation' | 'makeUp' | 'exam'
+  kind: 'approval' | 'leave' | 'resignation' | 'makeUp' | 'exam' | 'classChange'
   id: number
   reference: string
   subject: string
@@ -51,6 +53,7 @@ type MergedRow = {
   resignation?: ResignationRequest
   makeUp?: MakeUpClassRequest
   exam?: MyExamApplication
+  classChange?: ClassChangeRequest
 }
 
 const { t } = useI18n()
@@ -67,6 +70,8 @@ const canRequestMakeUp = computed(() => auth.hasRole('student'))
 // Exam applications are student-only too; they're listed here alongside the
 // rest, and the full detail (room, table...) stays on My Exam Application.
 const canApplyForExam = computed(() => auth.hasRole('student'))
+// Asking to move to another class is student-only too.
+const canRequestClassChange = computed(() => auth.hasRole('student'))
 
 const rows = ref<MergedRow[]>([])
 const loading = ref(false)
@@ -127,6 +132,7 @@ const showLeaveModal = ref(false)
 const showResignationModal = ref(false)
 const showMakeUpModal = ref(false)
 const showExamModal = ref(false)
+const showClassChangeModal = ref(false)
 
 function onLeaveModalChange(open: boolean) {
   showLeaveModal.value = open
@@ -154,6 +160,7 @@ async function remove(row: MergedRow) {
     if (row.kind === 'approval') await myApprovalRequestsService.remove(row.id)
     else if (row.kind === 'leave') await myLeaveRequestsService.remove(row.id)
     else if (row.kind === 'makeUp') await myMakeUpClassRequestsService.remove(row.id)
+    else if (row.kind === 'classChange') await myClassChangeRequestsService.remove(row.id)
     await load()
   } catch (e) {
     error.value = e instanceof ApiRequestError ? e.message : t('admin.myRequests.deleteFailed')
@@ -167,7 +174,7 @@ async function load() {
   error.value = null
 
   try {
-    const [approvals, leaves, resignations, makeUps, exams] = await Promise.all([
+    const [approvals, leaves, resignations, makeUps, exams, classChanges] = await Promise.all([
       myApprovalRequestsService.list(),
       myLeaveRequestsService.list({ page: 1, per_page: 100, filter: {} }),
       canResign.value
@@ -179,6 +186,7 @@ async function load() {
       canApplyForExam.value
         ? myExamApplicationsService.list({ page: 1, per_page: 100, filter: {} })
         : Promise.resolve({ data: [] as MyExamApplication[], pagination: undefined }),
+      canRequestClassChange.value ? myClassChangeRequestsService.list() : Promise.resolve([] as ClassChangeRequest[]),
     ])
 
     const approvalRows: MergedRow[] = approvals.data.map((r) => ({
@@ -239,7 +247,18 @@ async function load() {
         exam: r,
       }))
 
-    rows.value = [...approvalRows, ...leaveRows, ...resignationRows, ...makeUpRows, ...examRows].sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    const classChangeRows: MergedRow[] = classChanges.map((r) => ({
+      kind: 'classChange',
+      id: r.id,
+      reference: r.reference,
+      subject: t('classChangeRequest.subject', { classes: classChangeLabel(r), date: formatDate(r.start_date) }),
+      status: r.status,
+      createdAt: r.created_at,
+      reason: r.decision_reason ?? null,
+      classChange: r,
+    }))
+
+    rows.value = [...approvalRows, ...leaveRows, ...resignationRows, ...makeUpRows, ...examRows, ...classChangeRows].sort((a, b) => b.createdAt.localeCompare(a.createdAt))
   } catch (e) {
     error.value = e instanceof ApiRequestError ? e.message : t('admin.myRequests.loadFailed')
   } finally {
@@ -264,6 +283,7 @@ function leaveSubject(r: LeaveRequest): string {
         <BaseButton @click="showLeaveModal = true">{{ t('leaveRequest.title') }}</BaseButton>
         <BaseButton v-if="canRequestMakeUp" variant="outline" @click="showMakeUpModal = true">{{ t('makeUpClassRequest.title') }}</BaseButton>
         <BaseButton v-if="canApplyForExam" variant="outline" @click="showExamModal = true">{{ t('admin.myExamApplications.title') }}</BaseButton>
+        <BaseButton v-if="canRequestClassChange" variant="outline" @click="showClassChangeModal = true">{{ t('classChangeRequest.title') }}</BaseButton>
         <BaseButton v-if="canResign" variant="outline" @click="showResignationModal = true">{{ t('resignationRequest.title') }}</BaseButton>
       </div>
     </div>
@@ -386,6 +406,15 @@ function leaveSubject(r: LeaveRequest): string {
           <div v-if="detail.makeUp.decision_reason"><dt class="text-neutral-500">{{ t('admin.leaveRequests.decisionReason') }}</dt><dd class="font-medium text-neutral-900">{{ detail.makeUp.decision_reason }}</dd></div>
         </dl>
       </template>
+      <template v-else-if="detail?.kind === 'classChange' && detail.classChange">
+        <dl class="grid gap-y-2 text-sm">
+          <div><dt class="text-neutral-500">{{ t('classChangeRequest.currentClass') }}</dt><dd class="font-medium text-neutral-900">{{ detail.classChange.from_class?.name ?? '—' }}<template v-if="detail.classChange.enrollment.course"> — {{ detail.classChange.enrollment.course }}</template></dd></div>
+          <div><dt class="text-neutral-500">{{ t('classChangeRequest.newClass') }}</dt><dd class="font-medium text-primary-700">{{ detail.classChange.to_class?.name ?? '—' }}</dd></div>
+          <div><dt class="text-neutral-500">{{ t('classChangeRequest.startDate') }}</dt><dd class="font-medium text-neutral-900">{{ formatDate(detail.classChange.start_date) }}</dd></div>
+          <div v-if="detail.classChange.reason"><dt class="text-neutral-500">{{ t('classChangeRequest.reason') }}</dt><dd class="font-medium text-neutral-900">{{ detail.classChange.reason }}</dd></div>
+          <div v-if="detail.classChange.decision_reason"><dt class="text-neutral-500">{{ t('admin.leaveRequests.decisionReason') }}</dt><dd class="font-medium text-neutral-900">{{ detail.classChange.decision_reason }}</dd></div>
+        </dl>
+      </template>
       <template v-else-if="detail?.kind === 'exam' && detail.exam">
         <dl class="grid gap-y-2 text-sm">
           <div><dt class="text-neutral-500">{{ t('admin.myExamApplications.columnCourse') }}</dt><dd class="font-medium text-neutral-900">{{ [detail.exam.enrollment.course_package?.name, detail.exam.enrollment.school_class?.name].filter(Boolean).join(' — ') || '—' }}</dd></div>
@@ -401,6 +430,7 @@ function leaveSubject(r: LeaveRequest): string {
 
     <AskForPermissionModal :model-value="showLeaveModal" @update:model-value="onLeaveModalChange" />
     <ExamApplicationRequestModal v-if="canApplyForExam" v-model="showExamModal" @submitted="load" />
+    <ClassChangeRequestModal v-if="canRequestClassChange" v-model="showClassChangeModal" @submitted="load" />
     <MakeUpClassRequestModal v-if="canRequestMakeUp" :model-value="showMakeUpModal" @update:model-value="onMakeUpModalChange" />
     <ResignationFormModal v-if="canResign" :model-value="showResignationModal" @update:model-value="onResignationModalChange" />
   </div>
