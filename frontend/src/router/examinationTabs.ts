@@ -24,6 +24,7 @@ export const examinationTabs: ExaminationTab[] = [
   { to: '/admin/examination/corrections', labelKey: 'gradebook.tabs.corrections', permission: GRADEBOOK },
   { to: '/admin/examination/transcript', labelKey: 'gradebook.tabs.transcript', permission: GRADEBOOK },
   { to: '/admin/examination/progress', labelKey: 'gradebook.tabs.progress', permission: GRADEBOOK },
+  { to: '/admin/examination/remedial', labelKey: 'gradebook.tabs.remedial', permission: GRADEBOOK },
   { to: '/admin/examination/export', labelKey: 'gradebook.tabs.export', permission: GRADEBOOK },
   { to: '/admin/exams', labelKey: 'adminNav.items.exams', permission: ['exam-applications.view'] },
   // Grades needs its own exam-scores.* permission, distinct from exam-applications.view.

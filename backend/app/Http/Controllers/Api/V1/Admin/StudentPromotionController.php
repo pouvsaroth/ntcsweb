@@ -111,6 +111,9 @@ final class StudentPromotionController extends Controller
             ],
             'next_grade_level' => $next ? ['id' => $next->id, 'name' => $next->name] : null,
             'rule' => $result['rule'] ? $this->rule($result['rule']->load('gradeLevel:id,name,code,level_order')) : null,
+            // gradebook: approved term results (7e); exams: exam applications.
+            'source' => $result['source'],
+            'unapproved_sheets' => $result['unapproved_sheets'],
             'students' => $result['students'],
             'promote_classes' => $classesOf($next?->id),
             'repeat_classes' => $classesOf($class->grade_level_id),

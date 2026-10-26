@@ -6,8 +6,10 @@ namespace App\Services\Academic;
 
 use App\Models\Enrollment;
 use App\Models\PromotionRule;
+use App\Models\ResultSheet;
 use App\Models\SchoolClass;
 use App\Models\StudentPromotion;
+use App\Models\SubjectResult;
 use App\Models\User;
 use App\Support\Academic\AttendanceStatus;
 use Illuminate\Support\Collection;
@@ -20,8 +22,11 @@ use Illuminate\Validation\ValidationException;
  * chosen ones on.
  *
  * The figures, per enrollment in the class:
- *  - average: the mean of the student's latest score (0–100) in each subject
- *    (exam applications of this enrollment; of the class's academic year
+ *  - average: the mean of the student's score (0–100) in each subject —
+ *    for a class with a grade level that has gradebook results
+ *    (docs/academics/gradebook.md, 7e): each subject's average over the
+ *    class's approved, complete term results; otherwise the latest exam
+ *    application score of this enrollment (of the class's academic year
  *    when the class has one);
  *  - failed subjects: subjects whose latest score is below the pass mark;
  *  - attendance: present, late and excused days over all recorded days.
@@ -37,7 +42,7 @@ final class PromotionService
     public function __construct(private readonly EnrollmentService $enrollments) {}
 
     /**
-     * @return array{rule: PromotionRule|null, students: list<array<string, mixed>>}
+     * @return array{rule: PromotionRule|null, source: string, unapproved_sheets: int, students: list<array<string, mixed>>}
      */
     public function evaluate(SchoolClass $class): array
     {
@@ -49,7 +54,9 @@ final class PromotionService
             ->get();
         $ids = $enrollments->modelKeys();
 
-        $scores = $this->latestScores($ids, $class->academic_year_id);
+        $usesGradebook = $class->grade_level_id !== null && ResultSheet::query()->where('class_id', $class->getKey())->exists();
+        $scores = $usesGradebook ? $this->gradebookScores($class, $enrollments) : $this->latestScores($ids, $class->academic_year_id);
+        $unapproved = $usesGradebook ? ResultSheet::query()->where('class_id', $class->getKey())->where('status', '!=', ResultSheet::STATUS_APPROVED)->count() : 0;
         $attendance = $this->attendance($ids);
         $done = StudentPromotion::query()->with('toClass:id,name')->whereIn('from_enrollment_id', $ids)->get()->keyBy('from_enrollment_id');
 
@@ -106,7 +113,7 @@ final class PromotionService
             ];
         })->sortBy('student_name', SORT_NATURAL | SORT_FLAG_CASE)->values()->all();
 
-        return ['rule' => $rule, 'students' => $students];
+        return ['rule' => $rule, 'source' => $usesGradebook ? 'gradebook' : 'exams', 'unapproved_sheets' => $unapproved, 'students' => $students];
     }
 
     /**
@@ -178,6 +185,32 @@ final class PromotionService
         });
 
         return $counts;
+    }
+
+    /**
+     * Gradebook classes: each subject's average percent over the class's
+     * approved, complete term results. Drafts, pending and returned sheets
+     * do not count.
+     *
+     * @param  Collection<int, Enrollment>  $enrollments
+     * @return Collection<int, Collection<int, float>> enrollment id => (book id => percent)
+     */
+    private function gradebookScores(SchoolClass $class, Collection $enrollments): Collection
+    {
+        $sheets = ResultSheet::query()->where('class_id', $class->getKey())->where('status', ResultSheet::STATUS_APPROVED)->pluck('book_id', 'id');
+        $results = SubjectResult::query()->whereIn('result_sheet_id', $sheets->keys()->all() ?: [0])
+            ->whereIn('student_id', $enrollments->pluck('student_id')->unique()->all() ?: [0])
+            ->where('complete', true)->whereNotNull('percent')
+            ->get(['result_sheet_id', 'student_id', 'percent'])
+            ->groupBy('student_id');
+
+        return $enrollments->mapWithKeys(function (Enrollment $e) use ($results, $sheets) {
+            $bySubject = $results->get($e->student_id, collect())
+                ->groupBy(fn (SubjectResult $r) => (int) $sheets[$r->result_sheet_id])
+                ->map(fn (Collection $rows) => round((float) $rows->avg(fn ($r) => (float) $r->percent), 2));
+
+            return $bySubject->isEmpty() ? [] : [$e->getKey() => $bySubject];
+        });
     }
 
     /**

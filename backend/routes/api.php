@@ -107,6 +107,7 @@ use App\Http\Controllers\Api\V1\Admin\ProjectTaskCommentController;
 use App\Http\Controllers\Api\V1\Admin\ProjectTaskController;
 use App\Http\Controllers\Api\V1\Admin\ProjectTaskDependencyController;
 use App\Http\Controllers\Api\V1\Admin\PromotionRecommendationController;
+use App\Http\Controllers\Api\V1\Admin\RemedialTeachingController;
 use App\Http\Controllers\Api\V1\Admin\RepairShopController;
 use App\Http\Controllers\Api\V1\Admin\ResignationRequestController;
 use App\Http\Controllers\Api\V1\Admin\RoleController;
@@ -401,6 +402,11 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('gradebook/progress/class', [StudentResultsController::class, 'classProgress'])->name('gradebook.progress.class');
         Route::get('gradebook/export/report-cards', [StudentResultsController::class, 'reportCards'])->name('gradebook.export.report-cards');
         Route::get('gradebook/export/score-sheet', [StudentResultsController::class, 'scoreSheet'])->name('gradebook.export.score-sheet');
+        // Remedial Teaching (7e).
+        Route::get('gradebook/remedial', [RemedialTeachingController::class, 'index'])->name('gradebook.remedial.index');
+        Route::post('gradebook/remedial', [RemedialTeachingController::class, 'store'])->name('gradebook.remedial.store');
+        Route::put('gradebook/remedial/{remedialSession}', [RemedialTeachingController::class, 'update'])->name('gradebook.remedial.update');
+        Route::delete('gradebook/remedial/{remedialSession}', [RemedialTeachingController::class, 'destroy'])->name('gradebook.remedial.destroy');
         Route::get('student-promotions/classes', [StudentPromotionController::class, 'classes'])->name('student-promotions.classes');
         Route::get('student-promotions', [StudentPromotionController::class, 'show'])->name('student-promotions.show');
         Route::post('student-promotions', [StudentPromotionController::class, 'apply'])->name('student-promotions.apply');

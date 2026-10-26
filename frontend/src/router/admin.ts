@@ -315,6 +315,12 @@ const adminRoutes: RouteRecordRaw[] = [
     meta: { titleKey: 'gradebook.tabs.progress', headerTabs: 'examination' },
   },
   {
+    path: 'examination/remedial',
+    name: 'admin.examination.remedial',
+    component: () => import('@/pages/admin/examination/RemedialTeaching.vue'),
+    meta: { titleKey: 'gradebook.tabs.remedial', headerTabs: 'examination' },
+  },
+  {
     path: 'examination/export',
     name: 'admin.examination.export',
     component: () => import('@/pages/admin/examination/ResultExport.vue'),

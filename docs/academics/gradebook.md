@@ -79,7 +79,7 @@ must check against the Ministry's current assessment guidance before use.
 2. **7b Entry & calculation** — result sheets, Grade Entry (single + bulk), Grade Validation, Score Calculation.
 3. **7c Approval & correction** — two eApprovals document types, locking, Grade Correction with history.
 4. **7d Results** — Transcript, Student Progress, Result Export, the student's own My Scores.
-5. **7e Remedial & promotion** — Remedial Teaching; Promote students reads approved results.
+5. **7e Remedial & promotion** — Remedial Teaching; Promote students reads approved results. (Done 2026-10-26.)
 
 Each step: tests, `vue-tsc -b` + build, render check (desktop + phone cards),
 English + Khmer, and the new tabs added to `docs/NTCSWEB-Modules.xlsx` (edited
@@ -224,3 +224,36 @@ in place).
 - PDF views `pdf/transcript`, `pdf/report-cards` (shared
   `pdf/partials/gradebook-style`).
 - Tests: `tests/Feature/Academic/StudentResultsTest.php` (5).
+
+## As built — 7e (2026-10-26)
+
+- School migration `2026_10_26_120000_create_remedial_sessions_tables`:
+  `remedial_sessions` (class + subject + term, teacher, date, from–to, topic,
+  notes) and `remedial_session_students` (the student's percent in the subject
+  when added, came yes / no / not yet known, outcome improved | no_change |
+  needs_more, remark).
+- No new permissions: Remedial Teaching follows the gradebook — whoever may
+  open the class sees it (`gradebook.view` own classes, `manage-all`,
+  `gradebook.approve`); recording a session needs the right to enter that
+  subject's scores (`gradebook.enter` own subjects, or `manage-all`).
+- `RemedialTeaching`: students below the pass mark = subject results of the
+  class + term under the grade's pass mark (promotion rules, default 50),
+  drafts included so teachers can act early (each row shows whether its
+  scores are approved / complete), with how many sessions the student was
+  taken to and the latest outcome. A new session with no teacher picked gets
+  the person recording it.
+- API: `GET gradebook/remedial` (class + term, optional subject),
+  `POST gradebook/remedial`, `PUT|DELETE gradebook/remedial/{id}`.
+- Promote students (`PromotionService`): a class with a grade level that has
+  result sheets uses the gradebook — each subject's average over the class's
+  **approved, complete** term results; failed subjects = subject averages
+  below the pass mark; drafts, pending and returned sheets do not count (the
+  page says how many are not approved yet and links to Result Approval).
+  Other classes keep the latest exam application scores. The response now
+  has `source` (`gradebook` | `exams`) and `unapproved_sheets`.
+- Console: new tab Remedial Teaching (`/admin/examination/remedial`) after
+  Student Progress: the students below the mark (table; phone cards) with
+  "Plan a session", and the sessions as cards; the form ticks the students
+  below the mark in the chosen subject first, then attendance, outcome and a
+  remark per student.
+- Tests: `tests/Feature/Academic/RemedialAndPromotionTest.php` (4).

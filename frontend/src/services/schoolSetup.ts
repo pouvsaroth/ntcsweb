@@ -132,6 +132,10 @@ export interface PromotionView {
   class: { id: number; name: string; academic_year: string | null; grade_level: { id: number; name: string } | null }
   next_grade_level: { id: number; name: string } | null
   rule: PromotionRule | null
+  /** gradebook: approved term results of the class (Examination 7e); exams: exam applications. */
+  source: 'gradebook' | 'exams'
+  /** Gradebook classes: result sheets not approved yet (they do not count). */
+  unapproved_sheets: number
   students: PromotionStudent[]
   promote_classes: PromotionClassOption[]
   repeat_classes: PromotionClassOption[]

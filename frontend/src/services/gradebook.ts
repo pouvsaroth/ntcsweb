@@ -452,3 +452,74 @@ export const studentResultsService = {
     apiDownload(`/gradebook/export/score-sheet?${q({ class_id: classId, academic_term_id: termId })}`, filename),
   mine: () => apiGet<Transcript>('/my-results'),
 }
+
+// --- Step 7e: remedial teaching ---------------------------------------------------
+
+export const REMEDIAL_OUTCOMES = ['improved', 'no_change', 'needs_more'] as const
+export type RemedialOutcome = (typeof REMEDIAL_OUTCOMES)[number]
+
+export interface RemedialBelowRow {
+  student: RosterStudent
+  subject: { id: number; title: string | null }
+  percent: number
+  score: number | null
+  band: string | null
+  complete: boolean
+  sheet_status: SheetStatus
+  sessions: number
+  last_outcome: RemedialOutcome | null
+}
+
+export interface RemedialSessionStudent {
+  student_id: number
+  code: string | null
+  name: string | null
+  percent_before: number | null
+  attended: boolean | null
+  outcome: RemedialOutcome | null
+  remark: string | null
+}
+
+export interface RemedialSession {
+  id: number
+  subject: { id: number; title: string | null }
+  teacher: { id: number; name: string } | null
+  session_date: string
+  start_time: string | null
+  end_time: string | null
+  topic: string
+  notes: string | null
+  students: RemedialSessionStudent[]
+  can_edit: boolean
+}
+
+export interface RemedialOverview {
+  class: { id: number; name: string }
+  term: { id: number; name: string }
+  pass_mark: number
+  subjects: { id: number; title: string; can_record: boolean }[]
+  teachers: { id: number; name: string }[]
+  below: RemedialBelowRow[]
+  sessions: RemedialSession[]
+}
+
+export interface RemedialSessionInput {
+  class_id: number
+  academic_term_id: number
+  book_id: number
+  staff_id?: number | null
+  session_date: string
+  start_time?: string | null
+  end_time?: string | null
+  topic: string
+  notes?: string | null
+  students: { student_id: number; attended?: boolean | null; outcome?: RemedialOutcome | null; remark?: string | null }[]
+}
+
+export const remedialService = {
+  overview: (classId: number, termId: number, bookId?: number | null) =>
+    apiGet<RemedialOverview>('/gradebook/remedial', { params: { class_id: classId, academic_term_id: termId, book_id: bookId || undefined } }),
+  create: (input: RemedialSessionInput) => apiPost<RemedialSession>('/gradebook/remedial', input),
+  update: (id: number, input: RemedialSessionInput) => apiPut<RemedialSession>(`/gradebook/remedial/${id}`, input),
+  remove: (id: number) => apiDelete(`/gradebook/remedial/${id}`),
+}

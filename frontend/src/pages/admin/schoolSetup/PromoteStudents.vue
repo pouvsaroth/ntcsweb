@@ -17,6 +17,8 @@ import { ApiRequestError } from '@/types/api'
  * against the grade's promotion rule (average, attendance, failed subjects),
  * then promote the chosen ones into a class of the next grade — or keep them
  * in the grade, or mark them graduated. Each student is decided once.
+ * Classes with gradebook results are checked on each subject's approved
+ * year average (Examination 7e); other classes on exam applications.
  */
 const { t } = useI18n()
 const auth = useAuthStore()
@@ -162,6 +164,13 @@ onMounted(async () => {
         <p v-else class="mt-1 text-sm text-amber-700">
           {{ t('schoolSetup.promote.noRule') }}
           <RouterLink to="/admin/school-setup/promotion-rules" class="font-medium underline">{{ t('schoolSetup.tabs.promotionRules') }}</RouterLink>
+        </p>
+        <p class="mt-2 text-xs text-neutral-500">
+          {{ view.source === 'gradebook' ? t('schoolSetup.promote.sourceGradebook') : t('schoolSetup.promote.sourceExams') }}
+        </p>
+        <p v-if="view.unapproved_sheets > 0" class="mt-1 text-xs text-amber-700">
+          {{ t('schoolSetup.promote.unapproved', { count: view.unapproved_sheets }) }}
+          <RouterLink :to="{ path: '/admin/examination/approval', query: { class: view.class.id } }" class="font-medium underline">{{ t('gradebook.tabs.approval') }}</RouterLink>
         </p>
         <p class="mt-2 text-sm text-neutral-600">
           {{ t('schoolSetup.promote.summary', { passes: counts.passes, fails: counts.fails }) }}
