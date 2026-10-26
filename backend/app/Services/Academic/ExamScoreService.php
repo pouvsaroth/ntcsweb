@@ -191,8 +191,8 @@ final class ExamScoreService
                         ]);
                         $retakesCreated++;
                     }
-                } else {
-                    $application->enrollment()->update(['status' => Enrollment::STATUS_COMPLETED]);
+                } elseif ($application->loadMissing('enrollment')->enrollment !== null) {
+                    app(EnrollmentService::class)->setStatus($application->enrollment, Enrollment::STATUS_COMPLETED, __('Exam score recorded'), $actor);
                 }
             }
 

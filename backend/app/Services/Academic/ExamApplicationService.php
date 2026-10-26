@@ -258,7 +258,9 @@ final class ExamApplicationService
             }
 
             $application->update(['status' => ExamApplication::STATUS_NOT_EXAM]);
-            $application->enrollment()->update(['status' => Enrollment::STATUS_COMPLETED]);
+            if ($application->loadMissing('enrollment')->enrollment !== null) {
+                app(EnrollmentService::class)->setStatus($application->enrollment, Enrollment::STATUS_COMPLETED, __('No exam (marked Not Exam)'), auth()->user());
+            }
 
             return $application->fresh();
         });

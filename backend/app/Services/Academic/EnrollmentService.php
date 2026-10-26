@@ -186,14 +186,7 @@ final class EnrollmentService
                 app(StudentLimit::class)->assertRoomFor((int) $enrollment->student_id, (int) $enrollment->getKey());
             }
 
-            EnrollmentStatusHistory::query()->create([
-                'enrollment_id' => $enrollment->getKey(),
-                'from_status' => $enrollment->status,
-                'to_status' => $status,
-                'reason' => $reason,
-                'effective_date' => $effectiveDate,
-                'changed_by' => $actor->getKey(),
-            ]);
+            $this->recordStatus($enrollment, $enrollment->status, $status, $reason, $effectiveDate, $actor);
 
             $changes = ['status' => $status];
 
@@ -211,6 +204,17 @@ final class EnrollmentService
 
                 if ($tableTaken) {
                     $changes['table_id'] = null;
+                    // The seat change is history too.
+                    EnrollmentTransferHistory::query()->create([
+                        'enrollment_id' => $enrollment->getKey(),
+                        'from_class_id' => $enrollment->class_id,
+                        'to_class_id' => $enrollment->class_id,
+                        'from_table_id' => $enrollment->table_id,
+                        'to_table_id' => null,
+                        'from_course_package_id' => $enrollment->course_package_id,
+                        'to_course_package_id' => $enrollment->course_package_id,
+                        'changed_by' => $actor->getKey(),
+                    ]);
                 }
             }
 
@@ -221,9 +225,44 @@ final class EnrollmentService
         });
     }
 
+    /**
+     * Writes one status history row (from → to). Every place that changes an
+     * enrollment's status calls this, so the history is complete; nothing is
+     * written when the status does not actually change.
+     */
+    public function recordStatus(Enrollment $enrollment, string $from, string $to, ?string $reason, ?string $effectiveDate, ?User $actor): void
+    {
+        if ($from === $to) {
+            return;
+        }
+
+        EnrollmentStatusHistory::query()->create([
+            'enrollment_id' => $enrollment->getKey(),
+            'from_status' => $from,
+            'to_status' => $to,
+            'reason' => $reason,
+            'effective_date' => $effectiveDate,
+            'changed_by' => $actor?->getKey(),
+        ]);
+    }
+
+    /**
+     * Sets a new status and writes its history row — for the automatic
+     * changes (an exam result completing the course).
+     */
+    public function setStatus(Enrollment $enrollment, string $to, ?string $reason, ?User $actor): void
+    {
+        $from = (string) $enrollment->status;
+        if ($from === $to) {
+            return;
+        }
+        $this->recordStatus($enrollment, $from, $to, $reason, now()->toDateString(), $actor);
+        $enrollment->update(['status' => $to]);
+    }
+
     public function cancel(Enrollment $enrollment, string $reason, User $actor): Enrollment
     {
-        return DB::connection('tenant')->transaction(function () use ($enrollment, $reason) {
+        return DB::connection('tenant')->transaction(function () use ($enrollment, $reason, $actor) {
             /** @var Enrollment $enrollment */
             $enrollment = Enrollment::query()->whereKey($enrollment->getKey())->lockForUpdate()->firstOrFail();
 
@@ -231,6 +270,7 @@ final class EnrollmentService
                 throw ValidationException::withMessages(['status' => 'This enrollment is already dropped.']);
             }
 
+            $this->recordStatus($enrollment, $enrollment->status, Enrollment::STATUS_DROPPED, $reason, now()->toDateString(), $actor);
             $enrollment->auditReason = $reason;
             $enrollment->update(['status' => Enrollment::STATUS_DROPPED]);
 

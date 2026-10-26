@@ -36,3 +36,21 @@ school decides it in Approvals; approving moves the student.
   Setting, the Role editor ("Class change requests"), and the enrollment's
   history shows the start date and the request.
 - Tests: `tests/Feature/Academic/ClassChangeRequestTest.php` (3).
+
+## Enrollment history everywhere (2026-10-26)
+
+Every change to an enrollment's status, class or table now keeps a history
+row, wherever it happens:
+
+| Where | History kept |
+|---|---|
+| Change status (incl. student status cascade, Promote students) | status (already) |
+| Change status back to Studying when the old table is taken | status + table cleared (new) |
+| Edit enrollment (`PATCH enrollments/{id}`) with a new status | status (new) |
+| Cancel enrollment | status → dropped, with the reason (new) |
+| Exam application marked Not Exam | status → completed (new) |
+| Exam score saved (course completed) | status → completed (new) |
+| Transfer, change table, approved class change request | class / table (already) |
+
+`EnrollmentService::recordStatus()` / `setStatus()` write the status rows;
+tests in `tests/Feature/Academic/EnrollmentHistoryTest.php`.

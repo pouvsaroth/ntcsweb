@@ -22,6 +22,7 @@ use App\Services\Academic\EnrollmentService;
 use App\Support\Query\ApiQuery;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 final class EnrollmentController extends Controller
 {
@@ -61,7 +62,12 @@ final class EnrollmentController extends Controller
             app(StudentLimit::class)->assertRoomFor((int) $enrollment->student_id, (int) $enrollment->getKey());
         }
 
-        $enrollment->update($request->validated());
+        $from = (string) $enrollment->status;
+        DB::connection('tenant')->transaction(function () use ($request, $enrollment, $from) {
+            $enrollment->update($request->validated());
+            // A status changed here is kept in the status history too.
+            $this->enrollments->recordStatus($enrollment, $from, (string) $enrollment->status, null, null, $request->user());
+        });
 
         return ApiResponse::success(new EnrollmentResource($enrollment->load(self::WITH)));
     }
