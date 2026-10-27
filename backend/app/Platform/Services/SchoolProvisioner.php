@@ -51,7 +51,7 @@ final class SchoolProvisioner
                 $this->step($tenant, $attempt, 'copy', function () use ($tenant, $school) {
                     $source = Tenant::query()->find($school->copy_setup_from_tenant_id)
                         ?? throw new \RuntimeException('The school to copy the setup from no longer exists.');
-                    app(SchoolSetupCopier::class)->copy($source, $tenant);
+                    app(SchoolSetupCopier::class)->copy($source, $tenant, $school->copy_setup_parts);
                 });
             }
             $this->step($tenant, $attempt, 'health', fn () => $this->healthCheck($tenant));

@@ -50,6 +50,60 @@ final class SchoolSetupCopier
     ];
 
     /** Links the database does not declare as foreign keys: column => table it points at. */
+    /**
+     * What staff can pick to copy (all by default). `needs`: parts that must
+     * come with it, because its rows point at theirs (classes need rooms…).
+     * Every table in TABLES is in exactly one part.
+     */
+    public const PARTS = [
+        'programs' => ['tables' => ['academic_programs', 'programs', 'academic_years', 'academic_terms', 'grade_levels', 'holidays', 'school_calendar_events'], 'needs' => []],
+        'books' => ['tables' => ['book_categories', 'books', 'book_grade_level', 'curriculum_lessons'], 'needs' => ['programs']],
+        'grading' => ['tables' => ['assessment_schemes', 'assessment_components', 'grade_bands', 'competency_levels', 'competency_criteria', 'promotion_rules'], 'needs' => ['programs']],
+        'accounting' => ['tables' => ['accounts', 'currency_rates'], 'needs' => []],
+        'courses' => ['tables' => ['products', 'product_variants', 'course_packages', 'course_package_book'], 'needs' => ['programs', 'books', 'accounting']],
+        'rooms' => ['tables' => ['branches', 'buildings', 'classrooms', 'classroom_tables'], 'needs' => []],
+        'classes' => ['tables' => ['classes', 'class_schedules'], 'needs' => ['programs', 'rooms', 'books']],
+        'lists' => ['tables' => ['lookup_categories', 'lookup_values', 'lookup_value_translations'], 'needs' => []],
+        'roles' => ['tables' => [], 'needs' => []],
+        'hrm' => ['tables' => [
+            'departments', 'positions', 'teams', 'job_grades', 'job_levels', 'leave_types', 'leave_policies', 'shifts', 'shift_days', 'work_schedules',
+            'payroll_components', 'payroll_settings', 'performance_settings', 'tax_brackets', 'social_security_schemes',
+            'salary_structures', 'salary_structure_items', 'evaluation_forms', 'evaluation_form_questions', 'kpis',
+        ], 'needs' => ['roles']],
+        'approvals' => ['tables' => ['form_categories', 'form_templates', 'approval_groups', 'approval_flow_steps'], 'needs' => []],
+        'assets' => ['tables' => ['asset_categories', 'asset_locations', 'suppliers', 'repair_shops'], 'needs' => []],
+        'settings' => ['tables' => [], 'needs' => []],
+    ];
+
+    /**
+     * The parts picked plus everything they need. Null = every part.
+     *
+     * @param  list<string>|null  $parts
+     * @return list<string>
+     */
+    public static function withNeeds(?array $parts): array
+    {
+        if ($parts === null) {
+            return array_keys(self::PARTS);
+        }
+        $out = [];
+        $add = function (string $part) use (&$add, &$out): void {
+            if (! isset(self::PARTS[$part]) || in_array($part, $out, true)) {
+                return;
+            }
+            $out[] = $part;
+            foreach (self::PARTS[$part]['needs'] as $need) {
+                $add($need);
+            }
+        };
+        foreach ($parts as $part) {
+            $add($part);
+        }
+
+        // In PARTS order, so the list reads the same however it was picked.
+        return array_values(array_intersect(array_keys(self::PARTS), $out));
+    }
+
     private const REFS = [
         'book_categories.academic_program_id' => 'academic_programs',
         'books.academic_program_id' => 'academic_programs',
@@ -80,18 +134,24 @@ final class SchoolSetupCopier
         private readonly TenantContext $context,
     ) {}
 
-    /** @return array<string, int> rows copied per table */
-    public function copy(Tenant $source, Tenant $target): array
+    /**
+     * @param  list<string>|null  $parts  What to copy (PARTS keys); null = everything.
+     * @return array<string, int> rows copied per table
+     */
+    public function copy(Tenant $source, Tenant $target, ?array $parts = null): array
     {
+        $parts = self::withNeeds($parts);
+        $tables = array_values(array_filter(self::TABLES, fn (string $table) => in_array($table, array_merge(...array_map(fn ($p) => self::PARTS[$p]['tables'], $parts)), true)));
+
         if ((int) $source->getKey() === (int) $target->getKey()) {
             throw new RuntimeException('A school cannot copy its own setup.');
         }
 
         // 1. Read the source school's setup rows.
-        $rows = $this->database->within($source, fn () => $this->context->runFor($source, function () use ($source) {
+        $rows = $this->database->within($source, fn () => $this->context->runFor($source, function () use ($source, $tables) {
             $db = DB::connection(SchoolConnection::NAME);
             $out = [];
-            foreach (self::TABLES as $table) {
+            foreach ($tables as $table) {
                 if (! $db->getSchemaBuilder()->hasTable($table)) {
                     continue;
                 }
@@ -106,7 +166,7 @@ final class SchoolSetupCopier
         }));
 
         // 2. Roles first (central): the new school's positions point at them.
-        $roleMap = $this->copyRoles($source, $target);
+        $roleMap = in_array('roles', $parts, true) ? $this->copyRoles($source, $target) : [];
 
         // 3. Write into the new school.
         $counts = $this->database->within($target, fn () => $this->context->runFor($target, function () use ($rows, $roleMap, $source, $target) {
@@ -115,7 +175,9 @@ final class SchoolSetupCopier
             return $db->transaction(fn () => $this->write($db, $rows, $roleMap, $source, $target));
         }));
 
-        $this->copySettings($source, $target, $counts['__accounts'] ?? []);
+        if (in_array('settings', $parts, true) || in_array('accounting', $parts, true)) {
+            $this->copySettings($source, $target, $counts['__accounts'] ?? [], in_array('settings', $parts, true));
+        }
         unset($counts['__accounts']);
 
         return $counts;
@@ -309,13 +371,13 @@ final class SchoolSetupCopier
     }
 
     /** @param array<int, int> $accountMap */
-    private function copySettings(Tenant $source, Tenant $target, array $accountMap): void
+    private function copySettings(Tenant $source, Tenant $target, array $accountMap, bool $alerts): void
     {
         $source = $source->fresh();
         $target = $target->fresh();
         $settings = $target->settings ?? [];
 
-        foreach (self::SETTINGS as $key) {
+        foreach ($alerts ? self::SETTINGS : [] as $key) {
             if (isset($source->settings[$key])) {
                 $settings[$key] = $source->settings[$key];
             }
@@ -333,7 +395,7 @@ final class SchoolSetupCopier
             $settings['accounting'] = $remap($source->settings['accounting']);
         }
 
-        $target->forceFill(['settings' => $settings, 'exam_fee_amount' => $target->exam_fee_amount ?? $source->exam_fee_amount])->save();
+        $target->forceFill(['settings' => $settings, 'exam_fee_amount' => $alerts ? ($target->exam_fee_amount ?? $source->exam_fee_amount) : $target->exam_fee_amount])->save();
     }
 
     /** @return array<string, string> "table.column" => table it points at */

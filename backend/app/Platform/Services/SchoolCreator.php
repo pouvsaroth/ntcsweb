@@ -57,6 +57,7 @@ final class SchoolCreator
             School::for($tenant)->forceFill([
                 'created_by' => $actor?->getKey(),
                 'copy_setup_from_tenant_id' => $data['copy_setup_from'] ?? null,
+                'copy_setup_parts' => ! empty($data['copy_setup_from']) && ! empty($data['copy_setup_parts']) ? SchoolSetupCopier::withNeeds($data['copy_setup_parts']) : null,
             ])->save();
 
             SchoolPlacement::query()->create(match ($mode) {
@@ -84,6 +85,7 @@ final class SchoolCreator
                 'owner_email' => $data['owner_email'],
                 'placement' => $mode,
                 'copy_setup_from' => $data['copy_setup_from'] ?? null,
+                'copy_setup_parts' => $data['copy_setup_parts'] ?? null,
                 'organization_type_id' => $data['organization_type_id'] ?? null,
             ], tenantId: $tenant->getKey(), actor: $actor);
 

@@ -32,6 +32,7 @@ class School extends Model
             'activated_at' => 'datetime',
             'invite_sent_at' => 'datetime',
             'provisioning_attempts' => 'integer',
+            'copy_setup_parts' => 'array',
         ];
     }
 

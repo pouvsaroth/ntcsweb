@@ -342,8 +342,28 @@ export interface NewSchool {
   server?: ServerLogin
   /** Start with this school's setup (programs, courses, classes, lists…); never its users or students. */
   copy_setup_from?: number | null
+  /** Which parts of that setup (COPY_PARTS); none = all of it. */
+  copy_setup_parts?: CopyPart[] | null
   organization_type_id?: number | null
 }
+
+/** The parts of a school's setup staff can copy, and what each needs (mirrors SchoolSetupCopier::PARTS). */
+export const COPY_PARTS = {
+  programs: [],
+  books: ['programs'],
+  grading: ['programs'],
+  accounting: [],
+  courses: ['programs', 'books', 'accounting'],
+  rooms: [],
+  classes: ['programs', 'rooms', 'books'],
+  lists: [],
+  roles: [],
+  hrm: ['roles'],
+  approvals: [],
+  assets: [],
+  settings: [],
+} as const satisfies Record<string, readonly string[]>
+export type CopyPart = keyof typeof COPY_PARTS
 
 export type SchoolProfile = Partial<Pick<School, 'name' | 'name_en' | 'email' | 'phone' | 'address' | 'timezone' | 'locale' | 'default_currency' | 'organization_type_id'>>
 

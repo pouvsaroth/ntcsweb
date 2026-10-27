@@ -141,6 +141,47 @@ class SchoolSetupCopyTest extends TestCase
         });
     }
 
+    public function test_staff_pick_the_parts_to_copy_and_what_they_need_comes_too(): void
+    {
+        $source = Tenant::query()->findOrFail($this->createSchool('angkor')->assertCreated()->json('data.id'));
+        $customRole = Role::factory()->create(['tenant_id' => $source->id, 'slug' => 'front-desk', 'name' => 'Front desk']);
+        $this->in($source, function () use ($customRole) {
+            $program = AcademicProgram::factory()->create(['code' => 'COMP', 'name' => 'Computer']);
+            Account::factory()->create(['code' => '9100', 'name' => 'Parent']);
+            $room = Classroom::factory()->create(['name' => 'Room 101']);
+            SchoolClass::factory()->create(['name' => 'Word evening', 'classroom_id' => $room->id, 'academic_program_id' => $program->id]);
+            Position::factory()->create(['name' => 'Receptionist', 'role_id' => $customRole->id]);
+        });
+        $source->update(['settings' => [...($source->settings ?? []), 'term_study_alert_days' => 45]]);
+
+        // Only "classes": its programs, rooms and books come with it; accounts, HRM, roles and settings do not.
+        $targetId = $this->createSchool('bayon', ['copy_setup_from' => $source->id, 'copy_setup_parts' => ['classes']])
+            ->assertCreated()->assertJsonPath('data.copy_setup_parts', ['programs', 'books', 'rooms', 'classes'])->json('data.id');
+        $target = Tenant::query()->findOrFail($targetId);
+        $this->assertSame(Tenant::STATUS_ACTIVE, $target->status, (string) \App\Platform\Models\School::query()->find($targetId)?->status_detail);
+
+        $this->in($target, function () use ($target) {
+            $class = SchoolClass::query()->where('name', 'Word evening')->firstOrFail();
+            $this->assertSame(Classroom::query()->where('name', 'Room 101')->value('id'), $class->classroom_id);
+            $this->assertSame(AcademicProgram::query()->where('code', 'COMP')->value('id'), $class->academic_program_id);
+            $this->assertFalse(Account::query()->where('code', '9100')->exists());
+            $this->assertTrue(Account::query()->exists(), 'the new school keeps its own chart of accounts');
+            $this->assertFalse(Position::query()->where('name', 'Receptionist')->exists());
+            $this->assertFalse(Role::query()->withoutGlobalScopes()->where('tenant_id', $target->id)->where('slug', 'front-desk')->exists());
+            $this->assertNull($target->fresh()->setting('term_study_alert_days'));
+        });
+    }
+
+    public function test_every_copied_table_is_in_exactly_one_part_and_parts_are_checked(): void
+    {
+        $inParts = array_merge(...array_values(array_map(fn ($p) => $p['tables'], \App\Platform\Services\SchoolSetupCopier::PARTS)));
+        $this->assertEqualsCanonicalizing(\App\Platform\Services\SchoolSetupCopier::TABLES, $inParts);
+        $this->assertSame(count($inParts), count(array_unique($inParts)));
+
+        $this->createSchool('bayon', ['copy_setup_from' => Tenant::factory()->create()->id, 'copy_setup_parts' => ['nope']])
+            ->assertUnprocessable()->assertJsonValidationErrors('copy_setup_parts.0');
+    }
+
     public function test_the_school_to_copy_from_must_exist(): void
     {
         $this->createSchool('bayon', ['copy_setup_from' => 999999])->assertUnprocessable()->assertJsonValidationErrors('copy_setup_from');

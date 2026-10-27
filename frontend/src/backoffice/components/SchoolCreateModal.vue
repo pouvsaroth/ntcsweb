@@ -9,7 +9,7 @@ import BaseModal from '@/components/ui/BaseModal.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
 import { ApiRequestError } from '@/types/api'
 
-import { organizationTypeName, organizationTypesApi, schoolsApi, type OrganizationType, type PlacementMode, type School, type ServerLogin } from '../api'
+import { COPY_PARTS, organizationTypeName, organizationTypesApi, schoolsApi, type CopyPart, type OrganizationType, type PlacementMode, type School, type ServerLogin } from '../api'
 import PlacementChoice from './PlacementChoice.vue'
 import ServerFields from './ServerFields.vue'
 
@@ -33,6 +33,8 @@ const blank = () => ({
   server: { host: '', port: 5432, database: '', username: '', password: '', sslmode: 'require' } as ServerLogin,
   // '' = start empty; otherwise a school id whose setup is copied.
   copy_setup_from: '',
+  // The parts of it to copy; all by default.
+  copy_setup_parts: Object.keys(COPY_PARTS) as CopyPart[],
   // School, Company, Organization… ('' = School).
   organization_type_id: '',
 })
@@ -76,6 +78,24 @@ onMounted(async () => {
 })
 const orgTypeOptions = computed(() => orgTypes.value.map((o) => ({ value: String(o.id), label: organizationTypeName(o, locale.value) })))
 
+const allParts = Object.keys(COPY_PARTS) as CopyPart[]
+/** Ticking a part ticks what it needs; unticking one unticks what needs it. */
+function togglePart(part: CopyPart, on: boolean): void {
+  const picked = new Set(form.value.copy_setup_parts)
+  const add = (p: CopyPart): void => {
+    picked.add(p)
+    COPY_PARTS[p].forEach((n) => add(n as CopyPart))
+  }
+  const drop = (p: CopyPart): void => {
+    picked.delete(p)
+    allParts.filter((o) => picked.has(o) && (COPY_PARTS[o] as readonly string[]).includes(p)).forEach(drop)
+  }
+  if (on) add(part)
+  else drop(part)
+  form.value.copy_setup_parts = allParts.filter((p) => picked.has(p))
+}
+const needsLabel = (part: CopyPart) => COPY_PARTS[part].map((n) => t(`bo.schools.copyShort.${n}`)).join(', ')
+
 const copyOptions = computed(() => [
   { value: '', label: t('bo.schools.copyNone') },
   ...sourceSchools.value.map((s) => ({ value: String(s.id), label: s.name_en ? `${s.name} (${s.name_en})` : s.name })),
@@ -102,11 +122,17 @@ async function save(): Promise<void> {
   saving.value = true
   error.value = null
   try {
-    const { server, copy_setup_from, organization_type_id, ...rest } = form.value
+    const { server, copy_setup_from, copy_setup_parts, organization_type_id, ...rest } = form.value
+    if (copy_setup_from && copy_setup_parts.length === 0) {
+      error.value = new ApiRequestError(t('bo.schools.copyPickOne'), 422)
+      return
+    }
     const school = await schoolsApi.create({
       ...rest,
       name_en: rest.name_en || null,
       copy_setup_from: copy_setup_from ? Number(copy_setup_from) : null,
+      // All ticked: send nothing (= everything).
+      copy_setup_parts: copy_setup_from && copy_setup_parts.length < allParts.length ? copy_setup_parts : null,
       organization_type_id: organization_type_id ? Number(organization_type_id) : null,
       server: rest.placement === 'separate' ? { ...server, port: Number(server.port) } : undefined,
     })
@@ -170,6 +196,35 @@ async function save(): Promise<void> {
           :hint="t('bo.schools.copyHint')"
           :error="error?.fieldError('copy_setup_from')"
         />
+        <div v-if="form.copy_setup_from" class="mt-4">
+          <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <p class="text-sm font-medium text-neutral-700">{{ t('bo.schools.copyWhat') }}</p>
+            <div class="flex gap-3 text-sm">
+              <button type="button" class="text-primary-700 hover:underline" @click="form.copy_setup_parts = [...allParts]">{{ t('bo.schools.copyAll') }}</button>
+              <button type="button" class="text-primary-700 hover:underline" @click="form.copy_setup_parts = []">{{ t('bo.schools.copyNoneTicked') }}</button>
+            </div>
+          </div>
+          <div class="grid gap-2 sm:grid-cols-2">
+            <label
+              v-for="part in allParts"
+              :key="part"
+              class="flex cursor-pointer items-start gap-2 rounded-lg border px-3 py-2 text-sm"
+              :class="form.copy_setup_parts.includes(part) ? 'border-primary-500 bg-primary-50 text-neutral-900' : 'border-neutral-200 text-neutral-600'"
+            >
+              <input
+                type="checkbox"
+                class="mt-0.5 rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+                :checked="form.copy_setup_parts.includes(part)"
+                @change="togglePart(part, ($event.target as HTMLInputElement).checked)"
+              />
+              <span>
+                {{ t(`bo.schools.copyParts.${part}`) }}
+                <span v-if="COPY_PARTS[part].length" class="block text-xs text-neutral-500">{{ t('bo.schools.copyNeeds', { parts: needsLabel(part) }) }}</span>
+              </span>
+            </label>
+          </div>
+          <p v-if="error?.fieldError('copy_setup_parts')" class="mt-1 text-xs text-red-600">{{ error.fieldError('copy_setup_parts') }}</p>
+        </div>
       </fieldset>
 
       <fieldset class="space-y-3 rounded-lg border border-neutral-200 p-4">

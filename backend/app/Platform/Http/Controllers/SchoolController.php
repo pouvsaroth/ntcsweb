@@ -15,6 +15,7 @@ use App\Platform\Models\School;
 use App\Platform\Models\SchoolPlacement;
 use App\Platform\Services\SchoolCreator;
 use App\Platform\Services\SchoolDatabase;
+use App\Platform\Services\SchoolSetupCopier;
 use App\Platform\Services\SchoolOwners;
 use App\Platform\Services\SchoolStatus;
 use App\Platform\Services\SeparateServerProbe;
@@ -92,6 +93,9 @@ final class SchoolController extends Controller
             'placement' => ['nullable', Rule::in(SchoolPlacement::MODES)],
             // Start with another school's setup (never its users or students): SchoolSetupCopier.
             'copy_setup_from' => ['nullable', 'integer', Rule::exists(Tenant::class, 'id')->whereNull('deleted_at')],
+            // Which parts to copy (none given = all); what they need comes too.
+            'copy_setup_parts' => ['nullable', 'array', 'min:1'],
+            'copy_setup_parts.*' => ['string', 'distinct', Rule::in(array_keys(SchoolSetupCopier::PARTS))],
             'organization_type_id' => ['nullable', 'integer', Rule::exists((new OrganizationType)->getConnectionName().'.bo_organization_types', 'id')->where('status', OrganizationType::STATUS_ACTIVE)],
             'server' => ['exclude_unless:placement,separate', 'required', 'array'],
             'server.host' => ['exclude_unless:placement,separate', 'required', 'string', 'max:255'],

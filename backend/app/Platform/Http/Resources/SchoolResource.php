@@ -67,6 +67,8 @@ class SchoolResource extends JsonResource
             'status_detail' => $school?->status_detail,
             // Created as a copy of this school's setup (SchoolSetupCopier), if any.
             'copy_setup_from' => $school?->copy_setup_from_tenant_id,
+            // The parts copied; null = all of it.
+            'copy_setup_parts' => $school?->copy_setup_parts,
             'provisioning_attempts' => $school?->provisioning_attempts ?? 0,
             'activated_at' => $school?->activated_at?->toIso8601String(),
             'invite_sent_at' => $school?->invite_sent_at?->toIso8601String(),
