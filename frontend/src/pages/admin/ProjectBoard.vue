@@ -5,6 +5,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 import ProjectColumnFormModal from '@/components/admin/ProjectColumnFormModal.vue'
 import ProjectFormModal from '@/components/admin/ProjectFormModal.vue'
+import ProjectMilestonesTab from '@/components/admin/ProjectMilestonesTab.vue'
 import ProjectTaskFormModal from '@/components/admin/ProjectTaskFormModal.vue'
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
@@ -63,6 +64,13 @@ async function load() {
 }
 
 onMounted(() => load())
+
+/** Board or Milestones — kept in the URL (?tab=milestones) so a refresh or shared link opens the same tab. */
+type BoardTab = 'board' | 'milestones'
+const activeTab = computed<BoardTab>(() => (route.query.tab === 'milestones' ? 'milestones' : 'board'))
+function selectTab(tab: BoardTab) {
+  router.replace({ query: { ...route.query, tab: tab === 'board' ? undefined : tab } })
+}
 
 // --- Project edit/delete ---
 
@@ -330,7 +338,31 @@ async function submitMoveNote() {
         </div>
       </div>
 
-      <div class="flex gap-4 overflow-x-auto pb-4">
+      <div class="mb-4 flex gap-1 border-b border-neutral-200" role="tablist">
+        <button
+          v-for="tab in (['board', 'milestones'] as const)"
+          :key="tab"
+          type="button"
+          role="tab"
+          :aria-selected="activeTab === tab"
+          class="-mb-px border-b-2 px-4 py-2 text-sm font-medium"
+          :class="activeTab === tab ? 'border-primary-600 text-primary-700' : 'border-transparent text-neutral-500 hover:text-neutral-700'"
+          @click="selectTab(tab)"
+        >
+          {{ tab === 'board' ? t('admin.projects.tabBoard') : t('admin.projects.tabMilestones') }}
+          <span v-if="tab === 'milestones' && project.milestones.length > 0" class="ml-1 text-xs text-neutral-400">{{ project.milestones.length }}</span>
+        </button>
+      </div>
+
+      <ProjectMilestonesTab
+        v-if="activeTab === 'milestones'"
+        :project="project"
+        :can-update="canUpdate"
+        @open-task="openEditTask"
+        @error="actionError = $event"
+      />
+
+      <div v-else class="flex gap-4 overflow-x-auto pb-4">
         <div
           v-for="column in project.columns"
           :key="column.id"
@@ -374,6 +406,14 @@ async function submitMoveNote() {
             @dragover="onColumnBodyDragOver($event, column)"
             @drop="onTaskDrop($event, column)"
           >
+            <button
+              v-if="canUpdate"
+              type="button"
+              class="rounded-lg px-2 py-1.5 text-left text-sm text-neutral-500 hover:bg-neutral-200"
+              @click="openAddTask(column)"
+            >
+              + {{ t('admin.projects.addTask') }}
+            </button>
             <div
               v-for="(task, index) in column.tasks"
               :key="task.id"
@@ -421,14 +461,6 @@ async function submitMoveNote() {
               </div>
             </div>
 
-            <button
-              v-if="canUpdate"
-              type="button"
-              class="mt-1 rounded-lg px-2 py-1.5 text-left text-sm text-neutral-500 hover:bg-neutral-200"
-              @click="openAddTask(column)"
-            >
-              + {{ t('admin.projects.addTask') }}
-            </button>
           </div>
         </div>
 

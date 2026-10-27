@@ -345,8 +345,11 @@ watch(
     form.title = props.task?.title ?? ''
     form.description = props.task?.description ?? ''
     form.priority = props.task?.priority ?? 'medium'
-    form.start_date = props.task?.start_date ?? ''
-    form.due_date = props.task?.due_date ?? ''
+    // A new card starts and is due today; an existing card keeps what it has.
+    const now = new Date()
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+    form.start_date = props.task ? (props.task.start_date ?? '') : today
+    form.due_date = props.task ? (props.task.due_date ?? '') : today
     form.estimated_hours = props.task?.estimated_hours != null ? String(props.task.estimated_hours) : ''
     form.project_milestone_id = props.task?.project_milestone_id ? String(props.task.project_milestone_id) : ''
     form.assignee_id = props.task?.assignee_id ? String(props.task.assignee_id) : ''
