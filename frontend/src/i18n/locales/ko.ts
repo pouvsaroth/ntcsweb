@@ -3269,6 +3269,8 @@ const ko: MessageSchema = {
       saveAndPrint: '저장 후 인쇄 (청구서)',
       saveAndImage: '저장 및 이미지',
       deleteConfirm: '이 등록을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.',
+      deleteHasInvoice: '이 등록에는 청구서가 있어 삭제할 수 없습니다. 대신 "취소" 또는 "상태 변경"을 사용하세요.',
+      deleteFailed: '이 등록을 삭제할 수 없습니다.',
       student: '학생',
       searchStudentPlaceholder: '이름 또는 학번으로 검색…',
       program: '학업 프로그램',

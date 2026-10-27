@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Billing;
 
+use App\Models\Enrollment;
 use App\Models\Student;
+use App\Services\Billing\InvoiceService;
 use App\Support\Authorization\Permissions;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Validation\ValidationException;
 use Tests\Concerns\HasAcademicAdmin;
 use Tests\Concerns\HasAcademicCatalog;
 use Tests\TestCase;
@@ -104,6 +107,92 @@ class TermStudyAlertTest extends TestCase
         $response->assertJsonPath('data.items.0.type_recorded', false);
         $response->assertJsonPath('data.items.1.student.id', $legacyInvoice->id);
         $response->assertJsonPath('data.items.1.type_recorded', false);
+    }
+
+    public function test_a_moved_enrollment_takes_the_payment_type_of_the_dropped_one_before_it(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE, Permissions::INVOICES_VIEW]);
+        $this->setUpAcademicCatalog();
+        $wasTerm = Student::factory()->create();
+        $wasMonthly = Student::factory()->create();
+
+        // The old way of changing class: the first enrollment (with the
+        // invoice) dropped, a new one opened with no invoice.
+        foreach ([[$wasTerm, 'term'], [$wasMonthly, 'monthly']] as [$student, $type]) {
+            $oldId = $this->enroll($student, $type, '2026-08-01');
+            Enrollment::query()->whereKey($oldId)->update(['status' => Enrollment::STATUS_DROPPED]);
+            Enrollment::factory()->create([
+                'student_id' => $student->id, 'class_id' => $this->computerEveningClass->id,
+                'course_package_id' => $this->msWordPackage->id, 'enrolled_at' => '2026-08-05', 'status' => 'active',
+            ]);
+        }
+        // Promoted to a new grade: no course, no invoice — not a term student.
+        Enrollment::factory()->create([
+            'student_id' => Student::factory()->create()->id, 'class_id' => $this->computerEveningClass->id,
+            'course_package_id' => null, 'enrolled_at' => '2026-08-05', 'status' => 'active',
+        ]);
+
+        $this->travelTo(Carbon::parse('2026-09-15'));
+        $response = $this->getJson('/api/v1/term-study-alerts')->assertOk();
+        $response->assertJsonCount(1, 'data.items');
+        $response->assertJsonPath('data.items.0.student.id', $wasTerm->id);
+        $response->assertJsonPath('data.items.0.type_recorded', true);
+    }
+
+    public function test_an_enrollment_invoice_cannot_be_saved_without_a_payment_type(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE]);
+        $this->setUpAcademicCatalog();
+        $enrollment = Enrollment::factory()->create([
+            'student_id' => Student::factory()->create()->id, 'class_id' => $this->computerEveningClass->id,
+            'course_package_id' => $this->msWordPackage->id,
+        ]);
+
+        $this->expectException(ValidationException::class);
+        app(InvoiceService::class)->create([
+            'student_id' => $enrollment->student_id,
+            'items' => [[
+                'product_id' => $this->msWordPackage->product_id, 'unit_price' => 20,
+                'reference_type' => Enrollment::class, 'reference_id' => $enrollment->id,
+            ]],
+        ], $this->admin);
+    }
+
+    public function test_a_paid_invoice_left_by_a_deleted_enrollment_still_gives_the_payment_type(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE, Permissions::INVOICES_VIEW]);
+        $this->setUpAcademicCatalog();
+        $student = Student::factory()->create();
+
+        // Paid, then the enrollment was deleted (possible before the guard);
+        // the student studies on in a newer enrollment with no invoice.
+        $goneId = $this->enroll($student, 'term', '2026-08-01');
+        Enrollment::query()->whereKey($goneId)->delete();
+        Enrollment::factory()->create([
+            'student_id' => $student->id, 'class_id' => $this->computerEveningClass->id,
+            'course_package_id' => $this->msWordPackage->id, 'enrolled_at' => '2026-08-05', 'status' => 'active',
+        ]);
+
+        $this->travelTo(Carbon::parse('2026-09-15'));
+        $response = $this->getJson('/api/v1/term-study-alerts')->assertOk();
+        $response->assertJsonCount(1, 'data.items');
+        $response->assertJsonPath('data.items.0.type_recorded', true);
+    }
+
+    public function test_an_enrollment_with_an_invoice_cannot_be_deleted_but_one_without_can(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE, Permissions::ENROLLMENTS_DELETE]);
+        $this->setUpAcademicCatalog();
+
+        $invoicedId = $this->enroll(Student::factory()->create(), 'term', '2026-08-01');
+        $this->deleteJson("/api/v1/enrollments/{$invoicedId}")->assertUnprocessable();
+        $this->assertNotNull(Enrollment::query()->find($invoicedId));
+
+        $mistake = Enrollment::factory()->create([
+            'student_id' => Student::factory()->create()->id, 'class_id' => $this->computerEveningClass->id,
+            'course_package_id' => $this->msWordPackage->id,
+        ]);
+        $this->deleteJson("/api/v1/enrollments/{$mistake->id}")->assertNoContent();
     }
 
     public function test_needs_invoice_permission(): void

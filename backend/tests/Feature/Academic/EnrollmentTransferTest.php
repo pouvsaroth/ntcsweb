@@ -177,10 +177,13 @@ class EnrollmentTransferTest extends TestCase
         $response = $this->postJson("/api/v1/enrollments/{$originalId}/transfer", [
             'class_id' => $newClass->id,
             'course_package_id' => $excel->id,
+            'fee_type' => 'monthly',
         ]);
 
         $response->assertOk();
         $response->assertJsonPath('data.course_package.id', $excel->id);
+        // The fee type picked for the new course is kept on the enrollment's invoice.
+        $this->assertSame(['monthly'], \App\Models\Invoice::query()->whereHas('items', fn ($q) => $q->where('reference_id', $originalId))->pluck('payment_type')->all());
         $response->assertJsonPath('data.class.id', $newClass->id);
         $this->assertSame($excel->id, Enrollment::findOrFail($originalId)->course_package_id);
         $this->assertSame($excel->id, EnrollmentTransferHistory::where('enrollment_id', $originalId)->sole()->to_course_package_id);

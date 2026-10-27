@@ -21,6 +21,7 @@ import { academicYearsService, type AcademicYear } from '@/services/academicYear
 import { enrollmentsService, type Enrollment, type EnrollmentStatus } from '@/services/enrollments'
 import { type LookupOption, lookupsService } from '@/services/lookups'
 import { studentsService, type Student } from '@/services/students'
+import { ApiRequestError } from '@/types/api'
 import { formatDate } from '@/utils/date'
 
 const { t, locale } = useI18n()
@@ -143,10 +144,17 @@ function openTransfer(enrollment: Enrollment) {
   transferModalOpen.value = true
 }
 
+const deleteError = ref<string | null>(null)
+
 async function remove(enrollment: Enrollment) {
   if (!window.confirm(t('admin.enrollments.deleteConfirm'))) return
-  await enrollmentsService.remove(enrollment.id)
-  await fetch()
+  deleteError.value = null
+  try {
+    await enrollmentsService.remove(enrollment.id)
+    await fetch()
+  } catch (e) {
+    deleteError.value = e instanceof ApiRequestError && e.status === 422 ? t('admin.enrollments.deleteHasInvoice') : e instanceof ApiRequestError ? e.message : t('admin.enrollments.deleteFailed')
+  }
 }
 
 // Enrollment by academic year (the class's year, School setup).
@@ -228,6 +236,7 @@ onMounted(() => {
     </div>
 
     <BaseAlert v-if="error" variant="danger" class="mb-4">{{ error }}</BaseAlert>
+    <BaseAlert v-if="deleteError" variant="danger" class="mb-4" @click="deleteError = null">{{ deleteError }}</BaseAlert>
 
     <!-- Cards on a phone (below sm) -->
     <div class="sm:hidden">

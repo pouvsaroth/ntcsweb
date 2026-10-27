@@ -3269,6 +3269,8 @@ const ja: MessageSchema = {
       saveAndPrint: '保存して印刷（請求書）',
       saveAndImage: '保存して画像',
       deleteConfirm: 'この登録を削除しますか？この操作は取り消せません。',
+      deleteHasInvoice: 'この登録には請求書があるため削除できません。「キャンセル」または「ステータス変更」を使ってください。',
+      deleteFailed: 'この登録を削除できませんでした。',
       student: '生徒',
       searchStudentPlaceholder: '氏名または学籍番号で検索…',
       program: '学習プログラム',

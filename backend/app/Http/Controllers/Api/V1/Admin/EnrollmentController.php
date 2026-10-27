@@ -21,6 +21,7 @@ use App\Platform\Billing\StudentLimit;
 use App\Services\Academic\EnrollmentService;
 use App\Support\Query\ApiQuery;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -75,6 +76,16 @@ final class EnrollmentController extends Controller
     public function destroy(Enrollment $enrollment): JsonResponse
     {
         $this->authorize('delete', $enrollment);
+
+        // Its invoice (and payment) would be left pointing at nothing, and the
+        // student's payment type with it. A real enrollment is ended with
+        // Cancel or Change status instead; only one entered by mistake, with
+        // no invoice yet, can be deleted.
+        if ($enrollment->invoiceItems()->exists()) {
+            throw ValidationException::withMessages([
+                'enrollment' => 'This enrollment has an invoice, so it cannot be deleted. Use Cancel or Change status instead.',
+            ]);
+        }
 
         $enrollment->delete();
 

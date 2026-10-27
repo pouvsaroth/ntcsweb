@@ -3268,6 +3268,8 @@ const zh: MessageSchema = {
       saveAndPrint: '保存并打印（账单）',
       saveAndImage: '保存并生成图片',
       deleteConfirm: '确定要删除这条报名吗？此操作无法撤销。',
+      deleteHasInvoice: '此报名已有发票，无法删除。请改用“取消”或“更改状态”。',
+      deleteFailed: '无法删除此报名。',
       student: '学生',
       searchStudentPlaceholder: '按姓名或学号搜索…',
       program: '学术项目',

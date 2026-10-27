@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Billing;
 
+use App\Models\Enrollment;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Product;
@@ -38,6 +39,14 @@ final class InvoiceService
      */
     public function create(array $data, User $actor): Invoice
     {
+        // An enrollment's invoice is how the system knows whether the student
+        // pays by term, monthly or video (dashboard lists, monthly billing),
+        // so it may never be saved without one.
+        $forEnrollment = collect($data['items'])->contains(fn (array $item) => ($item['reference_type'] ?? null) === Enrollment::class);
+        if ($forEnrollment && empty($data['payment_type'])) {
+            throw ValidationException::withMessages(['payment_type' => 'Choose a payment type for this enrollment.']);
+        }
+
         return DB::transaction(function () use ($data, $actor) {
             $tenant = $this->context->getOrFail();
 

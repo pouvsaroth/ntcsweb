@@ -3273,6 +3273,8 @@ const en = {
       saveAndPrint: 'Save and Print (Invoice)',
       saveAndImage: 'Save and Image',
       deleteConfirm: 'Delete this enrollment? This cannot be undone.',
+      deleteHasInvoice: 'This enrollment has an invoice, so it cannot be deleted. Use Cancel or Change status instead.',
+      deleteFailed: 'Could not delete this enrollment.',
       student: 'Student',
       searchStudentPlaceholder: 'Search by name or student ID…',
       program: 'Academic Program',

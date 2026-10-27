@@ -8,6 +8,7 @@ use App\Models\CoursePackage;
 use App\Models\Enrollment;
 use App\Models\EnrollmentStatusHistory;
 use App\Models\EnrollmentTransferHistory;
+use App\Models\Invoice;
 use App\Models\SchoolClass;
 use App\Models\Student;
 use App\Models\Tenant;
@@ -359,6 +360,14 @@ final class EnrollmentService
                 'course_package_id' => $packageId,
                 'academic_program_id' => $programId,
             ], $actor, $history);
+
+            // A new course comes with the fee type picked for it; keep it on
+            // the enrollment's (unpaid) invoice so term/monthly lists see it.
+            if ($changingCourse && $feeType !== null) {
+                Invoice::query()
+                    ->whereHas('items', fn ($q) => $q->where('reference_type', Enrollment::class)->where('reference_id', $enrollment->getKey()))
+                    ->update(['payment_type' => $feeType]);
+            }
 
             return $enrollment->load(['student', 'schoolClass', 'table', 'coursePackage']);
         });
