@@ -8,6 +8,7 @@ import HeroSlider from '@/components/public/HeroSlider.vue'
 import PopularPrograms from '@/components/public/PopularPrograms.vue'
 import SectionContainer from '@/components/public/SectionContainer.vue'
 import { publicContentService, type EventItem, type NewsItem } from '@/services/publicContent'
+import { formatDate } from '@/utils/date'
 
 const { t } = useI18n()
 const news = ref<NewsItem[]>([])
@@ -44,7 +45,7 @@ onMounted(async () => {
             <img v-if="item.cover_image" :src="item.cover_image" :alt="item.title" class="h-full w-full object-cover" />
           </div>
           <div class="p-5">
-            <p class="text-xs font-medium text-neutral-400">{{ item.published_at }}</p>
+            <p class="text-xs font-medium text-neutral-400">{{ formatDate(item.published_at) }}</p>
             <h3 class="mt-1 font-semibold text-neutral-900">{{ item.title }}</h3>
             <p class="mt-2 line-clamp-2 text-sm text-neutral-500">{{ item.excerpt }}</p>
             <RouterLink :to="`/news/${item.slug}`" class="mt-3 inline-block text-sm font-medium text-secondary-600 hover:text-secondary-700">
@@ -61,7 +62,7 @@ onMounted(async () => {
     <SectionContainer v-if="loading || events.length > 0" :title="t('home.upcomingEvents')" :subtitle="t('home.upcomingEventsSubtitle')" class="bg-neutral-50">
       <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         <BaseCard v-for="item in events" :key="item.id" hoverable>
-          <p class="text-xs font-medium text-secondary-600">{{ item.starts_at }}</p>
+          <p class="text-xs font-medium text-secondary-600">{{ formatDate(item.starts_at) }}</p>
           <h3 class="mt-1 font-semibold text-neutral-900">{{ item.title }}</h3>
           <p v-if="item.location" class="mt-2 text-sm text-neutral-500">📍 {{ item.location }}</p>
         </BaseCard>

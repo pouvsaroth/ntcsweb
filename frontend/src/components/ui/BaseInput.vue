@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, useId } from 'vue'
 
+import DateInput from './DateInput.vue'
+
 interface Props {
   modelValue: string
   label?: string
@@ -37,7 +39,20 @@ const describedBy = computed(() => (props.error ? `${id}-error` : props.hint ? `
       <span v-if="required" class="text-danger-600">*</span>
     </label>
 
+    <!-- Dates always show dd-mm-yyyy, never the browser's own format. -->
+    <DateInput
+      v-if="type === 'date' || type === 'datetime-local'"
+      :id="id"
+      :model-value="modelValue"
+      :with-time="type === 'datetime-local'"
+      :disabled="disabled"
+      :required="required"
+      :invalid="Boolean(error)"
+      :described-by="describedBy"
+      @update:model-value="emit('update:modelValue', $event)"
+    />
     <input
+      v-else
       :id="id"
       :type="type"
       :value="modelValue"

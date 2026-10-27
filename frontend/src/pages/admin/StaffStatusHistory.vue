@@ -8,6 +8,7 @@ import BaseButton from '@/components/ui/BaseButton.vue'
 import BasePagination from '@/components/ui/BasePagination.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
 import DataTable from '@/components/ui/DataTable.vue'
+import DateInput from '@/components/ui/DateInput.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { lookupsService } from '@/services/lookups'
 import { staffService } from '@/services/staff'
@@ -106,8 +107,8 @@ onMounted(async () => {
         @update:model-value="onStatusFilterChange"
       />
       <div class="flex gap-2">
-        <input v-model="dateFrom" type="date" class="block w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200" />
-        <input v-model="dateTo" type="date" class="block w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200" />
+        <DateInput v-model="dateFrom" />
+        <DateInput v-model="dateTo" />
       </div>
       <div class="flex justify-end gap-2 lg:col-span-2">
         <BaseButton variant="outline" size="sm" @click="resetFilters">{{ t('admin.staffStatusHistory.reset') }}</BaseButton>

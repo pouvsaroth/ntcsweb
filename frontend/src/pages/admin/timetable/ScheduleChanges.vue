@@ -10,6 +10,7 @@ import { timetableService, type ScheduleChange } from '@/services/timetable'
 import { useAuthStore } from '@/stores/auth'
 import { useConfirmDialogStore } from '@/stores/confirmDialog'
 import { ApiRequestError } from '@/types/api'
+import { formatDate } from '@/utils/date'
 
 /**
  * Timetable > Schedule changes: requests to move a weekly time. A teacher asks
@@ -96,7 +97,7 @@ onMounted(load)
             <p class="text-sm text-neutral-700">{{ when(r.from) }} → <span class="font-medium">{{ when(r.to) }}</span></p>
             <p v-if="r.new_room || r.new_teacher" class="text-xs text-neutral-500">{{ [r.new_room ? t('timetable.room') + ': ' + r.new_room : null, r.new_teacher ? t('timetable.teacher') + ': ' + r.new_teacher : null].filter(Boolean).join(' · ') }}</p>
             <p class="mt-1 text-sm text-neutral-600">“{{ r.reason }}”</p>
-            <p class="text-xs text-neutral-400">{{ r.requested_by }} · {{ r.created_at }}<template v-if="r.decided_by"> · {{ t('timetable.change.decidedBy', { name: r.decided_by }) }}</template></p>
+            <p class="text-xs text-neutral-400">{{ r.requested_by }} · {{ formatDate(r.created_at) }}<template v-if="r.decided_by"> · {{ t('timetable.change.decidedBy', { name: r.decided_by }) }}</template></p>
           </div>
           <BaseBadge :variant="variant(r.status)">{{ t(`timetable.change.status.${r.status}`) }}</BaseBadge>
         </div>

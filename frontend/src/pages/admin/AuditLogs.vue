@@ -10,6 +10,7 @@ import BasePagination from '@/components/ui/BasePagination.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
 import DataTable from '@/components/ui/DataTable.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
+import DateInput from '@/components/ui/DateInput.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { adminUsersService } from '@/services/adminUsers'
 import { auditLogsService, type AuditLogEntry } from '@/services/auditLogs'
@@ -209,8 +210,8 @@ onMounted(async () => {
         @update:model-value="onModuleFilterChange"
       />
       <div class="flex gap-2">
-        <input v-model="dateFrom" type="date" class="block w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200" />
-        <input v-model="dateTo" type="date" class="block w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200" />
+        <DateInput v-model="dateFrom" />
+        <DateInput v-model="dateTo" />
       </div>
       <div class="flex justify-end gap-2 lg:col-span-6">
         <BaseButton variant="outline" size="sm" @click="resetFilters">{{ t('admin.auditLogs.reset') }}</BaseButton>
