@@ -151,19 +151,6 @@ jobs:
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts
 
-      # Scoped to frontend/dist/admin/ specifically (not the parent dist/
-      # folder) so this never touches dist/public/, which
-      # deploy-website.yml's own independent run manages.
-      - name: Upload admin frontend build
-        run: |
-          rsync -az --delete -e "ssh -i ~/.ssh/deploy_key" \
-            dist-admin/ "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${{ secrets.DEPLOY_PATH }}/frontend/dist/admin/"
-
-      # The back office's own folder — served by prod.conf's smis.newtechkh.com block.
-      - name: Upload back office frontend build
-        run: |
-          rsync -az --delete -e "ssh -i ~/.ssh/deploy_key"             dist-backoffice/ "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${{ secrets.DEPLOY_PATH }}/frontend/dist/backoffice/"
-
       # The backend itself is bind-mounted into the php/queue containers, so
       # a `git reset --hard` alone already changes the code they see; `up -d
       # --build` on top of that only rebuilds images when the Dockerfile (or
@@ -199,9 +186,36 @@ jobs:
             docker compose -f docker-compose.prod.yml restart scheduler
 
             # `up --build` recreates php (new container IP) whenever its image
-            # changes, but leaves nginx running — its fastcgi_pass hostname
-            # resolves to the *old* IP until nginx itself restarts, otherwise
-            # every request 502s until someone notices. Restarting it here is
-            # a ~1s blip, versus a silent outage after every rebuild.
-            docker compose -f docker-compose.prod.yml restart nginx
+            # changes, and nginx resolves the fastcgi_pass hostname only when
+            # it loads its config. A graceful reload re-reads the config (also
+            # picking up prod.conf changes) and re-resolves php, while requests
+            # already in progress finish on the old workers: no dropped
+            # requests, unlike the restart this used to be.
+            docker compose -f docker-compose.prod.yml exec -T nginx nginx -s reload
           '
+
+      # After the backend, so new screens never call server code that is not
+      # there yet. Only dist/admin/ (deploy-website.yml owns dist/public/).
+      # Open tabs still run the previous build and ask for its hashed files
+      # (/assets/*.js) when someone opens another page. So: new hashed files
+      # first, deleting nothing; then index.html, version.json and the rest
+      # (assets/ left alone); old hashed files are only removed once they are
+      # 14 days old. rsync -a stamps every file still in the build with the
+      # new build time, so only files no build uses any more ever age out.
+      - name: Upload admin frontend build
+        run: |
+          REMOTE="${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}"
+          DEST="${{ secrets.DEPLOY_PATH }}/frontend/dist/admin"
+          rsync -az -e "ssh -i ~/.ssh/deploy_key" dist-admin/assets/ "$REMOTE:$DEST/assets/"
+          rsync -az --delete --exclude "/assets/" -e "ssh -i ~/.ssh/deploy_key" dist-admin/ "$REMOTE:$DEST/"
+          ssh -i ~/.ssh/deploy_key "$REMOTE" "find \"$DEST/assets\" -type f -mtime +14 -delete"
+
+      # The back office (smis.newtechkh.com), uploaded the same way as the admin build above.
+      - name: Upload back office frontend build
+        run: |
+          REMOTE="${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}"
+          DEST="${{ secrets.DEPLOY_PATH }}/frontend/dist/backoffice"
+          rsync -az -e "ssh -i ~/.ssh/deploy_key" dist-backoffice/assets/ "$REMOTE:$DEST/assets/"
+          rsync -az --delete --exclude "/assets/" -e "ssh -i ~/.ssh/deploy_key" dist-backoffice/ "$REMOTE:$DEST/"
+          ssh -i ~/.ssh/deploy_key "$REMOTE" "find \"$DEST/assets\" -type f -mtime +14 -delete"
+

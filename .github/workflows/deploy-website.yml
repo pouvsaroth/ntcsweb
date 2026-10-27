@@ -63,7 +63,16 @@ jobs:
       # dist/admin/, which deploy.yml's own independent run manages. No
       # backend commands at all: this bundle is static files nginx already
       # knows how to serve from that doc-root.
+      # Open tabs still run the previous build and ask for its hashed files
+      # (/assets/*.js) when someone opens another page. So: new hashed files
+      # first, deleting nothing; then index.html, version.json and the rest
+      # (assets/ left alone); old hashed files are only removed once they are
+      # 14 days old. rsync -a stamps every file still in the build with the
+      # new build time, so only files no build uses any more ever age out.
       - name: Upload public frontend build
         run: |
-          rsync -az --delete -e "ssh -i ~/.ssh/deploy_key" \
-            dist/public/ "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${{ secrets.DEPLOY_PATH }}/frontend/dist/public/"
+          REMOTE="${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}"
+          DEST="${{ secrets.DEPLOY_PATH }}/frontend/dist/public"
+          rsync -az -e "ssh -i ~/.ssh/deploy_key" dist/public/assets/ "$REMOTE:$DEST/assets/"
+          rsync -az --delete --exclude "/assets/" -e "ssh -i ~/.ssh/deploy_key" dist/public/ "$REMOTE:$DEST/"
+          ssh -i ~/.ssh/deploy_key "$REMOTE" "find \"$DEST/assets\" -type f -mtime +14 -delete"
