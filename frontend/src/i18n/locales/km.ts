@@ -1025,6 +1025,7 @@ const km: MessageSchema = {
     steps: 'ជំហាន',
     step: { school: 'សាលា', owner: 'ម្ចាស់', plan: 'កញ្ចប់', confirm: 'បញ្ជាក់' },
     schoolName: 'ឈ្មោះសាលា',
+    organizationType: 'ប្រភេទស្ថាប័ន',
     schoolNameHint: 'ដូចដែលចង់បង្ហាញ ឧ. ជាភាសាខ្មែរ',
     schoolNameEn: 'ឈ្មោះសាលាជាភាសាអង់គ្លេស',
     slug: 'លេខកូដសាលា',

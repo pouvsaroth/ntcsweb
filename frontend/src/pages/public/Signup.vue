@@ -6,9 +6,10 @@ import { RouterLink, useRoute, useRouter } from 'vue-router'
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
+import BaseSelect from '@/components/ui/BaseSelect.vue'
 import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import { publicPlansService, type PublicPlan, type PublicPlans } from '@/services/plans'
-import { signupService, type SignupForm } from '@/services/signup'
+import { signupService, type SignupForm, type SignupOrganizationType } from '@/services/signup'
 import { ApiRequestError } from '@/types/api'
 import { formatMoney } from '@/utils/currency'
 
@@ -42,7 +43,25 @@ const form = ref<SignupForm>({
   password: '',
   password_confirmation: '',
   locale: locale.value === 'km' ? 'km' : 'en',
+  organization_type_id: null,
   website: '',
+})
+
+/** School, Company, Organization…; the website preselects School (or Organization for a non-school system). */
+const orgTypes = ref<SignupOrganizationType[]>([])
+const orgTypeOptions = computed(() => orgTypes.value.map((o) => ({ value: String(o.id), label: (locale.value === 'km' && o.words.km) || o.words.en })))
+const orgTypeId = computed({
+  get: () => (form.value.organization_type_id ? String(form.value.organization_type_id) : ''),
+  set: (v: string) => (form.value.organization_type_id = v ? Number(v) : null),
+})
+onMounted(async () => {
+  try {
+    orgTypes.value = await signupService.organizationTypes()
+    const preferred = orgTypes.value.find((o) => o.code === (systemCode && systemCode !== 'school' ? 'organization' : 'school')) ?? orgTypes.value[0]
+    if (preferred && !form.value.organization_type_id) form.value.organization_type_id = preferred.id
+  } catch {
+    orgTypes.value = []
+  }
 })
 
 onMounted(async () => {
@@ -231,6 +250,13 @@ const card = 'rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-
 
         <!-- 1. The school -->
         <div v-show="current === 'school'" :class="card" class="space-y-4">
+          <BaseSelect
+            v-if="orgTypeOptions.length > 1"
+            v-model="orgTypeId"
+            :label="w('signupPage.organizationType')"
+            :options="orgTypeOptions"
+            :error="fieldError('organization_type_id')"
+          />
           <BaseInput v-model="form.school_name" :label="w('signupPage.schoolName')" :placeholder="w('signupPage.schoolNameHint')" :error="fieldError('school_name')" required />
           <BaseInput
             v-model="form.school_name_en"

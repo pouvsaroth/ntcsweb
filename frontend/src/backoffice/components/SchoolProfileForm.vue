@@ -1,21 +1,38 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
+import BaseSelect from '@/components/ui/BaseSelect.vue'
 import { ApiRequestError } from '@/types/api'
 
-import { schoolsApi, type School } from '../api'
+import { organizationTypeName, organizationTypesApi, schoolsApi, type OrganizationType, type School } from '../api'
 
 /** Name and contact details. The slug is shown, never editable. */
 const props = defineProps<{ school: School; canWrite: boolean }>()
 const emit = defineEmits<{ saved: [school: School] }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
-const form = ref({ name: '', name_en: '', email: '', phone: '', address: '', timezone: '' })
+const form = ref({ name: '', name_en: '', email: '', phone: '', address: '', timezone: '', organization_type_id: '' })
+
+/** School, Company, Organization…: active types, plus the one it has now. */
+const orgTypes = ref<OrganizationType[]>([])
+onMounted(async () => {
+  try {
+    orgTypes.value = await organizationTypesApi.list()
+    if (!form.value.organization_type_id) form.value.organization_type_id = String(orgTypes.value.find((o) => o.code === 'school')?.id ?? '')
+  } catch {
+    orgTypes.value = []
+  }
+})
+const orgTypeOptions = computed(() =>
+  orgTypes.value
+    .filter((o) => o.status === 'active' || String(o.id) === form.value.organization_type_id)
+    .map((o) => ({ value: String(o.id), label: organizationTypeName(o, locale.value) })),
+)
 const saving = ref(false)
 const saved = ref(false)
 const error = ref<ApiRequestError | null>(null)
@@ -23,7 +40,15 @@ const error = ref<ApiRequestError | null>(null)
 watch(
   () => props.school,
   (s) => {
-    form.value = { name: s.name, name_en: s.name_en ?? '', email: s.email ?? '', phone: s.phone ?? '', address: s.address ?? '', timezone: s.timezone }
+    form.value = {
+      name: s.name,
+      name_en: s.name_en ?? '',
+      email: s.email ?? '',
+      phone: s.phone ?? '',
+      address: s.address ?? '',
+      timezone: s.timezone,
+      organization_type_id: s.organization_type_id ? String(s.organization_type_id) : String(orgTypes.value.find((o) => o.code === 'school')?.id ?? ''),
+    }
   },
   { immediate: true },
 )
@@ -41,6 +66,7 @@ async function save(): Promise<void> {
       phone: v.phone || null,
       address: v.address || null,
       timezone: v.timezone,
+      ...(v.organization_type_id ? { organization_type_id: Number(v.organization_type_id) } : {}),
     })
     saved.value = true
     emit('saved', school)
@@ -79,6 +105,14 @@ async function save(): Promise<void> {
         </div>
         <BaseInput v-model="form.address" :label="t('bo.schools.address')" :error="error?.fieldError('address')" />
         <BaseInput v-model="form.timezone" :label="t('bo.schools.timezone')" :error="error?.fieldError('timezone')" />
+        <BaseSelect
+          v-if="orgTypeOptions.length"
+          v-model="form.organization_type_id"
+          :label="t('bo.schools.organizationType')"
+          :options="orgTypeOptions"
+          :hint="t('bo.schools.organizationTypeHint')"
+          :error="error?.fieldError('organization_type_id')"
+        />
       </fieldset>
       <BaseButton v-if="canWrite" type="submit" :loading="saving">{{ t('bo.schools.saveProfile') }}</BaseButton>
     </form>

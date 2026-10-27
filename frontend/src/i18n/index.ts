@@ -5,6 +5,7 @@ import ja from './locales/ja'
 import km from './locales/km'
 import ko from './locales/ko'
 import zh from './locales/zh'
+import { swapOrganizationWords, type OrganizationWords } from './orgWords'
 
 export const SUPPORTED_LOCALES = ['en', 'km', 'zh', 'ko', 'ja'] as const
 export type Locale = (typeof SUPPORTED_LOCALES)[number]
@@ -76,6 +77,20 @@ export function builtInMessage(locale: Locale, key: string): string | null {
   return typeof node === 'string' ? node : null
 }
 
+let lastOverrides: Partial<Record<Locale, Record<string, string>>> = {}
+let organizationWords: OrganizationWords | null = null
+
+/**
+ * The signed-in customer's word for "school" (null or a School = no change).
+ * Rebuilds the text at once, keeping the school's own words on top.
+ */
+export function setOrganizationWords(code: string | null, words: OrganizationWords | null): void {
+  const next = code && code !== 'school' && words?.en ? words : null
+  if (JSON.stringify(next) === JSON.stringify(organizationWords)) return
+  organizationWords = next
+  applyTranslationOverrides(lastOverrides)
+}
+
 /**
  * Lays a school's own words (Settings > Language > Translation, keyed by
  * dotted message key) over the built-in text, replacing whatever was
@@ -83,8 +98,11 @@ export function builtInMessage(locale: Locale, key: string): string | null {
  * one. A key that names a group of messages rather than one is ignored.
  */
 export function applyTranslationOverrides(overrides: Partial<Record<Locale, Record<string, string>>>): void {
+  lastOverrides = overrides
   for (const locale of SUPPORTED_LOCALES) {
     const messages = structuredClone(builtInMessages[locale]) as unknown as MessageTree
+    // A Company, Ministry…: its word instead of "school" (orgWords.ts), under the school's own words.
+    if (organizationWords) swapOrganizationWords(messages, locale, organizationWords)
 
     for (const [key, value] of Object.entries(overrides[locale] ?? {})) {
       const parts = key.split('.')

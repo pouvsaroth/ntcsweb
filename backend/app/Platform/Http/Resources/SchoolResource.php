@@ -56,6 +56,8 @@ class SchoolResource extends JsonResource
             'timezone' => $this->timezone,
             'locale' => $this->locale,
             'default_currency' => $this->default_currency,
+            // School, Company, Organization… (null = School).
+            'organization_type_id' => $this->organization_type_id,
             'owner' => $owner ? [
                 'id' => $owner->id,
                 'name' => $owner->name,

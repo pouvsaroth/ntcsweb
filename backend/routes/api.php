@@ -1153,6 +1153,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         // NewTech's plans page (docs/backoffice/stage-8-signup.md, 8a); 404 on any other school.
         Route::get('plans', [PublicPlanController::class, 'index'])->name('plans.index');
         // Self-service sign-up (8b): web address check, start, and the visitor's own status page.
+        Route::get('signup/organization-types', [PublicSignupController::class, 'organizationTypes'])->middleware('throttle:signup-checks')->name('signup.organization-types');
         Route::get('signup/slug', [PublicSignupController::class, 'slug'])->middleware('throttle:signup-checks')->name('signup.slug');
         Route::post('signup', [PublicSignupController::class, 'store'])->middleware('throttle:signups')->name('signup.store');
         Route::get('signup/{token}', [PublicSignupController::class, 'show'])->whereUuid('token')->middleware('throttle:signup-checks')->name('signup.show');

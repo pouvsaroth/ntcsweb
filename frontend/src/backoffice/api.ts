@@ -215,6 +215,8 @@ export interface School {
   owner: { id: number; name: string; email: string; accepted: boolean } | null
   status_detail: string | null
   copy_setup_from?: number | null
+  /** School, Company, Organization… (null = School). */
+  organization_type_id?: number | null
   provisioning_attempts: number
   activated_at: string | null
   invite_sent_at: string | null
@@ -340,9 +342,43 @@ export interface NewSchool {
   server?: ServerLogin
   /** Start with this school's setup (programs, courses, classes, lists…); never its users or students. */
   copy_setup_from?: number | null
+  organization_type_id?: number | null
 }
 
-export type SchoolProfile = Partial<Pick<School, 'name' | 'name_en' | 'email' | 'phone' | 'address' | 'timezone' | 'locale' | 'default_currency'>>
+export type SchoolProfile = Partial<Pick<School, 'name' | 'name_en' | 'email' | 'phone' | 'address' | 'timezone' | 'locale' | 'default_currency' | 'organization_type_id'>>
+
+/** The word for "school" in each language; en_plural is "Schools". */
+export interface OrganizationWords {
+  en: string
+  en_plural?: string
+  km?: string
+  zh?: string
+  ja?: string
+  ko?: string
+}
+
+export interface OrganizationType {
+  id: number
+  code: string
+  words: OrganizationWords
+  sort_order: number
+  status: 'active' | 'inactive'
+  customers_count: number
+}
+
+export type OrganizationTypeInput = Partial<Pick<OrganizationType, 'code' | 'words' | 'sort_order' | 'status'>>
+
+export const organizationTypesApi = {
+  list: () => get<OrganizationType[]>('/organization-types'),
+  create: (body: OrganizationTypeInput) => send<OrganizationType>('post', '/organization-types', body),
+  update: (id: number, body: OrganizationTypeInput) => send<OrganizationType>('patch', `/organization-types/${id}`, body),
+  remove: (id: number) => send<{ deleted: boolean }>('delete', `/organization-types/${id}`),
+}
+
+/** A type's name in the staff member's language. */
+export function organizationTypeName(type: Pick<OrganizationType, 'words'>, locale: string): string {
+  return (locale === 'km' && type.words.km) || type.words.en
+}
 
 export const schoolsApi = {
   list: (query: ListQuery) => page<School>('/schools', query),

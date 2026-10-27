@@ -7,11 +7,13 @@ namespace App\Http\Controllers\Api\V1\Public;
 use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponse;
 use App\Models\Tenant;
+use App\Platform\Models\OrganizationType;
 use App\Platform\Models\Signup;
 use App\Platform\Signup\Signups;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 
 /**
@@ -24,6 +26,15 @@ final class SignupController extends Controller
         private readonly TenantContext $context,
         private readonly Signups $signups,
     ) {}
+
+    /** The organization types a visitor can pick (School, Company, Organization…). */
+    public function organizationTypes(): JsonResponse
+    {
+        $this->websiteOnly();
+        $types = OrganizationType::query()->where('status', OrganizationType::STATUS_ACTIVE)->orderBy('sort_order')->orderBy('id')->get();
+
+        return ApiResponse::success($types->map(fn (OrganizationType $t) => ['id' => $t->id, 'code' => $t->code, 'words' => $t->words])->values());
+    }
 
     /** Is this web address free? Checked as the visitor types. */
     public function slug(Request $request): JsonResponse
@@ -57,6 +68,8 @@ final class SignupController extends Controller
             'owner_phone' => ['required', 'string', 'max:50', 'regex:/^[0-9+\s()-]{6,}$/'],
             'password' => ['required', 'string', 'confirmed', Password::min(8)],
             'locale' => ['nullable', 'string', 'max:5'],
+            // School, Company, Organization… (none = School).
+            'organization_type_id' => ['nullable', 'integer', Rule::exists((new OrganizationType)->getConnectionName().'.bo_organization_types', 'id')->where('status', OrganizationType::STATUS_ACTIVE)],
         ]);
         $data['slug'] = strtolower(trim($data['slug']));
 

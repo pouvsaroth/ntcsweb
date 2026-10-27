@@ -8,6 +8,7 @@ use App\Platform\Http\Controllers\ChatController;
 use App\Platform\Http\Controllers\DataOpsController;
 use App\Platform\Http\Controllers\PaymentController;
 use App\Platform\Http\Controllers\PlanController;
+use App\Platform\Http\Controllers\OrganizationTypeController;
 use App\Platform\Http\Controllers\ProductController;
 use App\Platform\Http\Controllers\SignupController;
 use App\Platform\Http\Controllers\DemoVisitController;
@@ -110,6 +111,12 @@ Route::middleware('platform.staff')->group(function () {
         Route::post('migrate', [DataOpsController::class, 'migrate'])->middleware('platform.can:platform.data.migrate')->name('migrate');
         Route::post('schools/{school}/create-database', [DataOpsController::class, 'createDatabase'])->middleware('platform.can:platform.data.migrate')->name('create-database');
     });
+
+    // Organization types (School, Company, Organization, Ministry…).
+    Route::get('organization-types', [OrganizationTypeController::class, 'index'])->middleware('platform.can:platform.school.read')->name('organization-types.index');
+    Route::post('organization-types', [OrganizationTypeController::class, 'store'])->middleware('platform.can:platform.school.write')->name('organization-types.store');
+    Route::patch('organization-types/{organizationType}', [OrganizationTypeController::class, 'update'])->middleware('platform.can:platform.school.write')->name('organization-types.update');
+    Route::delete('organization-types/{organizationType}', [OrganizationTypeController::class, 'destroy'])->middleware('platform.can:platform.school.write')->name('organization-types.destroy');
 
     // Billing (stage 5): plans, each school's subscription, settings.
     Route::prefix('billing')->name('billing.')->group(function () {

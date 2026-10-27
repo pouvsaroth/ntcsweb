@@ -20,6 +20,8 @@ export const useAuthStore = defineStore('auth', () => {
   const tenantModules = ref<string[] | null>(null)
   /** The systems the customer has live (stage 9), e.g. ['school'] or ['erp']. Empty = not known. */
   const tenantSystems = ref<{ code: string; name: string; name_km: string | null }[]>([])
+  /** School, Company, Organization… and its word for "school"; null = School. */
+  const tenantOrganization = ref<NonNullable<NonNullable<MeResult['tenant']>['organization']> | null>(null)
   /** Plan ending / ended / student limit — AdminBillingBanner; owners and admins only. */
   const billingNotice = ref<BillingNotice | null>(null)
   /** The signed-in school's own public website hostname — see AdminHeader.vue's "Go to website" link. Null for a platform Super Admin browsing no particular school. */
@@ -65,6 +67,7 @@ export const useAuthStore = defineStore('auth', () => {
     khrPerUsdRate.value = result.tenant?.khr_per_usd_rate ?? null
     tenantModules.value = result.tenant?.modules ?? null
     tenantSystems.value = result.tenant?.systems ?? []
+    tenantOrganization.value = result.tenant?.organization ?? null
     billingNotice.value = result.tenant?.billing_notice ?? null
     tenantHostname.value = result.tenant?.hostname ?? null
     supportView.value = result.support_view
@@ -91,6 +94,7 @@ export const useAuthStore = defineStore('auth', () => {
     khrPerUsdRate.value = null
     tenantModules.value = null
     tenantSystems.value = []
+    tenantOrganization.value = null
     billingNotice.value = null
     tenantHostname.value = null
     supportView.value = null
@@ -224,6 +228,7 @@ export const useAuthStore = defineStore('auth', () => {
     khrPerUsdRate,
     tenantModules,
     tenantSystems,
+    tenantOrganization,
     isSchoolCustomer,
     billingNotice,
     hasModule,

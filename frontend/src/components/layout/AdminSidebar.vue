@@ -7,6 +7,7 @@ import ChangePasswordModal from '@/components/layout/ChangePasswordModal.vue'
 import EditProfileModal from '@/components/layout/EditProfileModal.vue'
 import NavIcon from '@/components/layout/NavIcon.vue'
 import { adminNav, isNavItemVisible, type AdminNavGroup, type AdminNavItem } from '@/router/adminNav'
+import { swapOrganizationText } from '@/i18n/orgWords'
 import { useAdminUiStore } from '@/stores/adminUi'
 import { useAuthStore } from '@/stores/auth'
 import { useSiteStore } from '@/stores/site'
@@ -23,7 +24,12 @@ const route = useRoute()
 const router = useRouter()
 
 /** Shown under the name in the sidebar's profile card — the first role is enough context; a user rarely holds more than one in practice. */
-const primaryRoleName = computed(() => auth.user?.roles?.[0]?.name ?? null)
+// Role names are stored in English; a Company's "School Admin" reads "Company Admin".
+const primaryRoleName = computed(() => {
+  const name = auth.user?.roles?.[0]?.name ?? null
+  const org = auth.tenantOrganization
+  return name && org && org.code !== 'school' ? swapOrganizationText(name, 'en', org.words) : name
+})
 
 const editProfileOpen = ref(false)
 const changePasswordOpen = ref(false)

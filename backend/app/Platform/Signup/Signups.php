@@ -116,6 +116,7 @@ final class Signups
                 'owner_phone' => trim($data['owner_phone']),
                 'owner_password' => Hash::make($data['password']),
                 'locale' => in_array($data['locale'] ?? null, ['en', 'km'], true) ? $data['locale'] : 'km',
+                'organization_type_id' => $data['organization_type_id'] ?? null,
                 'status' => Signup::PENDING_PAYMENT,
                 'expires_at' => now()->addMinutes(Signup::HOLD_MINUTES),
                 'ip_address' => $ip,
@@ -312,6 +313,7 @@ final class Signups
                     'phone' => $signup->owner_phone,
                     'locale' => $signup->locale,
                     'default_currency' => $signup->currency,
+                    'organization_type_id' => $signup->organization_type_id,
                 ],
                 // Shared or its own database, as its plan says.
                 in_array($plan?->placement, [SchoolPlacement::SHARED, SchoolPlacement::DEDICATED], true)

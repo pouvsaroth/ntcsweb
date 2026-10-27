@@ -31,7 +31,7 @@ final class SchoolCreator
     /**
      * @param  array<string, mixed>  $data  name, name_en, slug, owner_name, owner_email; optional timezone, locale,
      *                                      default_currency, email, phone, server (for a separate placement),
-     *                                      copy_setup_from (tenant id whose setup is copied)
+     *                                      copy_setup_from (tenant id whose setup is copied), organization_type_id
      * @param  string|null  $ownerPassword  A password the owner chose themselves (sign-up). Null: they are invited by email.
      * @param  (Closure(Tenant): mixed)|null  $subscribe  Puts the school on a plan; null = the usual trial.
      */
@@ -45,6 +45,7 @@ final class SchoolCreator
                 'timezone' => $data['timezone'] ?? 'Asia/Phnom_Penh',
                 'locale' => $data['locale'] ?? 'km',
                 'default_currency' => $data['default_currency'] ?? Tenant::CURRENCY_USD,
+                'organization_type_id' => $data['organization_type_id'] ?? null,
             ]);
             foreach (['email', 'phone'] as $field) {
                 if (! empty($data[$field])) {
@@ -83,6 +84,7 @@ final class SchoolCreator
                 'owner_email' => $data['owner_email'],
                 'placement' => $mode,
                 'copy_setup_from' => $data['copy_setup_from'] ?? null,
+                'organization_type_id' => $data['organization_type_id'] ?? null,
             ], tenantId: $tenant->getKey(), actor: $actor);
 
             return $tenant;

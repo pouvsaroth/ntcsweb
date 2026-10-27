@@ -10,6 +10,7 @@ use App\Models\Tenant;
 use App\Platform\Billing\Subscriptions;
 use App\Platform\Http\Resources\SchoolResource;
 use App\Platform\Jobs\ProvisionSchool;
+use App\Platform\Models\OrganizationType;
 use App\Platform\Models\School;
 use App\Platform\Models\SchoolPlacement;
 use App\Platform\Services\SchoolCreator;
@@ -91,6 +92,7 @@ final class SchoolController extends Controller
             'placement' => ['nullable', Rule::in(SchoolPlacement::MODES)],
             // Start with another school's setup (never its users or students): SchoolSetupCopier.
             'copy_setup_from' => ['nullable', 'integer', Rule::exists(Tenant::class, 'id')->whereNull('deleted_at')],
+            'organization_type_id' => ['nullable', 'integer', Rule::exists((new OrganizationType)->getConnectionName().'.bo_organization_types', 'id')->where('status', OrganizationType::STATUS_ACTIVE)],
             'server' => ['exclude_unless:placement,separate', 'required', 'array'],
             'server.host' => ['exclude_unless:placement,separate', 'required', 'string', 'max:255'],
             'server.port' => ['exclude_unless:placement,separate', 'required', 'integer', 'between:1,65535'],
@@ -126,6 +128,7 @@ final class SchoolController extends Controller
             'timezone' => ['sometimes', 'timezone'],
             'locale' => ['sometimes', Rule::in(['en', 'km', 'zh', 'ko', 'ja'])],
             'default_currency' => ['sometimes', Rule::in([Tenant::CURRENCY_USD, Tenant::CURRENCY_KHR])],
+            'organization_type_id' => ['sometimes', 'nullable', 'integer', Rule::exists((new OrganizationType)->getConnectionName().'.bo_organization_types', 'id')->where('status', OrganizationType::STATUS_ACTIVE)],
             // A slug is the database name and the subdomain: never editable.
             'slug' => ['prohibited'],
         ]);

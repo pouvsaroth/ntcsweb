@@ -12,7 +12,7 @@ import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 import ImagePreviewDialog from '@/components/ui/ImagePreviewDialog.vue'
 import { useAdminUiStore } from '@/stores/adminUi'
 import { useAuthStore } from '@/stores/auth'
-import { applyTranslationOverrides } from '@/i18n'
+import { applyTranslationOverrides, setOrganizationWords } from '@/i18n'
 import { loadTranslationOverrides } from '@/services/translationOverrides'
 import { useSiteStore } from '@/stores/site'
 
@@ -35,7 +35,16 @@ onMounted(() => site.load())
 // again on leaving the admin app (sign-out), so the next person to sign in
 // on this browser never sees another school's words.
 watch(() => auth.actingTenant?.id, () => void loadTranslationOverrides(), { immediate: true })
-onBeforeUnmount(() => applyTranslationOverrides({}))
+// A Company, Ministry…: its own word wherever the screens say "school".
+watch(
+  () => auth.tenantOrganization,
+  (org) => setOrganizationWords(org?.code ?? null, org?.words ?? null),
+  { immediate: true },
+)
+onBeforeUnmount(() => {
+  setOrganizationWords(null, null)
+  applyTranslationOverrides({})
+})
 </script>
 
 <template>

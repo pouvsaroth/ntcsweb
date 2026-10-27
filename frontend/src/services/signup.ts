@@ -16,6 +16,8 @@ export interface SignupForm {
   password: string
   password_confirmation: string
   locale: string
+  /** School, Company, Organization… (null = School). */
+  organization_type_id: number | null
   /** Hidden from people; a bot that fills it is turned away. */
   website: string
 }
@@ -44,7 +46,14 @@ export interface SignupState {
   sign_in_url: string | null
 }
 
+export interface SignupOrganizationType {
+  id: number
+  code: string
+  words: { en: string; km?: string }
+}
+
 export const signupService = {
+  organizationTypes: () => apiGet<SignupOrganizationType[]>('/public/signup/organization-types'),
   checkSlug: (slug: string, email?: string) =>
     apiGet<{ slug: string; available: boolean; message: string | null }>('/public/signup/slug', { params: { slug, email: email || undefined } }),
   start: (form: SignupForm) => apiPost<SignupState>('/public/signup', form),

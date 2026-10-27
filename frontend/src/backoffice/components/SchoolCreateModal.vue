@@ -9,7 +9,7 @@ import BaseModal from '@/components/ui/BaseModal.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
 import { ApiRequestError } from '@/types/api'
 
-import { schoolsApi, type PlacementMode, type School, type ServerLogin } from '../api'
+import { organizationTypeName, organizationTypesApi, schoolsApi, type OrganizationType, type PlacementMode, type School, type ServerLogin } from '../api'
 import PlacementChoice from './PlacementChoice.vue'
 import ServerFields from './ServerFields.vue'
 
@@ -17,7 +17,7 @@ import ServerFields from './ServerFields.vue'
 defineProps<{ modelValue: boolean }>()
 const emit = defineEmits<{ 'update:modelValue': [open: boolean]; created: [school: School] }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const blank = () => ({
   name: '',
@@ -33,6 +33,8 @@ const blank = () => ({
   server: { host: '', port: 5432, database: '', username: '', password: '', sslmode: 'require' } as ServerLogin,
   // '' = start empty; otherwise a school id whose setup is copied.
   copy_setup_from: '',
+  // School, Company, Organization… ('' = School).
+  organization_type_id: '',
 })
 const form = ref(blank())
 const slugTouched = ref(false)
@@ -61,6 +63,19 @@ onMounted(async () => {
     sourceSchools.value = []
   }
 })
+/** The active organization types; School is the default. */
+const orgTypes = ref<OrganizationType[]>([])
+onMounted(async () => {
+  try {
+    orgTypes.value = (await organizationTypesApi.list()).filter((o) => o.status === 'active')
+    const school = orgTypes.value.find((o) => o.code === 'school')
+    if (school && !form.value.organization_type_id) form.value.organization_type_id = String(school.id)
+  } catch {
+    orgTypes.value = []
+  }
+})
+const orgTypeOptions = computed(() => orgTypes.value.map((o) => ({ value: String(o.id), label: organizationTypeName(o, locale.value) })))
+
 const copyOptions = computed(() => [
   { value: '', label: t('bo.schools.copyNone') },
   ...sourceSchools.value.map((s) => ({ value: String(s.id), label: s.name_en ? `${s.name} (${s.name_en})` : s.name })),
@@ -78,6 +93,7 @@ function onSlug(value: string): void {
 function close(): void {
   emit('update:modelValue', false)
   form.value = blank()
+  form.value.organization_type_id = String(orgTypes.value.find((o) => o.code === 'school')?.id ?? '')
   slugTouched.value = false
   error.value = null
 }
@@ -86,11 +102,12 @@ async function save(): Promise<void> {
   saving.value = true
   error.value = null
   try {
-    const { server, copy_setup_from, ...rest } = form.value
+    const { server, copy_setup_from, organization_type_id, ...rest } = form.value
     const school = await schoolsApi.create({
       ...rest,
       name_en: rest.name_en || null,
       copy_setup_from: copy_setup_from ? Number(copy_setup_from) : null,
+      organization_type_id: organization_type_id ? Number(organization_type_id) : null,
       server: rest.placement === 'separate' ? { ...server, port: Number(server.port) } : undefined,
     })
     emit('created', school)
@@ -112,6 +129,14 @@ async function save(): Promise<void> {
         <BaseInput v-model="form.name" :label="t('bo.schools.name')" :error="error?.fieldError('name')" required />
         <BaseInput v-model="form.name_en" :label="t('bo.schools.nameEn')" :error="error?.fieldError('name_en')" />
       </div>
+      <BaseSelect
+        v-if="orgTypeOptions.length"
+        v-model="form.organization_type_id"
+        :label="t('bo.schools.organizationType')"
+        :options="orgTypeOptions"
+        :hint="t('bo.schools.organizationTypeHint')"
+        :error="error?.fieldError('organization_type_id')"
+      />
       <BaseInput
         :model-value="form.slug"
         :label="t('bo.schools.slug')"

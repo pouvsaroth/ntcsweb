@@ -1024,6 +1024,7 @@ const zh: MessageSchema = {
     steps: 'Steps',
     step: { school: 'School', owner: 'Owner', plan: 'Plan', confirm: 'Confirm' },
     schoolName: 'School name',
+    organizationType: 'Organization type',
     schoolNameHint: 'As it should appear, e.g. in Khmer',
     schoolNameEn: 'School name in English',
     slug: 'School code',

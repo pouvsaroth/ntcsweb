@@ -256,6 +256,9 @@ final class AuthController extends Controller
                         'id' => $tenant->id,
                         'name' => $tenant->name,
                         'default_currency' => $tenant->default_currency,
+                        // School, Company, Organization…: its word replaces
+                        // "school" on every admin screen (i18n/orgWords.ts).
+                        'organization' => \App\Platform\Models\OrganizationType::wordsFor($tenant),
                         // The modules the school's plan includes; null = all
                         // (docs/backoffice/stage-5-billing.md, 5c). The menu
                         // hides self-service items of a module that is off.
