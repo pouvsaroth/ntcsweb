@@ -5,6 +5,7 @@ import { useRoute } from 'vue-router'
 
 import AssignStudentsModal from '@/components/admin/AssignStudentsModal.vue'
 import ChangeTableModal from '@/components/admin/ChangeTableModal.vue'
+import ClassNotesModal from '@/components/admin/ClassNotesModal.vue'
 import EnrollmentStatusModal from '@/components/admin/EnrollmentStatusModal.vue'
 import EnrollmentTransferModal from '@/components/admin/EnrollmentTransferModal.vue'
 import SendToExamModal from '@/components/admin/SendToExamModal.vue'
@@ -36,6 +37,8 @@ const canTransfer = computed(() => auth.can('enrollments.transfer'))
 const canChangeStatus = computed(() => auth.can('enrollments.change-status'))
 const canChangeTable = computed(() => auth.can('enrollments.change-table'))
 const canSendToExam = computed(() => auth.can('exam-applications.create'))
+const canNote = computed(() => auth.can('enrollments.note'))
+const hasRowActions = computed(() => canTransfer.value || canChangeStatus.value || canChangeTable.value)
 
 /**
  * Reached two ways: the single-class route `/admin/classes/:id/students`
@@ -89,7 +92,8 @@ const columns = computed(() => [
   { key: 'gender', label: t('admin.classStudents.columnGender') },
   ...(isSingleClass.value ? [] : [{ key: 'class', label: t('admin.classStudents.columnClass') }]),
   { key: 'book', label: t('admin.classStudents.columnBook'), sortable: true },
-  ...(canTransfer.value || canChangeStatus.value || canChangeTable.value
+  { key: 'note', label: t('admin.classStudents.columnNote') },
+  ...(hasRowActions.value
     ? [{ key: 'actions', label: t('admin.classStudents.columnActions'), align: 'text-right' }]
     : []),
 ])
@@ -226,6 +230,67 @@ function onSentToExam(count: number) {
   selectedIds.value = []
 }
 
+// --- Note ----------------------------------------------------------------
+// Every student on the roster with their note, edited together (like Add score).
+
+const notesModalOpen = ref(false)
+const notesMessage = ref<string | null>(null)
+
+function openNotes() {
+  notesMessage.value = null
+  notesModalOpen.value = true
+}
+
+async function onNotesSaved(count: number) {
+  notesMessage.value = t('admin.classStudents.notesSaved', { count })
+  try {
+    await loadRoster()
+  } catch (error) {
+    loadError.value = error instanceof ApiRequestError ? error.message : t('admin.classStudents.loadFailed')
+  }
+}
+
+// --- Export Excel --------------------------------------------------------
+// Only the checked students, numbered in the order the roster shows them.
+
+const exporting = ref(false)
+const exportError = ref<string | null>(null)
+
+async function exportExcel() {
+  const ids = sortedRoster.value.filter((row) => selectedIds.value.includes(row.id)).map((row) => row.id)
+  if (ids.length === 0) return
+
+  exporting.value = true
+  exportError.value = null
+  try {
+    const name = (schoolClass.value?.name ?? 'class-students').replace(/[\\/:*?"<>|]+/g, '-').trim()
+    await enrollmentsService.exportExcel(
+      ids,
+      {
+        no: t('admin.classStudents.columnNo'),
+        table: t('admin.classStudents.columnTable'),
+        name: t('admin.classStudents.columnFullName'),
+        gender: t('admin.classStudents.columnGender'),
+        book: t('admin.classStudents.columnBook'),
+        note: t('admin.classStudents.columnNote'),
+        male: t('common.genderMale'),
+        female: t('common.genderFemale'),
+        other: t('common.genderOther'),
+      },
+      schoolClass.value?.name ?? null,
+      `${name || 'class-students'}.xlsx`,
+    )
+  } catch (error) {
+    exportError.value = error instanceof ApiRequestError ? error.message : t('admin.classStudents.exportFailed')
+  } finally {
+    exporting.value = false
+  }
+}
+
+function toggleSelected(id: number) {
+  selectedIds.value = selectedIds.value.includes(id) ? selectedIds.value.filter((x) => x !== id) : [...selectedIds.value, id]
+}
+
 onMounted(() => {
   void load()
   void lookupsService.values('ENROLLMENT_STATUS', locale.value).then((result) => (statusLookup.value = result))
@@ -281,6 +346,12 @@ onMounted(() => {
           <BaseButton v-if="canSendToExam" variant="outline" :disabled="selectedIds.length === 0" @click="openSendToExam">
             {{ t('admin.classStudents.sendToExam') }}
           </BaseButton>
+          <BaseButton v-if="canNote" variant="outline" :disabled="roster.length === 0" @click="openNotes">
+            {{ t('admin.classStudents.note') }}
+          </BaseButton>
+          <BaseButton variant="outline" :disabled="selectedIds.length === 0" :loading="exporting" :title="t('admin.classStudents.exportExcelHint')" @click="exportExcel">
+            {{ t('admin.classStudents.exportExcel') }}<template v-if="selectedIds.length > 0"> ({{ selectedIds.length }})</template>
+          </BaseButton>
         </div>
         <BaseSelect
           :model-value="selectedStatus"
@@ -291,13 +362,69 @@ onMounted(() => {
       </div>
 
       <BaseAlert v-if="sendToExamMessage" variant="success" class="mb-4">{{ sendToExamMessage }}</BaseAlert>
+      <BaseAlert v-if="notesMessage" variant="success" class="mb-4">{{ notesMessage }}</BaseAlert>
+      <BaseAlert v-if="exportError" variant="danger" class="mb-4">{{ exportError }}</BaseAlert>
+
+      <!-- Phone: one card per student. -->
+      <div class="sm:hidden">
+        <p v-if="sortedRoster.length === 0" class="rounded-[--radius-card] border border-dashed border-neutral-300 py-10 text-center text-sm text-neutral-500">
+          {{ t('admin.classStudents.emptyMessage') }}
+        </p>
+        <div v-else class="space-y-2">
+          <div v-for="(row, index) in sortedRoster" :key="row.id" class="rounded-[--radius-card] border border-neutral-200 bg-white p-3 shadow-[--shadow-card]">
+            <div class="flex items-start gap-2">
+              <input
+                type="checkbox"
+                class="mt-0.5 rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+                :checked="selectedIds.includes(row.id)"
+                @change="toggleSelected(row.id)"
+              />
+              <div class="min-w-0 flex-1">
+                <p class="text-sm font-semibold text-neutral-800">{{ index + 1 }}. {{ row.student.full_name }}</p>
+                <p class="text-xs text-neutral-500">
+                  {{ t('admin.classStudents.columnTable') }}: {{ row.table?.name ?? '—' }} · {{ genderLabel(row.student.gender) }}
+                  <template v-if="!isSingleClass"> · {{ row.class?.name ?? '—' }}</template>
+                </p>
+                <p v-if="row.course_package" class="text-xs text-neutral-500">{{ row.course_package.name }}</p>
+                <p v-if="row.note" class="mt-1 whitespace-pre-line rounded bg-neutral-50 px-2 py-1 text-xs text-neutral-700">{{ row.note }}</p>
+              </div>
+            </div>
+            <div v-if="hasRowActions" class="mt-2 flex justify-end gap-1">
+              <ActionIconButton v-if="canTransfer" :title="t('admin.enrollments.changeClass')" @click="openChangeClass(row)">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
+                </svg>
+              </ActionIconButton>
+              <ActionIconButton v-if="canChangeStatus" :title="t('admin.enrollments.changeStatus')" @click="openChangeStatus(row)">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"
+                  />
+                </svg>
+              </ActionIconButton>
+              <ActionIconButton v-if="canChangeTable" :title="t('admin.enrollments.changeTable')" @click="openChangeTable(row)">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z"
+                  />
+                </svg>
+              </ActionIconButton>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <DataTable
+        class="hidden sm:block"
         :columns="columns"
         :rows="sortedRoster"
         row-key="id"
         :sort="tableSort"
-        :selectable="canSendToExam"
+        selectable
         :selected="selectedIds"
         :empty-message="t('admin.classStudents.emptyMessage')"
         @sort="toggleTableSort"
@@ -309,6 +436,9 @@ onMounted(() => {
         <template #cell-gender="{ row }">{{ genderLabel(row.student.gender) }}</template>
         <template #cell-class="{ row }">{{ row.class?.name ?? '—' }}</template>
         <template #cell-book="{ row }">{{ row.course_package?.name ?? '—' }}</template>
+        <template #cell-note="{ row }">
+          <span class="line-clamp-2 max-w-xs whitespace-pre-line text-neutral-700" :title="row.note ?? ''">{{ row.note || '—' }}</span>
+        </template>
         <template #cell-actions="{ row }">
           <div class="flex justify-end gap-1">
             <ActionIconButton v-if="canTransfer" :title="t('admin.enrollments.changeClass')" @click="openChangeClass(row)">
@@ -343,6 +473,7 @@ onMounted(() => {
     <EnrollmentStatusModal v-model="statusModalOpen" :enrollment="activeEnrollment" @saved="load" />
     <ChangeTableModal v-model="tableModalOpen" :enrollment="activeEnrollment" @saved="load" />
     <SendToExamModal v-model="sendToExamModalOpen" :enrollment-ids="selectedIds" @saved="onSentToExam" />
+    <ClassNotesModal v-model="notesModalOpen" :enrollments="sortedRoster" @saved="onNotesSaved" />
     <AssignStudentsModal v-if="schoolClass" v-model="assignOpen" :class-id="schoolClass.id" :class-name="schoolClass.name" @saved="onAssigned" />
   </div>
 </template>

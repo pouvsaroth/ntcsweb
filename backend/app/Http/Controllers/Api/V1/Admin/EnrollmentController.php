@@ -21,6 +21,11 @@ use App\Platform\Billing\StudentLimit;
 use App\Services\Academic\EnrollmentService;
 use App\Support\Query\ApiQuery;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Response;
+use OpenSpout\Common\Entity\Row;
+use OpenSpout\Common\Entity\Style\Style;
+use OpenSpout\Writer\XLSX\Options;
+use OpenSpout\Writer\XLSX\Writer;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -128,6 +133,111 @@ final class EnrollmentController extends Controller
         $enrollment = $this->enrollments->changeTable($enrollment, $request->validated('table_id'), $request->user());
 
         return ApiResponse::success(new EnrollmentResource($enrollment->load(self::WITH)));
+    }
+
+    /**
+     * Class > Students > Note: one note per student in the class, saved for
+     * the whole class at once (like Add score). An empty note clears it.
+     */
+    public function saveNotes(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'notes' => ['required', 'array', 'min:1', 'max:500'],
+            'notes.*.enrollment_id' => ['required', 'integer', 'distinct'],
+            'notes.*.note' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $enrollments = Enrollment::query()->whereKey(array_column($data['notes'], 'enrollment_id'))->get()->keyBy('id');
+        if ($enrollments->count() !== count($data['notes'])) {
+            throw ValidationException::withMessages(['notes' => __('validation.exists', ['attribute' => 'enrollment'])]);
+        }
+        foreach ($enrollments as $enrollment) {
+            $this->authorize('note', $enrollment);
+        }
+
+        DB::connection((new Enrollment)->getConnectionName())->transaction(function () use ($data, $enrollments) {
+            foreach ($data['notes'] as $row) {
+                $note = trim((string) ($row['note'] ?? ''));
+                $enrollments[$row['enrollment_id']]->update(['note' => $note === '' ? null : $note]);
+            }
+        });
+
+        return ApiResponse::success(['saved' => count($data['notes'])]);
+    }
+
+    /**
+     * Class > Students > Export Excel: No., Table, Full name, Gender, Book,
+     * Note for the checked students, in the order the roster shows them.
+     * Headers and gender words come from the screen (`labels`), so the file
+     * is in the language the user is reading.
+     */
+    public function export(Request $request): Response
+    {
+        $this->authorize('viewAny', Enrollment::class);
+
+        $data = $request->validate([
+            'ids' => ['required', 'string', 'max:10000', 'regex:/^\d+(,\d+)*$/'],
+            'title' => ['nullable', 'string', 'max:255'],
+            'labels' => ['nullable', 'array'],
+            'labels.*' => ['nullable', 'string', 'max:60'],
+        ]);
+        $ids = array_values(array_unique(array_map('intval', explode(',', $data['ids']))));
+        $label = fn (string $key, string $default): string => (string) ($data['labels'][$key] ?? $default);
+
+        $enrollments = Enrollment::query()->whereKey($ids)->with(['student', 'table', 'coursePackage', 'schoolClass'])->get()->keyBy('id');
+        $gender = function (?string $value) use ($label): string {
+            $code = strtolower(trim((string) $value));
+
+            return match ($code) {
+                'male', 'm' => $label('male', 'Male'),
+                'female', 'f' => $label('female', 'Female'),
+                'other' => $label('other', 'Other'),
+                default => (string) $value,
+            };
+        };
+
+        $options = new Options;
+        $options->setColumnWidth(6, 1);
+        $options->setColumnWidth(10, 2);
+        $options->setColumnWidth(30, 3);
+        $options->setColumnWidth(10, 4);
+        $options->setColumnWidth(30, 5);
+        $options->setColumnWidth(60, 6);
+        $path = tempnam(sys_get_temp_dir(), 'class');
+        $writer = new Writer($options);
+        $writer->openToFile($path);
+
+        $classes = $enrollments->map(fn (Enrollment $e) => $e->schoolClass?->name)->filter()->unique()->implode(', ');
+        $writer->addRow(Row::fromValues([$data['title'] ?? $classes], (new Style)->setFontBold()->setFontSize(14)));
+        $writer->addRow(Row::fromValues([]));
+        $writer->addRow(Row::fromValues(
+            [$label('no', 'No.'), $label('table', 'Table'), $label('name', 'Full name'), $label('gender', 'Gender'), $label('book', 'Book'), $label('note', 'Note')],
+            (new Style)->setFontBold()->setBackgroundColor('F3F4F6'),
+        ));
+        $wrap = (new Style)->setShouldWrapText();
+        $n = 0;
+        foreach ($ids as $id) {
+            $e = $enrollments->get($id);
+            if ($e === null) {
+                continue;
+            }
+            $writer->addRow(Row::fromValues([
+                ++$n,
+                $e->table?->name ?? '',
+                $e->student?->fullName() ?? '',
+                $gender($e->student?->gender),
+                $e->coursePackage?->name ?? '',
+                $e->note ?? '',
+            ], $wrap));
+        }
+        $writer->close();
+        $bytes = (string) file_get_contents($path);
+        @unlink($path);
+
+        return response($bytes, 200, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => 'attachment; filename="class-students.xlsx"',
+        ]);
     }
 
     public function changeStatus(ChangeEnrollmentStatusRequest $request, Enrollment $enrollment): JsonResponse

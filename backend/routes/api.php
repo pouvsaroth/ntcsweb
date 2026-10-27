@@ -330,6 +330,10 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::apiResource('classes', SchoolClassController::class)->parameters(['classes' => 'class']);
         Route::get('classes/{class}/available-tables', [SchoolClassController::class, 'availableTables'])->name('classes.available-tables');
 
+        // Class > Students > Note: save the notes of many students at once.
+        Route::put('enrollment-notes', [EnrollmentController::class, 'saveNotes'])->name('enrollments.notes');
+        // Class > Students > Export Excel: the checked students, in the order shown.
+        Route::get('enrollment-export', [EnrollmentController::class, 'export'])->name('enrollments.export');
         Route::apiResource('enrollments', EnrollmentController::class)->except(['store']);
         Route::post('enrollments/package', [EnrollmentPackageController::class, 'store'])->name('enrollments.package.store');
         Route::post('enrollments/{enrollment}/cancel', [EnrollmentController::class, 'cancel'])->name('enrollments.cancel');

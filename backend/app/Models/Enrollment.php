@@ -38,10 +38,11 @@ use Illuminate\Support\Facades\DB;
  * @property int|null $academic_program_id
  * @property string $status
  * @property string|null $enrollments_code
+ * @property string|null $note
  */
 #[Fillable([
     'student_id', 'class_id', 'table_id', 'course_package_id', 'academic_program_id',
-    'enrolled_at', 'status', 'enrollments_code',
+    'enrolled_at', 'status', 'enrollments_code', 'note',
 ])]
 class Enrollment extends Model
 {

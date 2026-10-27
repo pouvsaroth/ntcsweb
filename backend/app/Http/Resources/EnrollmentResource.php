@@ -20,6 +20,7 @@ class EnrollmentResource extends JsonResource
             'enrollments_code' => $this->enrollments_code,
             'enrolled_at' => $this->enrolled_at?->toDateString(),
             'status' => $this->status,
+            'note' => $this->note,
             // When the current status started: its effective date, else the
             // day it was changed. Null when it never changed (still the
             // status it was enrolled with) — the enroll date covers that.

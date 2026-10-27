@@ -132,6 +132,9 @@ final class Permissions
     // defaults below for why a school may grant one without the other.
     public const ENROLLMENTS_CHANGE_TABLE = 'enrollments.change-table';
 
+    // Class > Students > Note: write the teacher's note on each student of a class.
+    public const ENROLLMENTS_NOTE = 'enrollments.note';
+
     // Academic Programs — the school's own curriculum areas (English,
     // Chinese, Computer). Deliberately a different slug group from
     // `programs.*` above, which is the unrelated public marketing catalog.
@@ -804,6 +807,7 @@ final class Permissions
                 self::ENROLLMENTS_TRANSFER => 'Transfer a student to another class or course',
                 self::ENROLLMENTS_CHANGE_STATUS => "Change a student's enrollment status (studying, completed, abandoned, ...)",
                 self::ENROLLMENTS_CHANGE_TABLE => "Change a student's table/seat within their current class",
+                self::ENROLLMENTS_NOTE => 'Write notes on the students of a class',
             ],
             'Academic Programs' => [
                 self::ACADEMIC_PROGRAMS_VIEW => 'View academic programs',
@@ -1134,7 +1138,7 @@ final class Permissions
             self::BOOKS_VIEW, self::BOOKS_CREATE, self::BOOKS_UPDATE, self::BOOKS_DELETE,
             self::CLASSES_VIEW, self::CLASSES_CREATE, self::CLASSES_UPDATE, self::CLASSES_DELETE,
             self::ENROLLMENTS_VIEW, self::ENROLLMENTS_CREATE, self::ENROLLMENTS_UPDATE, self::ENROLLMENTS_DELETE,
-            self::ENROLLMENTS_CANCEL, self::ENROLLMENTS_TRANSFER, self::ENROLLMENTS_CHANGE_STATUS, self::ENROLLMENTS_CHANGE_TABLE,
+            self::ENROLLMENTS_CANCEL, self::ENROLLMENTS_TRANSFER, self::ENROLLMENTS_CHANGE_STATUS, self::ENROLLMENTS_CHANGE_TABLE, self::ENROLLMENTS_NOTE,
             self::ACADEMIC_PROGRAMS_VIEW, self::ACADEMIC_PROGRAMS_CREATE, self::ACADEMIC_PROGRAMS_UPDATE, self::ACADEMIC_PROGRAMS_DELETE,
             self::COURSE_PACKAGES_VIEW, self::COURSE_PACKAGES_CREATE, self::COURSE_PACKAGES_UPDATE, self::COURSE_PACKAGES_DELETE,
             self::VIDEOS_VIEW, self::VIDEOS_CREATE, self::VIDEOS_UPDATE, self::VIDEOS_DELETE,
@@ -1357,6 +1361,7 @@ final class Permissions
                 self::ENROLLMENTS_VIEW,
                 self::ENROLLMENTS_CHANGE_TABLE,
                 self::ENROLLMENTS_CHANGE_STATUS,
+                self::ENROLLMENTS_NOTE,
                 self::ACADEMIC_PROGRAMS_VIEW,
                 self::COURSE_PACKAGES_VIEW,
                 self::VIDEOS_VIEW,
@@ -1421,6 +1426,7 @@ final class Permissions
                 self::ENROLLMENTS_UPDATE,
                 self::ENROLLMENTS_TRANSFER,
                 self::ENROLLMENTS_CHANGE_STATUS,
+                self::ENROLLMENTS_NOTE,
                 self::ACADEMIC_PROGRAMS_VIEW,
                 self::COURSE_PACKAGES_VIEW,
                 self::VIDEOS_VIEW,

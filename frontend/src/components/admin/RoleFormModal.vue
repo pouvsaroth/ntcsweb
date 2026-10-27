@@ -34,6 +34,7 @@ type Action =
   | 'export'
   | 'transfer'
   | 'table'
+  | 'note'
   | 'return'
   | 'retire'
   | 'dispose'
@@ -229,6 +230,7 @@ const MODULES: ModuleEntry[] = [
       transfer: 'enrollments.transfer',
       table: 'enrollments.change-table',
       status: 'enrollments.change-status',
+      note: 'enrollments.note',
     },
   },
   { name: 'Attendance', group: 'Academic', actions: { view: 'attendance.view', create: 'attendance.create', update: 'attendance.update' } },
@@ -342,7 +344,7 @@ const MODULES: ModuleEntry[] = [
 
 const COLUMNS: Action[] = [
   'view', 'create', 'update', 'delete', 'approve', 'reject', 'pay', 'cancel', 'deactivate', 'export', 'send', 'assign',
-  'return', 'transfer', 'table', 'retire', 'dispose', 'lost', 'found', 'resolve', 'complete',
+  'return', 'transfer', 'table', 'note', 'retire', 'dispose', 'lost', 'found', 'resolve', 'complete',
   'status', 'manage', 'reply', 'close', 'translations', 'languages', 'manageAll',
 ]
 

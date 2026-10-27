@@ -78,6 +78,12 @@ class EnrollmentPolicy
         return $user->hasPermission(Permissions::ENROLLMENTS_CHANGE_TABLE);
     }
 
+    /** Class > Students > Note. */
+    public function note(User $user, Enrollment $enrollment): bool
+    {
+        return $user->hasPermission(Permissions::ENROLLMENTS_NOTE);
+    }
+
     /**
      * The table picker (SchoolClassController::availableTables()) is shared
      * by every flow that ever needs to know which seats are free in a class

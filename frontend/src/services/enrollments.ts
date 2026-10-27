@@ -1,4 +1,4 @@
-import { apiDelete, apiGetWithMeta, apiPatch, apiPost, apiPut } from '@/services/http'
+import { apiDelete, apiDownload, apiGetWithMeta, apiPatch, apiPost, apiPut } from '@/services/http'
 import type { AcademicProgram } from '@/services/academicPrograms'
 import type { SchoolClass } from '@/services/classes'
 import type { CoursePackage } from '@/services/coursePackages'
@@ -63,6 +63,8 @@ export interface Enrollment {
   enrollments_code: string | null
   enrolled_at: string
   status: EnrollmentStatus
+  /** Class > Students > Note: the teacher's note on this student in the class. */
+  note?: string | null
   /** The day the current status started (completed on, abandoned on, ...); null when it never changed. List only. */
   status_date?: string | null
   /** Whether any money has been received against this enrollment — gates changing the course (not the class) via transfer(). */
@@ -119,6 +121,15 @@ export const enrollmentsService = {
 
   /** Status isn't editable here — see changeStatus() below, the one path that also logs history. */
   update: (id: number, input: { enrolled_at: string }) => apiPut<Enrollment>(`/enrollments/${id}`, input),
+  /** Class > Students > Note: save many students' notes at once (an empty note clears it). */
+  /** Class > Students > Export Excel: the given enrollments in this order; `labels` are the headers/gender words in the shown language. */
+  exportExcel: (ids: number[], labels: Record<string, string>, title: string | null, filename: string) => {
+    const query = new URLSearchParams({ ids: ids.join(',') })
+    if (title) query.set('title', title)
+    for (const [key, value] of Object.entries(labels)) query.set(`labels[${key}]`, value)
+    return apiDownload(`/enrollment-export?${query.toString()}`, filename)
+  },
+  saveNotes: (notes: { enrollment_id: number; note: string | null }[]) => apiPut<{ saved: number }>('/enrollment-notes', { notes }),
   remove: (id: number) => apiDelete(`/enrollments/${id}`),
 
   enrollInPackage: (input: EnrollmentPackageInput) => apiPost<Enrollment>('/enrollments/package', input),
