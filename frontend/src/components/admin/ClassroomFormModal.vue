@@ -103,8 +103,8 @@ async function submit() {
     <form class="space-y-4" @submit.prevent="submit">
       <BaseAlert v-if="generalError" variant="danger">{{ generalError }}</BaseAlert>
 
-      <BaseInput v-model="form.name" required :label="t('admin.classrooms.name')" :error="errors.name?.[0]" />
       <BaseInput v-model="form.code" :label="t('admin.classrooms.code')" :error="errors.code?.[0]" />
+      <BaseInput v-model="form.name" required :label="t('admin.classrooms.name')" :error="errors.name?.[0]" />
       <BaseInput
         :model-value="form.capacity !== null ? String(form.capacity) : ''"
         type="number"

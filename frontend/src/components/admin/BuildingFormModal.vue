@@ -87,8 +87,8 @@ async function submit() {
     <form class="space-y-4" @submit.prevent="submit">
       <BaseAlert v-if="generalError" variant="danger">{{ generalError }}</BaseAlert>
 
-      <BaseInput v-model="form.name" required :label="t('admin.buildings.name')" :error="errors.name?.[0]" />
       <BaseInput v-model="form.code" :label="t('admin.buildings.code')" :error="errors.code?.[0]" />
+      <BaseInput v-model="form.name" required :label="t('admin.buildings.name')" :error="errors.name?.[0]" />
       <BaseInput v-model="form.address" :label="t('admin.buildings.address')" :error="errors.address?.[0]" />
       <BaseSelect v-model="form.status" :options="statusOptions" :label="t('admin.buildings.status')" />
     </form>
