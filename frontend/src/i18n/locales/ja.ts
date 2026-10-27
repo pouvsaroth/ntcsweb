@@ -1803,6 +1803,8 @@ const ja: MessageSchema = {
       termStudyAlertsColumnEnrolled: '登録日',
       termStudyAlertsColumnDays: '日数',
       termStudyAlertsDays: '{n}日',
+      termStudyAlertsTypeUnknown: '支払い区分未登録',
+      termStudyAlertsTypeUnknownHint: 'この登録には支払い区分が記録されていないため（旧システムから移行など）、学期払いとして数えています。',
       unpaidInvoicesSection: '未払い・一部支払いの請求書',
       unpaidInvoicesViewAll: 'すべての請求書を見る',
       unpaidInvoicesColumnPaid: '支払済',

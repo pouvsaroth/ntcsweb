@@ -629,7 +629,7 @@ onBeforeUnmount(() => {
           <ul class="divide-y divide-neutral-100 sm:hidden">
             <li v-for="row in termStudyAlerts" :key="row.id" class="py-2">
               <div class="flex items-center justify-between gap-2">
-                <p class="font-medium text-neutral-800">{{ row.student?.name ?? '—' }}</p>
+                <p class="font-medium text-neutral-800">{{ row.student?.name ?? '—' }}<span v-if="!row.type_recorded" class="ml-1 rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] font-medium text-neutral-500" :title="t('admin.dashboard.termStudyAlertsTypeUnknownHint')">{{ t('admin.dashboard.termStudyAlertsTypeUnknown') }}</span></p>
                 <span class="whitespace-nowrap text-sm font-semibold text-danger-600">{{ t('admin.dashboard.termStudyAlertsDays', { n: row.days ?? 0 }) }}</span>
               </div>
               <p class="text-xs text-neutral-500">{{ [row.student?.student_code, row.course, row.class].filter(Boolean).join(' · ') }}</p>
@@ -652,6 +652,7 @@ onBeforeUnmount(() => {
                   <td class="py-1.5 pr-4 text-neutral-800">
                     {{ row.student?.name ?? '—' }}
                     <span v-if="row.student?.student_code" class="text-xs text-neutral-500">({{ row.student.student_code }})</span>
+                    <span v-if="!row.type_recorded" class="ml-1 rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] font-medium text-neutral-500" :title="t('admin.dashboard.termStudyAlertsTypeUnknownHint')">{{ t('admin.dashboard.termStudyAlertsTypeUnknown') }}</span>
                   </td>
                   <td class="py-1.5 pr-4 text-neutral-700">{{ row.course ?? '—' }}</td>
                   <td class="py-1.5 pr-4 text-neutral-700">{{ row.class ?? '—' }}</td>

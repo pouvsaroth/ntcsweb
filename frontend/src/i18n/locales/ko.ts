@@ -1803,6 +1803,8 @@ const ko: MessageSchema = {
       termStudyAlertsColumnEnrolled: '등록일',
       termStudyAlertsColumnDays: '일수',
       termStudyAlertsDays: '{n}일',
+      termStudyAlertsTypeUnknown: '납부 유형 미기록',
+      termStudyAlertsTypeUnknownHint: '이 등록에는 납부 유형이 기록되어 있지 않아(예: 이전 시스템에서 이전) 학기 납부로 계산합니다.',
       unpaidInvoicesSection: '미납 및 부분 납부 청구서',
       unpaidInvoicesViewAll: '모든 청구서 보기',
       unpaidInvoicesColumnPaid: '납부액',

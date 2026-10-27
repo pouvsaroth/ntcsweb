@@ -1802,6 +1802,8 @@ const zh: MessageSchema = {
       termStudyAlertsColumnEnrolled: '报名日期',
       termStudyAlertsColumnDays: '天数',
       termStudyAlertsDays: '{n} 天',
+      termStudyAlertsTypeUnknown: '未记录付费类型',
+      termStudyAlertsTypeUnknownHint: '此报名没有记录付费类型（例如从旧系统迁移），因此按学期付费计算。',
       unpaidInvoicesSection: '未付及部分付款账单',
       unpaidInvoicesViewAll: '查看全部账单',
       unpaidInvoicesColumnPaid: '已付',

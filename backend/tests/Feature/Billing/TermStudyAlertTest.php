@@ -52,6 +52,7 @@ class TermStudyAlertTest extends TestCase
         $response->assertJsonCount(1, 'data.items');
         $response->assertJsonPath('data.items.0.student.id', $term->id);
         $response->assertJsonPath('data.items.0.days', 40);
+        $response->assertJsonPath('data.items.0.type_recorded', true);
         $response->assertJsonPath('data.items.0.enrolled_at', '2026-08-01');
 
         // One day later the term_online student is over 31 days too.
@@ -76,6 +77,33 @@ class TermStudyAlertTest extends TestCase
         $response->assertJsonPath('data.days', 10);
         $response->assertJsonCount(1, 'data.items');
         $response->assertJsonPath('data.items.0.student.id', $studying->id);
+    }
+
+    public function test_lists_students_with_no_recorded_payment_type_but_not_monthly_ones(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE, Permissions::INVOICES_VIEW]);
+        $this->setUpAcademicCatalog();
+        $monthly = Student::factory()->create();
+        $noInvoice = Student::factory()->create();
+        $legacyInvoice = Student::factory()->create();
+
+        $this->enroll($monthly, 'monthly', '2026-08-01');
+        // Brought over from the old system: no invoice at all.
+        \App\Models\Enrollment::factory()->create([
+            'student_id' => $noInvoice->id, 'class_id' => $this->computerEveningClass->id,
+            'course_package_id' => $this->msWordPackage->id, 'enrolled_at' => '2026-08-02', 'status' => 'active',
+        ]);
+        // An imported invoice with no payment type.
+        $legacyId = $this->enroll($legacyInvoice, 'term', '2026-08-03');
+        \App\Models\Invoice::query()->whereHas('items', fn ($q) => $q->where('reference_id', $legacyId))->update(['payment_type' => null]);
+
+        $this->travelTo(Carbon::parse('2026-09-15'));
+        $response = $this->getJson('/api/v1/term-study-alerts')->assertOk();
+        $response->assertJsonCount(2, 'data.items');
+        $response->assertJsonPath('data.items.0.student.id', $noInvoice->id);
+        $response->assertJsonPath('data.items.0.type_recorded', false);
+        $response->assertJsonPath('data.items.1.student.id', $legacyInvoice->id);
+        $response->assertJsonPath('data.items.1.type_recorded', false);
     }
 
     public function test_needs_invoice_permission(): void

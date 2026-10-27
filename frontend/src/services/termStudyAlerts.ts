@@ -8,6 +8,8 @@ export interface TermStudyAlert {
   enrolled_at: string | null
   /** Days from enroll date to today. */
   days: number | null
+  /** False when listed only because no payment type is recorded (e.g. brought over from the old system). */
+  type_recorded: boolean
 }
 
 /** Dashboard list: Studying students billed by term who are past the school's day limit (see TermStudyAlertController). */

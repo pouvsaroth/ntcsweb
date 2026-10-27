@@ -1803,6 +1803,8 @@ const km: MessageSchema = {
       termStudyAlertsColumnEnrolled: 'ថ្ងៃចុះឈ្មោះ',
       termStudyAlertsColumnDays: 'ចំនួនថ្ងៃ',
       termStudyAlertsDays: '{n} ថ្ងៃ',
+      termStudyAlertsTypeUnknown: 'មិនបានកត់ប្រភេទបង់',
+      termStudyAlertsTypeUnknownHint: 'ការចុះឈ្មោះនេះមិនមានកត់ប្រភេទបង់ប្រាក់ (ឧ. ផ្ទេរពីប្រព័ន្ធចាស់) ដូច្នេះរាប់ជាបង់ជាវគ្គ។',
       unpaidInvoicesSection: 'វិក្កយបត្រមិនទាន់បង់ និងបង់ខ្លះ',
       unpaidInvoicesViewAll: 'មើលវិក្កយបត្រទាំងអស់',
       unpaidInvoicesColumnPaid: 'បានបង់',

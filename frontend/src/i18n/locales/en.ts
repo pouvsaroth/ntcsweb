@@ -1806,6 +1806,8 @@ const en = {
       termStudyAlertsColumnEnrolled: 'Enroll date',
       termStudyAlertsColumnDays: 'Days',
       termStudyAlertsDays: '{n} days',
+      termStudyAlertsTypeUnknown: 'Type not recorded',
+      termStudyAlertsTypeUnknownHint: 'No payment type is recorded for this enrollment (e.g. brought over from the old system), so it is counted as Term.',
       unpaidInvoicesSection: 'Unpaid & Partially Paid Invoices',
       unpaidInvoicesViewAll: 'View all invoices',
       unpaidInvoicesColumnPaid: 'Paid',
