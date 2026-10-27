@@ -3124,7 +3124,7 @@ const ko: MessageSchema = {
       sortOrder: '순서 번호',
       columnActions: '작업',
       delete: '삭제',
-      deleteConfirm: 'Delete this table?',
+      deleteConfirm: '책상 {name}을(를) 삭제할까요?',
       deleteFailed: 'Could not delete this table.',
       saveFailed: 'Could not save this table.',
       loadFailed: 'Could not load this classroom.',

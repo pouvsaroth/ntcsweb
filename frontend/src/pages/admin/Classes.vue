@@ -13,8 +13,10 @@ import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import DataTable from '@/components/ui/DataTable.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { classStatuses, classesService, type ClassStatus, type SchoolClass } from '@/services/classes'
+import { useConfirmDialogStore } from '@/stores/confirmDialog'
 
 const { t } = useI18n()
+const confirmDialog = useConfirmDialogStore()
 const router = useRouter()
 
 const { items, meta, loading, error, sort, setPage, setSearch, setSort, setFilter, fetch } = usePaginatedResource<SchoolClass>((query) =>
@@ -71,7 +73,7 @@ function scheduleSummary(row: SchoolClass): string {
 }
 
 async function remove(row: SchoolClass) {
-  if (!window.confirm(t('admin.classes.deleteConfirm'))) return
+  if (!(await confirmDialog.confirm({ message: t('admin.classes.deleteConfirm'), danger: true }))) return
   await classesService.remove(row.id)
   await fetch()
 }

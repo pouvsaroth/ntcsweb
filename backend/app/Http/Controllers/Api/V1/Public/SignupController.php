@@ -11,6 +11,7 @@ use App\Platform\Models\OrganizationType;
 use App\Platform\Models\Signup;
 use App\Platform\Signup\Signups;
 use App\Support\Tenancy\TenantContext;
+use App\Rules\UniqueAccountIdentity;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -64,8 +65,8 @@ final class SignupController extends Controller
             'school_name_en' => ['nullable', 'string', 'max:255'],
             'slug' => ['required', 'string', 'max:32'],
             'owner_name' => ['required', 'string', 'max:255'],
-            'owner_email' => ['required', 'email', 'max:255'],
-            'owner_phone' => ['required', 'string', 'max:50', 'regex:/^[0-9+\s()-]{6,}$/'],
+            'owner_email' => ['required', 'email', 'max:255', UniqueAccountIdentity::email(message: __('This email already has an account. Sign in, or contact us to buy a plan.'))],
+            'owner_phone' => ['required', 'string', 'max:50', 'regex:/^[0-9+\s()-]{6,}$/', UniqueAccountIdentity::phone(message: __('This phone number already has an account. Sign in, or contact us to buy a plan.'))],
             'password' => ['required', 'string', 'confirmed', Password::min(8)],
             'locale' => ['nullable', 'string', 'max:5'],
             // School, Company, Organization… (none = School).

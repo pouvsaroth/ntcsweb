@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Api\V1\Auth;
 
+use App\Rules\UniqueAccountIdentity;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 /**
  * Self-service only — there is no route parameter here, this always acts on
@@ -28,16 +28,8 @@ class UpdateProfileRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
 
-            // Same tenant-scoped (or platform-scoped, for a super admin)
-            // uniqueness the users table itself enforces — checked here too
-            // so a collision surfaces as a clean 422 instead of a raw DB
-            // constraint violation.
-            'phone' => [
-                'required', 'string', 'max:32',
-                Rule::unique('users', 'phone')
-                    ->where(fn ($query) => $user->tenant_id === null ? $query->whereNull('tenant_id') : $query->where('tenant_id', $user->tenant_id))
-                    ->ignore($user->getKey()),
-            ],
+            // One phone = one account across every customer.
+            'phone' => ['required', 'string', 'max:32', UniqueAccountIdentity::phone($user->getKey())],
 
             // Same shape and size cap as every other image upload in the app
             // (HomeSlide, Student, Staff, ...) — a webcam capture in

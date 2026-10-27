@@ -13,8 +13,10 @@ import { expensesService, type Expense, type ExpenseStatus } from '@/services/ex
 import { useAuthStore } from '@/stores/auth'
 import { ApiRequestError } from '@/types/api'
 import { formatDate } from '@/utils/date'
+import { useConfirmDialogStore } from '@/stores/confirmDialog'
 
 const { t } = useI18n()
+const confirmDialog = useConfirmDialogStore()
 const auth = useAuthStore()
 const route = useRoute()
 const router = useRouter()
@@ -63,7 +65,7 @@ async function load() {
 // --- Approve ---------------------------------------------------------------
 
 async function approve() {
-  if (!expense.value || !window.confirm(t('admin.expenses.approveConfirm'))) return
+  if (!expense.value || !(await confirmDialog.confirm({ message: t('admin.expenses.approveConfirm') }))) return
   actionError.value = null
 
   try {
@@ -155,7 +157,7 @@ async function onFileSelected(event: Event) {
 }
 
 async function removeAttachment(attachmentId: number) {
-  if (!expense.value || !window.confirm(t('admin.expenses.removeAttachmentConfirm'))) return
+  if (!expense.value || !(await confirmDialog.confirm({ message: t('admin.expenses.removeAttachmentConfirm'), danger: true }))) return
 
   await expensesService.removeAttachment(expense.value.id, attachmentId)
   await load()

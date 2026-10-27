@@ -11,8 +11,10 @@ import EditIconButton from '@/components/ui/EditIconButton.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { currencyRatesService, type CurrencyRate } from '@/services/currencyRates'
 import { formatDate } from '@/utils/date'
+import { useConfirmDialogStore } from '@/stores/confirmDialog'
 
 const { t } = useI18n()
+const confirmDialog = useConfirmDialogStore()
 
 const { items, meta, loading, error, setPage, fetch } = usePaginatedResource<CurrencyRate>((query) =>
   currencyRatesService.list(query),
@@ -39,7 +41,7 @@ function openEdit(rate: CurrencyRate) {
 }
 
 async function remove(rate: CurrencyRate) {
-  if (!window.confirm(t('admin.currencyRates.deleteConfirm'))) return
+  if (!(await confirmDialog.confirm({ message: t('admin.currencyRates.deleteConfirm'), danger: true }))) return
   await currencyRatesService.remove(rate.id)
   await fetch()
 }

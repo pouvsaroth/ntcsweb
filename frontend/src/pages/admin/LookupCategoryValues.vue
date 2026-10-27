@@ -14,8 +14,10 @@ import { type Language, languagesService } from '@/services/languages'
 import { lookupCategoriesService, type LookupCategory } from '@/services/lookupCategories'
 import { type LookupValue, lookupValuesService } from '@/services/lookupValues'
 import { ApiRequestError } from '@/types/api'
+import { useConfirmDialogStore } from '@/stores/confirmDialog'
 
 const { t } = useI18n()
+const confirmDialog = useConfirmDialogStore()
 const route = useRoute()
 const categoryId = Number(route.params.id)
 
@@ -47,7 +49,7 @@ function openEdit(value: LookupValue) {
 }
 
 async function remove(value: LookupValue) {
-  if (!window.confirm(t('admin.lookupValues.deleteConfirm'))) return
+  if (!(await confirmDialog.confirm({ message: t('admin.lookupValues.deleteConfirm'), danger: true }))) return
   deleteError.value = null
 
   try {

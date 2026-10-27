@@ -22,6 +22,7 @@ use App\Platform\Services\SeparateServerProbe;
 use App\Platform\Support\PlatformAudit;
 use App\Platform\Support\SchoolHealth;
 use App\Support\Query\ApiQuery;
+use App\Rules\UniqueAccountIdentity;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -85,7 +86,7 @@ final class SchoolController extends Controller
             'name_en' => ['nullable', 'string', 'max:255'],
             'slug' => ['required', 'string', 'regex:'.self::SLUG_PATTERN, Rule::notIn(config('platform.reserved_slugs', [])), $this->slugIsFree(...)],
             'owner_name' => ['required', 'string', 'max:255'],
-            'owner_email' => ['required', 'email', 'max:255'],
+            'owner_email' => ['required', 'email', 'max:255', UniqueAccountIdentity::email()],
             'timezone' => ['nullable', 'timezone'],
             'locale' => ['nullable', Rule::in(['en', 'km', 'zh', 'ko', 'ja'])],
             'default_currency' => ['nullable', Rule::in([Tenant::CURRENCY_USD, Tenant::CURRENCY_KHR])],

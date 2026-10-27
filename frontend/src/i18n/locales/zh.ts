@@ -3123,7 +3123,7 @@ const zh: MessageSchema = {
       sortOrder: '排序号',
       columnActions: '操作',
       delete: '删除',
-      deleteConfirm: 'Delete this table?',
+      deleteConfirm: '删除桌子 {name}？',
       deleteFailed: 'Could not delete this table.',
       saveFailed: 'Could not save this table.',
       loadFailed: 'Could not load this classroom.',

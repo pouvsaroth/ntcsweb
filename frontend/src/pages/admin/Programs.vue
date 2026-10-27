@@ -11,8 +11,10 @@ import BasePagination from '@/components/ui/BasePagination.vue'
 import DataTable from '@/components/ui/DataTable.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { programsService, type Program, type ProgramLevel } from '@/services/programs'
+import { useConfirmDialogStore } from '@/stores/confirmDialog'
 
 const { t } = useI18n()
+const confirmDialog = useConfirmDialogStore()
 
 const { items, meta, loading, error, setPage, setSort, sort, fetch } = usePaginatedResource<Program>((query) =>
   programsService.list(query),
@@ -49,7 +51,7 @@ function openEdit(program: Program) {
 }
 
 async function remove(program: Program) {
-  if (!window.confirm(t('admin.programs.deleteConfirm'))) return
+  if (!(await confirmDialog.confirm({ message: t('admin.programs.deleteConfirm'), danger: true }))) return
   await programsService.remove(program.id)
   await fetch()
 }

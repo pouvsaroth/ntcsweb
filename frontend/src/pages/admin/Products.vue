@@ -12,8 +12,10 @@ import DataTable from '@/components/ui/DataTable.vue'
 import EditIconButton from '@/components/ui/EditIconButton.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { productsService, productTypes, type Product, type ProductType } from '@/services/products'
+import { useConfirmDialogStore } from '@/stores/confirmDialog'
 
 const { t } = useI18n()
+const confirmDialog = useConfirmDialogStore()
 
 const { items, meta, loading, error, setPage, setSort, sort, setSearch, setFilter, fetch } = usePaginatedResource<Product>(
   (query) => productsService.list(query),
@@ -59,7 +61,7 @@ function openEdit(product: Product) {
 }
 
 async function remove(product: Product) {
-  if (!window.confirm(t('admin.products.deleteConfirm'))) return
+  if (!(await confirmDialog.confirm({ message: t('admin.products.deleteConfirm'), danger: true }))) return
   await productsService.remove(product.id)
   await fetch()
 }

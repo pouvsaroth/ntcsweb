@@ -18,8 +18,10 @@ import { adminUsersService } from '@/services/adminUsers'
 import { useAuthStore } from '@/stores/auth'
 import type { User } from '@/types/models'
 import { formatDate } from '@/utils/date'
+import { useConfirmDialogStore } from '@/stores/confirmDialog'
 
 const { t } = useI18n()
+const confirmDialog = useConfirmDialogStore()
 
 const userStatusVariant: Record<User['status'], 'success' | 'warning' | 'danger' | 'neutral'> = {
   active: 'success',
@@ -76,7 +78,7 @@ const actionError = ref<string | null>(null)
 
 /** For a user stuck locked out of AuthController's one-device login rule — see AuthService::ensureNoOtherActiveDevice(). */
 async function forceLogout(user: User) {
-  if (!window.confirm(t('admin.users.forceLogoutConfirm', { name: user.name }))) return
+  if (!(await confirmDialog.confirm({ message: t('admin.users.forceLogoutConfirm', { name: user.name }), danger: true }))) return
 
   actionError.value = null
   actionMessage.value = null

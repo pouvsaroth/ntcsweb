@@ -3124,7 +3124,7 @@ const km: MessageSchema = {
       sortOrder: 'លេខរៀង',
       columnActions: 'សកម្មភាព',
       delete: 'លុប',
-      deleteConfirm: 'Delete this table?',
+      deleteConfirm: 'លុបតុ {name}?',
       deleteFailed: 'Could not delete this table.',
       saveFailed: 'Could not save this table.',
       loadFailed: 'Could not load this classroom.',

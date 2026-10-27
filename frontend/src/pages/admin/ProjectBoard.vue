@@ -17,6 +17,7 @@ import { projectColumnsService, projectsService, projectTasksService, type Proje
 import { useAuthStore } from '@/stores/auth'
 import { ApiRequestError } from '@/types/api'
 import { formatDate } from '@/utils/date'
+import { useConfirmDialogStore } from '@/stores/confirmDialog'
 
 /**
  * The Kanban board for one project. Drag-and-drop uses plain HTML5 DnD
@@ -28,6 +29,7 @@ import { formatDate } from '@/utils/date'
  * siblings with the moved task already removed).
  */
 const { t } = useI18n()
+const confirmDialog = useConfirmDialogStore()
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
@@ -81,7 +83,7 @@ function onProjectSaved(updated: Project) {
 }
 
 async function deleteProject() {
-  if (!project.value || !window.confirm(t('admin.projects.deleteConfirm'))) return
+  if (!project.value || !(await confirmDialog.confirm({ message: t('admin.projects.deleteConfirm'), danger: true }))) return
 
   try {
     await projectsService.remove(project.value.id)
@@ -118,7 +120,7 @@ function onColumnSaved(saved: ProjectColumn) {
 }
 
 async function deleteColumn(column: ProjectColumn) {
-  if (!project.value || !window.confirm(t('admin.projects.deleteColumnConfirm'))) return
+  if (!project.value || !(await confirmDialog.confirm({ message: t('admin.projects.deleteColumnConfirm'), danger: true }))) return
 
   try {
     await projectColumnsService.remove(column.id)
@@ -162,7 +164,7 @@ function onTaskSaved(saved: ProjectTask) {
 }
 
 async function deleteTask(task: ProjectTask) {
-  if (!project.value || !window.confirm(t('admin.projects.deleteTaskConfirm'))) return
+  if (!project.value || !(await confirmDialog.confirm({ message: t('admin.projects.deleteTaskConfirm'), danger: true }))) return
 
   try {
     await projectTasksService.remove(task.id)

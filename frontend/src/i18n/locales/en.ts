@@ -3128,7 +3128,7 @@ const en = {
       sortOrder: 'Order No.',
       columnActions: 'Actions',
       delete: 'Delete',
-      deleteConfirm: 'Delete this table?',
+      deleteConfirm: 'Delete table {name}?',
       deleteFailed: 'Could not delete this table.',
       saveFailed: 'Could not save this table.',
       loadFailed: 'Could not load this classroom.',

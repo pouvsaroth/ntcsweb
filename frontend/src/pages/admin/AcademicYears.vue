@@ -14,8 +14,10 @@ import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { academicYearsService, type AcademicYear } from '@/services/academicYears'
 import { ApiRequestError } from '@/types/api'
 import { formatDate } from '@/utils/date'
+import { useConfirmDialogStore } from '@/stores/confirmDialog'
 
 const { t } = useI18n()
+const confirmDialog = useConfirmDialogStore()
 
 const { items, meta, loading, error, setPage, fetch } = usePaginatedResource<AcademicYear>((query) => academicYearsService.list(query))
 
@@ -42,7 +44,7 @@ function openEdit(year: AcademicYear) {
 }
 
 async function remove(year: AcademicYear) {
-  if (!window.confirm(t('admin.academicYears.deleteConfirm'))) return
+  if (!(await confirmDialog.confirm({ message: t('admin.academicYears.deleteConfirm'), danger: true }))) return
   deleteError.value = null
 
   try {

@@ -13,6 +13,7 @@ import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { organizationUnitsService, type OrganizationUnit, type OrganizationUnitKind } from '@/services/organizationUnits'
 import { useAuthStore } from '@/stores/auth'
 import { ApiRequestError } from '@/types/api'
+import { useConfirmDialogStore } from '@/stores/confirmDialog'
 
 /**
  * One page for each of HRM > Organization Management's simple lists
@@ -22,6 +23,7 @@ import { ApiRequestError } from '@/types/api'
 const props = defineProps<{ kind: OrganizationUnitKind }>()
 
 const { t } = useI18n()
+const confirmDialog = useConfirmDialogStore()
 const auth = useAuthStore()
 
 const service = organizationUnitsService(props.kind)
@@ -55,7 +57,7 @@ function openEdit(unit: OrganizationUnit) {
 }
 
 async function remove(unit: OrganizationUnit) {
-  if (!window.confirm(t('admin.organization.deleteConfirm', { name: unit.name }))) return
+  if (!(await confirmDialog.confirm({ message: t('admin.organization.deleteConfirm', { name: unit.name }), danger: true }))) return
   deleteError.value = null
 
   try {

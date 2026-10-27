@@ -13,8 +13,10 @@ import EditIconButton from '@/components/ui/EditIconButton.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { coursePackagesService, type CoursePackage } from '@/services/coursePackages'
 import { ApiRequestError } from '@/types/api'
+import { useConfirmDialogStore } from '@/stores/confirmDialog'
 
 const { t } = useI18n()
+const confirmDialog = useConfirmDialogStore()
 
 const { items, meta, loading, error, setPage, setSearch, fetch } = usePaginatedResource<CoursePackage>((query) =>
   coursePackagesService.list(query),
@@ -53,7 +55,7 @@ function openEdit(coursePackage: CoursePackage) {
 }
 
 async function remove(coursePackage: CoursePackage) {
-  if (!window.confirm(t('admin.coursePackages.deleteConfirm'))) return
+  if (!(await confirmDialog.confirm({ message: t('admin.coursePackages.deleteConfirm'), danger: true }))) return
   deleteError.value = null
 
   try {

@@ -3124,7 +3124,7 @@ const ja: MessageSchema = {
       sortOrder: '並び順',
       columnActions: '操作',
       delete: '削除',
-      deleteConfirm: 'Delete this table?',
+      deleteConfirm: '机 {name} を削除しますか？',
       deleteFailed: 'Could not delete this table.',
       saveFailed: 'Could not save this table.',
       loadFailed: 'Could not load this classroom.',

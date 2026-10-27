@@ -12,8 +12,10 @@ import EditIconButton from '@/components/ui/EditIconButton.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { languagesService, type Language } from '@/services/languages'
 import { ApiRequestError } from '@/types/api'
+import { useConfirmDialogStore } from '@/stores/confirmDialog'
 
 const { t } = useI18n()
+const confirmDialog = useConfirmDialogStore()
 
 const { items, meta, loading, error, setPage, fetch } = usePaginatedResource<Language>((query) => languagesService.list(query))
 
@@ -41,7 +43,7 @@ function openEdit(language: Language) {
 }
 
 async function remove(language: Language) {
-  if (!window.confirm(t('admin.languages.deleteConfirm'))) return
+  if (!(await confirmDialog.confirm({ message: t('admin.languages.deleteConfirm'), danger: true }))) return
   deleteError.value = null
 
   try {

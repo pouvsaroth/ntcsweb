@@ -6,6 +6,7 @@ namespace App\Http\Requests\Api\V1\Public;
 
 use App\Models\CoursePackage;
 use App\Support\Billing\PaymentMethod;
+use App\Rules\UniqueAccountIdentity;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -35,8 +36,8 @@ class StoreStudentRegistrationRequest extends FormRequest
             'last_name' => ['required', 'string', 'max:255'],
             'gender' => ['nullable', 'string', 'max:10'],
             'date_of_birth' => ['nullable', 'date', 'before:today'],
-            'phone' => ['required', 'string', 'max:32'],
-            'email' => ['nullable', 'email:rfc', 'max:255'],
+            'phone' => ['required', 'string', 'max:32', UniqueAccountIdentity::phone()],
+            'email' => ['nullable', 'email:rfc', 'max:255', UniqueAccountIdentity::email()],
 
             'house_no' => ['nullable', 'string', 'max:10'],
             'street_no' => ['nullable', 'string', 'max:10'],

@@ -7,6 +7,7 @@ namespace App\Http\Requests\Api\V1\Admin;
 use App\Models\Role;
 use App\Models\User;
 use App\Support\Tenancy\TenantContext;
+use App\Rules\UniqueAccountIdentity;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
@@ -36,8 +37,8 @@ class UpdateUserRequest extends FormRequest
 
         return [
             'name' => ['required', 'string', 'max:255'],
-            'phone' => ['nullable', 'string', 'max:32'],
-            'email' => ['nullable', 'email:rfc', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:32', UniqueAccountIdentity::phone($target->getKey())],
+            'email' => ['nullable', 'email:rfc', 'max:255', UniqueAccountIdentity::email($target->getKey())],
             'role_id' => [
                 'nullable',
                 Rule::prohibitedIf(fn () => $target->student()->exists()),

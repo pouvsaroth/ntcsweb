@@ -31,6 +31,7 @@ import {
 import { useAuthStore } from '@/stores/auth'
 import { ApiRequestError } from '@/types/api'
 import { formatDateTime } from '@/utils/date'
+import { useConfirmDialogStore } from '@/stores/confirmDialog'
 
 const props = defineProps<{
   modelValue: boolean
@@ -47,6 +48,7 @@ const props = defineProps<{
 const emit = defineEmits<{ 'update:modelValue': [value: boolean]; saved: [task: ProjectTask] }>()
 
 const { t } = useI18n()
+const confirmDialog = useConfirmDialogStore()
 const auth = useAuthStore()
 
 const isEditing = computed(() => props.task != null)
@@ -309,7 +311,7 @@ async function addComment() {
 }
 
 async function removeComment(comment: ProjectTaskComment) {
-  if (!window.confirm(t('admin.projects.deleteCommentConfirm'))) return
+  if (!(await confirmDialog.confirm({ message: t('admin.projects.deleteCommentConfirm'), danger: true }))) return
 
   try {
     await projectTaskCommentsService.remove(comment.id)

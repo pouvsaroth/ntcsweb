@@ -7,6 +7,7 @@ namespace App\Http\Requests\Api\V1\Admin;
 use App\Models\Role;
 use App\Models\User;
 use App\Support\Tenancy\TenantContext;
+use App\Rules\UniqueAccountIdentity;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
@@ -45,8 +46,8 @@ class StoreUserRequest extends FormRequest
                 Rule::exists('tenant.students', 'id')->whereNull('user_id'),
             ],
             'name' => ['required', 'string', 'max:255'],
-            'phone' => ['required', 'string', 'max:32'],
-            'email' => ['nullable', 'email:rfc', 'max:255'],
+            'phone' => ['required', 'string', 'max:32', UniqueAccountIdentity::phone()],
+            'email' => ['nullable', 'email:rfc', 'max:255', UniqueAccountIdentity::email()],
             'role_id' => [
                 'required_without:student_id',
                 'prohibited_if:student_id,present',

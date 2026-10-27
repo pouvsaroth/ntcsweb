@@ -15,8 +15,10 @@ import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { coursePackagesService, type CoursePackage } from '@/services/coursePackages'
 import { type Video, videosService } from '@/services/videos'
 import { ApiRequestError } from '@/types/api'
+import { useConfirmDialogStore } from '@/stores/confirmDialog'
 
 const { t } = useI18n()
+const confirmDialog = useConfirmDialogStore()
 
 const { items, meta, loading, error, sort, setPage, setSearch, setSort, setFilter, fetch } = usePaginatedResource<Video>((query) =>
   videosService.list(query),
@@ -57,7 +59,7 @@ function openEdit(video: Video) {
 }
 
 async function remove(video: Video) {
-  if (!window.confirm(t('admin.videos.deleteConfirm'))) return
+  if (!(await confirmDialog.confirm({ message: t('admin.videos.deleteConfirm'), danger: true }))) return
   deleteError.value = null
 
   try {

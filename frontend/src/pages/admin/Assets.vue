@@ -14,8 +14,10 @@ import { assetCategoriesService, type AssetCategory } from '@/services/assetCate
 import { assetsService, assetStatuses, type Asset, type AssetStatus } from '@/services/assets'
 import { useAdminUiStore } from '@/stores/adminUi'
 import { ApiRequestError } from '@/types/api'
+import { useConfirmDialogStore } from '@/stores/confirmDialog'
 
 const { t } = useI18n()
+const confirmDialog = useConfirmDialogStore()
 const adminUi = useAdminUiStore()
 
 const { items, meta, loading, error, perPage, setPage, setSort, sort, setSearch, setFilter, fetch } = usePaginatedResource<Asset>((query) =>
@@ -79,7 +81,7 @@ const columns = [
 const actionError = ref<string | null>(null)
 
 async function remove(asset: Asset) {
-  if (!window.confirm(t('admin.assets.deleteConfirm'))) return
+  if (!(await confirmDialog.confirm({ message: t('admin.assets.deleteConfirm'), danger: true }))) return
 
   actionError.value = null
   try {

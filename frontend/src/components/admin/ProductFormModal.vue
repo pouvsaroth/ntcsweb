@@ -19,6 +19,7 @@ import {
   type ProductVariantInput,
 } from '@/services/products'
 import { ApiRequestError } from '@/types/api'
+import { useConfirmDialogStore } from '@/stores/confirmDialog'
 
 const props = defineProps<{
   modelValue: boolean
@@ -29,6 +30,7 @@ const props = defineProps<{
 const emit = defineEmits<{ 'update:modelValue': [value: boolean]; saved: [] }>()
 
 const { t } = useI18n()
+const confirmDialog = useConfirmDialogStore()
 
 const isEditing = computed(() => props.product != null)
 const productId = computed(() => props.product?.id ?? null)
@@ -116,7 +118,7 @@ async function submitVariant() {
 }
 
 async function removeVariant(variant: ProductVariant) {
-  if (!window.confirm(t('admin.products.deleteVariantConfirm'))) return
+  if (!(await confirmDialog.confirm({ message: t('admin.products.deleteVariantConfirm'), danger: true }))) return
 
   try {
     await productsService.removeVariant(variant.id)

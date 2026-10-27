@@ -166,4 +166,14 @@ class SignupTest extends TestCase
         $this->actingAsStaff($this->platformStaff([]));
         $this->getJson('/api/v1/platform/billing/signups')->assertNotFound();
     }
+
+    public function test_an_email_or_phone_that_already_has_an_account_cannot_sign_up_again(): void
+    {
+        User::factory()->forTenant(Tenant::query()->where('slug', 'other')->firstOrFail())->create(['email' => 'dara@example.com', 'phone' => '012345678']);
+
+        $this->signUp()->assertUnprocessable()
+            ->assertJsonValidationErrors(['owner_email' => 'This email already has an account. Sign in, or contact us to buy a plan.'])
+            ->assertJsonValidationErrors(['owner_phone' => 'This phone number already has an account. Sign in, or contact us to buy a plan.']);
+        $this->assertFalse(Tenant::query()->where('slug', 'angkor')->exists());
+    }
 }

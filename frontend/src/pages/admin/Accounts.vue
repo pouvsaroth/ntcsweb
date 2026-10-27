@@ -12,8 +12,10 @@ import DataTable from '@/components/ui/DataTable.vue'
 import EditIconButton from '@/components/ui/EditIconButton.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { accountsService, accountTypes, type Account, type AccountType } from '@/services/accounting'
+import { useConfirmDialogStore } from '@/stores/confirmDialog'
 
 const { t } = useI18n()
+const confirmDialog = useConfirmDialogStore()
 
 const { items, meta, loading, error, setPage, setSort, sort, setSearch, setFilter, fetch } = usePaginatedResource<Account>(
   (query) => accountsService.list(query),
@@ -56,7 +58,7 @@ function openEdit(account: Account) {
 
 async function toggleActive(account: Account) {
   const confirmMessage = account.is_active ? t('admin.accounts.deactivateConfirm') : t('admin.accounts.reactivateConfirm')
-  if (!window.confirm(confirmMessage)) return
+  if (!(await confirmDialog.confirm({ message: confirmMessage, danger: true }))) return
 
   if (account.is_active) {
     await accountsService.deactivate(account.id)

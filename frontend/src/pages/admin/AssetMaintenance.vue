@@ -11,8 +11,10 @@ import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { assetMaintenanceService, maintenanceStatuses, type AssetMaintenance, type MaintenanceStatus } from '@/services/assetMaintenance'
 import { ApiRequestError } from '@/types/api'
 import { formatDate } from '@/utils/date'
+import { useConfirmDialogStore } from '@/stores/confirmDialog'
 
 const { t } = useI18n()
+const confirmDialog = useConfirmDialogStore()
 
 const { items, meta, loading, error, setPage, setSearch, setFilter, fetch } = usePaginatedResource<AssetMaintenance>((query) =>
   assetMaintenanceService.list(query),
@@ -46,7 +48,7 @@ async function completeMaintenance(record: AssetMaintenance) {
 }
 
 async function cancelMaintenance(record: AssetMaintenance) {
-  if (!window.confirm(t('admin.assetMaintenance.cancelConfirm'))) return
+  if (!(await confirmDialog.confirm({ message: t('admin.assetMaintenance.cancelConfirm'), danger: true }))) return
   actionError.value = null
 
   try {

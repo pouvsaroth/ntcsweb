@@ -23,8 +23,10 @@ import { type LookupOption, lookupsService } from '@/services/lookups'
 import { studentsService, type Student } from '@/services/students'
 import { ApiRequestError } from '@/types/api'
 import { formatDate } from '@/utils/date'
+import { useConfirmDialogStore } from '@/stores/confirmDialog'
 
 const { t, locale } = useI18n()
+const confirmDialog = useConfirmDialogStore()
 
 const { items, meta, loading, error, sort, setPage, setSort, setFilter, fetch } = usePaginatedResource<Enrollment>((query) =>
   enrollmentsService.list(query),
@@ -147,7 +149,7 @@ function openTransfer(enrollment: Enrollment) {
 const deleteError = ref<string | null>(null)
 
 async function remove(enrollment: Enrollment) {
-  if (!window.confirm(t('admin.enrollments.deleteConfirm'))) return
+  if (!(await confirmDialog.confirm({ message: t('admin.enrollments.deleteConfirm'), danger: true }))) return
   deleteError.value = null
   try {
     await enrollmentsService.remove(enrollment.id)

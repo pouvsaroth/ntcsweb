@@ -371,4 +371,26 @@ class PlatformSchoolsTest extends TestCase
 
         $this->assertSame(Tenant::STATUS_ACTIVE, $tenant->fresh()->status);
     }
+
+    public function test_a_new_customers_owner_email_must_not_already_have_an_account(): void
+    {
+        $this->actingAsStaff($this->platformStaff());
+        $other = \App\Models\Tenant::factory()->create(['slug' => 'other-school']);
+        User::factory()->forTenant($other)->create(['email' => 'dara@angkor.edu.kh']);
+
+        $this->createSchool()->assertUnprocessable()->assertJsonValidationErrors('owner_email');
+    }
+
+    public function test_a_new_owner_may_be_one_of_its_own_users_but_not_another_customers(): void
+    {
+        $this->actingAsStaff($this->platformStaff());
+        $id = $this->createSchool()->json('data.id');
+        $other = \App\Models\Tenant::factory()->create(['slug' => 'other-school']);
+        User::factory()->forTenant($other)->create(['email' => 'busy@example.com']);
+        User::factory()->forTenant($id)->create(['email' => 'teacher@angkor.edu.kh']);
+
+        $this->putJson("/api/v1/platform/schools/{$id}/owner", ['name' => 'X', 'email' => 'busy@example.com'])
+            ->assertUnprocessable()->assertJsonValidationErrors('email');
+        $this->putJson("/api/v1/platform/schools/{$id}/owner", ['name' => 'Teacher', 'email' => 'teacher@angkor.edu.kh'])->assertOk();
+    }
 }

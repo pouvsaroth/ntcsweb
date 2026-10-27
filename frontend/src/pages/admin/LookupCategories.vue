@@ -12,8 +12,10 @@ import EditIconButton from '@/components/ui/EditIconButton.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { lookupCategoriesService, type LookupCategory } from '@/services/lookupCategories'
 import { ApiRequestError } from '@/types/api'
+import { useConfirmDialogStore } from '@/stores/confirmDialog'
 
 const { t } = useI18n()
+const confirmDialog = useConfirmDialogStore()
 
 const { items, meta, loading, error, setPage, setSearch, fetch } = usePaginatedResource<LookupCategory>((query) =>
   lookupCategoriesService.list(query),
@@ -42,7 +44,7 @@ function openEdit(category: LookupCategory) {
 }
 
 async function remove(category: LookupCategory) {
-  if (!window.confirm(t('admin.lookupCategories.deleteConfirm'))) return
+  if (!(await confirmDialog.confirm({ message: t('admin.lookupCategories.deleteConfirm'), danger: true }))) return
   deleteError.value = null
 
   try {

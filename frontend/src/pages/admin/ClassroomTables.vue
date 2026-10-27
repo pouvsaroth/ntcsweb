@@ -12,10 +12,12 @@ import DataTable from '@/components/ui/DataTable.vue'
 import EditIconButton from '@/components/ui/EditIconButton.vue'
 import { type Classroom, classroomsService } from '@/services/classrooms'
 import { type BulkTablesResult, type ClassroomTable, classroomTablesService } from '@/services/classroomTables'
+import { useConfirmDialogStore } from '@/stores/confirmDialog'
 import { ApiRequestError } from '@/types/api'
 
 const { t } = useI18n()
 const route = useRoute()
+const confirmDialog = useConfirmDialogStore()
 const classroomId = Number(route.params.id)
 
 const classroom = ref<Classroom | null>(null)
@@ -68,7 +70,7 @@ function openEdit(table: ClassroomTable) {
 }
 
 async function remove(table: ClassroomTable) {
-  if (!window.confirm(t('admin.classroomTables.deleteConfirm'))) return
+  if (!(await confirmDialog.confirm({ message: t('admin.classroomTables.deleteConfirm', { name: table.name }), danger: true }))) return
   deleteError.value = null
 
   try {

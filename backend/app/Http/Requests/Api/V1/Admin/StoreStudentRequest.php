@@ -6,6 +6,7 @@ namespace App\Http\Requests\Api\V1\Admin;
 
 use App\Models\Student;
 use App\Support\Tenancy\TenantContext;
+use App\Rules\UniqueAccountIdentity;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -32,14 +33,14 @@ class StoreStudentRequest extends FormRequest
 
             'date_of_birth' => ['nullable', 'date', 'before:today'],
             'gender' => ['nullable', 'string', 'max:10'],
-            'email' => ['nullable', 'email:rfc', 'max:255'],
+            'email' => ['nullable', 'email:rfc', 'max:255', ...($this->filled('user_id') ? [] : [UniqueAccountIdentity::email()])],
             // Required, not email: this is what an auto-provisioned login
             // account (see StudentController::store()) is keyed on — a
             // school may have no email on file for a student, but always has
             // a phone number. Bulk import (StoreStudentImportRequest) is
             // untouched and keeps this nullable, since those rows are
             // historical/legacy data, not new enrollments needing an account.
-            'phone' => ['required', 'string', 'max:32'],
+            'phone' => ['required', 'string', 'max:32', ...($this->filled('user_id') ? [] : [UniqueAccountIdentity::phone()])],
 
             // Structured to match the legacy system's address shape — see
             // the restructuring migration for the full field-by-field

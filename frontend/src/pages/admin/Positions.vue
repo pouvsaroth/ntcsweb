@@ -11,8 +11,10 @@ import DataTable from '@/components/ui/DataTable.vue'
 import EditIconButton from '@/components/ui/EditIconButton.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { positionsService, type Position } from '@/services/positions'
+import { useConfirmDialogStore } from '@/stores/confirmDialog'
 
 const { t } = useI18n()
+const confirmDialog = useConfirmDialogStore()
 
 const { items, meta, loading, error, setPage, setSearch, fetch } = usePaginatedResource<Position>((query) =>
   positionsService.list(query),
@@ -40,7 +42,7 @@ function openEdit(position: Position) {
 }
 
 async function remove(position: Position) {
-  if (!window.confirm(t('admin.positions.deleteConfirm'))) return
+  if (!(await confirmDialog.confirm({ message: t('admin.positions.deleteConfirm'), danger: true }))) return
   await positionsService.remove(position.id)
   await fetch()
 }

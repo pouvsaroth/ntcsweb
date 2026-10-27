@@ -12,8 +12,10 @@ import EditIconButton from '@/components/ui/EditIconButton.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { assetCategoriesService, type AssetCategory } from '@/services/assetCategories'
 import { ApiRequestError } from '@/types/api'
+import { useConfirmDialogStore } from '@/stores/confirmDialog'
 
 const { t } = useI18n()
+const confirmDialog = useConfirmDialogStore()
 
 const { items, meta, loading, error, setPage, setSearch, fetch } = usePaginatedResource<AssetCategory>((query) =>
   assetCategoriesService.list(query),
@@ -42,7 +44,7 @@ function openEdit(category: AssetCategory) {
 }
 
 async function remove(category: AssetCategory) {
-  if (!window.confirm(t('admin.assetCategories.deleteConfirm'))) return
+  if (!(await confirmDialog.confirm({ message: t('admin.assetCategories.deleteConfirm'), danger: true }))) return
   deleteError.value = null
 
   try {

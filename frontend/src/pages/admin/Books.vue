@@ -15,8 +15,10 @@ import DataTable from '@/components/ui/DataTable.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { booksService, type Book } from '@/services/books'
 import { gradeLevelsService, type GradeLevel } from '@/services/schoolSetup'
+import { useConfirmDialogStore } from '@/stores/confirmDialog'
 
 const { t } = useI18n()
+const confirmDialog = useConfirmDialogStore()
 
 const { items, meta, loading, error, setPage, setSearch, setFilter, fetch } = usePaginatedResource<Book>((query) =>
   booksService.list(query),
@@ -46,7 +48,7 @@ function openEdit(book: Book) {
 }
 
 async function remove(book: Book) {
-  if (!window.confirm(t('admin.books.deleteConfirm'))) return
+  if (!(await confirmDialog.confirm({ message: t('admin.books.deleteConfirm'), danger: true }))) return
   await booksService.remove(book.id)
   await fetch()
 }

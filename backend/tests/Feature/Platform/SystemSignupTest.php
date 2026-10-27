@@ -122,7 +122,7 @@ class SystemSignupTest extends TestCase
         $this->assertSame('dedicated', \App\Platform\Models\SchoolPlacement::of($tenant)->mode);
 
         // A shared plan: the shared database.
-        $this->withHeader('X-Tenant', 'newtech')->postJson('/api/v1/public/signup', $this->form(['plan' => 'trial', 'slug' => 'bayon-co', 'owner_email' => 'b@example.com']))->assertCreated();
+        $this->withHeader('X-Tenant', 'newtech')->postJson('/api/v1/public/signup', $this->form(['plan' => 'trial', 'slug' => 'bayon-co', 'owner_email' => 'b@example.com', 'owner_phone' => '099 222 333']))->assertCreated();
         $this->assertSame('shared', \App\Platform\Models\SchoolPlacement::of(Tenant::query()->where('slug', 'bayon-co')->firstOrFail())->mode);
     }
 

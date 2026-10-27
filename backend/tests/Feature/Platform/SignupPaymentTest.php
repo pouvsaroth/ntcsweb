@@ -185,7 +185,7 @@ class SignupPaymentTest extends TestCase
         $this->postJson("/api/v1/platform/billing/signups/{$signup->id}/confirm-payment", ['amount' => 87])->assertOk()->assertJsonPath('data.status', 'created');
 
         // An expired one left alone loses the password after 7 days.
-        $this->signUp(['slug' => 'bayon', 'owner_email' => 'b@example.com']);
+        $this->signUp(['slug' => 'bayon', 'owner_email' => 'b@example.com', 'owner_phone' => '099 222 333']);
         Carbon::setTestNow(now()->addHour());
         $this->artisan('platform:signups-tick')->assertSuccessful();
         Carbon::setTestNow(now()->addDays(8));

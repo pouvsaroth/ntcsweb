@@ -8,6 +8,7 @@ import BaseButton from '@/components/ui/BaseButton.vue'
 import { projectMilestonesService, type Project, type ProjectMilestone, type ProjectTask } from '@/services/projects'
 import { ApiRequestError } from '@/types/api'
 import { formatDate } from '@/utils/date'
+import { useConfirmDialogStore } from '@/stores/confirmDialog'
 
 /**
  * The project's Milestones tab: each milestone with its dates, its cards and
@@ -17,6 +18,7 @@ const props = defineProps<{ project: Project; canUpdate: boolean }>()
 const emit = defineEmits<{ 'open-task': [task: ProjectTask]; error: [message: string] }>()
 
 const { t } = useI18n()
+const confirmDialog = useConfirmDialogStore()
 
 type Status = 'done' | 'overdue' | 'inProgress' | 'notStarted' | 'empty'
 const statusVariant: Record<Status, 'neutral' | 'primary' | 'success' | 'danger'> = {
@@ -91,7 +93,7 @@ function onSaved(saved: ProjectMilestone) {
 }
 
 async function remove(milestone: ProjectMilestone) {
-  if (!window.confirm(t('admin.projects.deleteMilestoneConfirm', { name: milestone.name }))) return
+  if (!(await confirmDialog.confirm({ message: t('admin.projects.deleteMilestoneConfirm', { name: milestone.name }), danger: true }))) return
 
   try {
     await projectMilestonesService.remove(milestone.id)

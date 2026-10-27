@@ -13,8 +13,10 @@ import StaffStatusModal from '@/components/admin/StaffStatusModal.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { lookupsService } from '@/services/lookups'
 import { staffService, type Staff } from '@/services/staff'
+import { useConfirmDialogStore } from '@/stores/confirmDialog'
 
 const { t, locale } = useI18n()
+const confirmDialog = useConfirmDialogStore()
 
 const { items, meta, loading, error, setPage, setSearch, fetch } = usePaginatedResource<Staff>((query) =>
   staffService.list(query),
@@ -64,7 +66,7 @@ function openStatusModal(staff: Staff) {
 }
 
 async function remove(staff: Staff) {
-  if (!window.confirm(t('admin.staff.deleteConfirm'))) return
+  if (!(await confirmDialog.confirm({ message: t('admin.staff.deleteConfirm'), danger: true }))) return
   await staffService.remove(staff.id)
   await fetch()
 }

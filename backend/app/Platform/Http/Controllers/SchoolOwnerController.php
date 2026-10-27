@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponse;
 use App\Models\Tenant;
 use App\Platform\Services\SchoolOwners;
+use App\Rules\UniqueAccountIdentity;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -36,7 +37,8 @@ final class SchoolOwnerController extends Controller
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255'],
+            // One of its own users may become owner; another customer's may not.
+            'email' => ['required', 'email', 'max:255', UniqueAccountIdentity::email(null, (int) $school->getKey())],
         ]);
 
         abort_unless($school->isActive(), 409, __('The owner can be changed once the school is active.'));

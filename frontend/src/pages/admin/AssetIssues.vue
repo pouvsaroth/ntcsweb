@@ -11,8 +11,10 @@ import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { assetIssuesService, issuePriorities, issueStatuses, type AssetIssue, type IssuePriority, type IssueStatus } from '@/services/assetIssues'
 import { ApiRequestError } from '@/types/api'
 import { formatDate } from '@/utils/date'
+import { useConfirmDialogStore } from '@/stores/confirmDialog'
 
 const { t } = useI18n()
+const confirmDialog = useConfirmDialogStore()
 
 const { items, meta, loading, error, setPage, setSearch, setFilter, fetch } = usePaginatedResource<AssetIssue>((query) => assetIssuesService.list(query))
 
@@ -47,7 +49,7 @@ function onStatusFilterChange(value: string) {
 const actionError = ref<string | null>(null)
 
 async function resolveIssue(issue: AssetIssue) {
-  if (!window.confirm(t('admin.assetIssues.resolveConfirm'))) return
+  if (!(await confirmDialog.confirm({ message: t('admin.assetIssues.resolveConfirm') }))) return
   actionError.value = null
 
   try {

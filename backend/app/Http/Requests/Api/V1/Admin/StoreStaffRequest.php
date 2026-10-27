@@ -6,6 +6,7 @@ namespace App\Http\Requests\Api\V1\Admin;
 
 use App\Http\Requests\Api\V1\Admin\Concerns\ValidatesStaffOrganization;
 use App\Models\Staff;
+use App\Rules\UniqueAccountIdentity;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -54,8 +55,8 @@ class StoreStaffRequest extends FormRequest
             // account (see StaffController::store()) is keyed on — a school
             // may have no email on file for a staff member, but always has a
             // phone number.
-            'phone' => ['required', 'string', 'max:32'],
-            'email' => ['nullable', 'email:rfc', 'max:255'],
+            'phone' => ['required', 'string', 'max:32', UniqueAccountIdentity::phone()],
+            'email' => ['nullable', 'email:rfc', 'max:255', UniqueAccountIdentity::email()],
 
             // Structured to match the legacy system's address shape — see
             // the restructuring migration for the full field-by-field

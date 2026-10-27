@@ -10,8 +10,10 @@ import DataTable from '@/components/ui/DataTable.vue'
 import EditIconButton from '@/components/ui/EditIconButton.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { formCategoriesService, type FormCategory } from '@/services/formCategories'
+import { useConfirmDialogStore } from '@/stores/confirmDialog'
 
 const { t } = useI18n()
+const confirmDialog = useConfirmDialogStore()
 
 const { items, meta, loading, error, setPage, fetch } = usePaginatedResource<FormCategory>((query) =>
   formCategoriesService.list(query),
@@ -38,7 +40,7 @@ function openEdit(category: FormCategory) {
 }
 
 async function remove(category: FormCategory) {
-  if (!window.confirm(t('admin.formCategories.deleteConfirm'))) return
+  if (!(await confirmDialog.confirm({ message: t('admin.formCategories.deleteConfirm'), danger: true }))) return
   await formCategoriesService.remove(category.id)
   await fetch()
 }

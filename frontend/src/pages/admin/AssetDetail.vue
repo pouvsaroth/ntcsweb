@@ -26,8 +26,10 @@ import { assetRepairsService, type AssetRepair } from '@/services/assetRepairs'
 import { assetsService, type Asset, type AssetCondition, type AssetDocument, type AssetStatus, type DisposalMethod } from '@/services/assets'
 import { ApiRequestError } from '@/types/api'
 import { formatDate, formatDateTime } from '@/utils/date'
+import { useConfirmDialogStore } from '@/stores/confirmDialog'
 
 const { t } = useI18n()
+const confirmDialog = useConfirmDialogStore()
 const route = useRoute()
 const router = useRouter()
 
@@ -142,7 +144,7 @@ async function confirmAssign(payload: Parameters<typeof assetsService.assign>[1]
 }
 
 async function returnAsset() {
-  if (!asset.value || !window.confirm(t('admin.assets.returnConfirm'))) return
+  if (!asset.value || !(await confirmDialog.confirm({ message: t('admin.assets.returnConfirm') }))) return
   actionError.value = null
 
   try {
@@ -256,7 +258,7 @@ async function confirmMarkLost(payload: { last_known_location?: string; descript
 }
 
 async function markFound() {
-  if (!asset.value || !window.confirm(t('admin.assets.markFoundConfirm'))) return
+  if (!asset.value || !(await confirmDialog.confirm({ message: t('admin.assets.markFoundConfirm') }))) return
   actionError.value = null
 
   try {
@@ -290,7 +292,7 @@ async function confirmReportIssue(payload: Parameters<typeof assetIssuesService.
 }
 
 async function resolveIssue(issue: AssetIssue) {
-  if (!window.confirm(t('admin.assetIssues.resolveConfirm'))) return
+  if (!(await confirmDialog.confirm({ message: t('admin.assetIssues.resolveConfirm') }))) return
 
   try {
     await assetIssuesService.resolve(issue.id)
@@ -392,7 +394,7 @@ async function completeMaintenance(record: AssetMaintenance) {
 }
 
 async function cancelMaintenance(record: AssetMaintenance) {
-  if (!window.confirm(t('admin.assetMaintenance.cancelConfirm'))) return
+  if (!(await confirmDialog.confirm({ message: t('admin.assetMaintenance.cancelConfirm'), danger: true }))) return
 
   try {
     await assetMaintenanceService.cancel(record.id)
@@ -426,7 +428,7 @@ async function onFileSelected(event: Event) {
 }
 
 async function removeDocument(document: AssetDocument) {
-  if (!asset.value || !window.confirm(t('admin.assets.removeDocumentConfirm'))) return
+  if (!asset.value || !(await confirmDialog.confirm({ message: t('admin.assets.removeDocumentConfirm'), danger: true }))) return
 
   await assetsService.removeDocument(asset.value.id, document.id)
   await loadDocuments()
