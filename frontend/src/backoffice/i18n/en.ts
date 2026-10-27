@@ -71,6 +71,10 @@ const en = {
     ownerName: 'Owner name',
     ownerEmail: 'Owner email',
     ownerHint: 'The owner gets an email to set their own password. You never see it.',
+    copyTitle: 'Starting setup',
+    copyFrom: 'Copy setup from',
+    copyNone: 'Start empty (standard setup)',
+    copyHint: 'Copies programs, courses and prices, classes, rooms, timetable, lists, chart of accounts, HRM, approval and asset setup, and custom roles. Never copies users, students, staff, payments or any records.',
     status: 'Status',
     created: 'Created',
     empty: 'No schools match.',
@@ -96,6 +100,7 @@ const en = {
     steps: {
       database: 'Create and migrate the database',
       seed: 'Load default data',
+      copy: 'Copy setup from the chosen school',
       health: 'Check the database',
       activate: 'Activate',
       owner: 'Invite the owner',

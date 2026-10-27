@@ -30,7 +30,8 @@ final class SchoolCreator
 
     /**
      * @param  array<string, mixed>  $data  name, name_en, slug, owner_name, owner_email; optional timezone, locale,
-     *                                      default_currency, email, phone, server (for a separate placement)
+     *                                      default_currency, email, phone, server (for a separate placement),
+     *                                      copy_setup_from (tenant id whose setup is copied)
      * @param  string|null  $ownerPassword  A password the owner chose themselves (sign-up). Null: they are invited by email.
      * @param  (Closure(Tenant): mixed)|null  $subscribe  Puts the school on a plan; null = the usual trial.
      */
@@ -52,7 +53,10 @@ final class SchoolCreator
             }
             $tenant->forceFill(['status' => Tenant::STATUS_PROVISIONING])->save();
 
-            School::for($tenant)->forceFill(['created_by' => $actor?->getKey()])->save();
+            School::for($tenant)->forceFill([
+                'created_by' => $actor?->getKey(),
+                'copy_setup_from_tenant_id' => $data['copy_setup_from'] ?? null,
+            ])->save();
 
             SchoolPlacement::query()->create(match ($mode) {
                 SchoolPlacement::SHARED => ['tenant_id' => $tenant->id, 'mode' => $mode, 'database' => config('tenancy.database.shared_database')],
@@ -78,6 +82,7 @@ final class SchoolCreator
                 'slug' => $tenant->slug,
                 'owner_email' => $data['owner_email'],
                 'placement' => $mode,
+                'copy_setup_from' => $data['copy_setup_from'] ?? null,
             ], tenantId: $tenant->getKey(), actor: $actor);
 
             return $tenant;

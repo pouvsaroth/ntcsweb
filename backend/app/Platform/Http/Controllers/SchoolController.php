@@ -89,6 +89,8 @@ final class SchoolController extends Controller
             'default_currency' => ['nullable', Rule::in([Tenant::CURRENCY_USD, Tenant::CURRENCY_KHR])],
             // Where its data lives (docs/backoffice/stage-4-database-placement.md).
             'placement' => ['nullable', Rule::in(SchoolPlacement::MODES)],
+            // Start with another school's setup (never its users or students): SchoolSetupCopier.
+            'copy_setup_from' => ['nullable', 'integer', Rule::exists(Tenant::class, 'id')->whereNull('deleted_at')],
             'server' => ['exclude_unless:placement,separate', 'required', 'array'],
             'server.host' => ['exclude_unless:placement,separate', 'required', 'string', 'max:255'],
             'server.port' => ['exclude_unless:placement,separate', 'required', 'integer', 'between:1,65535'],

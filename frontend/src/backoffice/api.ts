@@ -189,7 +189,7 @@ export interface SchoolDomain {
 
 export interface ProvisioningStep {
   attempt: number
-  step: 'database' | 'seed' | 'health' | 'activate' | 'owner'
+  step: 'database' | 'seed' | 'copy' | 'health' | 'activate' | 'owner'
   status: 'ok' | 'failed'
   message: string | null
   duration_ms: number
@@ -214,6 +214,7 @@ export interface School {
   default_currency: 'USD' | 'KHR'
   owner: { id: number; name: string; email: string; accepted: boolean } | null
   status_detail: string | null
+  copy_setup_from?: number | null
   provisioning_attempts: number
   activated_at: string | null
   invite_sent_at: string | null
@@ -337,6 +338,8 @@ export interface NewSchool {
   default_currency?: 'USD' | 'KHR'
   placement?: PlacementMode
   server?: ServerLogin
+  /** Start with this school's setup (programs, courses, classes, lists…); never its users or students. */
+  copy_setup_from?: number | null
 }
 
 export type SchoolProfile = Partial<Pick<School, 'name' | 'name_en' | 'email' | 'phone' | 'address' | 'timezone' | 'locale' | 'default_currency'>>

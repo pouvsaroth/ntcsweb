@@ -24,6 +24,7 @@ use Database\Seeders\RolePermissionSeeder;
  *
  *   database   create tn_<slug> if missing, run the tenant migrations
  *   seed       roles + permissions, teacher position, chart of accounts, base data
+ *   copy       only when "Copy setup from" was chosen: that school's setup (SchoolSetupCopier)
  *   health     read the seed back through the school's own connection
  *   activate   status → active
  *   owner      the owner gets School Admin and their invite
@@ -46,6 +47,13 @@ final class SchoolProvisioner
         try {
             $this->step($tenant, $attempt, 'database', fn () => $this->database->createAndMigrate($tenant));
             $this->step($tenant, $attempt, 'seed', fn () => $this->seed($tenant));
+            if ($school->copy_setup_from_tenant_id !== null) {
+                $this->step($tenant, $attempt, 'copy', function () use ($tenant, $school) {
+                    $source = Tenant::query()->find($school->copy_setup_from_tenant_id)
+                        ?? throw new \RuntimeException('The school to copy the setup from no longer exists.');
+                    app(SchoolSetupCopier::class)->copy($source, $tenant);
+                });
+            }
             $this->step($tenant, $attempt, 'health', fn () => $this->healthCheck($tenant));
             $this->step($tenant, $attempt, 'activate', function () use ($tenant, $school) {
                 $this->status->move($tenant, Tenant::STATUS_ACTIVE);

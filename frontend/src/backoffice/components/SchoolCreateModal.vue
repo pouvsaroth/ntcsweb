@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import BaseAlert from '@/components/ui/BaseAlert.vue'
@@ -31,6 +31,8 @@ const blank = () => ({
   // Shared unless staff choose otherwise (stage 4, as SmartGPS).
   placement: 'shared' as PlacementMode,
   server: { host: '', port: 5432, database: '', username: '', password: '', sslmode: 'require' } as ServerLogin,
+  // '' = start empty; otherwise a school id whose setup is copied.
+  copy_setup_from: '',
 })
 const form = ref(blank())
 const slugTouched = ref(false)
@@ -49,6 +51,20 @@ watch(
       .slice(0, 32)
   },
 )
+
+/** Schools whose setup can be copied: the active ones. */
+const sourceSchools = ref<School[]>([])
+onMounted(async () => {
+  try {
+    sourceSchools.value = (await schoolsApi.list({ page: 1, per_page: 200, filter: { status: 'active' } })).data
+  } catch {
+    sourceSchools.value = []
+  }
+})
+const copyOptions = computed(() => [
+  { value: '', label: t('bo.schools.copyNone') },
+  ...sourceSchools.value.map((s) => ({ value: String(s.id), label: s.name_en ? `${s.name} (${s.name_en})` : s.name })),
+])
 
 const slugHint = computed(() =>
   t('bo.schools.slugHint', { sub: `${form.value.slug || '…'}.ntcsweb.com` }),
@@ -70,10 +86,11 @@ async function save(): Promise<void> {
   saving.value = true
   error.value = null
   try {
-    const { server, ...rest } = form.value
+    const { server, copy_setup_from, ...rest } = form.value
     const school = await schoolsApi.create({
       ...rest,
       name_en: rest.name_en || null,
+      copy_setup_from: copy_setup_from ? Number(copy_setup_from) : null,
       server: rest.placement === 'separate' ? { ...server, port: Number(server.port) } : undefined,
     })
     emit('created', school)
@@ -117,6 +134,17 @@ async function save(): Promise<void> {
             required
           />
         </div>
+      </fieldset>
+
+      <fieldset class="rounded-lg border border-neutral-200 p-4">
+        <legend class="px-1 text-sm font-medium text-neutral-700">{{ t('bo.schools.copyTitle') }}</legend>
+        <BaseSelect
+          v-model="form.copy_setup_from"
+          :label="t('bo.schools.copyFrom')"
+          :options="copyOptions"
+          :hint="t('bo.schools.copyHint')"
+          :error="error?.fieldError('copy_setup_from')"
+        />
       </fieldset>
 
       <fieldset class="space-y-3 rounded-lg border border-neutral-200 p-4">

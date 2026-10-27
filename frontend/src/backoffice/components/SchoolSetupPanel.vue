@@ -16,13 +16,18 @@ const emit = defineEmits<{ retry: [] }>()
 
 const { t } = useI18n()
 
-const ORDER: ProvisioningStep['step'][] = ['database', 'seed', 'health', 'activate', 'owner']
 
 const rows = computed(() => {
   const log = props.school.provisioning_log ?? []
   let blocked = false
 
-  return ORDER.map((step) => {
+  // "copy" only for a school created from another school's setup.
+  const order: ProvisioningStep['step'][] =
+    props.school.copy_setup_from || log.some((l) => l.step === 'copy')
+      ? ['database', 'seed', 'copy', 'health', 'activate', 'owner']
+      : ['database', 'seed', 'health', 'activate', 'owner']
+
+  return order.map((step) => {
     const entry = log.find((l) => l.step === step)
     let state: 'ok' | 'failed' | 'running' | 'waiting' = 'waiting'
     if (entry) state = entry.status
