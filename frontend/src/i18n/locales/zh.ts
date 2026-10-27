@@ -167,6 +167,8 @@ const zh: MessageSchema = {
   },
 
   common: {
+    showPassword: '显示密码',
+    hidePassword: '隐藏密码',
     genderMale: '男',
     genderFemale: '女',
     genderOther: '其他',

@@ -121,3 +121,10 @@
     @apply font-semibold text-neutral-900;
   }
 }
+
+/* Password boxes have our own eye button (BaseInput); hide Edge's built-in
+   one, which only shows while typing and would make two eyes. */
+input::-ms-reveal,
+input::-ms-clear {
+  display: none;
+}

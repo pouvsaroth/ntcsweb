@@ -167,6 +167,8 @@ const km: MessageSchema = {
   },
 
   common: {
+    showPassword: 'បង្ហាញពាក្យសម្ងាត់',
+    hidePassword: 'លាក់ពាក្យសម្ងាត់',
     genderMale: 'ប្រុស',
     genderFemale: 'ស្រី',
     genderOther: 'ផ្សេងៗ',

@@ -167,6 +167,8 @@ const ja: MessageSchema = {
   },
 
   common: {
+    showPassword: 'パスワードを表示',
+    hidePassword: 'パスワードを隠す',
     genderMale: '男性',
     genderFemale: '女性',
     genderOther: 'その他',

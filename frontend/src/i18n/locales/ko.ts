@@ -167,6 +167,8 @@ const ko: MessageSchema = {
   },
 
   common: {
+    showPassword: '비밀번호 표시',
+    hidePassword: '비밀번호 숨기기',
     genderMale: '남성',
     genderFemale: '여성',
     genderOther: '기타',

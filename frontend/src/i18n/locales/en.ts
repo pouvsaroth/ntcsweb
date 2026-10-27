@@ -170,6 +170,8 @@ const en = {
   },
 
   common: {
+    showPassword: 'Show password',
+    hidePassword: 'Hide password',
     genderMale: 'Male',
     genderFemale: 'Female',
     genderOther: 'Other',
