@@ -59,6 +59,15 @@ class PlanModulesTest extends TestCase
         $this->assertNotContains(Permissions::PAYROLL_VIEW, $permissions);
     }
 
+    public function test_books_and_book_categories_come_with_academics(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::BOOKS_VIEW, Permissions::BOOK_CATEGORIES_VIEW]);
+        $this->putOnPlan(['academics', 'finance']);
+
+        $this->getJson('/api/v1/books')->assertOk();
+        $this->getJson('/api/v1/book-categories')->assertOk();
+    }
+
     public function test_adding_the_module_to_the_plan_turns_it_back_on_at_once(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::PAYROLL_VIEW]);

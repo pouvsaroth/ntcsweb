@@ -1,6 +1,9 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
+
+import { useAuthStore } from '@/stores/auth'
 
 /**
  * Shared tab bar across these "Programs" pages — these used to be separate
@@ -16,14 +19,18 @@ import { useRoute } from 'vue-router'
  */
 const { t } = useI18n()
 const route = useRoute()
+const auth = useAuthStore()
 
-const tabs = [
-  { to: '/admin/academic-programs', labelKey: 'adminNav.items.academicPrograms' },
-  { to: '/admin/academic-years', labelKey: 'adminNav.items.academicYears' },
-  { to: '/admin/course-packages', labelKey: 'adminNav.items.coursePackages' },
-  { to: '/admin/books', labelKey: 'adminNav.items.books' },
-  { to: '/admin/book-categories', labelKey: 'adminNav.items.bookCategories' },
-]
+// Only the tabs this user (and the school's plan) allows; no tab leads to "unauthorized".
+const tabs = computed(() =>
+  [
+    { to: '/admin/academic-programs', labelKey: 'adminNav.items.academicPrograms', permission: 'academic-programs.view' },
+    { to: '/admin/academic-years', labelKey: 'adminNav.items.academicYears', permission: 'academic-years.view' },
+    { to: '/admin/course-packages', labelKey: 'adminNav.items.coursePackages', permission: 'course-packages.view' },
+    { to: '/admin/books', labelKey: 'adminNav.items.books', permission: 'books.view' },
+    { to: '/admin/book-categories', labelKey: 'adminNav.items.bookCategories', permission: 'book-categories.view' },
+  ].filter((tab) => auth.can(tab.permission)),
+)
 </script>
 
 <template>

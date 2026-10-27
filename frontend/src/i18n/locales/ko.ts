@@ -357,6 +357,8 @@ const ko: MessageSchema = {
       inviteTitle: '환영합니다 — 비밀번호를 설정하세요',
       inviteSubtitle: '학교에 로그인할 때 사용할 비밀번호를 설정하세요',
       inviteSubmit: '비밀번호 설정',
+      signedInNote: '현재 이 브라우저에 {name}(으)로 로그인되어 있습니다. 이 비밀번호를 저장하면 {name}은(는) 이 브라우저에서 로그아웃되며, 이후 새 비밀번호로 로그인하세요.',
+      someone: '다른 사용자',
     },
   },
 

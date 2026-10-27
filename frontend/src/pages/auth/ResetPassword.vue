@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -7,11 +7,31 @@ import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import { authService } from '@/services/auth'
+import { apiGet } from '@/services/http'
+import { useAuthStore } from '@/stores/auth'
 import { ApiRequestError } from '@/types/api'
 
 const route = useRoute()
 const router = useRouter()
 const { t } = useI18n()
+const auth = useAuthStore()
+
+/**
+ * Someone may already be signed in on this browser (e.g. staff opening a
+ * customer's invite link). Their name when we can read it; a session of
+ * another school (refused with TENANT_MISMATCH) still counts as signed in.
+ */
+const signedIn = ref(false)
+const signedInName = ref('')
+onMounted(async () => {
+  try {
+    const user = await apiGet<{ name: string }>('/auth/me')
+    signedIn.value = true
+    signedInName.value = user.name
+  } catch (error) {
+    signedIn.value = error instanceof ApiRequestError && error.code === 'TENANT_MISMATCH'
+  }
+})
 
 const form = reactive({
   password: '',
@@ -30,6 +50,11 @@ async function submit() {
   generalError.value = null
 
   try {
+    // This link is for another account: end the session signed in here first.
+    if (signedIn.value) {
+      await auth.logout()
+      signedIn.value = false
+    }
     await authService.resetPassword({
       token: String(route.query.token ?? ''),
       email: String(route.query.email ?? ''),
@@ -53,6 +78,7 @@ async function submit() {
     <h2 class="mb-1 text-lg font-semibold text-neutral-900">{{ isInvite ? t('auth.resetPassword.inviteTitle') : t('auth.resetPassword.title') }}</h2>
     <p class="mb-6 text-sm text-neutral-500">{{ isInvite ? t('auth.resetPassword.inviteSubtitle') : t('auth.resetPassword.subtitle') }}</p>
 
+    <BaseAlert v-if="signedIn" variant="info" class="mb-4">{{ t('auth.resetPassword.signedInNote', { name: signedInName || t('auth.resetPassword.someone') }) }}</BaseAlert>
     <BaseAlert v-if="generalError" variant="danger" class="mb-4">{{ generalError }}</BaseAlert>
 
     <form class="space-y-4" @submit.prevent="submit">

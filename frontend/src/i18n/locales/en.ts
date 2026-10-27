@@ -360,6 +360,8 @@ const en = {
       inviteTitle: 'Welcome — set your password',
       inviteSubtitle: 'Choose the password you will use to sign in to your school',
       inviteSubmit: 'Set password',
+      signedInNote: 'This browser is signed in as {name}. Saving this password signs that account out here; then sign in with the new password.',
+      someone: 'someone',
     },
   },
 

@@ -33,11 +33,13 @@ const authRoutes: RouteRecordRaw[] = [
   // "Try the demo" from the website (docs/backoffice/stage-12-demo.md): the
   // one-time ticket signs this browser in. Works whoever is signed in.
   { path: 'demo', name: 'demo-enter', component: () => import('@/pages/auth/DemoEnter.vue') },
+  // Not guestOnly: staff often open a customer's invite / reset link in a
+  // browser where they are signed in themselves. The page says so and signs
+  // that session out when the new password is saved.
   {
     path: 'reset-password',
     name: 'reset-password',
     component: () => import('@/pages/auth/ResetPassword.vue'),
-    meta: { guestOnly: true },
   },
 ]
 

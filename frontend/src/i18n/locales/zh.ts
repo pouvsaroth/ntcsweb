@@ -357,6 +357,8 @@ const zh: MessageSchema = {
       inviteTitle: '欢迎 — 设置您的密码',
       inviteSubtitle: '设置您登录学校时使用的密码',
       inviteSubmit: '设置密码',
+      signedInNote: '您当前在此以 {name} 身份登录。保存此密码会让 {name} 在此浏览器中退出登录，然后请使用新密码登录。',
+      someone: '其他用户',
     },
   },
 

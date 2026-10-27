@@ -114,6 +114,21 @@ class TenantIsolationTest extends TestCase
         $response->assertJsonPath('error.code', 'TENANT_MISMATCH');
     }
 
+    public function test_a_user_can_still_sign_out_from_another_tenants_page(): void
+    {
+        // E.g. staff opening a customer's invite link while signed in themselves.
+        $userA = User::factory()->forTenant($this->tenantA)->create();
+        $token = $userA->createToken('browser')->plainTextToken;
+
+        // Nothing else opens up…
+        $this->withHeader('Authorization', "Bearer {$token}")->withHeader('X-Tenant', $this->tenantB->slug)
+            ->getJson('/api/v1/auth/me')->assertForbidden()->assertJsonPath('error.code', 'TENANT_MISMATCH');
+        // …but signing out works.
+        $this->withHeader('Authorization', "Bearer {$token}")->withHeader('X-Tenant', $this->tenantB->slug)
+            ->postJson('/api/v1/auth/logout')->assertOk();
+        $this->assertSame(0, $userA->tokens()->count());
+    }
+
     public function test_a_user_authenticated_against_their_own_tenant_succeeds(): void
     {
         $userA = User::factory()->forTenant($this->tenantA)->create();

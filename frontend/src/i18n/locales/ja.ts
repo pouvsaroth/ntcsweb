@@ -357,6 +357,8 @@ const ja: MessageSchema = {
       inviteTitle: 'ようこそ — パスワードを設定してください',
       inviteSubtitle: '学校へのサインインに使うパスワードを設定してください',
       inviteSubmit: 'パスワードを設定',
+      signedInNote: 'このブラウザでは {name} としてサインインしています。このパスワードを保存すると {name} はこのブラウザからサインアウトされます。その後、新しいパスワードでサインインしてください。',
+      someone: '別のユーザー',
     },
   },
 

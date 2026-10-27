@@ -34,7 +34,9 @@ final readonly class EnsureTenantMatchesUser
     {
         $user = Auth::guard(config('tenancy.auth_guard'))->user();
 
-        if (! $user instanceof User || $user->isSuperAdmin()) {
+        // Signing yourself out never touches a school's data; it must work
+        // even from another school's page (e.g. a customer's invite link).
+        if (! $user instanceof User || $user->isSuperAdmin() || $request->routeIs('api.v1.auth.logout')) {
             return $next($request);
         }
 

@@ -43,6 +43,9 @@ final class AcademicsModule extends Module
             'academic-reports' => ['Academic reports', 'របាយការណ៍សិក្សា'],
             'programs' => ['Programs', 'កម្មវិធី'],
             'course-packages' => ['Course packages', 'កញ្ចប់វគ្គសិក្សា'],
+            // Were the Library module; courses, timetable and curriculum use them.
+            'books' => ['Books', 'សៀវភៅ'],
+            'book-categories' => ['Book categories', 'ប្រភេទសៀវភៅ'],
             'classes' => ['Classes', 'ថ្នាក់'],
             'timetable' => ['Timetable', 'កាលវិភាគ'],
             'lesson-plans' => ['Lesson plans', 'ផែនការបង្រៀន'],

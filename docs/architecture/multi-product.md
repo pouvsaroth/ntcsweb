@@ -43,7 +43,7 @@ backend/app/Modules/
   School/      academics, students, classes, exams, school billing
   Inventory/   items, units, warehouses, stock moves, purchasing
   Pos/         registers, shifts, sales, receipts
-  Projects/ Library/ Website/ …
+  Projects/ Website/ …
      each: Models/ Http/ Services/ routes.php  migrations/  permissions.php
            menu (for the console)  seeders/ (its starting data)  lang/
 

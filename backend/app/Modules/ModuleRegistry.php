@@ -23,7 +23,6 @@ final class ModuleRegistry
             new Hrm\HrmModule,
             new Payroll\PayrollModule,
             new Assets\AssetsModule,
-            new Library\LibraryModule,
             new Website\WebsiteModule,
             new Projects\ProjectsModule,
         ])->keyBy(fn (Module $m) => $m->code())->all();
