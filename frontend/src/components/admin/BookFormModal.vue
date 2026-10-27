@@ -50,8 +50,15 @@ const statusOptions = computed(() => [
 const programOptions = computed(() => programs.value.map((p) => ({ value: String(p.id), label: `${p.code} — ${p.name}` })))
 const categoryOptions = computed(() => categories.value.map((c) => ({ value: String(c.id), label: c.name })))
 
+/** A new book starts on the first (active) program, so the category list is ready at once. */
+function pickDefaultProgram(): void {
+  if (isEditing.value || form.academic_program_id !== null) return
+  form.academic_program_id = (programs.value.find((p) => p.is_active) ?? programs.value[0])?.id ?? null
+}
+
 onMounted(async () => {
   programs.value = await academicProgramsService.listAll()
+  if (props.modelValue) pickDefaultProgram()
 })
 
 // Picking a different program invalidates whatever category was chosen for
@@ -93,6 +100,7 @@ watch(
     form.status = props.book?.status ?? 'active'
     form.academic_program_id = props.book?.academic_program_id ?? null
     form.book_category_id = props.book?.book_category_id ?? null
+    pickDefaultProgram()
     errors.value = {}
     generalError.value = null
   },
