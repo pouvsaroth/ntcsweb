@@ -121,9 +121,10 @@ final class SchoolClassController extends Controller
             ->whereNotNull('table_id')
             ->pluck('table_id');
 
+        // A table that allows many students is always offered.
         $available = ClassroomTable::query()
             ->where('classroom_id', $class->classroom_id)
-            ->whereNotIn('id', $takenTableIds)
+            ->where(fn ($q) => $q->whereNotIn('id', $takenTableIds)->orWhere('allow_many_students', true))
             ->orderBy('name')
             ->get(['id', 'name']);
 

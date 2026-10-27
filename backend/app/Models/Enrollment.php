@@ -94,8 +94,8 @@ class Enrollment extends Model
     /**
      * Only a Studying student keeps their table. Once they're stopped,
      * suspended, completed etc. the seat is free for someone else — the
-     * available-tables picker, every "table already taken" check, and the
-     * enrollments_class_table_active_unique DB index all use this one rule.
+     * available-tables picker and every "table already taken" check use
+     * this one rule (a table that allows many students is never taken).
      * A student returning to Studying whose old table was re-assigned in the
      * meantime gets it cleared (see EnrollmentService::changeStatus()).
      */

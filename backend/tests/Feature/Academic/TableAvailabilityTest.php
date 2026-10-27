@@ -88,4 +88,23 @@ class TableAvailabilityTest extends TestCase
         $this->assertSame(Enrollment::STATUS_ACTIVE, $returning->fresh()->status);
         $this->assertNull($returning->fresh()->table_id);
     }
+
+    public function test_a_table_that_allows_many_students_stays_available_and_seats_several(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE, Permissions::ENROLLMENTS_CHANGE_STATUS]);
+        [$class, $tableA] = $this->classWithTwoTables();
+        $tableA->update(['allow_many_students' => true]);
+
+        Enrollment::factory()->forClass($class)->create(['table_id' => $tableA->id, 'status' => Enrollment::STATUS_ACTIVE]);
+        Enrollment::factory()->forClass($class)->create(['table_id' => $tableA->id, 'status' => Enrollment::STATUS_ACTIVE]);
+
+        $this->getJson("/api/v1/classes/{$class->id}/available-tables")
+            ->assertOk()
+            ->assertJsonCount(2, 'data.available');
+
+        // A returning student keeps their seat at a shared table.
+        $returning = Enrollment::factory()->forClass($class)->create(['table_id' => $tableA->id, 'status' => Enrollment::STATUS_SUSPENDED]);
+        $this->postJson("/api/v1/enrollments/{$returning->id}/status", ['status' => Enrollment::STATUS_ACTIVE])->assertOk();
+        $this->assertSame($tableA->id, $returning->fresh()->table_id);
+    }
 }

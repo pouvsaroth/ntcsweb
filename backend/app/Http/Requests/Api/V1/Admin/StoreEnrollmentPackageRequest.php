@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Api\V1\Admin;
 
 use App\Models\CoursePackage;
+use App\Models\ClassroomTable;
 use App\Models\Enrollment;
 use App\Services\Billing\CurrencyConversionService;
 use App\Support\Billing\PaymentMethod;
@@ -158,7 +159,7 @@ class StoreEnrollmentPackageRequest extends FormRequest
                 ->where('status', Enrollment::TABLE_HOLDING_STATUS)
                 ->exists();
 
-            if ($taken) {
+            if ($taken && ! ClassroomTable::allowsMany($tableId)) {
                 $validator->errors()->add('table_id', __('This table is already taken in this class.'));
             }
         });

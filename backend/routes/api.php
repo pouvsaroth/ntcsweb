@@ -319,6 +319,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
 
         Route::apiResource('buildings', BuildingController::class);
         Route::apiResource('classrooms', ClassroomController::class);
+        Route::post('classroom-tables/bulk', [ClassroomTableController::class, 'bulkStore'])->name('classroom-tables.bulk');
         Route::apiResource('classroom-tables', ClassroomTableController::class);
         Route::apiResource('book-categories', BookCategoryController::class);
         Route::apiResource('books', BookController::class);

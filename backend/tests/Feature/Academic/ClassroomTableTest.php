@@ -65,4 +65,73 @@ class ClassroomTableTest extends TestCase
         $response->assertStatus(422);
         $this->assertDatabaseHas('classroom_tables', ['id' => $table->id, 'deleted_at' => null], 'tenant');
     }
+
+    public function test_bulk_creates_a_numbered_range_and_skips_names_already_there(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::CLASSROOMS_VIEW, Permissions::CLASSROOMS_CREATE]);
+        $room = Classroom::factory()->create();
+        ClassroomTable::factory()->create(['classroom_id' => $room->id, 'name' => 'NTS-T-03', 'sort_order' => 3]);
+        $gone = ClassroomTable::factory()->create(['classroom_id' => $room->id, 'name' => 'NTS-T-05']);
+        $gone->delete();
+
+        $this->postJson('/api/v1/classroom-tables/bulk', [
+            'classroom_id' => $room->id, 'prefix' => 'NTS-T-', 'count' => 40, 'start_number' => 1, 'allow_many_students' => true,
+        ])->assertCreated()->assertJsonPath('data.created', 39)->assertJsonPath('data.skipped', 1);
+
+        $tables = ClassroomTable::query()->where('classroom_id', $room->id)->orderBy('sort_order')->get();
+        $this->assertCount(40, $tables);
+        $this->assertSame('NTS-T-01', $tables->first()->name);
+        $this->assertSame(1, $tables->first()->sort_order);
+        $this->assertTrue($tables->first()->allow_many_students);
+        $this->assertSame('NTS-T-40', $tables->last()->name);
+        $this->assertSame(40, $tables->last()->sort_order);
+        // The deleted one came back; the one already there was left alone.
+        $this->assertNull($gone->fresh()->deleted_at);
+        $this->assertFalse(ClassroomTable::query()->where('name', 'NTS-T-03')->first()->allow_many_students);
+    }
+
+    public function test_bulk_without_a_prefix_pads_to_the_widest_number(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::CLASSROOMS_CREATE]);
+        $room = Classroom::factory()->create();
+
+        $this->postJson('/api/v1/classroom-tables/bulk', ['classroom_id' => $room->id, 'count' => 3, 'start_number' => 99])
+            ->assertCreated()->assertJsonPath('data.created', 3);
+
+        $this->assertSame(['099', '100', '101'], ClassroomTable::query()->where('classroom_id', $room->id)->orderBy('sort_order')->pluck('name')->all());
+    }
+
+    public function test_bulk_copies_another_rooms_tables(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::CLASSROOMS_CREATE]);
+        $from = Classroom::factory()->create();
+        $to = Classroom::factory()->create();
+        ClassroomTable::factory()->create(['classroom_id' => $from->id, 'name' => 'A1', 'sort_order' => 1]);
+        ClassroomTable::factory()->create(['classroom_id' => $from->id, 'name' => 'Bench', 'sort_order' => 2, 'allow_many_students' => true]);
+
+        $this->postJson('/api/v1/classroom-tables/bulk', ['classroom_id' => $to->id, 'copy_from_classroom_id' => $from->id])
+            ->assertCreated()->assertJsonPath('data.created', 2);
+
+        $bench = ClassroomTable::query()->where('classroom_id', $to->id)->where('name', 'Bench')->first();
+        $this->assertSame(2, $bench->sort_order);
+        $this->assertTrue($bench->allow_many_students);
+        $this->postJson('/api/v1/classroom-tables/bulk', ['classroom_id' => $to->id, 'copy_from_classroom_id' => $to->id])->assertUnprocessable();
+    }
+
+    public function test_bulk_needs_a_count_unless_copying(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::CLASSROOMS_CREATE]);
+        $room = Classroom::factory()->create();
+
+        $this->postJson('/api/v1/classroom-tables/bulk', ['classroom_id' => $room->id])->assertUnprocessable()->assertJsonValidationErrors('count');
+    }
+
+    public function test_allow_many_students_can_be_switched_on_a_table(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::CLASSROOMS_UPDATE]);
+        $table = ClassroomTable::factory()->create();
+
+        $this->putJson("/api/v1/classroom-tables/{$table->id}", ['allow_many_students' => true])
+            ->assertOk()->assertJsonPath('data.allow_many_students', true);
+    }
 }

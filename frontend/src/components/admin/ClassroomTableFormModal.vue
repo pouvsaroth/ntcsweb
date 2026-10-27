@@ -22,7 +22,7 @@ const { t } = useI18n()
 
 const isEditing = computed(() => props.table != null)
 
-const form = reactive({ name: '', sort_order: 0 })
+const form = reactive({ name: '', sort_order: 0, allow_many_students: false })
 const errors = ref<Record<string, string[]>>({})
 const generalError = ref<string | null>(null)
 const submitting = ref(false)
@@ -34,6 +34,7 @@ watch(
 
     form.name = props.table?.name ?? ''
     form.sort_order = props.table?.sort_order ?? 0
+    form.allow_many_students = props.table?.allow_many_students ?? false
     errors.value = {}
     generalError.value = null
   },
@@ -85,6 +86,10 @@ async function submit() {
         :error="errors.sort_order?.[0]"
         @update:model-value="form.sort_order = Number($event) || 0"
       />
+      <label class="flex items-center gap-2 text-sm text-neutral-700">
+        <input v-model="form.allow_many_students" type="checkbox" class="rounded border-neutral-300 text-primary-600 focus:ring-primary-500" />
+        {{ t('admin.classroomTables.allowMany') }}
+      </label>
     </form>
 
     <template #footer>

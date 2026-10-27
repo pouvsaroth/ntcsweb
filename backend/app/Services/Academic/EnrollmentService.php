@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Academic;
 
 use App\Models\CoursePackage;
+use App\Models\ClassroomTable;
 use App\Models\Enrollment;
 use App\Models\EnrollmentStatusHistory;
 use App\Models\EnrollmentTransferHistory;
@@ -195,7 +196,7 @@ final class EnrollmentService
             // else while they weren't holding it (see
             // Enrollment::TABLE_HOLDING_STATUS) — clear it rather than seat
             // two students at one table; staff pick a new one afterwards.
-            if ($status === Enrollment::TABLE_HOLDING_STATUS && $enrollment->table_id !== null) {
+            if ($status === Enrollment::TABLE_HOLDING_STATUS && $enrollment->table_id !== null && ! ClassroomTable::allowsMany($enrollment->table_id)) {
                 $tableTaken = Enrollment::query()
                     ->where('class_id', $enrollment->class_id)
                     ->where('table_id', $enrollment->table_id)

@@ -30,6 +30,7 @@ class UpdateClassroomTableRequest extends FormRequest
                 Rule::unique('tenant.classroom_tables', 'name')->where('classroom_id', $classroomId)->ignore($classroomTable),
             ],
             'sort_order' => ['sometimes', 'integer', 'min:0'],
+            'allow_many_students' => ['sometimes', 'boolean'],
         ];
     }
 }

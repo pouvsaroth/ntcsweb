@@ -149,6 +149,29 @@ class EnrollmentChangeTableTest extends TestCase
         $response->assertJsonValidationErrors('table_id');
     }
 
+    public function test_a_table_that_allows_many_students_can_seat_a_second_student(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE]);
+        $this->setUpAcademicCatalog();
+        [$class, $tableA, $tableB] = $this->classWithTwoTables();
+        $tableA->update(['allow_many_students' => true]);
+
+        foreach ([Student::factory()->create(), Student::factory()->create()] as $student) {
+            $this->postJson('/api/v1/enrollments/package', [
+                'student_id' => $student->id, 'class_id' => $class->id, 'course_package_id' => $this->msWordPackage->id,
+                'fee_type' => 'term', 'table_id' => $tableA->id,
+            ])->assertCreated();
+        }
+
+        $enrollmentC = $this->postJson('/api/v1/enrollments/package', [
+            'student_id' => Student::factory()->create()->id, 'class_id' => $class->id, 'course_package_id' => $this->msWordPackage->id,
+            'fee_type' => 'term', 'table_id' => $tableB->id,
+        ])->assertCreated()->json('data.id');
+
+        $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CHANGE_TABLE]);
+        $this->patchJson("/api/v1/enrollments/{$enrollmentC}/table", ['table_id' => $tableA->id])->assertOk();
+    }
+
     public function test_a_role_with_only_full_transfer_cannot_use_the_narrow_table_endpoint(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE]);

@@ -24,6 +24,7 @@ class StoreClassroomTableRequest extends FormRequest
                 Rule::unique('tenant.classroom_tables', 'name')->where('classroom_id', $this->input('classroom_id')),
             ],
             'sort_order' => ['sometimes', 'integer', 'min:0'],
+            'allow_many_students' => ['sometimes', 'boolean'],
         ];
     }
 }

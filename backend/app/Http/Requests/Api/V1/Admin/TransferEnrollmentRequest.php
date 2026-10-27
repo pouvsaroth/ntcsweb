@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Api\V1\Admin;
 
+use App\Models\ClassroomTable;
 use App\Models\Enrollment;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\DB;
@@ -78,7 +79,7 @@ class TransferEnrollmentRequest extends FormRequest
                 ->where('id', '!=', $this->route('enrollment')->id)
                 ->exists();
 
-            if ($taken) {
+            if ($taken && ! ClassroomTable::allowsMany($tableId)) {
                 $validator->errors()->add('table_id', __('This table is already taken in this class.'));
             }
         });

@@ -19,8 +19,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int $classroom_id
  * @property string $name
  * @property int $sort_order
+ * @property bool $allow_many_students
  */
-#[Fillable(['classroom_id', 'name', 'sort_order'])]
+#[Fillable(['classroom_id', 'name', 'sort_order', 'allow_many_students'])]
 class ClassroomTable extends Model
 {
     use HasFactory, SoftDeletes;
@@ -29,7 +30,19 @@ class ClassroomTable extends Model
 
     protected $attributes = [
         'sort_order' => 0,
+        'allow_many_students' => false,
     ];
+
+    protected function casts(): array
+    {
+        return ['allow_many_students' => 'boolean'];
+    }
+
+    /** Several students may sit at this table, so it is never "taken". */
+    public static function allowsMany(int|string|null $tableId): bool
+    {
+        return $tableId !== null && self::query()->whereKey($tableId)->where('allow_many_students', true)->exists();
+    }
 
     /** @use HasFactory<ClassroomTableFactory> */
     public function classroom(): BelongsTo
