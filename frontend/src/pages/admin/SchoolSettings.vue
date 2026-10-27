@@ -34,6 +34,7 @@ const form = reactive({
   khqr_template: '',
   monthly_payment_alert_days: '',
   student_inactive_after_days: '',
+  term_study_alert_days: '',
   exam_fee_amount: '',
 })
 const logoFile = ref<File | null>(null)
@@ -63,6 +64,7 @@ async function load() {
     form.khqr_template = settings.khqr_template ?? ''
     form.monthly_payment_alert_days = String(settings.monthly_payment_alert_days)
     form.student_inactive_after_days = String(settings.student_inactive_after_days)
+    form.term_study_alert_days = String(settings.term_study_alert_days)
     form.exam_fee_amount = settings.exam_fee_amount ?? ''
     logoPreview.value = settings.logo_url
     stampPreview.value = settings.stamp_url
@@ -107,6 +109,7 @@ async function save() {
     form.khqr_template = result.khqr_template ?? ''
     form.monthly_payment_alert_days = String(result.monthly_payment_alert_days)
     form.student_inactive_after_days = String(result.student_inactive_after_days)
+    form.term_study_alert_days = String(result.term_study_alert_days)
     form.exam_fee_amount = result.exam_fee_amount ?? ''
     logoPreview.value = result.logo_url
     logoFile.value = null
@@ -222,6 +225,15 @@ onMounted(load)
           :label="t('admin.school.studentInactiveAfterDaysLabel')"
           :hint="t('admin.school.studentInactiveAfterDaysHint')"
           :error="errors.student_inactive_after_days?.[0]"
+        />
+        <BaseInput
+          v-model="form.term_study_alert_days"
+          type="number"
+          min="1"
+          max="365"
+          :label="t('admin.school.termStudyAlertDaysLabel')"
+          :hint="t('admin.school.termStudyAlertDaysHint')"
+          :error="errors.term_study_alert_days?.[0]"
         />
         <BaseInput
           v-model="form.exam_fee_amount"

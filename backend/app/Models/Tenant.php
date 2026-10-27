@@ -178,6 +178,12 @@ class Tenant extends Model implements TenantWithDatabase
         return (int) ($this->setting('student_inactive_after_days') ?? 15);
     }
 
+    /** Days a term-billed student may study before the dashboard lists them (see TermStudyAlertController). */
+    public function termStudyAlertDays(): int
+    {
+        return (int) ($this->setting('term_study_alert_days') ?? 31);
+    }
+
     /**
      * `logo` stores a bare disk path (see SchoolSettingsController) — this is
      * the one place that turns it into something an `<img>` tag can load.

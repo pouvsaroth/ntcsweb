@@ -16,6 +16,7 @@ import { leaveRequestsService } from '@/services/leaveRequests'
 import { makeUpClassCourseLabel, makeUpClassRequestsService } from '@/services/makeUpClassRequests'
 import type { MonthlyInvoice } from '@/services/monthlyInvoices'
 import { monthlyPaymentAlertsService } from '@/services/monthlyPaymentAlerts'
+import { type TermStudyAlert, termStudyAlertsService } from '@/services/termStudyAlerts'
 import { resignationRequestsService } from '@/services/resignationRequests'
 import { useAuthStore } from '@/stores/auth'
 import { formatMoney } from '@/utils/currency'
@@ -201,6 +202,9 @@ function absenceStatusLabel(status: AttendanceStatusValue): string {
 }
 const absentYesterday = ref<AttendanceRecord[]>([])
 const monthlyPaymentAlerts = ref<MonthlyInvoice[]>([])
+/** Studying students billed by term past the school's day limit (School Settings). */
+const termStudyAlerts = ref<TermStudyAlert[]>([])
+const termStudyAlertDays = ref(31)
 
 /**
  * Invoices not yet fully paid (Unpaid, Partially Paid, Overdue — the same set
@@ -381,6 +385,13 @@ async function loadStats(): Promise<void> {
       monthlyPaymentAlerts.value = await monthlyPaymentAlertsService.list()
     } catch {
       // Left empty — most likely the signed-in admin just lacks invoices.view.
+    }
+    try {
+      const result = await termStudyAlertsService.list()
+      termStudyAlerts.value = result.items
+      termStudyAlertDays.value = result.days
+    } catch {
+      // Left empty, as above.
     }
     void loadUnpaidInvoices()
   }
@@ -606,6 +617,50 @@ onBeforeUnmount(() => {
           <RouterLink to="/admin/invoices/monthly" class="mt-3 inline-block text-sm font-medium text-primary-700 hover:text-primary-800">
             {{ t('admin.dashboard.monthlyPaymentAlertsViewAll') }}
           </RouterLink>
+        </BaseCard>
+      </template>
+
+      <template v-if="auth.can('dashboard.payment-alerts.view') && termStudyAlerts.length > 0">
+        <h2 class="mt-8 text-sm font-semibold uppercase tracking-wide text-neutral-500">
+          {{ t('admin.dashboard.termStudyAlertsSection', { days: termStudyAlertDays }) }} ({{ termStudyAlerts.length }})
+        </h2>
+        <BaseCard class="mt-3">
+          <!-- Phones: cards. -->
+          <ul class="divide-y divide-neutral-100 sm:hidden">
+            <li v-for="row in termStudyAlerts" :key="row.id" class="py-2">
+              <div class="flex items-center justify-between gap-2">
+                <p class="font-medium text-neutral-800">{{ row.student?.name ?? '—' }}</p>
+                <span class="whitespace-nowrap text-sm font-semibold text-danger-600">{{ t('admin.dashboard.termStudyAlertsDays', { n: row.days ?? 0 }) }}</span>
+              </div>
+              <p class="text-xs text-neutral-500">{{ [row.student?.student_code, row.course, row.class].filter(Boolean).join(' · ') }}</p>
+              <p class="mt-1 text-xs text-neutral-500">{{ t('admin.dashboard.termStudyAlertsColumnEnrolled') }}: {{ formatDate(row.enrolled_at) }}</p>
+            </li>
+          </ul>
+          <div class="hidden overflow-x-auto sm:block">
+            <table class="w-full text-left text-sm">
+              <thead class="text-neutral-500">
+                <tr>
+                  <th class="py-1.5 pr-4 font-medium">{{ t('admin.invoices.columnStudent') }}</th>
+                  <th class="py-1.5 pr-4 font-medium">{{ t('admin.invoices.monthlyColumnCourse') }}</th>
+                  <th class="py-1.5 pr-4 font-medium">{{ t('admin.dashboard.termStudyAlertsColumnClass') }}</th>
+                  <th class="py-1.5 pr-4 font-medium">{{ t('admin.dashboard.termStudyAlertsColumnEnrolled') }}</th>
+                  <th class="py-1.5 pr-4 font-medium">{{ t('admin.dashboard.termStudyAlertsColumnDays') }}</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-neutral-100">
+                <tr v-for="row in termStudyAlerts" :key="row.id">
+                  <td class="py-1.5 pr-4 text-neutral-800">
+                    {{ row.student?.name ?? '—' }}
+                    <span v-if="row.student?.student_code" class="text-xs text-neutral-500">({{ row.student.student_code }})</span>
+                  </td>
+                  <td class="py-1.5 pr-4 text-neutral-700">{{ row.course ?? '—' }}</td>
+                  <td class="py-1.5 pr-4 text-neutral-700">{{ row.class ?? '—' }}</td>
+                  <td class="whitespace-nowrap py-1.5 pr-4 text-neutral-700">{{ formatDate(row.enrolled_at) }}</td>
+                  <td class="whitespace-nowrap py-1.5 pr-4 font-medium text-danger-600">{{ row.days ?? '—' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </BaseCard>
       </template>
 

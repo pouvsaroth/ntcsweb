@@ -82,6 +82,7 @@ use App\Http\Controllers\Api\V1\Admin\MakeUpClassRequestController;
 use App\Http\Controllers\Api\V1\Admin\ManpowerRequestController;
 use App\Http\Controllers\Api\V1\Admin\MonthlyInvoiceController;
 use App\Http\Controllers\Api\V1\Admin\MonthlyPaymentAlertController;
+use App\Http\Controllers\Api\V1\Admin\TermStudyAlertController;
 use App\Http\Controllers\Api\V1\Admin\NotificationGroupController;
 use App\Http\Controllers\Api\V1\Admin\OfferLetterController;
 use App\Http\Controllers\Api\V1\Admin\OrganizationChartController;
@@ -796,6 +797,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('monthly-invoices', [MonthlyInvoiceController::class, 'index'])->name('monthly-invoices.index');
         // The dashboard's "students due for monthly payment" widget.
         Route::get('monthly-payment-alerts', [MonthlyPaymentAlertController::class, 'index'])->name('monthly-payment-alerts.index');
+        // The dashboard's "term students studying longer than N days" list.
+        Route::get('term-study-alerts', [TermStudyAlertController::class, 'index'])->name('term-study-alerts.index');
         Route::post('invoices/{invoice}/cancel', [InvoiceController::class, 'cancel'])->name('invoices.cancel');
         Route::post('invoices/{invoice}/void', [InvoiceController::class, 'void'])->name('invoices.void');
         Route::post('invoices/{invoice}/stop', [InvoiceController::class, 'stop'])->name('invoices.stop');
