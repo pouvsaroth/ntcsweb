@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -273,7 +273,7 @@ async function onTaskDrop(event: DragEvent, column: ProjectColumn) {
   try {
     await projectTasksService.move(dragged.id, column.id, finalIndex)
     await load()
-    if (isCrossColumnMove) moveNotePrompt.value = moveContext
+    if (isCrossColumnMove) showMoveToast(moveContext)
   } catch (e) {
     actionError.value = e instanceof ApiRequestError ? e.message : t('admin.projects.actionFailed')
     await load()
@@ -285,9 +285,33 @@ function onTaskDragEnd() {
   taskDropIndicator.value = null
 }
 
-// --- Optional note prompt after a cross-column move ---
+// --- Optional note after a cross-column move ---
+// A small bar offers "Add note" for a few seconds; nothing pops up unless
+// someone asks for it.
 
-const moveNotePrompt = ref<{ taskId: number; taskTitle: string; fromColumnName: string; toColumnName: string } | null>(null)
+type MoveContext = { taskId: number; taskTitle: string; fromColumnName: string; toColumnName: string }
+const moveToast = ref<MoveContext | null>(null)
+let moveToastTimer: ReturnType<typeof setTimeout> | undefined
+
+function showMoveToast(context: MoveContext) {
+  clearTimeout(moveToastTimer)
+  moveToast.value = context
+  moveToastTimer = setTimeout(() => (moveToast.value = null), 8000)
+}
+
+function closeMoveToast() {
+  clearTimeout(moveToastTimer)
+  moveToast.value = null
+}
+
+function openMoveNote() {
+  moveNotePrompt.value = moveToast.value
+  closeMoveToast()
+}
+
+onBeforeUnmount(() => clearTimeout(moveToastTimer))
+
+const moveNotePrompt = ref<MoveContext | null>(null)
 const moveNoteBody = ref('')
 const moveNoteSubmitting = ref(false)
 
@@ -491,6 +515,18 @@ async function submitMoveNote() {
       :candidate-tasks="allTasks"
       @saved="onTaskSaved"
     />
+
+    <div
+      v-if="moveToast"
+      class="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom))] left-1/2 z-40 flex w-[calc(100%-2rem)] max-w-md -translate-x-1/2 items-center gap-3 rounded-lg bg-neutral-900 px-4 py-3 text-sm text-white shadow-lg lg:bottom-6"
+      role="status"
+    >
+      <p class="min-w-0 flex-1 truncate">{{ t('admin.projects.moveToastText', { title: moveToast.taskTitle, to: moveToast.toColumnName }) }}</p>
+      <button type="button" class="shrink-0 font-semibold text-primary-300 hover:text-primary-200" @click="openMoveNote">{{ t('admin.projects.moveNoteAdd') }}</button>
+      <button type="button" class="shrink-0 rounded p-0.5 text-neutral-400 hover:text-white" :aria-label="t('common.close')" @click="closeMoveToast">
+        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+      </button>
+    </div>
 
     <BaseModal :model-value="moveNotePrompt !== null" size="sm" :title="t('admin.projects.moveNoteTitle')" @update:model-value="skipMoveNote">
       <template v-if="moveNotePrompt">

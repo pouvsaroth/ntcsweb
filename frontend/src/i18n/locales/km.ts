@@ -2730,6 +2730,7 @@ const km: MessageSchema = {
       moveNotePlaceholder: 'បន្ថែមចំណាំអំពីការផ្លាស់ទីនេះ (មិនចាំបាច់)',
       moveNoteSkip: 'រំលង',
       moveNoteAdd: 'បន្ថែមចំណាំ',
+      moveToastText: 'បានផ្លាស់ «{title}» ទៅ {to}។',
     },
     school: {
       title: 'ព័ត៌មានសាលា',

@@ -2734,6 +2734,7 @@ const en = {
       moveNotePlaceholder: 'Add a note about this move (optional)',
       moveNoteSkip: 'Skip',
       moveNoteAdd: 'Add note',
+      moveToastText: 'Moved "{title}" to {to}.',
     },
     school: {
       title: 'School Information',

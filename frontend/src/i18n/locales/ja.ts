@@ -2730,6 +2730,7 @@ const ja: MessageSchema = {
       moveNotePlaceholder: 'この移動についてのメモ（任意）',
       moveNoteSkip: 'スキップ',
       moveNoteAdd: 'メモを追加',
+      moveToastText: '「{title}」を{to}に移動しました。',
     },
     school: {
       title: '学校情報',

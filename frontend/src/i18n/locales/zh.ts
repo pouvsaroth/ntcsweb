@@ -2729,6 +2729,7 @@ const zh: MessageSchema = {
       moveNotePlaceholder: '为此次移动添加备注（可选）',
       moveNoteSkip: '跳过',
       moveNoteAdd: '添加备注',
+      moveToastText: '已将“{title}”移到 {to}。',
     },
     school: {
       title: '学校信息',

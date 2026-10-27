@@ -2730,6 +2730,7 @@ const ko: MessageSchema = {
       moveNotePlaceholder: '이 이동에 대한 메모 (선택 사항)',
       moveNoteSkip: '건너뛰기',
       moveNoteAdd: '메모 추가',
+      moveToastText: '"{title}"을(를) {to}(으)로 이동했습니다.',
     },
     school: {
       title: '학교 정보',
