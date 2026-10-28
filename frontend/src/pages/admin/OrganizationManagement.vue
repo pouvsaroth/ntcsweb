@@ -21,6 +21,7 @@ const tabs = computed(() => organizationTabs.filter((tab) => canOpenOrganization
   <div>
     <RouteTabBar :tabs="tabs" />
 
-    <RouterView />
+    <!-- Keyed: several tabs share one page (OrganizationUnits / AttendanceReport); a fresh one per tab loads its own data. -->
+    <RouterView :key="$route.path" />
   </div>
 </template>
