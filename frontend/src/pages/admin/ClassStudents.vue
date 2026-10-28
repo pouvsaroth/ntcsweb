@@ -119,14 +119,39 @@ const sortValueGetters: Record<string, (enrollment: Enrollment) => string> = {
   book: (enrollment) => enrollment.course_package?.name ?? '',
 }
 
+// Responsible Staff filter: '' = everyone, 'none' = no responsible staff, else a staff id.
+// Built from the students loaded, so it only lists staff of this class.
+const responsibleStaffFilter = ref('')
+const responsibleStaffFilterOptions = computed(() => {
+  const staff = new Map<number, string>()
+  for (const row of roster.value) {
+    if (row.responsible_staff) staff.set(row.responsible_staff.staff_id, row.responsible_staff.name)
+  }
+  return [
+    { value: '', label: t('admin.classStudents.filterAllResponsibleStaff') },
+    { value: 'none', label: t('admin.classStudents.filterNoResponsibleStaff') },
+    ...[...staff].sort((a, b) => a[1].localeCompare(b[1])).map(([id, name]) => ({ value: String(id), label: name })),
+  ]
+})
+const filteredRoster = computed(() => {
+  const f = responsibleStaffFilter.value
+  if (f === '') return roster.value
+  if (f === 'none') return roster.value.filter((row) => !row.responsible_staff)
+  return roster.value.filter((row) => String(row.responsible_staff?.staff_id ?? '') === f)
+})
+function onResponsibleStaffFilterChange(value: string) {
+  responsibleStaffFilter.value = value
+  selectedIds.value = []
+}
+
 const sortedRoster = computed(() => {
-  if (tableSort.value === undefined) return roster.value
+  if (tableSort.value === undefined) return filteredRoster.value
 
   const descending = tableSort.value.startsWith('-')
   const getValue = sortValueGetters[tableSort.value.replace(/^-/, '')]
-  if (!getValue) return roster.value
+  if (!getValue) return filteredRoster.value
 
-  return [...roster.value].sort((a, b) => {
+  return [...filteredRoster.value].sort((a, b) => {
     const result = getValue(a).localeCompare(getValue(b))
     return descending ? -result : result
   })
@@ -388,12 +413,21 @@ onMounted(() => {
             {{ t('admin.classStudents.exportExcel') }}<template v-if="selectedIds.length > 0"> ({{ selectedIds.length }})</template>
           </BaseButton>
         </div>
-        <BaseSelect
-          :model-value="selectedStatus"
-          :options="statusFilterOptions"
-          class="w-48"
-          @update:model-value="onStatusFilterChange"
-        />
+        <div class="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+          <BaseSelect
+            :model-value="responsibleStaffFilter"
+            :options="responsibleStaffFilterOptions"
+            class="w-full sm:w-56"
+            :aria-label="t('admin.classStudents.columnResponsibleStaff')"
+            @update:model-value="onResponsibleStaffFilterChange"
+          />
+          <BaseSelect
+            :model-value="selectedStatus"
+            :options="statusFilterOptions"
+            class="w-full sm:w-48"
+            @update:model-value="onStatusFilterChange"
+          />
+        </div>
       </div>
 
       <BaseAlert v-if="sendToExamMessage" variant="success" class="mb-4">{{ sendToExamMessage }}</BaseAlert>
@@ -407,58 +441,64 @@ onMounted(() => {
           {{ t('admin.classStudents.emptyMessage') }}
         </p>
         <div v-else class="space-y-2">
-          <div v-for="(row, index) in sortedRoster" :key="row.id" class="rounded-[--radius-card] border border-neutral-200 bg-white p-3 shadow-[--shadow-card]">
-            <div class="flex items-start gap-2">
+          <div v-for="(row, index) in sortedRoster" :key="row.id" class="rounded-lg border border-neutral-200 bg-white px-2.5 py-2 shadow-sm">
+            <div class="flex items-center gap-2">
               <input
                 type="checkbox"
-                class="mt-0.5 rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+                class="shrink-0 rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
                 :checked="selectedIds.includes(row.id)"
+                :aria-label="row.student.full_name"
                 @change="toggleSelected(row.id)"
               />
-              <div class="min-w-0 flex-1">
-                <p class="text-sm font-semibold text-neutral-800">{{ index + 1 }}. {{ row.student.full_name }}</p>
-                <p class="text-xs text-neutral-500">
-                  {{ t('admin.classStudents.columnTable') }}: {{ row.table?.name ?? '—' }} · {{ genderLabel(row.student.gender) }}
-                  <template v-if="!isSingleClass"> · {{ row.class?.name ?? '—' }}</template>
-                </p>
-                <p v-if="row.course_package" class="text-xs text-neutral-500">{{ row.course_package.name }}</p>
-                <dl class="mt-2 space-y-1 rounded bg-neutral-50 px-2 py-1.5 text-xs">
-                  <div class="flex gap-1">
-                    <dt class="shrink-0 text-neutral-500">{{ t('admin.classStudents.columnResponsibleStaff') }}:</dt>
-                    <dd class="min-w-0 font-medium text-neutral-800">{{ row.responsible_staff?.name || '—' }}</dd>
-                  </div>
-                  <div class="flex gap-1">
-                    <dt class="shrink-0 text-neutral-500">{{ t('admin.classStudents.columnNote') }}:</dt>
-                    <dd class="min-w-0 whitespace-pre-line text-neutral-800">{{ row.note || '—' }}</dd>
-                  </div>
-                </dl>
+              <p class="min-w-0 flex-1 truncate text-sm font-semibold text-neutral-800">
+                <span class="font-normal text-neutral-400">{{ index + 1 }}.</span> {{ row.student.full_name }}
+              </p>
+              <div v-if="hasRowActions" class="-my-1 flex shrink-0 gap-0.5">
+                <ActionIconButton v-if="canTransfer" :title="t('admin.enrollments.changeClass')" @click="openChangeClass(row)">
+                  <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
+                  </svg>
+                </ActionIconButton>
+                <ActionIconButton v-if="canChangeStatus" :title="t('admin.enrollments.changeStatus')" @click="openChangeStatus(row)">
+                  <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"
+                    />
+                  </svg>
+                </ActionIconButton>
+                <ActionIconButton v-if="showChangeTable" :title="t('admin.enrollments.changeTable')" @click="openChangeTable(row)">
+                  <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z"
+                    />
+                  </svg>
+                </ActionIconButton>
               </div>
             </div>
-            <div v-if="hasRowActions" class="mt-2 flex justify-end gap-1">
-              <ActionIconButton v-if="canTransfer" :title="t('admin.enrollments.changeClass')" @click="openChangeClass(row)">
-                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
-                </svg>
-              </ActionIconButton>
-              <ActionIconButton v-if="canChangeStatus" :title="t('admin.enrollments.changeStatus')" @click="openChangeStatus(row)">
-                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"
-                  />
-                </svg>
-              </ActionIconButton>
-              <ActionIconButton v-if="showChangeTable" :title="t('admin.enrollments.changeTable')" @click="openChangeTable(row)">
-                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z"
-                  />
-                </svg>
-              </ActionIconButton>
-            </div>
+            <p class="mt-0.5 truncate pl-6 text-xs text-neutral-500">
+              <span class="font-medium text-neutral-700">{{ row.table?.name ?? '—' }}</span>
+              · {{ genderLabel(row.student.gender) }}
+              <template v-if="row.course_package"> · {{ row.course_package.name }}</template>
+              <template v-if="!isSingleClass"> · {{ row.class?.name ?? '—' }}</template>
+            </p>
+            <p v-if="row.responsible_staff" class="mt-1 flex items-center gap-1 pl-6 text-xs text-neutral-700" :title="t('admin.classStudents.columnResponsibleStaff')">
+              <svg class="h-3.5 w-3.5 shrink-0 text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.5 20.1a7.5 7.5 0 0115 0A17.9 17.9 0 0112 21.75c-2.68 0-5.22-.59-7.5-1.65z" />
+              </svg>
+              <span class="sr-only">{{ t('admin.classStudents.columnResponsibleStaff') }}:</span>
+              <span class="truncate">{{ row.responsible_staff.name }}</span>
+            </p>
+            <p v-if="row.note" class="mt-1 flex items-start gap-1 pl-6 text-xs text-neutral-700" :title="t('admin.classStudents.columnNote')">
+              <svg class="mt-px h-3.5 w-3.5 shrink-0 text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16.86 4.49l1.69-1.69a1.88 1.88 0 112.65 2.65L10.58 16.07a4.5 4.5 0 01-1.9 1.13L6 18l.8-2.68a4.5 4.5 0 011.13-1.9l8.93-8.93zM19.5 14v5.25A2.25 2.25 0 0117.25 21.5H4.75A2.25 2.25 0 012.5 19.25V6.75A2.25 2.25 0 014.75 4.5H10" />
+              </svg>
+              <span class="sr-only">{{ t('admin.classStudents.columnNote') }}:</span>
+              <span class="line-clamp-2 whitespace-pre-line">{{ row.note }}</span>
+            </p>
           </div>
         </div>
       </div>

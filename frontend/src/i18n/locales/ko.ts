@@ -3306,6 +3306,8 @@ const ko: MessageSchema = {
       responsibleStaffHint: '현재 담당은 새 시작일 전날로 끝나며 기록은 남습니다.',
       responsibleStaffSaved: '학생 {count}명의 담당 직원을 지정했습니다.',
       responsibleStaffFailed: '담당 직원을 저장할 수 없습니다.',
+      filterAllResponsibleStaff: '모든 담당 직원',
+      filterNoResponsibleStaff: '담당 직원 없음',
     },
     enrollments: {
       title: '등록',

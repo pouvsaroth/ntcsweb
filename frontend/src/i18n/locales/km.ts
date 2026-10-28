@@ -3306,6 +3306,8 @@ const km: MessageSchema = {
       responsibleStaffHint: 'បុគ្គលិកទទួលខុសត្រូវបច្ចុប្បន្ន នឹងបញ្ចប់មួយថ្ងៃមុនថ្ងៃចាប់ផ្តើមថ្មី ហើយប្រវត្តិត្រូវបានរក្សាទុក។',
       responsibleStaffSaved: 'បានកំណត់បុគ្គលិកទទួលខុសត្រូវសម្រាប់សិស្ស {count} នាក់។',
       responsibleStaffFailed: 'មិនអាចរក្សាទុកបុគ្គលិកទទួលខុសត្រូវបានទេ។',
+      filterAllResponsibleStaff: 'បុគ្គលិកទទួលខុសត្រូវទាំងអស់',
+      filterNoResponsibleStaff: 'គ្មានបុគ្គលិកទទួលខុសត្រូវ',
     },
     enrollments: {
       title: 'ការចុះឈ្មោះ',

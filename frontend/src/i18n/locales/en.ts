@@ -3310,6 +3310,8 @@ const en = {
       responsibleStaffHint: "A student's current responsible staff ends the day before the new From date; the history is kept.",
       responsibleStaffSaved: 'Responsible staff set for {count} student(s).',
       responsibleStaffFailed: 'Could not save the responsible staff.',
+      filterAllResponsibleStaff: 'All responsible staff',
+      filterNoResponsibleStaff: 'No responsible staff',
     },
     enrollments: {
       title: 'Enrollments',

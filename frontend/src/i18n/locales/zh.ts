@@ -3305,6 +3305,8 @@ const zh: MessageSchema = {
       responsibleStaffHint: '当前负责员工在新开始日期的前一天结束，历史记录会保留。',
       responsibleStaffSaved: '已为 {count} 名学生设置负责员工。',
       responsibleStaffFailed: '无法保存负责员工。',
+      filterAllResponsibleStaff: '全部负责员工',
+      filterNoResponsibleStaff: '无负责员工',
     },
     enrollments: {
       title: '报名',

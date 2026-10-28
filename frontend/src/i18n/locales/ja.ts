@@ -3306,6 +3306,8 @@ const ja: MessageSchema = {
       responsibleStaffHint: '現在の担当は新しい開始日の前日で終了し、履歴は残ります。',
       responsibleStaffSaved: '{count} 名の担当スタッフを設定しました。',
       responsibleStaffFailed: '担当スタッフを保存できませんでした。',
+      filterAllResponsibleStaff: 'すべての担当スタッフ',
+      filterNoResponsibleStaff: '担当スタッフなし',
     },
     enrollments: {
       title: '登録',
