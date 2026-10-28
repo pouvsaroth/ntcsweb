@@ -78,6 +78,12 @@ class EnrollmentPolicy
         return $user->hasPermission(Permissions::ENROLLMENTS_CHANGE_TABLE);
     }
 
+    /** Class > Students > Responsible Staff. */
+    public function assignResponsibleStaff(User $user, Enrollment $enrollment): bool
+    {
+        return $user->hasPermission(Permissions::ENROLLMENTS_RESPONSIBLE_STAFF);
+    }
+
     /** Class > Students > Note. */
     public function note(User $user, Enrollment $enrollment): bool
     {

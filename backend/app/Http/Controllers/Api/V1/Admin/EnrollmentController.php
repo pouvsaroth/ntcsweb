@@ -16,19 +16,24 @@ use App\Http\Resources\EnrollmentTransferHistoryResource;
 use App\Http\Responses\ApiResponse;
 use App\Models\CoursePackage;
 use App\Models\Enrollment;
+use App\Models\EnrollmentResponsibleStaff;
 use App\Models\SchoolClass;
+use App\Models\Staff;
 use App\Platform\Billing\StudentLimit;
 use App\Services\Academic\EnrollmentService;
+use App\Support\Authorization\Permissions;
 use App\Support\Query\ApiQuery;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use OpenSpout\Common\Entity\Row;
 use OpenSpout\Common\Entity\Style\Style;
 use OpenSpout\Writer\XLSX\Options;
 use OpenSpout\Writer\XLSX\Writer;
-use Illuminate\Validation\ValidationException;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 final class EnrollmentController extends Controller
 {
@@ -41,7 +46,7 @@ final class EnrollmentController extends Controller
         $this->authorize('viewAny', Enrollment::class);
 
         $enrollments = ApiQuery::for(
-            Enrollment::query()->with([...self::WITH, 'latestStatusChange'])
+            Enrollment::query()->with([...self::WITH, 'latestStatusChange', 'currentResponsibleStaff.staff'])
                 // Enrollment by academic year: the year of the class (School setup).
                 ->when($request->filled('filter.academic_year_id'), fn ($q) => $q->whereHas('schoolClass', fn ($c) => $c->where('academic_year_id', $request->integer('filter.academic_year_id')))),
             $request,
@@ -166,8 +171,70 @@ final class EnrollmentController extends Controller
     }
 
     /**
+     * Class > Students > Responsible Staff: the active staff to pick from.
+     * Own endpoint so a teacher with this permission does not need the
+     * whole Staff list permission.
+     */
+    public function responsibleStaffOptions(Request $request): JsonResponse
+    {
+        abort_unless($request->user()?->hasPermission(Permissions::ENROLLMENTS_RESPONSIBLE_STAFF), 403);
+
+        $staff = Staff::query()->active()->orderBy('first_name')->orderBy('last_name')
+            ->get(['id', 'first_name', 'last_name', 'employee_code'])
+            ->map(fn (Staff $s) => ['id' => $s->id, 'name' => $s->fullName(), 'employee_code' => $s->employee_code]);
+
+        return ApiResponse::success($staff);
+    }
+
+    /**
+     * Class > Students > Responsible Staff: one staff member for all the
+     * checked students, from a date (to date optional). History is kept: a
+     * period still open on the new From date ends the day before; one that
+     * starts on the same From date is replaced.
+     */
+    public function assignResponsibleStaff(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'enrollment_ids' => ['required', 'array', 'min:1', 'max:500'],
+            'enrollment_ids.*' => ['required', 'integer', 'distinct'],
+            'staff_id' => ['required', 'integer', Rule::exists('tenant.staff', 'id')->whereNull('deleted_at')],
+            'from_date' => ['required', 'date_format:Y-m-d'],
+            'to_date' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:from_date'],
+        ]);
+
+        $enrollments = Enrollment::query()->whereKey($data['enrollment_ids'])->get();
+        if ($enrollments->count() !== count($data['enrollment_ids'])) {
+            throw ValidationException::withMessages(['enrollment_ids' => __('validation.exists', ['attribute' => 'enrollment'])]);
+        }
+        foreach ($enrollments as $enrollment) {
+            $this->authorize('assignResponsibleStaff', $enrollment);
+        }
+
+        $from = $data['from_date'];
+        $dayBefore = Carbon::parse($from)->subDay()->toDateString();
+        DB::connection('tenant')->transaction(function () use ($data, $from, $dayBefore, $request) {
+            foreach ($data['enrollment_ids'] as $enrollmentId) {
+                EnrollmentResponsibleStaff::query()->where('enrollment_id', $enrollmentId)->where('from_date', $from)->delete();
+                EnrollmentResponsibleStaff::query()->where('enrollment_id', $enrollmentId)
+                    ->where('from_date', '<', $from)
+                    ->where(fn ($q) => $q->whereNull('to_date')->orWhere('to_date', '>=', $from))
+                    ->update(['to_date' => $dayBefore]);
+                EnrollmentResponsibleStaff::query()->create([
+                    'enrollment_id' => $enrollmentId,
+                    'staff_id' => $data['staff_id'],
+                    'from_date' => $from,
+                    'to_date' => $data['to_date'] ?? null,
+                    'assigned_by' => $request->user()?->id,
+                ]);
+            }
+        });
+
+        return ApiResponse::success(['saved' => count($data['enrollment_ids'])]);
+    }
+
+    /**
      * Class > Students > Export Excel: No., Table, Full name, Gender, Book,
-     * Note for the checked students, in the order the roster shows them.
+     * Responsible staff, Note for the checked students, in the order the roster shows them.
      * Headers and gender words come from the screen (`labels`), so the file
      * is in the language the user is reading.
      */
@@ -184,7 +251,7 @@ final class EnrollmentController extends Controller
         $ids = array_values(array_unique(array_map('intval', explode(',', $data['ids']))));
         $label = fn (string $key, string $default): string => (string) ($data['labels'][$key] ?? $default);
 
-        $enrollments = Enrollment::query()->whereKey($ids)->with(['student', 'table', 'coursePackage', 'schoolClass'])->get()->keyBy('id');
+        $enrollments = Enrollment::query()->whereKey($ids)->with(['student', 'table', 'coursePackage', 'schoolClass', 'currentResponsibleStaff.staff'])->get()->keyBy('id');
         $gender = function (?string $value) use ($label): string {
             $code = strtolower(trim((string) $value));
 
@@ -202,7 +269,8 @@ final class EnrollmentController extends Controller
         $options->setColumnWidth(30, 3);
         $options->setColumnWidth(10, 4);
         $options->setColumnWidth(30, 5);
-        $options->setColumnWidth(60, 6);
+        $options->setColumnWidth(25, 6);
+        $options->setColumnWidth(60, 7);
         $path = tempnam(sys_get_temp_dir(), 'class');
         $writer = new Writer($options);
         $writer->openToFile($path);
@@ -211,7 +279,7 @@ final class EnrollmentController extends Controller
         $writer->addRow(Row::fromValues([$data['title'] ?? $classes], (new Style)->setFontBold()->setFontSize(14)));
         $writer->addRow(Row::fromValues([]));
         $writer->addRow(Row::fromValues(
-            [$label('no', 'No.'), $label('table', 'Table'), $label('name', 'Full name'), $label('gender', 'Gender'), $label('book', 'Book'), $label('note', 'Note')],
+            [$label('no', 'No.'), $label('table', 'Table'), $label('name', 'Full name'), $label('gender', 'Gender'), $label('book', 'Book'), $label('responsible_staff', 'Responsible staff'), $label('note', 'Note')],
             (new Style)->setFontBold()->setBackgroundColor('F3F4F6'),
         ));
         $wrap = (new Style)->setShouldWrapText();
@@ -227,6 +295,7 @@ final class EnrollmentController extends Controller
                 $e->student?->fullName() ?? '',
                 $gender($e->student?->gender),
                 $e->coursePackage?->name ?? '',
+                $e->currentResponsibleStaff?->staff?->fullName() ?? '',
                 $e->note ?? '',
             ], $wrap));
         }

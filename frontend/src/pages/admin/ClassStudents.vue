@@ -8,6 +8,7 @@ import ChangeTableModal from '@/components/admin/ChangeTableModal.vue'
 import ClassNotesModal from '@/components/admin/ClassNotesModal.vue'
 import EnrollmentStatusModal from '@/components/admin/EnrollmentStatusModal.vue'
 import EnrollmentTransferModal from '@/components/admin/EnrollmentTransferModal.vue'
+import ResponsibleStaffModal from '@/components/admin/ResponsibleStaffModal.vue'
 import SendToExamModal from '@/components/admin/SendToExamModal.vue'
 import ActionIconButton from '@/components/ui/ActionIconButton.vue'
 import BaseAlert from '@/components/ui/BaseAlert.vue'
@@ -20,6 +21,7 @@ import { enrollmentsService, type Enrollment, type EnrollmentStatus } from '@/se
 import { type LookupOption, lookupsService } from '@/services/lookups'
 import { useAuthStore } from '@/stores/auth'
 import { ApiRequestError } from '@/types/api'
+import { formatDate } from '@/utils/date'
 import { genderLabel } from '@/utils/gender'
 
 const { t, locale } = useI18n()
@@ -38,6 +40,10 @@ const canChangeStatus = computed(() => auth.can('enrollments.change-status'))
 const canChangeTable = computed(() => auth.can('enrollments.change-table'))
 const canSendToExam = computed(() => auth.can('exam-applications.create'))
 const canNote = computed(() => auth.can('enrollments.note'))
+const canResponsibleStaff = computed(() => auth.can('enrollments.responsible-staff'))
+// "Change class and table" already covers a seat change, so the seat-only
+// icon shows just for users who can change tables but not classes.
+const showChangeTable = computed(() => canChangeTable.value && !canTransfer.value)
 const hasRowActions = computed(() => canTransfer.value || canChangeStatus.value || canChangeTable.value)
 
 /**
@@ -92,6 +98,7 @@ const columns = computed(() => [
   { key: 'gender', label: t('admin.classStudents.columnGender') },
   ...(isSingleClass.value ? [] : [{ key: 'class', label: t('admin.classStudents.columnClass') }]),
   { key: 'book', label: t('admin.classStudents.columnBook'), sortable: true },
+  { key: 'responsible_staff', label: t('admin.classStudents.columnResponsibleStaff') },
   { key: 'note', label: t('admin.classStudents.columnNote') },
   ...(hasRowActions.value
     ? [{ key: 'actions', label: t('admin.classStudents.columnActions'), align: 'text-right' }]
@@ -250,6 +257,27 @@ async function onNotesSaved(count: number) {
   }
 }
 
+// --- Responsible Staff ---------------------------------------------------
+// One staff member for all the checked students, from a date.
+
+const responsibleStaffOpen = ref(false)
+const responsibleStaffMessage = ref<string | null>(null)
+
+function openResponsibleStaff() {
+  if (selectedIds.value.length === 0) return
+  responsibleStaffMessage.value = null
+  responsibleStaffOpen.value = true
+}
+
+async function onResponsibleStaffSaved(count: number) {
+  try {
+    await loadRoster()
+    responsibleStaffMessage.value = t('admin.classStudents.responsibleStaffSaved', { count })
+  } catch (error) {
+    loadError.value = error instanceof ApiRequestError ? error.message : t('admin.classStudents.loadFailed')
+  }
+}
+
 // --- Export Excel --------------------------------------------------------
 // Only the checked students, numbered in the order the roster shows them.
 
@@ -272,6 +300,7 @@ async function exportExcel() {
         name: t('admin.classStudents.columnFullName'),
         gender: t('admin.classStudents.columnGender'),
         book: t('admin.classStudents.columnBook'),
+        responsible_staff: t('admin.classStudents.columnResponsibleStaff'),
         note: t('admin.classStudents.columnNote'),
         male: t('common.genderMale'),
         female: t('common.genderFemale'),
@@ -299,6 +328,9 @@ onMounted(() => {
 
 <template>
   <div>
+    <div class="mb-2">
+      <BaseButton variant="outline" size="sm" to="/admin/classes">{{ t('admin.classStudents.backToClasses') }}</BaseButton>
+    </div>
     <div class="mb-6">
       <h1 class="text-xl font-semibold text-neutral-900">{{ t('admin.classStudents.title') }}</h1>
     </div>
@@ -349,6 +381,9 @@ onMounted(() => {
           <BaseButton v-if="canNote" variant="outline" :disabled="roster.length === 0" @click="openNotes">
             {{ t('admin.classStudents.note') }}
           </BaseButton>
+          <BaseButton v-if="canResponsibleStaff" variant="outline" :disabled="selectedIds.length === 0" @click="openResponsibleStaff">
+            {{ t('admin.classStudents.responsibleStaff') }}<template v-if="selectedIds.length > 0"> ({{ selectedIds.length }})</template>
+          </BaseButton>
           <BaseButton variant="outline" :disabled="selectedIds.length === 0" :loading="exporting" :title="t('admin.classStudents.exportExcelHint')" @click="exportExcel">
             {{ t('admin.classStudents.exportExcel') }}<template v-if="selectedIds.length > 0"> ({{ selectedIds.length }})</template>
           </BaseButton>
@@ -363,6 +398,7 @@ onMounted(() => {
 
       <BaseAlert v-if="sendToExamMessage" variant="success" class="mb-4">{{ sendToExamMessage }}</BaseAlert>
       <BaseAlert v-if="notesMessage" variant="success" class="mb-4">{{ notesMessage }}</BaseAlert>
+      <BaseAlert v-if="responsibleStaffMessage" variant="success" class="mb-4">{{ responsibleStaffMessage }}</BaseAlert>
       <BaseAlert v-if="exportError" variant="danger" class="mb-4">{{ exportError }}</BaseAlert>
 
       <!-- Phone: one card per student. -->
@@ -386,6 +422,9 @@ onMounted(() => {
                   <template v-if="!isSingleClass"> · {{ row.class?.name ?? '—' }}</template>
                 </p>
                 <p v-if="row.course_package" class="text-xs text-neutral-500">{{ row.course_package.name }}</p>
+                <p v-if="row.responsible_staff" class="text-xs text-neutral-500">
+                  {{ t('admin.classStudents.columnResponsibleStaff') }}: {{ row.responsible_staff.name }}
+                </p>
                 <p v-if="row.note" class="mt-1 whitespace-pre-line rounded bg-neutral-50 px-2 py-1 text-xs text-neutral-700">{{ row.note }}</p>
               </div>
             </div>
@@ -404,7 +443,7 @@ onMounted(() => {
                   />
                 </svg>
               </ActionIconButton>
-              <ActionIconButton v-if="canChangeTable" :title="t('admin.enrollments.changeTable')" @click="openChangeTable(row)">
+              <ActionIconButton v-if="showChangeTable" :title="t('admin.enrollments.changeTable')" @click="openChangeTable(row)">
                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path
                     stroke-linecap="round"
@@ -436,6 +475,16 @@ onMounted(() => {
         <template #cell-gender="{ row }">{{ genderLabel(row.student.gender) }}</template>
         <template #cell-class="{ row }">{{ row.class?.name ?? '—' }}</template>
         <template #cell-book="{ row }">{{ row.course_package?.name ?? '—' }}</template>
+        <template #cell-responsible_staff="{ row }">
+          <span
+            v-if="row.responsible_staff"
+            class="text-neutral-700"
+            :title="`${formatDate(row.responsible_staff.from_date)} → ${row.responsible_staff.to_date ? formatDate(row.responsible_staff.to_date) : '…'}`"
+          >
+            {{ row.responsible_staff.name }}
+          </span>
+          <span v-else class="text-neutral-400">—</span>
+        </template>
         <template #cell-note="{ row }">
           <span class="line-clamp-2 max-w-xs whitespace-pre-line text-neutral-700" :title="row.note ?? ''">{{ row.note || '—' }}</span>
         </template>
@@ -455,7 +504,7 @@ onMounted(() => {
                 />
               </svg>
             </ActionIconButton>
-            <ActionIconButton v-if="canChangeTable" :title="t('admin.enrollments.changeTable')" @click="openChangeTable(row)">
+            <ActionIconButton v-if="showChangeTable" :title="t('admin.enrollments.changeTable')" @click="openChangeTable(row)">
               <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path
                   stroke-linecap="round"
@@ -469,6 +518,7 @@ onMounted(() => {
       </DataTable>
     </template>
 
+    <ResponsibleStaffModal v-model="responsibleStaffOpen" :enrollment-ids="selectedIds" @saved="onResponsibleStaffSaved" />
     <EnrollmentTransferModal v-model="classModalOpen" :enrollment="activeEnrollment" @saved="load" />
     <EnrollmentStatusModal v-model="statusModalOpen" :enrollment="activeEnrollment" @saved="load" />
     <ChangeTableModal v-model="tableModalOpen" :enrollment="activeEnrollment" @saved="load" />

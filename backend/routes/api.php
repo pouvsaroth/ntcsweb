@@ -333,6 +333,9 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
 
         // Class > Students > Note: save the notes of many students at once.
         Route::put('enrollment-notes', [EnrollmentController::class, 'saveNotes'])->name('enrollments.notes');
+        // Class > Students > Responsible Staff: the staff picker, and assigning one to the checked students.
+        Route::get('enrollment-responsible-staff/staff', [EnrollmentController::class, 'responsibleStaffOptions'])->name('enrollments.responsible-staff.options');
+        Route::post('enrollment-responsible-staff', [EnrollmentController::class, 'assignResponsibleStaff'])->name('enrollments.responsible-staff.assign');
         // Class > Students > Export Excel: the checked students, in the order shown.
         Route::get('enrollment-export', [EnrollmentController::class, 'export'])->name('enrollments.export');
         Route::apiResource('enrollments', EnrollmentController::class)->except(['store']);

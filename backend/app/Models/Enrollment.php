@@ -213,6 +213,23 @@ class Enrollment extends Model
         return $this->hasOne(EnrollmentStatusHistory::class)->latestOfMany();
     }
 
+    public function responsibleStaffs(): HasMany
+    {
+        return $this->hasMany(EnrollmentResponsibleStaff::class);
+    }
+
+    /** The staff responsible today: the latest period that has started and not ended. */
+    public function currentResponsibleStaff(): HasOne
+    {
+        $today = now()->toDateString();
+
+        return $this->hasOne(EnrollmentResponsibleStaff::class)->ofMany(
+            ['from_date' => 'max', 'id' => 'max'],
+            fn ($query) => $query->where('from_date', '<=', $today)
+                ->where(fn ($q) => $q->whereNull('to_date')->orWhere('to_date', '>=', $today)),
+        );
+    }
+
     public function statusHistories(): HasMany
     {
         return $this->hasMany(EnrollmentStatusHistory::class);

@@ -21,6 +21,14 @@ class EnrollmentResource extends JsonResource
             'enrolled_at' => $this->enrolled_at?->toDateString(),
             'status' => $this->status,
             'note' => $this->note,
+            // Who looks after this student today (Class > Students > Responsible Staff).
+            'responsible_staff' => $this->whenLoaded('currentResponsibleStaff', fn () => $this->currentResponsibleStaff === null ? null : [
+                'id' => $this->currentResponsibleStaff->id,
+                'staff_id' => $this->currentResponsibleStaff->staff_id,
+                'name' => $this->currentResponsibleStaff->staff?->fullName() ?? '',
+                'from_date' => $this->currentResponsibleStaff->from_date?->toDateString(),
+                'to_date' => $this->currentResponsibleStaff->to_date?->toDateString(),
+            ]),
             // When the current status started: its effective date, else the
             // day it was changed. Null when it never changed (still the
             // status it was enrolled with) — the enroll date covers that.

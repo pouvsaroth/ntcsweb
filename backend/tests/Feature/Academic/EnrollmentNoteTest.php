@@ -82,7 +82,7 @@ class EnrollmentNoteTest extends TestCase
         $this->assertCount(4, $rows);
         $this->assertSame('ឈ្មោះ', $rows[1][2]);
         $this->assertSame([1, 'ស្រី'], [$rows[2][0], $rows[2][3]]);
-        $this->assertSame([2, 'Needs help'], [$rows[3][0], $rows[3][5]]);
+        $this->assertSame([2, 'Needs help'], [$rows[3][0], $rows[3][6]]);
         $this->assertSame($this->msWordPackage->name, $rows[3][4]);
         $this->assertNotContains($third->student->fullName(), array_column($rows, 2));
     }

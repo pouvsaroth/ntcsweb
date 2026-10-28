@@ -1,4 +1,4 @@
-import { apiDelete, apiDownload, apiGetWithMeta, apiPatch, apiPost, apiPut } from '@/services/http'
+import { apiDelete, apiDownload, apiGet, apiGetWithMeta, apiPatch, apiPost, apiPut } from '@/services/http'
 import type { AcademicProgram } from '@/services/academicPrograms'
 import type { SchoolClass } from '@/services/classes'
 import type { CoursePackage } from '@/services/coursePackages'
@@ -57,6 +57,13 @@ export interface EnrollmentStudent {
 
 export type FeeType = 'monthly' | 'term' | 'video' | 'monthly_online' | 'term_online'
 
+/** One staff member in the Responsible Staff picker. */
+export interface ResponsibleStaffOption {
+  id: number
+  name: string
+  employee_code: string | null
+}
+
 export interface Enrollment {
   id: number
   /** Human-readable per-student sequence code, e.g. `NTS-000008-01`. */
@@ -65,6 +72,8 @@ export interface Enrollment {
   status: EnrollmentStatus
   /** Class > Students > Note: the teacher's note on this student in the class. */
   note?: string | null
+  /** Class > Students > Responsible Staff: who looks after this student today. List only. */
+  responsible_staff?: { id: number; staff_id: number; name: string; from_date: string; to_date: string | null } | null
   /** The day the current status started (completed on, abandoned on, ...); null when it never changed. List only. */
   status_date?: string | null
   /** Whether any money has been received against this enrollment — gates changing the course (not the class) via transfer(). */
@@ -130,6 +139,11 @@ export const enrollmentsService = {
     return apiDownload(`/enrollment-export?${query.toString()}`, filename)
   },
   saveNotes: (notes: { enrollment_id: number; note: string | null }[]) => apiPut<{ saved: number }>('/enrollment-notes', { notes }),
+  /** Class > Students > Responsible Staff: the active staff to pick from. */
+  responsibleStaffOptions: () => apiGet<ResponsibleStaffOption[]>('/enrollment-responsible-staff/staff'),
+  /** One staff for all the given students from `from_date` (an open earlier period ends the day before). */
+  assignResponsibleStaff: (input: { enrollment_ids: number[]; staff_id: number; from_date: string; to_date: string | null }) =>
+    apiPost<{ saved: number }>('/enrollment-responsible-staff', input),
   remove: (id: number) => apiDelete(`/enrollments/${id}`),
 
   enrollInPackage: (input: EnrollmentPackageInput) => apiPost<Enrollment>('/enrollments/package', input),
