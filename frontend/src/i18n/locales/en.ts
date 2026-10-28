@@ -3148,6 +3148,8 @@ const en = {
       copyNone: 'That room has no tables yet.',
       skipNote: 'A table name this room already has is skipped.',
       columnAllowMany: 'Allow many students',
+      columnRemark: 'Remark',
+      remark: 'Remark (optional)',
       bulkSaved: '{created} tables added.',
       bulkSavedSkipped: '{created} tables added; {skipped} already there were skipped.',
     },

@@ -30,6 +30,7 @@ const columns = computed(() => [
   { key: 'name', label: t('admin.classroomTables.columnName') },
   { key: 'sort_order', label: t('admin.classroomTables.columnOrder') },
   { key: 'allow_many_students', label: t('admin.classroomTables.columnAllowMany') },
+  { key: 'remark', label: t('admin.classroomTables.columnRemark') },
   { key: 'actions', label: t('admin.classroomTables.columnActions'), align: 'text-right' },
 ])
 
@@ -134,6 +135,7 @@ onMounted(load)
               <p class="text-sm font-semibold text-neutral-800">{{ row.name }}</p>
               <span class="text-xs text-neutral-500">{{ t('admin.classroomTables.columnOrder') }}: {{ row.sort_order }}</span>
             </div>
+            <p v-if="row.remark" class="mt-1 text-sm text-neutral-600">{{ row.remark }}</p>
             <div class="mt-2 flex items-center justify-between gap-3">
               <label class="flex items-center gap-2 text-sm text-neutral-700">
                 <input
@@ -164,6 +166,9 @@ onMounted(load)
             class="rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
             @change="toggleAllowMany(row)"
           />
+        </template>
+        <template #cell-remark="{ row }">
+          <span class="text-neutral-600">{{ row.remark || '—' }}</span>
         </template>
         <template #cell-actions="{ row }">
           <div class="flex justify-end gap-2">

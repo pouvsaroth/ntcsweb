@@ -3144,6 +3144,8 @@ const ja: MessageSchema = {
       copyNone: 'その教室にはまだ机がありません。',
       skipNote: 'この教室に既にある机の名前はスキップされます。',
       columnAllowMany: '複数の生徒を許可',
+      columnRemark: '備考',
+      remark: '備考（任意）',
       bulkSaved: '{created} 個の机を追加しました。',
       bulkSavedSkipped: '{created} 個の机を追加しました。既存の {skipped} 個はスキップしました。',
     },

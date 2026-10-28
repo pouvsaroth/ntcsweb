@@ -30,6 +30,7 @@ class BulkStoreClassroomTablesRequest extends FormRequest
             'count' => [$copying ? 'nullable' : 'required', 'integer', 'min:1', 'max:500'],
             'start_number' => ['nullable', 'integer', 'min:0', 'max:100000'],
             'allow_many_students' => ['sometimes', 'boolean'],
+            'remark' => ['nullable', 'string', 'max:500'],
         ];
     }
 }

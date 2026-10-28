@@ -52,8 +52,8 @@ final class ClassroomTableController extends Controller
             $rows = ClassroomTable::query()
                 ->where('classroom_id', $data['copy_from_classroom_id'])
                 ->orderBy('sort_order')->orderBy('name')
-                ->get(['name', 'sort_order', 'allow_many_students'])
-                ->map(fn (ClassroomTable $t) => ['name' => $t->name, 'sort_order' => $t->sort_order, 'allow_many_students' => $t->allow_many_students])
+                ->get(['name', 'sort_order', 'allow_many_students', 'remark'])
+                ->map(fn (ClassroomTable $t) => ['name' => $t->name, 'sort_order' => $t->sort_order, 'allow_many_students' => $t->allow_many_students, 'remark' => $t->remark])
                 ->all();
         } else {
             $start = (int) ($data['start_number'] ?? 1);
@@ -66,6 +66,7 @@ final class ClassroomTableController extends Controller
                     'name' => $prefix.str_pad((string) $n, $width, '0', STR_PAD_LEFT),
                     'sort_order' => $n,
                     'allow_many_students' => (bool) ($data['allow_many_students'] ?? false),
+                    'remark' => ($data['remark'] ?? null) ?: null,
                 ];
             }
         }

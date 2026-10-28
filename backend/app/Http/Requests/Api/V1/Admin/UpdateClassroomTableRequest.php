@@ -31,6 +31,7 @@ class UpdateClassroomTableRequest extends FormRequest
             ],
             'sort_order' => ['sometimes', 'integer', 'min:0'],
             'allow_many_students' => ['sometimes', 'boolean'],
+            'remark' => ['nullable', 'string', 'max:500'],
         ];
     }
 }

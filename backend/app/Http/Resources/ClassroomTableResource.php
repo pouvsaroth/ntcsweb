@@ -20,6 +20,7 @@ class ClassroomTableResource extends JsonResource
             'name' => $this->name,
             'sort_order' => $this->sort_order,
             'allow_many_students' => (bool) $this->allow_many_students,
+            'remark' => $this->remark,
             'classroom_id' => $this->classroom_id,
             'classroom' => $this->whenLoaded('classroom', fn () => $this->classroom !== null ? [
                 'id' => $this->classroom->id,

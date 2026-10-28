@@ -3143,6 +3143,8 @@ const zh: MessageSchema = {
       copyNone: '该教室还没有桌子。',
       skipNote: '本教室已有的桌子名称会被跳过。',
       columnAllowMany: '允许多名学生',
+      columnRemark: '备注',
+      remark: '备注（可选）',
       bulkSaved: '已添加 {created} 张桌子。',
       bulkSavedSkipped: '已添加 {created} 张桌子；跳过已存在的 {skipped} 张。',
     },

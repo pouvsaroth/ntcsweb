@@ -107,7 +107,7 @@ class ClassroomTableTest extends TestCase
         $from = Classroom::factory()->create();
         $to = Classroom::factory()->create();
         ClassroomTable::factory()->create(['classroom_id' => $from->id, 'name' => 'A1', 'sort_order' => 1]);
-        ClassroomTable::factory()->create(['classroom_id' => $from->id, 'name' => 'Bench', 'sort_order' => 2, 'allow_many_students' => true]);
+        ClassroomTable::factory()->create(['classroom_id' => $from->id, 'name' => 'Bench', 'sort_order' => 2, 'allow_many_students' => true, 'remark' => 'Back row']);
 
         $this->postJson('/api/v1/classroom-tables/bulk', ['classroom_id' => $to->id, 'copy_from_classroom_id' => $from->id])
             ->assertCreated()->assertJsonPath('data.created', 2);
@@ -115,6 +115,7 @@ class ClassroomTableTest extends TestCase
         $bench = ClassroomTable::query()->where('classroom_id', $to->id)->where('name', 'Bench')->first();
         $this->assertSame(2, $bench->sort_order);
         $this->assertTrue($bench->allow_many_students);
+        $this->assertSame('Back row', $bench->remark);
         $this->postJson('/api/v1/classroom-tables/bulk', ['classroom_id' => $to->id, 'copy_from_classroom_id' => $to->id])->assertUnprocessable();
     }
 
@@ -133,5 +134,19 @@ class ClassroomTableTest extends TestCase
 
         $this->putJson("/api/v1/classroom-tables/{$table->id}", ['allow_many_students' => true])
             ->assertOk()->assertJsonPath('data.allow_many_students', true);
+    }
+
+    public function test_a_table_keeps_a_remark(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::CLASSROOMS_CREATE, Permissions::CLASSROOMS_UPDATE]);
+        $room = Classroom::factory()->create();
+
+        $id = $this->postJson('/api/v1/classroom-tables', ['classroom_id' => $room->id, 'name' => 'T1', 'remark' => 'Near the window'])
+            ->assertCreated()->assertJsonPath('data.remark', 'Near the window')->json('data.id');
+
+        $this->putJson("/api/v1/classroom-tables/{$id}", ['remark' => ''])->assertOk()->assertJsonPath('data.remark', null);
+
+        $this->postJson('/api/v1/classroom-tables/bulk', ['classroom_id' => $room->id, 'prefix' => 'B', 'count' => 2, 'remark' => 'Lab bench'])->assertCreated();
+        $this->assertSame(['Lab bench', 'Lab bench'], ClassroomTable::query()->where('classroom_id', $room->id)->where('name', 'like', 'B%')->pluck('remark')->all());
     }
 }

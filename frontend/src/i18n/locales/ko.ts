@@ -3144,6 +3144,8 @@ const ko: MessageSchema = {
       copyNone: '그 교실에는 아직 책상이 없습니다.',
       skipNote: '이 교실에 이미 있는 책상 이름은 건너뜁니다.',
       columnAllowMany: '여러 학생 허용',
+      columnRemark: '비고',
+      remark: '비고 (선택)',
       bulkSaved: '책상 {created}개를 추가했습니다.',
       bulkSavedSkipped: '책상 {created}개를 추가했습니다. 이미 있는 {skipped}개는 건너뛰었습니다.',
     },

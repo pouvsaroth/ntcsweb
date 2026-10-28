@@ -3144,6 +3144,8 @@ const km: MessageSchema = {
       copyNone: 'បន្ទប់នោះមិនទាន់មានតុទេ។',
       skipNote: 'ឈ្មោះតុដែលបន្ទប់នេះមានរួចហើយ នឹងត្រូវរំលង។',
       columnAllowMany: 'អនុញ្ញាតសិស្សច្រើននាក់',
+      columnRemark: 'កំណត់សម្គាល់',
+      remark: 'កំណត់សម្គាល់ (មិនបាច់)',
       bulkSaved: 'បានបន្ថែមតុ {created}។',
       bulkSavedSkipped: 'បានបន្ថែមតុ {created}; រំលង {skipped} ដែលមានរួចហើយ។',
     },

@@ -20,8 +20,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string $name
  * @property int $sort_order
  * @property bool $allow_many_students
+ * @property string|null $remark
  */
-#[Fillable(['classroom_id', 'name', 'sort_order', 'allow_many_students'])]
+#[Fillable(['classroom_id', 'name', 'sort_order', 'allow_many_students', 'remark'])]
 class ClassroomTable extends Model
 {
     use HasFactory, SoftDeletes;

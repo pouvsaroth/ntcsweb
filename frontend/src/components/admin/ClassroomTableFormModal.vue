@@ -22,7 +22,7 @@ const { t } = useI18n()
 
 const isEditing = computed(() => props.table != null)
 
-const form = reactive({ name: '', sort_order: 0, allow_many_students: false })
+const form = reactive({ name: '', sort_order: 0, allow_many_students: false, remark: '' })
 const errors = ref<Record<string, string[]>>({})
 const generalError = ref<string | null>(null)
 const submitting = ref(false)
@@ -35,6 +35,7 @@ watch(
     form.name = props.table?.name ?? ''
     form.sort_order = props.table?.sort_order ?? 0
     form.allow_many_students = props.table?.allow_many_students ?? false
+    form.remark = props.table?.remark ?? ''
     errors.value = {}
     generalError.value = null
   },
@@ -47,7 +48,7 @@ async function submit() {
   generalError.value = null
 
   try {
-    const input = { ...form, classroom_id: props.classroom.id }
+    const input = { ...form, remark: form.remark.trim() || null, classroom_id: props.classroom.id }
 
     if (isEditing.value) {
       await classroomTablesService.update(props.table!.id, input)
@@ -90,6 +91,7 @@ async function submit() {
         <input v-model="form.allow_many_students" type="checkbox" class="rounded border-neutral-300 text-primary-600 focus:ring-primary-500" />
         {{ t('admin.classroomTables.allowMany') }}
       </label>
+      <BaseInput v-model="form.remark" :label="t('admin.classroomTables.remark')" :error="errors.remark?.[0]" />
     </form>
 
     <template #footer>

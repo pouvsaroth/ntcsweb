@@ -22,7 +22,7 @@ const { t } = useI18n()
 
 type Mode = 'range' | 'copy'
 const mode = ref<Mode>('range')
-const form = reactive({ prefix: '', count: '', start_number: '1', allow_many_students: false, copy_from: '' })
+const form = reactive({ prefix: '', count: '', start_number: '1', allow_many_students: false, remark: '', copy_from: '' })
 const errors = ref<Record<string, string[]>>({})
 const generalError = ref<string | null>(null)
 const submitting = ref(false)
@@ -42,7 +42,7 @@ watch(
   async (open) => {
     if (!open) return
     mode.value = 'range'
-    Object.assign(form, { prefix: '', count: '', start_number: '1', allow_many_students: false, copy_from: '' })
+    Object.assign(form, { prefix: '', count: '', start_number: '1', allow_many_students: false, remark: '', copy_from: '' })
     sourceTables.value = []
     errors.value = {}
     generalError.value = null
@@ -97,6 +97,7 @@ async function submit() {
             count: form.count === '' ? null : Number(form.count),
             start_number: form.start_number === '' ? 1 : Number(form.start_number),
             allow_many_students: form.allow_many_students,
+            remark: form.remark.trim() || null,
           })
     emit('saved', result)
     emit('update:modelValue', false)
@@ -140,6 +141,7 @@ async function submit() {
           <input v-model="form.allow_many_students" type="checkbox" class="rounded border-neutral-300 text-primary-600 focus:ring-primary-500" />
           {{ t('admin.classroomTables.allowMany') }}
         </label>
+        <BaseInput v-model="form.remark" :label="t('admin.classroomTables.remark')" :error="errors.remark?.[0]" />
         <p v-if="rangePreview" class="rounded-md bg-neutral-50 px-3 py-2 text-sm text-neutral-600">
           {{ t('admin.classroomTables.rangePreview', { count: Number(form.count), names: rangePreview }) }}
         </p>

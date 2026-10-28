@@ -8,6 +8,7 @@ export interface ClassroomTable {
   sort_order: number
   /** Several students may sit here at once; never shown as taken. */
   allow_many_students: boolean
+  remark: string | null
   classroom_id: number
   classroom?: { id: number; name: string } | null
   created_at: string
@@ -17,6 +18,7 @@ export interface ClassroomTableInput {
   name: string
   sort_order?: number
   allow_many_students?: boolean
+  remark?: string | null
   classroom_id: number
 }
 
@@ -28,6 +30,7 @@ export interface BulkTablesInput {
   count?: number | null
   start_number?: number
   allow_many_students?: boolean
+  remark?: string | null
 }
 
 export interface BulkTablesResult {
