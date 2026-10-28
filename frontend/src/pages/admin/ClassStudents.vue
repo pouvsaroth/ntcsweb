@@ -422,10 +422,16 @@ onMounted(() => {
                   <template v-if="!isSingleClass"> · {{ row.class?.name ?? '—' }}</template>
                 </p>
                 <p v-if="row.course_package" class="text-xs text-neutral-500">{{ row.course_package.name }}</p>
-                <p v-if="row.responsible_staff" class="text-xs text-neutral-500">
-                  {{ t('admin.classStudents.columnResponsibleStaff') }}: {{ row.responsible_staff.name }}
-                </p>
-                <p v-if="row.note" class="mt-1 whitespace-pre-line rounded bg-neutral-50 px-2 py-1 text-xs text-neutral-700">{{ row.note }}</p>
+                <dl class="mt-2 space-y-1 rounded bg-neutral-50 px-2 py-1.5 text-xs">
+                  <div class="flex gap-1">
+                    <dt class="shrink-0 text-neutral-500">{{ t('admin.classStudents.columnResponsibleStaff') }}:</dt>
+                    <dd class="min-w-0 font-medium text-neutral-800">{{ row.responsible_staff?.name || '—' }}</dd>
+                  </div>
+                  <div class="flex gap-1">
+                    <dt class="shrink-0 text-neutral-500">{{ t('admin.classStudents.columnNote') }}:</dt>
+                    <dd class="min-w-0 whitespace-pre-line text-neutral-800">{{ row.note || '—' }}</dd>
+                  </div>
+                </dl>
               </div>
             </div>
             <div v-if="hasRowActions" class="mt-2 flex justify-end gap-1">

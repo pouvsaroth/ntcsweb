@@ -249,11 +249,11 @@ watch(folderId, () => void load(), { immediate: true })
           </div>
         </div>
 
-        <div v-if="folder.files.length" class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+        <div v-if="folder.files.length" class="grid grid-cols-3 gap-2 sm:grid-cols-6 sm:gap-3 lg:grid-cols-8">
           <div
             v-for="file in folder.files"
             :key="file.id"
-            class="flex flex-col overflow-hidden rounded-2xl border bg-white"
+            class="flex flex-col overflow-hidden rounded-xl border bg-white"
             :class="selected.has(file.id) ? 'border-primary-500 ring-2 ring-primary-200' : 'border-neutral-200'"
           >
             <div class="relative flex aspect-[4/3] items-center justify-center overflow-hidden bg-neutral-100">
@@ -266,10 +266,10 @@ watch(folderId, () => void load(), { immediate: true })
               >
                 <img :src="file.url" :alt="file.name" class="h-full w-full object-cover transition-transform group-hover:scale-105" loading="lazy" />
               </button>
-              <span v-else class="rounded-lg bg-white px-3 py-2 text-lg font-bold uppercase text-neutral-500 shadow-sm">{{ file.extension }}</span>
+              <span v-else class="rounded-md bg-white px-2 py-1 text-xs font-bold uppercase text-neutral-500 shadow-sm">{{ file.extension }}</span>
               <label
                 v-if="folder.files.length > 1"
-                class="absolute left-2 top-2 flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg bg-white/90 shadow-sm"
+                class="absolute left-1 top-1 flex h-6 w-6 cursor-pointer items-center justify-center rounded-md bg-white/90 shadow-sm"
               >
                 <input
                   type="checkbox"
@@ -280,16 +280,16 @@ watch(folderId, () => void load(), { immediate: true })
                 />
               </label>
             </div>
-            <div class="flex flex-1 flex-col gap-2 p-3">
-              <p class="break-words text-sm font-medium text-neutral-900">
+            <div class="flex flex-1 flex-col gap-1 p-2">
+              <p class="line-clamp-2 break-words text-xs font-medium text-neutral-900" :title="`${file.name}.${file.extension}`">
                 {{ file.name }}<span class="text-neutral-400">.{{ file.extension }}</span>
               </p>
-              <p class="text-xs text-neutral-500">{{ formatFileSize(file.size) }}</p>
+              <p class="text-[11px] text-neutral-500">{{ formatFileSize(file.size) }}</p>
               <a
                 :href="publicDownloadsService.fileUrl(file.id)"
-                class="mt-auto inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary-600 px-3 py-2 text-sm font-medium text-secondary-900 hover:bg-primary-700"
+                class="mt-auto inline-flex items-center justify-center gap-1 rounded-md bg-primary-600 px-2 py-1 text-xs font-medium text-secondary-900 hover:bg-primary-700"
               >
-                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <svg class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />
                 </svg>
                 {{ t('downloads.download') }}
