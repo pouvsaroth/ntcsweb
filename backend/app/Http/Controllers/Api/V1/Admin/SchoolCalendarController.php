@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponse;
 use App\Models\AcademicTerm;
 use App\Models\Holiday;
+use App\Models\Meeting;
 use App\Models\SchoolCalendarEvent;
 use App\Support\Authorization\Permissions;
 use Illuminate\Http\JsonResponse;
@@ -18,7 +19,9 @@ use Illuminate\Validation\Rule;
 /**
  * Academics > School setup > School calendar (docs/academics/school-setup.md):
  * one view of the school's days — its own calendar days (opening, closing,
- * exams, events), the Holidays list and the terms — between two dates.
+ * exams, events), the Holidays list, the terms and — for people who can
+ * see Front Office meetings — the meetings arranged there (read live, so a
+ * moved or cancelled meeting is never stale here).
  */
 final class SchoolCalendarController extends Controller
 {
@@ -62,7 +65,21 @@ final class SchoolCalendarController extends Controller
                 'end_date' => $t->end_date->toDateString(),
             ])->values();
 
-        return ApiResponse::success(['events' => $events, 'holidays' => $holidays, 'terms' => $terms]);
+        $meetings = $request->user()->hasPermission(Permissions::MEETINGS_VIEW)
+            ? Meeting::query()->whereBetween('meeting_date', [$from, $to])->where('status', '!=', 'cancelled')
+                ->orderBy('meeting_date')->orderBy('start_time')->get()
+                ->map(fn (Meeting $m) => [
+                    'id' => $m->id,
+                    'title' => $m->title,
+                    'date' => $m->meeting_date->toDateString(),
+                    'start_time' => substr((string) $m->start_time, 0, 5),
+                    'end_time' => $m->end_time ? substr((string) $m->end_time, 0, 5) : null,
+                    'location' => $m->location,
+                    'status' => $m->status,
+                ])->values()
+            : [];
+
+        return ApiResponse::success(['events' => $events, 'holidays' => $holidays, 'terms' => $terms, 'meetings' => $meetings]);
     }
 
     public function store(Request $request): JsonResponse

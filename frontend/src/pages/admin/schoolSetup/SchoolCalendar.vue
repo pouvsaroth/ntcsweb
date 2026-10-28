@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 
+import MeetingDetailModal from '@/components/admin/MeetingDetailModal.vue'
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
@@ -9,20 +11,22 @@ import BaseModal from '@/components/ui/BaseModal.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
 import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import { academicYearsService, type AcademicYear } from '@/services/academicYears'
-import { CALENDAR_TYPES, schoolCalendarService, type CalendarData, type CalendarEvent, type CalendarType } from '@/services/schoolSetup'
+import { CALENDAR_TYPES, schoolCalendarService, type CalendarData, type CalendarEvent, type CalendarMeeting, type CalendarType } from '@/services/schoolSetup'
 import { useAuthStore } from '@/stores/auth'
 import { useConfirmDialogStore } from '@/stores/confirmDialog'
 import { ApiRequestError } from '@/types/api'
-import { formatDate } from '@/utils/date'
+import { formatDate, formatTimeOfDay } from '@/utils/date'
 
 /**
  * School setup > School calendar: a month of the school's days — opening and
- * closing, exam days, events — with the Holidays list and the terms on it.
+ * closing, exam days, events — with the Holidays list, the terms and the
+ * Front Office meetings (for people who can see them) on it.
  * A month grid from `sm` up; the month's list on a phone.
  */
 const { t, locale } = useI18n()
 const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
+const router = useRouter()
 const canManage = computed(() => auth.can('school-calendar.manage'))
 const canManageHolidays = computed(() => auth.can('staff-attendance.manage'))
 
@@ -77,13 +81,29 @@ interface DayItem {
   title: string
   kind: 'holiday' | CalendarType
   event?: CalendarEvent
+  meeting?: CalendarMeeting
 }
 const covers = (start: string, end: string, day: string) => start <= day && end >= day
 function itemsOn(day: string): DayItem[] {
   return [
     ...data.value.holidays.filter((h) => covers(h.start_date, h.end_date, day)).map((h) => ({ key: `h${h.id}`, title: h.title, kind: 'holiday' as const })),
     ...data.value.events.filter((e) => covers(e.start_date, e.end_date, day)).map((e) => ({ key: `e${e.id}`, title: e.title, kind: e.type, event: e })),
+    ...(data.value.meetings ?? [])
+      .filter((m) => m.date === day)
+      .map((m) => ({ key: `m${m.id}`, title: `${formatTimeOfDay(m.start_time)} ${m.title}`, kind: 'meeting' as const, meeting: m })),
   ]
+}
+
+// --- Front Office meetings: open the meeting itself --------------------------------
+const meetingOpen = ref(false)
+const meetingId = ref<number | null>(null)
+function openMeeting(meeting: CalendarMeeting) {
+  meetingId.value = meeting.id
+  meetingOpen.value = true
+}
+function openItem(item: { event?: CalendarEvent; meeting?: CalendarMeeting }) {
+  if (item.meeting) openMeeting(item.meeting)
+  else if (item.event) open(item.event)
 }
 const termOn = (day: string) => data.value.terms.find((term) => covers(term.start_date, term.end_date, day)) ?? null
 
@@ -109,8 +129,18 @@ const kindLabel = (kind: DayItem['kind']) => (kind === 'holiday' ? t('schoolSetu
 /** The month's list (phone, and under the grid): holidays and days, by start date. */
 const agenda = computed(() =>
   [
-    ...data.value.holidays.map((h) => ({ key: `h${h.id}`, title: h.title, kind: 'holiday' as DayItem['kind'], start: h.start_date, end: h.end_date, event: undefined as CalendarEvent | undefined })),
-    ...data.value.events.map((e) => ({ key: `e${e.id}`, title: e.title, kind: e.type as DayItem['kind'], start: e.start_date, end: e.end_date, event: e })),
+    ...data.value.holidays.map((h) => ({ key: `h${h.id}`, title: h.title, kind: 'holiday' as DayItem['kind'], start: h.start_date, end: h.end_date, event: undefined as CalendarEvent | undefined, meeting: undefined as CalendarMeeting | undefined, time: '' })),
+    ...data.value.events.map((e) => ({ key: `e${e.id}`, title: e.title, kind: e.type as DayItem['kind'], start: e.start_date, end: e.end_date, event: e as CalendarEvent | undefined, meeting: undefined as CalendarMeeting | undefined, time: '' })),
+    ...(data.value.meetings ?? []).map((m) => ({
+      key: `m${m.id}`,
+      title: m.title,
+      kind: 'meeting' as DayItem['kind'],
+      start: m.date,
+      end: m.date,
+      event: undefined as CalendarEvent | undefined,
+      meeting: m as CalendarMeeting | undefined,
+      time: m.end_time ? `${formatTimeOfDay(m.start_time)} – ${formatTimeOfDay(m.end_time)}` : formatTimeOfDay(m.start_time),
+    })),
   ].sort((a, b) => a.start.localeCompare(b.start)),
 )
 const range = (start: string, end: string) => (start === end ? formatDate(start) : `${formatDate(start)} – ${formatDate(end)}`)
@@ -233,7 +263,7 @@ onMounted(async () => {
               class="block w-full truncate rounded px-1.5 py-0.5 text-left text-[11px]"
               :class="colours[item.kind]"
               :title="item.title"
-              @click.stop="item.event ? open(item.event) : undefined"
+              @click.stop="openItem(item)"
             >
               {{ item.title }}
             </button>
@@ -253,13 +283,16 @@ onMounted(async () => {
           v-for="item in agenda"
           :key="item.key"
           class="flex items-center gap-3 rounded-[--radius-card] border border-neutral-200 bg-white p-3 shadow-[--shadow-card]"
-          :class="{ 'cursor-pointer hover:bg-neutral-50': item.event && canManage }"
-          @click="item.event ? open(item.event) : undefined"
+          :class="{ 'cursor-pointer hover:bg-neutral-50': (item.event && canManage) || item.meeting }"
+          @click="openItem(item)"
         >
           <span class="shrink-0 rounded-full px-2 py-0.5 text-xs" :class="colours[item.kind]">{{ kindLabel(item.kind) }}</span>
           <div class="min-w-0 flex-1">
             <p class="truncate text-sm font-medium text-neutral-800">{{ item.title }}</p>
-            <p class="text-xs text-neutral-500">{{ range(item.start, item.end) }}</p>
+            <p class="text-xs text-neutral-500">
+              {{ range(item.start, item.end) }}<template v-if="item.time"> · {{ item.time }}</template
+              ><template v-if="item.meeting?.location"> · {{ item.meeting.location }}</template>
+            </p>
           </div>
         </div>
       </div>
@@ -289,5 +322,7 @@ onMounted(async () => {
         <BaseButton :loading="saving" @click="save">{{ t('common.save') }}</BaseButton>
       </template>
     </BaseModal>
+
+    <MeetingDetailModal v-model="meetingOpen" :meeting-id="meetingId" @changed="load" @edit="router.push('/admin/front-office/meetings')" />
   </div>
 </template>

@@ -25,6 +25,7 @@ final class ModuleRegistry
             new Assets\AssetsModule,
             new Website\WebsiteModule,
             new Projects\ProjectsModule,
+            new FrontOffice\FrontOfficeModule,
         ])->keyBy(fn (Module $m) => $m->code())->all();
     }
 

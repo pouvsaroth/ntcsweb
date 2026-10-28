@@ -41,6 +41,11 @@ export type NotificationTypeValue =
   | 'attendance_correction_submitted'
   | 'attendance_correction_approved'
   | 'attendance_correction_rejected'
+  | 'meeting_invited'
+  | 'meeting_updated'
+  | 'meeting_cancelled'
+  | 'appointment_booked'
+  | 'visitor_arrived'
 
 export interface AppNotification {
   id: number

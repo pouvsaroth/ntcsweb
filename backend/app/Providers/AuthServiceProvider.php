@@ -85,6 +85,10 @@ use App\Models\ResignationRequest;
 use App\Models\Role;
 use App\Models\SchoolClass;
 use App\Models\Shift;
+use App\Models\Inquiry;
+use App\Models\Meeting;
+use App\Models\Appointment;
+use App\Models\Visitor;
 use App\Models\Staff;
 use App\Models\StaffAttendance;
 use App\Models\Student;
@@ -116,6 +120,10 @@ use App\Policies\CoursePackagePolicy;
 use App\Policies\CurrencyRatePolicy;
 use App\Policies\DepartmentPolicy;
 use App\Policies\ManpowerRequestPolicy;
+use App\Policies\InquiryPolicy;
+use App\Policies\MeetingPolicy;
+use App\Policies\AppointmentPolicy;
+use App\Policies\VisitorPolicy;
 use App\Policies\OrganizationUnitPolicy;
 use App\Policies\AttendanceCorrectionPolicy;
 use App\Policies\ClassChangeRequestPolicy;
@@ -197,6 +205,10 @@ class AuthServiceProvider extends ServiceProvider
         Position::class => PositionPolicy::class,
         CurrencyRate::class => CurrencyRatePolicy::class,
         Staff::class => StaffPolicy::class,
+        Inquiry::class => InquiryPolicy::class,
+        Meeting::class => MeetingPolicy::class,
+        Appointment::class => AppointmentPolicy::class,
+        Visitor::class => VisitorPolicy::class,
         AuditLog::class => AuditLogPolicy::class,
         Product::class => ProductPolicy::class,
         Invoice::class => InvoicePolicy::class,

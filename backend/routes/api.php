@@ -79,6 +79,10 @@ use App\Http\Controllers\Api\V1\Admin\LessonPlanController;
 use App\Http\Controllers\Api\V1\Admin\LookupCategoryController;
 use App\Http\Controllers\Api\V1\Admin\LookupValueController;
 use App\Http\Controllers\Api\V1\Admin\MakeUpClassRequestController;
+use App\Http\Controllers\Api\V1\Admin\InquiryController;
+use App\Http\Controllers\Api\V1\Admin\MeetingController;
+use App\Http\Controllers\Api\V1\Admin\AppointmentController;
+use App\Http\Controllers\Api\V1\Admin\VisitorController;
 use App\Http\Controllers\Api\V1\Admin\ManpowerRequestController;
 use App\Http\Controllers\Api\V1\Admin\MonthlyInvoiceController;
 use App\Http\Controllers\Api\V1\Admin\MonthlyPaymentAlertController;
@@ -448,6 +452,27 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::apiResource('resignation-requests', ResignationRequestController::class)->only(['index', 'show']);
         Route::post('resignation-requests/{resignation_request}/approve', [ResignationRequestController::class, 'approve'])->name('resignation-requests.approve');
         Route::post('resignation-requests/{resignation_request}/reject', [ResignationRequestController::class, 'reject'])->name('resignation-requests.reject');
+
+        // Front Office > Inquiry — see InquiryController.
+        Route::get('inquiries/summary', [InquiryController::class, 'summary'])->name('inquiries.summary');
+        Route::get('inquiries/staff-options', [InquiryController::class, 'staffOptions'])->name('inquiries.staff-options');
+        Route::apiResource('inquiries', InquiryController::class);
+        Route::post('inquiries/{inquiry}/follow-ups', [InquiryController::class, 'addFollowUp'])->name('inquiries.follow-ups.store');
+        Route::post('inquiries/{inquiry}/enroll', [InquiryController::class, 'enroll'])->name('inquiries.enroll');
+
+        // Front Office > Meetings — see MeetingController.
+        Route::get('meetings/summary', [MeetingController::class, 'summary'])->name('meetings.summary');
+        Route::get('meetings/staff-options', [MeetingController::class, 'staffOptions'])->name('meetings.staff-options');
+        Route::apiResource('meetings', MeetingController::class);
+
+        // Front Office > Appointments and Visitors — see AppointmentController / VisitorController.
+        Route::get('front-office/staff-options', [VisitorController::class, 'staffOptions'])->name('front-office.staff-options');
+        Route::get('appointments/summary', [AppointmentController::class, 'summary'])->name('appointments.summary');
+        Route::apiResource('appointments', AppointmentController::class);
+        Route::post('appointments/{appointment}/check-in', [AppointmentController::class, 'checkIn'])->name('appointments.check-in');
+        Route::get('visitors/summary', [VisitorController::class, 'summary'])->name('visitors.summary');
+        Route::apiResource('visitors', VisitorController::class);
+        Route::post('visitors/{visitor}/check-out', [VisitorController::class, 'checkOut'])->name('visitors.check-out');
 
         // HRM > Recruitment > Manpower request — decided in E-Approvals like the above.
         Route::apiResource('manpower-requests', ManpowerRequestController::class);

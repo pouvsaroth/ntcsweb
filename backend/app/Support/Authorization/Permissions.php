@@ -605,6 +605,45 @@ final class Permissions
 
     public const PROJECTS_DELETE = 'projects.delete';
 
+    // Front Office > Inquiry — people who ask about the school and their
+    // follow-ups (InquiryPolicy). Adding a follow-up counts as an update.
+    public const INQUIRIES_VIEW = 'inquiries.view';
+
+    public const INQUIRIES_CREATE = 'inquiries.create';
+
+    public const INQUIRIES_UPDATE = 'inquiries.update';
+
+    public const INQUIRIES_DELETE = 'inquiries.delete';
+
+    // Front Office > Meetings (MeetingPolicy). Writing the meeting note and
+    // marking it completed or cancelled count as an update.
+    public const MEETINGS_VIEW = 'meetings.view';
+
+    public const MEETINGS_CREATE = 'meetings.create';
+
+    public const MEETINGS_UPDATE = 'meetings.update';
+
+    public const MEETINGS_DELETE = 'meetings.delete';
+
+    // Front Office > Appointments (AppointmentPolicy) and Visitors
+    // (VisitorPolicy). Check in needs appointments.update + visitors.create;
+    // check out is visitors.update.
+    public const APPOINTMENTS_VIEW = 'appointments.view';
+
+    public const APPOINTMENTS_CREATE = 'appointments.create';
+
+    public const APPOINTMENTS_UPDATE = 'appointments.update';
+
+    public const APPOINTMENTS_DELETE = 'appointments.delete';
+
+    public const VISITORS_VIEW = 'visitors.view';
+
+    public const VISITORS_CREATE = 'visitors.create';
+
+    public const VISITORS_UPDATE = 'visitors.update';
+
+    public const VISITORS_DELETE = 'visitors.delete';
+
     // Exam Applications — a student's own self-submitted application to sit
     // an exam for one of their own enrollments (see ExamApplication's
     // docblock). Submitting/viewing your own is identity-gated (no
@@ -1074,6 +1113,24 @@ final class Permissions
                 self::FORMS_VIEW => 'View and submit approval forms',
                 self::MY_REQUESTS_VIEW => 'View your own approval requests',
             ],
+            'Front Office' => [
+                self::INQUIRIES_VIEW => 'View inquiries',
+                self::INQUIRIES_CREATE => 'Record inquiries',
+                self::INQUIRIES_UPDATE => 'Update inquiries and add follow-ups',
+                self::INQUIRIES_DELETE => 'Delete inquiries',
+                self::MEETINGS_VIEW => 'View meetings',
+                self::MEETINGS_CREATE => 'Arrange meetings',
+                self::MEETINGS_UPDATE => 'Update meetings and their notes',
+                self::MEETINGS_DELETE => 'Delete meetings',
+                self::APPOINTMENTS_VIEW => 'View appointments',
+                self::APPOINTMENTS_CREATE => 'Book appointments',
+                self::APPOINTMENTS_UPDATE => 'Update, check in or cancel appointments',
+                self::APPOINTMENTS_DELETE => 'Delete appointments',
+                self::VISITORS_VIEW => 'View the visitor log',
+                self::VISITORS_CREATE => 'Check visitors in',
+                self::VISITORS_UPDATE => 'Update visitors and check them out',
+                self::VISITORS_DELETE => 'Delete visitor records',
+            ],
             'Projects' => [
                 self::PROJECTS_VIEW => 'View projects',
                 self::PROJECTS_CREATE => 'Create projects',
@@ -1227,6 +1284,15 @@ final class Permissions
         // Staff not being able to delete Students.
         $projectsForEveryone = [self::PROJECTS_VIEW, self::PROJECTS_CREATE, self::PROJECTS_UPDATE];
 
+        // Front Office is front-desk work: School Admin and Staff (the
+        // receptionist) by default; deleting stays School Admin only.
+        $frontOfficeDesk = [
+            self::INQUIRIES_VIEW, self::INQUIRIES_CREATE, self::INQUIRIES_UPDATE,
+            self::MEETINGS_VIEW, self::MEETINGS_CREATE, self::MEETINGS_UPDATE,
+            self::APPOINTMENTS_VIEW, self::APPOINTMENTS_CREATE, self::APPOINTMENTS_UPDATE,
+            self::VISITORS_VIEW, self::VISITORS_CREATE, self::VISITORS_UPDATE,
+        ];
+
         // The dashboard landing page, "assets assigned to me," approval
         // forms, and "my requests" are all self-service, not an admin
         // capability — every system role gets all four by default, same as
@@ -1332,6 +1398,11 @@ final class Permissions
                 ...$eApprovals,
                 self::PROJECTS_DELETE,
                 ...$projectsForEveryone,
+                ...$frontOfficeDesk,
+                self::INQUIRIES_DELETE,
+                self::MEETINGS_DELETE,
+                self::APPOINTMENTS_DELETE,
+                self::VISITORS_DELETE,
             ],
             // Read-only across the board, with a few write exceptions: the
             // teaching catalog itself (who teaches what, in which room) stays
@@ -1347,6 +1418,8 @@ final class Permissions
             // same as Staff.
             Role::TEACHER => [
                 ...$selfServiceForEveryone,
+                // Teachers are invited to meetings, so they can open them.
+                self::MEETINGS_VIEW,
                 // Matches what a Teacher already sees today via the
                 // underlying module permission below (classes.view,
                 // attendance.view, staff.view, users.view) — see
@@ -1444,6 +1517,7 @@ final class Permissions
                 self::TIMETABLE_VIEW,
                 self::LEAVE_REQUESTS_VIEW,
                 ...$projectsForEveryone,
+                ...$frontOfficeDesk,
             ],
             Role::STUDENT => [],
         ];

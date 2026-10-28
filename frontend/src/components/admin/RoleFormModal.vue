@@ -65,6 +65,7 @@ type Action =
 const GROUPS = [
   'Dashboard',
   'Project Management',
+  'Front Office',
   'Academic',
   'Students',
   'Staff',
@@ -145,6 +146,10 @@ const MODULES: ModuleEntry[] = [
     },
   },
   { name: 'Projects', group: 'Project Management', actions: { view: 'projects.view', create: 'projects.create', update: 'projects.update', delete: 'projects.delete' } },
+  { name: 'Inquiries', group: 'Front Office', actions: { view: 'inquiries.view', create: 'inquiries.create', update: 'inquiries.update', delete: 'inquiries.delete' } },
+  { name: 'Meetings', group: 'Front Office', actions: { view: 'meetings.view', create: 'meetings.create', update: 'meetings.update', delete: 'meetings.delete' } },
+  { name: 'Appointments', group: 'Front Office', actions: { view: 'appointments.view', create: 'appointments.create', update: 'appointments.update', delete: 'appointments.delete' } },
+  { name: 'Visitors', group: 'Front Office', actions: { view: 'visitors.view', create: 'visitors.create', update: 'visitors.update', delete: 'visitors.delete' } },
   { name: 'Positions', group: 'Staff', actions: { view: 'positions.view', create: 'positions.create', update: 'positions.update', delete: 'positions.delete' } },
   {
     name: 'Recruitment',
@@ -476,6 +481,7 @@ function toggleModule(module: (typeof MODULES)[number], checked: boolean) {
 const GROUP_I18N_KEYS: Partial<Record<(typeof GROUPS)[number], string>> = {
   Dashboard: 'dashboard',
   'Project Management': 'projectManagement',
+  'Front Office': 'frontOffice',
   Academic: 'academic',
   Students: 'students',
   Staff: 'staff',

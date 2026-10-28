@@ -117,4 +117,16 @@ final class NotificationType
     public const CLASS_CHANGE_REQUEST_APPROVED = 'class_change_request_approved';
 
     public const CLASS_CHANGE_REQUEST_REJECTED = 'class_change_request_rejected';
+
+    // Front Office meetings: staff added as participants, or a meeting they are in moved or called off.
+    public const MEETING_INVITED = 'meeting_invited';
+
+    public const MEETING_UPDATED = 'meeting_updated';
+
+    public const MEETING_CANCELLED = 'meeting_cancelled';
+
+    // Front Office: someone booked to see you, and your visitor has arrived.
+    public const APPOINTMENT_BOOKED = 'appointment_booked';
+
+    public const VISITOR_ARRIVED = 'visitor_arrived';
 }

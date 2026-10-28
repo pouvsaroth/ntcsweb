@@ -6,6 +6,7 @@ import { attendanceTabs } from '@/router/attendanceTabs'
 import { leaveTabs } from '@/router/leaveTabs'
 import { payrollTabs } from '@/router/payrollTabs'
 import { performanceTabs } from '@/router/performanceTabs'
+import { frontOfficeTabs } from '@/router/frontOfficeTabs'
 import { recruitmentTabs } from '@/router/recruitmentTabs'
 import { schoolSetupTabs } from '@/router/schoolSetupTabs'
 import { teacherTabs } from '@/router/teacherTabs'
@@ -538,6 +539,26 @@ const adminRoutes: RouteRecordRaw[] = [
       { path: 'job-levels', name: 'admin.organization.job-levels', component: organizationUnits, props: { kind: 'job-levels' } },
       { path: 'reporting', name: 'admin.organization.reporting', component: () => import('@/pages/admin/ReportingManagers.vue') },
       { path: 'hierarchy', name: 'admin.organization.hierarchy', component: () => import('@/pages/admin/OrganizationHierarchy.vue') },
+    ],
+  },
+  {
+    // Front Office: tabs as child routes (see FrontOfficeLayout.vue / frontOfficeTabs.ts).
+    path: 'front-office',
+    component: () => import('@/pages/admin/frontOffice/FrontOfficeLayout.vue'),
+    meta: { titleKey: 'adminNav.groups.frontOffice' },
+    children: [
+      {
+        path: '',
+        name: 'admin.front-office',
+        redirect: () => {
+          const auth = useAuthStore()
+          return (frontOfficeTabs.find((tab) => auth.can(tab.permission)) ?? frontOfficeTabs[0]!).to
+        },
+      },
+      { path: 'inquiries', name: 'admin.front-office.inquiries', component: () => import('@/pages/admin/frontOffice/Inquiries.vue') },
+      { path: 'meetings', name: 'admin.front-office.meetings', component: () => import('@/pages/admin/frontOffice/Meetings.vue') },
+      { path: 'appointments', name: 'admin.front-office.appointments', component: () => import('@/pages/admin/frontOffice/Appointments.vue') },
+      { path: 'visitors', name: 'admin.front-office.visitors', component: () => import('@/pages/admin/frontOffice/Visitors.vue') },
     ],
   },
   {

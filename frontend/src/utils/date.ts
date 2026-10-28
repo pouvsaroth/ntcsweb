@@ -26,6 +26,14 @@ export function formatClock(date: Date): string {
   return `${pad(date.getHours())}:${pad(date.getMinutes())}`
 }
 
+/** A bare "HH:mm" time (no date) in the person's clock format. */
+export function formatTimeOfDay(time: string | null | undefined): string {
+  if (!time) return ''
+  const [h, m] = time.split(':').map(Number)
+  const date = new Date(2000, 0, 1, h ?? 0, m ?? 0)
+  return formatClock(date)
+}
+
 function pad(value: number): string {
   return String(value).padStart(2, '0')
 }

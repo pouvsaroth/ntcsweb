@@ -81,10 +81,21 @@ export interface CalendarTerm {
   start_date: string
   end_date: string
 }
+/** A Front Office meeting on the calendar (only for people who can see meetings). */
+export interface CalendarMeeting {
+  id: number
+  title: string
+  date: string
+  start_time: string
+  end_time: string | null
+  location: string | null
+  status: 'scheduled' | 'completed'
+}
 export interface CalendarData {
   events: CalendarEvent[]
   holidays: CalendarHoliday[]
   terms: CalendarTerm[]
+  meetings?: CalendarMeeting[]
 }
 export interface CalendarEventInput {
   title: string

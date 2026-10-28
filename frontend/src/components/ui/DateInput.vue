@@ -109,8 +109,9 @@ function onTime(event: Event) {
 const borderClass = computed(() =>
   props.invalid ? 'border-danger-400 focus:border-danger-500 focus:ring-danger-200' : 'border-neutral-300 focus:border-primary-500 focus:ring-primary-200',
 )
+// No width here: the date box fills the row (w-full), the time box stays w-32.
 const boxClass =
-  'block w-full rounded-lg border px-3 py-2 text-sm text-neutral-900 shadow-sm transition-colors placeholder:text-neutral-400 focus:outline-none focus:ring-2 disabled:bg-neutral-100 disabled:text-neutral-500'
+  'block rounded-lg border px-3 py-2 text-sm text-neutral-900 shadow-sm transition-colors placeholder:text-neutral-400 focus:outline-none focus:ring-2 disabled:bg-neutral-100 disabled:text-neutral-500'
 </script>
 
 <template>
@@ -128,7 +129,7 @@ const boxClass =
         :required="required"
         :aria-invalid="invalid"
         :aria-describedby="describedBy"
-        :class="[boxClass, borderClass, inputClass, 'pr-10']"
+        :class="[boxClass, borderClass, inputClass, 'w-full pr-10']"
         @input="onType"
         @blur="onBlur"
       />

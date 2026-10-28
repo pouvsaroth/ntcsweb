@@ -9,6 +9,7 @@ import { payrollTabs } from '@/router/payrollTabs'
 import { performanceTabs } from '@/router/performanceTabs'
 import { documentLinks } from '@/router/publicNav'
 import { examinationPermissions } from '@/router/examinationTabs'
+import { frontOfficeTabs } from '@/router/frontOfficeTabs'
 import { recruitmentTabs } from '@/router/recruitmentTabs'
 
 export interface AdminNavItem {
@@ -124,6 +125,14 @@ export const adminNav: AdminNavGroup[] = [
     icon: 'collection',
     standalone: true,
     items: [{ labelKey: 'adminNav.groups.projectManagement', icon: 'collection', to: '/admin/projects', permission: 'projects.view' }],
+  },
+  {
+    // One top-level link; Inquiry, Meetings, Appointments and Visitors
+    // are tabs on the page itself (see frontOfficeTabs.ts).
+    labelKey: 'adminNav.groups.frontOffice',
+    icon: 'inbox',
+    standalone: true,
+    items: [{ labelKey: 'adminNav.groups.frontOffice', icon: 'inbox', to: '/admin/front-office', permission: frontOfficeTabs.map((tab) => tab.permission) }],
   },
   {
     labelKey: 'adminNav.groups.platform',

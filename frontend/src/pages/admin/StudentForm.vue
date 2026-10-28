@@ -11,6 +11,7 @@ import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import LookupSelect from '@/components/ui/LookupSelect.vue'
 import WebcamCaptureModal from '@/components/ui/WebcamCaptureModal.vue'
 import { geographyService, type GeographyOption } from '@/services/geography'
+import { inquiriesService } from '@/services/inquiries'
 import { studentsService, type StudentEducation, type StudentGuardian, type StudentInput } from '@/services/students'
 import { ApiRequestError } from '@/types/api'
 
@@ -19,6 +20,8 @@ const route = useRoute()
 const router = useRouter()
 
 const studentId = computed(() => (route.params.id ? Number(route.params.id) : null))
+/** Front Office > Inquiry > Register student: the inquiry to fill from, and to link the new student to. */
+const inquiryId = computed(() => (!route.params.id && route.query.inquiry ? Number(route.query.inquiry) : null))
 const isEditing = computed(() => studentId.value !== null)
 
 function emptyGuardian(): StudentGuardian {
@@ -183,6 +186,21 @@ function onPhotoChange(event: Event) {
   setPhotoFile(file)
 }
 
+/** The inquirer's name (first word, then the rest), gender, phone and email. */
+async function fillFromInquiry(id: number) {
+  try {
+    const inquiry = await inquiriesService.get(id)
+    const [first = '', ...rest] = inquiry.name.trim().split(/\s+/)
+    form.first_name = first
+    form.last_name = rest.join(' ')
+    if (inquiry.gender) form.gender = inquiry.gender
+    form.phone = inquiry.phone
+    if (inquiry.email) form.email = inquiry.email
+  } catch {
+    // Not fatal: the form still works, just empty.
+  }
+}
+
 async function load() {
   loading.value = true
   loadError.value = null
@@ -198,6 +216,7 @@ async function load() {
       form.date_of_birth = yearsAgo(13)
       form.village_code = DEFAULT_VILLAGE_CODE
       await selectAddressFromVillageCode(DEFAULT_VILLAGE_CODE)
+      if (inquiryId.value) await fillFromInquiry(inquiryId.value)
       return
     }
 
@@ -241,7 +260,13 @@ async function submit() {
     if (isEditing.value) {
       await studentsService.update(studentId.value!, payload)
     } else {
-      await studentsService.create(payload)
+      const student = await studentsService.create(payload)
+      if (inquiryId.value) {
+        // Close the inquiry as Enrolled, linked to this student; back to Front Office.
+        await inquiriesService.enroll(inquiryId.value, student.id).catch(() => undefined)
+        await router.push('/admin/front-office/inquiries')
+        return
+      }
     }
 
     await router.push('/admin/students')
