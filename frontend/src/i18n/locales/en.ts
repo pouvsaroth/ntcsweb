@@ -3299,6 +3299,7 @@ const en = {
       notePlaceholder: 'Write a note…',
       notesSaved: 'Saved notes for {count} student(s).',
       notesFailed: 'Could not save the notes.',
+      noteHint: 'Notes for the checked students, or for everyone shown when none is checked.',
       responsibleStaff: 'Responsible Staff',
       columnResponsibleStaff: 'Responsible staff',
       responsibleStaffTitle: 'Responsible Staff',

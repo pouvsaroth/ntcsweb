@@ -268,6 +268,11 @@ function onSentToExam(count: number) {
 const notesModalOpen = ref(false)
 const notesMessage = ref<string | null>(null)
 
+// The checked students (in screen order), or everyone shown when none is checked.
+const noteTargets = computed(() =>
+  selectedIds.value.length > 0 ? sortedRoster.value.filter((row) => selectedIds.value.includes(row.id)) : sortedRoster.value,
+)
+
 function openNotes() {
   notesMessage.value = null
   notesModalOpen.value = true
@@ -341,6 +346,11 @@ async function exportExcel() {
   }
 }
 
+const allShownSelected = computed(() => sortedRoster.value.length > 0 && sortedRoster.value.every((row) => selectedIds.value.includes(row.id)))
+function toggleAllShown() {
+  selectedIds.value = allShownSelected.value ? [] : sortedRoster.value.map((row) => row.id)
+}
+
 function toggleSelected(id: number) {
   selectedIds.value = selectedIds.value.includes(id) ? selectedIds.value.filter((x) => x !== id) : [...selectedIds.value, id]
 }
@@ -403,8 +413,8 @@ onMounted(() => {
           <BaseButton v-if="canSendToExam" variant="outline" :disabled="selectedIds.length === 0" @click="openSendToExam">
             {{ t('admin.classStudents.sendToExam') }}
           </BaseButton>
-          <BaseButton v-if="canNote" variant="outline" :disabled="roster.length === 0" @click="openNotes">
-            {{ t('admin.classStudents.note') }}
+          <BaseButton v-if="canNote" variant="outline" :disabled="sortedRoster.length === 0" :title="t('admin.classStudents.noteHint')" @click="openNotes">
+            {{ t('admin.classStudents.note') }}<template v-if="selectedIds.length > 0"> ({{ selectedIds.length }})</template>
           </BaseButton>
           <BaseButton v-if="canResponsibleStaff" variant="outline" :disabled="selectedIds.length === 0" @click="openResponsibleStaff">
             {{ t('admin.classStudents.responsibleStaff') }}<template v-if="selectedIds.length > 0"> ({{ selectedIds.length }})</template>
@@ -441,6 +451,17 @@ onMounted(() => {
           {{ t('admin.classStudents.emptyMessage') }}
         </p>
         <div v-else class="space-y-2">
+          <label class="flex items-center gap-2 rounded-lg border border-neutral-200 bg-white px-2.5 py-2 text-sm font-medium text-neutral-800 shadow-sm">
+            <input
+              type="checkbox"
+              class="rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+              :checked="allShownSelected"
+              :indeterminate="selectedIds.length > 0 && !allShownSelected"
+              @change="toggleAllShown"
+            />
+            {{ t('common.selectAll') }}
+            <span v-if="selectedIds.length > 0" class="ml-auto text-xs font-normal text-neutral-500">{{ t('common.selectedCount', { count: selectedIds.length }) }}</span>
+          </label>
           <div v-for="(row, index) in sortedRoster" :key="row.id" class="rounded-lg border border-neutral-200 bg-white px-2.5 py-2 shadow-sm">
             <div class="flex items-center gap-2">
               <input
@@ -569,7 +590,7 @@ onMounted(() => {
     <EnrollmentStatusModal v-model="statusModalOpen" :enrollment="activeEnrollment" @saved="load" />
     <ChangeTableModal v-model="tableModalOpen" :enrollment="activeEnrollment" @saved="load" />
     <SendToExamModal v-model="sendToExamModalOpen" :enrollment-ids="selectedIds" @saved="onSentToExam" />
-    <ClassNotesModal v-model="notesModalOpen" :enrollments="sortedRoster" @saved="onNotesSaved" />
+    <ClassNotesModal v-model="notesModalOpen" :enrollments="noteTargets" @saved="onNotesSaved" />
     <AssignStudentsModal v-if="schoolClass" v-model="assignOpen" :class-id="schoolClass.id" :class-name="schoolClass.name" @saved="onAssigned" />
   </div>
 </template>

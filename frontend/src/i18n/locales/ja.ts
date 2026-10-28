@@ -3295,6 +3295,7 @@ const ja: MessageSchema = {
       notePlaceholder: 'メモを入力…',
       notesSaved: '{count} 名の生徒のメモを保存しました。',
       notesFailed: 'メモを保存できませんでした。',
+      noteHint: '選択した生徒のメモ。選択がなければ表示中の全員。',
       responsibleStaff: '担当スタッフ',
       columnResponsibleStaff: '担当スタッフ',
       responsibleStaffTitle: '担当スタッフ',

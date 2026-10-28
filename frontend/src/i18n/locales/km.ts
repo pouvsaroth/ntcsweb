@@ -3295,6 +3295,7 @@ const km: MessageSchema = {
       notePlaceholder: 'សរសេរកំណត់ចំណាំ…',
       notesSaved: 'បានរក្សាទុកកំណត់ចំណាំសម្រាប់សិស្ស {count} នាក់។',
       notesFailed: 'មិនអាចរក្សាទុកកំណត់ចំណាំបានទេ។',
+      noteHint: 'កំណត់ចំណាំសម្រាប់សិស្សដែលបានជ្រើស ឬសិស្សទាំងអស់ដែលបង្ហាញ ពេលមិនបានជ្រើស។',
       responsibleStaff: 'បុគ្គលិកទទួលខុសត្រូវ',
       columnResponsibleStaff: 'បុគ្គលិកទទួលខុសត្រូវ',
       responsibleStaffTitle: 'បុគ្គលិកទទួលខុសត្រូវ',

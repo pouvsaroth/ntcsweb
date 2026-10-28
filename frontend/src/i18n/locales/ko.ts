@@ -3295,6 +3295,7 @@ const ko: MessageSchema = {
       notePlaceholder: '메모를 입력하세요…',
       notesSaved: '학생 {count}명의 메모를 저장했습니다.',
       notesFailed: '메모를 저장할 수 없습니다.',
+      noteHint: '선택한 학생의 메모, 선택이 없으면 표시된 모든 학생.',
       responsibleStaff: '담당 직원',
       columnResponsibleStaff: '담당 직원',
       responsibleStaffTitle: '담당 직원',

@@ -3294,6 +3294,7 @@ const zh: MessageSchema = {
       notePlaceholder: '填写备注…',
       notesSaved: '已保存 {count} 名学生的备注。',
       notesFailed: '无法保存备注。',
+      noteHint: '为勾选的学生填写备注；未勾选时为显示的全部学生。',
       responsibleStaff: '负责员工',
       columnResponsibleStaff: '负责员工',
       responsibleStaffTitle: '负责员工',
