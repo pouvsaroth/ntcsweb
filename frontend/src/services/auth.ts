@@ -1,5 +1,6 @@
-import { apiGetWithMeta, apiPost, primeCsrfCookie } from '@/services/http'
+import { apiGetWithMeta, apiPatch, apiPost, primeCsrfCookie } from '@/services/http'
 import type { User } from '@/types/models'
+import type { UserPreferences } from '@/utils/appearance'
 
 /** See backend App\Platform\Billing\BillingNotice. */
 export interface BillingNotice {
@@ -165,6 +166,11 @@ export const authService = {
   },
 
   /** Multipart — `avatar` is only appended when the admin actually picked a new file. */
+  /** My account → Preferences: one or more choices, saved on the account. */
+  updatePreferences(payload: UserPreferences) {
+    return apiPatch<User>('/auth/me/preferences', payload)
+  },
+
   updateProfile(payload: { name: string; phone: string; avatar?: File | null }) {
     const form = new FormData()
     form.append('name', payload.name)

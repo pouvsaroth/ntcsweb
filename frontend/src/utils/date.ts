@@ -5,6 +5,27 @@
  * ISO strings printed verbatim.
  */
 
+import { ref } from 'vue'
+
+/** 24-hour (14:30) or 12-hour (02:30 PM) — My account → Preferences (utils/appearance.ts). */
+export type ClockFormat = '24' | '12'
+
+// A ref, so every time on screen redraws the moment the choice changes.
+const clock = ref<ClockFormat>('24')
+
+export function setClockFormat(format: ClockFormat): void {
+  clock.value = format
+}
+
+/** HH:mm, or hh:mm AM/PM — the person's own choice. */
+export function formatClock(date: Date): string {
+  if (clock.value === '12') {
+    const h = date.getHours() % 12 || 12
+    return `${pad(h)}:${pad(date.getMinutes())} ${date.getHours() < 12 ? 'AM' : 'PM'}`
+  }
+  return `${pad(date.getHours())}:${pad(date.getMinutes())}`
+}
+
 function pad(value: number): string {
   return String(value).padStart(2, '0')
 }
@@ -40,9 +61,9 @@ export function formatDate(value: string | Date | null | undefined): string {
   return `${pad(date.getDate())}-${pad(date.getMonth() + 1)}-${date.getFullYear()}`
 }
 
-/** dd-mm-yyyy HH:mm, in the viewer's local time — for a timestamp (created_at, decided_at, ...), not a plain date. */
+/** dd-mm-yyyy HH:mm (or hh:mm AM/PM), in the viewer's local time — for a timestamp (created_at, decided_at, ...), not a plain date. */
 export function formatDateTime(value: string | Date | null | undefined): string {
   const date = toDate(value)
   if (!date) return '—'
-  return `${formatDate(date)} ${pad(date.getHours())}:${pad(date.getMinutes())}`
+  return `${formatDate(date)} ${formatClock(date)}`
 }

@@ -1,3 +1,4 @@
+import type { UserPreferences } from '@/utils/appearance'
 /**
  * Mirrors the backend API Resources (App\Http\Resources\*) field-for-field.
  * If a Resource's toArray() changes, this file changes with it.
@@ -51,6 +52,8 @@ export interface User {
   avatar_url: string | null
   status: 'active' | 'invited' | 'suspended' | 'inactive' | 'pending_approval'
   locale: string | null
+  /** My account → Preferences; only on /auth/me (your own account). */
+  preferences?: UserPreferences
   email_verified: boolean
   last_login_at: string | null
   created_at: string

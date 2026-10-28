@@ -258,6 +258,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::middleware(['auth:sanctum', 'active'])->group(function () {
             Route::get('me', [AuthController::class, 'me'])->name('me');
             Route::post('me', [AuthController::class, 'updateProfile'])->name('me.update');
+            Route::patch('me/preferences', [AuthController::class, 'updatePreferences'])->name('me.preferences');
             Route::post('logout', [AuthController::class, 'logout'])->name('logout');
             Route::post('change-password', [PasswordController::class, 'change'])->name('change-password');
 

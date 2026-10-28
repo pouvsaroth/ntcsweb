@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Api\V1\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Auth\LoginRequest;
 use App\Http\Requests\Api\V1\Auth\SelectLoginTenantRequest;
+use App\Http\Requests\Api\V1\Auth\UpdatePreferencesRequest;
 use App\Http\Requests\Api\V1\Auth\UpdateProfileRequest;
 use App\Http\Resources\UserResource;
 use App\Http\Responses\ApiResponse;
@@ -328,6 +329,32 @@ final class AuthController extends Controller
         if ($newAvatarPath !== null && $previousAvatarPath !== null) {
             Storage::disk('public')->delete($previousAvatarPath);
         }
+
+        return ApiResponse::success(new UserResource($user->fresh()->loadMissing('roles', 'tenant')));
+    }
+
+    /**
+     * My account → Preferences: language, theme, accent colour and clock,
+     * one or more at a time. Saved on the account so they follow the
+     * person to any device; always `$request->user()`, never someone else.
+     */
+    public function updatePreferences(UpdatePreferencesRequest $request): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+        $data = $request->validated();
+
+        $preferences = $user->preferences ?? [];
+        foreach (['locale', 'theme', 'accent', 'clock'] as $key) {
+            if (array_key_exists($key, $data)) {
+                $preferences[$key] = $key === 'accent' && $data[$key] !== null ? strtolower($data[$key]) : $data[$key];
+            }
+        }
+
+        $user->update([
+            'preferences' => $preferences,
+            ...(isset($data['locale']) ? ['locale' => $data['locale']] : []),
+        ]);
 
         return ApiResponse::success(new UserResource($user->fresh()->loadMissing('roles', 'tenant')));
     }

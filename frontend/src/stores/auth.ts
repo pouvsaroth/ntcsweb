@@ -6,6 +6,7 @@ import { type ActingTenant, getActingTenant, resetDevTenant, setActingTenant, se
 import { detachPushOnLogout } from '@/services/pushNotifications'
 import type { User } from '@/types/models'
 import { ApiRequestError } from '@/types/api'
+import { adoptPreferences, previewPreferences, type UserPreferences } from '@/utils/appearance'
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
@@ -60,6 +61,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   function applySession(result: MeResult) {
     user.value = result.user
+    adoptPreferences(result.user.preferences)
     permissions.value = result.permissions
     isSuperAdmin.value = result.is_super_admin
     tenantName.value = result.tenant?.name ?? null
@@ -211,6 +213,12 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = await authService.updateProfile(payload)
   }
 
+  /** Saved to the account; applied here at once, before the server answers. */
+  async function updatePreferences(payload: UserPreferences): Promise<void> {
+    previewPreferences(payload)
+    user.value = await authService.updatePreferences(payload)
+  }
+
   /** A customer of the school system (or not known): school words; otherwise organization words. */
   const isSchoolCustomer = computed(() => tenantSystems.value.length === 0 || tenantSystems.value.some((s) => s.code === 'school'))
 
@@ -246,6 +254,7 @@ export const useAuthStore = defineStore('auth', () => {
     selectTenant,
     logout,
     updateProfile,
+    updatePreferences,
     enterTenant,
     exitTenant,
   }

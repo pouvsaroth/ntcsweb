@@ -65,6 +65,13 @@ const adminRoutes: RouteRecordRaw[] = [
     meta: { titleKey: 'adminNav.items.dashboard', studentAllowed: true },
   },
   {
+    // Your own account (profile, password, preferences) — anyone signed in.
+    path: 'account',
+    name: 'admin.account',
+    component: () => import('@/pages/admin/MyAccount.vue'),
+    meta: { titleKey: 'myAccount.title', studentAllowed: true },
+  },
+  {
     path: 'projects',
     name: 'admin.projects',
     component: () => import('@/pages/admin/Projects.vue'),

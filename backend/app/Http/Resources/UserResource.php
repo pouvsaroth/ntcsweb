@@ -25,6 +25,11 @@ class UserResource extends JsonResource
             'avatar_url' => $this->avatarUrl(),
             'status' => $this->status,
             'locale' => $this->locale,
+            // My account → Preferences (theme, accent, clock); only ever your own.
+            'preferences' => $this->when(
+                $request->user()?->is($this->resource) === true,
+                fn () => (object) ($this->preferences ?? []),
+            ),
             'email_verified' => $this->email_verified_at !== null,
             'last_login_at' => $this->last_login_at?->toIso8601String(),
             'created_at' => $this->created_at?->toIso8601String(),

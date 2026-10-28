@@ -122,6 +122,43 @@
   }
 }
 
+/* ==========================================================================
+   DARK THEME — My account → Preferences (utils/appearance.ts sets
+   data-theme on <html>; admin app only). The neutral scale is turned
+   around, so bg-neutral-50 pages go deep and text-neutral-900 goes light
+   without touching any component. White surfaces (cards, modals, inputs)
+   become the raised dark surface. Outside any layer on purpose: it must
+   beat the utility classes. The primary scale is set from script, with the
+   accent colour.
+   ========================================================================== */
+:root[data-theme='dark'] {
+  --surface: #172033;
+  --color-neutral-50: #0b1220;
+  --color-neutral-100: #1f2a3d;
+  --color-neutral-200: #2b3a50;
+  --color-neutral-300: #3e4f68;
+  --color-neutral-400: #64748b;
+  --color-neutral-500: #94a3b8;
+  --color-neutral-600: #b4c0cf;
+  --color-neutral-700: #cbd5e1;
+  --color-neutral-800: #e2e8f0;
+  --color-neutral-900: #f1f5f9;
+}
+
+:root[data-theme='dark'] .bg-white,
+:root[data-theme='dark'] input:not([type='checkbox']):not([type='radio']),
+:root[data-theme='dark'] select,
+:root[data-theme='dark'] textarea {
+  background-color: var(--surface);
+}
+
+:root[data-theme='dark'] input,
+:root[data-theme='dark'] select,
+:root[data-theme='dark'] textarea {
+  color: var(--color-neutral-800);
+  border-color: var(--color-neutral-300);
+}
+
 /* Password boxes have our own eye button (BaseInput); hide Edge's built-in
    one, which only shows while typing and would make two eyes. */
 input::-ms-reveal,

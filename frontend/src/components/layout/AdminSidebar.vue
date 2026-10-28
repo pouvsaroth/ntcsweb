@@ -1,10 +1,8 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
-import ChangePasswordModal from '@/components/layout/ChangePasswordModal.vue'
-import EditProfileModal from '@/components/layout/EditProfileModal.vue'
 import NavIcon from '@/components/layout/NavIcon.vue'
 import { adminNav, isNavItemVisible, type AdminNavGroup, type AdminNavItem } from '@/router/adminNav'
 import { swapOrganizationText } from '@/i18n/orgWords'
@@ -33,32 +31,6 @@ const primaryRoleName = computed(() => {
 
 /** The school's (or company's) name at the top; the signed-in school's own, then the website's. */
 const orgName = computed(() => auth.tenantName ?? site.info.name ?? '')
-
-const editProfileOpen = ref(false)
-const changePasswordOpen = ref(false)
-
-// The pencil badge on the avatar opens a tiny menu choosing between the two
-// account modals. A document listener (not a `fixed inset-0` backdrop) closes
-// it, because the aside's `transform` would trap a fixed backdrop inside the
-// sidebar and leave clicks on the page itself unhandled.
-const accountMenuOpen = ref(false)
-const accountMenuRef = ref<HTMLElement | null>(null)
-
-function onDocumentPointerDown(event: PointerEvent) {
-  if (accountMenuRef.value && !accountMenuRef.value.contains(event.target as Node)) {
-    accountMenuOpen.value = false
-  }
-}
-
-onMounted(() => document.addEventListener('pointerdown', onDocumentPointerDown))
-onBeforeUnmount(() => document.removeEventListener('pointerdown', onDocumentPointerDown))
-
-function openAccountModal(which: 'profile' | 'password') {
-  accountMenuOpen.value = false
-  if (which === 'profile') editProfileOpen.value = true
-  else changePasswordOpen.value = true
-  emit('close')
-}
 
 async function handleLogout() {
   await auth.logout()
@@ -410,67 +382,30 @@ watch(
       </nav>
     </div>
 
-    <!-- You: picture, name and role (tap for Edit Profile / Change Password),
-         with Sign Out beside it. Outside the scrolling list, so always here. -->
+    <!-- You: picture, name and role (opens My account), with Sign Out
+         beside it. Outside the scrolling list, so always here. -->
     <div
       class="flex shrink-0 items-center gap-1 border-t border-neutral-200 px-3 py-3"
       :class="adminUi.sidebarCollapsed ? 'lg:flex-col lg:px-2' : ''"
     >
-      <div ref="accountMenuRef" class="relative min-w-0 flex-1" :class="adminUi.sidebarCollapsed ? 'lg:flex-none' : ''">
-        <button
-          type="button"
-          class="flex w-full min-w-0 items-center gap-3 rounded-lg p-2 text-left hover:bg-neutral-100"
-          :class="adminUi.sidebarCollapsed ? 'lg:p-1' : ''"
-          :title="t('common.editProfile')"
-          :aria-label="`${t('common.editProfile')}: ${auth.user?.name ?? ''}`"
-          :aria-expanded="accountMenuOpen"
-          @click="accountMenuOpen = !accountMenuOpen"
-        >
-          <span class="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary-100 text-sm font-semibold text-primary-800">
-            <img v-if="auth.user?.avatar_url" :src="auth.user.avatar_url" alt="" class="h-full w-full object-cover" />
-            <template v-else>{{ auth.user?.name.charAt(0) ?? '?' }}</template>
-          </span>
-          <span class="grid min-w-0 flex-1" :class="adminUi.sidebarCollapsed ? 'lg:hidden' : ''">
-            <span class="truncate text-sm font-semibold text-neutral-900">{{ auth.user?.name }}</span>
-            <span v-if="primaryRoleName" class="truncate text-xs text-neutral-500">{{ primaryRoleName }}</span>
-          </span>
-        </button>
-
-        <Transition
-          enter-active-class="transition ease-out duration-100"
-          enter-from-class="opacity-0 scale-95"
-          enter-to-class="opacity-100 scale-100"
-        >
-          <div
-            v-if="accountMenuOpen"
-            class="absolute bottom-full left-0 z-50 mb-2 w-48 rounded-lg border border-neutral-200 bg-white py-1 text-left shadow-lg"
-            role="menu"
-          >
-            <button
-              type="button"
-              class="flex w-full items-center gap-2 px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-50"
-              role="menuitem"
-              @click="openAccountModal('profile')"
-            >
-              <svg class="h-4 w-4 text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-              </svg>
-              {{ t('common.editProfile') }}
-            </button>
-            <button
-              type="button"
-              class="flex w-full items-center gap-2 px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-50"
-              role="menuitem"
-              @click="openAccountModal('password')"
-            >
-              <svg class="h-4 w-4 text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
-              </svg>
-              {{ t('common.changePassword') }}
-            </button>
-          </div>
-        </Transition>
-      </div>
+      <RouterLink
+        to="/admin/account"
+        class="flex min-w-0 flex-1 items-center gap-3 rounded-lg p-2 text-left hover:bg-neutral-100"
+        :class="adminUi.sidebarCollapsed ? 'lg:flex-none lg:p-1' : ''"
+        active-class="bg-primary-50"
+        :title="t('myAccount.open')"
+        :aria-label="`${t('myAccount.open')}: ${auth.user?.name ?? ''}`"
+        @click="emit('close')"
+      >
+        <span class="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary-100 text-sm font-semibold text-primary-800">
+          <img v-if="auth.user?.avatar_url" :src="auth.user.avatar_url" alt="" class="h-full w-full object-cover" />
+          <template v-else>{{ auth.user?.name.charAt(0) ?? '?' }}</template>
+        </span>
+        <span class="grid min-w-0 flex-1" :class="adminUi.sidebarCollapsed ? 'lg:hidden' : ''">
+          <span class="truncate text-sm font-semibold text-neutral-900">{{ auth.user?.name }}</span>
+          <span v-if="primaryRoleName" class="truncate text-xs text-neutral-500">{{ primaryRoleName }}</span>
+        </span>
+      </RouterLink>
       <button
         type="button"
         class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-danger-600 hover:bg-danger-50"
@@ -529,6 +464,4 @@ watch(
     </div>
   </Teleport>
 
-  <EditProfileModal v-model="editProfileOpen" />
-  <ChangePasswordModal v-model="changePasswordOpen" />
 </template>

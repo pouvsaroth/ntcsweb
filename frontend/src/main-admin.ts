@@ -4,7 +4,11 @@ import { createApp } from 'vue'
 import App from './App.vue'
 import { i18n } from './i18n'
 import router from './router/admin'
+import { initAppearance } from './utils/appearance'
 import './assets/styles/main.css'
+
+// Theme, colour and clock from this browser's copy, before the first paint.
+initAppearance()
 
 const app = createApp(App)
 

@@ -44,7 +44,7 @@ use Laravel\Sanctum\HasApiTokens;
  * @property string|null $phone
  * @property string $status
  */
-#[Fillable(['name', 'email', 'phone', 'password', 'status', 'locale', 'avatar_path'])]
+#[Fillable(['name', 'email', 'phone', 'password', 'status', 'locale', 'avatar_path', 'preferences'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements MustVerifyEmailContract
 {
@@ -92,6 +92,7 @@ class User extends Authenticatable implements MustVerifyEmailContract
             'studying_ended_at' => 'datetime',
             'auto_deactivated_at' => 'datetime',
             'password' => 'hashed',
+            'preferences' => 'array',
         ];
     }
 

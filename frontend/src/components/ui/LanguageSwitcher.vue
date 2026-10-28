@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 import FlagIcon from '@/components/ui/FlagIcon.vue'
 import { LOCALE_NAMES, SUPPORTED_LOCALES, setLocale, type Locale } from '@/i18n'
+import { useAuthStore } from '@/stores/auth'
 
 interface Props {
   /** 'light' for dark backgrounds (public header on a light page), 'dark' text for light backgrounds. */
@@ -14,10 +15,13 @@ withDefaults(defineProps<Props>(), { variant: 'dark' })
 
 const { locale, t } = useI18n()
 const open = ref(false)
+const auth = useAuthStore()
 
 function choose(next: Locale) {
   setLocale(next)
   open.value = false
+  // Signed in: the language follows the person to any device (My account).
+  if (auth.isAuthenticated) void auth.updatePreferences({ locale: next }).catch(() => undefined)
 }
 </script>
 
