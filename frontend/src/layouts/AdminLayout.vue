@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import AdminHeader from '@/components/layout/AdminHeader.vue'
@@ -28,7 +28,15 @@ const { t } = useI18n()
 // whether School Regulation/Attendance Policy have actually been uploaded.
 // A no-op if PublicLayout/AuthLayout already loaded it (see site.ts's
 // `loaded` guard).
-onMounted(() => site.load())
+//
+// Loaded again whenever the signed-in school changes: on the shared ERP
+// domain the sign-in page loaded it before sign-in, with no school known
+// (so no logo), and a Super Admin can switch school.
+watch(
+  () => `${auth.user?.id ?? ''}:${auth.user?.tenant?.id ?? ''}:${auth.actingTenant?.id ?? ''}`,
+  () => void site.load(true),
+  { immediate: true },
+)
 
 // This school's own wording of the app's text (Settings > Language >
 // Translation) — reloaded when a Super Admin switches school, and dropped

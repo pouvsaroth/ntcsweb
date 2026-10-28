@@ -138,8 +138,13 @@ export const useSiteStore = defineStore('site', () => {
   // tenant is resolved (public site, admin panel, auth screens alike).
   useFavicon(computed(() => info.value.logo ?? '/favicon.svg'))
 
-  async function load(): Promise<void> {
-    if (loaded.value) return
+  /**
+   * `force` loads again even when already loaded — the admin app does this
+   * when the signed-in school changes: on the shared ERP domain the sign-in
+   * page loads before anyone is signed in, so no school (and no logo) yet.
+   */
+  async function load(force = false): Promise<void> {
+    if (loaded.value && !force) return
     try {
       info.value = await apiGet<PublicSiteInfo>('/public/settings')
       resolved.value = true
