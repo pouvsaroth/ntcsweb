@@ -113,8 +113,14 @@ function toggleAssistantTeacher(staffId: number, checked: boolean) {
   }
 }
 
+/** A copy of the last row (same times), on the day after it — most classes repeat the same hours across days. */
 function addSchedule() {
-  form.schedules.push(emptySchedule())
+  const last = form.schedules[form.schedules.length - 1]
+  if (!last) {
+    form.schedules.push(emptySchedule())
+    return
+  }
+  form.schedules.push({ day_of_week: (last.day_of_week % 7) + 1, start_time: last.start_time, end_time: last.end_time })
 }
 
 function removeSchedule(index: number) {
