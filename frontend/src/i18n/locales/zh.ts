@@ -541,6 +541,7 @@ const zh: MessageSchema = {
       meeting_cancelled: '{date} 的“{title}”已取消',
       appointment_booked: '{name} 预约了 {date} {time} 与您见面：{purpose}',
       visitor_arrived: '{name} 已到，来找您（{purpose}）',
+      website_inquiry_received: '来自网站的新咨询：{name}（{interested_in}）',
       attendance_correction_submitted: '{staff_name} 申请更正 {date} 的考勤',
       attendance_correction_approved: '你 {date} 的考勤更正已批准',
       attendance_correction_rejected: '你 {date} 的考勤更正被拒绝：{reason}',

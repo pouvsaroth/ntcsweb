@@ -541,6 +541,7 @@ const km: MessageSchema = {
       meeting_cancelled: '«{title}» ថ្ងៃ {date} ត្រូវបានលុបចោល',
       appointment_booked: '{name} បានណាត់ជួបអ្នកថ្ងៃ {date} ម៉ោង {time}៖ {purpose}',
       visitor_arrived: '{name} បានមកដល់ដើម្បីជួបអ្នក ({purpose})',
+      website_inquiry_received: 'ការសាកសួរថ្មីពីគេហទំព័រ៖ {name} ({interested_in})',
       attendance_correction_submitted: '{staff_name} ស្នើកែវត្តមានថ្ងៃ {date}',
       attendance_correction_approved: 'ការកែវត្តមានថ្ងៃ {date} របស់អ្នកត្រូវបានអនុម័ត',
       attendance_correction_rejected: 'ការកែវត្តមានថ្ងៃ {date} របស់អ្នកត្រូវបានបដិសេធ៖ {reason}',

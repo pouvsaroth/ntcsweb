@@ -129,4 +129,7 @@ final class NotificationType
     public const APPOINTMENT_BOOKED = 'appointment_booked';
 
     public const VISITOR_ARRIVED = 'visitor_arrived';
+
+    // Someone sent the website's Register form (now in Front Office > Inquiry).
+    public const WEBSITE_INQUIRY_RECEIVED = 'website_inquiry_received';
 }

@@ -544,6 +544,7 @@ const en = {
       meeting_cancelled: '“{title}” on {date} was cancelled',
       appointment_booked: '{name} booked to see you on {date} at {time}: {purpose}',
       visitor_arrived: '{name} has arrived to see you ({purpose})',
+      website_inquiry_received: 'New inquiry from the website: {name} ({interested_in})',
       attendance_correction_submitted: '{staff_name} asked to correct their attendance on {date}',
       attendance_correction_approved: 'Your attendance correction for {date} was approved',
       attendance_correction_rejected: 'Your attendance correction for {date} was rejected: {reason}',

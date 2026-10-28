@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Academic;
 
 use App\Models\EnrollmentInquiry;
+use App\Models\Inquiry;
 use App\Models\Program;
 use App\Models\Tenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -33,6 +34,16 @@ class EnrollmentInquiryTest extends TestCase
         $inquiry = EnrollmentInquiry::first();
         $this->assertSame('Sok Dara', $inquiry->name);
         $this->assertSame($program->id, $inquiry->program_id);
+
+        // It also shows in Front Office > Inquiry, as a new Website inquiry.
+        $lead = Inquiry::query()->sole();
+        $this->assertSame('website', $lead->source);
+        $this->assertSame('new', $lead->status);
+        $this->assertSame('Sok Dara', $lead->name);
+        $this->assertSame('012345678', $lead->phone);
+        $this->assertSame($program->title, $lead->interested_in);
+        $this->assertSame('I want to join the evening batch.', $lead->note);
+        $this->assertSame($inquiry->id, $lead->enrollment_inquiry_id);
     }
 
     public function test_name_and_phone_are_required(): void

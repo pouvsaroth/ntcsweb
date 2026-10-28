@@ -46,6 +46,7 @@ export type NotificationTypeValue =
   | 'meeting_cancelled'
   | 'appointment_booked'
   | 'visitor_arrived'
+  | 'website_inquiry_received'
 
 export interface AppNotification {
   id: number

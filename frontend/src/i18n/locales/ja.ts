@@ -541,6 +541,7 @@ const ja: MessageSchema = {
       meeting_cancelled: '{date} の「{title}」は中止されました',
       appointment_booked: '{name} さんが {date} {time} に面会を予約しました: {purpose}',
       visitor_arrived: '{name} さんが到着しました（{purpose}）',
+      website_inquiry_received: 'ウェブサイトから新しい問い合わせ: {name}（{interested_in}）',
       attendance_correction_submitted: '{staff_name} が {date} の勤怠修正を申請しました',
       attendance_correction_approved: '{date} の勤怠修正が承認されました',
       attendance_correction_rejected: '{date} の勤怠修正が却下されました：{reason}',

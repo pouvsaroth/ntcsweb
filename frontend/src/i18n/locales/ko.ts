@@ -541,6 +541,7 @@ const ko: MessageSchema = {
       meeting_cancelled: '{date} “{title}” 회의가 취소되었습니다',
       appointment_booked: '{name}님이 {date} {time}에 면담을 예약했습니다: {purpose}',
       visitor_arrived: '{name}님이 도착했습니다 ({purpose})',
+      website_inquiry_received: '웹사이트에서 새 문의: {name} ({interested_in})',
       attendance_correction_submitted: '{staff_name}님이 {date} 근태 정정을 신청했습니다',
       attendance_correction_approved: '{date} 근태 정정이 승인되었습니다',
       attendance_correction_rejected: '{date} 근태 정정이 반려되었습니다: {reason}',
