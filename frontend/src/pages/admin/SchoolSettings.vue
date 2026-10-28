@@ -131,137 +131,170 @@ async function save() {
   }
 }
 
+// Each group: what it is on the left, its fields on the right (My account style).
+const card = 'grid gap-4 rounded-[--radius-card] border border-neutral-200 bg-white p-4 shadow-[--shadow-card] sm:p-6 lg:grid-cols-3 lg:gap-8'
+
 onMounted(load)
 </script>
 
 <template>
-  <div class="max-w-2xl">
+  <div class="mx-auto max-w-5xl">
     <div class="mb-6">
       <h1 class="text-xl font-semibold text-neutral-900">{{ t('admin.school.title') }}</h1>
+      <p class="mt-1 text-sm text-neutral-500">{{ t('admin.school.lede') }}</p>
     </div>
 
     <BaseAlert v-if="loadError" variant="danger" class="mb-4">{{ loadError }}</BaseAlert>
 
-    <form v-else-if="!loading" class="space-y-6" @submit.prevent="save">
-      <section class="rounded-lg border border-neutral-200 p-4">
-        <h2 class="mb-1 text-sm font-semibold text-neutral-800">{{ t('admin.school.logoSection') }}</h2>
-        <p class="mb-4 text-sm text-neutral-500">{{ t('admin.school.logoHint') }}</p>
-
-        <div class="flex items-center gap-4">
-          <div class="flex h-16 w-16 items-center justify-center overflow-hidden rounded-lg border border-neutral-200 bg-neutral-50">
-            <img v-if="logoPreview" :src="logoPreview" alt="" class="h-full w-full object-contain" />
-            <span v-else class="text-2xl font-bold text-neutral-300">{{ (form.name || '?').charAt(0) }}</span>
-          </div>
-          <label class="cursor-pointer">
-            <span class="inline-flex items-center rounded-lg border border-neutral-300 px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50">
-              {{ t('admin.school.chooseLogo') }}
-            </span>
-            <input type="file" accept="image/*" class="hidden" @change="onFileChange" />
-          </label>
+    <form v-else-if="!loading" class="space-y-4" @submit.prevent="save">
+      <!-- Logo and stamp, side by side -->
+      <section :class="card" aria-labelledby="school-brand">
+        <div>
+          <h2 id="school-brand" class="text-base font-semibold text-neutral-900">{{ t('admin.school.brandSection') }}</h2>
+          <p class="mt-1 text-sm text-neutral-500">{{ t('admin.school.brandLede') }}</p>
         </div>
-        <p v-if="errors.logo?.[0]" class="mt-2 text-sm text-danger-600">{{ errors.logo[0] }}</p>
-      </section>
-
-      <section class="rounded-lg border border-neutral-200 p-4">
-        <h2 class="mb-1 text-sm font-semibold text-neutral-800">{{ t('admin.school.stampSection') }}</h2>
-        <p class="mb-4 text-sm text-neutral-500">{{ t('admin.school.stampHint') }}</p>
-
-        <div class="flex items-center gap-4">
-          <div class="flex h-16 w-16 items-center justify-center overflow-hidden rounded-lg border border-neutral-200 bg-neutral-50">
-            <img v-if="stampPreview" :src="stampPreview" alt="" class="h-full w-full object-contain" />
-            <span v-else class="text-2xl text-neutral-300">—</span>
+        <div class="grid gap-4 sm:grid-cols-2 lg:col-span-2">
+          <div class="flex gap-4 rounded-lg border border-neutral-200 p-4">
+            <div class="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-neutral-200 bg-neutral-50">
+              <img v-if="logoPreview" :src="logoPreview" alt="" class="h-full w-full object-contain" />
+              <span v-else class="text-2xl font-bold text-neutral-300">{{ (form.name || '?').charAt(0) }}</span>
+            </div>
+            <div class="min-w-0">
+              <p class="text-sm font-medium text-neutral-800">{{ t('admin.school.logoSection') }}</p>
+              <p class="mt-0.5 text-xs text-neutral-500">{{ t('admin.school.logoHint') }}</p>
+              <label class="mt-2 inline-block cursor-pointer">
+                <span class="inline-flex items-center rounded-lg border border-neutral-300 px-3 py-1.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50">
+                  {{ t('admin.school.chooseLogo') }}
+                </span>
+                <input type="file" accept="image/*" class="hidden" @change="onFileChange" />
+              </label>
+              <p v-if="errors.logo?.[0]" class="mt-1 text-sm text-danger-600">{{ errors.logo[0] }}</p>
+            </div>
           </div>
-          <label class="cursor-pointer">
-            <span class="inline-flex items-center rounded-lg border border-neutral-300 px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50">
-              {{ t('admin.school.chooseStamp') }}
-            </span>
-            <input type="file" accept="image/*" class="hidden" @change="onStampFileChange" />
-          </label>
+          <div class="flex gap-4 rounded-lg border border-neutral-200 p-4">
+            <div class="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-neutral-200 bg-neutral-50">
+              <img v-if="stampPreview" :src="stampPreview" alt="" class="h-full w-full object-contain" />
+              <span v-else class="text-2xl text-neutral-300">—</span>
+            </div>
+            <div class="min-w-0">
+              <p class="text-sm font-medium text-neutral-800">{{ t('admin.school.stampSection') }}</p>
+              <p class="mt-0.5 text-xs text-neutral-500">{{ t('admin.school.stampHint') }}</p>
+              <label class="mt-2 inline-block cursor-pointer">
+                <span class="inline-flex items-center rounded-lg border border-neutral-300 px-3 py-1.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50">
+                  {{ t('admin.school.chooseStamp') }}
+                </span>
+                <input type="file" accept="image/*" class="hidden" @change="onStampFileChange" />
+              </label>
+              <p v-if="errors.stamp?.[0]" class="mt-1 text-sm text-danger-600">{{ errors.stamp[0] }}</p>
+            </div>
+          </div>
         </div>
-        <p v-if="errors.stamp?.[0]" class="mt-2 text-sm text-danger-600">{{ errors.stamp[0] }}</p>
       </section>
 
-      <section class="space-y-4 rounded-lg border border-neutral-200 p-4">
-        <h2 class="mb-1 text-sm font-semibold text-neutral-800">{{ t('admin.school.infoSection') }}</h2>
-
-        <BaseInput v-model="form.name" required :label="t('admin.school.nameLabel')" :error="errors.name?.[0]" />
-        <BaseInput
-          v-model="form.name_en"
-          :label="t('admin.school.nameEnLabel')"
-          :hint="t('admin.school.nameEnHint')"
-          :error="errors.name_en?.[0]"
-        />
-        <BaseInput v-model="form.email" type="email" :label="t('admin.school.emailLabel')" :error="errors.email?.[0]" />
-        <BaseInput v-model="form.phone" :label="t('admin.school.phoneLabel')" :error="errors.phone?.[0]" />
-        <BaseInput v-model="form.address" :label="t('admin.school.addressLabel')" :error="errors.address?.[0]" />
-        <BaseSelect
-          v-model="form.locale"
-          :options="localeOptions"
-          :label="t('admin.school.invoiceLanguageLabel')"
-          :hint="t('admin.school.invoiceLanguageHint')"
-          :error="errors.locale?.[0]"
-        />
-        <BaseSelect
-          v-model="form.default_currency"
-          :options="currencyOptions"
-          :label="t('admin.school.defaultCurrencyLabel')"
-          :hint="t('admin.school.defaultCurrencyHint')"
-          :error="errors.default_currency?.[0]"
-        />
-        <BaseInput
-          v-model="form.monthly_payment_alert_days"
-          type="number"
-          min="1"
-          max="60"
-          :label="t('admin.school.monthlyPaymentAlertDaysLabel')"
-          :hint="t('admin.school.monthlyPaymentAlertDaysHint')"
-          :error="errors.monthly_payment_alert_days?.[0]"
-        />
-        <BaseInput
-          v-model="form.student_inactive_after_days"
-          type="number"
-          min="1"
-          max="365"
-          :label="t('admin.school.studentInactiveAfterDaysLabel')"
-          :hint="t('admin.school.studentInactiveAfterDaysHint')"
-          :error="errors.student_inactive_after_days?.[0]"
-        />
-        <BaseInput
-          v-model="form.term_study_alert_days"
-          type="number"
-          min="1"
-          max="365"
-          :label="t('admin.school.termStudyAlertDaysLabel')"
-          :hint="t('admin.school.termStudyAlertDaysHint')"
-          :error="errors.term_study_alert_days?.[0]"
-        />
-        <BaseInput
-          v-model="form.exam_fee_amount"
-          type="number"
-          min="0"
-          step="1"
-          :label="t('admin.school.examFeeLabel')"
-          :hint="t('admin.school.examFeeHint')"
-          :error="errors.exam_fee_amount?.[0]"
-        />
+      <!-- Name and contact -->
+      <section :class="card" aria-labelledby="school-info">
+        <div>
+          <h2 id="school-info" class="text-base font-semibold text-neutral-900">{{ t('admin.school.infoSection') }}</h2>
+          <p class="mt-1 text-sm text-neutral-500">{{ t('admin.school.infoLede') }}</p>
+        </div>
+        <div class="grid gap-4 sm:grid-cols-2 lg:col-span-2">
+          <BaseInput v-model="form.name" required :label="t('admin.school.nameLabel')" :error="errors.name?.[0]" />
+          <BaseInput v-model="form.name_en" :label="t('admin.school.nameEnLabel')" :hint="t('admin.school.nameEnHint')" :error="errors.name_en?.[0]" />
+          <BaseInput v-model="form.email" type="email" :label="t('admin.school.emailLabel')" :error="errors.email?.[0]" />
+          <BaseInput v-model="form.phone" :label="t('admin.school.phoneLabel')" :error="errors.phone?.[0]" />
+          <div class="sm:col-span-2">
+            <BaseInput v-model="form.address" :label="t('admin.school.addressLabel')" :error="errors.address?.[0]" />
+          </div>
+        </div>
       </section>
 
-      <section class="space-y-2 rounded-lg border border-neutral-200 p-4">
-        <h2 class="mb-1 text-sm font-semibold text-neutral-800">{{ t('admin.school.khqrSection') }}</h2>
-        <p class="mb-2 text-sm text-neutral-500">{{ t('admin.school.khqrHint') }}</p>
-        <textarea
-          v-model="form.khqr_template"
-          rows="3"
-          class="block w-full rounded-lg border border-neutral-300 px-3 py-2 font-mono text-xs text-neutral-900 shadow-sm placeholder:font-sans placeholder:text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
-          :placeholder="t('admin.school.khqrPlaceholder')"
-        />
-        <p v-if="errors.khqr_template?.[0]" class="text-sm text-danger-600">{{ errors.khqr_template[0] }}</p>
+      <!-- Invoices and money -->
+      <section :class="card" aria-labelledby="school-billing">
+        <div>
+          <h2 id="school-billing" class="text-base font-semibold text-neutral-900">{{ t('admin.school.billingSection') }}</h2>
+          <p class="mt-1 text-sm text-neutral-500">{{ t('admin.school.billingLede') }}</p>
+        </div>
+        <div class="grid gap-4 sm:grid-cols-2 lg:col-span-2">
+          <BaseSelect
+            v-model="form.locale"
+            :options="localeOptions"
+            :label="t('admin.school.invoiceLanguageLabel')"
+            :hint="t('admin.school.invoiceLanguageHint')"
+            :error="errors.locale?.[0]"
+          />
+          <BaseSelect
+            v-model="form.default_currency"
+            :options="currencyOptions"
+            :label="t('admin.school.defaultCurrencyLabel')"
+            :hint="t('admin.school.defaultCurrencyHint')"
+            :error="errors.default_currency?.[0]"
+          />
+          <BaseInput
+            v-model="form.exam_fee_amount"
+            type="number"
+            min="0"
+            step="1"
+            :label="t('admin.school.examFeeLabel')"
+            :hint="t('admin.school.examFeeHint')"
+            :error="errors.exam_fee_amount?.[0]"
+          />
+          <div class="sm:col-span-2">
+            <label for="school-khqr" class="mb-1.5 block text-sm font-medium text-neutral-700">{{ t('admin.school.khqrSection') }}</label>
+            <textarea
+              id="school-khqr"
+              v-model="form.khqr_template"
+              rows="3"
+              class="block w-full rounded-lg border border-neutral-300 px-3 py-2 font-mono text-xs text-neutral-900 shadow-sm placeholder:font-sans placeholder:text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+              :placeholder="t('admin.school.khqrPlaceholder')"
+            />
+            <p v-if="errors.khqr_template?.[0]" class="mt-1.5 text-sm text-danger-600">{{ errors.khqr_template[0] }}</p>
+            <p v-else class="mt-1.5 text-sm text-neutral-500">{{ t('admin.school.khqrHint') }}</p>
+          </div>
+        </div>
       </section>
 
-      <div class="flex flex-wrap items-center gap-3">
+      <!-- Alerts and student accounts -->
+      <section :class="card" aria-labelledby="school-alerts">
+        <div>
+          <h2 id="school-alerts" class="text-base font-semibold text-neutral-900">{{ t('admin.school.alertsSection') }}</h2>
+          <p class="mt-1 text-sm text-neutral-500">{{ t('admin.school.alertsLede') }}</p>
+        </div>
+        <div class="grid gap-4 sm:grid-cols-2 lg:col-span-2">
+          <BaseInput
+            v-model="form.monthly_payment_alert_days"
+            type="number"
+            min="1"
+            max="60"
+            :label="t('admin.school.monthlyPaymentAlertDaysLabel')"
+            :hint="t('admin.school.monthlyPaymentAlertDaysHint')"
+            :error="errors.monthly_payment_alert_days?.[0]"
+          />
+          <BaseInput
+            v-model="form.term_study_alert_days"
+            type="number"
+            min="1"
+            max="365"
+            :label="t('admin.school.termStudyAlertDaysLabel')"
+            :hint="t('admin.school.termStudyAlertDaysHint')"
+            :error="errors.term_study_alert_days?.[0]"
+          />
+          <BaseInput
+            v-model="form.student_inactive_after_days"
+            type="number"
+            min="1"
+            max="365"
+            :label="t('admin.school.studentInactiveAfterDaysLabel')"
+            :hint="t('admin.school.studentInactiveAfterDaysHint')"
+            :error="errors.student_inactive_after_days?.[0]"
+          />
+        </div>
+      </section>
+
+      <!-- Save, always in reach at the bottom of the screen -->
+      <div class="sticky bottom-0 z-10 -mx-1 flex flex-wrap items-center justify-end gap-3 border-t border-neutral-200 bg-neutral-50/95 px-1 py-3 backdrop-blur">
+        <BaseAlert v-if="saveError" variant="danger" class="mr-auto">{{ saveError }}</BaseAlert>
+        <p v-else-if="saved" class="mr-auto text-sm text-success-600" role="status">{{ t('admin.school.saveSuccess') }}</p>
         <BaseButton type="submit" :loading="saving">{{ t('common.save') }}</BaseButton>
-        <BaseAlert v-if="saveError" variant="danger">{{ saveError }}</BaseAlert>
-        <BaseAlert v-if="saved" variant="success">{{ t('admin.school.saveSuccess') }}</BaseAlert>
       </div>
     </form>
   </div>

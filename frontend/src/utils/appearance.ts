@@ -34,16 +34,13 @@ export const SCHOOL_ACCENT = '#f5a800'
 const SCHOOL_SCALE = ['#fffbeb', '#fff3c4', '#ffe58a', '#ffd24d', '#ffc01a', '#f5a800', '#d99400', '#b37a00', '#8c6000', '#664600']
 
 /**
- * The six other colours on offer. Each is light enough that the navy text
- * drawn on primary surfaces (buttons, active menu) still reads clearly.
+ * Ready-made colours after the school's; any other is picked from the
+ * rainbow swatch. Whatever is chosen, accentScale() adjusts it only as far
+ * as it takes to stay readable (SmartGPS core/accent.ts does the same).
  */
 export const ACCENT_PRESETS = [
-  { hex: '#38bdf8', key: 'sky' },
-  { hex: '#34d399', key: 'green' },
-  { hex: '#2dd4bf', key: 'teal' },
-  { hex: '#a78bfa', key: 'violet' },
-  { hex: '#fb7185', key: 'rose' },
-  { hex: '#fb923c', key: 'orange' },
+  '#38bdf8', '#60a5fa', '#818cf8', '#a78bfa', '#c084fc', '#e879f9', '#f472b6', '#fb7185',
+  '#f87171', '#fb923c', '#facc15', '#a3e635', '#4ade80', '#34d399', '#2dd4bf', '#22d3ee', '#94a3b8',
 ] as const
 
 const STEPS = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900] as const
@@ -68,15 +65,61 @@ function mix(a: number[], b: number[], t: number): number[] {
   return a.map((c, i) => c + (b[i]! - c) * t)
 }
 
-/** 50…900 from one colour: lighter tints toward white, deeper shades toward black. */
+const WHITE = [255, 255, 255]
+const BLACK = [0, 0, 0]
+/** The navy every primary surface carries its text in (text-secondary-900). */
+const NAVY = [12, 18, 56]
+
+/** WCAG 2 relative luminance. */
+function luminance(rgb: number[]): number {
+  const [r, g, b] = rgb.map((c) => {
+    const v = c / 255
+    return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4
+  }) as [number, number, number]
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b
+}
+
+function contrast(a: number[], b: number[]): number {
+  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x) as [number, number]
+  return (hi + 0.05) / (lo + 0.05)
+}
+
+/** Moved toward `to` just far enough to reach `ratio` against `against` (a colour that already does is kept as is). */
+function reach(rgb: number[], to: number[], against: number[], ratio: number): number[] {
+  for (let t = 0; t <= 1; t += 0.02) {
+    const c = mix(rgb, to, t)
+    if (contrast(c, against) >= ratio) return c
+  }
+  return to
+}
+
+/**
+ * The button colour from the chosen one: buttons and the active menu draw
+ * navy text on primary-500/600, so a dark choice (navy, deep red…) is
+ * lightened just enough for that text to read (4.5:1).
+ */
+function readableBase(hex: string): number[] {
+  const rgb = parseHex(hex) ?? parseHex(SCHOOL_ACCENT)!
+  return reach(rgb, WHITE, NAVY, 4.8)
+}
+
+/**
+ * 50…900 from one colour: pale tints toward white; 600 for buttons (navy
+ * text still reads); 700…900 deep enough to read as text on white.
+ */
 export function accentScale(hex: string): string[] {
-  const base = parseHex(hex)
-  if (!base) return SCHOOL_SCALE
-  const white = [255, 255, 255]
-  const black = [0, 0, 0]
+  const chosen = parseHex(hex) ?? parseHex(SCHOOL_ACCENT)!
+  const base = readableBase(hex)
   const tints = [0.92, 0.8, 0.62, 0.42, 0.2] // 50…400
-  const shades = [0.12, 0.28, 0.44, 0.58] // 600…900
-  return [...tints.map((t) => toHex(mix(base, white, t))), hex.toLowerCase(), ...shades.map((t) => toHex(mix(base, black, t)))]
+  // Text shades start from the colour as chosen, so a deep one stays deep.
+  return [
+    ...tints.map((t) => toHex(mix(base, WHITE, t))),
+    toHex(base),
+    toHex(reach(mix(base, BLACK, 0.1), WHITE, NAVY, 4.5)),
+    toHex(reach(chosen, BLACK, WHITE, 4.5)),
+    toHex(reach(chosen, BLACK, WHITE, 6)),
+    toHex(reach(chosen, BLACK, WHITE, 8)),
+  ]
 }
 
 /**
@@ -85,9 +128,9 @@ export function accentScale(hex: string): string[] {
  * and the button colour (500/600) stays vivid.
  */
 function darkScale(hex: string): string[] {
-  const base = parseHex(hex) ?? parseHex(SCHOOL_ACCENT)!
+  const base = readableBase(hex)
   const page = [11, 18, 32] // --dark page, main.css
-  const white = [255, 255, 255]
+  const white = WHITE
   return [
     toHex(mix(base, page, 0.82)),
     toHex(mix(base, page, 0.7)),
@@ -171,6 +214,11 @@ export function adoptPreferences(prefs: UserPreferences | null | undefined): voi
   if (locale && (SUPPORTED_LOCALES as readonly string[]).includes(locale) && i18n.global.locale.value !== locale) {
     setLocale(locale as Locale)
   }
+}
+
+/** Every choice as it stands now (the language is sent only when picked). */
+export function currentPreferences(): UserPreferences {
+  return { theme: themeMode.value, accent: accentColor.value, clock: clockFormat.value }
 }
 
 /** Chosen on this device right now (before the save answers). */

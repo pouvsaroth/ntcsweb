@@ -93,10 +93,14 @@ const themes: { mode: ThemeMode; key: string }[] = [
   { mode: 'light', key: 'myAccount.themeLight' },
   { mode: 'dark', key: 'myAccount.themeDark' },
 ]
-const accents: { hex: string | null; key: string; swatch: string }[] = [
-  { hex: null, key: 'school', swatch: SCHOOL_ACCENT },
-  ...ACCENT_PRESETS.map((a) => ({ hex: a.hex, key: a.key, swatch: a.hex })),
-]
+const accents: { hex: string | null; swatch: string }[] = [{ hex: null, swatch: SCHOOL_ACCENT }, ...ACCENT_PRESETS.map((hex) => ({ hex, swatch: hex }))]
+/** A colour picked from the rainbow swatch, i.e. none of the ready-made ones. */
+const customAccent = computed(() => accentColor.value !== null && !(ACCENT_PRESETS as readonly string[]).includes(accentColor.value))
+
+function pickCustomAccent(event: Event) {
+  const value = (event.target as HTMLInputElement).value
+  if (/^#[0-9a-f]{6}$/i.test(value)) void savePreference({ accent: value.toLowerCase() })
+}
 const clocks: { value: ClockFormat; sample: string; key: string }[] = [
   { value: '24', sample: '14:30', key: 'myAccount.clock24' },
   { value: '12', sample: '02:30 PM', key: 'myAccount.clock12' },
@@ -265,16 +269,16 @@ async function changePassword() {
           <!-- Accent colour -->
           <div>
             <p id="acct-accent" class="mb-2 text-sm font-medium text-neutral-700">{{ t('myAccount.accent') }}</p>
-            <div class="flex flex-wrap gap-2.5" role="radiogroup" aria-labelledby="acct-accent">
+            <div class="flex flex-wrap items-center gap-2.5" role="radiogroup" aria-labelledby="acct-accent">
               <button
                 v-for="a in accents"
-                :key="a.key"
+                :key="a.swatch"
                 type="button"
                 role="radio"
                 :aria-checked="accentColor === a.hex"
-                :title="t(`myAccount.accents.${a.key}`)"
-                :aria-label="t(`myAccount.accents.${a.key}`)"
-                class="flex h-9 w-9 items-center justify-center rounded-full ring-offset-2 transition"
+                :title="a.hex ? a.hex : t('myAccount.accents.school')"
+                :aria-label="a.hex ? a.hex : t('myAccount.accents.school')"
+                class="flex h-8 w-8 items-center justify-center rounded-full ring-offset-2 transition"
                 :class="accentColor === a.hex ? 'ring-2 ring-neutral-700' : 'hover:ring-2 hover:ring-neutral-300'"
                 :style="{ backgroundColor: a.swatch }"
                 @click="savePreference({ accent: a.hex })"
@@ -282,6 +286,27 @@ async function changePassword() {
                 <svg v-if="accentColor === a.hex" class="h-4 w-4 text-secondary-900" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24" aria-hidden="true">
                   <path stroke-linecap="round" stroke-linejoin="round" d="m5 12 5 5 9-10" />
                 </svg>
+              </button>
+              <!-- Any colour: the rainbow swatch opens the system colour picker; it shows the colour once chosen. -->
+              <label
+                class="relative flex h-8 w-8 cursor-pointer items-center justify-center overflow-hidden rounded-full ring-offset-2 transition"
+                :class="customAccent ? 'ring-2 ring-neutral-700' : 'hover:ring-2 hover:ring-neutral-300'"
+                :style="{ background: customAccent ? accentColor! : 'conic-gradient(#ef4444, #f59e0b, #22c55e, #06b6d4, #3b82f6, #a855f7, #ef4444)' }"
+                :title="t('myAccount.accents.custom')"
+              >
+                <svg v-if="customAccent" class="h-4 w-4 text-white mix-blend-difference" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m5 12 5 5 9-10" />
+                </svg>
+                <input
+                  type="color"
+                  class="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                  :aria-label="t('myAccount.accents.custom')"
+                  :value="accentColor ?? SCHOOL_ACCENT"
+                  @change="pickCustomAccent"
+                />
+              </label>
+              <button v-if="accentColor" type="button" class="ml-1 text-sm font-medium text-secondary-600 hover:underline" @click="savePreference({ accent: null })">
+                {{ t('myAccount.accents.reset') }}
               </button>
             </div>
             <p class="mt-1.5 text-xs text-neutral-500">{{ t('myAccount.accentHint') }}</p>

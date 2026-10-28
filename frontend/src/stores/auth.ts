@@ -6,7 +6,7 @@ import { type ActingTenant, getActingTenant, resetDevTenant, setActingTenant, se
 import { detachPushOnLogout } from '@/services/pushNotifications'
 import type { User } from '@/types/models'
 import { ApiRequestError } from '@/types/api'
-import { adoptPreferences, previewPreferences, type UserPreferences } from '@/utils/appearance'
+import { adoptPreferences, currentPreferences, previewPreferences, type UserPreferences } from '@/utils/appearance'
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
@@ -214,9 +214,16 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   /** Saved to the account; applied here at once, before the server answers. */
-  async function updatePreferences(payload: UserPreferences): Promise<void> {
+  // One save at a time, each carrying every choice as it stands, so quick
+  // clicks never overwrite one another on the server.
+  let preferenceSaves: Promise<unknown> = Promise.resolve()
+  function updatePreferences(payload: UserPreferences): Promise<void> {
     previewPreferences(payload)
-    user.value = await authService.updatePreferences(payload)
+    const run = preferenceSaves.then(async () => {
+      user.value = await authService.updatePreferences({ ...currentPreferences(), ...payload })
+    })
+    preferenceSaves = run.catch(() => undefined)
+    return run
   }
 
   /** A customer of the school system (or not known): school words; otherwise organization words. */
