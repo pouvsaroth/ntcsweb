@@ -1,7 +1,9 @@
 <?php
 
+use App\Support\Tenancy\SchoolTables;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
@@ -25,6 +27,10 @@ return new class extends Migration
 
             $table->index(['enrollment_id', 'from_date']);
         });
+
+        $db = DB::connection();
+        SchoolTables::secure($db, 'enrollment_responsible_staff');
+        SchoolTables::grantAppRole($db);
     }
 
     public function down(): void
