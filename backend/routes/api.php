@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Support\Staff\StaffRecordKinds;
 use App\Http\Controllers\Api\V1\Admin\AcademicProgramController;
 use App\Http\Controllers\Api\V1\Admin\AcademicReportController;
 use App\Http\Controllers\Api\V1\Admin\AcademicTermController;
@@ -127,6 +128,8 @@ use App\Http\Controllers\Api\V1\Admin\ShiftController;
 use App\Http\Controllers\Api\V1\Admin\StaffAttendanceController;
 use App\Http\Controllers\Api\V1\Admin\StaffController;
 use App\Http\Controllers\Api\V1\Admin\StaffEducationController;
+use App\Http\Controllers\Api\V1\Admin\StaffDocumentController;
+use App\Http\Controllers\Api\V1\Admin\StaffRecordController;
 use App\Http\Controllers\Api\V1\Admin\StaffLoanController;
 use App\Http\Controllers\Api\V1\Admin\StaffPayComponentController;
 use App\Http\Controllers\Api\V1\Admin\StaffSalaryController;
@@ -842,6 +845,17 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::post('staff/{staff}/educations', [StaffEducationController::class, 'store'])->name('staff.educations.store');
         Route::put('staff/{staff}/educations/{education}', [StaffEducationController::class, 'update'])->whereNumber('education')->name('staff.educations.update');
         Route::delete('staff/{staff}/educations/{education}', [StaffEducationController::class, 'destroy'])->whereNumber('education')->name('staff.educations.destroy');
+        // HRM > Staff > Emergency Contacts, Family Members, ... (docs/hrm/staff-profile-tabs.md).
+        Route::get('staff/{staff}/records/{kind}', [StaffRecordController::class, 'index'])->where('kind', StaffRecordKinds::pattern())->name('staff.records.index');
+        Route::post('staff/{staff}/records/{kind}', [StaffRecordController::class, 'store'])->where('kind', StaffRecordKinds::pattern())->name('staff.records.store');
+        Route::put('staff/{staff}/records/{kind}/{record}', [StaffRecordController::class, 'update'])->where('kind', StaffRecordKinds::pattern())->whereNumber('record')->name('staff.records.update');
+        Route::delete('staff/{staff}/records/{kind}/{record}', [StaffRecordController::class, 'destroy'])->where('kind', StaffRecordKinds::pattern())->whereNumber('record')->name('staff.records.destroy');
+        // HRM > Staff > Documents: private personal / HR files (docs/hrm/staff-profile-tabs.md).
+        Route::get('staff/{staff}/documents', [StaffDocumentController::class, 'index'])->name('staff.documents.index');
+        Route::post('staff/{staff}/documents', [StaffDocumentController::class, 'store'])->name('staff.documents.store');
+        Route::post('staff/{staff}/documents/{document}', [StaffDocumentController::class, 'update'])->whereNumber('document')->name('staff.documents.update');
+        Route::get('staff/{staff}/documents/{document}/file', [StaffDocumentController::class, 'download'])->whereNumber('document')->name('staff.documents.download');
+        Route::delete('staff/{staff}/documents/{document}', [StaffDocumentController::class, 'destroy'])->whereNumber('document')->name('staff.documents.destroy');
 
         // Read-only, cross-staff — see StaffStatusHistoryController's
         // docblock for why there is deliberately no store/update/destroy

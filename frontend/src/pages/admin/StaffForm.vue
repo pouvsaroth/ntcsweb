@@ -4,12 +4,13 @@ import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
 import StaffEducationTab from '@/components/admin/StaffEducationTab.vue'
+import StaffDocumentsTab from '@/components/admin/StaffDocumentsTab.vue'
+import StaffRecordsTab from '@/components/admin/StaffRecordsTab.vue'
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
 import BaseSpinner from '@/components/ui/BaseSpinner.vue'
-import EmptyState from '@/components/ui/EmptyState.vue'
 import LookupSelect from '@/components/ui/LookupSelect.vue'
 import { departmentsService, type Department } from '@/services/departments'
 import { geographyService, type GeographyOption } from '@/services/geography'
@@ -19,6 +20,7 @@ import { positionsService, type Position } from '@/services/positions'
 import { staffService, type Staff, type StaffInput } from '@/services/staff'
 import { ApiRequestError } from '@/types/api'
 import { optionalOptions } from '@/utils/organizationOptions'
+import { EMERGENCY_CONTACTS, FAMILY_MEMBERS, JOB_EXPERIENCES, LANGUAGES, OTHER_SKILLS, type StaffRecordKind } from '@/utils/staffRecordKinds'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -27,18 +29,29 @@ const router = useRouter()
 const staffId = computed(() => (route.params.id ? Number(route.params.id) : null))
 const isEditing = computed(() => staffId.value !== null)
 
-// "Current Info" holds the staff form itself; "Education" is its own list
-// (StaffEducationTab, saved row by row); the rest are still placeholders.
+// "Current Info" holds the staff form itself; Education (StaffEducationTab)
+// the list tabs (StaffRecordsTab, see recordTabs) and Documents
+// (StaffDocumentsTab) are saved row by row.
 // Purely client-side; switching tabs never touches the router or loses form data.
-type TabKey = 'current-info' | 'emergency-contacts' | 'education' | 'family-members' | 'language' | 'previous-work' | 'documents'
+type TabKey = 'current-info' | 'emergency-contacts' | 'education' | 'family-members' | 'languages' | 'job-experience' | 'other-skills' | 'documents'
+
+// The tabs drawn by StaffRecordsTab, by tab key.
+const recordTabs: Partial<Record<TabKey, StaffRecordKind>> = {
+  'emergency-contacts': EMERGENCY_CONTACTS,
+  'family-members': FAMILY_MEMBERS,
+  languages: LANGUAGES,
+  'job-experience': JOB_EXPERIENCES,
+  'other-skills': OTHER_SKILLS,
+}
 
 const tabs: { key: TabKey; labelKey: string }[] = [
   { key: 'current-info', labelKey: 'admin.staff.tabCurrentInfo' },
   { key: 'emergency-contacts', labelKey: 'admin.staff.tabEmergencyContacts' },
   { key: 'education', labelKey: 'admin.staff.tabEducation' },
   { key: 'family-members', labelKey: 'admin.staff.tabFamilyMembers' },
-  { key: 'language', labelKey: 'admin.staff.tabLanguage' },
-  { key: 'previous-work', labelKey: 'admin.staff.tabPreviousWork' },
+  { key: 'languages', labelKey: 'admin.staff.tabLanguages' },
+  { key: 'job-experience', labelKey: 'admin.staff.tabJobExperience' },
+  { key: 'other-skills', labelKey: 'admin.staff.tabOtherSkills' },
   { key: 'documents', labelKey: 'admin.staff.tabDocuments' },
 ]
 
@@ -455,10 +468,8 @@ onMounted(load)
       </div>
 
       <StaffEducationTab v-if="activeTab === 'education'" :staff-id="staffId" />
-
-      <div v-else-if="activeTab !== 'current-info'">
-        <EmptyState :title="t('admin.comingSoon.notBuiltYet', { title: t(tabs.find((tab) => tab.key === activeTab)!.labelKey) })" :message="t('admin.comingSoon.message')" />
-      </div>
+      <StaffDocumentsTab v-else-if="activeTab === 'documents'" :staff-id="staffId" />
+      <StaffRecordsTab v-else-if="recordTabs[activeTab]" :key="activeTab" :staff-id="staffId" :config="recordTabs[activeTab]!" />
 
       <template v-else>
         <BaseSpinner v-if="loading" class="mx-auto" />
