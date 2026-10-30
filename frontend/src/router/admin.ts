@@ -6,6 +6,7 @@ import { attendanceTabs } from '@/router/attendanceTabs'
 import { leaveTabs } from '@/router/leaveTabs'
 import { payrollTabs } from '@/router/payrollTabs'
 import { performanceTabs } from '@/router/performanceTabs'
+import { canOpenProfessionalDevelopmentTab, professionalDevelopmentTabs } from '@/router/professionalDevelopmentTabs'
 import { frontOfficeTabs } from '@/router/frontOfficeTabs'
 import { recruitmentTabs } from '@/router/recruitmentTabs'
 import { schoolSetupTabs } from '@/router/schoolSetupTabs'
@@ -781,6 +782,29 @@ const adminRoutes: RouteRecordRaw[] = [
       { path: 'manager-assessment', name: 'admin.performance.manager-assessment', component: () => import('@/pages/admin/performance/AssessmentPage.vue'), props: { side: 'manager' } },
       { path: 'scores', name: 'admin.performance.scores', component: () => import('@/pages/admin/performance/PerformanceScores.vue') },
       { path: 'promotions', name: 'admin.performance.promotions', component: () => import('@/pages/admin/performance/PromotionRecommendations.vue') },
+    ],
+  },
+  {
+    // HRM > Professional Development: tabs as child routes (see ProfessionalDevelopmentLayout.vue / professionalDevelopmentTabs.ts).
+    path: 'professional-development',
+    component: () => import('@/pages/admin/professionalDevelopment/ProfessionalDevelopmentLayout.vue'),
+    meta: { titleKey: 'adminNav.items.professionalDevelopment' },
+    children: [
+      {
+        path: '',
+        name: 'admin.professional-development',
+        redirect: () => {
+          const auth = useAuthStore()
+          return (professionalDevelopmentTabs.find((tab) => canOpenProfessionalDevelopmentTab(tab, auth.can)) ?? professionalDevelopmentTabs[0]!).to
+        },
+      },
+      { path: 'records', name: 'admin.professional-development.records', component: () => import('@/pages/admin/professionalDevelopment/TrainingRecords.vue') },
+      { path: 'calendar', name: 'admin.professional-development.calendar', component: () => import('@/pages/admin/professionalDevelopment/TrainingCalendar.vue') },
+      { path: 'certificates', name: 'admin.professional-development.certificates', component: () => import('@/pages/admin/professionalDevelopment/Certificates.vue') },
+      { path: 'observations', name: 'admin.professional-development.observations', component: () => import('@/pages/admin/professionalDevelopment/Observations.vue') },
+      { path: 'coaching', name: 'admin.professional-development.coaching', component: () => import('@/pages/admin/professionalDevelopment/Coaching.vue') },
+      { path: 'plans', name: 'admin.professional-development.plans', component: () => import('@/pages/admin/professionalDevelopment/DevelopmentPlans.vue') },
+      { path: 'reports', name: 'admin.professional-development.reports', component: () => import('@/pages/admin/professionalDevelopment/TrainingReports.vue') },
     ],
   },
   {

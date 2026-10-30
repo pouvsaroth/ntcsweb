@@ -39,6 +39,7 @@ final class HrmModule extends Module
             'recruitment' => ['Recruitment', 'ការជ្រើសរើសបុគ្គលិក'],
             'resignation-requests' => ['Resignation requests', 'សំណើលាលែង'],
             'performance' => ['Performance', 'ការវាយតម្លៃការងារ'],
+            'professional-development' => ['Professional development', 'ការអភិវឌ្ឍវិជ្ជាជីវៈ'],
             'overtime-requests' => ['Overtime requests', 'សំណើម៉ោងបន្ថែម'],
             'manpower-requests' => ['Manpower requests', 'សំណើបុគ្គលិកបន្ថែម'],
             'attendance-corrections' => ['Attendance corrections', 'កែតម្រូវវត្តមាន'],

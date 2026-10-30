@@ -7,6 +7,7 @@ import { lessonTabs } from '@/router/lessonTabs'
 import { leaveTabs } from '@/router/leaveTabs'
 import { payrollTabs } from '@/router/payrollTabs'
 import { performanceTabs } from '@/router/performanceTabs'
+import { professionalDevelopmentTabs } from '@/router/professionalDevelopmentTabs'
 import { documentLinks } from '@/router/publicNav'
 import { examinationPermissions } from '@/router/examinationTabs'
 import { frontOfficeTabs } from '@/router/frontOfficeTabs'
@@ -206,6 +207,8 @@ export const adminNav: AdminNavGroup[] = [
       { labelKey: 'adminNav.items.payroll', icon: 'cash', to: '/admin/payroll', permission: payrollTabs.map((tab) => tab.permission) },
       // One link; KPI, Goals, Performance review, ... are tabs on the page itself (see performanceTabs.ts).
       { labelKey: 'adminNav.items.performance', icon: 'star', to: '/admin/performance', permission: performanceTabs.map((tab) => tab.permission), module: 'hrm' },
+      // One link; Training records, Training calendar, Certificates, ... are tabs on the page itself (see professionalDevelopmentTabs.ts).
+      { labelKey: 'adminNav.items.professionalDevelopment', icon: 'academic', to: '/admin/professional-development', permission: [...new Set(professionalDevelopmentTabs.flatMap((tab) => tab.permissions))], module: 'hrm' },
       // Self-service for every staff account — the same slug as Request Leave
       // below, so students (who hold none) never see it. See MyCheckIn.vue.
       { labelKey: 'adminNav.items.myCheckIn', icon: 'location', to: '/admin/my-check-in', permission: 'my-requests.view', module: 'hrm' },

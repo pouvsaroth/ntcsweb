@@ -140,6 +140,13 @@ use App\Http\Controllers\Api\V1\Admin\SupplierController;
 use App\Http\Controllers\Api\V1\Admin\TeacherController;
 use App\Http\Controllers\Api\V1\Admin\TeacherDocumentController;
 use App\Http\Controllers\Api\V1\Admin\TeacherScheduleController;
+use App\Http\Controllers\Api\V1\Admin\TrainingController;
+use App\Http\Controllers\Api\V1\Admin\ClassroomObservationController;
+use App\Http\Controllers\Api\V1\Admin\CoachingController;
+use App\Http\Controllers\Api\V1\Admin\DevelopmentPlanController;
+use App\Http\Controllers\Api\V1\Admin\TrainingReportController;
+use App\Http\Controllers\Api\V1\Admin\ObservationFormController;
+use App\Http\Controllers\Api\V1\Admin\TrainingRecordController;
 use App\Http\Controllers\Api\V1\Admin\TeamController;
 use App\Http\Controllers\Api\V1\Admin\TimetableController;
 use App\Http\Controllers\Api\V1\Admin\UserController;
@@ -641,6 +648,42 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::post('documents', [TeacherDocumentController::class, 'store'])->name('documents.store');
             Route::get('documents/{document}/file', [TeacherDocumentController::class, 'download'])->name('documents.download');
             Route::delete('documents/{document}', [TeacherDocumentController::class, 'destroy'])->name('documents.destroy');
+        });
+
+        // HRM > Professional Development (docs/hrm/professional-development.md).
+        Route::prefix('professional-development')->name('professional-development.')->group(function () {
+            Route::get('trainings/summary', [TrainingController::class, 'summary'])->name('trainings.summary');
+            Route::get('trainings/calendar', [TrainingController::class, 'calendar'])->name('trainings.calendar');
+            Route::get('trainings/categories', [TrainingController::class, 'categories'])->name('trainings.categories');
+            Route::get('staff-options', [TrainingController::class, 'staffOptions'])->name('staff-options');
+            Route::put('trainings/{training}/attendance', [TrainingController::class, 'attendance'])->whereNumber('training')->name('trainings.attendance');
+            Route::apiResource('trainings', TrainingController::class);
+            Route::get('records', [TrainingRecordController::class, 'index'])->name('records.index');
+            Route::get('records/totals', [TrainingRecordController::class, 'totals'])->name('records.totals');
+            Route::get('certificates', [TrainingRecordController::class, 'certificates'])->name('certificates.index');
+            Route::post('records/{participant}/certificate', [TrainingRecordController::class, 'issueCertificate'])->whereNumber('participant')->name('certificates.issue');
+            Route::get('records/{participant}/certificate/file', [TrainingRecordController::class, 'downloadCertificate'])->whereNumber('participant')->name('certificates.download');
+            Route::delete('records/{participant}/certificate', [TrainingRecordController::class, 'revokeCertificate'])->whereNumber('participant')->name('certificates.revoke');
+
+            Route::apiResource('observation-forms', ObservationFormController::class)->except(['show']);
+            Route::get('observations/summary', [ClassroomObservationController::class, 'summary'])->name('observations.summary');
+            Route::get('observations/options', [ClassroomObservationController::class, 'options'])->name('observations.options');
+            Route::put('observations/{observation}/record', [ClassroomObservationController::class, 'record'])->whereNumber('observation')->name('observations.record');
+            Route::post('observations/{observation}/acknowledge', [ClassroomObservationController::class, 'acknowledge'])->whereNumber('observation')->name('observations.acknowledge');
+            Route::apiResource('observations', ClassroomObservationController::class);
+
+            Route::get('coachings/summary', [CoachingController::class, 'summary'])->name('coachings.summary');
+            Route::post('coachings/{coaching}/sessions', [CoachingController::class, 'storeSession'])->whereNumber('coaching')->name('coachings.sessions.store');
+            Route::put('coaching-sessions/{session}', [CoachingController::class, 'updateSession'])->whereNumber('session')->name('coaching-sessions.update');
+            Route::delete('coaching-sessions/{session}', [CoachingController::class, 'destroySession'])->whereNumber('session')->name('coaching-sessions.destroy');
+            Route::apiResource('coachings', CoachingController::class);
+
+            Route::get('development-plans/summary', [DevelopmentPlanController::class, 'summary'])->name('development-plans.summary');
+            Route::get('development-plans/options', [DevelopmentPlanController::class, 'options'])->name('development-plans.options');
+            Route::put('development-plan-goals/{goal}/progress', [DevelopmentPlanController::class, 'progress'])->whereNumber('goal')->name('development-plan-goals.progress');
+            Route::apiResource('development-plans', DevelopmentPlanController::class)->parameters(['development-plans' => 'plan']);
+
+            Route::get('reports', [TrainingReportController::class, 'index'])->name('reports.index');
         });
         Route::apiResource('holidays', HolidayController::class);
         Route::get('staff-attendance/sheet', [StaffAttendanceController::class, 'sheet'])->name('staff-attendance.sheet');

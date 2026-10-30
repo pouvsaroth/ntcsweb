@@ -165,6 +165,7 @@ const MODULES: ModuleEntry[] = [
   { name: 'Payroll set-up and rules (salaries, allowances, bonuses, deductions, overtime, tax, NSSF, loans)', group: 'Staff', actions: { view: 'payroll.view', manage: 'payroll.manage' } },
   { name: 'Payroll runs (work out, send for approval and pay; approve)', group: 'Staff', actions: { create: 'payroll.run', approve: 'payroll.approve' } },
   { name: 'Performance (KPIs, goals, evaluation forms, reviews, promotion recommendations)', group: 'Staff', actions: { view: 'performance.view', manage: 'performance.manage', approve: 'performance.approve-promotion' } },
+  { name: 'Professional development (trainings, records, certificates, observations, coaching, development plans)', group: 'Staff', actions: { view: 'professional-development.view', manage: 'professional-development.manage' } },
   // HRM > Organization Management's Branch/Department/Team/Job grade/Job level tabs share one set.
   {
     name: 'Organization (branches, departments, teams, job grades, job levels)',

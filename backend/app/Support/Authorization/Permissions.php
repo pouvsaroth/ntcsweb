@@ -399,6 +399,13 @@ final class Permissions
     // Approving or rejecting a promotion recommendation (when there's no Approval Flow for it).
     public const PERFORMANCE_APPROVE_PROMOTION = 'performance.approve-promotion';
 
+    // HRM > Professional Development (docs/hrm/professional-development.md):
+    // view reads trainings, records, certificates, observations, coaching,
+    // development plans and reports; manage records and changes them.
+    public const PROFESSIONAL_DEVELOPMENT_VIEW = 'professional-development.view';
+
+    public const PROFESSIONAL_DEVELOPMENT_MANAGE = 'professional-development.manage';
+
     // Working out a payroll, sending it for approval and paying it.
     public const PAYROLL_RUN = 'payroll.run';
 
@@ -1013,6 +1020,10 @@ final class Permissions
                 self::PERFORMANCE_MANAGE => 'Manage KPIs, goals, evaluation forms, review cycles and score weights, and recommend promotions',
                 self::PERFORMANCE_APPROVE_PROMOTION => 'Approve or reject a promotion recommendation',
             ],
+            'Professional Development' => [
+                self::PROFESSIONAL_DEVELOPMENT_VIEW => 'View trainings, training records, certificates, observations, coaching, development plans and reports',
+                self::PROFESSIONAL_DEVELOPMENT_MANAGE => 'Plan trainings, record attendance and results, issue certificates, observe classes, coach staff and keep development plans',
+            ],
             'Staff' => [
                 self::STAFF_VIEW => 'View staff',
                 self::STAFF_CREATE => 'Create staff',
@@ -1373,6 +1384,8 @@ final class Permissions
                 self::PERFORMANCE_VIEW,
                 self::PERFORMANCE_MANAGE,
                 self::PERFORMANCE_APPROVE_PROMOTION,
+                self::PROFESSIONAL_DEVELOPMENT_VIEW,
+                self::PROFESSIONAL_DEVELOPMENT_MANAGE,
                 self::MAKE_UP_CLASS_REQUESTS_VIEW,
                 self::MAKE_UP_CLASS_REQUESTS_APPROVE,
                 self::MAKE_UP_CLASS_REQUESTS_REJECT,

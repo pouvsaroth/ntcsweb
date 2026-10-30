@@ -125,6 +125,22 @@ final class NotificationType
 
     public const MEETING_CANCELLED = 'meeting_cancelled';
 
+    // HRM > Professional Development: staff assigned to a training, or a training they are on called off.
+    public const TRAINING_ASSIGNED = 'training_assigned';
+
+    public const TRAINING_CANCELLED = 'training_cancelled';
+
+    // Classroom observation: scheduled (teacher and observer told), done (teacher asked to read and acknowledge).
+    public const OBSERVATION_SCHEDULED = 'observation_scheduled';
+
+    public const OBSERVATION_COMPLETED = 'observation_completed';
+
+    // Coaching / mentoring: a coach and a staff member paired up (both told).
+    public const COACHING_ASSIGNED = 'coaching_assigned';
+
+    // Development plan: shared with the staff member and their reviewer.
+    public const DEVELOPMENT_PLAN_SHARED = 'development_plan_shared';
+
     // Front Office: someone booked to see you, and your visitor has arrived.
     public const APPOINTMENT_BOOKED = 'appointment_booked';
 
