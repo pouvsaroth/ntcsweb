@@ -19,6 +19,8 @@ class FinancialTransactionResource extends JsonResource
             'id' => $this->id,
             'transaction_number' => $this->transaction_number,
             'transaction_date' => $this->transaction_date?->toDateString(),
+            // 'YYYY-MM': the month it belongs to.
+            'for_month' => $this->for_month?->format('Y-m'),
             'type' => $this->type,
             'debit_account' => $this->whenLoaded('debitAccount', fn () => [
                 'id' => $this->debitAccount->id,

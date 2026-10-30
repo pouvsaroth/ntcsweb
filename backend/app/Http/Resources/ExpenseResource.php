@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Resources;
 
 use App\Models\Expense;
+use App\Models\Tenant;
+use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -19,6 +21,8 @@ class ExpenseResource extends JsonResource
             'id' => $this->id,
             'expense_number' => $this->expense_number,
             'expense_date' => $this->expense_date?->toDateString(),
+            // 'YYYY-MM': the month it belongs to.
+            'for_month' => $this->for_month?->format('Y-m'),
             'account' => $this->whenLoaded('account', fn () => [
                 'id' => $this->account->id,
                 'code' => $this->account->code,
@@ -30,6 +34,8 @@ class ExpenseResource extends JsonResource
                 'name' => $this->cashAccount->name,
             ] : null),
             'amount' => (float) $this->amount,
+            // Empty on older expenses = the school's default currency.
+            'currency' => $this->currency ?? app(TenantContext::class)->get()?->default_currency ?? Tenant::CURRENCY_USD,
             'payment_method' => $this->payment_method,
             'vendor' => $this->vendor,
             'description' => $this->description,

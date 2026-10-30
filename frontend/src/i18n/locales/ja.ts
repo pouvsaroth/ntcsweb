@@ -2724,6 +2724,9 @@ const ja: MessageSchema = {
       emptyMessage: '採点待ちの生徒はいません。',
     },
     examCertificate: {
+      selectedStudents: '選択した学生：{count}',
+      exportSelectedHint: 'チェックした学生のみを書き出します',
+      exportAllHint: 'チェックした学生だけを書き出せます。未選択なら一覧の全員',
       onlyNotIssued: '証明書未交付の生徒のみ',
       academicYear: '学年度',
       allAcademicYears: 'すべての学年度',
@@ -4953,6 +4956,9 @@ const ja: MessageSchema = {
       emptyMessage: 'まだ科目がありません。',
     },
     income: {
+      forMonth: '対象月',
+      currency: '通貨',
+      filterForMonth: '対象月',
       title: '収入',
       pageSubtitle: 'すべての収益計上——学生の支払いから自動計上されたもの、または手動で記録したもの。',
       addIncome: '収入を記録',
@@ -4971,6 +4977,10 @@ const ja: MessageSchema = {
       emptyMessage: 'まだ収入が記録されていません。',
     },
     expenses: {
+      forMonth: '対象月',
+      forMonthHint: 'この経費の対象月（例：今日支払い、9月分）。',
+      currency: '通貨',
+      filterForMonth: '対象月',
       title: '支出',
       pageSubtitle: '作成から承認、支払いまでの学校の支出。',
       searchPlaceholder: '支出番号または参照番号で検索…',

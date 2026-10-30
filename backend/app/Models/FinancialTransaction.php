@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Models\Concerns\HasForMonth;
 use App\Support\Accounting\TransactionStatus;
 use Database\Factories\FinancialTransactionFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -39,14 +40,17 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property string $status
  */
 #[Fillable([
-    'transaction_number', 'transaction_date', 'type', 'debit_account_id', 'credit_account_id',
+    'transaction_number', 'transaction_date', 'for_month', 'type', 'debit_account_id', 'credit_account_id',
     'amount', 'currency', 'description', 'reference_type', 'reference_id',
     'reverses_transaction_id', 'status', 'created_by',
 ])]
 class FinancialTransaction extends Model
 {
     /** @use HasFactory<FinancialTransactionFactory> */
-    use HasFactory;
+    use HasFactory, HasForMonth;
+
+    /** An empty For month takes this date's month (HasForMonth). */
+    public const FOR_MONTH_FROM = 'transaction_date';
 
     protected $connection = 'tenant';
 

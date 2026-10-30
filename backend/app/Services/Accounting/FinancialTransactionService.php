@@ -152,6 +152,7 @@ final class FinancialTransactionService
             referenceType: $original->getAttributes()['reference_type'] ?? null,
             referenceId: $original->getAttributes()['reference_id'] ?? null,
             reverses: $original,
+            forMonth: $original->for_month,
         );
 
         $original->update(['status' => TransactionStatus::REVERSED]);
@@ -252,16 +253,21 @@ final class FinancialTransactionService
             debitAccount: $expenseAccount,
             creditAccount: $cashAccount,
             amount: $amount,
-            currency: $tenant->default_currency,
+            currency: $expense->currency ?? $tenant->default_currency,
             description: "Paid expense {$expense->expense_number}: {$expense->description}",
             actor: $actor,
             referenceType: $expense->getMorphClass(),
             referenceId: $expense->getKey(),
+            forMonth: $expense->for_month,
         );
     }
 
     /** Manual "other income" entry (section 6) — a sale that never went through Invoice/Payment at all. */
-    public function createManualIncome(Account $revenueAccount, Account $cashAccount, float $amount, string $date, ?string $description, User $actor): FinancialTransaction
+    /**
+     * @param  string|null  $currency  USD / KHR; empty = the school's default
+     * @param  string|null  $forMonth  'YYYY-MM' the income belongs to; empty = the month of $date
+     */
+    public function createManualIncome(Account $revenueAccount, Account $cashAccount, float $amount, string $date, ?string $description, User $actor, ?string $currency = null, ?string $forMonth = null): FinancialTransaction
     {
         if ($amount <= 0) {
             throw ValidationException::withMessages(['amount' => 'The amount must be greater than zero.']);
@@ -277,9 +283,10 @@ final class FinancialTransactionService
             debitAccount: $cashAccount,
             creditAccount: $revenueAccount,
             amount: $amount,
-            currency: $tenant->default_currency,
+            currency: $currency ?? $tenant->default_currency,
             description: $description,
             actor: $actor,
+            forMonth: $forMonth,
         );
 
         $this->audit->log(
@@ -380,10 +387,13 @@ final class FinancialTransactionService
         ?string $referenceType = null,
         ?int $referenceId = null,
         ?FinancialTransaction $reverses = null,
+        string|CarbonInterface|null $forMonth = null,
     ): FinancialTransaction {
         return FinancialTransaction::query()->create([
             'transaction_number' => $number,
             'transaction_date' => $date,
+            // Empty = the month of the date (HasForMonth).
+            'for_month' => $forMonth,
             'type' => $type,
             'debit_account_id' => $debitAccount->getKey(),
             'credit_account_id' => $creditAccount->getKey(),

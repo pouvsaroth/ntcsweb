@@ -2723,6 +2723,9 @@ const zh: MessageSchema = {
       emptyMessage: '没有等待评分的学生。',
     },
     examCertificate: {
+      selectedStudents: '已选学生：{count}',
+      exportSelectedHint: '仅导出已勾选的学生',
+      exportAllHint: '勾选学生则只导出他们，否则导出列表中的全部',
       onlyNotIssued: '仅显示未发证书的学生',
       academicYear: '学年',
       allAcademicYears: '所有学年',
@@ -4952,6 +4955,9 @@ const zh: MessageSchema = {
       emptyMessage: '暂无科目。',
     },
     income: {
+      forMonth: '所属月份',
+      currency: '货币',
+      filterForMonth: '所属月份',
       title: '收入',
       pageSubtitle: '每一笔已确认的收入——来自学生付款的自动记录，或手动录入。',
       addIncome: '录入收入',
@@ -4970,6 +4976,10 @@ const zh: MessageSchema = {
       emptyMessage: '暂无收入记录。',
     },
     expenses: {
+      forMonth: '所属月份',
+      forMonthHint: '此支出所属的月份，例如今天支付9月的费用。',
+      currency: '货币',
+      filterForMonth: '所属月份',
       title: '支出',
       pageSubtitle: '学校支出，从创建到审批再到付款的全过程。',
       searchPlaceholder: '按支出编号或参考号搜索…',

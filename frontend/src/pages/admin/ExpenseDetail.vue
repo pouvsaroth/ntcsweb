@@ -12,7 +12,8 @@ import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import { expensesService, type Expense, type ExpenseStatus } from '@/services/expenses'
 import { useAuthStore } from '@/stores/auth'
 import { ApiRequestError } from '@/types/api'
-import { formatDate } from '@/utils/date'
+import { formatMoney } from '@/utils/currency'
+import { formatDate, formatMonth } from '@/utils/date'
 import { useConfirmDialogStore } from '@/stores/confirmDialog'
 
 const { t } = useI18n()
@@ -209,7 +210,8 @@ onMounted(load)
             <h2 class="mb-3 text-sm font-semibold text-neutral-800">{{ t('admin.expenses.detailsTitle') }}</h2>
             <dl class="grid grid-cols-2 gap-3 text-sm">
               <div><dt class="text-neutral-500">{{ t('admin.expenses.expenseDate') }}</dt><dd class="font-medium text-neutral-900">{{ formatDate(expense.expense_date) }}</dd></div>
-              <div><dt class="text-neutral-500">{{ t('admin.expenses.amount') }}</dt><dd class="font-medium text-neutral-900">${{ expense.amount.toFixed(2) }}</dd></div>
+              <div><dt class="text-neutral-500">{{ t('admin.expenses.forMonth') }}</dt><dd class="font-medium text-neutral-900">{{ formatMonth(expense.for_month) }}</dd></div>
+              <div><dt class="text-neutral-500">{{ t('admin.expenses.amount') }}</dt><dd class="font-medium text-neutral-900">{{ formatMoney(expense.amount, expense.currency) }}</dd></div>
               <div><dt class="text-neutral-500">{{ t('admin.expenses.vendor') }}</dt><dd class="font-medium text-neutral-900">{{ expense.vendor ?? '—' }}</dd></div>
               <div><dt class="text-neutral-500">{{ t('admin.expenses.referenceNumber') }}</dt><dd class="font-medium text-neutral-900">{{ expense.reference_number ?? '—' }}</dd></div>
               <div class="col-span-2"><dt class="text-neutral-500">{{ t('admin.expenses.description') }}</dt><dd class="font-medium text-neutral-900">{{ expense.description ?? '—' }}</dd></div>

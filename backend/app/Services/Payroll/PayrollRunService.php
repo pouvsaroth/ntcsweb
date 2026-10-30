@@ -200,8 +200,11 @@ final class PayrollRunService
             if ($total > 0) {
                 $expense = $this->expenses->create([
                     'expense_date' => $paidOn,
+                    // The payroll's own month, whenever it is paid.
+                    'for_month' => $locked->period_start?->format('Y-m'),
                     'account_id' => $expenseAccount->id,
                     'amount' => $total,
+                    'currency' => $currency,
                     'payment_method' => 'payroll',
                     'vendor' => 'Payroll',
                     'description' => "Payroll {$locked->reference} — {$slips->count()} staff",

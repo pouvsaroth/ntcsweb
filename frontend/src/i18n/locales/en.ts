@@ -2728,6 +2728,9 @@ const en = {
       emptyMessage: 'No students are waiting on a score.',
     },
     examCertificate: {
+      selectedStudents: 'Selected students: {count}',
+      exportSelectedHint: 'Exports only the ticked students',
+      exportAllHint: 'Tick students to export only them; otherwise everyone in the list',
       onlyNotIssued: 'Only students not yet issued',
       academicYear: 'Academic year',
       allAcademicYears: 'All academic years',
@@ -4957,6 +4960,9 @@ const en = {
       emptyMessage: 'No accounts yet.',
     },
     income: {
+      forMonth: 'For month',
+      currency: 'Currency',
+      filterForMonth: 'For month',
       title: 'Income',
       pageSubtitle: 'Every recognized revenue entry — automatic from student payments, or recorded manually.',
       addIncome: 'Record Income',
@@ -4975,6 +4981,10 @@ const en = {
       emptyMessage: 'No income recorded yet.',
     },
     expenses: {
+      forMonth: 'For month',
+      forMonthHint: 'The month this expense is for, e.g. paid today for September.',
+      currency: 'Currency',
+      filterForMonth: 'For month',
       title: 'Expenses',
       pageSubtitle: 'School expenses, from creation through approval and payment.',
       searchPlaceholder: 'Search by expense or reference number…',

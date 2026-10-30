@@ -69,6 +69,18 @@ export function formatDate(value: string | Date | null | undefined): string {
   return `${pad(date.getDate())}-${pad(date.getMonth() + 1)}-${date.getFullYear()}`
 }
 
+/** 'YYYY-MM' (a For month) as mm-yyyy, matching dd-mm-yyyy. '—' when empty. */
+export function formatMonth(value: string | null | undefined): string {
+  const match = value ? /^(\d{4})-(\d{2})/.exec(value) : null
+  return match ? `${match[2]}-${match[1]}` : '—'
+}
+
+/** 'YYYY-MM' of today, in local time — what an `<input type="month">` expects. */
+export function thisMonth(): string {
+  const now = new Date()
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}`
+}
+
 /** dd-mm-yyyy HH:mm (or hh:mm AM/PM), in the viewer's local time — for a timestamp (created_at, decided_at, ...), not a plain date. */
 export function formatDateTime(value: string | Date | null | undefined): string {
   const date = toDate(value)

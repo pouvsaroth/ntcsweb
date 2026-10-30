@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Api\V1\Admin;
 
 use App\Models\Expense;
+use App\Models\Tenant;
 use App\Support\Accounting\AccountType;
 use App\Support\Accounting\ExpenseStatus;
 use App\Support\Billing\PaymentMethod;
@@ -23,6 +24,9 @@ class StoreExpenseRequest extends FormRequest
     {
         return [
             'expense_date' => ['nullable', 'date'],
+            // The month it is for (paid today for September): 'YYYY-MM'.
+            'for_month' => ['nullable', 'date_format:Y-m'],
+            'currency' => ['nullable', Rule::in([Tenant::CURRENCY_USD, Tenant::CURRENCY_KHR])],
             'account_id' => [
                 'required',
                 Rule::exists('tenant.accounts', 'id')->where('type', AccountType::EXPENSE)->where('is_active', true),

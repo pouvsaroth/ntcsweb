@@ -7,21 +7,46 @@ import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
+import SearchableSelect from '@/components/ui/SearchableSelect.vue'
 import { accountsService, type Account } from '@/services/accounting'
 import { incomeService, type IncomeInput } from '@/services/financialTransactions'
+import { useAuthStore } from '@/stores/auth'
 import { ApiRequestError } from '@/types/api'
+import { thisMonth } from '@/utils/date'
 
 const props = defineProps<{ modelValue: boolean }>()
 const emit = defineEmits<{ 'update:modelValue': [value: boolean]; saved: [] }>()
 
 const { t } = useI18n()
+const auth = useAuthStore()
+/** New income starts on the school's own currency. */
+const defaultCurrency = () => auth.tenantDefaultCurrency ?? 'USD'
 
 function today(): string {
   const now = new Date()
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
 }
 
-const form = reactive<IncomeInput>({ revenue_account_id: null, cash_account_id: null, amount: '', date: today(), description: '' })
+const form = reactive<IncomeInput>({ revenue_account_id: null, cash_account_id: null, amount: '', currency: defaultCurrency(), date: today(), for_month: thisMonth(), description: '' })
+
+const currencyOptions = computed(() => [
+  { value: 'USD', label: t('admin.coursePackages.currencyUsd') },
+  { value: 'KHR', label: t('admin.coursePackages.currencyKhr') },
+])
+
+// For month follows the date until it is picked by hand
+// (received today for September: pick September).
+const monthPicked = ref(false)
+watch(
+  () => form.date,
+  (date) => {
+    if (!monthPicked.value && date) form.for_month = date.slice(0, 7)
+  },
+)
+function onMonth(value: string) {
+  form.for_month = value
+  monthPicked.value = true
+}
 const errors = ref<Record<string, string[]>>({})
 const generalError = ref<string | null>(null)
 const submitting = ref(false)
@@ -43,7 +68,10 @@ watch(
     form.revenue_account_id = null
     form.cash_account_id = null
     form.amount = ''
+    form.currency = defaultCurrency()
     form.date = today()
+    form.for_month = thisMonth()
+    monthPicked.value = false
     form.description = ''
     errors.value = {}
     generalError.value = null
@@ -85,7 +113,7 @@ async function submit() {
     <form class="space-y-4" @submit.prevent="submit">
       <BaseAlert v-if="generalError" variant="danger">{{ generalError }}</BaseAlert>
 
-      <BaseSelect
+      <SearchableSelect
         :model-value="form.revenue_account_id !== null ? String(form.revenue_account_id) : ''"
         :options="revenueOptions"
         :disabled="loadingAccounts"
@@ -95,7 +123,7 @@ async function submit() {
         @update:model-value="form.revenue_account_id = $event ? Number($event) : null"
       />
 
-      <BaseSelect
+      <SearchableSelect
         :model-value="form.cash_account_id !== null ? String(form.cash_account_id) : ''"
         :options="cashOptions"
         :disabled="loadingAccounts"
@@ -114,7 +142,19 @@ async function submit() {
           :error="errors.amount?.[0]"
           @update:model-value="form.amount = $event"
         />
-        <BaseInput v-model="form.date" type="date" :label="t('admin.income.date')" />
+        <BaseSelect v-model="form.currency" :options="currencyOptions" required :label="t('admin.income.currency')" :error="errors.currency?.[0]" />
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <BaseInput v-model="form.date" type="date" :label="t('admin.income.date')" :error="errors.date?.[0]" />
+        <BaseInput
+          :model-value="form.for_month"
+          type="month"
+          required
+          :label="t('admin.income.forMonth')"
+          :error="errors.for_month?.[0]"
+          @update:model-value="onMonth"
+        />
       </div>
 
       <div>

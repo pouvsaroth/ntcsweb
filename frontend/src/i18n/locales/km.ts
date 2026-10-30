@@ -2724,6 +2724,9 @@ const km: MessageSchema = {
       emptyMessage: 'គ្មានសិស្សកំពុងរង់ចាំពិន្ទុទេ។',
     },
     examCertificate: {
+      selectedStudents: 'សិស្សដែលបានជ្រើសរើស៖ {count}',
+      exportSelectedHint: 'នាំចេញតែសិស្សដែលបានធីក',
+      exportAllHint: 'ធីកសិស្សដើម្បីនាំចេញតែពួកគេ បើមិនធីកទេ នាំចេញទាំងអស់ក្នុងបញ្ជី',
       onlyNotIssued: 'សិស្សមិនទាន់ទទួលវិញ្ញាបនបត្រ',
       academicYear: 'ឆ្នាំសិក្សា',
       allAcademicYears: 'គ្រប់ឆ្នាំសិក្សា',
@@ -4953,6 +4956,9 @@ const km: MessageSchema = {
       emptyMessage: 'មិនទាន់មានគណនីទេ។',
     },
     income: {
+      forMonth: 'សម្រាប់ខែ',
+      currency: 'រូបិយប័ណ្ណ',
+      filterForMonth: 'សម្រាប់ខែ',
       title: 'ចំណូល',
       pageSubtitle: 'រាល់ការទទួលស្គាល់ចំណូល — ស្វ័យប្រវត្តិពីការទូទាត់របស់សិស្ស ឬកត់ត្រាដោយដៃ។',
       addIncome: 'កត់ត្រាចំណូល',
@@ -4971,6 +4977,10 @@ const km: MessageSchema = {
       emptyMessage: 'មិនទាន់មានចំណូលត្រូវបានកត់ត្រាទេ។',
     },
     expenses: {
+      forMonth: 'សម្រាប់ខែ',
+      forMonthHint: 'ខែដែលចំណាយនេះសម្រាប់ ឧ. បង់ថ្ងៃនេះ សម្រាប់ខែកញ្ញា។',
+      currency: 'រូបិយប័ណ្ណ',
+      filterForMonth: 'សម្រាប់ខែ',
       title: 'ចំណាយ',
       pageSubtitle: 'ចំណាយសាលា ចាប់ពីការបង្កើតរហូតដល់ការអនុម័ត និងការទូទាត់។',
       searchPlaceholder: 'ស្វែងរកតាមលេខចំណាយ ឬលេខយោង…',

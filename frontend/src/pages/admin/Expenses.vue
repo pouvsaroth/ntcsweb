@@ -5,13 +5,15 @@ import { useI18n } from 'vue-i18n'
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
+import BaseInput from '@/components/ui/BaseInput.vue'
 import BasePagination from '@/components/ui/BasePagination.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
 import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import DataTable from '@/components/ui/DataTable.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { expensesService, expenseStatuses, type Expense, type ExpenseStatus } from '@/services/expenses'
-import { formatDate } from '@/utils/date'
+import { formatMoney } from '@/utils/currency'
+import { formatDate, formatMonth } from '@/utils/date'
 
 const { t } = useI18n()
 
@@ -40,6 +42,12 @@ const statusVariant: Record<ExpenseStatus, 'neutral' | 'warning' | 'success' | '
 
 const statusFilterOptions = computed(() => expenseStatuses.map((status) => ({ value: status, label: t(`admin.expenses.status${statusKey(status)}`) })))
 
+const selectedMonth = ref('')
+function onMonthFilterChange(value: string) {
+  selectedMonth.value = value
+  setFilter('for_month', value || undefined)
+}
+
 function onStatusFilterChange(value: string) {
   selectedStatus.value = value
   setFilter('status', value || undefined)
@@ -47,6 +55,7 @@ function onStatusFilterChange(value: string) {
 
 const columns = [
   { key: 'expense_date', label: t('admin.expenses.columnDate'), sortable: true },
+  { key: 'for_month', label: t('admin.expenses.forMonth'), sortable: true },
   { key: 'expense_number', label: t('admin.expenses.columnNumber') },
   { key: 'account', label: t('admin.expenses.columnAccount') },
   { key: 'vendor', label: t('admin.expenses.columnVendor') },
@@ -61,7 +70,7 @@ onMounted(() => fetch())
   <div>
     <BaseAlert v-if="error" variant="danger" class="mb-4">{{ error }}</BaseAlert>
 
-    <div class="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    <div class="mb-4 grid items-end gap-3 sm:grid-cols-2 lg:grid-cols-4">
       <input
         type="search"
         class="block w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
@@ -74,6 +83,7 @@ onMounted(() => fetch())
         :placeholder="t('admin.expenses.filterAllStatuses')"
         @update:model-value="onStatusFilterChange"
       />
+      <BaseInput :model-value="selectedMonth" type="month" :label="t('admin.expenses.filterForMonth')" @update:model-value="onMonthFilterChange" />
       <BaseButton to="/admin/expenses/new">{{ t('admin.expenses.addExpense') }}</BaseButton>
     </div>
 
@@ -95,14 +105,14 @@ onMounted(() => fetch())
           <div class="flex items-start justify-between gap-2">
             <div class="min-w-0">
               <p class="truncate font-medium text-primary-700">{{ row.expense_number }}</p>
-              <p class="text-xs text-neutral-500">{{ formatDate(row.expense_date) }}</p>
+              <p class="text-xs text-neutral-500">{{ formatDate(row.expense_date) }} · {{ t('admin.expenses.forMonth') }} {{ formatMonth(row.for_month) }}</p>
             </div>
             <BaseBadge :variant="statusVariant[row.status]">{{ t(`admin.expenses.status${statusKey(row.status)}`) }}</BaseBadge>
           </div>
           <p class="mt-2 truncate text-sm text-neutral-700">{{ row.account.code }} — {{ row.account.name }}</p>
           <div class="mt-1 flex items-center justify-between gap-2">
             <p class="truncate text-xs text-neutral-500">{{ row.vendor ?? '—' }}</p>
-            <p class="shrink-0 text-base font-semibold text-neutral-900">${{ row.amount.toFixed(2) }}</p>
+            <p class="shrink-0 text-base font-semibold text-neutral-900">{{ formatMoney(row.amount, row.currency) }}</p>
           </div>
         </RouterLink>
       </div>
@@ -122,9 +132,10 @@ onMounted(() => fetch())
         <RouterLink :to="`/admin/expenses/${row.id}`" class="font-medium text-primary-700 hover:underline">{{ row.expense_number }}</RouterLink>
       </template>
       <template #cell-expense_date="{ row }">{{ formatDate(row.expense_date) }}</template>
+      <template #cell-for_month="{ row }">{{ formatMonth(row.for_month) }}</template>
       <template #cell-account="{ row }">{{ row.account.code }} — {{ row.account.name }}</template>
       <template #cell-vendor="{ row }">{{ row.vendor ?? '—' }}</template>
-      <template #cell-amount="{ row }">${{ row.amount.toFixed(2) }}</template>
+      <template #cell-amount="{ row }">{{ formatMoney(row.amount, row.currency) }}</template>
       <template #cell-status="{ row }">
         <BaseBadge :variant="statusVariant[row.status]">{{ t(`admin.expenses.status${statusKey(row.status)}`) }}</BaseBadge>
       </template>

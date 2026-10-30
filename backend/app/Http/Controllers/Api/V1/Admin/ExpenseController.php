@@ -58,10 +58,17 @@ final class ExpenseController extends Controller
             $query->whereDate('expense_date', '<=', $request->string('date_to')->toString());
         }
 
+        // For month ('YYYY-MM'): the month it belongs to, not the day money moved.
+        $forMonth = $request->input('filter.for_month', $request->input('for_month'));
+        if (is_string($forMonth) && $forMonth !== '') {
+            validator(['for_month' => $forMonth], ['for_month' => ['date_format:Y-m']])->validate();
+            $query->forMonth($forMonth);
+        }
+
         $expenses = ApiQuery::for($query, $request)
             ->searchable('expense_number', 'vendor', 'reference_number')
             ->filterable(['status', 'account_id', 'payment_method', 'created_by'])
-            ->sortable(['expense_date', 'amount', 'created_at'], default: '-created_at')
+            ->sortable(['expense_date', 'for_month', 'amount', 'created_at'], default: '-created_at')
             ->paginate();
 
         $this->flow->attachProgress($expenses->getCollection(), $user);

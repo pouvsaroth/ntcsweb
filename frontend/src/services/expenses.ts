@@ -20,9 +20,12 @@ export interface Expense {
   id: number
   expense_number: string
   expense_date: string
+  /** 'YYYY-MM': the month it is for (may differ from the date paid). */
+  for_month: string | null
   account: { id: number; code: string; name: string }
   cash_account: { id: number; code: string; name: string } | null
   amount: number
+  currency: 'USD' | 'KHR'
   payment_method: string | null
   vendor: string | null
   description: string | null
@@ -44,8 +47,11 @@ export interface Expense {
 
 export interface ExpenseInput {
   expense_date: string
+  /** 'YYYY-MM' */
+  for_month: string
   account_id: number | null
   amount: string
+  currency: 'USD' | 'KHR'
   payment_method: string
   vendor: string
   description: string
@@ -55,8 +61,10 @@ export interface ExpenseInput {
 function toExpensePayload(input: ExpenseInput) {
   return {
     expense_date: input.expense_date,
+    for_month: input.for_month || null,
     account_id: input.account_id,
     amount: Number(input.amount) || 0,
+    currency: input.currency,
     payment_method: input.payment_method || null,
     vendor: input.vendor || null,
     description: input.description || null,

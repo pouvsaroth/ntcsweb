@@ -2724,6 +2724,9 @@ const ko: MessageSchema = {
       emptyMessage: '점수를 기다리는 학생이 없습니다.',
     },
     examCertificate: {
+      selectedStudents: '선택한 학생: {count}',
+      exportSelectedHint: '체크한 학생만 내보냅니다',
+      exportAllHint: '학생을 체크하면 그 학생만, 아니면 목록 전체를 내보냅니다',
       onlyNotIssued: '수료증 미발급 학생만',
       academicYear: '학년도',
       allAcademicYears: '모든 학년도',
@@ -4953,6 +4956,9 @@ const ko: MessageSchema = {
       emptyMessage: '아직 계정이 없습니다.',
     },
     income: {
+      forMonth: '해당 월',
+      currency: '통화',
+      filterForMonth: '해당 월',
       title: '수입',
       pageSubtitle: '모든 인식된 수익 항목 — 학생 결제로부터 자동 생성되거나 수동으로 기록됨.',
       addIncome: '수입 기록',
@@ -4971,6 +4977,10 @@ const ko: MessageSchema = {
       emptyMessage: '아직 기록된 수입이 없습니다.',
     },
     expenses: {
+      forMonth: '해당 월',
+      forMonthHint: '이 지출의 해당 월 (예: 오늘 지급, 9월분).',
+      currency: '통화',
+      filterForMonth: '해당 월',
       title: '지출',
       pageSubtitle: '생성부터 승인, 지급까지의 학교 지출.',
       searchPlaceholder: '지출번호 또는 참조번호로 검색…',

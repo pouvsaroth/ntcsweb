@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Models\Concerns\HasForMonth;
 use App\Support\Accounting\ExpenseStatus;
 use Database\Factories\ExpenseFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -29,7 +30,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property string $status
  */
 #[Fillable([
-    'expense_number', 'expense_date', 'account_id', 'cash_account_id', 'amount', 'payment_method',
+    'expense_number', 'expense_date', 'for_month', 'account_id', 'cash_account_id', 'amount', 'currency', 'payment_method',
     'vendor', 'description', 'reference_number', 'status', 'created_by',
     'approved_by', 'approved_at', 'rejected_reason', 'paid_at',
     'cancellation_reason', 'cancelled_by', 'cancelled_at',
@@ -38,7 +39,10 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 class Expense extends Model
 {
     /** @use HasFactory<ExpenseFactory> */
-    use HasFactory;
+    use HasFactory, HasForMonth;
+
+    /** An empty For month takes this date's month (HasForMonth). */
+    public const FOR_MONTH_FROM = 'expense_date';
 
     protected $connection = 'tenant';
 

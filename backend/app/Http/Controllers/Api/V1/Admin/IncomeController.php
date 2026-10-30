@@ -42,10 +42,17 @@ final class IncomeController extends Controller
             $query->whereDate('transaction_date', '<=', $request->string('date_to')->toString());
         }
 
+        // For month ('YYYY-MM'): the month it belongs to, not the day money moved.
+        $forMonth = $request->input('filter.for_month', $request->input('for_month'));
+        if (is_string($forMonth) && $forMonth !== '') {
+            validator(['for_month' => $forMonth], ['for_month' => ['date_format:Y-m']])->validate();
+            $query->forMonth($forMonth);
+        }
+
         $income = ApiQuery::for($query, $request)
             ->searchable('transaction_number', 'description')
-            ->filterable(['credit_account_id', 'reference_type'])
-            ->sortable(['transaction_date', 'amount', 'created_at'], default: '-created_at')
+            ->filterable(['credit_account_id', 'reference_type', 'currency'])
+            ->sortable(['transaction_date', 'for_month', 'amount', 'created_at'], default: '-created_at')
             ->paginate();
 
         return ApiResponse::success(FinancialTransactionResource::collection($income));
@@ -63,6 +70,8 @@ final class IncomeController extends Controller
             $request->validated('date') ?? now()->toDateString(),
             $request->validated('description'),
             $request->user(),
+            $request->validated('currency'),
+            $request->validated('for_month'),
         );
 
         return ApiResponse::created(new FinancialTransactionResource($transaction->load(['debitAccount', 'creditAccount'])));

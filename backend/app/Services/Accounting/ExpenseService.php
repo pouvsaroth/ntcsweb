@@ -40,7 +40,7 @@ final class ExpenseService
     ) {}
 
     /**
-     * @param  array{expense_date?:string, account_id:int, amount:float, payment_method?:string|null, vendor?:string|null, description?:string|null, reference_number?:string|null, status?:string}  $data
+     * @param  array{expense_date?:string, for_month?:string|null, account_id:int, amount:float, currency?:string|null, payment_method?:string|null, vendor?:string|null, description?:string|null, reference_number?:string|null, status?:string}  $data
      */
     public function create(array $data, User $actor): Expense
     {
@@ -64,7 +64,7 @@ final class ExpenseService
     }
 
     /**
-     * @param  array{expense_date?:string, account_id:int, amount:float, payment_method?:string|null, vendor?:string|null, description?:string|null, reference_number?:string|null, status?:string}  $data
+     * @param  array{expense_date?:string, for_month?:string|null, account_id:int, amount:float, currency?:string|null, payment_method?:string|null, vendor?:string|null, description?:string|null, reference_number?:string|null, status?:string}  $data
      */
     private function createRow(array $data, User $actor): Expense
     {
@@ -74,8 +74,11 @@ final class ExpenseService
             $expense = Expense::query()->create([
                 'expense_number' => $this->numbers->nextExpenseNumber($tenant),
                 'expense_date' => $data['expense_date'] ?? now()->toDateString(),
+                // 'YYYY-MM' it is for; empty = the month of expense_date (HasForMonth).
+                'for_month' => $data['for_month'] ?? null,
                 'account_id' => $data['account_id'],
                 'amount' => round((float) $data['amount'], 2),
+                'currency' => $data['currency'] ?? $tenant->default_currency,
                 'payment_method' => $data['payment_method'] ?? null,
                 'vendor' => $data['vendor'] ?? null,
                 'description' => $data['description'] ?? null,

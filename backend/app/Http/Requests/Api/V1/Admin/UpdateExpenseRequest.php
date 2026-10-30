@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Api\V1\Admin;
 
 use App\Models\Expense;
+use App\Models\Tenant;
 use App\Support\Accounting\AccountType;
 use App\Support\Accounting\ExpenseStatus;
 use App\Support\Billing\PaymentMethod;
@@ -27,6 +28,8 @@ class UpdateExpenseRequest extends FormRequest
     {
         return [
             'expense_date' => ['sometimes', 'required', 'date'],
+            'for_month' => ['sometimes', 'required', 'date_format:Y-m'],
+            'currency' => ['sometimes', 'required', Rule::in([Tenant::CURRENCY_USD, Tenant::CURRENCY_KHR])],
             'account_id' => [
                 'sometimes', 'required',
                 Rule::exists('tenant.accounts', 'id')->where('type', AccountType::EXPENSE)->where('is_active', true),

@@ -40,8 +40,10 @@ final class ExamScoreController extends Controller
             $filters['scored'] = $request->boolean('scored');
         }
 
-        // Earliest exam first; id breaks ties within one exam date.
-        $query = $this->scores->filtered($request->user(), $filters)->orderBy('exam_date')->orderBy('id');
+        // The Grade tab (scored) shows the latest exam first; the Add Score
+        // popup (not scored yet) keeps the earliest first. id breaks ties.
+        $direction = ($filters['scored'] ?? null) === true ? 'desc' : 'asc';
+        $query = $this->scores->filtered($request->user(), $filters)->orderByRaw("exam_date {$direction} nulls last")->orderBy('id', $direction);
 
         $rows = ApiQuery::for($query, $request)->maxPerPage(500)->paginate();
 

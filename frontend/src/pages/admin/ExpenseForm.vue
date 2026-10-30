@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
@@ -7,13 +7,17 @@ import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
+import SearchableSelect from '@/components/ui/SearchableSelect.vue'
 import { accountsService, type Account } from '@/services/accounting'
 import { expensesService, type ExpenseInput } from '@/services/expenses'
 import { paymentMethods } from '@/services/payments'
+import { useAuthStore } from '@/stores/auth'
 import { ApiRequestError } from '@/types/api'
+import { thisMonth } from '@/utils/date'
 
 const { t } = useI18n()
 const router = useRouter()
+const auth = useAuthStore()
 
 function today(): string {
   const now = new Date()
@@ -35,20 +39,39 @@ function toPascalCase(value: string): string {
     .join('')
 }
 
-const paymentMethodOptions = computed(() => [
-  { value: '', label: t('admin.expenses.selectPaymentMethod') },
-  ...paymentMethods.map((method) => ({ value: method, label: t(`admin.payments.method${toPascalCase(method)}`) })),
+const paymentMethodOptions = computed(() => paymentMethods.map((method) => ({ value: method, label: t(`admin.payments.method${toPascalCase(method)}`) })))
+
+const currencyOptions = computed(() => [
+  { value: 'USD', label: t('admin.coursePackages.currencyUsd') },
+  { value: 'KHR', label: t('admin.coursePackages.currencyKhr') },
 ])
 
 const form = reactive<ExpenseInput>({
   expense_date: today(),
+  for_month: thisMonth(),
   account_id: null,
   amount: '',
+  // Starts on the school's own currency.
+  currency: auth.tenantDefaultCurrency ?? 'USD',
   payment_method: '',
   vendor: '',
   description: '',
   reference_number: '',
 })
+
+// For month follows the expense date until it is picked by hand
+// (paid today for September: pick September).
+const monthPicked = ref(false)
+watch(
+  () => form.expense_date,
+  (date) => {
+    if (!monthPicked.value && date) form.for_month = date.slice(0, 7)
+  },
+)
+function onMonth(value: string) {
+  form.for_month = value
+  monthPicked.value = true
+}
 
 const errors = ref<Record<string, string[]>>({})
 const generalError = ref<string | null>(null)
@@ -94,7 +117,7 @@ async function submit() {
     <form class="space-y-6" @submit.prevent="submit">
       <BaseAlert v-if="generalError" variant="danger">{{ generalError }}</BaseAlert>
 
-      <BaseSelect
+      <SearchableSelect
         :model-value="form.account_id !== null ? String(form.account_id) : ''"
         :options="expenseAccountOptions"
         :disabled="loadingAccounts"
@@ -108,6 +131,18 @@ async function submit() {
       <div class="grid grid-cols-2 gap-4">
         <BaseInput v-model="form.expense_date" type="date" required :label="t('admin.expenses.expenseDate')" :error="errors.expense_date?.[0]" />
         <BaseInput
+          :model-value="form.for_month"
+          type="month"
+          required
+          :label="t('admin.expenses.forMonth')"
+          :hint="t('admin.expenses.forMonthHint')"
+          :error="errors.for_month?.[0]"
+          @update:model-value="onMonth"
+        />
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <BaseInput
           :model-value="form.amount"
           type="number"
           required
@@ -115,11 +150,17 @@ async function submit() {
           :error="errors.amount?.[0]"
           @update:model-value="form.amount = $event"
         />
+        <BaseSelect v-model="form.currency" :options="currencyOptions" required :label="t('admin.expenses.currency')" :error="errors.currency?.[0]" />
       </div>
 
       <div class="grid grid-cols-2 gap-4">
         <BaseInput v-model="form.vendor" :label="t('admin.expenses.vendor')" :error="errors.vendor?.[0]" />
-        <BaseSelect v-model="form.payment_method" :options="paymentMethodOptions" :label="t('admin.expenses.paymentMethod')" />
+        <SearchableSelect
+          v-model="form.payment_method"
+          :options="paymentMethodOptions"
+          :placeholder="t('admin.expenses.selectPaymentMethod')"
+          :label="t('admin.expenses.paymentMethod')"
+        />
       </div>
 
       <BaseInput v-model="form.reference_number" :label="t('admin.expenses.referenceNumber')" :error="errors.reference_number?.[0]" />

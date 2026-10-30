@@ -148,7 +148,8 @@ function openModal(mode: 'photo' | 'issued') {
 }
 
 // --- Export as image -----------------------------------------------------------
-// Every passed student under the current filters, not just the page on screen.
+// The ticked students only, when any are ticked; otherwise every passed
+// student under the current filters, not just the page on screen.
 
 const exporting = ref(false)
 const exportError = ref<string | null>(null)
@@ -162,6 +163,12 @@ async function fetchAllForExport(): Promise<ExamApplication[]> {
   }
 }
 
+/** Ticked rows in the order the list shows them (ticks can span pages), not the order they were ticked. */
+function sortedLikeList(rows: ExamApplication[]): ExamApplication[] {
+  const order = [...seenRows.keys()]
+  return [...rows].sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id))
+}
+
 function dateCell(date: string | null | undefined, remark: string | null | undefined, emptyKey: string) {
   return date
     ? { text: `✓ ${formatDate(date)}`, badge: 'success' as const, subtext: remark || undefined }
@@ -172,10 +179,12 @@ async function exportImage() {
   exporting.value = true
   exportError.value = null
   try {
-    const rows = await fetchAllForExport()
+    const selected = selectedRows.value
+    const rows = selected.length > 0 ? sortedLikeList(selected) : await fetchAllForExport()
+    const scope = selected.length > 0 ? t('admin.examCertificate.selectedStudents', { count: selected.length }) : filterSummary()
     await exportTableAsImage({
       title: t('admin.examCertificate.title'),
-      subtitle: [filterSummary(), `${t('admin.examCertificate.exportedOn')} ${formatDate(new Date())}`].join('  ·  '),
+      subtitle: [scope, `${t('admin.examCertificate.exportedOn')} ${formatDate(new Date())}`].join('  ·  '),
       columns: [
         { label: t('admin.examCertificate.columnPhotoReceived'), width: 150, maxWidth: 260 },
         { label: t('admin.examCertificate.columnIssued'), width: 150, maxWidth: 260 },
@@ -269,7 +278,9 @@ onMounted(async () => {
         <p class="mt-1 max-w-3xl text-sm text-neutral-500">{{ t('admin.examCertificate.subtitle') }}</p>
       </div>
       <div class="flex flex-wrap gap-2">
-        <BaseButton variant="outline" :loading="exporting" @click="exportImage">{{ t('admin.examCertificate.exportImage') }}</BaseButton>
+        <BaseButton variant="outline" :loading="exporting" :title="selectedRows.length ? t('admin.examCertificate.exportSelectedHint') : t('admin.examCertificate.exportAllHint')" @click="exportImage">
+          {{ t('admin.examCertificate.exportImage') }}<template v-if="selectedRows.length"> ({{ selectedRows.length }})</template>
+        </BaseButton>
         <BaseButton variant="outline" :loading="printing" :disabled="selectedRows.length === 0" @click="printCertificates">
           {{ t('admin.examCertificate.printCertificate') }}<template v-if="selectedRows.length"> ({{ selectedRows.length }})</template>
         </BaseButton>

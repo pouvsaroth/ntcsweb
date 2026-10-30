@@ -6,7 +6,7 @@ import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
-import BaseSelect from '@/components/ui/BaseSelect.vue'
+import SearchableSelect from '@/components/ui/SearchableSelect.vue'
 import { accountsService, type Account } from '@/services/accounting'
 
 function today(): string {
@@ -59,7 +59,7 @@ function submit() {
     <form class="space-y-4" @submit.prevent="submit">
       <BaseAlert v-if="error" variant="danger">{{ error }}</BaseAlert>
 
-      <BaseSelect
+      <SearchableSelect
         :model-value="cashAccountId !== null ? String(cashAccountId) : ''"
         :options="cashOptions"
         :disabled="loadingAccounts"

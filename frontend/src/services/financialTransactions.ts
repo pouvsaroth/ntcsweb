@@ -10,6 +10,8 @@ export interface FinancialTransaction {
   id: number
   transaction_number: string
   transaction_date: string
+  /** 'YYYY-MM': the month it is for (may differ from the date). */
+  for_month: string | null
   type: TransactionType
   debit_account: { id: number; code: string; name: string }
   credit_account: { id: number; code: string; name: string }
@@ -43,7 +45,10 @@ export interface IncomeInput {
   revenue_account_id: number | null
   cash_account_id: number | null
   amount: string
+  currency: 'USD' | 'KHR'
   date: string
+  /** 'YYYY-MM' */
+  for_month: string
   description: string
 }
 
@@ -87,7 +92,9 @@ export const incomeService = {
       revenue_account_id: input.revenue_account_id,
       cash_account_id: input.cash_account_id,
       amount: Number(input.amount) || 0,
+      currency: input.currency,
       date: input.date || undefined,
+      for_month: input.for_month || null,
       description: input.description || null,
     }),
 }

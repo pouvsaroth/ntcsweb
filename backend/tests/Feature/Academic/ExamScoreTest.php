@@ -81,6 +81,13 @@ class ExamScoreTest extends TestCase
             ->assertJsonPath('data.1.mention', null)
             ->assertJsonPath('data.2.exam_application_id', $later->id)
             ->assertJsonPath('data.2.mention', 'excellent');
+
+        // The Grade tab (scored only): latest exam first.
+        $this->getJson('/api/v1/exam-scores?scored=1')
+            ->assertOk()
+            ->assertJsonCount(2, 'data')
+            ->assertJsonPath('data.0.exam_application_id', $later->id)
+            ->assertJsonPath('data.1.exam_application_id', $earlier->id);
     }
 
     public function test_options_list_the_course_class_book_combinations_that_have_approved_applications(): void

@@ -148,6 +148,7 @@ final class AssetRepairService
                 'expense_date' => now()->toDateString(),
                 'account_id' => $expenseAccountId,
                 'amount' => (float) $repair->total_cost,
+                'currency' => $tenant->default_currency,
                 'vendor' => $repair->repairShop?->name,
                 'description' => "Repair {$repair->repair_number} for asset {$asset->asset_number}",
                 'reference_number' => $repair->repair_number,
