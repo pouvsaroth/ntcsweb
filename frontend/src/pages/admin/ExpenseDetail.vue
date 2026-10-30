@@ -225,7 +225,7 @@ onMounted(load)
             <h2 class="mb-3 text-sm font-semibold text-neutral-800">{{ t('admin.expenses.attachmentsTitle') }}</h2>
             <BaseAlert v-if="uploadError" variant="danger" class="mb-3">{{ uploadError }}</BaseAlert>
 
-            <ul v-if="expense.attachments.length > 0" class="mb-3 divide-y divide-neutral-100 rounded-lg border border-neutral-200">
+            <ul v-if="(expense.attachments ?? []).length > 0" class="mb-3 divide-y divide-neutral-100 rounded-lg border border-neutral-200">
               <li v-for="attachment in expense.attachments" :key="attachment.id" class="flex items-center justify-between px-3 py-2 text-sm">
                 <a :href="attachment.url" target="_blank" rel="noopener noreferrer" class="text-primary-700 hover:underline">{{ attachment.file_name }}</a>
                 <button type="button" class="text-danger-600 hover:text-red-700" @click="removeAttachment(attachment.id)">{{ t('common.remove') }}</button>

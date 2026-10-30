@@ -112,6 +112,9 @@ class ExpenseTest extends TestCase
         $response = $this->postJson("/api/v1/expenses/{$expenseId}/pay", ['cash_account_id' => $this->cashAccount->id]);
         $response->assertOk();
         $response->assertJsonPath('data.status', ExpenseStatus::PAID);
+        // The whole expense comes back, as the detail page shows it (it went blank without attachments).
+        $response->assertJsonPath('data.attachments', [])->assertJsonPath('data.cash_account.id', $this->cashAccount->id)
+            ->assertJsonPath('data.account.id', $this->electricityAccount->id)->assertJsonStructure(['data' => ['created_by', 'approved_by']]);
 
         $transaction = FinancialTransaction::where('type', TransactionType::EXPENSE)->firstOrFail();
         $this->assertSame($this->electricityAccount->id, $transaction->debit_account_id);

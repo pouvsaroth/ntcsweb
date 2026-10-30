@@ -19,6 +19,7 @@ use App\Models\Account;
 use App\Models\Expense;
 use App\Models\ExpenseAttachment;
 use App\Models\Tenant;
+use App\Models\User;
 use App\Services\Accounting\ExpenseService;
 use App\Services\Approvals\ApprovalFlow;
 use App\Support\Approvals\DocumentType;
@@ -88,6 +89,16 @@ final class ExpenseController extends Controller
         $user = $request->user();
         abort_unless($user->can('view', $expense) || $this->flow->isCurrentApprover($expense, $user), 403);
 
+        return $this->full($expense, $user);
+    }
+
+    /**
+     * The whole expense, as show() returns it. Every action answers with this
+     * too: the detail page swaps in what comes back, and a missing part (e.g.
+     * attachments after Pay) would leave it blank.
+     */
+    private function full(Expense $expense, User $user): JsonResponse
+    {
         $expense->load(['account', 'cashAccount', 'createdBy', 'approvedBy', 'cancelledBy', 'attachments.uploadedBy']);
         $this->flow->attachProgress([$expense], $user);
 
@@ -98,7 +109,7 @@ final class ExpenseController extends Controller
     {
         $expense->update($request->validated());
 
-        return ApiResponse::success(new ExpenseResource($expense->load(['account', 'createdBy'])));
+        return $this->full($expense, $request->user());
     }
 
     public function approve(ApproveExpenseRequest $request, Expense $expense): JsonResponse
@@ -112,16 +123,14 @@ final class ExpenseController extends Controller
             fn (Expense $doc, $nextApprovers) => $this->expenses->notifyApprovers($doc, $nextApprovers),
         );
 
-        $this->flow->attachProgress([$expense], $request->user());
-
-        return ApiResponse::success(new ExpenseResource($expense));
+        return $this->full($expense, $request->user());
     }
 
     public function reject(RejectExpenseRequest $request, Expense $expense): JsonResponse
     {
         $expense = $this->expenses->reject($expense, $request->validated('reason'), $request->user());
 
-        return ApiResponse::success(new ExpenseResource($expense));
+        return $this->full($expense, $request->user());
     }
 
     public function pay(PayExpenseRequest $request, Expense $expense): JsonResponse
@@ -130,14 +139,14 @@ final class ExpenseController extends Controller
 
         $expense = $this->expenses->pay($expense, $cashAccount, $request->user(), $request->validated('paid_date'));
 
-        return ApiResponse::success(new ExpenseResource($expense->load('cashAccount')));
+        return $this->full($expense, $request->user());
     }
 
     public function cancel(CancelExpenseRequest $request, Expense $expense): JsonResponse
     {
         $expense = $this->expenses->cancel($expense, $request->validated('reason'), $request->user());
 
-        return ApiResponse::success(new ExpenseResource($expense));
+        return $this->full($expense, $request->user());
     }
 
     /** Reuses the existing `public` disk convention (Gallery/avatars) — see Tenant::storagePath(). */
