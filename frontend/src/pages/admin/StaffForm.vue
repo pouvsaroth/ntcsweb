@@ -3,6 +3,7 @@ import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
+import StaffEducationTab from '@/components/admin/StaffEducationTab.vue'
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
@@ -26,10 +27,9 @@ const router = useRouter()
 const staffId = computed(() => (route.params.id ? Number(route.params.id) : null))
 const isEditing = computed(() => staffId.value !== null)
 
-// "Current Info" is the only tab with real form state — the other six are
-// placeholders (see the module docblock at the top of the task spec): a
-// coming-soon message instead of six half-built features. Purely
-// client-side; switching tabs never touches the router or loses form data.
+// "Current Info" holds the staff form itself; "Education" is its own list
+// (StaffEducationTab, saved row by row); the rest are still placeholders.
+// Purely client-side; switching tabs never touches the router or loses form data.
 type TabKey = 'current-info' | 'emergency-contacts' | 'education' | 'family-members' | 'language' | 'previous-work' | 'documents'
 
 const tabs: { key: TabKey; labelKey: string }[] = [
@@ -454,7 +454,9 @@ onMounted(load)
         </nav>
       </div>
 
-      <div v-if="activeTab !== 'current-info'">
+      <StaffEducationTab v-if="activeTab === 'education'" :staff-id="staffId" />
+
+      <div v-else-if="activeTab !== 'current-info'">
         <EmptyState :title="t('admin.comingSoon.notBuiltYet', { title: t(tabs.find((tab) => tab.key === activeTab)!.labelKey) })" :message="t('admin.comingSoon.message')" />
       </div>
 

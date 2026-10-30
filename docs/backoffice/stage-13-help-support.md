@@ -16,7 +16,7 @@ and answers tickets there.
 
 ## Steps (one at a time, check in after each)
 
-### 13a. Help articles, FAQ, Contact — 🚧 built 2026-10-30, not committed
+### 13a. Help articles, FAQ, Contact — ✅ live 2026-10-30
 - Central tables `bo_help_articles` (module or none, title and body in en/km,
   draft/published, order) and `bo_help_faqs` (module or none, question and
   answer in en/km, draft/published, order). Contacts on `bo_support_settings`:
@@ -31,7 +31,7 @@ and answers tickets there.
   grouped by module, article page), FAQ (search, expand), Contact (call,
   Telegram, email, hours, open the chat).
 
-### 13b. Support tickets — 🚧 built 2026-10-30, not committed
+### 13b. Support tickets — ✅ live 2026-10-30
 - A school user sends a ticket (subject, module, priority, description,
   screenshots/files), follows its status (open → in progress → resolved →
   closed) and NewTech's replies; NewTech answers in the back office, with a

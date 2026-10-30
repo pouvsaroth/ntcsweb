@@ -101,7 +101,7 @@ onMounted(() => {
             <img v-if="row.photo_url" :src="row.photo_url" alt="" class="h-full w-full object-cover" />
             <template v-else>{{ initials(row) }}</template>
           </div>
-          <span class="font-medium text-neutral-800">{{ row.full_name }}</span>
+          <RouterLink :to="`/admin/staff/${row.id}/edit`" class="font-medium text-neutral-800 hover:text-secondary-700 hover:underline">{{ row.full_name }}</RouterLink>
         </div>
       </template>
       <template #cell-position="{ row }">{{ row.position?.name ?? '—' }}</template>

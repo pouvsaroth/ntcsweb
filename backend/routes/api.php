@@ -126,6 +126,7 @@ use App\Http\Controllers\Api\V1\Admin\SchoolSettingsController;
 use App\Http\Controllers\Api\V1\Admin\ShiftController;
 use App\Http\Controllers\Api\V1\Admin\StaffAttendanceController;
 use App\Http\Controllers\Api\V1\Admin\StaffController;
+use App\Http\Controllers\Api\V1\Admin\StaffEducationController;
 use App\Http\Controllers\Api\V1\Admin\StaffLoanController;
 use App\Http\Controllers\Api\V1\Admin\StaffPayComponentController;
 use App\Http\Controllers\Api\V1\Admin\StaffSalaryController;
@@ -836,6 +837,11 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
 
         Route::apiResource('staff', StaffController::class);
         Route::post('staff/{staff}/status', [StaffController::class, 'changeStatus'])->name('staff.status.update');
+        // HRM > Staff > Education (docs/hrm/staff-education.md).
+        Route::get('staff/{staff}/educations', [StaffEducationController::class, 'index'])->name('staff.educations.index');
+        Route::post('staff/{staff}/educations', [StaffEducationController::class, 'store'])->name('staff.educations.store');
+        Route::put('staff/{staff}/educations/{education}', [StaffEducationController::class, 'update'])->whereNumber('education')->name('staff.educations.update');
+        Route::delete('staff/{staff}/educations/{education}', [StaffEducationController::class, 'destroy'])->whereNumber('education')->name('staff.educations.destroy');
 
         // Read-only, cross-staff — see StaffStatusHistoryController's
         // docblock for why there is deliberately no store/update/destroy

@@ -256,6 +256,12 @@ class Staff extends Model
         return $this->hasMany(StaffStatusHistory::class);
     }
 
+    /** HRM > Staff > Education: schools and universities. */
+    public function educations(): HasMany
+    {
+        return $this->hasMany(StaffEducation::class, 'staff_id');
+    }
+
     /**
      * Classes this staff member is assigned to teach, as either the main
      * teacher or an assistant — meaningful only when their Position carries
