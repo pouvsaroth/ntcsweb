@@ -196,6 +196,8 @@ use App\Http\Controllers\Api\V1\Public\StudentRegistrationController as PublicSt
 use App\Http\Controllers\Api\V1\Public\VideoLessonController;
 use App\Http\Controllers\Api\V1\Public\WebsiteVisitController;
 use App\Http\Controllers\Api\V1\SupportChatController;
+use App\Http\Controllers\Api\V1\HelpController;
+use App\Http\Controllers\Api\V1\SupportTicketController;
 use App\Http\Controllers\Api\V1\TenantDirectoryController;
 use App\Http\Controllers\Api\V1\TranslationOverrideController;
 use App\Http\Responses\ApiResponse;
@@ -303,6 +305,20 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::post('/', [SupportChatController::class, 'send'])->middleware('throttle:30,1')->name('send');
             Route::post('read', [SupportChatController::class, 'read'])->name('read');
             Route::get('files/{message}/{index}', [SupportChatController::class, 'file'])->whereNumber(['message', 'index'])->name('file');
+        });
+        // Help & Support (docs/backoffice/stage-13-help-support.md): help-support.view.
+        Route::get('help', [HelpController::class, 'index'])->name('help.index');
+        Route::get('help/articles/{article}', [HelpController::class, 'article'])->whereNumber('article')->name('help.article');
+        // Support tickets (docs/backoffice/stage-13-help-support.md, 13b): own tickets only.
+        Route::prefix('support-tickets')->name('support-tickets.')->group(function () {
+            Route::get('/', [SupportTicketController::class, 'index'])->name('index');
+            Route::get('unread', [SupportTicketController::class, 'unread'])->name('unread');
+            Route::get('options', [SupportTicketController::class, 'options'])->name('options');
+            Route::post('/', [SupportTicketController::class, 'store'])->middleware('throttle:10,1')->name('store');
+            Route::get('{ticket}', [SupportTicketController::class, 'show'])->whereNumber('ticket')->name('show');
+            Route::post('{ticket}/messages', [SupportTicketController::class, 'reply'])->whereNumber('ticket')->middleware('throttle:30,1')->name('reply');
+            Route::post('{ticket}/close', [SupportTicketController::class, 'close'])->whereNumber('ticket')->name('close');
+            Route::get('{ticket}/files/{message}/{index}', [SupportTicketController::class, 'file'])->whereNumber(['ticket', 'message', 'index'])->name('file');
         });
 
         // Student record (docs/academics/student-record.md).

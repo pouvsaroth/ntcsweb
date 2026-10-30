@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
 import LanguageSwitch from './components/LanguageSwitch.vue'
-import { chatsApi } from './api'
+import { chatsApi, ticketsApi } from './api'
 import { navItems } from './router'
 import { useSession } from './session'
 
@@ -46,12 +46,13 @@ watch(() => route.fullPath, () => (drawerOpen.value = false))
 
 const items = computed(() => (session.mustChangePassword ? [] : navItems.filter((item) => session.can(item.permission))))
 
-/** Customers waiting for an answer in the support chat (stage 10): a badge on Support. */
+/** Customers waiting for an answer in the support chat (stage 10) or a ticket (13b): a badge on Support. */
 const chatsWaiting = ref(0)
 async function refreshWaiting(): Promise<void> {
   if (!session.can('platform.support.read') || session.mustChangePassword) return
   try {
-    chatsWaiting.value = (await chatsApi.waiting()).waiting
+    const [chats, tickets] = await Promise.all([chatsApi.waiting(), ticketsApi.waiting()])
+    chatsWaiting.value = chats.waiting + tickets.waiting
   } catch {
     /* keep the last count */
   }

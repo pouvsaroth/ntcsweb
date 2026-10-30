@@ -73,6 +73,8 @@ return [
                 ['key' => 'platform.support.read', 'label' => 'See school health and support views', 'label_km' => 'មើលសុខភាពសាលា និងការមើលជំនួយ'],
                 ['key' => 'platform.support.view', 'label' => 'Open and end support views of a school', 'label_km' => 'បើក និងបញ្ចប់ការមើលជំនួយរបស់សាលា'],
                 ['key' => 'platform.support.chat', 'label' => 'Answer support chats and set their Telegram alerts', 'label_km' => 'ឆ្លើយការជជែកជំនួយ និងកំណត់ការជូនដំណឹង Telegram'],
+                ['key' => 'platform.support.help', 'label' => 'Write help articles, FAQ and support contacts', 'label_km' => 'សរសេរអត្ថបទជំនួយ សំណួរញឹកញាប់ និងទំនាក់ទំនងជំនួយ'],
+                ['key' => 'platform.support.tickets', 'label' => 'Answer support tickets: reply, assign, change status and priority', 'label_km' => 'ឆ្លើយសំបុត្រជំនួយ៖ ឆ្លើយតប ចាត់តាំង ប្តូរស្ថានភាព និងអាទិភាព'],
             ],
         ],
         [

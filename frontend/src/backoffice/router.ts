@@ -78,6 +78,9 @@ const routes: RouteRecordRaw[] = [
           { path: '', redirect: '/support/chats' },
           // A Telegram alert links straight to one chat: /support/chats/{id}.
           { path: 'chats/:id(\\d+)?', component: () => import('./pages/support/ChatsTab.vue') },
+          // A Telegram alert links straight to one ticket: /support/tickets/{id}.
+          { path: 'tickets/:id(\\d+)?', component: () => import('./pages/support/TicketsTab.vue') },
+          { path: 'help', component: () => import('./pages/support/HelpTab.vue') },
           { path: 'views', component: () => import('./pages/support/ViewsTab.vue') },
           { path: 'settings', component: () => import('./pages/support/SettingsTab.vue') },
         ],

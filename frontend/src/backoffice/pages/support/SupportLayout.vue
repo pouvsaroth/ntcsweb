@@ -2,7 +2,7 @@
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 
-/** Support: customers' chats, every support view, and the settings. */
+/** Support: customers' chats and tickets, the help center, every support view, and the settings. */
 const { t } = useI18n()
 const route = useRoute()
 /** A tab stays marked on its own sub-pages too (Chats while one chat is open). */
@@ -10,6 +10,8 @@ const onTab = (to: string) => route.path === to || route.path.startsWith(`${to}/
 
 const tabs = [
   { to: '/support/chats', key: 'chats' },
+  { to: '/support/tickets', key: 'tickets' },
+  { to: '/support/help', key: 'help' },
   { to: '/support/views', key: 'views' },
   { to: '/support/settings', key: 'settings' },
 ] as const

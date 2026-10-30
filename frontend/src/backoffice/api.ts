@@ -1101,3 +1101,117 @@ export const websiteServicesApi = {
   updateCard: (id: string, card: ServiceCardInput) => send<ServiceCard>('post', `/website/services/cards/${id}`, formData({ ...card, _method: 'PUT' })),
   removeCard: (id: string) => send<null>('delete', `/website/services/cards/${id}`),
 }
+
+// ── Help center (stage 13a) ─────────────────────────────────────────────────
+export type HelpStatus = 'draft' | 'published'
+
+export interface HelpModuleOption {
+  code: string
+  label: string
+  label_km: string | null
+}
+
+export interface HelpArticleRow {
+  id: number
+  module: string | null
+  title_en: string | null
+  title_km: string | null
+  body_en: string | null
+  body_km: string | null
+  status: HelpStatus
+  sort_order: number
+  updated_at: string | null
+}
+
+export interface HelpFaqRow {
+  id: number
+  module: string | null
+  question_en: string | null
+  question_km: string | null
+  answer_en: string | null
+  answer_km: string | null
+  status: HelpStatus
+  sort_order: number
+  updated_at: string | null
+}
+
+export interface HelpContactInfo {
+  phone: string | null
+  telegram: string | null
+  email: string | null
+  hours_en: string | null
+  hours_km: string | null
+}
+
+export const helpApi = {
+  modules: () => get<HelpModuleOption[]>('/support/help/modules'),
+  articles: () => get<HelpArticleRow[]>('/support/help/articles'),
+  saveArticle: (id: number | null, body: Omit<HelpArticleRow, 'id' | 'updated_at' | 'sort_order'> & { sort_order: number | null }) =>
+    id ? send<HelpArticleRow>('put', `/support/help/articles/${id}`, body) : send<HelpArticleRow>('post', '/support/help/articles', body),
+  deleteArticle: (id: number) => send<null>('delete', `/support/help/articles/${id}`),
+  faqs: () => get<HelpFaqRow[]>('/support/help/faqs'),
+  saveFaq: (id: number | null, body: Omit<HelpFaqRow, 'id' | 'updated_at' | 'sort_order'> & { sort_order: number | null }) =>
+    id ? send<HelpFaqRow>('put', `/support/help/faqs/${id}`, body) : send<HelpFaqRow>('post', '/support/help/faqs', body),
+  deleteFaq: (id: number) => send<null>('delete', `/support/help/faqs/${id}`),
+  contact: () => get<HelpContactInfo>('/support/help/contact'),
+  saveContact: (body: { help_phone: string | null; help_telegram: string | null; help_email: string | null; help_hours_en: string | null; help_hours_km: string | null }) =>
+    send<HelpContactInfo>('put', '/support/help/contact', body),
+}
+
+// ── Support tickets (Stage 13b) ──────────────────────────────────────────────
+
+export type TicketStatus = 'open' | 'in_progress' | 'resolved' | 'closed'
+export type TicketPriority = 'low' | 'normal' | 'high' | 'urgent'
+
+export interface TicketRow {
+  id: number
+  /** T-00042 */
+  number: string
+  subject: string
+  module: string | null
+  module_label: string | null
+  module_label_km: string | null
+  priority: TicketPriority
+  status: TicketStatus
+  /** Customer words not read by NewTech yet. */
+  unread: number
+  user_name: string
+  user_email: string | null
+  assignee: string | null
+  assigned_staff_id: number | null
+  customer: { id: number; name: string; slug: string } | null
+  last_reply_at: string | null
+  resolved_at: string | null
+  closed_at: string | null
+  created_at: string
+}
+
+export interface TicketMessageRow {
+  id: number
+  sender: 'user' | 'staff'
+  staff: string | null
+  body: string | null
+  event: { status: TicketStatus } | null
+  attachments: ChatAttachment[]
+  created_at: string
+}
+
+export interface TicketThread {
+  ticket: TicketRow
+  messages: TicketMessageRow[]
+}
+
+export const ticketsApi = {
+  list: (query: ListQuery) => page<TicketRow>('/support/tickets', query),
+  waiting: () => get<{ waiting: number }>('/support/tickets/waiting'),
+  staff: () => get<{ id: number; name: string }[]>('/support/tickets/staff'),
+  show: (id: number) => get<TicketThread>(`/support/tickets/${id}`),
+  reply: (id: number, body: string, files: File[]) => {
+    const form = new FormData()
+    if (body.trim()) form.append('body', body.trim())
+    files.forEach((f) => form.append('files[]', f))
+    return send<TicketThread>('post', `/support/tickets/${id}/messages`, form)
+  },
+  update: (id: number, body: { status?: TicketStatus; priority?: TicketPriority; assigned_staff_id?: number | null }) =>
+    send<TicketThread>('patch', `/support/tickets/${id}`, body),
+}

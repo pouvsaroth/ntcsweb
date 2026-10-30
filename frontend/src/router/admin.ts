@@ -808,6 +808,22 @@ const adminRoutes: RouteRecordRaw[] = [
     ],
   },
   {
+    // Help & Support, opened from the top bar's Support button
+    // (docs/backoffice/stage-13-help-support.md). The API checks help-support.view.
+    path: 'help',
+    component: () => import('@/pages/admin/help/HelpLayout.vue'),
+    meta: { titleKey: 'help.title' },
+    children: [
+      { path: '', name: 'admin.help', redirect: '/admin/help/articles' },
+      { path: 'articles', name: 'admin.help.articles', component: () => import('@/pages/admin/help/HelpArticles.vue') },
+      { path: 'articles/:id(\\d+)', name: 'admin.help.article', component: () => import('@/pages/admin/help/HelpArticle.vue') },
+      { path: 'faq', name: 'admin.help.faq', component: () => import('@/pages/admin/help/HelpFaq.vue') },
+      { path: 'tickets', name: 'admin.help.tickets', component: () => import('@/pages/admin/help/HelpTickets.vue') },
+      { path: 'tickets/:id(\\d+)', name: 'admin.help.ticket', component: () => import('@/pages/admin/help/HelpTicket.vue') },
+      { path: 'contact', name: 'admin.help.contact', component: () => import('@/pages/admin/help/HelpContact.vue') },
+    ],
+  },
+  {
     // A staff member's own check-in / check-out — see MyStaffAttendanceController.
     path: 'my-check-in',
     name: 'admin.my-check-in',

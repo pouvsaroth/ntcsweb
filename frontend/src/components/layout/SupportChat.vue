@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
+
+import { useSupportChat } from '@/composables/useSupportChat'
+import { useSupportTickets } from '@/composables/useSupportTickets'
 
 import { CHAT_ACCEPT, CHAT_MAX_BYTES, CHAT_MAX_FILES, supportChatService, type ChatMessage } from '@/services/supportChat'
 import { useAuthStore } from '@/stores/auth'
@@ -8,7 +12,11 @@ import { ApiRequestError } from '@/types/api'
 import { formatDateTime } from '@/utils/date'
 
 /**
- * The support chat button in the top bar (docs/backoffice/stage-10-support-chat.md):
+ * The Support button in the top bar (docs/backoffice/stage-13-help-support.md):
+ * a menu with Chat with NewTech and, for roles holding help-support.view,
+ * Help & Support. Without that permission the button opens the chat at once.
+ *
+ * The chat (docs/backoffice/stage-10-support-chat.md):
  * a red dot when NewTech replied; a panel with the conversation, text,
  * images (paste a screenshot with Ctrl+V) and files. Staff users only —
  * not students, not platform accounts. No push server: the open panel asks
@@ -16,10 +24,35 @@ import { formatDateTime } from '@/utils/date'
  */
 const { t } = useI18n()
 const auth = useAuthStore()
+const router = useRouter()
+const { openRequests } = useSupportChat()
+const { ticketsUnread, refreshTicketsUnread } = useSupportTickets()
 
 const allowed = computed(() => auth.isAuthenticated && !auth.isSuperAdmin && auth.tenantName !== null && !auth.hasRole('student'))
 /** Inside a back office support view everything is read-only. */
 const readOnly = computed(() => auth.supportView !== null)
+const canHelp = computed(() => auth.can('help-support.view'))
+/** The button's dot: chat replies plus, with Help & Support, ticket replies. */
+const badge = computed(() => unread.value + (canHelp.value ? ticketsUnread.value : 0))
+
+// --- The Support menu ---------------------------------------------------------
+const menuOpen = ref(false)
+function onButton(): void {
+  if (open.value) closePanel()
+  else if (canHelp.value) menuOpen.value = !menuOpen.value
+  else void openPanel()
+}
+function chooseChat(): void {
+  menuOpen.value = false
+  void openPanel()
+}
+function chooseHelp(): void {
+  menuOpen.value = false
+  void router.push('/admin/help')
+}
+function onMenuKey(event: KeyboardEvent): void {
+  if (event.key === 'Escape') menuOpen.value = false
+}
 
 const open = ref(false)
 const unread = ref(0)
@@ -44,7 +77,9 @@ async function scrollDown(): Promise<void> {
 }
 
 async function refreshUnread(): Promise<void> {
-  if (!allowed.value || open.value) return
+  if (!allowed.value) return
+  if (canHelp.value) void refreshTicketsUnread()
+  if (open.value) return
   try {
     unread.value = (await supportChatService.unread()).unread
   } catch {
@@ -158,28 +193,66 @@ onBeforeUnmount(() => {
   previews.value.forEach((p) => p && URL.revokeObjectURL(p))
 })
 watch(allowed, (on) => on && void refreshUnread())
+// Another page asked for the chat (Help & Support → Contact).
+watch(openRequests, () => {
+  menuOpen.value = false
+  if (allowed.value && !open.value) void openPanel()
+})
 </script>
 
 <template>
-  <div v-if="allowed">
+  <div v-if="allowed" class="relative" @keydown="onMenuKey">
     <button
       type="button"
-      class="relative rounded-lg p-2 text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
-      :aria-label="t('supportChat.title')"
-      :title="t('supportChat.title')"
-      @click="open ? closePanel() : openPanel()"
+      class="relative inline-flex items-center gap-1.5 rounded-lg p-2 text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 sm:border sm:border-neutral-300 sm:px-3 sm:py-1.5"
+      :aria-label="t('supportMenu.button')"
+      :title="t('supportMenu.button')"
+      :aria-haspopup="canHelp ? 'menu' : undefined"
+      :aria-expanded="canHelp ? menuOpen : undefined"
+      @click="onButton"
     >
-      <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+      <svg class="h-6 w-6 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
         <path
           stroke-linecap="round"
           stroke-linejoin="round"
-          d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z"
+          d="M16.712 4.33a9.027 9.027 0 011.652 1.306c.51.51.944 1.064 1.306 1.652M16.712 4.33l-3.448 4.138m3.448-4.138a9.014 9.014 0 00-9.424 0M19.67 7.288l-4.138 3.448m4.138-3.448a9.014 9.014 0 010 9.424m-4.138-5.976a3.736 3.736 0 00-.88-1.388 3.737 3.737 0 00-1.388-.88m2.268 2.268a3.765 3.765 0 010 2.528m-2.268-4.796a3.765 3.765 0 00-2.528 0m4.796 4.796c-.181.506-.475.982-.88 1.388a3.736 3.736 0 01-1.388.88m2.268-2.268l4.138 3.448m0 0a9.027 9.027 0 01-1.306 1.652c-.51.51-1.064.944-1.652 1.306m0 0l-3.448-4.138m3.448 4.138a9.014 9.014 0 01-9.424 0m5.976-4.138a3.765 3.765 0 01-2.528 0m0 0a3.736 3.736 0 01-1.388-.88 3.737 3.737 0 01-.88-1.388m2.268 2.268L7.288 19.67m0 0a9.024 9.024 0 01-1.652-1.306 9.027 9.027 0 01-1.306-1.652m0 0l4.138-3.448M4.33 16.712a9.014 9.014 0 010-9.424m4.138 5.976a3.765 3.765 0 010-2.528m0 0c.181-.506.475-.982.88-1.388a3.736 3.736 0 011.388-.88m-2.268 2.268L4.33 7.288m6.406 1.18L7.288 4.33m0 0a9.024 9.024 0 00-1.652 1.306A9.025 9.025 0 004.33 7.288"
         />
       </svg>
-      <span v-if="unread > 0" class="absolute top-1 right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white">
-        {{ unread > 9 ? '9+' : unread }}
+      <span class="hidden text-sm font-medium sm:inline">{{ t('supportMenu.button') }}</span>
+      <span v-if="badge > 0" class="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white">
+        {{ badge > 9 ? '9+' : badge }}
       </span>
     </button>
+
+    <template v-if="menuOpen">
+      <div class="fixed inset-0 z-30" @click="menuOpen = false" />
+      <div class="absolute right-0 z-40 mt-2 w-64 overflow-hidden rounded-xl border border-neutral-200 bg-white py-1 shadow-lg" role="menu">
+        <button type="button" role="menuitem" class="flex w-full items-start gap-3 px-4 py-2.5 text-left hover:bg-neutral-50" @click="chooseChat">
+          <svg class="mt-0.5 h-5 w-5 shrink-0 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
+          </svg>
+          <span class="min-w-0 flex-1">
+            <span class="flex items-center gap-2 text-sm font-medium text-neutral-900">
+              {{ t('supportMenu.chat') }}
+              <span v-if="unread > 0" class="rounded-full bg-red-600 px-1.5 text-[10px] font-bold text-white">{{ unread > 9 ? '9+' : unread }}</span>
+            </span>
+            <span class="block text-xs text-neutral-500">{{ t('supportMenu.chatHint') }}</span>
+          </span>
+        </button>
+        <button type="button" role="menuitem" class="flex w-full items-start gap-3 px-4 py-2.5 text-left hover:bg-neutral-50" @click="chooseHelp">
+          <svg class="mt-0.5 h-5 w-5 shrink-0 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" />
+          </svg>
+          <span class="min-w-0 flex-1">
+            <span class="flex items-center gap-2 text-sm font-medium text-neutral-900">
+              {{ t('supportMenu.help') }}
+              <span v-if="ticketsUnread > 0" class="rounded-full bg-red-600 px-1.5 text-[10px] font-bold text-white">{{ ticketsUnread > 9 ? '9+' : ticketsUnread }}</span>
+            </span>
+            <span class="block text-xs text-neutral-500">{{ t('supportMenu.helpHint') }}</span>
+          </span>
+        </button>
+      </div>
+    </template>
 
     <Teleport to="body">
       <div v-if="open" class="fixed inset-0 z-40 bg-neutral-900/20 sm:bg-transparent" @click="closePanel" />

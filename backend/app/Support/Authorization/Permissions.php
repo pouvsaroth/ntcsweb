@@ -763,6 +763,10 @@ final class Permissions
 
     public const MY_REQUESTS_VIEW = 'my-requests.view';
 
+    // Help & Support (docs/backoffice/stage-13-help-support.md): NewTech's
+    // help articles, FAQ, contacts and support tickets, by role.
+    public const HELP_SUPPORT_VIEW = 'help-support.view';
+
     /**
      * Every permission, grouped for the admin UI checkbox list.
      *
@@ -1124,6 +1128,9 @@ final class Permissions
                 self::FORMS_VIEW => 'View and submit approval forms',
                 self::MY_REQUESTS_VIEW => 'View your own approval requests',
             ],
+            'Help & Support' => [
+                self::HELP_SUPPORT_VIEW => 'Open Help & Support: help articles, FAQ, NewTech contacts and support tickets',
+            ],
             'Front Office' => [
                 self::INQUIRIES_VIEW => 'View inquiries',
                 self::INQUIRIES_CREATE => 'Record inquiries',
@@ -1311,7 +1318,7 @@ final class Permissions
         // of these on a custom role via the Role editor; this is only the
         // out-of-the-box default.
         $selfServiceForEveryone = [
-            self::DASHBOARD_VIEW, self::MY_ASSETS_VIEW, self::FORMS_VIEW, self::MY_REQUESTS_VIEW,
+            self::DASHBOARD_VIEW, self::MY_ASSETS_VIEW, self::FORMS_VIEW, self::MY_REQUESTS_VIEW, self::HELP_SUPPORT_VIEW,
             self::DASHBOARD_ATTENDANCE_VIEW, self::DASHBOARD_FINANCE_VIEW, self::DASHBOARD_PAYMENT_ALERTS_VIEW,
         ];
 

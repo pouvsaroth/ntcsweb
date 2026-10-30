@@ -5,6 +5,8 @@ declare(strict_types=1);
 use App\Platform\Http\Controllers\AuditLogController;
 use App\Platform\Http\Controllers\BillingSettingsController;
 use App\Platform\Http\Controllers\ChatController;
+use App\Platform\Http\Controllers\HelpCenterController;
+use App\Platform\Http\Controllers\TicketController;
 use App\Platform\Http\Controllers\DataOpsController;
 use App\Platform\Http\Controllers\PaymentController;
 use App\Platform\Http\Controllers\PlanController;
@@ -166,6 +168,35 @@ Route::middleware('platform.staff')->group(function () {
         Route::post('{chat}/close', [ChatController::class, 'close'])->whereNumber('chat')->middleware('platform.can:platform.support.chat')->name('close');
         Route::post('{chat}/reopen', [ChatController::class, 'reopen'])->whereNumber('chat')->middleware('platform.can:platform.support.chat')->name('reopen');
         Route::get('{chat}/files/{message}/{index}', [ChatController::class, 'file'])->whereNumber(['chat', 'message', 'index'])->middleware('platform.can:platform.support.read')->name('file');
+    });
+    // Support tickets (docs/backoffice/stage-13-help-support.md, 13b).
+    Route::prefix('support/tickets')->name('support.tickets.')->group(function () {
+        $read = 'platform.can:platform.support.read';
+        $answer = 'platform.can:platform.support.tickets';
+        Route::get('/', [TicketController::class, 'index'])->middleware($read)->name('index');
+        Route::get('waiting', [TicketController::class, 'waiting'])->middleware($read)->name('waiting');
+        Route::get('staff', [TicketController::class, 'staff'])->middleware($read)->name('staff');
+        Route::get('{ticket}', [TicketController::class, 'show'])->whereNumber('ticket')->middleware($read)->name('show');
+        Route::post('{ticket}/messages', [TicketController::class, 'reply'])->whereNumber('ticket')->middleware([$answer, 'throttle:60,1'])->name('reply');
+        Route::patch('{ticket}', [TicketController::class, 'update'])->whereNumber('ticket')->middleware($answer)->name('update');
+        Route::get('{ticket}/files/{message}/{index}', [TicketController::class, 'file'])->whereNumber(['ticket', 'message', 'index'])->middleware($read)->name('file');
+    });
+
+    // Help center (docs/backoffice/stage-13-help-support.md).
+    Route::prefix('support/help')->name('support.help.')->group(function () {
+        $read = 'platform.can:platform.support.read';
+        $write = 'platform.can:platform.support.help';
+        Route::get('modules', [HelpCenterController::class, 'modules'])->middleware($read)->name('modules');
+        Route::get('articles', [HelpCenterController::class, 'articles'])->middleware($read)->name('articles.index');
+        Route::post('articles', [HelpCenterController::class, 'storeArticle'])->middleware($write)->name('articles.store');
+        Route::put('articles/{article}', [HelpCenterController::class, 'updateArticle'])->whereNumber('article')->middleware($write)->name('articles.update');
+        Route::delete('articles/{article}', [HelpCenterController::class, 'destroyArticle'])->whereNumber('article')->middleware($write)->name('articles.destroy');
+        Route::get('faqs', [HelpCenterController::class, 'faqs'])->middleware($read)->name('faqs.index');
+        Route::post('faqs', [HelpCenterController::class, 'storeFaq'])->middleware($write)->name('faqs.store');
+        Route::put('faqs/{faq}', [HelpCenterController::class, 'updateFaq'])->whereNumber('faq')->middleware($write)->name('faqs.update');
+        Route::delete('faqs/{faq}', [HelpCenterController::class, 'destroyFaq'])->whereNumber('faq')->middleware($write)->name('faqs.destroy');
+        Route::get('contact', [HelpCenterController::class, 'contact'])->middleware($read)->name('contact');
+        Route::put('contact', [HelpCenterController::class, 'updateContact'])->middleware($write)->name('contact.update');
     });
     Route::get('schools/{school}/health', [SupportController::class, 'health'])->middleware('platform.can:platform.support.read')->name('schools.health');
     Route::get('schools/{school}/support/users', [SupportController::class, 'users'])->middleware('platform.can:platform.support.view')->name('schools.support.users');

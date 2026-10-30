@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 
@@ -7,10 +8,19 @@ import { useRoute } from 'vue-router'
  * Organization Management, Settings > Language, ...). Callers pass only the
  * tabs this account may open.
  */
-defineProps<{ tabs: { to: string; labelKey: string }[] }>()
+const props = defineProps<{ tabs: { to: string; labelKey: string }[] }>()
 
 const { t } = useI18n()
 const route = useRoute()
+
+// The tab whose path is the current page or the closest parent of it, so a
+// detail page under a tab (Help articles > one article) keeps its tab lit.
+const activeTo = computed(() =>
+  props.tabs
+    .map((tab) => tab.to)
+    .filter((to) => route.path === to || route.path.startsWith(to + '/'))
+    .sort((a, b) => b.length - a.length)[0],
+)
 </script>
 
 <template>
@@ -22,7 +32,7 @@ const route = useRoute()
         :to="tab.to"
         class="whitespace-nowrap border-b-2 px-1 py-3 text-sm font-medium"
         :class="
-          route.path === tab.to
+          activeTo === tab.to
             ? 'border-primary-600 text-primary-700'
             : 'border-transparent text-neutral-500 hover:border-neutral-300 hover:text-neutral-700'
         "

@@ -48,6 +48,7 @@ sign-in, its own routes and its own app.
 | 10 | Support chat — a chat button in the system, answered from the back office, Telegram alert | [stage-10-support-chat.md](stage-10-support-chat.md) | ✅ Live since 2026-10-21 |
 | 11 | Telegram notifications — school notification groups linked to Telegram groups; every bell notification goes there too | [stage-11-telegram-notifications.md](stage-11-telegram-notifications.md) | 🚧 Built 2026-10-21 |
 | 12 | Try the demo — a button on the website's Plans page; each visitor gets their own Director, Teacher or Student account in the demo school, listed in Billing → Demos | [stage-12-demo.md](stage-12-demo.md) | 🚧 Built 2026-10-22, not committed |
+| 13 | Help & Support — the chat icon becomes a Support button (Chat / Help & Support); help articles, FAQ, contacts written in the back office; support tickets | [stage-13-help-support.md](stage-13-help-support.md) | 🚧 13a + 13b built 2026-10-30, not committed |
 
 Each stage gets its brief before any code, and a "done when" that is a list
 of commands.
