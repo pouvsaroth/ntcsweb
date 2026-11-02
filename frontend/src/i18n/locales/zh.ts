@@ -5165,6 +5165,7 @@ const zh: MessageSchema = {
         overtime: '加班',
         shifts: '班次',
         workSchedules: '员工班次',
+        records: '考勤记录',
         holidays: '节假日',
         corrections: '考勤更正',
         approval: '考勤审批',

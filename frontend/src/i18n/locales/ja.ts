@@ -5166,6 +5166,7 @@ const ja: MessageSchema = {
         overtime: '残業',
         shifts: 'シフト',
         workSchedules: 'スタッフのシフト',
+        records: '勤怠記録',
         holidays: '休日',
         corrections: '勤怠修正',
         approval: '勤怠承認',

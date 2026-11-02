@@ -5170,6 +5170,7 @@ const en = {
         overtime: 'Overtime',
         shifts: 'Shift',
         workSchedules: 'Staff shift',
+        records: 'Attendance records',
         holidays: 'Holidays',
         corrections: 'Attendance correction',
         approval: 'Attendance approval',

@@ -5166,6 +5166,7 @@ const km: MessageSchema = {
         overtime: 'ម៉ោងបន្ថែម',
         shifts: 'វេនការងារ',
         workSchedules: 'វេនបុគ្គលិក',
+        records: 'កំណត់ត្រាវត្តមាន',
         holidays: 'ថ្ងៃឈប់សម្រាក',
         corrections: 'ការកែវត្តមាន',
         approval: 'ការអនុម័តវត្តមាន',

@@ -2,7 +2,7 @@ import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 
 import { firstAccessibleAdminPath } from '@/router/adminNav'
 import { canOpenOrganizationTab, organizationTabs } from '@/router/organizationTabs'
-import { attendanceTabs } from '@/router/attendanceTabs'
+import { attendanceRecordTabs, attendanceTabs } from '@/router/attendanceTabs'
 import { leaveTabs } from '@/router/leaveTabs'
 import { payrollTabs } from '@/router/payrollTabs'
 import { performanceTabs } from '@/router/performanceTabs'
@@ -693,14 +693,31 @@ const adminRoutes: RouteRecordRaw[] = [
       },
       { path: 'employees', name: 'admin.time-attendance.employees', component: () => import('@/pages/admin/timeAttendance/EmployeeAttendance.vue') },
       { path: 'check-ins', name: 'admin.time-attendance.check-ins', component: () => import('@/pages/admin/timeAttendance/CheckInOut.vue') },
-      { path: 'late', name: 'admin.time-attendance.late', component: () => import('@/pages/admin/timeAttendance/AttendanceReport.vue'), props: { type: 'late' } },
-      { path: 'early-leave', name: 'admin.time-attendance.early-leave', component: () => import('@/pages/admin/timeAttendance/AttendanceReport.vue'), props: { type: 'early_leave' } },
-      { path: 'absence', name: 'admin.time-attendance.absence', component: () => import('@/pages/admin/timeAttendance/AttendanceReport.vue'), props: { type: 'absence' } },
-      { path: 'overtime', name: 'admin.time-attendance.overtime', component: () => import('@/pages/admin/timeAttendance/Overtime.vue') },
+      {
+        // Attendance records: Late, Early leave, Absence, Overtime and Attendance correction as sub-tabs.
+        path: 'records',
+        component: () => import('@/pages/admin/timeAttendance/AttendanceRecordsLayout.vue'),
+        children: [
+          {
+            path: '',
+            name: 'admin.time-attendance.records',
+            redirect: () => {
+              const auth = useAuthStore()
+              return (attendanceRecordTabs.find((tab) => auth.can(tab.permission)) ?? attendanceRecordTabs[0]!).to
+            },
+          },
+          { path: 'late', name: 'admin.time-attendance.late', component: () => import('@/pages/admin/timeAttendance/AttendanceReport.vue'), props: { type: 'late' } },
+          { path: 'early-leave', name: 'admin.time-attendance.early-leave', component: () => import('@/pages/admin/timeAttendance/AttendanceReport.vue'), props: { type: 'early_leave' } },
+          { path: 'absence', name: 'admin.time-attendance.absence', component: () => import('@/pages/admin/timeAttendance/AttendanceReport.vue'), props: { type: 'absence' } },
+          { path: 'overtime', name: 'admin.time-attendance.overtime', component: () => import('@/pages/admin/timeAttendance/Overtime.vue') },
+          { path: 'corrections', name: 'admin.time-attendance.corrections', component: () => import('@/pages/admin/timeAttendance/Corrections.vue') },
+        ],
+      },
+      // Their old addresses, from before they were sub-tabs.
+      ...['late', 'early-leave', 'absence', 'overtime', 'corrections'].map((path) => ({ path, redirect: `/admin/time-attendance/records/${path}` })),
       { path: 'shifts', name: 'admin.time-attendance.shifts', component: () => import('@/pages/admin/timeAttendance/Shifts.vue') },
       { path: 'work-schedules', name: 'admin.time-attendance.work-schedules', component: () => import('@/pages/admin/timeAttendance/WorkSchedules.vue') },
       { path: 'holidays', name: 'admin.time-attendance.holidays', component: () => import('@/pages/admin/timeAttendance/Holidays.vue') },
-      { path: 'corrections', name: 'admin.time-attendance.corrections', component: () => import('@/pages/admin/timeAttendance/Corrections.vue') },
       { path: 'approval', name: 'admin.time-attendance.approval', component: () => import('@/pages/admin/timeAttendance/AttendanceApproval.vue') },
     ],
   },

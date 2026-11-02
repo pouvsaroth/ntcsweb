@@ -5166,6 +5166,7 @@ const ko: MessageSchema = {
         overtime: '초과근무',
         shifts: '근무조',
         workSchedules: '직원 근무조',
+        records: '근태 기록',
         holidays: '공휴일',
         corrections: '근태 정정',
         approval: '근태 승인',
