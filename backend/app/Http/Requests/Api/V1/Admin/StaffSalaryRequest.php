@@ -43,6 +43,7 @@ class StaffSalaryRequest extends FormRequest
             'shifts.*.amount' => ['required', 'numeric', 'min:0', 'max:9999999999'],
             'currency' => [$required, Rule::in([Tenant::CURRENCY_USD, Tenant::CURRENCY_KHR])],
             'salary_structure_id' => ['nullable', 'integer', Rule::exists('tenant.salary_structures', 'id')],
+            'deduct_attendance' => ['sometimes', 'boolean'],
             'effective_from' => [
                 $required,
                 'date',

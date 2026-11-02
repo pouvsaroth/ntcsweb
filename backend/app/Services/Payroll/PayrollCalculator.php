@@ -296,6 +296,8 @@ final class PayrollCalculator
                 'period' => ['from' => $from->toDateString(), 'to' => $to->toDateString()],
                 'overtime' => ['minutes' => $overtime['minutes'] ?? null, 'hourly_rate' => $overtime['hourly_rate'] ?? null],
                 'attendance' => collect($deduction)->only(['absent_days', 'unpaid_leave_days', 'late_times', 'late_minutes', 'early_leave_times', 'early_leave_minutes'])->all(),
+                // False: "Deduct for attendance" is off on their salary — counted, not taken off.
+                'attendance_deducted' => $deduction['deducted'] ?? true,
                 // What this period adds to the month's tax / NSSF — the 16th–end run reads the first half's.
                 'taxable_pay' => round($taxablePay, 2),
                 'nssf_pay' => round($nssfPay, 2),

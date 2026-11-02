@@ -113,6 +113,9 @@ const overtime = computed(() => slip.value?.details?.overtime?.minutes ?? null)
             <dd>{{ t('admin.payroll.payslip.shiftRate', { days: line.days, daily: line.daily_rate !== null ? money(line.daily_rate) : '—', hourly: line.hourly_rate !== null ? money(line.hourly_rate) : '—' }) }}</dd>
           </template>
           <template v-if="overtime"><dt class="text-neutral-500">{{ t('admin.payroll.tabs.overtime') }}</dt><dd>{{ hoursLabel(overtime.normal) }} / {{ hoursLabel(overtime.rest_day) }} / {{ hoursLabel(overtime.holiday) }}</dd></template>
+          <template v-if="slip.details?.attendance_deducted === false">
+            <dt class="text-neutral-500">{{ t('admin.payroll.tabs.attendanceDeduction') }}</dt><dd>{{ t('admin.payroll.salaries.notDeducted') }}</dd>
+          </template>
           <template v-if="attendance">
             <dt class="text-neutral-500">{{ t('admin.payroll.deductionRules.absence') }} · {{ t('admin.payroll.deductionRules.unpaidLeave') }}</dt>
             <dd>{{ t('admin.payroll.deductionRules.daysN', { count: attendance.absent_days ?? 0 }) }} · {{ t('admin.payroll.deductionRules.daysN', { count: attendance.unpaid_leave_days ?? 0 }) }}</dd>

@@ -30,7 +30,9 @@ use Illuminate\Support\Collection;
  *   at the hourly rate or a fixed amount each time — as PayrollSetting says.
  *
  * Both use the basic salary in effect at the end of the period, in its own
- * currency. A staff member with no salary is listed with no amount.
+ * currency. A staff member with no salary is listed with no amount; one
+ * whose salary has "Deduct for attendance" off has their counts listed but
+ * nothing deducted (`deducted` false).
  *
  * Rates (see rateBook()): a plain monthly salary has one daily rate (basic ÷
  * working days per month) and one hourly rate (÷ hours per day). A "pay by
@@ -175,7 +177,10 @@ final class PayrollAttendance
             }
 
             $lines = null;
-            if ($salary !== null) {
+            $deducted = $salary === null || $salary->deduct_attendance;
+            if ($salary !== null && ! $salary->deduct_attendance) {
+                $lines = ['absence' => 0.0, 'unpaid_leave' => 0.0, 'late' => 0.0, 'early_leave' => 0.0];
+            } elseif ($salary !== null) {
                 $fixed = $salary->currency === Tenant::CURRENCY_KHR ? $settings->late_amount_khr : $settings->late_amount_usd;
                 $byTime = fn (int $times, float $perMinutePay) => match ($settings->late_deduction_mode) {
                     PayrollSetting::LATE_PER_MINUTE => $perMinutePay,
@@ -199,6 +204,7 @@ final class PayrollAttendance
                 'early_leave_times' => $earlyTimes,
                 'early_leave_minutes' => $earlyMinutes,
                 'currency' => $salary?->currency,
+                'deducted' => $deducted,
                 'lines' => $lines,
                 'amount' => $lines !== null ? $this->round(array_sum($lines), $salary->currency) : null,
             ]];

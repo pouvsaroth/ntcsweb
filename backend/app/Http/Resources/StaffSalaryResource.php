@@ -21,6 +21,7 @@ class StaffSalaryResource extends JsonResource
             'basic_salary' => $this->basic_salary,
             'currency' => $this->currency,
             'salary_structure_id' => $this->salary_structure_id,
+            'deduct_attendance' => $this->deduct_attendance,
             'structure' => $this->whenLoaded('structure', fn () => $this->structure !== null
                 ? ['id' => $this->structure->id, 'code' => $this->structure->code, 'name' => $this->structure->name]
                 : null),

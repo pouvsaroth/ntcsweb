@@ -19,8 +19,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * a given day is the row with the latest `effective_from` on or before it
  * (see scopeEffectiveOn()). Currency is per staff member, USD or KHR.
  * "Pay by shift": with shift rows (see shifts()), basic_salary is their sum.
+ * `deduct_attendance` off: payroll takes nothing off for absence, unpaid
+ * leave, late or early leave (overtime is still paid).
  */
-#[Fillable(['staff_id', 'basic_salary', 'currency', 'salary_structure_id', 'effective_from', 'payment_method', 'bank_name', 'bank_account_name', 'bank_account_number', 'note', 'created_by'])]
+#[Fillable(['staff_id', 'basic_salary', 'currency', 'salary_structure_id', 'deduct_attendance', 'effective_from', 'payment_method', 'bank_name', 'bank_account_name', 'bank_account_number', 'note', 'created_by'])]
 class StaffSalary extends Model
 {
     /** @use HasFactory<StaffSalaryFactory> */
@@ -36,12 +38,14 @@ class StaffSalary extends Model
 
     protected $attributes = [
         'payment_method' => self::PAYMENT_BANK,
+        'deduct_attendance' => true,
     ];
 
     protected function casts(): array
     {
         return [
             'basic_salary' => 'decimal:2',
+            'deduct_attendance' => 'boolean',
             'effective_from' => 'date',
         ];
     }

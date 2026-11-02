@@ -3,6 +3,7 @@ import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import BaseAlert from '@/components/ui/BaseAlert.vue'
+import BaseBadge from '@/components/ui/BaseBadge.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
@@ -198,7 +199,8 @@ onMounted(() => {
         <div v-for="row in rows" :key="row.staff.id" class="rounded-[--radius-card] border border-neutral-200 bg-white p-3 shadow-[--shadow-card]">
           <div class="flex items-start justify-between gap-2">
             <p class="text-sm font-semibold text-neutral-800">{{ row.staff.name }} <span class="font-normal text-neutral-500">({{ row.staff.employee_code }})</span></p>
-            <span class="shrink-0 text-sm font-semibold text-danger-600">{{ money(row, row.amount ?? 0) }}</span>
+            <BaseBadge v-if="!row.deducted" variant="warning" class="shrink-0">{{ t('admin.payroll.salaries.notDeducted') }}</BaseBadge>
+            <span v-else class="shrink-0 text-sm font-semibold text-danger-600">{{ money(row, row.amount ?? 0) }}</span>
           </div>
           <dl class="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
             <dt class="text-neutral-500">{{ t('admin.payroll.deductionRules.absence') }}</dt><dd class="text-neutral-800">{{ t('admin.payroll.deductionRules.daysN', { count: row.absent_days }) }}</dd>
@@ -225,6 +227,7 @@ onMounted(() => {
               <td class="px-4 py-3">
                 <p class="font-medium text-neutral-800">{{ row.staff.name }}</p>
                 <p class="text-xs text-neutral-500">{{ row.staff.employee_code }}</p>
+                <BaseBadge v-if="!row.deducted" variant="warning" class="mt-1">{{ t('admin.payroll.salaries.notDeducted') }}</BaseBadge>
               </td>
               <td class="px-4 py-3 text-right tabular-nums">
                 <p class="text-neutral-800">{{ money(row, row.lines?.absence) }}</p>

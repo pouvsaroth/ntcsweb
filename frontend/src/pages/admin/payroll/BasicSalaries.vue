@@ -101,6 +101,7 @@ const form = reactive({
   basic_salary: '',
   currency: 'USD' as PayCurrency,
   salary_structure_id: '',
+  deduct_attendance: true,
   effective_from: '',
   payment_method: 'bank' as PaymentMethod,
   bank_name: '',
@@ -169,6 +170,7 @@ function openForm(salary: StaffSalary | null) {
   form.pay_by = form.shifts.length > 0 ? 'shift' : 'monthly'
   form.currency = base?.currency ?? 'USD'
   form.salary_structure_id = base?.salary_structure_id ? String(base.salary_structure_id) : ''
+  form.deduct_attendance = base?.deduct_attendance ?? true
   form.effective_from = salary?.effective_from ?? today()
   form.payment_method = base?.payment_method ?? 'bank'
   form.bank_name = base?.bank_name ?? ''
@@ -198,6 +200,7 @@ async function save() {
     shifts: lines,
     currency: form.currency,
     salary_structure_id: form.salary_structure_id ? Number(form.salary_structure_id) : null,
+    deduct_attendance: form.deduct_attendance,
     effective_from: form.effective_from,
     payment_method: form.payment_method,
     bank_name: bank ? form.bank_name.trim() || null : null,
@@ -275,6 +278,7 @@ onMounted(() => fetch())
           <p class="text-xs text-neutral-500">{{ [row.staff.position, row.staff.department].filter(Boolean).join(' · ') || '—' }}</p>
           <p v-if="row.salary?.structure" class="mt-1 text-xs text-neutral-600">{{ row.salary.structure.name }}</p>
           <p v-if="shiftSummary(row.salary)" class="mt-1 text-xs text-neutral-600">{{ t('admin.payroll.salaries.payByShift') }}: {{ shiftSummary(row.salary) }}</p>
+          <p v-if="row.salary && !row.salary.deduct_attendance" class="mt-1 text-xs text-warning-700">{{ t('admin.payroll.salaries.noAttendanceDeduction') }}</p>
           <p v-if="row.next_salary" class="mt-1 text-xs text-primary-700">
             {{ t('admin.payroll.salaries.nextFrom', { amount: money(row.next_salary), date: formatDate(row.next_salary.effective_from) }) }}
           </p>
@@ -304,6 +308,7 @@ onMounted(() => fetch())
                 <span v-if="row.salary" class="font-semibold tabular-nums text-neutral-900">{{ money(row.salary) }}</span>
                 <BaseBadge v-else variant="warning">{{ t('admin.payroll.salaries.notSet') }}</BaseBadge>
                 <p v-if="shiftSummary(row.salary)" class="text-xs text-neutral-500">{{ shiftSummary(row.salary) }}</p>
+                <p v-if="row.salary && !row.salary.deduct_attendance" class="text-xs text-warning-700">{{ t('admin.payroll.salaries.noAttendanceDeduction') }}</p>
                 <p v-if="row.next_salary" class="text-xs text-primary-700">
                   {{ t('admin.payroll.salaries.nextFrom', { amount: money(row.next_salary), date: formatDate(row.next_salary.effective_from) }) }}
                 </p>
@@ -362,6 +367,13 @@ onMounted(() => fetch())
           :hint="t('admin.payroll.salaries.structureHint')"
           :error="errors.salary_structure_id?.[0]"
         />
+        <label class="flex items-start gap-2 text-sm text-neutral-700">
+          <input v-model="form.deduct_attendance" type="checkbox" class="mt-0.5 rounded border-neutral-300 text-primary-600 focus:ring-primary-500" />
+          <span>
+            {{ t('admin.payroll.salaries.deductAttendance') }}
+            <span class="block text-xs text-neutral-500">{{ t('admin.payroll.salaries.deductAttendanceHint') }}</span>
+          </span>
+        </label>
         <div class="grid gap-4 sm:grid-cols-2">
           <BaseSelect
             :model-value="form.payment_method"
@@ -403,6 +415,7 @@ onMounted(() => fetch())
                 <template v-if="salary.structure"> · {{ salary.structure.name }}</template>
               </p>
               <p v-if="shiftSummary(salary)" class="text-xs text-neutral-600">{{ t('admin.payroll.salaries.payByShift') }}: {{ shiftSummary(salary) }}</p>
+              <p v-if="!salary.deduct_attendance" class="text-xs text-warning-700">{{ t('admin.payroll.salaries.noAttendanceDeduction') }}</p>
               <p v-if="salary.note" class="text-xs text-neutral-600">{{ salary.note }}</p>
             </div>
             <div v-if="canManage" class="flex shrink-0 gap-3">

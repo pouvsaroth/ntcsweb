@@ -67,6 +67,8 @@ export interface StaffSalary {
   currency: PayCurrency
   salary_structure_id: number | null
   structure?: { id: number; code: string; name: string } | null
+  /** Off: payroll takes nothing off for absence, unpaid leave, late or early leave. */
+  deduct_attendance: boolean
   effective_from: string
   payment_method: PaymentMethod
   bank_name: string | null
@@ -90,6 +92,7 @@ export interface StaffSalaryInput {
   basic_salary: number
   currency: PayCurrency
   salary_structure_id: number | null
+  deduct_attendance: boolean
   effective_from: string
   payment_method: PaymentMethod
   bank_name: string | null
@@ -298,6 +301,8 @@ export interface DeductionRow {
   early_leave_times: number
   early_leave_minutes: number
   currency: PayCurrency | null
+  /** False: "Deduct for attendance" is off on their salary — counted, nothing taken off. */
+  deducted: boolean
   lines: { absence: number; unpaid_leave: number; late: number; early_leave: number } | null
   amount: number | null
 }
@@ -455,6 +460,8 @@ export interface Payslip {
   details: {
     overtime?: { minutes: { normal: number; rest_day: number; holiday: number } | null; hourly_rate: number | null }
     attendance?: { absent_days?: number; unpaid_leave_days?: number; late_times?: number; late_minutes?: number; early_leave_times?: number; early_leave_minutes?: number }
+    /** False: "Deduct for attendance" is off on their salary. */
+    attendance_deducted?: boolean
     taxed?: boolean
     khr_per_usd?: number | null
     tax?: { taxable: number; allowances: number; base: number; tax: number }

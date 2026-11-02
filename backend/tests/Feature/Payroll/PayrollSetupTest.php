@@ -140,9 +140,12 @@ class PayrollSetupTest extends TestCase
         $khrStructure = SalaryStructure::factory()->create(['currency' => Tenant::CURRENCY_KHR]);
         $date = now()->startOfMonth()->toDateString();
 
-        $this->postJson('/api/v1/staff-salaries', [
+        $salary = $this->postJson('/api/v1/staff-salaries', [
             'staff_id' => $staff->id, 'basic_salary' => 500, 'currency' => 'USD', 'effective_from' => $date,
-        ])->assertCreated()->assertJsonPath('data.payment_method', 'bank');
+        ])->assertCreated()->assertJsonPath('data.payment_method', 'bank')->assertJsonPath('data.deduct_attendance', true)->json('data');
+
+        $this->putJson("/api/v1/staff-salaries/{$salary['id']}", ['deduct_attendance' => false])
+            ->assertOk()->assertJsonPath('data.deduct_attendance', false);
 
         $this->postJson('/api/v1/staff-salaries', [
             'staff_id' => $staff->id, 'basic_salary' => 550, 'currency' => 'USD', 'effective_from' => $date,

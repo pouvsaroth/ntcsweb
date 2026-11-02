@@ -198,6 +198,24 @@ class PayrollRulesTest extends TestCase
         $this->assertEquals($absent * 20 + 20 + 0.83, $row['amount']);
     }
 
+    public function test_a_salary_with_deduct_attendance_off_has_nothing_taken_off(): void
+    {
+        $this->actingAsAdminWithPermissions(self::ALL);
+        $shift = Shift::factory()->create();
+        WorkSchedule::factory()->create(['is_default' => true, 'monday_shift_id' => $shift->id]);
+        $staff = $this->staffOn520();
+        StaffSalary::query()->where('staff_id', $staff->id)->update(['deduct_attendance' => false]);
+        $month = CarbonImmutable::now()->subMonth()->startOfMonth();
+
+        // No check-ins at all: every Monday is absent, but none of it comes off.
+        $row = collect($this->getJson('/api/v1/payroll-attendance-deductions?month='.$month->format('Y-m'))->assertOk()->json('data.rows'))->firstWhere('staff.id', $staff->id);
+
+        $this->assertGreaterThan(0, $row['absent_days']);
+        $this->assertFalse($row['deducted']);
+        $this->assertEquals(0, $row['lines']['absence']);
+        $this->assertEquals(0, $row['amount']);
+    }
+
     public function test_pay_by_shift_uses_each_shifts_own_rate(): void
     {
         $this->actingAsAdminWithPermissions(self::ALL);
