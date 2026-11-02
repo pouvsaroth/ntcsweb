@@ -13,14 +13,18 @@ use App\Models\StaffSalary;
 use App\Support\Query\ApiQuery;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 /**
  * HRM > Payroll > Basic salary — every working staff member with the salary
  * in effect today (null when none is set yet), and each one's history. A
- * raise is a new row from its own date; see StaffSalary.
+ * raise is a new row from its own date; see StaffSalary. A salary can be
+ * "pay by shift" — a monthly amount per shift (StaffSalaryShift).
  */
 final class StaffSalaryController extends Controller
 {
+    private const WITH = ['structure', 'shifts.shift'];
+
     public function index(Request $request): JsonResponse
     {
         $this->authorize('viewAny', StaffSalary::class);
@@ -43,7 +47,7 @@ final class StaffSalaryController extends Controller
         $current = StaffSalary::query()
             ->whereIn('staff_id', $staff->getCollection()->modelKeys())
             ->effectiveOn($today)
-            ->with('structure')
+            ->with(self::WITH)
             ->get()
             ->keyBy('staff_id');
 
@@ -51,6 +55,7 @@ final class StaffSalaryController extends Controller
             ->whereIn('staff_id', $staff->getCollection()->modelKeys())
             ->whereDate('effective_from', '>', $today)
             ->orderBy('effective_from')
+            ->with(self::WITH)
             ->get()
             ->groupBy('staff_id')
             ->map->first();
@@ -71,7 +76,7 @@ final class StaffSalaryController extends Controller
 
         $salaries = StaffSalary::query()
             ->where('staff_id', $staff->id)
-            ->with('structure')
+            ->with(self::WITH)
             ->orderByDesc('effective_from')
             ->get();
 
@@ -85,18 +90,28 @@ final class StaffSalaryController extends Controller
     {
         $this->authorize('create', StaffSalary::class);
 
-        $salary = StaffSalary::query()->create([...$request->validated(), 'created_by' => $request->user()->getKey()]);
+        $salary = DB::connection('tenant')->transaction(function () use ($request) {
+            $salary = StaffSalary::query()->create([...$request->salaryData(), 'created_by' => $request->user()->getKey()]);
+            $this->syncShifts($salary, $request->validated('shifts', []));
 
-        return ApiResponse::created(new StaffSalaryResource($salary->load('structure')));
+            return $salary;
+        });
+
+        return ApiResponse::created(new StaffSalaryResource($salary->load(self::WITH)));
     }
 
     public function update(StaffSalaryRequest $request, StaffSalary $staffSalary): JsonResponse
     {
         $this->authorize('update', $staffSalary);
 
-        $staffSalary->update($request->validated());
+        DB::connection('tenant')->transaction(function () use ($request, $staffSalary) {
+            $staffSalary->update($request->salaryData());
+            if ($request->has('shifts')) {
+                $this->syncShifts($staffSalary, $request->validated('shifts', []));
+            }
+        });
 
-        return ApiResponse::success(new StaffSalaryResource($staffSalary->load('structure')));
+        return ApiResponse::success(new StaffSalaryResource($staffSalary->load(self::WITH)));
     }
 
     public function destroy(StaffSalary $staffSalary): JsonResponse
@@ -106,6 +121,17 @@ final class StaffSalaryController extends Controller
         $staffSalary->delete();
 
         return ApiResponse::noContent();
+    }
+
+    /** @param  list<array{shift_id:int, amount:numeric-string|float}>  $lines */
+    private function syncShifts(StaffSalary $salary, array $lines): void
+    {
+        $keep = collect($lines)->pluck('shift_id')->map(fn ($id) => (int) $id)->all();
+        $salary->shifts()->whereNotIn('shift_id', $keep)->delete();
+
+        foreach ($lines as $line) {
+            $salary->shifts()->updateOrCreate(['shift_id' => (int) $line['shift_id']], ['amount' => $line['amount']]);
+        }
     }
 
     /** @return array<string, mixed> */

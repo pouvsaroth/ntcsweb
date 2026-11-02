@@ -198,6 +198,57 @@ class PayrollRulesTest extends TestCase
         $this->assertEquals($absent * 20 + 20 + 0.83, $row['amount']);
     }
 
+    public function test_pay_by_shift_uses_each_shifts_own_rate(): void
+    {
+        $this->actingAsAdminWithPermissions(self::ALL);
+        // Mr. A: Shift A Mon–Fri 16:00–19:00 for $70, Shift B Sat–Sun 13:00–17:00 for $100.
+        $weekday = Shift::factory()->create(['start_time' => '16:00', 'end_time' => '19:00', 'break_minutes' => 0]);
+        $weekend = Shift::factory()->create(['start_time' => '13:00', 'end_time' => '17:00', 'break_minutes' => 0]);
+        $schedule = WorkSchedule::factory()->create([
+            'monday_shift_id' => $weekday->id, 'tuesday_shift_id' => $weekday->id, 'wednesday_shift_id' => $weekday->id,
+            'thursday_shift_id' => $weekday->id, 'friday_shift_id' => $weekday->id,
+            'saturday_shift_id' => $weekend->id, 'sunday_shift_id' => $weekend->id,
+        ]);
+        $staff = Staff::factory()->create(['hire_date' => now()->subYear()->toDateString(), 'work_schedule_id' => $schedule->id]);
+        $salary = StaffSalary::factory()->create(['staff_id' => $staff->id, 'basic_salary' => 170, 'currency' => Tenant::CURRENCY_USD, 'effective_from' => now()->subYear()->toDateString()]);
+        $salary->shifts()->create(['shift_id' => $weekday->id, 'amount' => 70]);
+        $salary->shifts()->create(['shift_id' => $weekend->id, 'amount' => 100]);
+        PayrollSetting::current()->update(['late_grace_minutes' => 0, 'late_deduction_mode' => PayrollSetting::LATE_PER_MINUTE]);
+
+        $month = CarbonImmutable::now()->subMonth()->startOfMonth();
+        $dates = collect(range(0, $month->daysInMonth - 1))->map(fn ($d) => $month->addDays($d));
+        $weekdays = $dates->reject->isWeekend()->count();
+        $weekendDays = $dates->filter->isWeekend()->count();
+        $saturday = $dates->first->isSaturday();
+        $monday = $dates->first->isMonday();
+        $sunday = $dates->first->isSunday();
+        $tuesday = $dates->first->isTuesday();
+
+        // In every day but one Saturday and one Monday; 30 minutes late one Sunday.
+        foreach ($dates as $date) {
+            if ($date->isSameDay($saturday) || $date->isSameDay($monday)) {
+                continue;
+            }
+            $late = $date->isSameDay($sunday) ? 30 : 0;
+            StaffAttendance::query()->create(['staff_id' => $staff->id, 'date' => $date->toDateString(), 'status' => $late ? 'late' : 'present', 'late_minutes' => $late, 'worked_minutes' => 180]);
+        }
+        OvertimeRequest::query()->create(['staff_id' => $staff->id, 'date' => $tuesday->toDateString(), 'minutes' => 60, 'reason' => 'Exams', 'status' => 'approved', 'requested_by' => 1]);
+
+        $row = collect($this->getJson('/api/v1/payroll-attendance-deductions?month='.$month->format('Y-m'))->assertOk()->json('data.rows'))->firstWhere('staff.id', $staff->id);
+
+        $saturdayRate = 100 / $weekendDays;
+        $mondayRate = 70 / $weekdays;
+        $this->assertSame(2, $row['absent_days']);
+        // The missed Saturday comes off at Shift B's rate, the Monday at Shift A's.
+        $this->assertEquals(round($saturdayRate + $mondayRate, 2), $row['lines']['absence']);
+        // 30 minutes at Shift B's hourly rate (its daily rate ÷ 4 hours).
+        $this->assertEquals(round(30 * $saturdayRate / 4 / 60, 2), $row['lines']['late']);
+
+        $overtime = collect($this->getJson('/api/v1/payroll-overtime?month='.$month->format('Y-m'))->assertOk()->json('data.rows'))->firstWhere('staff.id', $staff->id);
+        // 1 hour × 1.5 at Shift A's hourly rate (its daily rate ÷ 3 hours).
+        $this->assertEquals(round(1.5 * $mondayRate / 3, 2), (float) $overtime['amount']);
+    }
+
     public function test_a_loan_is_in_the_salary_currency_and_settles_when_paid_back(): void
     {
         $this->actingAsAdminWithPermissions(self::ALL);

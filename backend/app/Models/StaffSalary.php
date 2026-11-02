@@ -11,12 +11,14 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * Tenant-owned. A staff member's basic salary from a date on (HRM > Payroll >
  * Basic salary) — a raise is a new row, so the history stays. The salary on
  * a given day is the row with the latest `effective_from` on or before it
  * (see scopeEffectiveOn()). Currency is per staff member, USD or KHR.
+ * "Pay by shift": with shift rows (see shifts()), basic_salary is their sum.
  */
 #[Fillable(['staff_id', 'basic_salary', 'currency', 'salary_structure_id', 'effective_from', 'payment_method', 'bank_name', 'bank_account_name', 'bank_account_number', 'note', 'created_by'])]
 class StaffSalary extends Model
@@ -47,6 +49,12 @@ class StaffSalary extends Model
     public function staff(): BelongsTo
     {
         return $this->belongsTo(Staff::class);
+    }
+
+    /** "Pay by shift" — each shift's monthly amount; empty for a plain monthly salary. */
+    public function shifts(): HasMany
+    {
+        return $this->hasMany(StaffSalaryShift::class)->orderBy('id');
     }
 
     public function structure(): BelongsTo

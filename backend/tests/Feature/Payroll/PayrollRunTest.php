@@ -8,7 +8,11 @@ use App\Models\Account;
 use App\Models\Expense;
 use App\Models\PayrollComponent;
 use App\Models\PayrollRun;
+use App\Models\PayrollSetting;
+use App\Models\Permission;
+use App\Models\Role;
 use App\Models\SalaryStructure;
+use App\Models\Shift;
 use App\Models\Staff;
 use App\Models\StaffLoan;
 use App\Models\StaffPayComponent;
@@ -16,6 +20,7 @@ use App\Models\StaffSalary;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Models\UserNotification;
+use App\Models\WorkSchedule;
 use App\Support\Accounting\AccountType;
 use App\Support\Authorization\Permissions;
 use App\Support\Notifications\NotificationType;
@@ -92,6 +97,33 @@ class PayrollRunTest extends TestCase
         $this->assertSame($loan->id, collect($slip['lines']['deductions'])->firstWhere('type', 'loan')['loan_id']);
     }
 
+    public function test_a_pay_by_shift_payslip_shows_a_line_per_shift(): void
+    {
+        $weekday = Shift::factory()->create(['name' => 'Evening', 'start_time' => '16:00', 'end_time' => '19:00', 'break_minutes' => 0]);
+        $weekend = Shift::factory()->create(['name' => 'Weekend', 'start_time' => '13:00', 'end_time' => '17:00', 'break_minutes' => 0]);
+        $schedule = WorkSchedule::factory()->create([
+            'monday_shift_id' => $weekday->id, 'tuesday_shift_id' => $weekday->id, 'wednesday_shift_id' => $weekday->id,
+            'thursday_shift_id' => $weekday->id, 'friday_shift_id' => $weekday->id,
+            'saturday_shift_id' => $weekend->id, 'sunday_shift_id' => $weekend->id,
+        ]);
+        $staff = $this->staffOnTwoMillion(['basic_salary' => 700000]);
+        $staff->forceFill(['work_schedule_id' => $schedule->id])->save();
+        $salary = StaffSalary::query()->where('staff_id', $staff->id)->firstOrFail();
+        $salary->shifts()->create(['shift_id' => $weekday->id, 'amount' => 280000]);
+        $salary->shifts()->create(['shift_id' => $weekend->id, 'amount' => 420000]);
+        PayrollSetting::current()->update(['deduct_absence' => false]);
+
+        $slip = collect($this->createRun()['payslips'])->firstWhere('staff.id', $staff->id);
+
+        $this->assertSame(700000.0, (float) $slip['basic_pay']);
+        $basic = collect($slip['lines']['earnings'])->where('type', 'basic')->values();
+        $this->assertSame(['Evening', 'Weekend'], $basic->pluck('name')->all());
+        $this->assertEquals([280000, 420000], $basic->pluck('amount')->all());
+
+        $slip = $this->getJson("/api/v1/payslips/{$slip['id']}")->assertOk()->json('data');
+        $this->assertCount(2, $slip['details']['shift_pay']);
+    }
+
     public function test_a_pay_period_is_held_by_one_run_until_it_is_cancelled(): void
     {
         $this->staffOnTwoMillion();
@@ -147,7 +179,7 @@ class PayrollRunTest extends TestCase
         $staff = $this->staffOnTwoMillion();
         $loan = StaffLoan::factory()->create(['staff_id' => $staff->id, 'currency' => Tenant::CURRENCY_KHR, 'amount' => 500000, 'installment_amount' => 300000, 'issued_on' => now()->subMonths(3)->toDateString(), 'first_deduction_on' => $this->month.'-01']);
         $approver = User::factory()->forTenant($this->tenant)->create();
-        $approver->attachRoles(\App\Models\Role::query()->where('slug', 'test-admin')->firstOrFail());
+        $approver->attachRoles(Role::query()->where('slug', 'test-admin')->firstOrFail());
 
         $run = $this->createRun();
         $net = (float) collect($run['payslips'])->sum('net_pay');
@@ -198,8 +230,8 @@ class PayrollRunTest extends TestCase
         $this->postJson("/api/v1/payroll-runs/{$run['id']}/submit")->assertOk();
 
         $clerk = User::factory()->forTenant($this->tenant)->create();
-        $role = \App\Models\Role::factory()->forTenant($this->tenant)->create(['slug' => 'payroll-clerk', 'level' => 50]);
-        $role->permissions()->attach(\App\Models\Permission::query()->whereIn('slug', [Permissions::PAYROLL_VIEW, Permissions::PAYROLL_RUN])->pluck('id'));
+        $role = Role::factory()->forTenant($this->tenant)->create(['slug' => 'payroll-clerk', 'level' => 50]);
+        $role->permissions()->attach(Permission::query()->whereIn('slug', [Permissions::PAYROLL_VIEW, Permissions::PAYROLL_RUN])->pluck('id'));
         $clerk->attachRoles($role);
 
         $this->actingAsTenantUser($clerk);

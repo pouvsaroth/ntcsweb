@@ -73,7 +73,16 @@ export interface StaffSalary {
   bank_account_name: string | null
   bank_account_number: string | null
   note: string | null
+  /** "Pay by shift": each shift's monthly amount — basic_salary is their sum. Empty for a plain monthly salary. */
+  shifts?: StaffSalaryShift[]
   created_at: string | null
+}
+
+export interface StaffSalaryShift {
+  id: number
+  shift_id: number
+  shift: { id: number; code: string; name: string; color: string | null } | null
+  amount: string
 }
 
 export interface StaffSalaryInput {
@@ -87,6 +96,8 @@ export interface StaffSalaryInput {
   bank_account_name: string | null
   bank_account_number: string | null
   note: string | null
+  /** Replaces the shift lines when sent; [] makes it a plain monthly salary. */
+  shifts?: { shift_id: number; amount: number }[]
 }
 
 export interface PayrollStaff {
@@ -410,10 +421,12 @@ export interface PayrollTotals {
 export interface PayslipLine {
   /** basic | allowance | bonus | overtime | adjustment (earnings); attendance | deduction | social_security | tax | loan | adjustment (deductions) */
   type: string
+  /** For basic: `basic`, or `shift` (one line per shift on a "pay by shift" salary, name = the shift's). */
   code: string
   name: string
   amount: number
   loan_id?: number
+  shift_id?: number
 }
 
 export interface Payslip {
@@ -446,6 +459,8 @@ export interface Payslip {
     khr_per_usd?: number | null
     tax?: { taxable: number; allowances: number; base: number; tax: number }
     structure?: string | null
+    /** "Pay by shift": each shift's monthly amount, its days that month and rates. */
+    shift_pay?: { shift_id: number; name: string | null; amount: number; days: number; hours: number; daily_rate: number | null; hourly_rate: number | null }[]
   } | null
   payment_method: PaymentMethod | null
   bank_name: string | null

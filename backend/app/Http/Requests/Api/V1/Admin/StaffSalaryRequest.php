@@ -15,6 +15,10 @@ use Illuminate\Validation\Validator;
  * A staff member's basic salary from a date on (HRM > Payroll > Basic
  * salary). Creating one is a raise / change; updating corrects a row. One
  * row per staff member per effective date.
+ *
+ * `shifts` ("Pay by shift") replaces the salary's shift lines when sent —
+ * an empty list makes it a plain monthly salary again. With lines, the
+ * basic salary is their sum (worked out here, whatever was sent).
  */
 class StaffSalaryRequest extends FormRequest
 {
@@ -33,7 +37,10 @@ class StaffSalaryRequest extends FormRequest
 
         return [
             'staff_id' => $creating ? ['required', 'integer', Rule::exists('tenant.staff', 'id')] : ['prohibited'],
-            'basic_salary' => [$required, 'numeric', 'min:0', 'max:9999999999'],
+            'basic_salary' => [$this->filled('shifts') ? 'sometimes' : $required, 'numeric', 'min:0', 'max:9999999999'],
+            'shifts' => ['sometimes', 'array', 'max:7'],
+            'shifts.*.shift_id' => ['required', 'integer', 'distinct', Rule::exists('tenant.shifts', 'id')],
+            'shifts.*.amount' => ['required', 'numeric', 'min:0', 'max:9999999999'],
             'currency' => [$required, Rule::in([Tenant::CURRENCY_USD, Tenant::CURRENCY_KHR])],
             'salary_structure_id' => ['nullable', 'integer', Rule::exists('tenant.salary_structures', 'id')],
             'effective_from' => [
@@ -55,7 +62,20 @@ class StaffSalaryRequest extends FormRequest
     {
         return [
             'effective_from.unique' => 'This staff member already has a salary starting on this date. Edit that one instead.',
+            'shifts.*.shift_id.distinct' => 'Each shift can be listed once.',
         ];
+    }
+
+    /** @return array<string, mixed> the salary's own columns — basic_salary is the shifts' sum when there are any. */
+    public function salaryData(): array
+    {
+        $data = $this->safe()->except('shifts');
+        $shifts = $this->validated('shifts');
+        if (! empty($shifts)) {
+            $data['basic_salary'] = round(array_sum(array_map(fn (array $line) => (float) $line['amount'], $shifts)), 2);
+        }
+
+        return $data;
     }
 
     public function withValidator(Validator $validator): void

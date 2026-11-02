@@ -94,6 +94,20 @@ class Shift extends Model
         return max(0, $minutes - $this->break_minutes);
     }
 
+    /** Scheduled working minutes on this date's weekday: that day's start to end, less its break. */
+    public function workMinutesOn(CarbonInterface $date): int
+    {
+        [$start, $end] = $this->timesOn($date);
+        [$sh, $sm] = array_map('intval', explode(':', $start));
+        [$eh, $em] = array_map('intval', explode(':', $end));
+        $minutes = ($eh * 60 + $em) - ($sh * 60 + $sm);
+        if ($minutes <= 0) {
+            $minutes += 24 * 60;
+        }
+
+        return max(0, $minutes - $this->breakOn($date));
+    }
+
     public function auditModule(): string
     {
         return 'Attendance';

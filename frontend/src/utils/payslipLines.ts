@@ -8,7 +8,7 @@ import type { PayslipLine } from '@/services/payroll'
 export function payslipLineLabel(line: PayslipLine, t: (key: string) => string): string {
   switch (line.type) {
     case 'basic':
-      return t('admin.payroll.lines.basic')
+      return line.code === 'shift' ? `${t('admin.payroll.lines.basic')}: ${line.name}` : t('admin.payroll.lines.basic')
     case 'overtime':
       return t('admin.payroll.lines.overtime')
     case 'social_security':

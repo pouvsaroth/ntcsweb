@@ -24,6 +24,13 @@ class StaffSalaryResource extends JsonResource
             'structure' => $this->whenLoaded('structure', fn () => $this->structure !== null
                 ? ['id' => $this->structure->id, 'code' => $this->structure->code, 'name' => $this->structure->name]
                 : null),
+            // "Pay by shift" lines; empty for a plain monthly salary.
+            'shifts' => $this->whenLoaded('shifts', fn () => $this->shifts->map(fn ($line) => [
+                'id' => $line->id,
+                'shift_id' => $line->shift_id,
+                'shift' => $line->shift !== null ? ['id' => $line->shift->id, 'code' => $line->shift->code, 'name' => $line->shift->name, 'color' => $line->shift->color] : null,
+                'amount' => $line->amount,
+            ])->values()),
             'effective_from' => $this->effective_from?->toDateString(),
             'payment_method' => $this->payment_method,
             'bank_name' => $this->bank_name,

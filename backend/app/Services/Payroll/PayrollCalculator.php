@@ -8,12 +8,14 @@ use App\Models\PayrollComponent;
 use App\Models\PayrollRun;
 use App\Models\Payslip;
 use App\Models\SalaryStructure;
+use App\Models\Shift;
 use App\Models\Staff;
 use App\Models\StaffLoan;
 use App\Models\StaffPayComponent;
 use App\Models\StaffPayrollProfile;
 use App\Models\StaffSalary;
 use App\Models\Tenant;
+use App\Models\WorkSchedule;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
@@ -22,7 +24,8 @@ use Illuminate\Validation\ValidationException;
  * Works out every payslip of a payroll run — each working staff member with
  * a basic salary on the period's last day, in their salary currency:
  *
- *   basic (half of it for a 15-day period)
+ *   basic (half of it for a 15-day period; a "pay by shift" salary shows one
+ *   line per shift, and its basic is their sum)
  * + allowances and bonuses (salary structure, overridden / added to by the
  *   staff member's own; recurring ones halved for 15 days, one-time ones in
  *   full in the period covering their date; a % is of the monthly basic)
@@ -90,6 +93,9 @@ final class PayrollCalculator
             ->groupBy('staff_id');
         $firstHalf = $run->period === PayrollRun::PERIOD_SECOND_HALF ? $this->firstHalfSlips($run) : collect();
         $kept = $run->payslips()->get(['staff_id', 'adjustment', 'adjustment_note'])->keyBy('staff_id');
+        $schedules = WorkSchedule::query()->get()->keyBy('id');
+        $defaultSchedule = $schedules->firstWhere('is_default', true);
+        $shifts = Shift::query()->with('days')->get()->keyBy('id');
 
         $run->payslips()->delete();
 
@@ -111,6 +117,9 @@ final class PayrollCalculator
                 $firstHalf->get($member->id),
                 (float) ($kept->get($member->id)?->adjustment ?? 0),
                 $kept->get($member->id)?->adjustment_note,
+                $salaries[$member->id]->shifts->isNotEmpty()
+                    ? $this->attendance->rateBook($salaries[$member->id], $schedules->get($member->work_schedule_id) ?? $defaultSchedule, $shifts, $to)['shifts']
+                    : [],
             );
             $run->payslips()->create($slip);
         }
@@ -154,10 +163,13 @@ final class PayrollCalculator
         ?Payslip $firstHalf,
         float $adjustment,
         ?string $adjustmentNote,
+        array $shiftRates = [],
     ): array {
         $currency = $salary->currency;
         $monthly = (float) $salary->basic_salary;
-        $basic = $this->round($monthly * $factor, $currency);
+        $basic = $salary->shifts->isNotEmpty()
+            ? $this->round($salary->shifts->sum(fn ($line) => $this->round((float) $line->amount * $factor, $currency)), $currency)
+            : $this->round($monthly * $factor, $currency);
 
         // The structure's items, then the staff member's own on top: a
         // recurring one replaces the structure's for the same component;
@@ -250,7 +262,7 @@ final class PayrollCalculator
             $deductionLines[] = ['type' => 'tax', 'code' => 'tax', 'name' => 'tax', 'amount' => $taxAmount];
         }
 
-        $earningLines = [['type' => 'basic', 'code' => 'basic', 'name' => 'basic', 'amount' => $basic], ...$earnings];
+        $earningLines = [...$this->basicLines($salary, $basic, $factor), ...$earnings];
         if ($overtimePay > 0) {
             $earningLines[] = ['type' => 'overtime', 'code' => 'overtime', 'name' => 'overtime', 'amount' => $overtimePay];
         }
@@ -296,12 +308,35 @@ final class PayrollCalculator
                 'loans_open' => $openLoans->all(),
                 'loans' => $loanLines,
                 'structure' => $salary->salary_structure_id !== null ? $structures->get($salary->salary_structure_id)?->name : null,
+                // "Pay by shift": each shift's amount, days that month and rates.
+                'shift_pay' => $shiftRates,
             ],
             'payment_method' => $salary->payment_method,
             'bank_name' => $salary->bank_name,
             'bank_account_name' => $salary->bank_account_name,
             'bank_account_number' => $salary->bank_account_number,
         ];
+    }
+
+    /**
+     * The payslip's basic: one line, or for a "pay by shift" salary one per
+     * shift (type basic, code shift, the shift's name) — summing to $basic.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function basicLines(StaffSalary $salary, float $basic, float $factor): array
+    {
+        if ($salary->shifts->isEmpty()) {
+            return [['type' => 'basic', 'code' => 'basic', 'name' => 'basic', 'amount' => $basic]];
+        }
+
+        return $salary->shifts->map(fn ($line) => [
+            'type' => 'basic',
+            'code' => 'shift',
+            'name' => $line->shift?->name ?? 'basic',
+            'shift_id' => $line->shift_id,
+            'amount' => $this->round((float) $line->amount * $factor, $salary->currency),
+        ])->values()->all();
     }
 
     /**

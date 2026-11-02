@@ -6,6 +6,7 @@ namespace Tests\Feature\Payroll;
 
 use App\Models\PayrollComponent;
 use App\Models\SalaryStructure;
+use App\Models\Shift;
 use App\Models\Staff;
 use App\Models\StaffPayComponent;
 use App\Models\StaffSalary;
@@ -151,6 +152,42 @@ class PayrollSetupTest extends TestCase
             'staff_id' => $staff->id, 'basic_salary' => 550, 'currency' => 'USD',
             'effective_from' => now()->addMonth()->startOfMonth()->toDateString(), 'salary_structure_id' => $khrStructure->id,
         ])->assertUnprocessable()->assertJsonValidationErrors(['salary_structure_id']);
+    }
+
+    public function test_a_salary_can_be_paid_by_shift_and_its_basic_is_their_sum(): void
+    {
+        $this->actingAsAdminWithPermissions(self::ALL);
+        $staff = Staff::factory()->create();
+        $weekday = Shift::factory()->create(['start_time' => '16:00', 'end_time' => '19:00']);
+        $weekend = Shift::factory()->create(['start_time' => '13:00', 'end_time' => '17:00']);
+
+        $salary = $this->postJson('/api/v1/staff-salaries', [
+            'staff_id' => $staff->id, 'currency' => 'USD', 'effective_from' => now()->startOfMonth()->toDateString(),
+            'shifts' => [['shift_id' => $weekday->id, 'amount' => 70], ['shift_id' => $weekend->id, 'amount' => 100]],
+        ])->assertCreated()
+            ->assertJsonPath('data.basic_salary', '170.00')
+            ->assertJsonCount(2, 'data.shifts')
+            ->assertJsonPath('data.shifts.1.amount', '100.00')
+            ->json('data');
+
+        // Change one amount: the basic follows.
+        $this->putJson("/api/v1/staff-salaries/{$salary['id']}", [
+            'shifts' => [['shift_id' => $weekday->id, 'amount' => 80], ['shift_id' => $weekend->id, 'amount' => 100]],
+        ])->assertOk()->assertJsonPath('data.basic_salary', '180.00');
+
+        // A shift staff are paid by can't be deleted.
+        $this->actingAsAdminWithPermissions([...self::ALL, Permissions::STAFF_ATTENDANCE_MANAGE]);
+        $this->deleteJson("/api/v1/shifts/{$weekend->id}")->assertUnprocessable();
+
+        $this->actingAsAdminWithPermissions(self::ALL);
+        $this->postJson('/api/v1/staff-salaries', [
+            'staff_id' => $staff->id, 'currency' => 'USD', 'effective_from' => now()->addMonth()->startOfMonth()->toDateString(),
+            'shifts' => [['shift_id' => $weekday->id, 'amount' => 70], ['shift_id' => $weekday->id, 'amount' => 100]],
+        ])->assertUnprocessable()->assertJsonValidationErrors(['shifts.1.shift_id']);
+
+        // An empty list makes it a plain monthly salary again.
+        $this->putJson("/api/v1/staff-salaries/{$salary['id']}", ['shifts' => [], 'basic_salary' => 300])
+            ->assertOk()->assertJsonPath('data.basic_salary', '300.00')->assertJsonCount(0, 'data.shifts');
     }
 
     public function test_staff_are_given_recurring_and_one_time_items(): void

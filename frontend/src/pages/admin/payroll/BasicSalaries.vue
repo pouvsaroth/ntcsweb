@@ -22,6 +22,7 @@ import {
   type StaffSalary,
   type StaffSalaryRow,
 } from '@/services/payroll'
+import { shiftsService, type Shift } from '@/services/timeAttendance'
 import { useAuthStore } from '@/stores/auth'
 import { useConfirmDialogStore } from '@/stores/confirmDialog'
 import { ApiRequestError } from '@/types/api'
@@ -31,6 +32,9 @@ import { formatDate } from '@/utils/date'
  * HRM > Payroll > Basic salary — each working staff member's monthly basic
  * salary in effect today, in their own currency. A raise is a new salary
  * from its own date, so the history stays (open a staff member to see it).
+ * A salary can be "by shift": a monthly amount per shift (Shift A Mon–Fri
+ * $70, Shift B Sat–Sun $100), the basic being their sum — payroll then
+ * deducts / pays overtime at the rate of the shift on that day.
  * Cards on a phone, a table from `sm` up.
  */
 const { t } = useI18n()
@@ -51,6 +55,11 @@ function money(salary: StaffSalary): string {
   return payAmountLabel(salary.basic_salary, 'fixed', salary.currency)
 }
 
+/** "Evening $70 · Weekend $100" for a salary paid by shift, else ''. */
+function shiftSummary(salary: StaffSalary | null): string {
+  return (salary?.shifts ?? []).map((line) => `${line.shift?.name ?? '—'} ${payAmountLabel(line.amount, 'fixed', salary!.currency)}`).join(' · ')
+}
+
 function today(): string {
   const now = new Date()
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
@@ -59,6 +68,7 @@ function today(): string {
 // --- One staff member: history + set a salary -------------------------------------
 
 const structures = ref<SalaryStructure[]>([])
+const shifts = ref<Shift[]>([])
 const detailOpen = ref(false)
 const detailLoading = ref(false)
 const detailStaff = ref<PayrollStaff | null>(null)
@@ -70,6 +80,7 @@ async function openDetail(staff: PayrollStaff) {
   formOpen.value = false
   await loadHistory()
   if (structures.value.length === 0) structures.value = await salaryStructuresService.listAll().catch(() => [])
+  if (shifts.value.length === 0) shifts.value = await shiftsService.listAll().catch(() => [])
 }
 
 async function loadHistory() {
@@ -85,6 +96,8 @@ async function loadHistory() {
 const formOpen = ref(false)
 const editing = ref<StaffSalary | null>(null)
 const form = reactive({
+  pay_by: 'monthly' as 'monthly' | 'shift',
+  shifts: [] as { shift_id: string; amount: string }[],
   basic_salary: '',
   currency: 'USD' as PayCurrency,
   salary_structure_id: '',
@@ -114,6 +127,32 @@ const structureOptions = computed(() => [
     .map((s) => ({ value: String(s.id), label: `${s.name} (${s.code})` })),
 ])
 
+const payByOptions = computed(() => [
+  { value: 'monthly', label: t('admin.payroll.salaries.payMonthly') },
+  { value: 'shift', label: t('admin.payroll.salaries.payByShift') },
+])
+/** Active shifts, plus one already on this salary; a shift picked on another line is left out. */
+function shiftOptions(index: number) {
+  const taken = form.shifts.filter((_, i) => i !== index).map((l) => l.shift_id)
+  return [
+    { value: '', label: '—' },
+    ...shifts.value
+      .filter((s) => (s.is_active || s.id === Number(form.shifts[index]?.shift_id)) && !taken.includes(String(s.id)))
+      .map((s) => ({ value: String(s.id), label: `${s.name} (${s.code}) ${s.start_time}–${s.end_time}` })),
+  ]
+}
+const shiftsTotal = computed(() => form.shifts.reduce((sum, l) => sum + Number(l.amount || 0), 0))
+
+function addShiftLine() {
+  form.shifts.push({ shift_id: '', amount: '' })
+}
+
+/** Switching to "by shift" starts with one empty line. */
+function setPayBy(value: string) {
+  form.pay_by = value === 'shift' ? 'shift' : 'monthly'
+  if (form.pay_by === 'shift' && form.shifts.length === 0) addShiftLine()
+}
+
 // A structure in the other currency can't be kept once the currency changes.
 watch(() => form.currency, () => {
   if (form.salary_structure_id && !structures.value.some((s) => String(s.id) === form.salary_structure_id && s.currency === form.currency)) {
@@ -126,6 +165,8 @@ function openForm(salary: StaffSalary | null) {
   editing.value = salary
   const base = salary ?? history.value[0] ?? null
   form.basic_salary = base ? String(Number(base.basic_salary)) : ''
+  form.shifts = (base?.shifts ?? []).map((l) => ({ shift_id: String(l.shift_id), amount: String(Number(l.amount)) }))
+  form.pay_by = form.shifts.length > 0 ? 'shift' : 'monthly'
   form.currency = base?.currency ?? 'USD'
   form.salary_structure_id = base?.salary_structure_id ? String(base.salary_structure_id) : ''
   form.effective_from = salary?.effective_from ?? today()
@@ -145,8 +186,16 @@ async function save() {
   errors.value = {}
   saveError.value = null
   const bank = form.payment_method === 'bank'
+  const byShift = form.pay_by === 'shift'
+  const lines = byShift ? form.shifts.filter((l) => l.shift_id).map((l) => ({ shift_id: Number(l.shift_id), amount: Number(l.amount || 0) })) : []
+  if (byShift && lines.length === 0) {
+    saveError.value = t('admin.payroll.salaries.shiftsRequired')
+    saving.value = false
+    return
+  }
   const input = {
-    basic_salary: Number(form.basic_salary || 0),
+    basic_salary: byShift ? lines.reduce((sum, l) => sum + l.amount, 0) : Number(form.basic_salary || 0),
+    shifts: lines,
     currency: form.currency,
     salary_structure_id: form.salary_structure_id ? Number(form.salary_structure_id) : null,
     effective_from: form.effective_from,
@@ -225,6 +274,7 @@ onMounted(() => fetch())
           </div>
           <p class="text-xs text-neutral-500">{{ [row.staff.position, row.staff.department].filter(Boolean).join(' · ') || '—' }}</p>
           <p v-if="row.salary?.structure" class="mt-1 text-xs text-neutral-600">{{ row.salary.structure.name }}</p>
+          <p v-if="shiftSummary(row.salary)" class="mt-1 text-xs text-neutral-600">{{ t('admin.payroll.salaries.payByShift') }}: {{ shiftSummary(row.salary) }}</p>
           <p v-if="row.next_salary" class="mt-1 text-xs text-primary-700">
             {{ t('admin.payroll.salaries.nextFrom', { amount: money(row.next_salary), date: formatDate(row.next_salary.effective_from) }) }}
           </p>
@@ -253,6 +303,7 @@ onMounted(() => fetch())
               <td class="px-4 py-3 text-right">
                 <span v-if="row.salary" class="font-semibold tabular-nums text-neutral-900">{{ money(row.salary) }}</span>
                 <BaseBadge v-else variant="warning">{{ t('admin.payroll.salaries.notSet') }}</BaseBadge>
+                <p v-if="shiftSummary(row.salary)" class="text-xs text-neutral-500">{{ shiftSummary(row.salary) }}</p>
                 <p v-if="row.next_salary" class="text-xs text-primary-700">
                   {{ t('admin.payroll.salaries.nextFrom', { amount: money(row.next_salary), date: formatDate(row.next_salary.effective_from) }) }}
                 </p>
@@ -274,8 +325,26 @@ onMounted(() => fetch())
       <form v-if="formOpen" class="space-y-4" @submit.prevent="save">
         <h3 class="text-sm font-semibold text-neutral-800">{{ editing ? t('admin.payroll.salaries.edit') : t('admin.payroll.salaries.set') }}</h3>
         <BaseAlert v-if="saveError" variant="danger">{{ saveError }}</BaseAlert>
+        <BaseSelect
+          :model-value="form.pay_by"
+          :options="payByOptions"
+          :label="t('admin.payroll.salaries.payType')"
+          @update:model-value="setPayBy($event as string)"
+        />
+        <div v-if="form.pay_by === 'shift'" class="space-y-2 rounded-lg border border-neutral-200 p-3">
+          <p class="text-xs text-neutral-500">{{ t('admin.payroll.salaries.payByShiftHint') }}</p>
+          <div v-for="(line, index) in form.shifts" :key="index" class="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-2 sm:grid-cols-[minmax(0,1fr)_10rem_auto]">
+            <BaseSelect v-model="line.shift_id" class="col-span-2 sm:col-span-1" :options="shiftOptions(index)" :label="t('admin.payroll.salaries.shift')" :error="errors[`shifts.${index}.shift_id`]?.[0]" />
+            <BaseInput v-model="line.amount" type="number" :label="t('admin.payroll.salaries.shiftAmount')" :error="errors[`shifts.${index}.amount`]?.[0]" />
+            <button type="button" class="mb-2 text-sm font-medium text-danger-600 hover:text-red-700" @click="form.shifts.splice(index, 1)">{{ t('admin.payroll.salaries.removeShift') }}</button>
+          </div>
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <BaseButton size="sm" variant="outline" @click="addShiftLine">{{ t('admin.payroll.salaries.addShift') }}</BaseButton>
+            <p class="text-sm text-neutral-700">{{ t('admin.payroll.salaries.shiftsTotal') }}: <span class="font-semibold tabular-nums text-neutral-900">{{ payAmountLabel(shiftsTotal, 'fixed', form.currency) }}</span></p>
+          </div>
+        </div>
         <div class="grid gap-4 sm:grid-cols-3">
-          <BaseInput v-model="form.basic_salary" type="number" required :label="t('admin.payroll.salaries.monthlyBasic')" :error="errors.basic_salary?.[0]" />
+          <BaseInput v-if="form.pay_by === 'monthly'" v-model="form.basic_salary" type="number" required :label="t('admin.payroll.salaries.monthlyBasic')" :error="errors.basic_salary?.[0]" />
           <BaseSelect
             :model-value="form.currency"
             :options="currencyOptions"
@@ -333,6 +402,7 @@ onMounted(() => fetch())
                 · {{ t(`admin.payroll.salaries.${salary.payment_method}`) }}<template v-if="salary.bank_name"> ({{ salary.bank_name }}<template v-if="salary.bank_account_number"> {{ salary.bank_account_number }}</template>)</template>
                 <template v-if="salary.structure"> · {{ salary.structure.name }}</template>
               </p>
+              <p v-if="shiftSummary(salary)" class="text-xs text-neutral-600">{{ t('admin.payroll.salaries.payByShift') }}: {{ shiftSummary(salary) }}</p>
               <p v-if="salary.note" class="text-xs text-neutral-600">{{ salary.note }}</p>
             </div>
             <div v-if="canManage" class="flex shrink-0 gap-3">

@@ -9,6 +9,7 @@ use App\Http\Requests\Api\V1\Admin\ShiftRequest;
 use App\Http\Resources\ShiftResource;
 use App\Http\Responses\ApiResponse;
 use App\Models\Shift;
+use App\Models\StaffSalaryShift;
 use App\Models\WorkSchedule;
 use App\Support\Query\ApiQuery;
 use Illuminate\Database\Eloquent\Builder;
@@ -105,6 +106,10 @@ final class ShiftController extends Controller
 
         if ($inUse) {
             return ApiResponse::error('This shift is used in a work schedule and cannot be deleted. Deactivate it instead.', 422);
+        }
+
+        if (StaffSalaryShift::query()->where('shift_id', $shift->id)->exists()) {
+            return ApiResponse::error('Staff are paid by this shift (Payroll > Basic salary), so it cannot be deleted. Deactivate it instead.', 422);
         }
 
         $shift->delete();
