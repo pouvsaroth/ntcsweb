@@ -47,7 +47,11 @@
     table.items th { text-align: left; padding: 5px 4px; font-size: 10px; text-transform: uppercase; background: #f3f4f6; }
     table.items td { padding: 5px 4px; }
     table.items th.num, table.items td.num { text-align: right; }
-    .totals { width: 45%; margin-left: 55%; margin-bottom: 14px; }
+    .pay-row { display: table; width: 100%; margin-bottom: 14px; }
+    .pay-row .khqr { display: table-cell; width: 55%; vertical-align: top; }
+    .pay-row .khqr img { width: 110px; height: 110px; display: block; }
+    .pay-row .khqr p { margin: 2px 0 0; font-size: 10px; color: #374151; }
+    .totals { display: table-cell; width: 45%; vertical-align: top; }
     .totals table { width: 100%; border-collapse: collapse; }
     .totals td { padding: 3px 0; }
     .totals td.label { color: #6b7280; }
@@ -194,6 +198,14 @@
         </tbody>
     </table>
 
+    <div class="pay-row">
+    <div class="khqr">
+        @if(! empty($khqrDataUri))
+            <img src="{{ $khqrDataUri }}" alt="KHQR">
+            <p><strong>{{ __('invoice.scan_to_pay') }}</strong></p>
+            <p>{{ __('invoice.balance') }}: {{ $money((float) $invoice->balance) }}</p>
+        @endif
+    </div>
     <div class="totals">
         <table>
             <tr><td class="label">{{ __('invoice.subtotal') }}</td><td class="value">{{ $money((float) $invoice->subtotal) }}</td></tr>
@@ -203,6 +215,7 @@
             <tr><td class="label">{{ __('invoice.paid') }}</td><td class="value">{{ $money((float) $invoice->paid_amount) }}</td></tr>
             <tr class="balance"><td class="label">{{ __('invoice.balance') }}</td><td class="value">{{ $money((float) $invoice->balance) }}</td></tr>
         </table>
+    </div>
     </div>
 
     @if($invoice->isForCompany() && $invoice->invoiceStudents->isNotEmpty())

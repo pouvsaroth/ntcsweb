@@ -9,6 +9,8 @@ use App\Models\Invoice;
 use App\Services\Pdf\BrowsershotRenderer;
 use App\Services\Pdf\KhmerFont;
 use App\Services\Pdf\PdfImageEncoder;
+use App\Support\Billing\InvoiceStatus;
+use App\Support\Billing\KhqrImage;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Facades\App;
@@ -117,6 +119,10 @@ final class InvoicePdfService
                 'signatureDataUri' => PdfImageEncoder::dataUri($issuerStaff?->signaturePath()),
                 'khmerFontRegular' => KhmerFont::dataUri('Regular'),
                 'khmerFontBold' => KhmerFont::dataUri('Bold'),
+                // Scan to pay what is still owed, when the school has set its KHQR (School Settings).
+                'khqrDataUri' => in_array($invoice->status, [InvoiceStatus::CANCELLED, InvoiceStatus::VOID], true)
+                    ? null
+                    : KhqrImage::forBalance($tenant->khqrTemplate(), (float) $invoice->balance, (string) $invoice->currency),
             ])->render();
         } finally {
             if ($locale !== null) {
