@@ -18,6 +18,13 @@ use InvalidArgumentException;
  */
 final class KhqrImage
 {
+    /**
+     * A printed invoice's code stays payable this long. Bank apps reject a
+     * fixed-amount KHQR without an expiry (tag 99), so one is always set;
+     * every print makes a fresh code.
+     */
+    public const VALID_DAYS = 30;
+
     public static function dataUri(string $khqr): string
     {
         $options = new QROptions([
@@ -41,7 +48,9 @@ final class KhqrImage
         }
 
         try {
-            return self::dataUri(Khqr::withAmount((string) $template, $balance, $currency));
+            $now = now();
+
+            return self::dataUri(Khqr::forPayment((string) $template, $balance, $currency, $now, $now->copy()->addDays(self::VALID_DAYS)));
         } catch (InvalidArgumentException) {
             return null;
         }

@@ -84,7 +84,8 @@ class InvoiceKhqrTest extends TestCase
         if (! extension_loaded('gd')) {
             $this->markTestSkipped('Reading a QR back needs GD.');
         }
-        $payload = Khqr::withAmount(self::TEMPLATE, 210, 'USD');
+        \Illuminate\Support\Carbon::setTestNow('2026-11-04 10:00:00');
+        $payload = Khqr::forPayment(self::TEMPLATE, 210, 'USD', now(), now()->addDays(KhqrImage::VALID_DAYS));
         $this->assertNotNull(KhqrImage::forBalance(self::TEMPLATE, 210, 'USD'));
 
         // Same byte segment as KhqrImage, as a PNG the reader can open.
@@ -96,5 +97,7 @@ class InvoiceKhqrTest extends TestCase
         $this->assertStringContainsString('5406210.00', $read); // tag 54, amount
         $this->assertStringContainsString('5303840', $read); // tag 53, USD
         $this->assertStringContainsString('ពៅ  សារដ្ធ6010PHNOM PENH', $read);
+        // Tag 99: created and expires timestamps, which bank apps need on a fixed-amount code.
+        $this->assertStringContainsString('9934'.'0013'.now()->getTimestampMs().'0113'.now()->addDays(KhqrImage::VALID_DAYS)->getTimestampMs(), $read);
     }
 }
