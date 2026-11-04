@@ -4271,6 +4271,7 @@ const ja: MessageSchema = {
       batchTitle: 'クラスに生徒を追加',
       batchSubtitle: '会社が支払うクラスに複数の生徒を追加します。生徒ごとの請求書は作成されず、クラス分を会社に請求します。',
       batchClassHint: '会社が支払うクラスのみ表示されます。',
+      batchCompanyClassesIn: '企業クラスがあるプログラム: {programs}。',
       batchNoCompanyClasses: 'このプログラムには会社が支払うクラスがありません。先にクラスに会社を設定してください（クラス > 編集 > 会社）。',
       batchPaidBy: '支払者: {company}',
       batchNoInvoice: 'ここで追加した生徒には個別の請求書は作成されません。',

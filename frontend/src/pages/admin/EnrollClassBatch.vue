@@ -63,6 +63,13 @@ const classOptions = computed(() =>
 )
 const selectedClass = computed(() => classes.value.find((c) => c.id === form.class_id) ?? null)
 const noCompanyClasses = computed(() => form.academic_program_id !== null && classOptions.value.length === 0)
+// Where the company classes are, when the picked program has none.
+const companyClassPrograms = computed(() =>
+  [...new Set(classes.value.map((c) => c.academic_program_id))]
+    .map((id) => programs.value.find((p) => p.id === id)?.name)
+    .filter(Boolean)
+    .join(', '),
+)
 
 // Students already in the class, so staff see who is in it before adding more.
 const current = ref<Enrollment[]>([])
@@ -190,11 +197,12 @@ onMounted(async () => {
   try {
     const [loadedPrograms, loadedClasses, loadedPackages] = await Promise.all([
       academicProgramsService.listAll(),
-      classesService.listAll(),
+      classesService.listCompanyClasses(),
       coursePackagesService.listAll(),
     ])
     programs.value = loadedPrograms
-    classes.value = loadedClasses
+    // Upcoming classes too: a company class is often set up before it starts.
+    classes.value = loadedClasses.filter((c) => c.status === 'upcoming' || c.status === 'active')
     packages.value = loadedPackages.filter((pkg) => pkg.is_active)
   } catch (error) {
     loadError.value = error instanceof ApiRequestError ? error.message : t('admin.enrollments.saveFailed')
@@ -246,7 +254,7 @@ onMounted(async () => {
             :error="errors.class_id?.[0]"
             @update:model-value="onClassChange"
           />
-          <p v-if="noCompanyClasses" class="mt-1.5 text-sm text-warning-700">{{ t('admin.enrollments.batchNoCompanyClasses') }}</p>
+          <p v-if="noCompanyClasses" class="mt-1.5 text-sm text-warning-700">{{ t('admin.enrollments.batchNoCompanyClasses') }}<template v-if="companyClassPrograms"> {{ t('admin.enrollments.batchCompanyClassesIn', { programs: companyClassPrograms }) }}</template></p>
         </div>
         <BaseInput v-model="form.enrolled_at" type="date" required :label="t('admin.enrollments.enrolledAt')" :error="errors.enrolled_at?.[0]" />
 

@@ -4270,6 +4270,7 @@ const zh: MessageSchema = {
       batchTitle: '添加学生到班级',
       batchSubtitle: '将多名学生添加到由公司付款的班级。不为每位学生开具发票，而是按班级向公司开票。',
       batchClassHint: '只显示由公司付款的班级。',
+      batchCompanyClassesIn: '企业班级所在的课程：{programs}。',
       batchNoCompanyClasses: '此课程没有由公司付款的班级。请先在班级上设置公司（班级 > 编辑 > 公司）。',
       batchPaidBy: '付款方：{company}',
       batchNoInvoice: '在此添加的学生不会单独开具发票。',

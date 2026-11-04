@@ -4275,6 +4275,7 @@ const en = {
       batchTitle: 'Add students to class',
       batchSubtitle: 'Add many students to a class paid by a company. No invoice is made for each student — the company is invoiced for the class.',
       batchClassHint: 'Only classes paid by a company are listed.',
+      batchCompanyClassesIn: 'Company classes are in: {programs}.',
       batchNoCompanyClasses: 'This program has no class paid by a company. Set the company on the class first (Classes > Edit > Company).',
       batchPaidBy: 'Paid by: {company}',
       batchNoInvoice: 'Students added here get no invoice of their own.',

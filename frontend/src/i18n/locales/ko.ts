@@ -4271,6 +4271,7 @@ const ko: MessageSchema = {
       batchTitle: '수업에 학생 추가',
       batchSubtitle: '회사가 지불하는 수업에 여러 학생을 추가합니다. 학생별 청구서는 만들어지지 않고, 수업 비용을 회사에 청구합니다.',
       batchClassHint: '회사가 지불하는 수업만 표시됩니다.',
+      batchCompanyClassesIn: '회사 반이 있는 과정: {programs}.',
       batchNoCompanyClasses: '이 프로그램에는 회사가 지불하는 수업이 없습니다. 먼저 수업에 회사를 설정하세요 (수업 > 수정 > 회사).',
       batchPaidBy: '지불자: {company}',
       batchNoInvoice: '여기서 추가한 학생에게는 개별 청구서가 만들어지지 않습니다.',
