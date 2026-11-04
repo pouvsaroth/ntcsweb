@@ -59,7 +59,7 @@ final class InvoicePdfService
      */
     public function render(Invoice $invoice, ?string $locale = null): string
     {
-        return $this->renderer->render($this->html($invoice, $locale), 'A5', marginMm: 10);
+        return $this->renderer->render($this->html($invoice, $locale), $this->paper($invoice), marginMm: 10);
     }
 
     /**
@@ -68,7 +68,15 @@ final class InvoicePdfService
      */
     public function renderImage(Invoice $invoice, ?string $locale = null): string
     {
-        return $this->renderer->renderImage($this->html($invoice, $locale), 148, 210, marginMm: 10);
+        [$width, $height] = $this->paper($invoice) === 'A4' ? [210, 297] : [148, 210];
+
+        return $this->renderer->renderImage($this->html($invoice, $locale), $width, $height, marginMm: 10);
+    }
+
+    /** A company class invoice (with its student list) prints on A4; a student's own invoice on A5. */
+    public function paper(Invoice $invoice): string
+    {
+        return $invoice->isForCompany() ? 'A4' : 'A5';
     }
 
     private function html(Invoice $invoice, ?string $locale): string

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Billing;
 
+use App\Models\ClassSchedule;
 use App\Models\Company;
 use App\Models\Invoice;
 use App\Models\Payment;
@@ -102,5 +103,32 @@ class InvoiceLanguageTest extends TestCase
         $this->assertStringContainsString(e('ការចុះឈ្មោះ: '.substr($stored, strlen('Enrollment: '))), $km);
         $this->assertStringNotContainsString('Enrollment:', $km);
         $this->assertStringContainsString(e($stored), $this->invoiceHtml($invoice, 'en'));
+    }
+
+    public function test_class_time_prints_one_day_per_line(): void
+    {
+        $this->actingAsAdminWithPermissions(self::PERMS);
+        $this->setUpAcademicCatalog();
+        $class = $this->computerEveningClass;
+        $class->schedules()->delete();
+        foreach ([[3, '18:00', '19:30'], [1, '06:15', '07:15'], [1, '17:00', '18:00']] as [$day, $start, $end]) {
+            ClassSchedule::query()->create(['class_id' => $class->id, 'day_of_week' => $day, 'start_time' => $start, 'end_time' => $end]);
+        }
+        $this->postJson('/api/v1/enrollments/package', [
+            'student_id' => Student::factory()->create()->id,
+            'class_id' => $class->id,
+            'course_package_id' => $this->msWordPackage->id,
+            'fee_type' => 'term',
+        ])->assertCreated();
+        $invoice = Invoice::query()->sole();
+
+        $en = $this->invoiceHtml($invoice, 'en');
+        $this->assertStringContainsString('<p>Monday: 6:15AM-7:15AM, 5:00PM-6:00PM</p>', $en);
+        $this->assertStringContainsString('<p>Wednesday: 6:00PM-7:30PM</p>', $en);
+        $this->assertLessThan(strpos($en, 'Wednesday:'), strpos($en, 'Monday:'));
+
+        $km = $this->invoiceHtml($invoice, 'km');
+        $this->assertStringContainsString('<p>ថ្ងៃច័ន្ទ: 6:15AM-7:15AM, 5:00PM-6:00PM</p>', $km);
+        $this->assertStringNotContainsString('Monday', $km);
     }
 }

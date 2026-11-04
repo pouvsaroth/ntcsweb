@@ -196,6 +196,8 @@ class CompanyInvoiceTest extends TestCase
         $this->assertStringContainsString('01-11-2026', $html);
         $this->assertStringContainsString('30-11-2026', $html);
         $this->assertStringContainsString('Class A', $html);
+        // A company invoice with its student list prints on A4.
+        $this->assertSame('A4', app(InvoicePdfService::class)->paper(Invoice::findOrFail($id)));
         foreach ($this->students as $student) {
             $this->assertStringContainsString($student->student_code, $html);
         }

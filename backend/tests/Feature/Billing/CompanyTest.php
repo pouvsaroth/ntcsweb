@@ -41,8 +41,12 @@ class CompanyTest extends TestCase
         $used = Company::factory()->create();
         SchoolClass::factory()->create(['company_id' => $used->id]);
         $unused = Company::factory()->create();
+        // A class deleted later still points at its company.
+        $withDeletedClass = Company::factory()->create();
+        SchoolClass::factory()->create(['company_id' => $withDeletedClass->id])->delete();
 
         $this->deleteJson("/api/v1/companies/{$used->id}")->assertUnprocessable();
+        $this->deleteJson("/api/v1/companies/{$withDeletedClass->id}")->assertUnprocessable();
         $this->deleteJson("/api/v1/companies/{$unused->id}")->assertNoContent();
         $this->assertDatabaseHas('companies', ['id' => $used->id], 'tenant');
         $this->assertDatabaseMissing('companies', ['id' => $unused->id], 'tenant');

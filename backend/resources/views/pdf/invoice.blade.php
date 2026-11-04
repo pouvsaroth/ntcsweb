@@ -86,9 +86,13 @@
         );
         // A company class invoice names its class directly.
         $enrolledClass = $enrollmentItem?->reference?->schoolClass ?? $invoice->schoolClass;
-        $classTime = $enrolledClass?->schedules
-            ?->map(fn ($s) => "{$s->dayName()} {$s->start_time}–{$s->end_time}")
-            ->implode(', ');
+        // One line per day, e.g. "Monday: 6:15AM-7:15AM" (two slots on a day share its line).
+        $clock = fn ($time) => \Illuminate\Support\Carbon::parse($time)->format('g:iA');
+        $classTimeLines = ($enrolledClass?->schedules ?? collect())
+            ->sortBy(fn ($s) => sprintf('%d %s', $s->day_of_week, $s->start_time))
+            ->groupBy('day_of_week')
+            ->map(fn ($slots, $day) => __('invoice.days.'.$day).': '.$slots->map(fn ($s) => $clock($s->start_time).'-'.$clock($s->end_time))->implode(', '))
+            ->values();
     @endphp
     <div class="header">
         <div class="school">
@@ -150,7 +154,11 @@
                 <h3 style="margin-top:8px;">{{ __('invoice.class') }}</h3>
                 <p>{{ $enrolledClass->name }}</p>
                 <h3 style="margin-top:8px;">{{ __('invoice.time') }}</h3>
-                <p>{{ $classTime ?: '—' }}</p>
+                @forelse($classTimeLines as $line)
+                    <p>{{ $line }}</p>
+                @empty
+                    <p>—</p>
+                @endforelse
             @endif
             @if($invoice->period_from && $invoice->period_to)
                 <h3 style="margin-top:8px;">{{ __('invoice.period') }}</h3>

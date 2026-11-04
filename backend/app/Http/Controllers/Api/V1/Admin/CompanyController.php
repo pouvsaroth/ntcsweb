@@ -10,6 +10,7 @@ use App\Http\Requests\Api\V1\Admin\UpdateCompanyRequest;
 use App\Http\Resources\CompanyResource;
 use App\Http\Responses\ApiResponse;
 use App\Models\Company;
+use App\Models\Invoice;
 use App\Support\Query\ApiQuery;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -55,7 +56,8 @@ final class CompanyController extends Controller
     {
         $this->authorize('delete', $company);
 
-        if ($company->classes()->exists()) {
+        // Deleted classes and its invoices still point at the company.
+        if ($company->classes()->withTrashed()->exists() || Invoice::query()->where('company_id', $company->getKey())->exists()) {
             return ApiResponse::error(__('This company has classes and cannot be deleted. Deactivate it instead.'), 422);
         }
 
