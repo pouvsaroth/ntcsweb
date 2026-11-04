@@ -151,6 +151,7 @@ onMounted(() => {
             </BaseBadge>
           </div>
           <p class="mt-1 truncate text-xs text-neutral-500">{{ row.teachers.map((t) => t.name).join(', ') || '—' }}</p>
+          <p v-if="row.company" class="truncate text-xs font-medium text-secondary-700">{{ t('admin.classes.paidBy', { company: row.company.name }) }}</p>
           <p v-if="row.grade_level || row.academic_year" class="truncate text-xs text-neutral-500">{{ [row.grade_level?.name, row.academic_year?.name].filter(Boolean).join(' · ') }}</p>
           <div class="mt-2 flex items-center justify-between">
             <p class="text-xs text-neutral-500">{{ t('admin.classes.columnActiveStudents') }}: <span class="font-medium text-neutral-800">{{ row.active_students_count ?? 0 }}</span></p>
@@ -186,6 +187,7 @@ onMounted(() => {
             {{ [row.teachers.map((t) => t.name).join(', ') || null, row.classroom?.name].filter(Boolean).join(' · ') }}
           </p>
           <p v-if="row.grade_level || row.academic_year" class="text-xs text-neutral-500">{{ [row.grade_level?.name, row.academic_year?.name].filter(Boolean).join(' · ') }}</p>
+          <p v-if="row.company" class="text-xs font-medium text-secondary-700">{{ t('admin.classes.paidBy', { company: row.company.name }) }}</p>
         </template>
         <template #cell-schedule="{ row }">{{ scheduleSummary(row) }}</template>
         <template #cell-program="{ row }">{{ row.academic_program?.name ?? '—' }}</template>

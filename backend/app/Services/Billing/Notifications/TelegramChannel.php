@@ -66,7 +66,7 @@ final class TelegramChannel implements NotificationChannelContract
 
         return trim(
             ($tenant?->name ?? config('app.name'))."\n\n".
-            "Dear {$invoice->student->fullName()},\n\n".
+            "Dear {$invoice->billToName()},\n\n".
             "Your invoice has been issued.\n\n".
             "Invoice: {$invoice->invoice_number}\n".
             'Total: $'.number_format((float) $invoice->total, 2)."\n".

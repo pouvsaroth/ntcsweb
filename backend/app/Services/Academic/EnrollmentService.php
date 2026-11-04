@@ -74,6 +74,13 @@ final class EnrollmentService
             $package = CoursePackage::query()->with('product')->findOrFail($data['course_package_id']);
 
             $this->assertEnrollable($class, $package);
+
+            if ($class->isCompanyClass()) {
+                throw ValidationException::withMessages([
+                    'class_id' => __('This class is paid by a company. Use Add students to class instead — its students get no invoice of their own.'),
+                ]);
+            }
+
             $this->assertNotAlreadyEnrolled((int) $data['student_id'], $package);
             // The plan's student limit (back office billing, 5d).
             app(StudentLimit::class)->assertRoomFor((int) $data['student_id']);
@@ -161,6 +168,116 @@ final class EnrollmentService
             );
 
             return $enrollment;
+        });
+    }
+
+    /**
+     * Enrollments > Add students to class: many students into one company
+     * class (Billing > Companies) and course, with NO invoices — the company
+     * pays one total for the whole class, invoiced separately. All or
+     * nothing: any student that fails rolls the whole batch back, and every
+     * failure is reported against its own row (students.{i}.student_id /
+     * students.{i}.table_id) so staff can fix them all in one go.
+     *
+     * @param  array{class_id:int, course_package_id:int, enrolled_at?:string|null, students:list<array{student_id:int, table_id?:int|null}>}  $data
+     * @return list<Enrollment>
+     */
+    public function enrollClassBatch(array $data, User $actor): array
+    {
+        return DB::connection('tenant')->transaction(function () use ($data, $actor) {
+            /** @var SchoolClass $class */
+            $class = SchoolClass::query()->with('company')->findOrFail($data['class_id']);
+            /** @var CoursePackage $package */
+            $package = CoursePackage::query()->findOrFail($data['course_package_id']);
+
+            $this->assertEnrollable($class, $package);
+
+            if (! $class->isCompanyClass()) {
+                throw ValidationException::withMessages([
+                    'class_id' => __('Only a class paid by a company can take many students at once. Set its company on the class first, or enroll students one at a time so each gets an invoice.'),
+                ]);
+            }
+
+            $enrolledAt = $data['enrolled_at'] ?? now()->toDateString();
+
+            // Tables in this class's room, and the ones already held.
+            $roomTables = $class->classroom_id === null
+                ? collect()
+                : ClassroomTable::query()->where('classroom_id', $class->classroom_id)->get(['id', 'name', 'allow_many_students'])->keyBy('id');
+            $takenTableIds = Enrollment::query()
+                ->where('class_id', $class->getKey())
+                ->where('status', Enrollment::TABLE_HOLDING_STATUS)
+                ->whereNotNull('table_id')
+                ->pluck('table_id')->map(fn ($id) => (int) $id)->all();
+
+            $errors = [];
+            $enrollments = [];
+
+            foreach (array_values($data['students']) as $i => $row) {
+                $studentId = (int) $row['student_id'];
+                $tableId = isset($row['table_id']) ? (int) $row['table_id'] : null;
+
+                if ($roomTables->isNotEmpty()) {
+                    $table = $tableId === null ? null : $roomTables->get($tableId);
+
+                    if ($table === null) {
+                        $errors["students.{$i}.table_id"] = [$tableId === null ? __('Pick a table for this class.') : __("This table does not belong to the selected class's room.")];
+
+                        continue;
+                    }
+
+                    if (! $table->allow_many_students && in_array($tableId, $takenTableIds, true)) {
+                        $errors["students.{$i}.table_id"] = [__('This table is already taken in this class.')];
+
+                        continue;
+                    }
+                } else {
+                    $tableId = null;
+                }
+
+                try {
+                    $this->assertNotAlreadyEnrolled($studentId, $package);
+                    app(StudentLimit::class)->assertRoomFor($studentId);
+                } catch (ValidationException $e) {
+                    $errors["students.{$i}.student_id"] = [collect($e->errors())->flatten()->first()];
+
+                    continue;
+                }
+
+                $enrollments[] = Enrollment::query()->create([
+                    'student_id' => $studentId,
+                    'class_id' => $class->getKey(),
+                    'table_id' => $tableId,
+                    'course_package_id' => $package->getKey(),
+                    'academic_program_id' => $class->academic_program_id,
+                    'enrolled_at' => $enrolledAt,
+                    'enrollments_code' => $this->generateEnrollmentCode($studentId),
+                    'status' => Enrollment::STATUS_ACTIVE,
+                ]);
+
+                if ($tableId !== null) {
+                    $takenTableIds[] = $tableId;
+                }
+            }
+
+            if ($errors !== []) {
+                throw ValidationException::withMessages($errors);
+            }
+
+            $this->audit->log(
+                AuditAction::ENROLLMENT_CLASS_BATCH,
+                'Enrollments',
+                $class,
+                new: ['company_id' => $class->company_id, 'course_package_id' => $package->getKey(), 'students' => count($enrollments)],
+                description: 'Added '.count($enrollments)." students to {$class->name} — {$package->name}, paid by {$class->company?->name}",
+                actor: $actor,
+            );
+
+            foreach ($enrollments as $enrollment) {
+                $enrollment->load(['student', 'schoolClass', 'table', 'coursePackage', 'academicProgram']);
+            }
+
+            return $enrollments;
         });
     }
 
@@ -320,6 +437,14 @@ final class EnrollmentService
 
             if ($enrollment->status !== Enrollment::STATUS_ACTIVE) {
                 throw ValidationException::withMessages(['status' => 'Only an active enrollment can be transferred.']);
+            }
+
+            // A company class holds only that company's students (paid in one
+            // total), never students paying for themselves — so a move stays
+            // within the same payer.
+            $fromCompanyId = SchoolClass::query()->whereKey($enrollment->class_id)->value('company_id');
+            if ((int) $fromCompanyId !== (int) $newClass->company_id) {
+                throw ValidationException::withMessages(['class_id' => __('A student can only move between classes paid the same way — both by the same company, or both by the students themselves.')]);
             }
 
             $changingCourse = $newPackage !== null && (int) $newPackage->getKey() !== (int) $enrollment->course_package_id;

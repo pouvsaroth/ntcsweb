@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\V1\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\V1\Admin\StoreEnrollmentClassBatchRequest;
 use App\Http\Requests\Api\V1\Admin\StoreEnrollmentPackageRequest;
 use App\Http\Resources\EnrollmentResource;
 use App\Http\Responses\ApiResponse;
@@ -26,5 +27,13 @@ final class EnrollmentPackageController extends Controller
         $enrollment = $this->enrollments->enrollInPackage($request->validated(), $request->user());
 
         return ApiResponse::created(new EnrollmentResource($enrollment));
+    }
+
+    /** Enrollments > Add students to class: many students into a company class, no invoices. */
+    public function storeBatch(StoreEnrollmentClassBatchRequest $request): JsonResponse
+    {
+        $enrollments = $this->enrollments->enrollClassBatch($request->validated(), $request->user());
+
+        return ApiResponse::created(EnrollmentResource::collection($enrollments));
     }
 }

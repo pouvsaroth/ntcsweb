@@ -11,6 +11,14 @@ return [
     'tel' => 'ទូរស័ព្ទ',
     'enrollment_code' => 'លេខកូដចុះឈ្មោះ',
     'class' => 'ថ្នាក់',
+    'company' => 'ក្រុមហ៊ុន',
+    'contact_person' => 'អ្នកទំនាក់ទំនង',
+    'tax_number' => 'លេខអត្តសញ្ញាណកម្មសារពើពន្ធ',
+    'address' => 'អាសយដ្ឋាន',
+    'period' => 'រយៈពេល',
+    'students' => 'សិស្ស',
+    'student_count' => 'សិស្ស :count នាក់',
+    'no' => 'ល.រ',
     'time' => 'ម៉ោង',
     'invoice_date' => 'កាលបរិច្ឆេទវិក្កយបត្រ',
     'due_date' => 'កាលបរិច្ឆេទត្រូវទូទាត់',
@@ -28,6 +36,20 @@ return [
     'date' => 'កាលបរិច្ឆេទ',
     'amount' => 'ចំនួនទឹកប្រាក់',
     'notes' => 'ចំណាំ',
+
+    'receipt' => 'បង្កាន់ដៃ',
+    'student' => 'សិស្ស',
+    'invoice_number' => 'វិក្កយបត្រ',
+    'payment_method' => 'វិធីទូទាត់',
+    'reference' => 'លេខយោង',
+    'invoice_total' => 'សរុបវិក្កយបត្រ',
+    'remaining_balance' => 'នៅសល់',
+
+    'lines' => [
+        'enrollment' => 'ការចុះឈ្មោះ: :detail',
+        'exam_fee' => 'ថ្លៃប្រឡង: :name',
+        'company_class' => ':detail (សិស្ស :count នាក់), ពី :from ដល់ :to',
+    ],
 
     'statuses' => [
         'draft' => 'សេចក្តីព្រាង',

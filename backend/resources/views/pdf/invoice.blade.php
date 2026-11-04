@@ -84,7 +84,8 @@
         $enrollmentItem = $invoice->items->first(
             fn ($item) => $item->reference_type === \App\Models\Enrollment::class && $item->reference !== null
         );
-        $enrolledClass = $enrollmentItem?->reference?->schoolClass;
+        // A company class invoice names its class directly.
+        $enrolledClass = $enrollmentItem?->reference?->schoolClass ?? $invoice->schoolClass;
         $classTime = $enrolledClass?->schedules
             ?->map(fn ($s) => "{$s->dayName()} {$s->start_time}–{$s->end_time}")
             ->implode(', ');
@@ -113,6 +114,22 @@
     <div class="meta">
         <div class="student">
             <h3>{{ __('invoice.bill_to') }}</h3>
+            @if($invoice->isForCompany())
+            {{-- Invoice by class: the company pays one total for its class. --}}
+            <p>{{ __('invoice.company') }}: <strong>{{ $invoice->company?->name }}</strong></p>
+            @if($invoice->company?->contact_person)
+                <p>{{ __('invoice.contact_person') }}: {{ $invoice->company->contact_person }}</p>
+            @endif
+            @if($invoice->company?->phone)
+                <p>{{ __('invoice.tel') }}: {{ $invoice->company->phone }}</p>
+            @endif
+            @if($invoice->company?->tax_number)
+                <p>{{ __('invoice.tax_number') }}: {{ $invoice->company->tax_number }}</p>
+            @endif
+            @if($invoice->company?->address)
+                <p>{{ __('invoice.address') }}: {{ $invoice->company->address }}</p>
+            @endif
+            @else
             <p>{{ __('invoice.student_id') }}: <strong>{{ $invoice->student->student_code }}</strong></p>
             <p>{{ __('invoice.name') }}: <strong>{{ $invoice->student->fullName() }}</strong></p>
             @if($invoice->student->english_name)
@@ -124,6 +141,7 @@
             @if($enrollmentItem?->reference?->enrollments_code)
                 <p>{{ __('invoice.enrollment_code') }}: {{ $enrollmentItem->reference->enrollments_code }}</p>
             @endif
+            @endif
         </div>
         <div class="dates">
             <h3>{{ __('invoice.invoice_date') }}</h3>
@@ -133,6 +151,10 @@
                 <p>{{ $enrolledClass->name }}</p>
                 <h3 style="margin-top:8px;">{{ __('invoice.time') }}</h3>
                 <p>{{ $classTime ?: '—' }}</p>
+            @endif
+            @if($invoice->period_from && $invoice->period_to)
+                <h3 style="margin-top:8px;">{{ __('invoice.period') }}</h3>
+                <p>{{ $invoice->period_from->format('d-m-Y') }} – {{ $invoice->period_to->format('d-m-Y') }}</p>
             @endif
             @if($invoice->due_date)
                 <h3 style="margin-top:8px;">{{ __('invoice.due_date') }}</h3>
@@ -154,7 +176,7 @@
         <tbody>
             @foreach($invoice->items as $item)
                 <tr>
-                    <td>{{ $item->description }}</td>
+                    <td>{{ \App\Support\Billing\InvoiceLineText::for($item) }}</td>
                     <td class="num">{{ $item->quantity }}</td>
                     <td class="num">{{ $money((float) $item->unit_price) }}</td>
                     <td class="num">{{ $money((float) $item->discount) }}</td>
@@ -174,6 +196,24 @@
             <tr class="balance"><td class="label">{{ __('invoice.balance') }}</td><td class="value">{{ $money((float) $invoice->balance) }}</td></tr>
         </table>
     </div>
+
+    @if($invoice->isForCompany() && $invoice->invoiceStudents->isNotEmpty())
+        {{-- The class's students as they were when the invoice was made. --}}
+        <table class="payments">
+            <thead>
+                <tr><th style="width:12%;">{{ __('invoice.no') }}</th><th>{{ __('invoice.students') }} ({{ __('invoice.student_count', ['count' => $invoice->invoiceStudents->count()]) }})</th><th class="num">{{ __('invoice.student_id') }}</th></tr>
+            </thead>
+            <tbody>
+                @foreach($invoice->invoiceStudents as $row)
+                    <tr>
+                        <td>{{ $loop->iteration }}</td>
+                        <td>{{ $row->student_name }}</td>
+                        <td class="num">{{ $row->student_code }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    @endif
 
     @if($invoice->payments->isNotEmpty())
         <table class="payments">

@@ -210,7 +210,11 @@ onMounted(load)
             <h1 class="text-xl font-semibold text-neutral-900">{{ invoice.invoice_number }}</h1>
             <BaseBadge :variant="statusVariant[invoice.status]">{{ t(`admin.invoices.status${statusKey(invoice.status)}`) }}</BaseBadge>
           </div>
-          <p class="mt-1 text-sm text-neutral-500">
+          <p v-if="invoice.company" class="mt-1 text-sm text-neutral-500">
+            {{ invoice.company.name }}<span v-if="invoice.class" class="text-neutral-400"> — {{ invoice.class.name }}</span>
+            <span v-if="invoice.period_from" class="text-neutral-400"> · {{ formatDate(invoice.period_from) }} – {{ formatDate(invoice.period_to) }}</span>
+          </p>
+          <p v-else class="mt-1 text-sm text-neutral-500">
             {{ invoice.student?.name }} <span v-if="invoice.student" class="text-neutral-400">({{ invoice.student.student_code }})</span>
           </p>
         </div>
@@ -283,6 +287,15 @@ onMounted(load)
               <p>{{ invoice.cancellation_reason }}</p>
               <p class="mt-1 text-xs text-red-500">{{ invoice.cancelled_by }} — {{ formatDateTime(invoice.cancelled_at) }}</p>
             </div>
+          </section>
+
+          <section v-if="invoice.students?.length" class="rounded-[--radius-card] border border-neutral-200 bg-white p-5">
+            <h2 class="mb-3 text-sm font-semibold text-neutral-800">{{ t('admin.invoices.companyStudentsSection', { count: invoice.students.length }) }}</h2>
+            <ol class="grid gap-x-6 gap-y-1 text-sm text-neutral-700 sm:grid-cols-2">
+              <li v-for="(row, index) in invoice.students" :key="row.student_id">
+                {{ index + 1 }}. {{ row.name }} <span class="text-neutral-400">({{ row.student_code }})</span>
+              </li>
+            </ol>
           </section>
 
           <section class="rounded-[--radius-card] border border-neutral-200 bg-white p-5">

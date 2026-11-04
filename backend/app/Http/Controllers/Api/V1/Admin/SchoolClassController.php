@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\DB;
 
 final class SchoolClassController extends Controller
 {
-    private const WITH = ['teachers', 'assistantTeachers', 'classroom', 'schedules', 'academicProgram', 'gradeLevel', 'academicYear'];
+    private const WITH = ['teachers', 'assistantTeachers', 'classroom', 'schedules', 'academicProgram', 'gradeLevel', 'academicYear', 'company'];
 
     public function index(Request $request): JsonResponse
     {
@@ -34,9 +34,14 @@ final class SchoolClassController extends Controller
             $query->whereHas('enrollments', fn ($q) => $q->active());
         }
 
+        // Billing > Invoices > Invoice by class: only classes paid by a company.
+        if ($request->boolean('filter.has_company')) {
+            $query->whereNotNull('company_id');
+        }
+
         $classes = ApiQuery::for($query, $request)
             ->searchable('name', 'code')
-            ->filterable(['status', 'classroom_id', 'academic_program_id', 'grade_level_id', 'academic_year_id'])
+            ->filterable(['status', 'classroom_id', 'academic_program_id', 'grade_level_id', 'academic_year_id', 'company_id'])
             ->sortable(['name', 'start_date', 'created_at'], default: '-created_at')
             ->paginate();
 

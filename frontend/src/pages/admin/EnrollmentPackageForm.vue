@@ -80,7 +80,8 @@ const programOptions = computed(() => programs.value.map((p) => ({ value: String
 // whichever class ends up picked.
 const classOptions = computed(() =>
   classes.value
-    .filter((c) => c.academic_program_id === form.academic_program_id)
+    // A company class is paid by its company — see EnrollClassBatch.vue.
+    .filter((c) => c.academic_program_id === form.academic_program_id && c.company_id === null)
     .map((c) => ({ value: String(c.id), label: c.name })),
 )
 

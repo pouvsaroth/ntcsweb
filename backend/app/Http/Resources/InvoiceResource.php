@@ -25,6 +25,18 @@ class InvoiceResource extends JsonResource
                 'student_code' => $this->student->student_code,
                 'name' => $this->student->fullName(),
             ]),
+            // Billing > Invoices > Invoice by class: billed to a company for a class, no student.
+            'company_id' => $this->company_id,
+            'company' => $this->whenLoaded('company', fn () => $this->company ? ['id' => $this->company->id, 'name' => $this->company->name, 'contact_person' => $this->company->contact_person, 'phone' => $this->company->phone, 'address' => $this->company->address, 'tax_number' => $this->company->tax_number] : null),
+            'class_id' => $this->class_id,
+            'class' => $this->whenLoaded('schoolClass', fn () => $this->schoolClass ? ['id' => $this->schoolClass->id, 'name' => $this->schoolClass->name] : null),
+            'period_from' => $this->period_from?->toDateString(),
+            'period_to' => $this->period_to?->toDateString(),
+            'students' => $this->whenLoaded('invoiceStudents', fn () => $this->invoiceStudents->map(fn ($row) => [
+                'student_id' => $row->student_id,
+                'student_code' => $row->student_code,
+                'name' => $row->student_name,
+            ])->values()),
             'invoice_date' => $this->invoice_date?->toDateString(),
             'due_date' => $this->due_date?->toDateString(),
             'status' => $this->status,

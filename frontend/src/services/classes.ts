@@ -38,6 +38,9 @@ export interface SchoolClass {
   grade_level: { id: number; name: string; code: string } | null
   academic_year_id: number | null
   academic_year: { id: number; name: string } | null
+  /** Billing > Companies: set on a company class — the company pays one total, so its students get no invoices of their own. */
+  company_id: number | null
+  company: { id: number; name: string } | null
   active_students_count?: number
   created_at: string
 }
@@ -51,6 +54,7 @@ export interface ClassInput {
   academic_program_id: number | null
   grade_level_id: number | null
   academic_year_id: number | null
+  company_id: number | null
   start_date: string
   end_date: string
   status: ClassStatus
@@ -71,6 +75,12 @@ export const classesService = {
   /** Which tables in this class's room are still free — drives the enrollment form's seat picker. `total_tables` is 0 when the room has none configured (nothing to require). */
   availableTables: (id: number) =>
     apiGetWithMeta<{ total_tables: number; available: { id: number; name: string }[] }>(`/classes/${id}/available-tables`).then((r) => r.data),
+
+  /** Every class paid by a company (any status) — Invoice by class's picker. */
+  async listCompanyClasses(): Promise<SchoolClass[]> {
+    const result = await apiGetWithMeta<SchoolClass[]>('/classes', { params: { per_page: 200, filter: { has_company: 'true' } } })
+    return result.data
+  },
 
   /** All active classes, for the enrollment form's class picker. */
   async listAll(): Promise<SchoolClass[]> {

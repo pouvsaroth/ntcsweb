@@ -18,8 +18,10 @@ class PaymentPolicy
 
     public function view(User $user, Payment $payment): bool
     {
+        // A company invoice's payment has no student — a missing student on
+        // both sides must never count as a match.
         return $user->hasPermission(Permissions::PAYMENTS_VIEW)
-            || $user->student?->id === $payment->student_id;
+            || ($payment->student_id !== null && $user->student?->id === $payment->student_id);
     }
 
     public function create(User $user, Invoice $invoice): bool

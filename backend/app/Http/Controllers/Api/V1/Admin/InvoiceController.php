@@ -37,6 +37,8 @@ final class InvoiceController extends Controller
 
         $query = Invoice::query()->with([
             'student',
+            'company',
+            'schoolClass',
             // For the list's Course column — see InvoiceResource::courseName().
             'items.product',
             'items.reference' => fn (MorphTo $morph) => $morph->morphWith([Enrollment::class => ['coursePackage']]),
@@ -55,7 +57,7 @@ final class InvoiceController extends Controller
         // No ->searchable(): the search spans relations (student, course),
         // which ApiQuery's plain-column search can't — see applySearch().
         $invoices = ApiQuery::for($query, $request)
-            ->filterable(['status', 'student_id', 'payment_type'])
+            ->filterable(['status', 'student_id', 'payment_type', 'company_id', 'class_id'])
             ->sortable(['invoice_number', 'invoice_date', 'due_date', 'total', 'balance', 'created_at'], default: '-created_at')
             ->paginate();
 
@@ -106,6 +108,9 @@ final class InvoiceController extends Controller
                     ->orWhere('phone', 'ILIKE', $like)
                     ->orWhereRaw("concat_ws(' ', last_name, first_name) ILIKE ?", [$like])
                     ->orWhereRaw("concat_ws(' ', first_name, last_name) ILIKE ?", [$like]))
+                // Company class invoices: the company, and any student on its list.
+                ->orWhereHas('company', fn (Builder $company) => $company->where('name', 'ILIKE', $like))
+                ->orWhereHas('invoiceStudents', fn (Builder $row) => $row->where('student_name', 'ILIKE', $like)->orWhere('student_code', 'ILIKE', $like))
                 ->orWhereHas('items', fn (Builder $item) => $item
                     ->where('description', 'ILIKE', $like)
                     ->orWhereHas('product', fn (Builder $product) => $product->where('name', 'ILIKE', $like))
@@ -127,7 +132,7 @@ final class InvoiceController extends Controller
         $this->authorize('view', $invoice);
 
         return ApiResponse::success(new InvoiceResource(
-            $invoice->load(['student', 'items.product', 'items.variant', 'payments.receivedBy', 'createdBy', 'cancelledBy'])
+            $invoice->load(['student', 'company', 'schoolClass', 'invoiceStudents', 'items.product', 'items.variant', 'payments.receivedBy', 'createdBy', 'cancelledBy'])
         ));
     }
 

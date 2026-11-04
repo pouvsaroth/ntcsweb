@@ -239,6 +239,8 @@ export const adminNav: AdminNavGroup[] = [
       { labelKey: 'adminNav.items.products', icon: 'tag', to: '/admin/products', permission: 'products.view' },
       { labelKey: 'adminNav.items.invoices', icon: 'document', to: '/admin/invoices', permission: 'invoices.view' },
       { labelKey: 'adminNav.items.payments', icon: 'dollar', to: '/admin/payments', permission: 'payments.view' },
+      // Who pays one total for a company class (no per-student invoices).
+      { labelKey: 'adminNav.items.companies', icon: 'briefcase', to: '/admin/companies', permission: 'companies.view' },
       { labelKey: 'adminNav.items.currencyRates', icon: 'switchHorizontal', to: '/admin/currency-rates', permission: 'currency-rates.view' },
     ],
   },

@@ -1,4 +1,5 @@
 import { apiDownload, apiGetWithMeta, apiPost } from '@/services/http'
+import { currentInvoiceLocale } from '@/services/invoices'
 import type { PaginatedQuery } from '@/composables/usePaginatedResource'
 import type { LengthAwarePaginationMeta, PaginatedResult } from '@/types/api'
 
@@ -15,7 +16,8 @@ export interface Payment {
   payment_number: string
   invoice_id: number
   invoice_number?: string | null
-  student_id: number
+  /** null for a payment on a company class invoice. */
+  student_id: number | null
   amount: number
   /** Always its invoice's currency. */
   currency: 'USD' | 'KHR'
@@ -64,5 +66,5 @@ export const paymentsService = {
 
   refund: (id: number, reason: string) => apiPost<Payment>(`/payments/${id}/refund`, { reason }),
 
-  downloadReceipt: (id: number, paymentNumber: string) => apiDownload(`/payments/${id}/receipt`, `${paymentNumber}.pdf`),
+  downloadReceipt: (id: number, paymentNumber: string) => apiDownload(`/payments/${id}/receipt?locale=${currentInvoiceLocale()}`, `${paymentNumber}.pdf`),
 }

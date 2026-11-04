@@ -160,6 +160,9 @@ final class AuditAction
     // distinguishable from a routine STATUS_CHANGE.
     public const ENROLLMENT_INVOICED = 'ENROLLMENT_INVOICED';
 
+    // Enrollments > Add students to class: many students into a company class at once.
+    public const ENROLLMENT_CLASS_BATCH = 'ENROLLMENT_CLASS_BATCH';
+
     public const ENROLLMENT_CANCELLED = 'ENROLLMENT_CANCELLED';
 
     public const ENROLLMENT_TRANSFERRED = 'ENROLLMENT_TRANSFERRED';

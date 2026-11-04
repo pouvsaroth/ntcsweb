@@ -35,7 +35,10 @@ final class InvoiceService
     ) {}
 
     /**
-     * @param  array{student_id:int, invoice_date?:string, due_date?:string|null, currency?:string, discount?:float, discount_reason?:string|null, tax?:float, notes?:string|null, payment_type?:string|null, items:list<array<string,mixed>>}  $data
+     * A company class invoice (CompanyInvoiceService) passes company_id +
+     * class_id + period_from/period_to and no student_id.
+     *
+     * @param  array{student_id?:int|null, company_id?:int|null, class_id?:int|null, period_from?:string|null, period_to?:string|null, invoice_date?:string, due_date?:string|null, currency?:string, discount?:float, discount_reason?:string|null, tax?:float, notes?:string|null, payment_type?:string|null, items:list<array<string,mixed>>}  $data
      */
     public function create(array $data, User $actor): Invoice
     {
@@ -52,9 +55,13 @@ final class InvoiceService
 
             $invoice = Invoice::query()->create([
                 'invoice_number' => $this->numbers->nextInvoiceNumber($tenant),
-                'student_id' => $data['student_id'],
+                'student_id' => $data['student_id'] ?? null,
+                'company_id' => $data['company_id'] ?? null,
+                'class_id' => $data['class_id'] ?? null,
                 'invoice_date' => $data['invoice_date'] ?? now()->toDateString(),
                 'due_date' => $data['due_date'] ?? null,
+                'period_from' => $data['period_from'] ?? null,
+                'period_to' => $data['period_to'] ?? null,
                 'status' => InvoiceStatus::ISSUED,
                 'discount' => (float) ($data['discount'] ?? 0),
                 'discount_reason' => $data['discount_reason'] ?? null,
@@ -82,6 +89,8 @@ final class InvoiceService
                 $invoice,
                 new: [
                     'student_id' => $invoice->student_id,
+                    'company_id' => $invoice->company_id,
+                    'class_id' => $invoice->class_id,
                     'items' => $invoice->items->count(),
                     'subtotal' => (float) $invoice->subtotal,
                     'discount' => (float) $invoice->discount,

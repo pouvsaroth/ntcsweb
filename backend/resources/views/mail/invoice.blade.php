@@ -1,7 +1,7 @@
 @component('mail::message')
 # {{ $tenant?->name ?? config('app.name') }}
 
-{{ __('invoice.greeting', ['name' => $invoice->student->fullName()]) }}
+{{ __('invoice.greeting', ['name' => $invoice->billToName()]) }}
 
 {{ __('invoice.issued_notice') }}
 

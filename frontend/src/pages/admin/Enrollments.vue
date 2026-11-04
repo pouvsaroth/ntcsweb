@@ -233,6 +233,7 @@ onMounted(() => {
           class="w-48"
           @update:model-value="onStatusFilterChange"
         />
+        <BaseButton variant="outline" to="/admin/enrollments/class">{{ t('admin.enrollments.batchTitle') }}</BaseButton>
         <BaseButton to="/admin/enrollments/new">{{ t('admin.enrollments.createPackageTitle') }}</BaseButton>
       </div>
     </div>

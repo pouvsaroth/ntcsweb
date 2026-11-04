@@ -689,7 +689,7 @@ onBeforeUnmount(() => {
             <li v-for="row in unpaidInvoices" :key="row.id" class="py-2">
               <RouterLink :to="`/admin/invoices/${row.id}`" class="block">
                 <div class="flex items-center justify-between gap-2">
-                  <p class="font-medium text-neutral-800">{{ row.student?.name ?? '—' }}</p>
+                  <p class="font-medium text-neutral-800">{{ row.student?.name ?? row.company?.name ?? '—' }}</p>
                   <BaseBadge :variant="unpaidStatusVariant[row.status] ?? 'primary'">{{ invoiceStatusLabel(row.status) }}</BaseBadge>
                 </div>
                 <p class="text-xs text-neutral-500">{{ [row.invoice_number, row.course, formatDate(row.due_date)].filter(Boolean).join(' · ') }}</p>
@@ -717,7 +717,7 @@ onBeforeUnmount(() => {
               </thead>
               <tbody class="divide-y divide-neutral-100">
                 <tr v-for="row in unpaidInvoices" :key="row.id">
-                  <td class="py-1.5 pr-4 text-neutral-800">{{ row.student?.name ?? '—' }}</td>
+                  <td class="py-1.5 pr-4 text-neutral-800">{{ row.student?.name ?? row.company?.name ?? '—' }}</td>
                   <td class="py-1.5 pr-4">
                     <RouterLink :to="`/admin/invoices/${row.id}`" class="font-medium text-primary-700 hover:text-primary-800">{{ row.invoice_number }}</RouterLink>
                   </td>

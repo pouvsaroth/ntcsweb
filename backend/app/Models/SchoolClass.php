@@ -33,7 +33,7 @@ use Illuminate\Support\Carbon;
  * @property string $name
  * @property string $status
  */
-#[Fillable(['classroom_id', 'academic_program_id', 'grade_level_id', 'academic_year_id', 'name', 'code', 'capacity', 'start_date', 'end_date', 'status'])]
+#[Fillable(['classroom_id', 'academic_program_id', 'grade_level_id', 'academic_year_id', 'company_id', 'name', 'code', 'capacity', 'start_date', 'end_date', 'status'])]
 class SchoolClass extends Model
 {
     use HasFactory, SoftDeletes;
@@ -110,6 +110,20 @@ class SchoolClass extends Model
     public function academicYear(): BelongsTo
     {
         return $this->belongsTo(AcademicYear::class);
+    }
+
+    /**
+     * Billing > Companies: set on a company class — the company pays one
+     * total for the class, so its students get no invoices of their own.
+     */
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
+    }
+
+    public function isCompanyClass(): bool
+    {
+        return $this->company_id !== null;
     }
 
     public function schedules(): HasMany

@@ -9,6 +9,7 @@ use App\Services\Pdf\BrowsershotRenderer;
 use App\Services\Pdf\KhmerFont;
 use App\Services\Pdf\PdfImageEncoder;
 use App\Support\Tenancy\TenantContext;
+use Illuminate\Support\Facades\App;
 
 /**
  * A5, same signature/stamp treatment as InvoicePdfService — see that class's
@@ -24,9 +25,19 @@ final class ReceiptPdfService
         private readonly BrowsershotRenderer $renderer,
     ) {}
 
-    public function render(Payment $payment): string
+    /**
+     * `$locale` ('en' or 'km', see InvoicePdfService::resolveRequestedLocale())
+     * prints this one receipt in that language; null keeps the school's own
+     * invoice language. Restored afterwards, as InvoicePdfService does.
+     */
+    public function render(Payment $payment, ?string $locale = null): string
     {
-        $payment->loadMissing(['invoice.student', 'receivedBy.staff.position']);
+        return $this->renderer->render($this->html($payment, $locale), 'A5');
+    }
+
+    private function html(Payment $payment, ?string $locale): string
+    {
+        $payment->loadMissing(['invoice.student', 'invoice.company', 'invoice.schoolClass', 'receivedBy.staff.position']);
 
         // `invoices`/`payments` live in the tenant database now, so neither
         // carries a tenant() relation anymore — see InvoicePdfService for
@@ -34,19 +45,28 @@ final class ReceiptPdfService
         $tenant = $this->context->getOrFail();
         $issuerStaff = $payment->receivedBy?->staff;
 
-        $html = view('pdf.receipt', [
-            'payment' => $payment,
-            'invoice' => $payment->invoice,
-            'tenant' => $tenant,
-            'issuerStaff' => $issuerStaff,
-            'logoDataUri' => PdfImageEncoder::dataUri($tenant->logoPath()),
-            'stampDataUri' => PdfImageEncoder::dataUri($tenant->stampPath()),
-            'signatureDataUri' => PdfImageEncoder::dataUri($issuerStaff?->signaturePath()),
-            'khmerFontRegular' => KhmerFont::dataUri('Regular'),
-            'khmerFontBold' => KhmerFont::dataUri('Bold'),
-        ])->render();
+        $previousLocale = App::getLocale();
+        if ($locale !== null) {
+            App::setLocale($locale);
+        }
 
-        return $this->renderer->render($html, 'A5');
+        try {
+            return view('pdf.receipt', [
+                'payment' => $payment,
+                'invoice' => $payment->invoice,
+                'tenant' => $tenant,
+                'issuerStaff' => $issuerStaff,
+                'logoDataUri' => PdfImageEncoder::dataUri($tenant->logoPath()),
+                'stampDataUri' => PdfImageEncoder::dataUri($tenant->stampPath()),
+                'signatureDataUri' => PdfImageEncoder::dataUri($issuerStaff?->signaturePath()),
+                'khmerFontRegular' => KhmerFont::dataUri('Regular'),
+                'khmerFontBold' => KhmerFont::dataUri('Bold'),
+            ])->render();
+        } finally {
+            if ($locale !== null) {
+                App::setLocale($previousLocale);
+            }
+        }
     }
 
     public function filename(Payment $payment): string

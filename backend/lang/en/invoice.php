@@ -18,6 +18,14 @@ return [
     'tel' => 'Tel',
     'enrollment_code' => 'Enrollment Code',
     'class' => 'Class',
+    'company' => 'Company',
+    'contact_person' => 'Contact',
+    'tax_number' => 'Tax No.',
+    'address' => 'Address',
+    'period' => 'Period',
+    'students' => 'Students',
+    'student_count' => ':count students',
+    'no' => 'No.',
     'time' => 'Time',
     'invoice_date' => 'Invoice Date',
     'due_date' => 'Due Date',
@@ -35,6 +43,22 @@ return [
     'date' => 'Date',
     'amount' => 'Amount',
     'notes' => 'Notes',
+
+    // Receipt PDF (resources/views/pdf/receipt.blade.php).
+    'receipt' => 'RECEIPT',
+    'student' => 'Student',
+    'invoice_number' => 'Invoice',
+    'payment_method' => 'Payment Method',
+    'reference' => 'Reference',
+    'invoice_total' => 'Invoice Total',
+    'remaining_balance' => 'Remaining Balance',
+
+    // Invoice lines the system writes itself — see App\Support\Billing\InvoiceLineText.
+    'lines' => [
+        'enrollment' => 'Enrollment: :detail',
+        'exam_fee' => 'Exam fee: :name',
+        'company_class' => ':detail (:count students), :from to :to',
+    ],
 
     'statuses' => [
         'draft' => 'Draft',

@@ -11,6 +11,7 @@ use App\Http\Resources\PaymentResource;
 use App\Http\Responses\ApiResponse;
 use App\Models\Invoice;
 use App\Models\Payment;
+use App\Services\Billing\InvoicePdfService;
 use App\Services\Billing\PaymentService;
 use App\Services\Billing\ReceiptPdfService;
 use App\Support\Query\ApiQuery;
@@ -80,11 +81,12 @@ final class PaymentController extends Controller
         return ApiResponse::success(new PaymentResource($payment));
     }
 
-    public function receipt(Payment $payment, ReceiptPdfService $pdf): HttpResponse
+    public function receipt(Request $request, Payment $payment, ReceiptPdfService $pdf): HttpResponse
     {
         $this->authorize('view', $payment);
+        $locale = InvoicePdfService::resolveRequestedLocale($request->query('locale'));
 
-        return response($pdf->render($payment), 200, [
+        return response($pdf->render($payment, $locale), 200, [
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => 'attachment; filename="'.$pdf->filename($payment).'"',
         ]);

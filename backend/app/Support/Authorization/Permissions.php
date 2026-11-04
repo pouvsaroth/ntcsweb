@@ -466,6 +466,15 @@ final class Permissions
 
     public const CURRENCY_RATES_DELETE = 'currency-rates.delete';
 
+    // Billing > Companies: who pays one total for a company class.
+    public const COMPANIES_VIEW = 'companies.view';
+
+    public const COMPANIES_CREATE = 'companies.create';
+
+    public const COMPANIES_UPDATE = 'companies.update';
+
+    public const COMPANIES_DELETE = 'companies.delete';
+
     public const NOTIFICATIONS_SEND = 'notifications.send';
 
     // Accounting — the Chart of Accounts and general ledger sitting on top
@@ -1056,6 +1065,10 @@ final class Permissions
                 self::CURRENCY_RATES_CREATE => 'Add currency exchange rates',
                 self::CURRENCY_RATES_UPDATE => 'Update currency exchange rates',
                 self::CURRENCY_RATES_DELETE => 'Delete currency exchange rates',
+                self::COMPANIES_VIEW => 'View companies',
+                self::COMPANIES_CREATE => 'Add companies',
+                self::COMPANIES_UPDATE => 'Update companies',
+                self::COMPANIES_DELETE => 'Delete companies',
                 self::NOTIFICATIONS_SEND => 'Send invoice notifications',
             ],
             'Accounting' => [
@@ -1254,6 +1267,7 @@ final class Permissions
             self::PAYMENTS_VIEW, self::PAYMENTS_CREATE, self::PAYMENTS_UPDATE, self::PAYMENTS_CANCEL,
             self::RECEIPTS_VIEW, self::BILLING_REPORTS_VIEW, self::NOTIFICATIONS_SEND,
             self::CURRENCY_RATES_VIEW, self::CURRENCY_RATES_CREATE, self::CURRENCY_RATES_UPDATE, self::CURRENCY_RATES_DELETE,
+            self::COMPANIES_VIEW, self::COMPANIES_CREATE, self::COMPANIES_UPDATE, self::COMPANIES_DELETE,
         ];
 
         // Same reasoning as $billing above — its own tight group,

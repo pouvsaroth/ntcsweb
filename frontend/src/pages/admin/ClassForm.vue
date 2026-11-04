@@ -12,14 +12,17 @@ import { academicProgramsService, type AcademicProgram } from '@/services/academ
 import { academicYearsService, type AcademicYear } from '@/services/academicYears'
 import { classesService, type ClassInput } from '@/services/classes'
 import { classroomsService, type Classroom } from '@/services/classrooms'
+import { companiesService, type Company } from '@/services/companies'
 import { positionsService } from '@/services/positions'
 import { gradeLevelsService, type GradeLevel } from '@/services/schoolSetup'
 import { staffService, type Staff } from '@/services/staff'
+import { useAuthStore } from '@/stores/auth'
 import { ApiRequestError } from '@/types/api'
 
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
+const auth = useAuthStore()
 
 const classId = computed(() => (route.params.id ? Number(route.params.id) : null))
 const isEditing = computed(() => classId.value !== null)
@@ -37,6 +40,7 @@ const form = reactive<ClassInput>({
   academic_program_id: null,
   grade_level_id: null,
   academic_year_id: null,
+  company_id: null,
   start_date: '',
   end_date: '',
   status: 'active',
@@ -49,6 +53,12 @@ const programs = ref<AcademicProgram[]>([])
 // School setup: the grade level and academic year a class belongs to (both optional).
 const gradeLevels = ref<GradeLevel[]>([])
 const academicYears = ref<AcademicYear[]>([])
+// Billing > Companies: only loaded for staff who can see companies.
+const companies = ref<Company[]>([])
+const companyOptions = computed(() => [
+  { value: '', label: t('admin.classes.companyNone') },
+  ...companies.value.map((c) => ({ value: String(c.id), label: c.name })),
+])
 
 const loading = ref(true)
 const loadError = ref<string | null>(null)
@@ -132,13 +142,15 @@ async function load() {
   loadError.value = null
 
   try {
-    const [positions, loadedClassrooms, loadedPrograms, loadedGrades, loadedYears] = await Promise.all([
+    const [positions, loadedClassrooms, loadedPrograms, loadedGrades, loadedYears, loadedCompanies] = await Promise.all([
       positionsService.listAll(),
       classroomsService.listAll(),
       academicProgramsService.listAll(),
       gradeLevelsService.list(true).catch(() => [] as GradeLevel[]),
       academicYearsService.listAll().catch(() => [] as AcademicYear[]),
+      auth.can('companies.view') ? companiesService.listAll().catch(() => [] as Company[]) : Promise.resolve([] as Company[]),
     ])
+    companies.value = loadedCompanies
     classrooms.value = loadedClassrooms
     programs.value = loadedPrograms
     gradeLevels.value = loadedGrades
@@ -164,6 +176,11 @@ async function load() {
     form.academic_program_id = schoolClass.academic_program?.id ?? null
     form.grade_level_id = schoolClass.grade_level_id ?? null
     form.academic_year_id = schoolClass.academic_year_id ?? null
+    form.company_id = schoolClass.company_id ?? null
+    // An inactive company is not in the list but must still show on its class.
+    if (schoolClass.company && !companies.value.some((c) => c.id === schoolClass.company!.id)) {
+      companies.value.push({ id: schoolClass.company.id, name: schoolClass.company.name } as Company)
+    }
     form.start_date = schoolClass.start_date ?? ''
     form.end_date = schoolClass.end_date ?? ''
     form.status = schoolClass.status
@@ -251,6 +268,15 @@ onMounted(load)
             :label="t('schoolSetup.academicYear')"
             :error="errors.academic_year_id?.[0]"
             @update:model-value="form.academic_year_id = $event ? Number($event) : null"
+          />
+          <BaseSelect
+            v-if="companies.length"
+            :model-value="form.company_id !== null ? String(form.company_id) : ''"
+            :options="companyOptions"
+            :label="t('admin.classes.company')"
+            :hint="t('admin.classes.companyHint')"
+            :error="errors.company_id?.[0]"
+            @update:model-value="form.company_id = $event ? Number($event) : null"
           />
           <BaseSelect v-model="form.status" :options="statusOptions" :label="t('admin.classes.status')" />
           <BaseInput v-model="form.start_date" type="date" :label="t('admin.classes.startDate')" :error="errors.start_date?.[0]" />

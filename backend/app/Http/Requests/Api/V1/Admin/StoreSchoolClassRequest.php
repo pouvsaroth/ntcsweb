@@ -42,6 +42,8 @@ class StoreSchoolClassRequest extends FormRequest
             'academic_program_id' => ['nullable', Rule::exists('tenant.academic_programs', 'id')],
             'grade_level_id' => ['nullable', Rule::exists('tenant.grade_levels', 'id')],
             'academic_year_id' => ['nullable', Rule::exists('tenant.academic_years', 'id')->whereNull('deleted_at')],
+            // Billing > Companies: makes this a company class (no per-student invoices).
+            'company_id' => ['nullable', Rule::exists('tenant.companies', 'id')],
             'capacity' => ['nullable', 'integer', 'min:1', 'max:100000'],
             'start_date' => ['nullable', 'date'],
             'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],

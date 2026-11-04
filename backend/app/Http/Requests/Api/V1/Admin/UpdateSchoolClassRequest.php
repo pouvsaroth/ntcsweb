@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Api\V1\Admin;
 
+use App\Models\Enrollment;
 use App\Models\Position;
 use App\Models\SchoolClass;
+use App\Services\Billing\CompanyInvoiceService;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -41,6 +43,8 @@ class UpdateSchoolClassRequest extends FormRequest
             'academic_program_id' => ['nullable', Rule::exists('tenant.academic_programs', 'id')],
             'grade_level_id' => ['nullable', Rule::exists('tenant.grade_levels', 'id')],
             'academic_year_id' => ['nullable', Rule::exists('tenant.academic_years', 'id')->whereNull('deleted_at')],
+            // Billing > Companies: makes this a company class (no per-student invoices).
+            'company_id' => ['nullable', Rule::exists('tenant.companies', 'id')],
             'capacity' => ['nullable', 'integer', 'min:1', 'max:100000'],
             'start_date' => ['nullable', 'date'],
             'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
@@ -60,6 +64,32 @@ class UpdateSchoolClassRequest extends FormRequest
 
     public function withValidator(Validator $validator): void
     {
+        // Billing > Companies: a class holds either one company's students
+        // (no invoices of their own) or students paying for themselves —
+        // never both. So who pays can only change while nobody is in it.
+        $validator->after(function (Validator $validator) {
+            /** @var SchoolClass $class */
+            $class = $this->route('class');
+            if (! $this->has('company_id') || $validator->errors()->has('company_id')) {
+                return;
+            }
+            $new = $this->input('company_id') === null ? null : (int) $this->input('company_id');
+            if ($new === ($class->company_id === null ? null : (int) $class->company_id)) {
+                return;
+            }
+
+            $invoice = app(CompanyInvoiceService::class)->openInvoiceFor($class);
+            if ($invoice !== null) {
+                $validator->errors()->add('company_id', __('This class is already invoiced to its company (:number). Cancel or void that invoice before changing who pays.', ['number' => $invoice->invoice_number]));
+
+                return;
+            }
+
+            if ($class->enrollments()->whereNotIn('status', Enrollment::STATUSES_FINISHED)->exists()) {
+                $validator->errors()->add('company_id', __('Students are already in this class. Who pays can only change while the class has no students.'));
+            }
+        });
+
         $validator->after(function (Validator $validator) {
             if (! $this->has('teacher_ids') && ! $this->has('assistant_teacher_ids')) {
                 return;

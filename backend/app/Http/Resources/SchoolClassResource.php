@@ -34,6 +34,8 @@ class SchoolClassResource extends JsonResource
             'grade_level' => $this->whenLoaded('gradeLevel', fn () => $this->gradeLevel ? ['id' => $this->gradeLevel->id, 'name' => $this->gradeLevel->name, 'code' => $this->gradeLevel->code] : null),
             'academic_year_id' => $this->academic_year_id,
             'academic_year' => $this->whenLoaded('academicYear', fn () => $this->academicYear ? ['id' => $this->academicYear->id, 'name' => $this->academicYear->name] : null),
+            'company_id' => $this->company_id,
+            'company' => $this->whenLoaded('company', fn () => $this->company ? ['id' => $this->company->id, 'name' => $this->company->name] : null),
             'active_students_count' => $this->whenCounted('active_students'),
 
             'created_at' => $this->created_at?->toIso8601String(),

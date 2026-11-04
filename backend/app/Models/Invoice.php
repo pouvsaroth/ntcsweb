@@ -25,14 +25,16 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * payments — never accepted as request input.
  *
  * @property string $invoice_number
- * @property int $student_id
+ * @property int|null $student_id  null on a company class invoice (company_id + class_id set instead)
+ * @property int|null $company_id
+ * @property int|null $class_id
  * @property string $status
  * @property string $total
  * @property string $paid_amount
  * @property string $balance
  */
 #[Fillable([
-    'invoice_number', 'student_id', 'invoice_date', 'due_date', 'status',
+    'invoice_number', 'student_id', 'company_id', 'class_id', 'invoice_date', 'due_date', 'period_from', 'period_to', 'status',
     'subtotal', 'discount', 'discount_reason', 'tax', 'total', 'paid_amount', 'balance', 'currency', 'notes',
     'intended_payment_method', 'payment_type', 'created_by', 'cancellation_reason', 'cancelled_by', 'cancelled_at',
 ])]
@@ -59,6 +61,8 @@ class Invoice extends Model
         return [
             'invoice_date' => 'date',
             'due_date' => 'date',
+            'period_from' => 'date',
+            'period_to' => 'date',
             'subtotal' => 'decimal:2',
             'discount' => 'decimal:2',
             'tax' => 'decimal:2',
@@ -72,6 +76,35 @@ class Invoice extends Model
     public function student(): BelongsTo
     {
         return $this->belongsTo(Student::class);
+    }
+
+    /** Billing > Invoices > Invoice by class: the company billed instead of a student. */
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
+    }
+
+    /** The company class a company invoice is for. */
+    public function schoolClass(): BelongsTo
+    {
+        return $this->belongsTo(SchoolClass::class, 'class_id');
+    }
+
+    /** A company invoice's student list, as it was when the invoice was made. */
+    public function invoiceStudents(): HasMany
+    {
+        return $this->hasMany(InvoiceStudent::class)->orderBy('position');
+    }
+
+    public function isForCompany(): bool
+    {
+        return $this->company_id !== null;
+    }
+
+    /** Who the invoice is addressed to: the student, or the company for a company class invoice. */
+    public function billToName(): string
+    {
+        return $this->isForCompany() ? (string) $this->company?->name : (string) $this->student?->fullName();
     }
 
     public function items(): HasMany

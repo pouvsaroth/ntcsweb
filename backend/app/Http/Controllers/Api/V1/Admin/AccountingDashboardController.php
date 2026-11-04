@@ -99,6 +99,7 @@ final class AccountingDashboardController extends Controller
             ->whereIn('id', $transactions->where('reference_type', Payment::class)->pluck('reference_id')->unique())
             ->with([
                 'student',
+                'invoice.company',
                 'invoice.items.product',
                 'invoice.items.reference' => fn (MorphTo $morph) => $morph->morphWith([Enrollment::class => ['coursePackage']]),
             ])
@@ -144,7 +145,8 @@ final class AccountingDashboardController extends Controller
             return $transaction->description;
         }
 
-        $parts = array_filter([$payment->student?->fullName(), $payment->invoice?->courseName()]);
+        // A company class invoice's payment has no student — name the company.
+        $parts = array_filter([$payment->student?->fullName() ?? $payment->invoice?->company?->name, $payment->invoice?->courseName()]);
 
         return $parts === [] ? $transaction->description : implode(' — ', $parts);
     }

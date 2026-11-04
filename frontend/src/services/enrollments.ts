@@ -147,6 +147,9 @@ export const enrollmentsService = {
   remove: (id: number) => apiDelete(`/enrollments/${id}`),
 
   enrollInPackage: (input: EnrollmentPackageInput) => apiPost<Enrollment>('/enrollments/package', input),
+  /** Enrollments > Add students to class: many students into a company class, no invoices. All or nothing; errors come back per row as students.{i}.student_id / students.{i}.table_id. */
+  enrollClassBatch: (input: { class_id: number; course_package_id: number; enrolled_at: string; students: { student_id: number; table_id: number | null }[] }) =>
+    apiPost<Enrollment[]>('/enrollments/class-batch', input),
   cancel: (id: number, reason: string) => apiPost<Enrollment>(`/enrollments/${id}/cancel`, { reason }),
 
   /**

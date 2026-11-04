@@ -44,6 +44,8 @@ use App\Http\Controllers\Api\V1\Admin\CurrencyRateController;
 use App\Http\Controllers\Api\V1\Admin\CurriculumController;
 use App\Http\Controllers\Api\V1\Admin\DatabaseBackupController;
 use App\Http\Controllers\Api\V1\Admin\DepartmentController;
+use App\Http\Controllers\Api\V1\Admin\CompanyController;
+use App\Http\Controllers\Api\V1\Admin\CompanyInvoiceController;
 use App\Http\Controllers\Api\V1\Admin\EnrollmentController;
 use App\Http\Controllers\Api\V1\Admin\EnrollmentPackageController;
 use App\Http\Controllers\Api\V1\Admin\EvaluationFormController;
@@ -372,6 +374,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('enrollment-export', [EnrollmentController::class, 'export'])->name('enrollments.export');
         Route::apiResource('enrollments', EnrollmentController::class)->except(['store']);
         Route::post('enrollments/package', [EnrollmentPackageController::class, 'store'])->name('enrollments.package.store');
+        // Enrollments > Add students to class: many students into a company class, no invoices.
+        Route::post('enrollments/class-batch', [EnrollmentPackageController::class, 'storeBatch'])->name('enrollments.class-batch.store');
         Route::post('enrollments/{enrollment}/cancel', [EnrollmentController::class, 'cancel'])->name('enrollments.cancel');
         Route::post('enrollments/{enrollment}/transfer', [EnrollmentController::class, 'transfer'])->name('enrollments.transfer');
         Route::patch('enrollments/{enrollment}/table', [EnrollmentController::class, 'changeTable'])->name('enrollments.change-table');
@@ -904,6 +908,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::put('product-variants/{variant}', [ProductVariantController::class, 'update'])->name('product-variants.update');
         Route::delete('product-variants/{variant}', [ProductVariantController::class, 'destroy'])->name('product-variants.destroy');
 
+        // Billing > Invoices > Invoice by class: one invoice to a company for its class.
+        Route::post('invoices/company-class', [CompanyInvoiceController::class, 'store'])->name('invoices.company-class.store');
         Route::apiResource('invoices', InvoiceController::class)->only(['index', 'store', 'show']);
         // A separate top-level path (not invoices/monthly) so it can never be
         // shadowed by the invoices/{invoice} route-model-bound route above.
@@ -931,6 +937,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('billing/reports/payments-by-method', [BillingDashboardController::class, 'paymentsByMethod'])->name('billing.reports.payments-by-method');
 
         Route::apiResource('currency-rates', CurrencyRateController::class);
+        Route::apiResource('companies', CompanyController::class);
 
         /*
         |------------------------------------------------------------------

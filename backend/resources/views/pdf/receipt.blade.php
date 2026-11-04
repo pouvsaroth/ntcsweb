@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="{{ app()->getLocale() }}">
 <head>
 <meta charset="utf-8">
 <style>
@@ -45,25 +45,29 @@
     <div class="center">
         @if($logoDataUri)<img src="{{ $logoDataUri }}" alt="" style="max-height:56px;"><br>@endif
         <h1>{{ $tenant?->name ?? config('app.name') }}</h1>
-        <h2>RECEIPT</h2>
+        <h2>{{ __('invoice.receipt') }}</h2>
         <p>{{ $payment->payment_number }}</p>
     </div>
 
     <div class="box">
-        <div class="row"><div class="label">Student</div><div class="value">{{ $invoice->student->student_code }} — {{ $invoice->student->fullName() }}</div></div>
-        <div class="row"><div class="label">Invoice</div><div class="value">{{ $invoice->invoice_number }}</div></div>
-        <div class="row"><div class="label">Payment Method</div><div class="value">{{ $payment->payment_method }}</div></div>
-        <div class="row"><div class="label">Date</div><div class="value">{{ $payment->payment_date->format('d-m-Y') }}</div></div>
+        @if($invoice->isForCompany())
+            <div class="row"><div class="label">{{ __('invoice.company') }}</div><div class="value">{{ $invoice->company?->name }}@if($invoice->schoolClass) — {{ $invoice->schoolClass->name }}@endif</div></div>
+        @else
+            <div class="row"><div class="label">{{ __('invoice.student') }}</div><div class="value">{{ $invoice->student?->student_code }} — {{ $invoice->student?->fullName() }}</div></div>
+        @endif
+        <div class="row"><div class="label">{{ __('invoice.invoice_number') }}</div><div class="value">{{ $invoice->invoice_number }}</div></div>
+        <div class="row"><div class="label">{{ __('invoice.payment_method') }}</div><div class="value">{{ __('invoice.methods.'.strtolower($payment->payment_method)) }}</div></div>
+        <div class="row"><div class="label">{{ __('invoice.date') }}</div><div class="value">{{ $payment->payment_date->format('d-m-Y') }}</div></div>
         @if($payment->reference_number)
-            <div class="row"><div class="label">Reference</div><div class="value">{{ $payment->reference_number }}</div></div>
+            <div class="row"><div class="label">{{ __('invoice.reference') }}</div><div class="value">{{ $payment->reference_number }}</div></div>
         @endif
     </div>
 
     <div class="amount">{{ $money((float) $payment->amount) }}</div>
 
     <div class="box">
-        <div class="row"><div class="label">Invoice Total</div><div class="value">{{ $money((float) $invoice->total) }}</div></div>
-        <div class="row"><div class="label">Remaining Balance</div><div class="value">{{ $money((float) $invoice->balance) }}</div></div>
+        <div class="row"><div class="label">{{ __('invoice.invoice_total') }}</div><div class="value">{{ $money((float) $invoice->total) }}</div></div>
+        <div class="row"><div class="label">{{ __('invoice.remaining_balance') }}</div><div class="value">{{ $money((float) $invoice->balance) }}</div></div>
     </div>
 
     {{-- The staff member who actually recorded this payment (Payment::receivedBy) signs it — see invoice.blade.php's identical block. --}}

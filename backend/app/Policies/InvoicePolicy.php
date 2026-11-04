@@ -22,8 +22,10 @@ class InvoicePolicy
      */
     public function view(User $user, Invoice $invoice): bool
     {
+        // A company invoice has no student — never let a missing student on
+        // both sides (a staff account, a company invoice) count as a match.
         return $user->hasPermission(Permissions::INVOICES_VIEW)
-            || $user->student?->id === $invoice->student_id;
+            || ($invoice->student_id !== null && $user->student?->id === $invoice->student_id);
     }
 
     public function create(User $user): bool

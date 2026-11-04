@@ -246,6 +246,12 @@ const adminRoutes: RouteRecordRaw[] = [
     meta: { titleKey: 'adminNav.items.enrollments' },
   },
   {
+    path: 'enrollments/class',
+    name: 'admin.enrollments.class',
+    component: () => import('@/pages/admin/EnrollClassBatch.vue'),
+    meta: { titleKey: 'adminNav.items.enrollments' },
+  },
+  {
     path: 'attendance',
     name: 'admin.attendance',
     component: () => import('@/pages/admin/Attendance.vue'),
@@ -869,6 +875,12 @@ const adminRoutes: RouteRecordRaw[] = [
     meta: { titleKey: 'adminNav.items.billingDashboard' },
   },
   {
+    path: 'companies',
+    name: 'admin.companies',
+    component: () => import('@/pages/admin/Companies.vue'),
+    meta: { titleKey: 'adminNav.items.companies' },
+  },
+  {
     path: 'currency-rates',
     name: 'admin.currency-rates',
     component: () => import('@/pages/admin/CurrencyRates.vue'),
@@ -890,6 +902,12 @@ const adminRoutes: RouteRecordRaw[] = [
     path: 'invoices/new',
     name: 'admin.invoices.new',
     component: () => import('@/pages/admin/InvoiceForm.vue'),
+    meta: { titleKey: 'adminNav.items.invoices' },
+  },
+  {
+    path: 'invoices/company-class',
+    name: 'admin.invoices.company-class',
+    component: () => import('@/pages/admin/CompanyInvoiceForm.vue'),
     meta: { titleKey: 'adminNav.items.invoices' },
   },
   {

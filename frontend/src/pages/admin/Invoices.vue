@@ -120,6 +120,7 @@ onMounted(() => setFilter('status', selectedStatuses.value.length > 0 ? selected
         :placeholder="t('admin.invoices.filterAllPaymentTypes')"
         @update:model-value="onPaymentTypeFilterChange"
       />
+      <BaseButton variant="outline" to="/admin/invoices/company-class">{{ t('admin.invoices.companyInvoiceTitle') }}</BaseButton>
       <BaseButton to="/admin/invoices/new">{{ t('admin.invoices.addInvoice') }}</BaseButton>
     </div>
 
@@ -132,7 +133,7 @@ onMounted(() => setFilter('status', selectedStatuses.value.length > 0 ? selected
       :empty-message="t('admin.invoices.emptyMessage')"
       @sort="(col) => setSort(sort === col ? `-${col}` : col)"
     >
-      <template #cell-student="{ row }">{{ row.student?.name ?? '—' }}</template>
+      <template #cell-student="{ row }">{{ row.student?.name ?? row.company?.name ?? '—' }}</template>
       <template #cell-course="{ row }">{{ row.course ?? '—' }}</template>
       <template #cell-payment_type="{ row }">
         {{ row.payment_type ? t(`admin.invoices.paymentType${paymentTypeKey(row.payment_type)}`) : '—' }}

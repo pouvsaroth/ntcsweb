@@ -6,7 +6,7 @@ import type { Currency } from '@/services/schoolSettings'
 import type { LengthAwarePaginationMeta, PaginatedResult } from '@/types/api'
 
 /** Only 'en'/'km' have invoice translations (see InvoicePdfService::SUPPORTED_LOCALES) — everything else falls back to English rather than the tenant's own fixed School Settings language, matching "whatever language I'm currently using" for every UI locale that isn't Khmer. */
-function currentInvoiceLocale(): 'en' | 'km' {
+export function currentInvoiceLocale(): 'en' | 'km' {
   return i18n.global.locale.value === 'km' ? 'km' : 'en'
 }
 
@@ -42,6 +42,21 @@ export interface InvoiceStudent {
   name: string
 }
 
+export interface CompanyInvoiceInput {
+  class_id: number
+  invoice_date: string
+  due_date: string | null
+  period_from: string
+  period_to: string
+  currency: Currency
+  amount: number
+  discount: number
+  discount_reason: string | null
+  notes: string | null
+  received_amount: number
+  payment_method: string | null
+}
+
 export interface InvoiceItem {
   id: number
   product_id: number
@@ -59,8 +74,17 @@ export interface InvoiceItem {
 export interface Invoice {
   id: number
   invoice_number: string
-  student_id: number
-  student?: InvoiceStudent
+  /** null on a company class invoice (Invoice by class) — `company` + `class` are set instead. */
+  student_id: number | null
+  student?: InvoiceStudent | null
+  company_id?: number | null
+  company?: { id: number; name: string; contact_person: string | null; phone: string | null; address: string | null; tax_number: string | null } | null
+  class_id?: number | null
+  class?: { id: number; name: string } | null
+  period_from?: string | null
+  period_to?: string | null
+  /** A company class invoice's student list, as it was when the invoice was made (detail endpoint only). */
+  students?: { student_id: number; student_code: string | null; name: string }[]
   invoice_date: string | null
   due_date: string | null
   status: InvoiceStatusValue
@@ -168,6 +192,8 @@ export const invoicesService = {
   get: (id: number) => apiGetWithMeta<Invoice>(`/invoices/${id}`).then((r) => r.data),
 
   create: (input: InvoiceInput) => apiPost<Invoice>('/invoices', toInvoicePayload(input)),
+  /** Billing > Invoices > Invoice by class: one invoice to the company paying for a company class. */
+  createForCompanyClass: (input: CompanyInvoiceInput) => apiPost<Invoice>('/invoices/company-class', input),
 
   cancel: (id: number, reason: string) => apiPost<Invoice>(`/invoices/${id}/cancel`, { reason }),
 

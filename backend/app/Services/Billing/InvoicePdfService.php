@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Services\Billing;
 
+use App\Models\Enrollment;
 use App\Models\Invoice;
 use App\Services\Pdf\BrowsershotRenderer;
 use App\Services\Pdf\KhmerFont;
 use App\Services\Pdf\PdfImageEncoder;
 use App\Support\Tenancy\TenantContext;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Facades\App;
 
 /**
@@ -74,8 +76,13 @@ final class InvoicePdfService
         $invoice->loadMissing([
             'items.product',
             'items.variant',
-            'items.reference.schoolClass.schedules',
+            // A company class invoice's line points at the class itself, which has
+            // no schoolClass of its own — only follow it through an enrollment.
+            'items.reference' => fn (MorphTo $morph) => $morph->morphWith([Enrollment::class => ['schoolClass.schedules']]),
             'student',
+            'company',
+            'schoolClass.schedules',
+            'invoiceStudents',
             'payments' => fn ($q) => $q->completed()->orderBy('payment_date'),
             'createdBy.staff.position',
         ]);

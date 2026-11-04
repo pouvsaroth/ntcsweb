@@ -30,7 +30,9 @@ use Illuminate\Support\Collection;
  *    same student (enrollments used to be deletable even when paid);
  * 4. else unknown — still listed (counted as term, the owner's choice),
  *    with `type_recorded` false so the dashboard can tag it.
- * Enrollments known to be monthly or video are left out.
+ * Enrollments known to be monthly or video are left out, and so are company
+ * classes (Billing > Companies): the company pays the class once, so its
+ * students have no invoice and no term to pay.
  */
 final class TermStudyAlertController extends Controller
 {
@@ -50,6 +52,7 @@ final class TermStudyAlertController extends Controller
         $enrollments = Enrollment::query()
             ->active()
             ->whereNotNull('course_package_id')
+            ->where(fn ($q) => $q->whereNull('class_id')->orWhereHas('schoolClass', fn ($c) => $c->whereNull('company_id')))
             ->whereDate('enrolled_at', '<', $today->copy()->subDays($days)->toDateString())
             ->with(['student', 'schoolClass', 'coursePackage', 'invoiceItems.invoice'])
             ->orderBy('enrolled_at')
