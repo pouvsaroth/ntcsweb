@@ -1,4 +1,4 @@
-import { apiDownload, apiGetWithMeta, apiPost } from '@/services/http'
+import { apiDownload, apiGetBlob, apiGetWithMeta, apiPost } from '@/services/http'
 import { currentInvoiceLocale } from '@/services/invoices'
 import type { PaginatedQuery } from '@/composables/usePaginatedResource'
 import type { LengthAwarePaginationMeta, PaginatedResult } from '@/types/api'
@@ -67,4 +67,8 @@ export const paymentsService = {
   refund: (id: number, reason: string) => apiPost<Payment>(`/payments/${id}/refund`, { reason }),
 
   downloadReceipt: (id: number, paymentNumber: string) => apiDownload(`/payments/${id}/receipt?locale=${currentInvoiceLocale()}`, `${paymentNumber}.pdf`),
+
+  /** The receipt as an image — same design and paper as its invoice. */
+  getReceiptImage: (id: number, onProgress?: (fraction: number) => void) =>
+    apiGetBlob(`/payments/${id}/receipt-image?locale=${currentInvoiceLocale()}`, onProgress),
 }

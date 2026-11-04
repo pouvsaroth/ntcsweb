@@ -56,6 +56,10 @@ return [
     'reference' => 'Reference',
     'invoice_total' => 'Invoice Total',
     'remaining_balance' => 'Remaining Balance',
+    'received_from' => 'Received From',
+    'payment_date' => 'Payment Date',
+    'paid_before' => 'Paid Before',
+    'amount_received' => 'Amount Received',
 
     // Invoice lines the system writes itself — see App\Support\Billing\InvoiceLineText.
     'lines' => [

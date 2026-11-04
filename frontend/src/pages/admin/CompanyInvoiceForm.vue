@@ -8,6 +8,8 @@ import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
 import BaseSpinner from '@/components/ui/BaseSpinner.vue'
+import TaskProgressOverlay from '@/components/ui/TaskProgressOverlay.vue'
+import { useInvoicePrint } from '@/composables/useInvoicePrint'
 import { classesService, type SchoolClass } from '@/services/classes'
 import { enrollmentsService, type Enrollment } from '@/services/enrollments'
 import { invoicesService, type Invoice } from '@/services/invoices'
@@ -50,13 +52,15 @@ const form = reactive({
   discount: 0,
   discount_reason: '',
   notes: '',
-  received_amount: 0,
   payment_method: 'CASH' as PaymentMethodValue,
 })
 
 const errors = ref<Record<string, string[]>>({})
 const generalError = ref<string | null>(null)
-const submitting = ref(false)
+const issuing = ref(false)
+const paying = ref(false)
+const anySubmitting = computed(() => issuing.value || paying.value)
+const { progress: receiptProgress, printReceipt } = useInvoicePrint()
 
 const canTakePayment = computed(() => auth.can('payments.create'))
 
@@ -80,8 +84,10 @@ const openInvoice = ref<Invoice | null>(null)
 const loadingClass = ref(false)
 
 const total = computed(() => Math.max(0, (form.amount || 0) - (form.discount || 0)))
-const paid = computed(() => Math.min(form.received_amount || 0, total.value))
-const balance = computed(() => Math.max(0, total.value - paid.value))
+
+// Payment, used only by "Pay and invoice". null = follow the total; the typed text once staff enter their own amount.
+const payAmountText = ref<string | null>(null)
+const payAmount = computed(() => (payAmountText.value !== null ? Number(payAmountText.value) || 0 : total.value))
 
 async function onClassChange(value: string) {
   form.class_id = value ? Number(value) : null
@@ -117,9 +123,16 @@ const canSubmit = computed(
   () => form.class_id !== null && !openInvoice.value && students.value.length > 0 && form.amount > 0 && form.period_from !== '' && form.period_to !== '',
 )
 
-async function submit() {
+/**
+ * `issue`: "Issue invoice" — saved unpaid. `pay`: "Pay and invoice" — saved
+ * with the payment, then the receipt (A4, like the company invoice) opens in
+ * print preview. A print failure still opens the saved invoice.
+ */
+async function submit(mode: 'issue' | 'pay' = 'issue') {
   if (!canSubmit.value) return
-  submitting.value = true
+  if (mode === 'pay' && (!canTakePayment.value || payAmount.value <= 0)) return
+  const busy = mode === 'pay' ? paying : issuing
+  busy.value = true
   errors.value = {}
   generalError.value = null
 
@@ -135,9 +148,13 @@ async function submit() {
       discount: form.discount || 0,
       discount_reason: form.discount_reason || null,
       notes: form.notes || null,
-      received_amount: canTakePayment.value ? form.received_amount || 0 : 0,
-      payment_method: canTakePayment.value && form.received_amount > 0 ? form.payment_method : null,
+      received_amount: mode === 'pay' ? payAmount.value : 0,
+      payment_method: mode === 'pay' ? form.payment_method : null,
     })
+    if (mode === 'pay') {
+      const payment = [...(invoice.payments ?? [])].sort((a, b) => b.id - a.id)[0]
+      if (payment) await printReceipt(payment.id, payment.payment_number, 'A4').catch(() => {})
+    }
     await router.push(`/admin/invoices/${invoice.id}`)
   } catch (error) {
     if (error instanceof ApiRequestError && error.errors) {
@@ -146,7 +163,7 @@ async function submit() {
       generalError.value = error instanceof ApiRequestError ? error.message : t('admin.invoices.companyInvoiceSaveFailed')
     }
   } finally {
-    submitting.value = false
+    busy.value = false
   }
 }
 
@@ -174,7 +191,7 @@ onMounted(async () => {
     <BaseAlert v-else-if="loadError" variant="danger">{{ loadError }}</BaseAlert>
     <BaseAlert v-else-if="classes.length === 0" variant="warning">{{ t('admin.invoices.companyInvoiceNoClasses') }}</BaseAlert>
 
-    <form v-else class="grid gap-8 lg:grid-cols-2" @submit.prevent="submit">
+    <form v-else class="grid gap-8 lg:grid-cols-2" @submit.prevent="submit()">
       <div class="space-y-5">
         <BaseSelect
           :model-value="form.class_id !== null ? String(form.class_id) : ''"
@@ -245,39 +262,51 @@ onMounted(async () => {
           />
         </div>
 
-        <div v-if="canTakePayment" class="grid gap-4 sm:grid-cols-2">
-          <BaseInput
-            :model-value="String(form.received_amount)"
-            @update:model-value="form.received_amount = Number($event) || 0"
-            type="number"
-            min="0"
-            step="any"
-            :label="`${t('admin.enrollments.receivedMoney')} (${form.currency})`"
-            :hint="t('admin.invoices.companyInvoiceReceivedHint')"
-            :error="errors.received_amount?.[0]"
-          />
-          <BaseSelect
-            v-if="form.received_amount > 0"
-            v-model="form.payment_method"
-            :options="paymentMethodOptions"
-            :label="t('admin.invoices.paymentMethod')"
-            :error="errors.payment_method?.[0]"
-          />
-        </div>
-
         <dl class="space-y-1 rounded-[--radius-card] border border-neutral-200 bg-white p-4 text-sm">
           <div class="flex justify-between"><dt class="text-neutral-500">{{ t('admin.invoices.columnTotal') }}</dt><dd class="font-semibold text-neutral-900">{{ formatMoney(total, form.currency) }}</dd></div>
-          <div class="flex justify-between"><dt class="text-neutral-500">{{ t('admin.invoices.companyInvoicePaid') }}</dt><dd>{{ formatMoney(paid, form.currency) }}</dd></div>
-          <div class="flex justify-between"><dt class="text-neutral-500">{{ t('admin.invoices.columnBalance') }}</dt><dd>{{ formatMoney(balance, form.currency) }}</dd></div>
         </dl>
+
+        <div v-if="canTakePayment">
+          <h2 class="text-sm font-semibold text-neutral-800">{{ t('admin.invoices.paySection') }}</h2>
+          <p class="mb-2 text-xs text-neutral-500">{{ t('admin.invoices.paySectionHint') }}</p>
+          <div class="grid gap-4 sm:grid-cols-2">
+            <BaseInput
+              :model-value="payAmountText ?? String(total)"
+              @update:model-value="payAmountText = $event === '' ? null : $event"
+              type="number"
+              min="0"
+              step="any"
+              :label="`${t('admin.invoices.payAmount')} (${form.currency})`"
+              :hint="t('admin.invoices.payAmountHint')"
+              :error="errors.received_amount?.[0]"
+            />
+            <BaseSelect
+              v-model="form.payment_method"
+              :options="paymentMethodOptions"
+              :label="t('admin.invoices.paymentMethod')"
+              :error="errors.payment_method?.[0]"
+            />
+          </div>
+        </div>
 
         <BaseAlert v-if="generalError" variant="danger">{{ generalError }}</BaseAlert>
 
         <div class="flex justify-end gap-3">
           <BaseButton variant="outline" to="/admin/invoices">{{ t('common.cancel') }}</BaseButton>
-          <BaseButton type="submit" :loading="submitting" :disabled="!canSubmit">{{ t('admin.invoices.companyInvoiceSave') }}</BaseButton>
+          <BaseButton type="submit" variant="outline" :loading="issuing" :disabled="!canSubmit || (anySubmitting && !issuing)">{{ t('admin.invoices.issueInvoice') }}</BaseButton>
+          <BaseButton
+            v-if="canTakePayment"
+            type="button"
+            :loading="paying"
+            :disabled="!canSubmit || payAmount <= 0 || (anySubmitting && !paying)"
+            @click="submit('pay')"
+          >
+            {{ t('admin.invoices.payAndInvoice') }}
+          </BaseButton>
         </div>
       </div>
     </form>
+
+    <TaskProgressOverlay :percent="receiptProgress.percent.value" :label="receiptProgress.label.value" />
   </div>
 </template>

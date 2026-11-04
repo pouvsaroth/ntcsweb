@@ -2,6 +2,7 @@ import { useI18n } from 'vue-i18n'
 
 import { useTaskProgress } from '@/composables/useTaskProgress'
 import { invoicesService } from '@/services/invoices'
+import { paymentsService } from '@/services/payments'
 import { useImagePreviewStore } from '@/stores/imagePreview'
 import { printImage } from '@/utils/printImage'
 
@@ -49,5 +50,19 @@ export function useInvoicePrint() {
     }
   }
 
-  return { progress, printInvoice, showInvoiceImage }
+  /** "Pay and invoice": the payment's receipt (designed like the invoice), on the same paper as its invoice. */
+  async function printReceipt(paymentId: number, paymentNumber: string, pageSize: 'A4' | 'A5' = 'A5'): Promise<void> {
+    try {
+      progress.creep(t('admin.invoices.progressCreatingReceipt'), 85)
+      const image = await paymentsService.getReceiptImage(paymentId, (fraction) =>
+        progress.set(t('admin.invoices.progressDownloading'), 85 + fraction * 15),
+      )
+      await progress.done()
+      await printImage(image, paymentNumber, pageSize)
+    } finally {
+      progress.reset()
+    }
+  }
+
+  return { progress, printInvoice, showInvoiceImage, printReceipt }
 }

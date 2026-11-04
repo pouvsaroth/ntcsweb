@@ -16,6 +16,8 @@ use App\Models\Enrollment;
 use App\Models\Invoice;
 use App\Services\Billing\InvoicePdfService;
 use App\Services\Billing\InvoiceService;
+use App\Services\Billing\PaymentService;
+use App\Support\Billing\PaymentMethod;
 use App\Support\Query\ApiQuery;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Database\Eloquent\Builder;
@@ -23,6 +25,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
+use Illuminate\Support\Facades\DB;
 
 final class InvoiceController extends Controller
 {
@@ -64,9 +67,26 @@ final class InvoiceController extends Controller
         return ApiResponse::success(InvoiceResource::collection($invoices));
     }
 
-    public function store(StoreInvoiceRequest $request): JsonResponse
+    /** "Pay and invoice" sends `received_amount` too: the payment is taken in the same save, capped at the total. */
+    public function store(StoreInvoiceRequest $request, PaymentService $payments): JsonResponse
     {
-        $invoice = $this->invoices->create($request->validated(), $request->user());
+        $data = $request->validated();
+        $received = (float) ($data['received_amount'] ?? 0);
+        unset($data['received_amount'], $data['payment_method']);
+
+        $invoice = DB::transaction(function () use ($data, $received, $request, $payments) {
+            $invoice = $this->invoices->create($data, $request->user());
+
+            if ($received > 0) {
+                $payments->record($invoice, [
+                    'amount' => min($received, (float) $invoice->total),
+                    'payment_method' => $request->validated('payment_method') ?? PaymentMethod::CASH,
+                    'payment_date' => $data['invoice_date'] ?? now()->toDateString(),
+                ], $request->user());
+            }
+
+            return $invoice->refresh()->load(['student', 'items.product', 'payments']);
+        });
 
         return ApiResponse::created(new InvoiceResource($invoice));
     }

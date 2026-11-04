@@ -91,4 +91,16 @@ final class PaymentController extends Controller
             'Content-Disposition' => 'attachment; filename="'.$pdf->filename($payment).'"',
         ]);
     }
+
+    /** The receipt as an image (same look and size as the invoice image), for print preview or sharing. */
+    public function receiptImage(Request $request, Payment $payment, ReceiptPdfService $pdf): HttpResponse
+    {
+        $this->authorize('view', $payment);
+        $locale = InvoicePdfService::resolveRequestedLocale($request->query('locale'));
+
+        return response($pdf->renderImage($payment, $locale), 200, [
+            'Content-Type' => 'image/png',
+            'Content-Disposition' => 'attachment; filename="'.$pdf->imageFilename($payment).'"',
+        ]);
+    }
 }

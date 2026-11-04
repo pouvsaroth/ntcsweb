@@ -48,6 +48,51 @@ class InvoiceTest extends TestCase
         $response->assertJsonPath('data.invoice_number', fn ($number) => str_starts_with($number, 'INV-'.now()->year.'-'));
     }
 
+    public function test_pay_and_invoice_records_the_payment_in_the_same_save_capped_at_the_total(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::INVOICES_CREATE, Permissions::INVOICES_VIEW, Permissions::PAYMENTS_CREATE]);
+        $book = Product::factory()->create(['price' => 10]);
+
+        $response = $this->postJson('/api/v1/invoices', [
+            'student_id' => Student::factory()->create()->id,
+            'items' => [['product_id' => $book->id, 'quantity' => 2]],
+            'received_amount' => 25,
+            'payment_method' => 'ABA',
+        ]);
+
+        $response->assertCreated();
+        $response->assertJsonPath('data.status', InvoiceStatus::PAID);
+        $response->assertJsonPath('data.balance', 0);
+        $response->assertJsonCount(1, 'data.payments');
+        $response->assertJsonPath('data.payments.0.amount', 20);
+        $response->assertJsonPath('data.payments.0.payment_method', 'ABA');
+    }
+
+    public function test_pay_and_invoice_needs_a_payment_method(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::INVOICES_CREATE, Permissions::PAYMENTS_CREATE]);
+
+        $this->postJson('/api/v1/invoices', [
+            'student_id' => Student::factory()->create()->id,
+            'items' => [['product_id' => Product::factory()->create(['price' => 10])->id, 'quantity' => 1]],
+            'received_amount' => 10,
+        ])->assertUnprocessable()->assertJsonValidationErrors('payment_method');
+
+        $this->assertSame(0, Invoice::query()->count());
+    }
+
+    public function test_taking_payment_at_save_needs_the_record_payments_permission(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::INVOICES_CREATE]);
+
+        $this->postJson('/api/v1/invoices', [
+            'student_id' => Student::factory()->create()->id,
+            'items' => [['product_id' => Product::factory()->create(['price' => 10])->id, 'quantity' => 1]],
+            'received_amount' => 10,
+            'payment_method' => 'CASH',
+        ])->assertForbidden();
+    }
+
     public function test_the_list_search_covers_student_course_amount_status_and_date_not_just_the_number(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::INVOICES_CREATE, Permissions::INVOICES_VIEW]);

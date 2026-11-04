@@ -143,6 +143,9 @@ export interface InvoiceInput {
   /** Empty string means "not a course-fee invoice" — omitted from the payload when blank. */
   payment_type: PaymentTypeValue | ''
   items: InvoiceItemInput[]
+  /** "Pay and invoice": the payment taken in the same save (capped at the total by the server). */
+  received_amount?: number
+  payment_method?: string | null
 }
 
 export interface SendInvoiceInput {
@@ -177,6 +180,8 @@ function toInvoicePayload(input: InvoiceInput) {
       discount: item.discount.trim() ? Number(item.discount) : undefined,
       description: item.description || undefined,
     })),
+    received_amount: input.received_amount && input.received_amount > 0 ? input.received_amount : undefined,
+    payment_method: input.received_amount && input.received_amount > 0 ? input.payment_method : undefined,
   }
 }
 

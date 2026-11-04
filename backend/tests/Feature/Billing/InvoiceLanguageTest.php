@@ -69,15 +69,15 @@ class InvoiceLanguageTest extends TestCase
         $this->assertStringContainsString('Bill To', $en);
 
         $kmReceipt = $this->receiptHtml($payment, 'km');
-        foreach (['បង្កាន់ដៃ', 'ក្រុមហ៊ុន', 'វិធីទូទាត់', 'សាច់ប្រាក់', 'សរុបវិក្កយបត្រ'] as $text) {
+        foreach (['បង្កាន់ដៃ', 'ក្រុមហ៊ុន', 'វិធីទូទាត់', 'សាច់ប្រាក់', 'ទទួលពី', 'ទឹកប្រាក់ទទួលបាន'] as $text) {
             $this->assertStringContainsString($text, $kmReceipt);
         }
-        foreach (['RECEIPT', 'Company', 'Payment Method', 'CASH', 'Invoice Total', 'Remaining Balance'] as $text) {
+        foreach (['RECEIPT', 'Company', 'Payment Method', 'CASH', 'Received From', 'Amount Received'] as $text) {
             $this->assertStringNotContainsString($text, $kmReceipt);
         }
 
         $enReceipt = $this->receiptHtml($payment, 'en');
-        foreach (['RECEIPT', 'Company', 'Payment Method', 'Cash', 'Invoice Total', 'Remaining Balance'] as $text) {
+        foreach (['RECEIPT', 'Company', 'Payment Method', 'Cash', 'Received From', 'Amount Received'] as $text) {
             $this->assertStringContainsString($text, $enReceipt);
         }
 

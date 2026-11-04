@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="{{ app()->getLocale() }}">
 <head>
 <meta charset="utf-8">
 <style>
@@ -58,6 +58,7 @@
     .totals td.value { text-align: right; }
     .totals tr.total td { border-top: 2px solid #1f2937; font-weight: bold; font-size: 13px; padding-top: 6px; }
     .totals tr.balance td { font-weight: bold; color: #dc2626; }
+    .totals tr.received td { font-weight: bold; font-size: 13px; }
     table.payments { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
     table.payments th { text-align: left; border-bottom: 2px solid #1f2937; padding: 5px 4px; font-size: 10px; text-transform: uppercase; }
     table.payments td { padding: 5px 4px; border-bottom: 1px solid #e5e7eb; }
@@ -97,6 +98,19 @@
             ->groupBy('day_of_week')
             ->map(fn ($slots, $day) => __('invoice.days.'.$day).': '.$slots->map(fn ($s) => $clock($s->start_time).'-'.$clock($s->end_time))->implode(', '))
             ->values();
+
+        // Receipt mode: ReceiptPdfService renders this same template for one
+        // payment (via pdf/receipt.blade.php), so a receipt looks exactly like
+        // its invoice. Totals then show what was paid up to and including this
+        // payment, not whatever was paid later.
+        $receipt = $receiptPayment ?? null;
+        if ($receipt) {
+            $paidToDate = (float) $invoice->payments
+                ->filter(fn ($p) => $p->id <= $receipt->id)
+                ->sum('amount');
+            $paidBefore = max(0, $paidToDate - (float) $receipt->amount);
+            $balanceAfter = max(0, (float) $invoice->total - $paidToDate);
+        }
     @endphp
     <div class="header">
         <div class="school">
@@ -109,6 +123,11 @@
             @if($tenant?->email)<p>{{ $tenant->email }}</p>@endif
         </div>
         <div class="invoice">
+            @if($receipt)
+            <h2>{{ __('invoice.receipt') }}</h2>
+            <p><strong>{{ $receipt->payment_number }}</strong></p>
+            <p>{{ __('invoice.invoice_number') }}: {{ $invoice->invoice_number }}</p>
+            @else
             <h2>{{ __('invoice.invoice') }}</h2>
             <p><strong>{{ $invoice->invoice_number }}</strong></p>
             <p>
@@ -116,12 +135,13 @@
                     {{ __('invoice.statuses.'.strtolower($invoice->status)) }}
                 </span>
             </p>
+            @endif
         </div>
     </div>
 
     <div class="meta">
         <div class="student">
-            <h3>{{ __('invoice.bill_to') }}</h3>
+            <h3>{{ $receipt ? __('invoice.received_from') : __('invoice.bill_to') }}</h3>
             @if($invoice->isForCompany())
             {{-- Invoice by class: the company pays one total for its class. --}}
             <p>{{ __('invoice.company') }}: <strong>{{ $invoice->company?->name }}</strong></p>
@@ -152,8 +172,15 @@
             @endif
         </div>
         <div class="dates">
+            @if($receipt)
+            <h3>{{ __('invoice.payment_date') }}</h3>
+            <p>{{ $receipt->payment_date->format('d-m-Y') }}</p>
+            <h3 style="margin-top:8px;">{{ __('invoice.payment_method') }}</h3>
+            <p>{{ __('invoice.methods.'.strtolower($receipt->payment_method)) }}@if($receipt->reference_number) ({{ $receipt->reference_number }})@endif</p>
+            @else
             <h3>{{ __('invoice.invoice_date') }}</h3>
             <p>{{ $invoice->invoice_date->format('d-m-Y') }}</p>
+            @endif
             @if($enrolledClass)
                 <h3 style="margin-top:8px;">{{ __('invoice.class') }}</h3>
                 <p>{{ $enrolledClass->name }}</p>
@@ -168,7 +195,7 @@
                 <h3 style="margin-top:8px;">{{ __('invoice.period') }}</h3>
                 <p>{{ $invoice->period_from->format('d-m-Y') }} – {{ $invoice->period_to->format('d-m-Y') }}</p>
             @endif
-            @if($invoice->due_date)
+            @if($invoice->due_date && ! $receipt)
                 <h3 style="margin-top:8px;">{{ __('invoice.due_date') }}</h3>
                 <p>{{ $invoice->due_date->format('d-m-Y') }}</p>
             @endif
@@ -212,8 +239,16 @@
             <tr><td class="label">{{ __('invoice.discount') }}</td><td class="value">{{ $money((float) $invoice->discount) }}</td></tr>
             <tr><td class="label">{{ __('invoice.tax') }}</td><td class="value">{{ $money((float) $invoice->tax) }}</td></tr>
             <tr class="total"><td class="label">{{ __('invoice.total') }}</td><td class="value">{{ $money((float) $invoice->total) }}</td></tr>
+            @if($receipt)
+            @if($paidBefore > 0)
+            <tr><td class="label">{{ __('invoice.paid_before') }}</td><td class="value">{{ $money($paidBefore) }}</td></tr>
+            @endif
+            <tr class="received"><td class="label">{{ __('invoice.amount_received') }}</td><td class="value">{{ $money((float) $receipt->amount) }}</td></tr>
+            <tr class="balance"><td class="label">{{ __('invoice.balance') }}</td><td class="value">{{ $money($balanceAfter) }}</td></tr>
+            @else
             <tr><td class="label">{{ __('invoice.paid') }}</td><td class="value">{{ $money((float) $invoice->paid_amount) }}</td></tr>
             <tr class="balance"><td class="label">{{ __('invoice.balance') }}</td><td class="value">{{ $money((float) $invoice->balance) }}</td></tr>
+            @endif
         </table>
     </div>
     </div>
@@ -236,7 +271,7 @@
         </table>
     @endif
 
-    @if($invoice->payments->isNotEmpty())
+    @if($invoice->payments->isNotEmpty() && ! $receipt)
         <table class="payments">
             <thead>
                 <tr><th>{{ __('invoice.payment_history') }}</th><th class="num">{{ __('invoice.method') }}</th><th class="num">{{ __('invoice.date') }}</th><th class="num">{{ __('invoice.amount') }}</th></tr>
@@ -254,15 +289,22 @@
         </table>
     @endif
 
-    @if($invoice->notes)
+    @if($receipt)
+        @if($receipt->notes)
+            <div class="notes">
+                <h3>{{ __('invoice.notes') }}</h3>
+                <p>{{ $receipt->notes }}</p>
+            </div>
+        @endif
+    @elseif($invoice->notes)
         <div class="notes">
             <h3>{{ __('invoice.notes') }}</h3>
             <p>{{ $invoice->notes }}</p>
         </div>
     @endif
 
-    {{-- The staff member who actually issued this invoice (Invoice::createdBy)
-         signs it — never a fixed "always the director" signer. Falls back to
+    {{-- The staff member who actually issued this invoice (Invoice::createdBy),
+         or on a receipt whoever recorded the payment (Payment::receivedBy), signs it — never a fixed "always the director" signer. Falls back to
          the plain account name when that user has no linked Staff profile
          (and so no position/signature of their own) rather than showing
          nothing at all. --}}
@@ -280,7 +322,7 @@
             @if($issuerStaff?->position?->name)
                 <p class="title">{{ $issuerStaff->position->name }}</p>
             @endif
-            <p class="name">{{ $issuerStaff?->fullName() ?? $invoice->createdBy?->name }}</p>
+            <p class="name">{{ $issuerStaff?->fullName() ?? ($receipt ? $receipt->receivedBy?->name : $invoice->createdBy?->name) }}</p>
         </div>
     </div>
 </body>

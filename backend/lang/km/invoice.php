@@ -47,6 +47,10 @@ return [
     'reference' => 'លេខយោង',
     'invoice_total' => 'សរុបវិក្កយបត្រ',
     'remaining_balance' => 'នៅសល់',
+    'received_from' => 'ទទួលពី',
+    'payment_date' => 'ថ្ងៃទូទាត់',
+    'paid_before' => 'បានបង់មុន',
+    'amount_received' => 'ទឹកប្រាក់ទទួលបាន',
 
     'lines' => [
         'enrollment' => 'ការចុះឈ្មោះ: :detail',

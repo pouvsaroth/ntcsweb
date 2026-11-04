@@ -9,11 +9,13 @@ import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
 import type { InvoiceInput, InvoiceItemInput, PaymentTypeValue } from '@/services/invoices'
 import { invoicesService, paymentTypes } from '@/services/invoices'
+import { paymentMethods, type PaymentMethodValue } from '@/services/payments'
 import { productsService, type Product } from '@/services/products'
 import { studentsService, type Student } from '@/services/students'
 import TaskProgressOverlay from '@/components/ui/TaskProgressOverlay.vue'
 import { useInvoicePrint } from '@/composables/useInvoicePrint'
 import { useTaskProgress } from '@/composables/useTaskProgress'
+import { useAuthStore } from '@/stores/auth'
 import { ApiRequestError } from '@/types/api'
 
 /** yyyy-MM-dd in the viewer's local time — matches EnrollmentPackageForm's own helper. */
@@ -24,6 +26,7 @@ function today(): string {
 
 const { t } = useI18n()
 const router = useRouter()
+const auth = useAuthStore()
 
 // --- Student picker (same search-then-select pattern as EnrollmentPackageForm) --
 
@@ -129,37 +132,54 @@ const totalPreview = computed(() => {
 
 const errors = ref<Record<string, string[]>>({})
 const generalError = ref<string | null>(null)
-const submitting = ref(false)
-const submittingAndPrinting = ref(false)
-const submittingAndImaging = ref(false)
-const anySubmitting = computed(() => submitting.value || submittingAndPrinting.value || submittingAndImaging.value)
-const printProgress = useTaskProgress()
-const { progress: imageProgress, printInvoice, showInvoiceImage } = useInvoicePrint()
+const issuing = ref(false)
+const paying = ref(false)
+const anySubmitting = computed(() => issuing.value || paying.value)
+const saveProgress = useTaskProgress()
+const { progress: receiptProgress, printReceipt } = useInvoicePrint()
 
 const canSubmit = computed(() => selectedStudent.value !== null && form.items.every((item) => item.product_id !== null))
 
-/**
- * `print`: "Save and Print" — also opens print preview with the new invoice
- * as an A5 image (same as the Enrollment form's) before opening it.
- * `image`: "Save and Image" — shows that image in the share / download /
- * copy dialog instead (see useInvoicePrint). Either way a failure still
- * opens the saved invoice, where Download Invoice / Image retries it.
- */
-async function submit(then: 'none' | 'print' | 'image' = 'none') {
-  if (!selectedStudent.value) return
+// --- Payment, used only by "Pay and invoice" ---------------------------------
 
-  const busy = then === 'print' ? submittingAndPrinting : then === 'image' ? submittingAndImaging : submitting
+const canTakePayment = computed(() => auth.can('payments.create'))
+const payMethod = ref<PaymentMethodValue>('CASH')
+/** null = follow the total as items change; the typed text once staff enter their own amount. */
+const payAmountText = ref<string | null>(null)
+const payAmount = computed(() => (payAmountText.value !== null ? Number(payAmountText.value) || 0 : totalPreview.value))
+const paymentMethodOptions = computed(() =>
+  paymentMethods.map((method) => ({
+    value: method,
+    label: t(`admin.payments.method${method.toLowerCase().split('_').map((p) => p.charAt(0).toUpperCase() + p.slice(1)).join('')}`),
+  })),
+)
+
+/**
+ * `issue`: "Issue invoice" — saved unpaid, then opened.
+ * `pay`: "Pay and invoice" — saved with the payment in the same request,
+ * then the payment's receipt opens in print preview. A print failure still
+ * opens the saved invoice, where the receipt can be downloaded again.
+ */
+async function submit(mode: 'issue' | 'pay' = 'issue') {
+  if (!selectedStudent.value) return
+  if (mode === 'pay' && (!canTakePayment.value || payAmount.value <= 0)) return
+
+  const busy = mode === 'pay' ? paying : issuing
   busy.value = true
   errors.value = {}
   generalError.value = null
-  if (then !== 'none') printProgress.creep(t('admin.invoices.progressSaving'), 25)
+  if (mode === 'pay') saveProgress.creep(t('admin.invoices.progressSaving'), 25)
 
   try {
-    const invoice = await invoicesService.create({ ...form, student_id: selectedStudent.value.id })
-    if (then !== 'none') {
-      printProgress.reset()
-      const output = then === 'print' ? printInvoice : showInvoiceImage
-      await output(invoice.id, invoice.invoice_number).catch(() => {})
+    const invoice = await invoicesService.create({
+      ...form,
+      student_id: selectedStudent.value.id,
+      ...(mode === 'pay' ? { received_amount: payAmount.value, payment_method: payMethod.value } : {}),
+    })
+    if (mode === 'pay') {
+      saveProgress.reset()
+      const payment = [...(invoice.payments ?? [])].sort((a, b) => b.id - a.id)[0]
+      if (payment) await printReceipt(payment.id, payment.payment_number).catch(() => {})
     }
     await router.push(`/admin/invoices/${invoice.id}`)
   } catch (error) {
@@ -169,7 +189,7 @@ async function submit(then: 'none' | 'print' | 'image' = 'none') {
       generalError.value = error instanceof ApiRequestError ? error.message : t('admin.invoices.saveFailed')
     }
   } finally {
-    printProgress.reset()
+    saveProgress.reset()
     busy.value = false
   }
 }
@@ -326,31 +346,48 @@ onMounted(async () => {
         <p class="mt-2 text-xs text-neutral-400">{{ t('admin.invoices.totalPreviewHint') }}</p>
       </div>
 
+      <section v-if="canTakePayment">
+        <h2 class="text-sm font-semibold text-neutral-800">{{ t('admin.invoices.paySection') }}</h2>
+        <p class="mb-2 text-xs text-neutral-500">{{ t('admin.invoices.paySectionHint') }}</p>
+        <div class="grid grid-cols-2 gap-4">
+          <BaseInput
+            :model-value="payAmountText ?? totalPreview.toFixed(2)"
+            type="number"
+            min="0"
+            step="any"
+            :label="t('admin.invoices.payAmount')"
+            :hint="t('admin.invoices.payAmountHint')"
+            :error="errors.received_amount?.[0]"
+            @update:model-value="payAmountText = $event === '' ? null : $event"
+          />
+          <BaseSelect
+            :model-value="payMethod"
+            :options="paymentMethodOptions"
+            :label="t('admin.invoices.paymentMethod')"
+            :error="errors.payment_method?.[0]"
+            @update:model-value="payMethod = ($event || 'CASH') as PaymentMethodValue"
+          />
+        </div>
+      </section>
+
       <div class="flex flex-wrap gap-3">
-        <BaseButton type="submit" :loading="submitting" :disabled="!canSubmit || (anySubmitting && !submitting)">{{ t('common.save') }}</BaseButton>
-        <BaseButton
-          type="button"
-          variant="outline"
-          :loading="submittingAndPrinting"
-          :disabled="!canSubmit || (anySubmitting && !submittingAndPrinting)"
-          @click="submit('print')"
-        >
-          {{ t('admin.invoices.saveAndPrint') }}
+        <BaseButton type="submit" variant="outline" :loading="issuing" :disabled="!canSubmit || (anySubmitting && !issuing)">
+          {{ t('admin.invoices.issueInvoice') }}
         </BaseButton>
         <BaseButton
+          v-if="canTakePayment"
           type="button"
-          variant="outline"
-          :loading="submittingAndImaging"
-          :disabled="!canSubmit || (anySubmitting && !submittingAndImaging)"
-          @click="submit('image')"
+          :loading="paying"
+          :disabled="!canSubmit || payAmount <= 0 || (anySubmitting && !paying)"
+          @click="submit('pay')"
         >
-          {{ t('admin.invoices.saveAndImage') }}
+          {{ t('admin.invoices.payAndInvoice') }}
         </BaseButton>
         <BaseButton type="button" variant="outline" @click="router.push('/admin/invoices')">{{ t('common.cancel') }}</BaseButton>
       </div>
     </form>
 
-    <TaskProgressOverlay :percent="printProgress.percent.value" :label="printProgress.label.value" />
-    <TaskProgressOverlay :percent="imageProgress.percent.value" :label="imageProgress.label.value" />
+    <TaskProgressOverlay :percent="saveProgress.percent.value" :label="saveProgress.label.value" />
+    <TaskProgressOverlay :percent="receiptProgress.percent.value" :label="receiptProgress.label.value" />
   </div>
 </template>

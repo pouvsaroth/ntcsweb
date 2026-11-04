@@ -932,6 +932,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::post('payments/{payment}/cancel', [PaymentController::class, 'cancel'])->name('payments.cancel');
         Route::post('payments/{payment}/refund', [PaymentController::class, 'refund'])->name('payments.refund');
         Route::get('payments/{payment}/receipt', [PaymentController::class, 'receipt'])->name('payments.receipt');
+        Route::get('payments/{payment}/receipt-image', [PaymentController::class, 'receiptImage'])->name('payments.receipt-image');
 
         Route::get('billing/dashboard', [BillingDashboardController::class, 'summary'])->name('billing.dashboard');
         Route::get('billing/reports/payments-by-method', [BillingDashboardController::class, 'paymentsByMethod'])->name('billing.reports.payments-by-method');

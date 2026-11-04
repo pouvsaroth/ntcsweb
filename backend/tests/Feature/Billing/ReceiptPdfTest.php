@@ -28,7 +28,7 @@ class ReceiptPdfTest extends TestCase
         $student = Student::factory()->create();
         $invoice = Invoice::factory()->forStudent($student)->create();
         $payment = Payment::factory()->forInvoice($invoice)->create();
-        $payment->load('invoice.student');
+        $payment->load(['invoice.student', 'invoice.items', 'invoice.invoiceStudents', 'invoice.payments']);
 
         return View::make('pdf.receipt', [
             'payment' => $payment,
@@ -69,7 +69,50 @@ class ReceiptPdfTest extends TestCase
 
         $this->assertStringContainsString('RECEIPT', $html);
         $this->assertStringContainsString('Student', $html);
-        $this->assertStringContainsString('Invoice Total', $html);
+        $this->assertStringContainsString('Total', $html);
+    }
+
+    public function test_the_receipt_uses_the_invoice_design_with_this_payment_s_amount(): void
+    {
+        $this->actingAsAdminWithPermissions([]);
+
+        $html = $this->receiptView();
+
+        // Same layout as the invoice: its item table and sign-off.
+        $this->assertStringContainsString('class="items"', $html);
+        $this->assertStringContainsString('class="signoff"', $html);
+        $this->assertStringContainsString('Received From', $html);
+        $this->assertStringContainsString('Amount Received', $html);
+        $this->assertStringNotContainsString('Payment History', $html);
+        $this->assertStringNotContainsString('Bill To', $html);
+    }
+
+    public function test_the_receipt_image_is_a_png(): void
+    {
+        if (! file_exists(config('services.browsershot.chrome_path') ?: '/usr/bin/chromium')) {
+            $this->markTestSkipped('Chromium is not available in this environment — see docker/php/Dockerfile.');
+        }
+
+        $this->actingAsAdminWithPermissions([Permissions::PAYMENTS_VIEW]);
+
+        $invoice = Invoice::factory()->forStudent(Student::factory()->create())->create();
+        $payment = Payment::factory()->forInvoice($invoice)->create();
+
+        $response = $this->get("/api/v1/payments/{$payment->id}/receipt-image");
+
+        $response->assertOk();
+        $response->assertHeader('Content-Type', 'image/png');
+        $this->assertSame("PNG", substr((string) $response->getContent(), 1, 3));
+    }
+
+    public function test_the_receipt_image_needs_permission_to_view_payments(): void
+    {
+        $this->actingAsAdminWithPermissions([]);
+
+        $invoice = Invoice::factory()->forStudent(Student::factory()->create())->create();
+        $payment = Payment::factory()->forInvoice($invoice)->create();
+
+        $this->get("/api/v1/payments/{$payment->id}/receipt-image")->assertForbidden();
     }
 
     public function test_downloading_the_receipt_pdf_produces_a_real_pdf_with_the_khmer_font_embedded(): void
