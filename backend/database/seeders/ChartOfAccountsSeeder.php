@@ -28,6 +28,8 @@ class ChartOfAccountsSeeder extends Seeder
         ['code' => '1200', 'name' => 'Bank', 'type' => AccountType::ASSET, 'parent' => '1000', 'bank' => true],
 
         ['code' => '2000', 'name' => 'Liabilities', 'type' => AccountType::LIABILITY, 'parent' => null],
+        // Accounting > Borrowings (BorrowingAccounts finds or adds these too).
+        ['code' => '2100', 'name' => 'Loans Payable', 'type' => AccountType::LIABILITY, 'parent' => '2000'],
 
         ['code' => '3000', 'name' => 'Equity', 'type' => AccountType::EQUITY, 'parent' => null],
 
@@ -50,6 +52,7 @@ class ChartOfAccountsSeeder extends Seeder
         ['code' => '5700', 'name' => 'Transportation', 'type' => AccountType::EXPENSE, 'parent' => '5000'],
         ['code' => '5800', 'name' => 'Marketing', 'type' => AccountType::EXPENSE, 'parent' => '5000'],
         ['code' => '5900', 'name' => 'Other Expenses', 'type' => AccountType::EXPENSE, 'parent' => '5000'],
+        ['code' => '5950', 'name' => 'Loan Interest', 'type' => AccountType::EXPENSE, 'parent' => '5000'],
     ];
 
     public function run(): void

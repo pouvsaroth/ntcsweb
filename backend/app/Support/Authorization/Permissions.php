@@ -516,6 +516,10 @@ final class Permissions
 
     public const EXPENSE_PAY = 'expense.pay';
 
+    public const BORROWINGS_VIEW = 'borrowings.view';
+
+    public const BORROWINGS_MANAGE = 'borrowings.manage';
+
     public const TRANSACTIONS_VIEW = 'transactions.view';
 
     public const TRANSACTIONS_CREATE = 'transactions.create';
@@ -736,6 +740,9 @@ final class Permissions
 
     public const DASHBOARD_CARDS_EXPENSE = 'dashboard.cards.expense';
 
+    /** Total owed on Accounting > Borrowings; school admin only by default (personal loans too). */
+    public const DASHBOARD_CARDS_BORROWINGS = 'dashboard.cards.borrowings';
+
     public const DASHBOARD_CARDS_STUDENT_ATTENDANCE = 'dashboard.cards.student-attendance';
 
     public const DASHBOARD_CARDS_TEACHER_ATTENDANCE = 'dashboard.cards.teacher-attendance';
@@ -794,6 +801,7 @@ final class Permissions
                 self::DASHBOARD_CARDS_STUDENT_PAYMENT => 'Show the Student Payment card',
                 self::DASHBOARD_CARDS_INVOICES => 'Show the Invoices card',
                 self::DASHBOARD_CARDS_EXPENSE => 'Show the Expense card',
+                self::DASHBOARD_CARDS_BORROWINGS => 'Show the Borrowings card (total owed)',
                 self::DASHBOARD_CARDS_STUDENT_ATTENDANCE => 'Show the Student Attendance card',
                 self::DASHBOARD_CARDS_TEACHER_ATTENDANCE => 'Show the Teacher Attendance card',
                 self::DASHBOARD_CARDS_REGISTRATION_PENDING => 'Show the Registration Pending card',
@@ -1092,6 +1100,8 @@ final class Permissions
                 self::EXPENSE_REJECT => 'Reject expenses',
                 self::EXPENSE_CANCEL => 'Cancel expenses',
                 self::EXPENSE_PAY => 'Pay expenses',
+                self::BORROWINGS_VIEW => 'View borrowings and lenders',
+                self::BORROWINGS_MANAGE => 'Add and edit borrowings and lenders',
                 self::TRANSACTIONS_VIEW => 'View the general ledger',
                 self::TRANSACTIONS_CREATE => 'Create transfers and adjustments',
                 self::REPORTS_FINANCIAL_VIEW => 'View financial reports',
@@ -1281,6 +1291,7 @@ final class Permissions
             self::INCOME_VIEW, self::INCOME_CREATE, self::INCOME_UPDATE, self::INCOME_CANCEL,
             self::EXPENSE_VIEW, self::EXPENSE_CREATE, self::EXPENSE_UPDATE,
             self::EXPENSE_APPROVE, self::EXPENSE_REJECT, self::EXPENSE_CANCEL, self::EXPENSE_PAY,
+            self::BORROWINGS_VIEW, self::BORROWINGS_MANAGE, self::DASHBOARD_CARDS_BORROWINGS,
             self::TRANSACTIONS_VIEW, self::TRANSACTIONS_CREATE,
             self::REPORTS_FINANCIAL_VIEW, self::REPORTS_FINANCIAL_EXPORT,
             self::ACCOUNTING_PERIOD_CLOSE, self::ACCOUNTING_ADJUSTMENT_CREATE,

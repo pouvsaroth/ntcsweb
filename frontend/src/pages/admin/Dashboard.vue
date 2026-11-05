@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
 
@@ -19,6 +19,7 @@ import { monthlyPaymentAlertsService } from '@/services/monthlyPaymentAlerts'
 import { type TermStudyAlert, termStudyAlertsService } from '@/services/termStudyAlerts'
 import { resignationRequestsService } from '@/services/resignationRequests'
 import { useAuthStore } from '@/stores/auth'
+import { borrowingsService, type BorrowingSummary } from '@/services/borrowings'
 import { formatMoney } from '@/utils/currency'
 import { formatDate } from '@/utils/date'
 
@@ -248,6 +249,18 @@ async function loadUnpaidInvoices(): Promise<void> {
 
 let currency: 'USD' | 'KHR' = 'USD'
 
+// Accounting > Borrowings card: total still owed, per currency, and the next payment.
+const borrowings = ref<BorrowingSummary | null>(null)
+async function loadBorrowings(): Promise<void> {
+  if (!auth.can('dashboard.cards.borrowings')) return
+  try {
+    borrowings.value = await borrowingsService.summary()
+  } catch {
+    // No card — most likely the signed-in admin just lacks borrowings.view.
+  }
+}
+const owedText = computed(() => (borrowings.value?.owed.length ? borrowings.value.owed.map((o) => amount(o.amount, o.currency)).join(' · ') : amount(0, auth.tenantDefaultCurrency === 'KHR' ? 'KHR' : 'USD')))
+
 function money(amount: number): string {
   return formatMoney(amount, currency)
 }
@@ -357,6 +370,8 @@ async function loadPendingApprovals(): Promise<void> {
 
 async function loadStats(): Promise<void> {
   void loadPendingApprovals()
+
+  void loadBorrowings()
 
   if (auth.can('dashboard.finance.view')) {
     try {
@@ -796,6 +811,31 @@ onBeforeUnmount(() => {
           </BaseCard>
         </div>
       </template>
+
+      <div v-if="borrowings && auth.can('dashboard.cards.borrowings')" class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <RouterLink
+          to="/admin/borrowings/reports"
+          class="rounded-[--radius-card] transition hover:ring-2 hover:ring-primary-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+        >
+          <BaseCard class="h-full">
+            <div class="flex items-start justify-between gap-2">
+              <p class="text-sm font-medium text-neutral-500">{{ t('admin.dashboard.statBorrowingsOwed') }}</p>
+              <BaseBadge v-if="borrowings.late_loans" variant="danger">{{ t('admin.borrowings.lateCount', { count: borrowings.late_loans }) }}</BaseBadge>
+            </div>
+            <p class="mt-1 text-2xl font-bold text-neutral-900">{{ owedText }}</p>
+            <p v-if="borrowings.next_payment" class="mt-1 text-xs" :class="borrowings.next_payment.late ? 'text-danger-700' : 'text-neutral-500'">
+              {{
+                t('admin.dashboard.borrowingsNext', {
+                  amount: amount(borrowings.next_payment.amount, borrowings.next_payment.currency),
+                  date: formatDate(borrowings.next_payment.due_on),
+                  lender: borrowings.next_payment.lender ?? '—',
+                })
+              }}
+            </p>
+            <p v-else class="mt-1 text-xs text-neutral-500">{{ t('admin.dashboard.borrowingsNone') }}</p>
+          </BaseCard>
+        </RouterLink>
+      </div>
     </template>
 
     <BaseModal v-model="incomeDetailOpen" :title="t('admin.dashboard.incomeDetailTitle')" size="lg">

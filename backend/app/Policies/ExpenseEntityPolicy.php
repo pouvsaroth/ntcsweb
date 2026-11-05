@@ -13,7 +13,8 @@ class ExpenseEntityPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->hasPermission(Permissions::EXPENSE_VIEW) || $user->hasPermission(Permissions::EXPENSE_CREATE);
+        // Borrowings pick "Borrowed for" from the same list.
+        return $user->hasPermission(Permissions::EXPENSE_VIEW) || $user->hasPermission(Permissions::EXPENSE_CREATE) || $user->hasPermission(Permissions::BORROWINGS_VIEW);
     }
 
     public function view(User $user, ExpenseEntity $entity): bool

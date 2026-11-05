@@ -34,6 +34,7 @@ final class AccountingModule extends Module
             'accounts' => ['Chart of accounts', 'តារាងគណនី'],
             'income' => ['Income', 'ចំណូល'],
             'expense' => ['Expenses', 'ចំណាយ'],
+            'borrowings' => ['Borrowings', 'ប្រាក់កម្ចី'],
             'transactions' => ['Transactions', 'ប្រតិបត្តិការ'],
             'reports' => ['Financial reports', 'របាយការណ៍ហិរញ្ញវត្ថុ'],
         ];
@@ -43,6 +44,7 @@ final class AccountingModule extends Module
     {
         return [
             'dashboard.cards.expense',
+            'dashboard.cards.borrowings',
         ];
     }
 }

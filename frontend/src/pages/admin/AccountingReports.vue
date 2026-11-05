@@ -154,7 +154,9 @@ onMounted(() => load())
           <div class="flex justify-between"><dt class="text-neutral-500">{{ t('admin.accountingReports.openingBalance') }}</dt><dd class="font-medium text-neutral-900">${{ cashFlow.opening.toFixed(2) }}</dd></div>
           <div class="flex justify-between"><dt class="text-neutral-500">{{ t('admin.accountingReports.studentPayments') }}</dt><dd class="font-medium text-green-700">+${{ cashFlow.student_payments.toFixed(2) }}</dd></div>
           <div class="flex justify-between"><dt class="text-neutral-500">{{ t('admin.accountingReports.otherIncome') }}</dt><dd class="font-medium text-green-700">+${{ cashFlow.other_income.toFixed(2) }}</dd></div>
+          <div v-if="cashFlow.loans_received" class="flex justify-between"><dt class="text-neutral-500">{{ t('admin.accountingReports.loansReceived') }}</dt><dd class="font-medium text-green-700">+${{ cashFlow.loans_received.toFixed(2) }}</dd></div>
           <div class="flex justify-between"><dt class="text-neutral-500">{{ t('admin.accountingReports.expensesOut') }}</dt><dd class="font-medium text-danger-700">-${{ cashFlow.expenses.toFixed(2) }}</dd></div>
+          <div v-if="cashFlow.loan_repayments" class="flex justify-between"><dt class="text-neutral-500">{{ t('admin.accountingReports.loanRepayments') }}</dt><dd class="font-medium text-danger-700">-${{ cashFlow.loan_repayments.toFixed(2) }}</dd></div>
           <div class="flex justify-between border-t border-neutral-200 pt-3 font-semibold text-neutral-900"><dt>{{ t('admin.accountingReports.closingBalance') }}</dt><dd>${{ cashFlow.closing.toFixed(2) }}</dd></div>
         </dl>
       </div>

@@ -262,6 +262,30 @@ final class FinancialTransactionService
         );
     }
 
+    /**
+     * Accounting > Borrowings: money borrowed coming in (debit Cash/Bank,
+     * credit Loans Payable) or principal paid back (the other way round).
+     */
+    public function postLoan(Account $debitAccount, Account $creditAccount, float $amount, string $currency, string $date, string $description, string $referenceType, int $referenceId, User $actor): FinancialTransaction
+    {
+        $tenant = $this->context->getOrFail();
+        $this->periodGuard->assertOpen($tenant, Carbon::parse($date));
+
+        return $this->post(
+            number: $this->numbers->nextTransactionNumber($tenant),
+            date: $date,
+            type: TransactionType::LOAN,
+            debitAccount: $debitAccount,
+            creditAccount: $creditAccount,
+            amount: $amount,
+            currency: $currency,
+            description: $description,
+            actor: $actor,
+            referenceType: $referenceType,
+            referenceId: $referenceId,
+        );
+    }
+
     /** Manual "other income" entry (section 6) — a sale that never went through Invoice/Payment at all. */
     /**
      * @param  string|null  $currency  USD / KHR; empty = the school's default

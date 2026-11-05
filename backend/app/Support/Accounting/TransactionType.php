@@ -22,9 +22,12 @@ final class TransactionType
 
     public const ADJUSTMENT = 'ADJUSTMENT';
 
+    /** Borrowed money coming in (Cash/Bank ← Loans Payable) or principal paid back (the reverse). */
+    public const LOAN = 'LOAN';
+
     /** @return list<string> */
     public static function all(): array
     {
-        return [self::INCOME, self::EXPENSE, self::TRANSFER, self::REFUND, self::ADJUSTMENT];
+        return [self::INCOME, self::EXPENSE, self::TRANSFER, self::REFUND, self::ADJUSTMENT, self::LOAN];
     }
 }

@@ -91,7 +91,10 @@ export interface CashFlowReport {
   opening: number
   student_payments: number
   other_income: number
+  /** Accounting > Borrowings: money borrowed in / principal paid back. */
+  loans_received: number
   expenses: number
+  loan_repayments: number
   closing: number
 }
 

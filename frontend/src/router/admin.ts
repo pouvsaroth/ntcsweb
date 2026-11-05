@@ -4,6 +4,7 @@ import { firstAccessibleAdminPath } from '@/router/adminNav'
 import { canOpenOrganizationTab, organizationTabs } from '@/router/organizationTabs'
 import { attendanceRecordTabs, attendanceTabs } from '@/router/attendanceTabs'
 import { leaveTabs } from '@/router/leaveTabs'
+import { borrowingsTabs } from '@/router/borrowingsTabs'
 import { payrollTabs } from '@/router/payrollTabs'
 import { performanceTabs } from '@/router/performanceTabs'
 import { canOpenProfessionalDevelopmentTab, professionalDevelopmentTabs } from '@/router/professionalDevelopmentTabs'
@@ -951,6 +952,28 @@ const adminRoutes: RouteRecordRaw[] = [
     name: 'admin.expenses',
     component: () => import('@/pages/admin/Expenses.vue'),
     meta: { titleKey: 'adminNav.items.expenses' },
+  },
+  {
+    // Accounting > Borrowings: tabs as child routes (see BorrowingsLayout.vue / borrowingsTabs.ts).
+    path: 'borrowings',
+    component: () => import('@/pages/admin/borrowings/BorrowingsLayout.vue'),
+    meta: { titleKey: 'adminNav.items.borrowings' },
+    children: [
+      {
+        path: '',
+        name: 'admin.borrowings',
+        redirect: () => {
+          const auth = useAuthStore()
+          return (borrowingsTabs.find((tab) => auth.can(tab.permission)) ?? borrowingsTabs[0]!).to
+        },
+      },
+      { path: 'loans', name: 'admin.borrowings.loans', component: () => import('@/pages/admin/borrowings/Loans.vue') },
+      { path: 'repayments', name: 'admin.borrowings.repayments', component: () => import('@/pages/admin/borrowings/Repayments.vue') },
+      { path: 'lenders', name: 'admin.borrowings.lenders', component: () => import('@/pages/admin/borrowings/Lenders.vue') },
+      { path: 'reports', name: 'admin.borrowings.reports', component: () => import('@/pages/admin/borrowings/BorrowingReports.vue') },
+      // One loan's statement (print), opened from the loan.
+      { path: 'loans/:id/statement', name: 'admin.borrowings.statement', component: () => import('@/pages/admin/borrowings/LoanStatement.vue') },
+    ],
   },
   {
     path: 'expense-for',

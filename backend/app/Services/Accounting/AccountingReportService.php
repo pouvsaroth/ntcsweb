@@ -108,7 +108,7 @@ final class AccountingReportService
     }
 
     /**
-     * @return array{opening: float, student_payments: float, other_income: float, expenses: float, closing: float}
+     * @return array{opening: float, student_payments: float, other_income: float, loans_received: float, expenses: float, loan_repayments: float, closing: float}
      */
     public function cashFlow(string $dateFrom, string $dateTo): array
     {
@@ -130,14 +130,34 @@ final class AccountingReportService
         $leftoverReversal = max(0.0, $reversedIncome - $studentPayments);
         $netOtherIncome = round(max(0.0, $otherIncome - $leftoverReversal), 2);
 
-        $expenses = round($this->sum('credit_account_id', $bankIds, $dateFrom, $dateTo, [TransactionType::EXPENSE]), 2);
+        // A reversed expense (a removed loan repayment's interest) puts the cash back.
+        $expenses = round(
+            $this->sum('credit_account_id', $bankIds, $dateFrom, $dateTo, [TransactionType::EXPENSE], reversal: false)
+            - $this->sum('debit_account_id', $bankIds, $dateFrom, $dateTo, [TransactionType::EXPENSE], reversal: true),
+            2,
+        );
+
+        // Accounting > Borrowings: money borrowed in and principal paid back,
+        // each net of its own reversals.
+        $loansReceived = round(
+            $this->sum('debit_account_id', $bankIds, $dateFrom, $dateTo, [TransactionType::LOAN], reversal: false)
+            - $this->sum('credit_account_id', $bankIds, $dateFrom, $dateTo, [TransactionType::LOAN], reversal: true),
+            2,
+        );
+        $loanRepayments = round(
+            $this->sum('credit_account_id', $bankIds, $dateFrom, $dateTo, [TransactionType::LOAN], reversal: false)
+            - $this->sum('debit_account_id', $bankIds, $dateFrom, $dateTo, [TransactionType::LOAN], reversal: true),
+            2,
+        );
 
         return [
             'opening' => $opening,
             'student_payments' => $netStudentPayments,
             'other_income' => $netOtherIncome,
+            'loans_received' => $loansReceived,
             'expenses' => $expenses,
-            'closing' => round($opening + $netStudentPayments + $netOtherIncome - $expenses, 2),
+            'loan_repayments' => $loanRepayments,
+            'closing' => round($opening + $netStudentPayments + $netOtherIncome + $loansReceived - $expenses - $loanRepayments, 2),
         ];
     }
 
@@ -167,6 +187,7 @@ final class AccountingReportService
         array $types,
         ?string $referenceType = null,
         bool $referenceTypeNull = false,
+        ?bool $reversal = null,
     ): float {
         $query = FinancialTransaction::query()
             ->select('currency', DB::raw('DATE(transaction_date) as tx_date'), DB::raw('SUM(amount) as total'))
@@ -191,6 +212,13 @@ final class AccountingReportService
 
         if ($referenceTypeNull) {
             $query->whereNull('reference_type');
+        }
+
+        // true: only reversal entries; false: only originals; null: both.
+        if ($reversal === true) {
+            $query->whereNotNull('reverses_transaction_id');
+        } elseif ($reversal === false) {
+            $query->whereNull('reverses_transaction_id');
         }
 
         return $this->currency->sumConverted($query->get(), $this->tenantContext->getOrFail());
