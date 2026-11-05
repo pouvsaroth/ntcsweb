@@ -11,10 +11,12 @@ use App\Models\PayrollRun;
 use App\Models\Payslip;
 use App\Services\Approvals\ApprovalFlow;
 use App\Services\Payroll\PayrollRunService;
+use App\Services\Payroll\PayslipPdfService;
 use App\Support\Accounting\AccountType;
 use App\Support\Query\ApiQuery;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
 
@@ -166,6 +168,30 @@ final class PayrollRunController extends Controller
         $this->runs->adjust($payslip, (float) $data['adjustment'], $data['adjustment_note'] ?? null);
 
         return ApiResponse::success($this->detail($payslip->run->fresh(), $request));
+    }
+
+    /**
+     * Payslip > Export PDF: the picked payslips of one payroll (`ids`, comma
+     * separated; all when left out) in one A4 PDF, one per page, signed by
+     * whoever prepared and approved the payroll. `locale` en|km.
+     */
+    public function payslipsPdf(Request $request, PayrollRun $payrollRun, PayslipPdfService $pdf): Response
+    {
+        $this->authorize('view', $payrollRun);
+
+        $ids = collect(explode(',', (string) $request->query('ids', '')))->map(fn ($id) => (int) trim($id))->filter()->values();
+        $slips = $payrollRun->payslips()
+            ->with(['staff.position', 'staff.department'])
+            ->when($ids->isNotEmpty(), fn ($q) => $q->whereIn('id', $ids))
+            ->get()
+            ->sortBy(fn (Payslip $s) => $s->staff?->employee_code)
+            ->values();
+        abort_if($slips->isEmpty(), 422, 'No payslips to export.');
+
+        return response($pdf->render($payrollRun, $slips, PayslipPdfService::resolveLocale($request->query('locale'))), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="'.$pdf->filename($payrollRun).'"',
+        ]);
     }
 
     public function payslip(Payslip $payslip): JsonResponse

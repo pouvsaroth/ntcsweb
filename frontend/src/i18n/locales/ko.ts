@@ -3923,7 +3923,11 @@ const ko: MessageSchema = {
       nationalIdPhoto: '신분증 사진',
       photo: '사진',
       signature: '서명',
-      signatureHint: '이 직원이 발행하는 청구서나 영수증에 인쇄됩니다.',
+      signatureHint: '이 직원이 발행하는 청구서·영수증과 작성 또는 승인하는 급여명세서에 인쇄됩니다.',
+      uploadSignature: '업로드',
+      signatureTitle: '서명 — {name}',
+      noSignature: '아직 서명이 없습니다',
+      signatureSaveFailed: '서명을 저장할 수 없습니다.',
 
       contactSection: '연락처 정보',
       facebook: '페이스북',
@@ -5815,6 +5819,9 @@ const ko: MessageSchema = {
         noRuns: "아직 급여가 없습니다 — 급여 계산에서 시작하세요.",
         signSchool: "작성자",
         signStaff: "수령자",
+        exportPdf: "PDF 내보내기 ({count})",
+        selectAll: "모두 선택",
+        exportFailed: "급여명세서를 내보낼 수 없습니다.",
       },
       approval: {
         waiting: "승인 대기",

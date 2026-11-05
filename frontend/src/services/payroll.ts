@@ -1,4 +1,4 @@
-import { apiDelete, apiGetWithMeta, apiPost, apiPut } from '@/services/http'
+import { apiDelete, apiDownload, apiGetWithMeta, apiPost, apiPut } from '@/services/http'
 import type { PaginatedQuery } from '@/composables/usePaginatedResource'
 import type { LengthAwarePaginationMeta, PaginatedResult } from '@/types/api'
 
@@ -520,6 +520,9 @@ export const payrollRunsService = {
   payAccounts: () => apiGetWithMeta<PayAccounts>('/payroll-runs/pay-accounts').then((r) => r.data),
   adjust: (payslipId: number, input: { adjustment: number; adjustment_note: string | null }) => apiPut<PayrollRun>(`/payslips/${payslipId}/adjustment`, input),
   payslip: (id: number) => apiGetWithMeta<Payslip>(`/payslips/${id}`).then((r) => r.data),
+  /** One PDF of the picked payslips (all when `ids` is empty), signed per the payroll's approval. en/km only; others get the school's language. */
+  payslipsPdf: (runId: number, ids: number[], locale: string, filename: string) =>
+    apiDownload(`/payroll-runs/${runId}/payslips-pdf?ids=${ids.join(',')}&locale=${encodeURIComponent(locale)}`, filename),
   payslips: (query: PaginatedQuery, extra: { year?: number } = {}) =>
     page<Payslip>('/payslips', query, extra.year ? { year: extra.year } : {}),
 }

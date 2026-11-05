@@ -3923,7 +3923,11 @@ const km: MessageSchema = {
       nationalIdPhoto: 'រូបថតអត្តសញ្ញាណប័ណ្ណ',
       photo: 'រូបថត',
       signature: 'ហត្ថលេខា',
-      signatureHint: 'បោះពុម្ពនៅលើវិក្កយបត្រ ឬបង្កាន់ដៃទូទាត់ដែលនិយោជិកនេះចេញ។',
+      signatureHint: 'បោះពុម្ពនៅលើវិក្កយបត្រ និងបង្កាន់ដៃដែលបុគ្គលិកនេះចេញ និងលើបង្កាន់ដៃប្រាក់ខែដែលគាត់រៀបចំ ឬអនុម័ត។',
+      uploadSignature: 'បញ្ចូល',
+      signatureTitle: 'ហត្ថលេខា — {name}',
+      noSignature: 'មិនទាន់មានហត្ថលេខា',
+      signatureSaveFailed: 'មិនអាចរក្សាទុកហត្ថលេខាបានទេ។',
 
       contactSection: 'ព័ត៌មានទំនាក់ទំនង',
       facebook: 'ហ្វេសប៊ុក',
@@ -5815,6 +5819,9 @@ const km: MessageSchema = {
         noRuns: "មិនទាន់មានបញ្ជីប្រាក់ខែ — ចាប់ផ្ដើមនៅ ការគណនាប្រាក់ខែ។",
         signSchool: "រៀបចំដោយ",
         signStaff: "ទទួលដោយ",
+        exportPdf: "នាំចេញ PDF ({count})",
+        selectAll: "ជ្រើសរើសទាំងអស់",
+        exportFailed: "មិនអាចនាំចេញបង្កាន់ដៃប្រាក់ខែបានទេ។",
       },
       approval: {
         waiting: "កំពុងរង់ចាំការអនុម័ត",

@@ -3922,7 +3922,11 @@ const zh: MessageSchema = {
       nationalIdPhoto: '身份证照片',
       photo: '照片',
       signature: '签名',
-      signatureHint: '打印在该员工开具的发票或收据上。',
+      signatureHint: '打印在该员工开具的发票、收据，以及其制作或审批的工资单上。',
+      uploadSignature: '上传',
+      signatureTitle: '签名 — {name}',
+      noSignature: '尚无签名',
+      signatureSaveFailed: '无法保存签名。',
 
       contactSection: '联系方式',
       facebook: 'Facebook',
@@ -5814,6 +5818,9 @@ const zh: MessageSchema = {
         noRuns: "还没有工资单——请在“工资计算”中开始。",
         signSchool: "制表人",
         signStaff: "签收人",
+        exportPdf: "导出 PDF ({count})",
+        selectAll: "全选",
+        exportFailed: "无法导出工资单。",
       },
       approval: {
         waiting: "待审批",

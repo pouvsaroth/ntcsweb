@@ -3923,7 +3923,11 @@ const ja: MessageSchema = {
       nationalIdPhoto: '国民ID写真',
       photo: '写真',
       signature: '署名',
-      signatureHint: 'この職員が発行する請求書や領収書に印刷されます。',
+      signatureHint: 'この職員が発行する請求書・領収書と、作成または承認する給与明細に印刷されます。',
+      uploadSignature: 'アップロード',
+      signatureTitle: '署名 — {name}',
+      noSignature: '署名はまだありません',
+      signatureSaveFailed: '署名を保存できませんでした。',
 
       contactSection: '連絡先情報',
       facebook: 'Facebook',
@@ -5815,6 +5819,9 @@ const ja: MessageSchema = {
         noRuns: "まだ給与計算はありません。「給与計算」から始めてください。",
         signSchool: "作成者",
         signStaff: "受領者",
+        exportPdf: "PDF出力 ({count})",
+        selectAll: "すべて選択",
+        exportFailed: "給与明細を出力できませんでした。",
       },
       approval: {
         waiting: "承認待ち",

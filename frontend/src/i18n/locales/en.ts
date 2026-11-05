@@ -3927,7 +3927,11 @@ const en = {
       nationalIdPhoto: 'National ID photo',
       photo: 'Photo',
       signature: 'Signature',
-      signatureHint: 'Printed on an invoice or receipt this staff member issues.',
+      signatureHint: 'Printed on invoices and receipts this staff member issues, and on payslips they prepare or approve.',
+      uploadSignature: 'Upload',
+      signatureTitle: 'Signature — {name}',
+      noSignature: 'No signature yet',
+      signatureSaveFailed: 'Could not save the signature.',
 
       contactSection: 'Contact information',
       facebook: 'Facebook',
@@ -5819,6 +5823,9 @@ const en = {
         noRuns: "No payrolls yet — start one under Payroll calculation.",
         signSchool: "Prepared by",
         signStaff: "Received by",
+        exportPdf: "Export PDF ({count})",
+        selectAll: "Select all",
+        exportFailed: "Could not export the payslips.",
       },
       approval: {
         waiting: "Waiting for approval",

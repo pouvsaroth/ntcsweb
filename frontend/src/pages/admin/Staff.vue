@@ -9,6 +9,7 @@ import BaseButton from '@/components/ui/BaseButton.vue'
 import BasePagination from '@/components/ui/BasePagination.vue'
 import DataTable from '@/components/ui/DataTable.vue'
 import EditIconButton from '@/components/ui/EditIconButton.vue'
+import StaffSignatureModal from '@/components/admin/StaffSignatureModal.vue'
 import StaffStatusModal from '@/components/admin/StaffStatusModal.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { lookupsService } from '@/services/lookups'
@@ -28,6 +29,7 @@ const columns = computed(() => [
   { key: 'position', label: t('admin.staff.columnPosition') },
   { key: 'phone', label: t('admin.staff.columnPhone') },
   { key: 'status', label: t('admin.staff.columnStatus') },
+  { key: 'signature', label: t('admin.staff.signature') },
   { key: 'actions', label: t('admin.staff.columnActions'), align: 'text-right' },
 ])
 
@@ -63,6 +65,14 @@ const activeStaff = ref<Staff | null>(null)
 function openStatusModal(staff: Staff) {
   activeStaff.value = staff
   statusModalOpen.value = true
+}
+
+// Signature column: upload/replace without opening the Staff form.
+const signatureOpen = ref(false)
+const signatureStaff = ref<Staff | null>(null)
+function openSignature(staff: Staff) {
+  signatureStaff.value = staff
+  signatureOpen.value = true
 }
 
 async function remove(staff: Staff) {
@@ -110,6 +120,18 @@ onMounted(() => {
           {{ statusLabels[row.status] ?? row.status }}
         </BaseBadge>
       </template>
+      <template #cell-signature="{ row }">
+        <button
+          type="button"
+          class="flex h-9 w-20 items-center justify-center overflow-hidden rounded border text-xs font-medium"
+          :class="row.signature_url ? 'border-neutral-200 bg-white hover:ring-2 hover:ring-primary-300' : 'border-dashed border-neutral-300 text-primary-700 hover:bg-primary-50'"
+          :title="t('admin.staff.uploadSignature')"
+          @click="openSignature(row)"
+        >
+          <img v-if="row.signature_url" :src="row.signature_url" alt="" class="h-full w-full object-contain" />
+          <template v-else>{{ t('admin.staff.uploadSignature') }}</template>
+        </button>
+      </template>
       <template #cell-actions="{ row }">
         <div class="flex justify-end gap-1">
           <EditIconButton :to="`/admin/staff/${row.id}/edit`" />
@@ -138,5 +160,6 @@ onMounted(() => {
     <BasePagination v-if="meta" :meta="meta" sticky class="mt-4" @update:page="setPage" />
 
     <StaffStatusModal v-model="statusModalOpen" :staff="activeStaff" @saved="fetch" />
+    <StaffSignatureModal v-model="signatureOpen" :staff="signatureStaff" @saved="fetch()" />
   </div>
 </template>

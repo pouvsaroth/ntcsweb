@@ -153,6 +153,13 @@ export const staffService = {
   // File uploads can't ride a native PUT — same `_method` override trick as
   // studentsService.update().
   update: (id: number, input: StaffInput) => apiPost<Staff>(`/staff/${id}`, toFormData(input, 'PUT')),
+  /** Only the signature (Staff list > Signature); every other field stays as it is. */
+  uploadSignature: (id: number, file: File) => {
+    const form = new FormData()
+    form.append('signature', file)
+    form.append('_method', 'PUT')
+    return apiPost<Staff>(`/staff/${id}`, form)
+  },
 
   remove: (id: number) => apiDelete(`/staff/${id}`),
 

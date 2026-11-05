@@ -14,8 +14,10 @@ import { printPayslips } from '@/utils/printPayslip'
 
 /**
  * HRM > Payroll > Payslip — pick a payroll, then see, print or save as PDF
- * any staff member's payslip (or all of them at once). The latest payroll
- * is picked to start with. Cards on a phone, a table from `sm` up.
+ * any staff member's payslip (or all of them at once). Tick staff and
+ * Export PDF downloads one PDF of them, signed by whoever prepared and
+ * approved the payroll (see PayslipPdfService). The latest payroll is
+ * picked to start with. Cards on a phone, a table from `sm` up.
  */
 const { t, locale } = useI18n()
 const site = useSiteStore()
@@ -28,6 +30,32 @@ const loading = ref(false)
 const printing = ref(false)
 const error = ref<string | null>(null)
 const viewing = ref<number | null>(null)
+
+// Ticked payslips for Export PDF.
+const selected = ref<number[]>([])
+const exporting = ref(false)
+const allTicked = computed(() => visible.value.length > 0 && visible.value.every((s) => selected.value.includes(s.id)))
+function toggle(id: number) {
+  selected.value = selected.value.includes(id) ? selected.value.filter((x) => x !== id) : [...selected.value, id]
+}
+function toggleAll() {
+  const ids = visible.value.map((s) => s.id)
+  selected.value = allTicked.value ? selected.value.filter((id) => !ids.includes(id)) : [...new Set([...selected.value, ...ids])]
+}
+
+async function exportPdf() {
+  const run = runs.value.find((r) => String(r.id) === runId.value)
+  if (!run || selected.value.length === 0) return
+  exporting.value = true
+  error.value = null
+  try {
+    await payrollRunsService.payslipsPdf(run.id, selected.value, locale.value, `payslips-${run.reference}.pdf`)
+  } catch (e) {
+    error.value = e instanceof ApiRequestError ? e.message : t('admin.payroll.payslip.exportFailed')
+  } finally {
+    exporting.value = false
+  }
+}
 
 const runOptions = computed(() =>
   runs.value.map((run) => ({ value: String(run.id), label: `${run.reference} · ${runPeriodLabel(run, locale.value)} · ${t(`admin.payroll.runs.status.${run.status}`)}` })),
@@ -49,6 +77,7 @@ async function loadRuns() {
 
 watch(runId, async (id) => {
   slips.value = []
+  selected.value = []
   if (!id) return
   loading.value = true
   error.value = null
@@ -85,7 +114,10 @@ onMounted(() => loadRuns())
         :placeholder="t('common.searchPlaceholder')"
         class="block w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200 sm:max-w-xs"
       />
-      <BaseButton v-if="visible.length" variant="outline" :loading="printing" class="sm:ml-auto" @click="printAll">{{ t('admin.payroll.runs.printAll') }}</BaseButton>
+      <div v-if="visible.length" class="flex w-full flex-wrap gap-2 sm:ml-auto sm:w-auto">
+        <BaseButton variant="outline" :loading="printing" @click="printAll">{{ t('admin.payroll.runs.printAll') }}</BaseButton>
+        <BaseButton :loading="exporting" :disabled="selected.length === 0" @click="exportPdf">{{ t('admin.payroll.payslip.exportPdf', { count: selected.length }) }}</BaseButton>
+      </div>
     </div>
 
     <BaseAlert v-if="error" variant="danger" class="mb-4">{{ error }}</BaseAlert>
@@ -93,15 +125,25 @@ onMounted(() => loadRuns())
     <div v-else-if="loading" class="flex justify-center py-10"><BaseSpinner /></div>
     <template v-else-if="visible.length">
       <div class="space-y-2 sm:hidden">
-        <button v-for="slip in visible" :key="slip.id" type="button" class="flex w-full items-center justify-between gap-2 rounded-[--radius-card] border border-neutral-200 bg-white p-3 text-left shadow-[--shadow-card]" @click="viewing = slip.id">
-          <span class="text-sm font-semibold text-neutral-800">{{ slip.staff?.name }} <span class="font-normal text-neutral-500">({{ slip.staff?.employee_code }})</span></span>
-          <span class="shrink-0 text-sm font-bold">{{ money(slip, slip.net_pay) }}</span>
-        </button>
+        <label class="flex items-center gap-2 px-1 text-sm text-neutral-600">
+          <input type="checkbox" class="rounded border-neutral-300 text-primary-600 focus:ring-primary-500" :checked="allTicked" @change="toggleAll" />
+          {{ t('admin.payroll.payslip.selectAll') }}
+        </label>
+        <div v-for="slip in visible" :key="slip.id" class="flex items-center gap-3 rounded-[--radius-card] border border-neutral-200 bg-white p-3 shadow-[--shadow-card]">
+          <input type="checkbox" class="rounded border-neutral-300 text-primary-600 focus:ring-primary-500" :checked="selected.includes(slip.id)" :aria-label="slip.staff?.name" @change="toggle(slip.id)" />
+          <button type="button" class="flex min-w-0 flex-1 items-center justify-between gap-2 text-left" @click="viewing = slip.id">
+            <span class="text-sm font-semibold text-neutral-800">{{ slip.staff?.name }} <span class="font-normal text-neutral-500">({{ slip.staff?.employee_code }})</span></span>
+            <span class="shrink-0 text-sm font-bold">{{ money(slip, slip.net_pay) }}</span>
+          </button>
+        </div>
       </div>
       <div class="hidden overflow-x-auto rounded-[--radius-card] border border-neutral-200 bg-white sm:block">
         <table class="w-full text-left text-sm">
           <thead class="border-b border-neutral-200 bg-neutral-50 text-neutral-500">
             <tr>
+              <th class="w-10 px-4 py-3">
+                <input type="checkbox" class="rounded border-neutral-300 text-primary-600 focus:ring-primary-500" :checked="allTicked" :aria-label="t('admin.payroll.payslip.selectAll')" @change="toggleAll" />
+              </th>
               <th class="px-4 py-3 font-medium">{{ t('admin.payroll.staff') }}</th>
               <th class="px-4 py-3 text-right font-medium">{{ t('admin.payroll.payslip.gross') }}</th>
               <th class="px-4 py-3 text-right font-medium">{{ t('admin.payroll.payslip.totalDeductions') }}</th>
@@ -111,6 +153,9 @@ onMounted(() => loadRuns())
           </thead>
           <tbody class="divide-y divide-neutral-100">
             <tr v-for="slip in visible" :key="slip.id">
+              <td class="px-4 py-3">
+                <input type="checkbox" class="rounded border-neutral-300 text-primary-600 focus:ring-primary-500" :checked="selected.includes(slip.id)" :aria-label="slip.staff?.name" @change="toggle(slip.id)" />
+              </td>
               <td class="px-4 py-3">
                 <p class="font-medium text-neutral-800">{{ slip.staff?.name }}</p>
                 <p class="text-xs text-neutral-500">{{ slip.staff?.employee_code }}</p>

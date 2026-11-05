@@ -571,6 +571,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::post('payroll-runs/{payroll_run}/reject', [PayrollRunController::class, 'reject'])->name('payroll-runs.reject');
         Route::post('payroll-runs/{payroll_run}/pay', [PayrollRunController::class, 'pay'])->name('payroll-runs.pay');
         Route::post('payroll-runs/{payroll_run}/cancel', [PayrollRunController::class, 'cancel'])->name('payroll-runs.cancel');
+        Route::get('payroll-runs/{payroll_run}/payslips-pdf', [PayrollRunController::class, 'payslipsPdf'])->name('payroll-runs.payslips-pdf');
         Route::get('payslips', [PayrollRunController::class, 'payslips'])->name('payslips.index');
         Route::get('payslips/{payslip}', [PayrollRunController::class, 'payslip'])->name('payslips.show');
         Route::put('payslips/{payslip}/adjustment', [PayrollRunController::class, 'adjust'])->name('payslips.adjust');
