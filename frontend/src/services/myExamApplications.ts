@@ -91,15 +91,6 @@ export type ExamPaymentMethod = 'cash' | 'qr'
 export interface ExamFee {
   amount: string | number | null
   currency: string | null
-  /** The school has set its KHQR code, so "QR code" can be picked. */
-  qr_available?: boolean
-}
-
-export interface ExamFeeQr {
-  khqr: string
-  expires_at: string
-  amount: number
-  currency: string
 }
 
 /** Paid (QR) / Not paid (QR) / Not paid (Cash) — for the student's rows and the Approvals queue. */
@@ -108,11 +99,6 @@ export function examPaymentLabelKey(application: { payment_method?: string | nul
   if (application.payment_method === 'qr') return 'examFeePayment.statusNotPaidQr'
   if (application.payment_method === 'cash') return 'examFeePayment.statusNotPaidCash'
   return 'examFeePayment.statusNotPaid'
-}
-
-/** A Pay button is offered while the fee is unpaid and the application is still open. */
-export function examCanPay(application: { status: string; paid_at?: string | null }): boolean {
-  return !application.paid_at && (application.status === 'pending' || application.status === 'approved')
 }
 
 /** Student self-service — own applications only, scoped server-side. */
@@ -146,10 +132,4 @@ export const myExamApplicationsService = {
   lookup: (enrollmentId: number) => apiGet<MyExamApplicationLookup>(`/my-exam-applications/lookup/${enrollmentId}`),
 
   fee: () => apiGet<ExamFee>('/my-exam-applications/fee'),
-
-  /** The QR (with the fee amount) to pay this application — see ExamFeeQrModal. */
-  qr: (id: number) => apiPost<ExamFeeQr>(`/my-exam-applications/${id}/qr`, {}),
-
-  /** Asks whether the QR was paid (the QR screen polls this). */
-  payment: (id: number) => apiGet<{ paid: boolean; paid_at: string | null }>(`/my-exam-applications/${id}/payment`),
 }

@@ -197,9 +197,6 @@ export const publicContentService = {
   /** Which currently-running classes offer this package, with their weekly schedule — the registration wizard's "Schedule" step. */
   getCourseClasses: (coursePackageId: number) => apiGet<ScheduledClass[]>(`/public/course-packages/${coursePackageId}/classes`),
 
-  /** A fixed-amount Bakong KHQR code for one specific invoice amount — see backend App\Support\Billing\Khqr. */
-  getKhqrPreview: (amount: number, currency: 'USD' | 'KHR') =>
-    apiGet<{ khqr_string: string }>('/public/khqr-preview', { params: { amount, currency } }),
 
   /** Real — see Public\VideoLessonController. Courses grouped with their video lessons, each flagged whether the current viewer can actually play it. */
   getVideoLessons: () => apiGet<PublicVideoCourse[]>('/public/video-lessons'),

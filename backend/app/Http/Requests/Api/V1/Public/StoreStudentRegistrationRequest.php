@@ -18,9 +18,9 @@ use Illuminate\Validation\Validator;
  * same reason StoreEnrollmentPackageRequest doesn't — both are always
  * server-derived, never client-supplied.
  *
- * `payment_method` accepts `CASH` or `QR` (Bakong KHQR — see App\Support\
- * Billing\Khqr) — either way, nothing is actually billed until an admin
- * confirms it at approval time; see StudentRegistrationService.
+ * `payment_method` is always `CASH` (the QR option was removed); nothing
+ * is billed until an admin confirms it at approval time; see
+ * StudentRegistrationService.
  */
 class StoreStudentRegistrationRequest extends FormRequest
 {
@@ -50,7 +50,7 @@ class StoreStudentRegistrationRequest extends FormRequest
             'course_package_id' => ['required', Rule::exists('tenant.course_packages', 'id')],
             'fee_type' => ['required', Rule::in(['monthly', 'term', 'video', 'monthly_online', 'term_online'])],
 
-            'payment_method' => ['required', Rule::in([PaymentMethod::CASH, PaymentMethod::QR])],
+            'payment_method' => ['required', Rule::in([PaymentMethod::CASH])],
 
             'password' => ['required', 'string', 'min:6', 'confirmed'],
         ];

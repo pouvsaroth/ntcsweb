@@ -87,8 +87,6 @@ export interface PublicSiteInfo {
   about: AboutContent | null
   /** The "Document and Form" menu's two fixed downloads — null until uploaded, see School Documents. */
   documents: SiteDocuments
-  /** Whether the registration wizard's payment step should offer QR (Bakong KHQR) as an option — see School Settings. */
-  has_khqr: boolean
   /** False when the school's plan has no Website module — PublicLayout then shows a "not available" notice. */
   website_enabled: boolean
   /** The "group of services" front page; null while it is off and `/` is the school's home page. */
@@ -104,7 +102,6 @@ const FALLBACK: PublicSiteInfo = {
   address: null,
   about: null,
   documents: { school_regulation_url: null, student_attendance_policy_url: null },
-  has_khqr: false,
   website_enabled: true,
   services: null,
 }

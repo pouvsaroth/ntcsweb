@@ -20,14 +20,13 @@ use Tests\Concerns\HasAcademicAdmin;
 use Tests\TestCase;
 
 /**
- * The exam fee paid by the student: cash at school, or the school's QR with
- * the amount — found through Bakong (faked here), like a plan sign-up.
+ * The exam fee: students pay cash at school (the QR option was removed). A
+ * QR already shown before the removal is still confirmed through Bakong
+ * (faked here) when the list is opened.
  */
 class ExamFeePaymentTest extends TestCase
 {
     use HasAcademicAdmin, RefreshDatabase;
-
-    private const TEMPLATE = '00020101021129380009khqr@aclb0111855100589230206ACLEDA391300042CCY010145204599953031165802KH5910ពៅ  សារដ្ធ6010PHNOM PENH621302090122374226304D1E3';
 
     private const BAKONG = 'https://api-bakong.nbc.gov.kh/v1/check_transaction_by_md5';
 
@@ -48,14 +47,11 @@ class ExamFeePaymentTest extends TestCase
         parent::tearDown();
     }
 
-    private function school(bool $qr = true): void
+    private function school(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::EXAM_APPLICATIONS_VIEW, Permissions::EXAM_APPLICATIONS_UPDATE]);
-        $this->tenant->update([
-            'exam_fee_amount' => 25,
-            'settings' => [...($this->tenant->settings ?? []), ...($qr ? ['khqr_template' => self::TEMPLATE] : [])],
-        ]);
-        BillingSettings::current()->update(['khqr_template' => self::TEMPLATE, 'bakong_token' => 'test-token']);
+        $this->tenant->update(['exam_fee_amount' => 25]);
+        BillingSettings::current()->update(['khqr_template' => '00020101021129380009khqr@aclb5802KH6304ABCD', 'bakong_token' => 'test-token']);
 
         $this->studentUser = User::factory()->forTenant($this->tenant)->create();
         $student = Student::factory()->create(['user_id' => $this->studentUser->id]);
@@ -72,77 +68,43 @@ class ExamFeePaymentTest extends TestCase
         ])->assertCreated()->assertJsonPath('data.payment_method', $method)->json('data.id');
     }
 
-    private function bakong(bool $paid, float $amount = 25.0): void
-    {
-        Http::fake([self::BAKONG => $paid
-            ? Http::response(['responseCode' => 0, 'data' => ['hash' => 'hash-1', 'currency' => 'USD', 'amount' => $amount]])
-            : Http::response(['responseCode' => 1, 'data' => null])]);
-    }
-
-    public function test_paying_by_qr_is_found_through_bakong_and_shows_paid(): void
+    public function test_cash_is_the_only_way_to_apply(): void
     {
         $this->school();
         $this->actingAsTenantUser($this->studentUser);
-        $this->assertTrue($this->getJson('/api/v1/my-exam-applications/fee')->assertOk()->json('data.qr_available'));
-        $id = $this->apply('qr');
+        $this->assertArrayNotHasKey('qr_available', $this->getJson('/api/v1/my-exam-applications/fee')->assertOk()->json('data'));
 
-        $qr = $this->postJson("/api/v1/my-exam-applications/{$id}/qr")->assertOk()->json('data');
-        $this->assertEquals([25, 'USD'], [$qr['amount'], $qr['currency']]);
-        $this->assertStringContainsString('540525.00', $qr['khqr']);
-        // The same code while it is still valid.
-        $this->assertSame($qr['khqr'], $this->postJson("/api/v1/my-exam-applications/{$id}/qr")->json('data.khqr'));
+        $this->postJson('/api/v1/my-exam-applications', [
+            'enrollment_id' => $this->draft->enrollment_id, 'first_name' => 'Test', 'last_name' => 'Student', 'payment_method' => 'qr',
+        ])->assertUnprocessable()->assertJsonValidationErrors('payment_method');
 
-        // Bakong: not yet, then paid.
-        Http::fake([self::BAKONG => Http::sequence()
-            ->push(['responseCode' => 1, 'data' => null])
-            ->push(['responseCode' => 0, 'data' => ['hash' => 'hash-1', 'currency' => 'USD', 'amount' => 25]])]);
-        $this->getJson("/api/v1/my-exam-applications/{$id}/payment")->assertOk()->assertJsonPath('data.paid', false);
-        // Asked again within a few seconds: Bakong is not asked twice.
-        $this->getJson("/api/v1/my-exam-applications/{$id}/payment")->assertOk()->assertJsonPath('data.paid', false);
-        Http::assertSentCount(1);
-
-        Carbon::setTestNow(now()->addSeconds(10));
-        $this->getJson("/api/v1/my-exam-applications/{$id}/payment")->assertOk()->assertJsonPath('data.paid', true);
-        $this->assertSame('hash-1', ExamApplication::query()->find($id)->bakong_hash);
-
-        // Paid: no new QR.
-        $this->postJson("/api/v1/my-exam-applications/{$id}/qr")->assertUnprocessable();
-
-        // The approver sees it paid; Print records it as a QR payment.
-        $this->actingAsTenantUser($this->admin);
-        $row = collect($this->getJson('/api/v1/exam-applications?approval_queue=1')->assertOk()->json('data'))->firstWhere('id', $id);
-        $this->assertSame('qr', $row['payment_method']);
-        $this->assertNotNull($row['paid_at']);
-        $this->postJson("/api/v1/exam-applications/{$id}/print", ['fee' => 25, 'currency' => 'USD', 'payment_method' => PaymentMethod::CASH, 'print_date' => '2026-10-27'])->assertOk();
-        $this->assertSame(PaymentMethod::QR, Payment::query()->latest('id')->value('payment_method'));
+        $id = $this->apply('cash');
+        $row = $this->getJson('/api/v1/my-exam-applications')->assertOk()->json('data.0');
+        $this->assertSame(['cash', null], [$row['payment_method'], $row['paid_at']]);
+        $this->postJson("/api/v1/my-exam-applications/{$id}/qr")->assertNotFound();
     }
 
-    public function test_pay_later_and_cash_stay_not_paid(): void
+    public function test_a_qr_shown_before_the_removal_is_still_confirmed(): void
     {
         $this->school();
         $this->actingAsTenantUser($this->studentUser);
         $id = $this->apply('cash');
+        ExamApplication::query()->whereKey($id)->update([
+            'payment_method' => 'qr', 'fee_amount' => 25, 'fee_currency' => 'USD',
+            'khqr' => 'old-code', 'khqr_md5' => md5('old-code'), 'khqr_expires_at' => now()->addMinutes(5),
+        ]);
 
-        $row = $this->getJson('/api/v1/my-exam-applications')->assertOk()->json('data.0');
-        $this->assertSame(['cash', null], [$row['payment_method'], $row['paid_at']]);
+        // A wrong amount first (not accepted), then the right one.
+        Http::fake([self::BAKONG => Http::sequence()
+            ->push(['responseCode' => 0, 'data' => ['hash' => 'hash-0', 'currency' => 'USD', 'amount' => 5]])
+            ->push(['responseCode' => 0, 'data' => ['hash' => 'hash-1', 'currency' => 'USD', 'amount' => 25]])]);
+        $this->assertNull($this->getJson('/api/v1/my-exam-applications')->assertOk()->json('data.0.paid_at'));
 
-        // A wrong amount at Bakong is not accepted as paid.
-        $this->postJson("/api/v1/my-exam-applications/{$id}/qr")->assertOk();
-        $this->bakong(true, 5.0);
-        $this->getJson("/api/v1/my-exam-applications/{$id}/payment")->assertOk()->assertJsonPath('data.paid', false);
-    }
+        Carbon::setTestNow(now()->addSeconds(10));
+        $this->assertNotNull($this->getJson('/api/v1/my-exam-applications')->assertOk()->json('data.0.paid_at'));
 
-    public function test_no_qr_without_the_schools_code_and_only_for_own_applications(): void
-    {
-        $this->school(qr: false);
-        $this->actingAsTenantUser($this->studentUser);
-        $this->assertFalse($this->getJson('/api/v1/my-exam-applications/fee')->json('data.qr_available'));
-        $id = $this->apply('qr');
-        $this->postJson("/api/v1/my-exam-applications/{$id}/qr")->assertUnprocessable()->assertJsonValidationErrors('payment');
-
-        $other = User::factory()->forTenant($this->tenant)->create();
-        Student::factory()->create(['user_id' => $other->id]);
-        $this->actingAsTenantUser($other);
-        $this->postJson("/api/v1/my-exam-applications/{$id}/qr")->assertNotFound();
+        $this->actingAsTenantUser($this->admin);
+        $this->postJson("/api/v1/exam-applications/{$id}/print", ['fee' => 25, 'currency' => 'USD', 'payment_method' => PaymentMethod::CASH, 'print_date' => '2026-10-27'])->assertOk();
+        $this->assertSame(PaymentMethod::QR, Payment::query()->latest('id')->value('payment_method'));
     }
 }

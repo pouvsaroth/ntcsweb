@@ -5,7 +5,6 @@ import { useI18n } from 'vue-i18n'
 import AskForPermissionModal from '@/components/layout/AskForPermissionModal.vue'
 import ClassChangeRequestModal from '@/components/layout/ClassChangeRequestModal.vue'
 import ExamApplicationRequestModal from '@/components/layout/ExamApplicationRequestModal.vue'
-import ExamFeeQrModal from '@/components/layout/ExamFeeQrModal.vue'
 import MakeUpClassRequestModal from '@/components/layout/MakeUpClassRequestModal.vue'
 import ResignationFormModal from '@/components/layout/ResignationFormModal.vue'
 import BaseAlert from '@/components/ui/BaseAlert.vue'
@@ -20,7 +19,7 @@ import { classChangeLabel, myClassChangeRequestsService, type ClassChangeRequest
 import { myLeaveRequestsService, type LeaveRequest } from '@/services/leaveRequests'
 import { formatDays } from '@/services/leaveManagement'
 import { makeUpClassCourseLabel, myMakeUpClassRequestsService, type MakeUpClassRequest, type MakeUpClassRequestStatus } from '@/services/makeUpClassRequests'
-import { examCanPay, examPaymentLabelKey, myExamApplicationsService, type MyExamApplication } from '@/services/myExamApplications'
+import { examPaymentLabelKey, myExamApplicationsService, type MyExamApplication } from '@/services/myExamApplications'
 import { myResignationRequestsService, type ResignationRequest } from '@/services/resignationRequests'
 import { useAuthStore } from '@/stores/auth'
 import { useConfirmDialogStore } from '@/stores/confirmDialog'
@@ -134,7 +133,6 @@ const showResignationModal = ref(false)
 const showMakeUpModal = ref(false)
 const showExamModal = ref(false)
 // The exam fee QR open for this application (the row's Pay button).
-const payingExamId = ref<number | null>(null)
 const showClassChangeModal = ref(false)
 
 function onLeaveModalChange(open: boolean) {
@@ -331,7 +329,6 @@ function leaveSubject(r: LeaveRequest): string {
 
           <div v-if="row.exam" class="mt-2 flex items-center justify-between gap-2">
             <BaseBadge :variant="row.exam.paid_at ? 'success' : 'neutral'">{{ t(examPaymentLabelKey(row.exam)) }}</BaseBadge>
-            <BaseButton v-if="examCanPay(row.exam)" size="sm" @click="payingExamId = row.id">{{ t('examFeePayment.pay') }}</BaseButton>
           </div>
 
           <dl class="mt-3 grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 text-sm">
@@ -363,7 +360,6 @@ function leaveSubject(r: LeaveRequest): string {
             </button>
             <div v-if="row.exam" class="mt-1 flex items-center gap-2">
               <BaseBadge :variant="row.exam.paid_at ? 'success' : 'neutral'">{{ t(examPaymentLabelKey(row.exam)) }}</BaseBadge>
-              <BaseButton v-if="examCanPay(row.exam)" size="sm" @click="payingExamId = row.id">{{ t('examFeePayment.pay') }}</BaseButton>
             </div>
           </template>
           <template #cell-reference="{ row }">{{ row.reference }}</template>
@@ -444,7 +440,6 @@ function leaveSubject(r: LeaveRequest): string {
 
     <AskForPermissionModal :model-value="showLeaveModal" @update:model-value="onLeaveModalChange" />
     <ExamApplicationRequestModal v-if="canApplyForExam" v-model="showExamModal" @submitted="load" />
-    <ExamFeeQrModal :application-id="payingExamId" @close="payingExamId = null" @paid="load" />
     <ClassChangeRequestModal v-if="canRequestClassChange" v-model="showClassChangeModal" @submitted="load" />
     <MakeUpClassRequestModal v-if="canRequestMakeUp" :model-value="showMakeUpModal" @update:model-value="onMakeUpModalChange" />
     <ResignationFormModal v-if="canResign" :model-value="showResignationModal" @update:model-value="onResignationModalChange" />

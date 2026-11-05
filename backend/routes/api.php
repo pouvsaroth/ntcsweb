@@ -193,7 +193,6 @@ use App\Http\Controllers\Api\V1\Public\DownloadController as PublicDownloadContr
 use App\Http\Controllers\Api\V1\Public\EnrollmentInquiryController;
 use App\Http\Controllers\Api\V1\Public\GalleryController as PublicGalleryController;
 use App\Http\Controllers\Api\V1\Public\HomeSlideController as PublicHomeSlideController;
-use App\Http\Controllers\Api\V1\Public\KhqrController as PublicKhqrController;
 use App\Http\Controllers\Api\V1\Public\PlanController as PublicPlanController;
 use App\Http\Controllers\Api\V1\Public\ProgramController as PublicProgramController;
 use App\Http\Controllers\Api\V1\Public\PromotionController as PublicPromotionController;
@@ -1127,8 +1126,6 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('my-exam-applications/fee', [MyExamApplicationController::class, 'fee'])->name('my-exam-applications.fee');
         Route::get('my-exam-applications', [MyExamApplicationController::class, 'index'])->name('my-exam-applications.index');
         Route::post('my-exam-applications', [MyExamApplicationController::class, 'store'])->name('my-exam-applications.store');
-        Route::post('my-exam-applications/{application}/qr', [MyExamApplicationController::class, 'qr'])->whereNumber('application')->name('my-exam-applications.qr');
-        Route::get('my-exam-applications/{application}/payment', [MyExamApplicationController::class, 'payment'])->whereNumber('application')->name('my-exam-applications.payment');
 
         // Self-service — identity-gated (Staff/Student/User's own assignments), same pattern as my-invoices.
         Route::get('my-assets', [MyAssetController::class, 'index'])->name('my-assets.index');
@@ -1284,7 +1281,6 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::get('schedules', [PublicScheduleController::class, 'index'])->name('schedules.index');
             Route::post('enrollment-inquiries', [EnrollmentInquiryController::class, 'store'])->name('enrollment-inquiries.store');
         });
-        Route::get('khqr-preview', [PublicKhqrController::class, 'preview'])->name('khqr-preview');
         // NewTech's plans page (docs/backoffice/stage-8-signup.md, 8a); 404 on any other school.
         Route::get('plans', [PublicPlanController::class, 'index'])->name('plans.index');
         // Self-service sign-up (8b): web address check, start, and the visitor's own status page.

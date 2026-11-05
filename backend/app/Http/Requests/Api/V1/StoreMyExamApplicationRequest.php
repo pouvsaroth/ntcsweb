@@ -52,10 +52,9 @@ class StoreMyExamApplicationRequest extends FormRequest
             // which defeats the point of letting them apply first and pay
             // later.
             'has_paid' => ['nullable', 'boolean'],
-            // How the student will pay the fee: cash at school, or the
-            // school's QR (docs/academics/exam-fee-payment.md). The form
-            // always sends it; older clients default to cash.
-            'payment_method' => ['sometimes', Rule::in(['cash', 'qr'])],
+            // How the student will pay the fee: cash at school (the QR
+            // option was removed). Older clients may still send it.
+            'payment_method' => ['sometimes', Rule::in(['cash'])],
         ];
     }
 

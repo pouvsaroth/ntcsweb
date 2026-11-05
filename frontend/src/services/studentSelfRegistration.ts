@@ -22,7 +22,7 @@ export interface StudentSelfRegistrationInput {
   class_id: number
   course_package_id: number
   fee_type: string
-  payment_method: 'CASH' | 'QR'
+  payment_method: 'CASH'
   password: string
   password_confirmation: string
 }

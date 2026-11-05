@@ -136,34 +136,20 @@ class SchoolSettingsTest extends TestCase
         $this->assertNotNull($response->json('data.logo'));
     }
 
-    public function test_it_saves_the_khqr_template_without_touching_other_settings_keys(): void
+    public function test_the_khqr_field_is_gone(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::TENANT_SETTINGS_UPDATE]);
         $this->admin->tenant->update(['settings' => ['about' => ['history_title' => 'Our Story']]]);
 
-        $this->postJson('/api/v1/settings/school', [
+        $response = $this->postJson('/api/v1/settings/school', [
             'name' => 'NewTech Computer School',
             'khqr_template' => '00020101021129380009khqr@aclb...',
         ])->assertOk();
 
-        $tenant = $this->tenant->fresh();
-        $this->assertSame('00020101021129380009khqr@aclb...', $tenant->khqrTemplate());
-        $this->assertSame('Our Story', $tenant->setting('about')['history_title']);
-    }
-
-    public function test_the_public_endpoint_never_exposes_the_raw_khqr_template(): void
-    {
-        $this->actingAsAdminWithPermissions([Permissions::TENANT_SETTINGS_UPDATE]);
-        $this->postJson('/api/v1/settings/school', [
-            'name' => 'NewTech Computer School',
-            'khqr_template' => '00020101021129380009khqr@aclb...',
-        ])->assertOk();
-
-        $response = $this->withHeader('X-Tenant', $this->tenant->slug)->getJson('/api/v1/public/settings');
-
-        $response->assertOk();
-        $response->assertJsonPath('data.has_khqr', true);
         $this->assertArrayNotHasKey('khqr_template', $response->json('data'));
+        $this->assertNull($this->tenant->fresh()->setting('khqr_template'));
+        $this->assertSame('Our Story', $this->tenant->fresh()->setting('about')['history_title']);
+        $this->assertArrayNotHasKey('has_khqr', $this->withHeader('X-Tenant', $this->tenant->slug)->getJson('/api/v1/public/settings')->assertOk()->json('data'));
     }
 
     public function test_it_defaults_the_monthly_payment_alert_days_to_three(): void

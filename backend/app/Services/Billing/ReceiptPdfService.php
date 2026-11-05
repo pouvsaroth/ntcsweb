@@ -90,7 +90,6 @@ final class ReceiptPdfService
                 'signatureDataUri' => PdfImageEncoder::dataUri($issuerStaff?->signaturePath()),
                 'khmerFontRegular' => KhmerFont::dataUri('Regular'),
                 'khmerFontBold' => KhmerFont::dataUri('Bold'),
-                'khqrDataUri' => null,
             ])->render();
         } finally {
             if ($locale !== null) {

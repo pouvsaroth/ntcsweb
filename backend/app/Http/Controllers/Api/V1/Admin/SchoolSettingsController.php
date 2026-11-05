@@ -36,7 +36,7 @@ final class SchoolSettingsController extends Controller
         $tenant = $this->context->getOrFail();
         $this->authorize('update', $tenant);
 
-        $data = $request->safe()->except(['logo', 'stamp', 'khqr_template', 'monthly_payment_alert_days', 'student_inactive_after_days', 'term_study_alert_days']);
+        $data = $request->safe()->except(['logo', 'stamp', 'monthly_payment_alert_days', 'student_inactive_after_days', 'term_study_alert_days']);
         $logoPath = $tenant->logo;
         $stampPath = $tenant->stamp;
 
@@ -76,7 +76,6 @@ final class SchoolSettingsController extends Controller
             'stamp' => $stampPath,
             'settings' => [
                 ...($tenant->settings ?? []),
-                'khqr_template' => $request->safe()->input('khqr_template'),
                 'monthly_payment_alert_days' => $request->filled('monthly_payment_alert_days')
                     ? (int) $request->safe()->input('monthly_payment_alert_days')
                     : null,
@@ -105,7 +104,6 @@ final class SchoolSettingsController extends Controller
             'exam_fee_amount' => $tenant->exam_fee_amount,
             'logo_url' => $tenant->logoUrl(),
             'stamp_url' => $tenant->stampUrl(),
-            'khqr_template' => $tenant->khqrTemplate(),
             'monthly_payment_alert_days' => $tenant->monthlyPaymentAlertDays(),
             'student_inactive_after_days' => $tenant->studentInactiveAfterDays(),
             'term_study_alert_days' => $tenant->termStudyAlertDays(),

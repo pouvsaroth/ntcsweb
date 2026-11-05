@@ -9,7 +9,6 @@ import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
 import BaseSpinner from '@/components/ui/BaseSpinner.vue'
-import ExamFeeQrModal from '@/components/layout/ExamFeeQrModal.vue'
 import WebcamCaptureModal from '@/components/ui/WebcamCaptureModal.vue'
 import {
   myExamApplicationsService,
@@ -52,10 +51,8 @@ const createForm = reactive({
   date_of_birth: '',
   phone: '',
   village_code: '',
-  payment_method: '' as '' | 'cash' | 'qr',
+  payment_method: 'cash' as '' | 'cash',
 })
-// Picked QR: the QR to pay opens once the application is in.
-const payingId = ref<number | null>(null)
 const enrollments = ref<MyExamApplicationEnrollment[]>([])
 const enrollmentsLoading = ref(false)
 const enrollmentsError = ref<string | null>(null)
@@ -96,7 +93,7 @@ async function reset() {
   createForm.date_of_birth = ''
   createForm.phone = ''
   createForm.village_code = ''
-  createForm.payment_method = ''
+  createForm.payment_method = 'cash'
   createErrors.value = {}
   createGeneralError.value = null
   lookup.value = null
@@ -179,7 +176,7 @@ async function submitCreate() {
 
   try {
     if (createForm.payment_method === '') return
-    const created = await myExamApplicationsService.submit({
+    await myExamApplicationsService.submit({
       enrollment_id: Number(createForm.enrollment_id),
       first_name: createForm.first_name,
       last_name: createForm.last_name,
@@ -193,7 +190,6 @@ async function submitCreate() {
     })
     emit('update:modelValue', false)
     emit('submitted')
-    if (createForm.payment_method === 'qr') payingId.value = created.id
   } catch (e) {
     if (e instanceof ApiRequestError && e.errors) {
       createErrors.value = e.errors
@@ -353,16 +349,8 @@ watch(
               <input v-model="createForm.payment_method" type="radio" value="cash" class="text-primary-600 focus:ring-primary-500" />
               {{ t('examFeePayment.cash') }}
             </label>
-            <label
-              v-if="fee?.qr_available"
-              class="flex flex-1 cursor-pointer items-center gap-2 rounded-lg border border-neutral-300 p-3 text-sm"
-              :class="createForm.payment_method === 'qr' ? 'border-primary-500 bg-primary-50' : ''"
-            >
-              <input v-model="createForm.payment_method" type="radio" value="qr" class="text-primary-600 focus:ring-primary-500" />
-              {{ t('examFeePayment.qr') }}
-            </label>
           </div>
-          <p class="mt-1 text-xs text-neutral-500">{{ createForm.payment_method === 'qr' ? t('examFeePayment.qrHintOnSubmit') : createForm.payment_method === 'cash' ? t('examFeePayment.cashHint') : '' }}</p>
+          <p class="mt-1 text-xs text-neutral-500">{{ createForm.payment_method === 'cash' ? t('examFeePayment.cashHint') : '' }}</p>
           <p v-if="createErrors.payment_method?.[0]" class="text-sm text-danger-600">{{ createErrors.payment_method[0] }}</p>
         </div>
       </template>
@@ -374,5 +362,4 @@ watch(
     </template>
   </BaseModal>
 
-  <ExamFeeQrModal :application-id="payingId" @close="payingId = null" @paid="emit('submitted')" />
 </template>

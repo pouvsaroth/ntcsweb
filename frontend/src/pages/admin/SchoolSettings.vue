@@ -31,7 +31,6 @@ const form = reactive({
   address: '',
   locale: 'en' as InvoiceLocale,
   default_currency: 'USD' as 'USD' | 'KHR',
-  khqr_template: '',
   monthly_payment_alert_days: '',
   student_inactive_after_days: '',
   term_study_alert_days: '',
@@ -61,7 +60,6 @@ async function load() {
     form.address = settings.address ?? ''
     form.locale = settings.locale
     form.default_currency = settings.default_currency
-    form.khqr_template = settings.khqr_template ?? ''
     form.monthly_payment_alert_days = String(settings.monthly_payment_alert_days)
     form.student_inactive_after_days = String(settings.student_inactive_after_days)
     form.term_study_alert_days = String(settings.term_study_alert_days)
@@ -106,7 +104,6 @@ async function save() {
     form.address = result.address ?? ''
     form.locale = result.locale
     form.default_currency = result.default_currency
-    form.khqr_template = result.khqr_template ?? ''
     form.monthly_payment_alert_days = String(result.monthly_payment_alert_days)
     form.student_inactive_after_days = String(result.student_inactive_after_days)
     form.term_study_alert_days = String(result.term_study_alert_days)
@@ -238,18 +235,6 @@ onMounted(load)
             :hint="t('admin.school.examFeeHint')"
             :error="errors.exam_fee_amount?.[0]"
           />
-          <div class="sm:col-span-2">
-            <label for="school-khqr" class="mb-1.5 block text-sm font-medium text-neutral-700">{{ t('admin.school.khqrSection') }}</label>
-            <textarea
-              id="school-khqr"
-              v-model="form.khqr_template"
-              rows="3"
-              class="block w-full rounded-lg border border-neutral-300 px-3 py-2 font-mono text-xs text-neutral-900 shadow-sm placeholder:font-sans placeholder:text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
-              :placeholder="t('admin.school.khqrPlaceholder')"
-            />
-            <p v-if="errors.khqr_template?.[0]" class="mt-1.5 text-sm text-danger-600">{{ errors.khqr_template[0] }}</p>
-            <p v-else class="mt-1.5 text-sm text-neutral-500">{{ t('admin.school.khqrHint') }}</p>
-          </div>
         </div>
       </section>
 

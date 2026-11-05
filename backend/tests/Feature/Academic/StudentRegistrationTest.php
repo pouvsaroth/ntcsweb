@@ -195,25 +195,15 @@ class StudentRegistrationTest extends TestCase
         $this->assertSame('24.00', (string) $invoice->balance, 'A rejected registration is never charged.');
     }
 
-    public function test_a_qr_registration_is_approved_with_the_qr_payment_method_not_cash(): void
+    public function test_online_registration_no_longer_accepts_qr(): void
     {
-        Notification::fake();
-
-        $this->actingAsAdminWithPermissions([Permissions::STUDENTS_APPROVE_REGISTRATION]);
+        $this->actingAsAdminWithPermissions([]);
         $this->setUpAcademicCatalog();
 
         $this->withHeader('X-Tenant', $this->tenant->slug)
             ->postJson('/api/v1/public/student-registrations', $this->registrationPayload(['payment_method' => 'QR']))
-            ->assertCreated();
-
-        $student = Student::where('first_name', 'Sok')->firstOrFail();
-        $invoice = $student->invoices()->firstOrFail();
-        $this->assertSame('QR', $invoice->intended_payment_method);
-
-        $this->postJson("/api/v1/student-registrations/{$student->id}/approve")->assertOk();
-
-        $payment = $invoice->payments()->firstOrFail();
-        $this->assertSame(PaymentMethod::QR, $payment->payment_method);
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('payment_method');
     }
 
     public function test_approving_requires_the_approve_permission(): void

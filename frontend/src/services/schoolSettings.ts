@@ -20,8 +20,6 @@ export interface SchoolSettings {
   logo_url: string | null
   /** The school's own stamp/seal image — printed on invoices/receipts next to the issuing staff member's signature. */
   stamp_url: string | null
-  /** The school's own static Bakong KHQR string (e.g. from ACLEDA Toanchet's "My QR") — see backend App\Support\Billing\Khqr. */
-  khqr_template: string | null
   /** How many days before a monthly-billed student's next payment is due the dashboard/student popup starts alerting. Always a number — the backend defaults it to 3. */
   monthly_payment_alert_days: number
   student_inactive_after_days: number
@@ -39,7 +37,6 @@ export interface SchoolSettingsInput {
   address: string
   locale: InvoiceLocale
   default_currency: Currency
-  khqr_template: string
   /** Empty string means "use the default" — omitted from the request rather than sent as 0/blank. */
   monthly_payment_alert_days: string
   student_inactive_after_days: string
@@ -68,7 +65,6 @@ function toFormData(input: SchoolSettingsInput): FormData {
   if (input.address.trim()) form.append('address', input.address.trim())
   form.append('locale', input.locale)
   form.append('default_currency', input.default_currency)
-  if (input.khqr_template.trim()) form.append('khqr_template', input.khqr_template.trim())
   if (input.monthly_payment_alert_days.trim()) form.append('monthly_payment_alert_days', input.monthly_payment_alert_days.trim())
   if (input.student_inactive_after_days.trim()) form.append('student_inactive_after_days', input.student_inactive_after_days.trim())
   if (input.term_study_alert_days.trim()) form.append('term_study_alert_days', input.term_study_alert_days.trim())

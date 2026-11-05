@@ -60,35 +60,6 @@ final class MyExamApplicationController extends Controller
         return ApiResponse::success(ExamApplicationResource::collection($applications));
     }
 
-    /**
-     * POST /my-exam-applications/{id}/qr — the QR to pay this exam fee
-     * (with the amount), valid for a few minutes.
-     */
-    public function qr(Request $request, int $application): JsonResponse
-    {
-        $model = $this->ownApplication($request, $application);
-
-        return ApiResponse::success($this->payments->qrFor($model));
-    }
-
-    /** GET /my-exam-applications/{id}/payment — asks Bakong whether the QR was paid (the QR screen polls this). */
-    public function payment(Request $request, int $application): JsonResponse
-    {
-        $model = $this->payments->check($this->ownApplication($request, $application));
-
-        return ApiResponse::success([
-            'paid' => $model->paid_at !== null,
-            'paid_at' => $model->paid_at?->toIso8601String(),
-        ]);
-    }
-
-    private function ownApplication(Request $request, int $id): ExamApplication
-    {
-        return ExamApplication::query()
-            ->where('student_id', $this->studentOrFail($request)->id)
-            ->findOrFail($id);
-    }
-
     public function store(StoreMyExamApplicationRequest $request): JsonResponse
     {
         $student = $this->studentOrFail($request);
@@ -204,8 +175,6 @@ final class MyExamApplicationController extends Controller
         return ApiResponse::success([
             'amount' => $tenant->exam_fee_amount,
             'currency' => $tenant->default_currency,
-            // Whether "QR code" can be picked (the school has set its KHQR).
-            'qr_available' => $this->payments->qrAvailable(),
         ]);
     }
 

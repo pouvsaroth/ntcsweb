@@ -16,7 +16,7 @@ use Tests\TestCase;
 /**
  * The read-only public endpoints the self-registration wizard needs beyond
  * what already existed: which classes a given course package can be
- * enrolled into, a fixed-amount KHQR preview, and Cambodia's geography
+ * enrolled into, and Cambodia's geography
  * opened to the public route group. None of these touch the admin
  * Students/Enrollment area.
  */
@@ -41,33 +41,6 @@ class PublicRegistrationSupportTest extends TestCase
         $this->assertTrue($names->contains('Computer Evening A'));
         $this->assertFalse($names->contains($otherProgramClass->name));
         $this->assertFalse($names->contains($noProgramClass->name));
-    }
-
-    public function test_khqr_preview_fails_cleanly_when_not_configured(): void
-    {
-        $this->actingAsAdminWithPermissions([]);
-
-        $response = $this->withHeader('X-Tenant', $this->tenant->slug)
-            ->getJson('/api/v1/public/khqr-preview?amount=24.00&currency=USD');
-
-        $response->assertNotFound();
-        $response->assertJsonPath('error.code', 'KHQR_NOT_CONFIGURED');
-    }
-
-    public function test_khqr_preview_returns_a_fixed_amount_code_once_configured(): void
-    {
-        $this->actingAsAdminWithPermissions([Permissions::TENANT_SETTINGS_UPDATE]);
-        $this->postJson('/api/v1/settings/school', [
-            'name' => 'NewTech Computer School',
-            'khqr_template' => '00020101021129380009khqr@aclb0111855100589230206ACLEDA391300042CCY010145204599953031165802KH5910ពៅ  សារដ្ធ6010PHNOM PENH621302090122374226304D1E3',
-        ])->assertOk();
-
-        $response = $this->withHeader('X-Tenant', $this->tenant->slug)
-            ->getJson('/api/v1/public/khqr-preview?amount=24.00&currency=USD');
-
-        $response->assertOk();
-        $this->assertStringContainsString('540524.00', $response->json('data.khqr_string'));
-        $this->assertStringContainsString('5303840', $response->json('data.khqr_string'));
     }
 
     public function test_provinces_are_reachable_without_authentication(): void

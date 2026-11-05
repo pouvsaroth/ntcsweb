@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import QRCode from 'qrcode'
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import BaseAlert from '@/components/ui/BaseAlert.vue'
@@ -14,11 +13,9 @@ import { publicContentService, type PublicCourse, type ScheduledClass } from '@/
 import { publicGeographyService } from '@/services/publicGeography'
 import type { GeographyOption } from '@/services/geography'
 import { studentSelfRegistrationService } from '@/services/studentSelfRegistration'
-import { useSiteStore } from '@/stores/site'
 import { ApiRequestError } from '@/types/api'
 
 const { t } = useI18n()
-const site = useSiteStore()
 
 type FeeType = 'monthly' | 'term' | 'video' | 'monthly_online' | 'term_online'
 
@@ -39,7 +36,7 @@ const form = reactive({
   class_id: null as number | null,
   course_package_id: null as number | null,
   fee_type: '' as FeeType | '',
-  payment_method: 'CASH' as 'CASH' | 'QR',
+  payment_method: 'CASH' as const,
   password: '',
   password_confirmation: '',
 })
@@ -195,7 +192,6 @@ async function onPackageChange(value: string) {
   form.class_id = null
   form.fee_type = ''
   classes.value = []
-  khqrString.value = null
 
   if (!value) return
 
@@ -233,31 +229,6 @@ const feeAmount = computed(() => (selectedPackage.value && form.fee_type ? (pack
 const currency = computed(() => selectedPackage.value?.currency ?? 'USD')
 const currencySymbol = computed(() => (currency.value === 'USD' ? '$' : '៛'))
 
-const khqrString = ref<string | null>(null)
-const khqrImage = ref<string | null>(null)
-const khqrLoading = ref(false)
-const khqrError = ref<string | null>(null)
-
-async function loadKhqr() {
-  if (form.payment_method !== 'QR' || feeAmount.value <= 0) return
-
-  khqrLoading.value = true
-  khqrError.value = null
-  khqrImage.value = null
-
-  try {
-    const result = await publicContentService.getKhqrPreview(feeAmount.value, currency.value)
-    khqrString.value = result.khqr_string
-    khqrImage.value = await QRCode.toDataURL(result.khqr_string, { width: 260, margin: 1 })
-  } catch (error) {
-    khqrError.value = error instanceof ApiRequestError ? error.message : t('registerWizard.khqrLoadFailed')
-  } finally {
-    khqrLoading.value = false
-  }
-}
-
-watch(() => [form.payment_method, form.fee_type, form.course_package_id] as const, loadKhqr)
-
 // --- Wizard navigation -----------------------------------------------------
 
 const stepErrors = ref<string | null>(null)
@@ -266,7 +237,7 @@ const canProceedFromStep: Record<number, () => boolean> = {
   1: () => form.first_name.trim() !== '' && form.last_name.trim() !== '' && form.phone.trim() !== '',
   2: () => true,
   3: () => form.class_id !== null && form.course_package_id !== null && form.fee_type !== '',
-  4: () => form.payment_method === 'CASH' || khqrString.value !== null,
+  4: () => true,
   5: () => true,
 }
 
@@ -363,7 +334,7 @@ onMounted(async () => {
         </div>
         <h2 class="text-xl font-bold text-neutral-900">{{ t('registerWizard.successTitle') }}</h2>
         <p class="mt-2 text-neutral-600">
-          {{ form.payment_method === 'QR' ? t('registerWizard.successMessageQr') : t('registerWizard.successMessageCash') }}
+          {{ t('registerWizard.successMessageCash') }}
         </p>
         <p class="mt-4 text-sm text-neutral-500">{{ t('registerWizard.yourStudentCode') }}: <span class="font-mono font-semibold text-neutral-800">{{ registeredCode }}</span></p>
       </div>
@@ -523,24 +494,7 @@ onMounted(async () => {
                 <input v-model="form.payment_method" type="radio" value="CASH" class="text-primary-600 focus:ring-primary-500" />
                 {{ t('registerWizard.paymentCash') }}
               </label>
-              <label
-                v-if="site.info.has_khqr"
-                class="flex flex-1 cursor-pointer items-center gap-2 rounded-lg border border-neutral-300 p-3 text-sm"
-                :class="form.payment_method === 'QR' ? 'border-primary-500 bg-primary-50' : ''"
-              >
-                <input v-model="form.payment_method" type="radio" value="QR" class="text-primary-600 focus:ring-primary-500" />
-                {{ t('registerWizard.paymentQr') }}
-              </label>
             </div>
-          </div>
-
-          <div v-if="form.payment_method === 'QR'" class="flex flex-col items-center gap-3 rounded-lg border border-neutral-200 p-4">
-            <BaseSpinner v-if="khqrLoading" />
-            <BaseAlert v-else-if="khqrError" variant="danger">{{ khqrError }}</BaseAlert>
-            <template v-else-if="khqrImage">
-              <img :src="khqrImage" alt="KHQR" class="h-64 w-64" />
-              <p class="text-center text-sm text-neutral-500">{{ t('registerWizard.khqrHint') }}</p>
-            </template>
           </div>
         </div>
 

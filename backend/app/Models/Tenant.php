@@ -147,17 +147,6 @@ class Tenant extends Model implements TenantWithDatabase
     }
 
     /**
-     * The school's static "receive any amount" Bakong KHQR string (e.g. from
-     * ACLEDA Toanchet's "My QR" screen) — see App\Support\Billing\Khqr,
-     * which turns this into a fixed-amount code per invoice. Null until a
-     * school admin sets it under School Settings.
-     */
-    public function khqrTemplate(): ?string
-    {
-        return $this->setting('khqr_template');
-    }
-
-    /**
      * How many days before a monthly-billed student's next payment is due
      * the dashboard (and their own student-facing popup) should start
      * flagging them — see MonthlyInvoiceController for how "next payment
