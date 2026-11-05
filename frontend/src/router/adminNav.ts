@@ -252,6 +252,10 @@ export const adminNav: AdminNavGroup[] = [
       { labelKey: 'adminNav.items.accounts', icon: 'library', to: '/admin/accounts', permission: 'accounts.view' },
       { labelKey: 'adminNav.items.income', icon: 'trendingUp', to: '/admin/income', permission: 'income.view' },
       { labelKey: 'adminNav.items.expenses', icon: 'trendingDown', to: '/admin/expenses', permission: 'expense.view' },
+      // Who an expense is for (Newtech, Flexi, Family...).
+      { labelKey: 'adminNav.items.expenseFor', icon: 'tag', to: '/admin/expense-for', permission: 'expense.view' },
+      // Same list as Assets > Suppliers: who an expense is paid to.
+      { labelKey: 'adminNav.items.vendors', icon: 'truck', to: '/admin/suppliers', permission: 'expense.view' },
       { labelKey: 'adminNav.items.transactions', icon: 'switchVertical', to: '/admin/transactions', permission: 'transactions.view' },
       { labelKey: 'adminNav.items.accountingReports', icon: 'report', to: '/admin/accounting-reports', permission: 'reports.financial.view' },
     ],

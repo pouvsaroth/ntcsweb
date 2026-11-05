@@ -31,8 +31,11 @@ class StoreExpenseRequest extends FormRequest
                 'required',
                 Rule::exists('tenant.accounts', 'id')->where('type', AccountType::EXPENSE)->where('is_active', true),
             ],
+            // Who it is for (Newtech, Flexi, Family...): required on every new expense.
+            'expense_entity_id' => ['required', 'integer', Rule::exists('tenant.expense_entities', 'id')->where('is_active', true)],
             'amount' => ['required', 'numeric', 'min:0.01', 'max:999999999.99'],
             'payment_method' => ['nullable', Rule::in(PaymentMethod::all())],
+            'supplier_id' => ['nullable', 'integer', Rule::exists('tenant.suppliers', 'id')],
             'vendor' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
             'reference_number' => ['nullable', 'string', 'max:100'],

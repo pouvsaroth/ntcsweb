@@ -90,6 +90,6 @@ onMounted(() => fetch())
 
     <BasePagination v-if="meta" :meta="meta" sticky class="mt-4" @update:page="setPage" />
 
-    <SupplierFormModal v-model="modalOpen" :supplier="editingSupplier" @saved="fetch" />
+    <SupplierFormModal v-model="modalOpen" :supplier="editingSupplier" @saved="fetch()" />
   </div>
 </template>

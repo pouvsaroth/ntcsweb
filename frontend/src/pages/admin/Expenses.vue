@@ -11,6 +11,7 @@ import BaseSelect from '@/components/ui/BaseSelect.vue'
 import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import DataTable from '@/components/ui/DataTable.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
+import { expenseEntitiesService, type ExpenseEntity } from '@/services/expenseEntities'
 import { expensesService, expenseStatuses, type Expense, type ExpenseStatus } from '@/services/expenses'
 import { formatMoney } from '@/utils/currency'
 import { formatDate, formatMonth } from '@/utils/date'
@@ -48,6 +49,15 @@ function onMonthFilterChange(value: string) {
   setFilter('for_month', value || undefined)
 }
 
+// Filter by who it is for (Accounting > Expense for).
+const entities = ref<ExpenseEntity[]>([])
+const entityFilterOptions = computed(() => entities.value.map((e) => ({ value: String(e.id), label: e.name })))
+const selectedEntity = ref('')
+function onEntityFilterChange(value: string) {
+  selectedEntity.value = value
+  setFilter('expense_entity_id', value || undefined)
+}
+
 function onStatusFilterChange(value: string) {
   selectedStatus.value = value
   setFilter('status', value || undefined)
@@ -57,20 +67,27 @@ const columns = [
   { key: 'expense_date', label: t('admin.expenses.columnDate'), sortable: true },
   { key: 'for_month', label: t('admin.expenses.forMonth'), sortable: true },
   { key: 'expense_number', label: t('admin.expenses.columnNumber') },
+  { key: 'expense_entity', label: t('admin.expenses.expenseFor') },
   { key: 'account', label: t('admin.expenses.columnAccount') },
   { key: 'vendor', label: t('admin.expenses.columnVendor') },
   { key: 'amount', label: t('admin.expenses.columnAmount'), sortable: true, align: 'text-right' },
   { key: 'status', label: t('admin.expenses.columnStatus') },
 ]
 
-onMounted(() => fetch())
+onMounted(() => {
+  fetch()
+  expenseEntitiesService
+    .listAll()
+    .then((list) => (entities.value = list))
+    .catch(() => {})
+})
 </script>
 
 <template>
   <div>
     <BaseAlert v-if="error" variant="danger" class="mb-4">{{ error }}</BaseAlert>
 
-    <div class="mb-4 grid items-end gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    <div class="mb-4 grid items-end gap-3 sm:grid-cols-2 lg:grid-cols-5">
       <input
         type="search"
         class="block w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
@@ -82,6 +99,12 @@ onMounted(() => fetch())
         :options="statusFilterOptions"
         :placeholder="t('admin.expenses.filterAllStatuses')"
         @update:model-value="onStatusFilterChange"
+      />
+      <BaseSelect
+        :model-value="selectedEntity"
+        :options="entityFilterOptions"
+        :placeholder="t('admin.expenses.filterAllExpenseFor')"
+        @update:model-value="onEntityFilterChange"
       />
       <BaseInput :model-value="selectedMonth" type="month" :label="t('admin.expenses.filterForMonth')" @update:model-value="onMonthFilterChange" />
       <BaseButton to="/admin/expenses/new">{{ t('admin.expenses.addExpense') }}</BaseButton>
@@ -110,6 +133,7 @@ onMounted(() => fetch())
             <BaseBadge :variant="statusVariant[row.status]">{{ t(`admin.expenses.status${statusKey(row.status)}`) }}</BaseBadge>
           </div>
           <p class="mt-2 truncate text-sm text-neutral-700">{{ row.account.code }} — {{ row.account.name }}</p>
+          <p v-if="row.expense_entity" class="truncate text-xs text-neutral-500">{{ t('admin.expenses.expenseFor') }}: {{ row.expense_entity.name }}</p>
           <div class="mt-1 flex items-center justify-between gap-2">
             <p class="truncate text-xs text-neutral-500">{{ row.vendor ?? '—' }}</p>
             <p class="shrink-0 text-base font-semibold text-neutral-900">{{ formatMoney(row.amount, row.currency) }}</p>
@@ -133,6 +157,7 @@ onMounted(() => fetch())
       </template>
       <template #cell-expense_date="{ row }">{{ formatDate(row.expense_date) }}</template>
       <template #cell-for_month="{ row }">{{ formatMonth(row.for_month) }}</template>
+      <template #cell-expense_entity="{ row }">{{ row.expense_entity?.name ?? '—' }}</template>
       <template #cell-account="{ row }">{{ row.account.code }} — {{ row.account.name }}</template>
       <template #cell-vendor="{ row }">{{ row.vendor ?? '—' }}</template>
       <template #cell-amount="{ row }">{{ formatMoney(row.amount, row.currency) }}</template>

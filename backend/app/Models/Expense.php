@@ -30,8 +30,8 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property string $status
  */
 #[Fillable([
-    'expense_number', 'expense_date', 'for_month', 'account_id', 'cash_account_id', 'amount', 'currency', 'payment_method',
-    'vendor', 'description', 'reference_number', 'status', 'created_by',
+    'expense_number', 'expense_date', 'for_month', 'account_id', 'expense_entity_id', 'cash_account_id', 'amount', 'currency', 'payment_method',
+    'supplier_id', 'vendor', 'description', 'reference_number', 'status', 'created_by',
     'approved_by', 'approved_at', 'rejected_reason', 'paid_at',
     'cancellation_reason', 'cancelled_by', 'cancelled_at',
     'reference_type', 'reference_id',
@@ -69,6 +69,18 @@ class Expense extends Model
     public function cashAccount(): BelongsTo
     {
         return $this->belongsTo(Account::class, 'cash_account_id');
+    }
+
+    /** Who it is for (Accounting > Expense for). */
+    public function expenseEntity(): BelongsTo
+    {
+        return $this->belongsTo(ExpenseEntity::class);
+    }
+
+    /** The vendor, from the shared Suppliers list. */
+    public function supplier(): BelongsTo
+    {
+        return $this->belongsTo(Supplier::class);
     }
 
     public function attachments(): HasMany

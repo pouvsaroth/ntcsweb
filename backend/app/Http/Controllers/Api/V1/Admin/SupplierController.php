@@ -54,7 +54,7 @@ final class SupplierController extends Controller
     {
         $this->authorize('delete', $supplier);
 
-        if ($supplier->assets()->exists()) {
+        if ($supplier->assets()->exists() || $supplier->expenses()->exists()) {
             return ApiResponse::error('This supplier is in use and cannot be deleted. Deactivate it instead.', 422);
         }
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Concerns;
 
 use App\Models\Account;
+use App\Models\ExpenseEntity;
 use App\Support\Accounting\AccountType;
 use App\Support\Billing\ProductType;
 
@@ -29,6 +30,9 @@ trait HasChartOfAccounts
 
     protected Account $electricityAccount;
 
+    /** Who test expenses are for (Accounting > Expense for), required on new expenses. */
+    protected ExpenseEntity $expenseEntity;
+
     /** @param array<string,mixed> $accountingSettings */
     protected function setUpChartOfAccounts(array $accountingSettings = []): void
     {
@@ -38,6 +42,7 @@ trait HasChartOfAccounts
         $this->tshirtSalesAccount = Account::factory()->type(AccountType::REVENUE)->create(['code' => '4300', 'name' => 'T-Shirt Sales']);
         $this->otherIncomeAccount = Account::factory()->type(AccountType::REVENUE)->create(['code' => '4900', 'name' => 'Other Income']);
         $this->electricityAccount = Account::factory()->type(AccountType::EXPENSE)->create(['code' => '5300', 'name' => 'Electricity']);
+        $this->expenseEntity = ExpenseEntity::factory()->create(['name' => 'Newtech']);
 
         $this->tenant->update([
             'settings' => [

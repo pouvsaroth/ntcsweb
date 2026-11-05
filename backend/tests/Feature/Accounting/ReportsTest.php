@@ -50,7 +50,7 @@ class ReportsTest extends TestCase
 
         // Electricity expense, created -> approved (by someone else) -> paid.
         $expenseId = $this->postJson('/api/v1/expenses', [
-            'account_id' => $this->electricityAccount->id,
+            'account_id' => $this->electricityAccount->id, 'expense_entity_id' => $this->expenseEntity->id,
             'amount' => 30,
         ])->assertCreated()->json('data.id');
 

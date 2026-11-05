@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-/** Tenant-owned. Who an asset was purchased from — see the migration's docblock for why this is distinct from RepairShop. */
+/** Tenant-owned. A vendor: who an asset was bought from or an expense paid to — see the migration's docblock for why this is distinct from RepairShop. */
 #[Fillable(['name', 'contact_person', 'phone', 'email', 'address', 'notes', 'is_active'])]
 class Supplier extends Model
 {
@@ -35,6 +35,11 @@ class Supplier extends Model
     public function assets(): HasMany
     {
         return $this->hasMany(Asset::class);
+    }
+
+    public function expenses(): HasMany
+    {
+        return $this->hasMany(Expense::class);
     }
 
     /**

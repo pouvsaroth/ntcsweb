@@ -95,6 +95,7 @@ use App\Models\Student;
 use App\Models\StudentFeedback;
 use App\Models\Supplier;
 use App\Models\Company;
+use App\Models\ExpenseEntity;
 use App\Models\Team;
 use App\Models\Tenant;
 use App\Models\User;
@@ -167,6 +168,7 @@ use App\Policies\StudentFeedbackPolicy;
 use App\Policies\StudentPolicy;
 use App\Policies\SupplierPolicy;
 use App\Policies\CompanyPolicy;
+use App\Policies\ExpenseEntityPolicy;
 use App\Policies\TenantPolicy;
 use App\Policies\UserPolicy;
 use App\Policies\VideoPolicy;
@@ -265,6 +267,7 @@ class AuthServiceProvider extends ServiceProvider
         PromotionRecommendation::class => PromotionRecommendationPolicy::class,
         Supplier::class => SupplierPolicy::class,
         Company::class => CompanyPolicy::class,
+        ExpenseEntity::class => ExpenseEntityPolicy::class,
         RepairShop::class => RepairShopPolicy::class,
         AssetIssue::class => AssetIssuePolicy::class,
         AssetRepair::class => AssetRepairPolicy::class,

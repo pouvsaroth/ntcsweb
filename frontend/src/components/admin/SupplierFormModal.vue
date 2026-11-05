@@ -14,7 +14,7 @@ const props = defineProps<{
   supplier?: Supplier | null
 }>()
 
-const emit = defineEmits<{ 'update:modelValue': [value: boolean]; saved: [] }>()
+const emit = defineEmits<{ 'update:modelValue': [value: boolean]; saved: [supplier: Supplier] }>()
 
 const { t } = useI18n()
 
@@ -58,13 +58,9 @@ async function submit() {
   generalError.value = null
 
   try {
-    if (isEditing.value) {
-      await suppliersService.update(props.supplier!.id, { ...form })
-    } else {
-      await suppliersService.create({ ...form })
-    }
+    const saved = isEditing.value ? await suppliersService.update(props.supplier!.id, { ...form }) : await suppliersService.create({ ...form })
 
-    emit('saved')
+    emit('saved', saved)
     emit('update:modelValue', false)
   } catch (error) {
     if (error instanceof ApiRequestError && error.errors) {

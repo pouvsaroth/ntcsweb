@@ -46,6 +46,7 @@ use App\Http\Controllers\Api\V1\Admin\DatabaseBackupController;
 use App\Http\Controllers\Api\V1\Admin\DepartmentController;
 use App\Http\Controllers\Api\V1\Admin\CompanyController;
 use App\Http\Controllers\Api\V1\Admin\CompanyInvoiceController;
+use App\Http\Controllers\Api\V1\Admin\ExpenseEntityController;
 use App\Http\Controllers\Api\V1\Admin\EnrollmentController;
 use App\Http\Controllers\Api\V1\Admin\EnrollmentPackageController;
 use App\Http\Controllers\Api\V1\Admin\EvaluationFormController;
@@ -961,6 +962,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('income', [IncomeController::class, 'index'])->name('income.index');
         Route::post('income', [IncomeController::class, 'store'])->name('income.store');
 
+        // Accounting > Expense for (Newtech, Flexi, Family...).
+        Route::apiResource('expense-entities', ExpenseEntityController::class);
         Route::apiResource('expenses', ExpenseController::class)->except(['destroy']);
         Route::post('expenses/{expense}/approve', [ExpenseController::class, 'approve'])->name('expenses.approve');
         Route::post('expenses/{expense}/reject', [ExpenseController::class, 'reject'])->name('expenses.reject');

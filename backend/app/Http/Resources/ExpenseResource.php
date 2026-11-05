@@ -28,6 +28,11 @@ class ExpenseResource extends JsonResource
                 'code' => $this->account->code,
                 'name' => $this->account->name,
             ]),
+            // Who it is for (Accounting > Expense for); null on older expenses.
+            'expense_entity' => $this->whenLoaded('expenseEntity', fn () => $this->expenseEntity !== null ? [
+                'id' => $this->expenseEntity->id,
+                'name' => $this->expenseEntity->name,
+            ] : null),
             'cash_account' => $this->whenLoaded('cashAccount', fn () => $this->cashAccount !== null ? [
                 'id' => $this->cashAccount->id,
                 'code' => $this->cashAccount->code,
@@ -37,6 +42,7 @@ class ExpenseResource extends JsonResource
             // Empty on older expenses = the school's default currency.
             'currency' => $this->currency ?? app(TenantContext::class)->get()?->default_currency ?? Tenant::CURRENCY_USD,
             'payment_method' => $this->payment_method,
+            'supplier_id' => $this->supplier_id,
             'vendor' => $this->vendor,
             'description' => $this->description,
             'reference_number' => $this->reference_number,

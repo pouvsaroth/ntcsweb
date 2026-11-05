@@ -24,9 +24,13 @@ export interface Expense {
   for_month: string | null
   account: { id: number; code: string; name: string }
   cash_account: { id: number; code: string; name: string } | null
+  /** Who it is for (Accounting > Expense for); null on older expenses. */
+  expense_entity: { id: number; name: string } | null
   amount: number
   currency: 'USD' | 'KHR'
   payment_method: string | null
+  /** The vendor picked from the Suppliers list; `vendor` is its name (or a name typed on older expenses). */
+  supplier_id: number | null
   vendor: string | null
   description: string | null
   reference_number: string | null
@@ -50,9 +54,11 @@ export interface ExpenseInput {
   /** 'YYYY-MM' */
   for_month: string
   account_id: number | null
+  expense_entity_id: number | null
   amount: string
   currency: 'USD' | 'KHR'
   payment_method: string
+  supplier_id: number | null
   vendor: string
   description: string
   reference_number: string
@@ -63,9 +69,11 @@ function toExpensePayload(input: ExpenseInput) {
     expense_date: input.expense_date,
     for_month: input.for_month || null,
     account_id: input.account_id,
+    expense_entity_id: input.expense_entity_id,
     amount: Number(input.amount) || 0,
     currency: input.currency,
     payment_method: input.payment_method || null,
+    supplier_id: input.supplier_id,
     vendor: input.vendor || null,
     description: input.description || null,
     reference_number: input.reference_number || null,

@@ -18,6 +18,7 @@ use App\Http\Responses\ApiResponse;
 use App\Models\Account;
 use App\Models\Expense;
 use App\Models\ExpenseAttachment;
+use App\Models\Supplier;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Services\Accounting\ExpenseService;
@@ -45,7 +46,7 @@ final class ExpenseController extends Controller
         // on them in the Approvals queue even without expense.view.
         abort_unless($canViewAll || $this->flow->isApproverFor($user, [DocumentType::EXPENSE]), 403);
 
-        $query = Expense::query()->with(['account', 'createdBy']);
+        $query = Expense::query()->with(['account', 'expenseEntity', 'createdBy']);
 
         if ($request->boolean('approval_queue') || ! $canViewAll) {
             $this->flow->scopeQueue($query, Expense::class, $user, $canViewAll);
@@ -68,7 +69,7 @@ final class ExpenseController extends Controller
 
         $expenses = ApiQuery::for($query, $request)
             ->searchable('expense_number', 'vendor', 'reference_number')
-            ->filterable(['status', 'account_id', 'payment_method', 'created_by'])
+            ->filterable(['status', 'account_id', 'payment_method', 'created_by', 'supplier_id', 'expense_entity_id'])
             ->sortable(['expense_date', 'for_month', 'amount', 'created_at'], default: '-created_at')
             ->paginate();
 
@@ -81,7 +82,7 @@ final class ExpenseController extends Controller
     {
         $expense = $this->expenses->create($request->validated(), $request->user());
 
-        return ApiResponse::created(new ExpenseResource($expense->load(['account', 'createdBy'])));
+        return ApiResponse::created(new ExpenseResource($expense->load(['account', 'expenseEntity', 'createdBy'])));
     }
 
     public function show(Request $request, Expense $expense): JsonResponse
@@ -99,7 +100,7 @@ final class ExpenseController extends Controller
      */
     private function full(Expense $expense, User $user): JsonResponse
     {
-        $expense->load(['account', 'cashAccount', 'createdBy', 'approvedBy', 'cancelledBy', 'attachments.uploadedBy']);
+        $expense->load(['account', 'expenseEntity', 'cashAccount', 'createdBy', 'approvedBy', 'cancelledBy', 'attachments.uploadedBy']);
         $this->flow->attachProgress([$expense], $user);
 
         return ApiResponse::success(new ExpenseResource($expense));
@@ -107,7 +108,12 @@ final class ExpenseController extends Controller
 
     public function update(UpdateExpenseRequest $request, Expense $expense): JsonResponse
     {
-        $expense->update($request->validated());
+        $data = $request->validated();
+        // A picked vendor's name is kept too (see ExpenseService::createRow()).
+        if (! empty($data['supplier_id'])) {
+            $data['vendor'] = Supplier::query()->find($data['supplier_id'])?->name;
+        }
+        $expense->update($data);
 
         return $this->full($expense, $request->user());
     }

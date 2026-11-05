@@ -212,6 +212,7 @@ onMounted(load)
               <div><dt class="text-neutral-500">{{ t('admin.expenses.expenseDate') }}</dt><dd class="font-medium text-neutral-900">{{ formatDate(expense.expense_date) }}</dd></div>
               <div><dt class="text-neutral-500">{{ t('admin.expenses.forMonth') }}</dt><dd class="font-medium text-neutral-900">{{ formatMonth(expense.for_month) }}</dd></div>
               <div><dt class="text-neutral-500">{{ t('admin.expenses.amount') }}</dt><dd class="font-medium text-neutral-900">{{ formatMoney(expense.amount, expense.currency) }}</dd></div>
+              <div><dt class="text-neutral-500">{{ t('admin.expenses.expenseFor') }}</dt><dd class="font-medium text-neutral-900">{{ expense.expense_entity?.name ?? '—' }}</dd></div>
               <div><dt class="text-neutral-500">{{ t('admin.expenses.vendor') }}</dt><dd class="font-medium text-neutral-900">{{ expense.vendor ?? '—' }}</dd></div>
               <div><dt class="text-neutral-500">{{ t('admin.expenses.referenceNumber') }}</dt><dd class="font-medium text-neutral-900">{{ expense.reference_number ?? '—' }}</dd></div>
               <div class="col-span-2"><dt class="text-neutral-500">{{ t('admin.expenses.description') }}</dt><dd class="font-medium text-neutral-900">{{ expense.description ?? '—' }}</dd></div>

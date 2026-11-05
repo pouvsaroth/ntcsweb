@@ -27,15 +27,15 @@ class ForMonthAndCurrencyTest extends TestCase
         $default = $this->tenant->default_currency;
 
         // No month or currency given: the month of the date and the school's currency.
-        $this->postJson('/api/v1/expenses', ['account_id' => $this->electricityAccount->id, 'amount' => 10, 'expense_date' => '2026-10-30'])
+        $this->postJson('/api/v1/expenses', ['account_id' => $this->electricityAccount->id, 'expense_entity_id' => $this->expenseEntity->id, 'amount' => 10, 'expense_date' => '2026-10-30'])
             ->assertCreated()->assertJsonPath('data.for_month', '2026-10')->assertJsonPath('data.currency', $default);
 
         $id = $this->postJson('/api/v1/expenses', [
-            'account_id' => $this->electricityAccount->id, 'amount' => 120000, 'currency' => 'KHR',
+            'account_id' => $this->electricityAccount->id, 'expense_entity_id' => $this->expenseEntity->id, 'amount' => 120000, 'currency' => 'KHR',
             'expense_date' => '2026-10-30', 'for_month' => '2026-09',
         ])->assertCreated()->assertJsonPath('data.for_month', '2026-09')->assertJsonPath('data.currency', 'KHR')->json('data.id');
 
-        $this->postJson('/api/v1/expenses', ['account_id' => $this->electricityAccount->id, 'amount' => 1, 'for_month' => 'Sept', 'currency' => 'EUR'])
+        $this->postJson('/api/v1/expenses', ['account_id' => $this->electricityAccount->id, 'expense_entity_id' => $this->expenseEntity->id, 'amount' => 1, 'for_month' => 'Sept', 'currency' => 'EUR'])
             ->assertUnprocessable()->assertJsonValidationErrors(['for_month', 'currency']);
 
         // Filter by For month.

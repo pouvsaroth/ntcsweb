@@ -3,14 +3,18 @@ import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
+import ExpenseEntityFormModal from '@/components/admin/ExpenseEntityFormModal.vue'
+import SupplierFormModal from '@/components/admin/SupplierFormModal.vue'
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
 import SearchableSelect from '@/components/ui/SearchableSelect.vue'
 import { accountsService, type Account } from '@/services/accounting'
+import { expenseEntitiesService, type ExpenseEntity } from '@/services/expenseEntities'
 import { expensesService, type ExpenseInput } from '@/services/expenses'
 import { paymentMethods } from '@/services/payments'
+import { suppliersService, type Supplier } from '@/services/suppliers'
 import { useAuthStore } from '@/stores/auth'
 import { ApiRequestError } from '@/types/api'
 import { thisMonth } from '@/utils/date'
@@ -26,6 +30,28 @@ function today(): string {
 
 const accounts = ref<Account[]>([])
 const loadingAccounts = ref(true)
+
+// Who it is for (Accounting > Expense for): required.
+const entities = ref<ExpenseEntity[]>([])
+const entityOptions = computed(() => entities.value.map((e) => ({ value: String(e.id), label: e.name })))
+const entityModalOpen = ref(false)
+const canAddEntity = computed(() => auth.can('expense.create'))
+
+function onEntitySaved(entity: ExpenseEntity) {
+  if (entity.is_active) entities.value = [...entities.value, entity].sort((a, b) => a.name.localeCompare(b.name))
+  if (entity.is_active) form.expense_entity_id = entity.id
+}
+
+// Vendors come from the shared Suppliers list (Accounting > Vendors).
+const suppliers = ref<Supplier[]>([])
+const supplierOptions = computed(() => suppliers.value.map((s) => ({ value: String(s.id), label: s.name })))
+const supplierModalOpen = ref(false)
+const canAddSupplier = computed(() => auth.can('expense.create') || auth.can('assets.create'))
+
+function onSupplierSaved(supplier: Supplier) {
+  suppliers.value = [...suppliers.value, supplier].sort((a, b) => a.name.localeCompare(b.name))
+  form.supplier_id = supplier.id
+}
 
 const expenseAccountOptions = computed(() =>
   accounts.value.filter((a) => a.type === 'EXPENSE' && a.is_active).map((a) => ({ value: String(a.id), label: `${a.code} — ${a.name}` })),
@@ -50,10 +76,12 @@ const form = reactive<ExpenseInput>({
   expense_date: today(),
   for_month: thisMonth(),
   account_id: null,
+  expense_entity_id: null,
   amount: '',
   // Starts on the school's own currency.
   currency: auth.tenantDefaultCurrency ?? 'USD',
   payment_method: '',
+  supplier_id: null,
   vendor: '',
   description: '',
   reference_number: '',
@@ -80,14 +108,19 @@ const submitting = ref(false)
 onMounted(async () => {
   loadingAccounts.value = true
   try {
-    accounts.value = await accountsService.listAll()
+    ;[accounts.value, suppliers.value, entities.value] = await Promise.all([
+      accountsService.listAll(),
+      suppliersService.listAll().catch(() => []),
+      expenseEntitiesService.listAll().catch(() => []),
+    ])
+    if (entities.value.length === 1) form.expense_entity_id = entities.value[0]!.id
   } finally {
     loadingAccounts.value = false
   }
 })
 
 async function submit() {
-  if (!form.account_id) return
+  if (!form.account_id || !form.expense_entity_id) return
 
   submitting.value = true
   errors.value = {}
@@ -116,6 +149,22 @@ async function submit() {
 
     <form class="space-y-6" @submit.prevent="submit">
       <BaseAlert v-if="generalError" variant="danger">{{ generalError }}</BaseAlert>
+
+      <div>
+        <SearchableSelect
+          :model-value="form.expense_entity_id !== null ? String(form.expense_entity_id) : ''"
+          :options="entityOptions"
+          :disabled="loadingAccounts"
+          :placeholder="t('admin.expenses.selectExpenseFor')"
+          :label="t('admin.expenses.expenseFor')"
+          required
+          :error="errors.expense_entity_id?.[0]"
+          @update:model-value="form.expense_entity_id = $event ? Number($event) : null"
+        />
+        <button v-if="canAddEntity" type="button" class="mt-1 text-xs font-medium text-primary-600 hover:text-primary-700" @click="entityModalOpen = true">
+          {{ t('admin.expenses.addExpenseFor') }}
+        </button>
+      </div>
 
       <SearchableSelect
         :model-value="form.account_id !== null ? String(form.account_id) : ''"
@@ -154,7 +203,20 @@ async function submit() {
       </div>
 
       <div class="grid grid-cols-2 gap-4">
-        <BaseInput v-model="form.vendor" :label="t('admin.expenses.vendor')" :error="errors.vendor?.[0]" />
+        <div>
+          <SearchableSelect
+            :model-value="form.supplier_id !== null ? String(form.supplier_id) : ''"
+            :options="supplierOptions"
+            :disabled="loadingAccounts"
+            :placeholder="t('admin.expenses.selectVendor')"
+            :label="t('admin.expenses.vendor')"
+            :error="errors.supplier_id?.[0]"
+            @update:model-value="form.supplier_id = $event ? Number($event) : null"
+          />
+          <button v-if="canAddSupplier" type="button" class="mt-1 text-xs font-medium text-primary-600 hover:text-primary-700" @click="supplierModalOpen = true">
+            {{ t('admin.expenses.addVendor') }}
+          </button>
+        </div>
         <SearchableSelect
           v-model="form.payment_method"
           :options="paymentMethodOptions"
@@ -175,9 +237,12 @@ async function submit() {
       </div>
 
       <div class="flex gap-3">
-        <BaseButton type="submit" :loading="submitting" :disabled="!form.account_id">{{ t('common.save') }}</BaseButton>
+        <BaseButton type="submit" :loading="submitting" :disabled="!form.account_id || !form.expense_entity_id">{{ t('common.save') }}</BaseButton>
         <BaseButton type="button" variant="outline" @click="router.push('/admin/expenses')">{{ t('common.cancel') }}</BaseButton>
       </div>
     </form>
+
+    <SupplierFormModal v-model="supplierModalOpen" @saved="onSupplierSaved" />
+    <ExpenseEntityFormModal v-model="entityModalOpen" @saved="onEntitySaved" />
   </div>
 </template>

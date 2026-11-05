@@ -69,7 +69,7 @@ class ExpenseApprovalFlowTest extends TestCase
     private function createExpense(): int
     {
         return $this->postJson('/api/v1/expenses', [
-            'account_id' => $this->electricityAccount->id,
+            'account_id' => $this->electricityAccount->id, 'expense_entity_id' => $this->expenseEntity->id,
             'amount' => 30,
         ])->assertCreated()->json('data.id');
     }

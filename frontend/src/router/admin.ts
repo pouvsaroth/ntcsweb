@@ -953,6 +953,12 @@ const adminRoutes: RouteRecordRaw[] = [
     meta: { titleKey: 'adminNav.items.expenses' },
   },
   {
+    path: 'expense-for',
+    name: 'admin.expense-for',
+    component: () => import('@/pages/admin/ExpenseEntities.vue'),
+    meta: { titleKey: 'adminNav.items.expenseFor' },
+  },
+  {
     path: 'expenses/new',
     name: 'admin.expenses.new',
     component: () => import('@/pages/admin/ExpenseForm.vue'),

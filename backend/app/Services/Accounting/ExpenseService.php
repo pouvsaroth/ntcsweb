@@ -6,6 +6,7 @@ namespace App\Services\Accounting;
 
 use App\Models\Account;
 use App\Models\Expense;
+use App\Models\Supplier;
 use App\Models\User;
 use App\Services\Approvals\ApprovalFlow;
 use App\Services\Notifications\NotificationService;
@@ -40,7 +41,7 @@ final class ExpenseService
     ) {}
 
     /**
-     * @param  array{expense_date?:string, for_month?:string|null, account_id:int, amount:float, currency?:string|null, payment_method?:string|null, vendor?:string|null, description?:string|null, reference_number?:string|null, status?:string}  $data
+     * @param  array{expense_date?:string, for_month?:string|null, account_id:int, expense_entity_id?:int|null, amount:float, currency?:string|null, payment_method?:string|null, supplier_id?:int|null, vendor?:string|null, description?:string|null, reference_number?:string|null, status?:string}  $data
      */
     public function create(array $data, User $actor): Expense
     {
@@ -64,7 +65,7 @@ final class ExpenseService
     }
 
     /**
-     * @param  array{expense_date?:string, for_month?:string|null, account_id:int, amount:float, currency?:string|null, payment_method?:string|null, vendor?:string|null, description?:string|null, reference_number?:string|null, status?:string}  $data
+     * @param  array{expense_date?:string, for_month?:string|null, account_id:int, expense_entity_id?:int|null, amount:float, currency?:string|null, payment_method?:string|null, supplier_id?:int|null, vendor?:string|null, description?:string|null, reference_number?:string|null, status?:string}  $data
      */
     private function createRow(array $data, User $actor): Expense
     {
@@ -77,10 +78,13 @@ final class ExpenseService
                 // 'YYYY-MM' it is for; empty = the month of expense_date (HasForMonth).
                 'for_month' => $data['for_month'] ?? null,
                 'account_id' => $data['account_id'],
+                'expense_entity_id' => $data['expense_entity_id'] ?? null,
                 'amount' => round((float) $data['amount'], 2),
                 'currency' => $data['currency'] ?? $tenant->default_currency,
                 'payment_method' => $data['payment_method'] ?? null,
-                'vendor' => $data['vendor'] ?? null,
+                'supplier_id' => $data['supplier_id'] ?? null,
+                // A picked vendor's name is kept too, so the list reads it without a join.
+                'vendor' => isset($data['supplier_id']) ? Supplier::query()->find($data['supplier_id'])?->name : ($data['vendor'] ?? null),
                 'description' => $data['description'] ?? null,
                 'reference_number' => $data['reference_number'] ?? null,
                 'status' => $data['status'] ?? ExpenseStatus::PENDING_APPROVAL,

@@ -27,7 +27,7 @@ class ExpenseTest extends TestCase
         $this->setUpChartOfAccounts();
 
         $response = $this->postJson('/api/v1/expenses', [
-            'account_id' => $this->electricityAccount->id,
+            'account_id' => $this->electricityAccount->id, 'expense_entity_id' => $this->expenseEntity->id,
             'amount' => 30,
             'description' => 'August electricity bill',
         ]);
@@ -46,7 +46,7 @@ class ExpenseTest extends TestCase
         $this->setUpChartOfAccounts();
 
         $expenseId = $this->postJson('/api/v1/expenses', [
-            'account_id' => $this->electricityAccount->id,
+            'account_id' => $this->electricityAccount->id, 'expense_entity_id' => $this->expenseEntity->id,
             'amount' => 30,
         ])->assertCreated()->json('data.id');
 
@@ -60,7 +60,7 @@ class ExpenseTest extends TestCase
         $this->setUpChartOfAccounts();
 
         $expenseId = $this->postJson('/api/v1/expenses', [
-            'account_id' => $this->electricityAccount->id,
+            'account_id' => $this->electricityAccount->id, 'expense_entity_id' => $this->expenseEntity->id,
             'amount' => 30,
         ])->assertCreated()->json('data.id');
 
@@ -80,7 +80,7 @@ class ExpenseTest extends TestCase
         $this->actingAsAdminWithPermissions([Permissions::EXPENSE_CREATE, Permissions::EXPENSE_REJECT]);
         $this->setUpChartOfAccounts();
 
-        $expenseId = $this->postJson('/api/v1/expenses', ['account_id' => $this->electricityAccount->id, 'amount' => 30])
+        $expenseId = $this->postJson('/api/v1/expenses', ['account_id' => $this->electricityAccount->id, 'expense_entity_id' => $this->expenseEntity->id, 'amount' => 30])
             ->assertCreated()->json('data.id');
 
         $this->postJson("/api/v1/expenses/{$expenseId}/reject", [])->assertUnprocessable();
@@ -97,7 +97,7 @@ class ExpenseTest extends TestCase
         ]);
         $this->setUpChartOfAccounts();
 
-        $expenseId = $this->postJson('/api/v1/expenses', ['account_id' => $this->electricityAccount->id, 'amount' => 30])
+        $expenseId = $this->postJson('/api/v1/expenses', ['account_id' => $this->electricityAccount->id, 'expense_entity_id' => $this->expenseEntity->id, 'amount' => 30])
             ->assertCreated()->json('data.id');
 
         $approver = User::factory()->forTenant($this->tenant)->create();
@@ -130,7 +130,7 @@ class ExpenseTest extends TestCase
         $this->actingAsAdminWithPermissions([Permissions::EXPENSE_CREATE, Permissions::EXPENSE_PAY]);
         $this->setUpChartOfAccounts();
 
-        $expenseId = $this->postJson('/api/v1/expenses', ['account_id' => $this->electricityAccount->id, 'amount' => 30])
+        $expenseId = $this->postJson('/api/v1/expenses', ['account_id' => $this->electricityAccount->id, 'expense_entity_id' => $this->expenseEntity->id, 'amount' => 30])
             ->assertCreated()->json('data.id');
 
         $this->postJson("/api/v1/expenses/{$expenseId}/pay", ['cash_account_id' => $this->cashAccount->id])->assertUnprocessable();
@@ -143,7 +143,7 @@ class ExpenseTest extends TestCase
         ]);
         $this->setUpChartOfAccounts();
 
-        $expenseId = $this->postJson('/api/v1/expenses', ['account_id' => $this->electricityAccount->id, 'amount' => 30])
+        $expenseId = $this->postJson('/api/v1/expenses', ['account_id' => $this->electricityAccount->id, 'expense_entity_id' => $this->expenseEntity->id, 'amount' => 30])
             ->assertCreated()->json('data.id');
 
         $approver = User::factory()->forTenant($this->tenant)->create();
@@ -164,7 +164,7 @@ class ExpenseTest extends TestCase
         $this->actingAsAdminWithPermissions([]);
         $this->setUpChartOfAccounts();
 
-        $this->postJson('/api/v1/expenses', ['account_id' => $this->electricityAccount->id, 'amount' => 30])->assertForbidden();
+        $this->postJson('/api/v1/expenses', ['account_id' => $this->electricityAccount->id, 'expense_entity_id' => $this->expenseEntity->id, 'amount' => 30])->assertForbidden();
     }
 
     public function test_viewing_expenses_requires_the_expense_view_permission(): void
