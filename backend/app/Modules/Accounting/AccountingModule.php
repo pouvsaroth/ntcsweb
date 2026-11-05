@@ -38,4 +38,11 @@ final class AccountingModule extends Module
             'reports' => ['Financial reports', 'របាយការណ៍ហិរញ្ញវត្ថុ'],
         ];
     }
+
+    public function dashboardPermissions(): array
+    {
+        return [
+            'dashboard.cards.expense',
+        ];
+    }
 }
