@@ -131,6 +131,7 @@ use App\Http\Controllers\Api\V1\Admin\SchoolDocumentsController;
 use App\Http\Controllers\Api\V1\Admin\SchoolSettingsController;
 use App\Http\Controllers\Api\V1\Admin\ShiftController;
 use App\Http\Controllers\Api\V1\Admin\StaffAttendanceController;
+use App\Http\Controllers\Api\V1\Admin\StaffBankQrController;
 use App\Http\Controllers\Api\V1\Admin\StaffController;
 use App\Http\Controllers\Api\V1\Admin\StaffEducationController;
 use App\Http\Controllers\Api\V1\Admin\StaffDocumentController;
@@ -857,6 +858,9 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::post('staff/{staff}/records/{kind}', [StaffRecordController::class, 'store'])->where('kind', StaffRecordKinds::pattern())->name('staff.records.store');
         Route::put('staff/{staff}/records/{kind}/{record}', [StaffRecordController::class, 'update'])->where('kind', StaffRecordKinds::pattern())->whereNumber('record')->name('staff.records.update');
         Route::delete('staff/{staff}/records/{kind}/{record}', [StaffRecordController::class, 'destroy'])->where('kind', StaffRecordKinds::pattern())->whereNumber('record')->name('staff.records.destroy');
+        // HRM > Staff: a staff member's own bank KHQR (only they can change it), shown on their payslip.
+        Route::post('staff/{staff}/bank-qr', [StaffBankQrController::class, 'store'])->name('staff.bank-qr.store');
+        Route::delete('staff/{staff}/bank-qr', [StaffBankQrController::class, 'destroy'])->name('staff.bank-qr.destroy');
         // HRM > Staff > Documents: private personal / HR files (docs/hrm/staff-profile-tabs.md).
         Route::get('staff/{staff}/documents', [StaffDocumentController::class, 'index'])->name('staff.documents.index');
         Route::post('staff/{staff}/documents', [StaffDocumentController::class, 'store'])->name('staff.documents.store');

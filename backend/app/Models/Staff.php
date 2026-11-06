@@ -150,6 +150,12 @@ class Staff extends Model
         return $this->signature_path !== null ? Storage::disk('public')->url($this->signature_path) : null;
     }
 
+    /** Their bank KHQR image, uploaded by themselves — see StaffBankQrController. */
+    public function bankQrUrl(): ?string
+    {
+        return $this->bank_qr_path !== null ? Storage::disk('public')->url($this->bank_qr_path) : null;
+    }
+
     /** Absolute filesystem path to the signature, for the PDF renderer (Browsershot) — see Tenant::logoPath()'s own docblock. */
     public function signaturePath(): ?string
     {
@@ -188,6 +194,10 @@ class Staff extends Model
 
             if ($staff->signature_path !== null) {
                 Storage::disk('public')->delete($staff->signature_path);
+            }
+
+            if ($staff->bank_qr_path !== null) {
+                Storage::disk('public')->delete($staff->bank_qr_path);
             }
         });
     }

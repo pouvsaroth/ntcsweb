@@ -64,6 +64,17 @@ const overtime = computed(() => slip.value?.details?.overtime?.minutes ?? null)
         </div>
       </dl>
 
+      <!-- The staff member's own bank KHQR: scan it in the bank app to pay. -->
+      <div v-if="slip.bank_qr_url" class="mb-4 flex flex-col items-center gap-2 rounded-lg border border-neutral-200 p-3 sm:flex-row sm:items-start">
+        <a :href="slip.bank_qr_url" target="_blank" rel="noopener">
+          <img :src="slip.bank_qr_url" :alt="t('admin.staff.bankQr')" class="h-48 w-48 object-contain" />
+        </a>
+        <div class="text-sm">
+          <p class="font-medium text-neutral-800">{{ t('admin.staff.bankQr') }}</p>
+          <p class="text-neutral-500">{{ t('admin.staff.bankQrScan') }}</p>
+        </div>
+      </div>
+
       <div class="grid gap-4 sm:grid-cols-2">
         <section>
           <h3 class="mb-1 text-sm font-semibold text-neutral-800">{{ t('admin.payroll.payslip.earnings') }}</h3>

@@ -29,6 +29,8 @@ export interface Staff {
   photo_url: string | null
   /** Printed on an invoice/receipt this staff member issues — see StaffForm.vue. */
   signature_url: string | null
+  /** Their own bank KHQR, to pay their salary; only they can change it — see StaffBankQrController. */
+  bank_qr_url: string | null
   /** Server-generated avatar fallback color — see StaffController::profileColorFor() on the backend. Never user-editable. */
   profile_color: string | null
   hire_date: string | null
@@ -162,6 +164,14 @@ export const staffService = {
   },
 
   remove: (id: number) => apiDelete(`/staff/${id}`),
+
+  /** Their own bank KHQR — only the staff member themselves may call these. */
+  uploadBankQr: (id: number, file: File) => {
+    const form = new FormData()
+    form.append('bank_qr', file)
+    return apiPost<{ bank_qr_url: string | null }>(`/staff/${id}/bank-qr`, form)
+  },
+  removeBankQr: (id: number) => apiDelete(`/staff/${id}/bank-qr`),
 
   /** The tracked HR path — records who/why/when alongside the status change, see StaffStatusHistoryEntry. */
   changeStatus: (id: number, input: { status: StaffStatus; reason: string; requested_date: string; effective_date: string }) =>

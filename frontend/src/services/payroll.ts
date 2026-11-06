@@ -473,6 +473,8 @@ export interface Payslip {
   bank_name: string | null
   bank_account_name: string | null
   bank_account_number: string | null
+  /** The staff member's own KHQR, to scan and pay (single payslip view only). */
+  bank_qr_url?: string | null
 }
 
 export interface PayrollRun {

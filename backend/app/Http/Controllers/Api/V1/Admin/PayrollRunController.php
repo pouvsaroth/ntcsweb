@@ -299,6 +299,8 @@ final class PayrollRunController extends Controller
             'bank_name' => $slip->bank_name,
             'bank_account_name' => $slip->bank_account_name,
             'bank_account_number' => $slip->bank_account_number,
+            // The staff member's own KHQR (live, not a snapshot), to scan and pay.
+            'bank_qr_url' => $full ? $staff?->bankQrUrl() : null,
         ];
     }
 

@@ -106,6 +106,43 @@ const nationalIdPhotoFile = ref<File | null>(null)
 const nationalIdPhotoPreview = ref<string | null>(null)
 const signatureFile = ref<File | null>(null)
 const signaturePreview = ref<string | null>(null)
+
+// Bank KHQR: saved straight away (own endpoint), and only by the staff member themselves.
+const bankQrUrl = ref<string | null>(null)
+const staffUserId = ref<number | null>(null)
+const isOwnProfile = computed(() => staffUserId.value !== null && staffUserId.value === auth.user?.id)
+const bankQrBusy = ref(false)
+const bankQrError = ref<string | null>(null)
+
+async function onBankQrChange(event: Event): Promise<void> {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file || staffId.value === null) return
+  bankQrBusy.value = true
+  bankQrError.value = null
+  try {
+    bankQrUrl.value = (await staffService.uploadBankQr(staffId.value, file)).bank_qr_url
+  } catch (err) {
+    bankQrError.value = err instanceof ApiRequestError ? err.message : t('admin.staff.bankQrFailed')
+  } finally {
+    bankQrBusy.value = false
+    input.value = ''
+  }
+}
+
+async function removeBankQr(): Promise<void> {
+  if (staffId.value === null) return
+  bankQrBusy.value = true
+  bankQrError.value = null
+  try {
+    await staffService.removeBankQr(staffId.value)
+    bankQrUrl.value = null
+  } catch (err) {
+    bankQrError.value = err instanceof ApiRequestError ? err.message : t('admin.staff.bankQrFailed')
+  } finally {
+    bankQrBusy.value = false
+  }
+}
 /** Read-only, display-only — server-generated (see StaffIdGenerator on the backend), never part of the submitted form. */
 const employeeCode = ref<string | null>(null)
 
@@ -381,6 +418,8 @@ async function load() {
     photoPreview.value = staff.photo_url
     nationalIdPhotoPreview.value = staff.national_id_photo_url
     signaturePreview.value = staff.signature_url
+    bankQrUrl.value = staff.bank_qr_url
+    staffUserId.value = staff.user?.id ?? null
 
     if (staff.village_code) await selectAddressFromVillageCode(staff.village_code)
   } catch (error) {
@@ -644,6 +683,28 @@ onMounted(load)
                   @change="onSignatureChange"
                 />
                 <p v-if="errors.signature?.[0]" class="mt-1.5 text-sm text-danger-600">{{ errors.signature[0] }}</p>
+              </div>
+
+              <div v-if="isEditing">
+                <label class="mb-1.5 block text-sm font-medium text-neutral-700">{{ t('admin.staff.bankQr') }}</label>
+                <p class="mb-2 text-xs text-neutral-500">{{ isOwnProfile ? t('admin.staff.bankQrHintOwn') : t('admin.staff.bankQrHintOthers') }}</p>
+                <a v-if="bankQrUrl" :href="bankQrUrl" target="_blank" rel="noopener" class="mb-3 flex h-36 w-36 items-center justify-center overflow-hidden rounded-lg border border-neutral-200 bg-white">
+                  <img :src="bankQrUrl" :alt="t('admin.staff.bankQr')" class="h-full w-full object-contain" />
+                </a>
+                <p v-else class="mb-3 text-sm text-neutral-500">{{ t('admin.staff.bankQrNone') }}</p>
+                <template v-if="isOwnProfile">
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    :disabled="bankQrBusy"
+                    class="block w-full text-sm text-neutral-600 file:mr-3 file:rounded-lg file:border-0 file:bg-primary-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-primary-800 hover:file:bg-primary-100"
+                    @change="onBankQrChange"
+                  />
+                  <button v-if="bankQrUrl" type="button" class="mt-2 text-sm font-medium text-danger-600 hover:underline disabled:opacity-50" :disabled="bankQrBusy" @click="removeBankQr">
+                    {{ t('admin.staff.bankQrRemove') }}
+                  </button>
+                </template>
+                <p v-if="bankQrError" class="mt-1.5 text-sm text-danger-600">{{ bankQrError }}</p>
               </div>
             </div>
           </section>
