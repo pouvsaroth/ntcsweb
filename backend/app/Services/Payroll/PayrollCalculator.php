@@ -65,6 +65,15 @@ final class PayrollCalculator
         $salaries = $this->attendance->salaries($staff, $to);
         $staff = $staff->filter(fn (Staff $member) => $salaries->has($member->id))->values();
 
+        // Staff already on another run of this period are left out, so nobody is paid twice.
+        [$covered, $coveringRuns] = $this->coveredStaff($run);
+        if ($covered->isNotEmpty()) {
+            $staff = $staff->reject(fn (Staff $member) => $covered->contains($member->id))->values();
+            if ($staff->isEmpty()) {
+                throw ValidationException::withMessages(['period' => 'Everyone with a salary is already in payroll '.$coveringRuns->implode(', ').' for this pay period. Add a basic salary for more staff, or cancel that payroll to start again.']);
+            }
+        }
+
         $taxed = $run->period !== PayrollRun::PERIOD_FIRST_HALF;
         if ($taxed && $rate === null && $salaries->contains(fn (StaffSalary $s) => $s->currency === Tenant::CURRENCY_USD)) {
             throw ValidationException::withMessages(['khr_per_usd' => 'Tax and NSSF are worked out in riel — add a currency rate (Settings > Currency rates) before working out USD salaries.']);
@@ -381,16 +390,40 @@ final class PayrollCalculator
         return [...$lines, 'earnings' => $earnings, 'deductions' => $deductions];
     }
 
-    /** @return Collection<int, Payslip> keyed by staff id */
+    /** @return Collection<int, Payslip> keyed by staff id (from every first-half run of the month) */
     private function firstHalfSlips(PayrollRun $run): Collection
     {
-        $first = PayrollRun::query()
+        $runIds = PayrollRun::query()
             ->where('month', $run->month)
             ->where('period', PayrollRun::PERIOD_FIRST_HALF)
             ->whereNotIn('status', [PayrollRun::STATUS_CANCELLED, PayrollRun::STATUS_REJECTED])
-            ->first();
+            ->pluck('id');
 
-        return $first?->payslips()->get()->keyBy('staff_id') ?? collect();
+        return Payslip::query()->whereIn('payroll_run_id', $runIds)->get()->keyBy('staff_id');
+    }
+
+    /**
+     * Staff already on another run that pays the same days: any run of the month for a
+     * whole-month run; the same half or a whole-month run for a half-month run.
+     *
+     * @return array{0: Collection<int, int>, 1: Collection<int, string>} staff ids, run references
+     */
+    private function coveredStaff(PayrollRun $run): array
+    {
+        $runs = PayrollRun::query()
+            ->where('month', $run->month)
+            ->whereKeyNot($run->getKey())
+            ->whereIn('status', PayrollRun::STATUSES_HOLDING)
+            ->when($run->period !== PayrollRun::PERIOD_MONTH, fn ($q) => $q->whereIn('period', [PayrollRun::PERIOD_MONTH, $run->period]))
+            ->get(['id', 'reference']);
+        if ($runs->isEmpty()) {
+            return [collect(), collect()];
+        }
+
+        return [
+            Payslip::query()->whereIn('payroll_run_id', $runs->modelKeys())->pluck('staff_id')->unique()->values(),
+            $runs->pluck('reference'),
+        ];
     }
 
     private function fromKhr(float $khr, string $currency, ?float $rate): float

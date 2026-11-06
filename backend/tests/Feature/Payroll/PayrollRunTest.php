@@ -124,17 +124,57 @@ class PayrollRunTest extends TestCase
         $this->assertCount(2, $slip['details']['shift_pay']);
     }
 
-    public function test_a_pay_period_is_held_by_one_run_until_it_is_cancelled(): void
+    public function test_a_staff_member_is_held_by_one_run_of_a_period_until_it_is_cancelled(): void
     {
         $this->staffOnTwoMillion();
         $run = $this->createRun();
         $this->assertSame('PR-'.$this->month, $run['reference']);
 
+        // Everyone is already in the month's run (a half-month run would pay the same days again).
         $this->postJson('/api/v1/payroll-runs', ['month' => $this->month, 'period' => 'first_half', 'pay_date' => now()->toDateString()])
+            ->assertUnprocessable()->assertJsonValidationErrors(['period']);
+        $this->postJson('/api/v1/payroll-runs', ['month' => $this->month, 'period' => 'month', 'pay_date' => now()->toDateString()])
             ->assertUnprocessable()->assertJsonValidationErrors(['period']);
 
         $this->postJson("/api/v1/payroll-runs/{$run['id']}/cancel")->assertOk()->assertJsonPath('data.status', 'cancelled');
         $this->assertSame('PR-'.$this->month.'-2', $this->createRun()['reference']);
+    }
+
+    public function test_staff_given_a_salary_after_a_run_was_paid_go_on_a_new_run_of_the_same_period(): void
+    {
+        $first = $this->staffOnTwoMillion();
+        $run = $this->createRun();
+        PayrollRun::query()->whereKey($run['id'])->update(['status' => PayrollRun::STATUS_PAID]);
+
+        $second = $this->staffOnTwoMillion();
+        $third = $this->staffOnTwoMillion();
+        $more = $this->createRun();
+
+        $this->assertSame('PR-'.$this->month.'-2', $more['reference']);
+        $this->assertEqualsCanonicalizing([$second->id, $third->id], collect($more['payslips'])->pluck('staff.id')->all());
+        $this->assertNotContains($first->id, collect($more['payslips'])->pluck('staff.id')->all());
+
+        // Recalculating the new run still leaves out the staff already paid.
+        $this->postJson("/api/v1/payroll-runs/{$more['id']}/recalculate")->assertOk();
+        $this->assertEqualsCanonicalizing([$second->id, $third->id], PayrollRun::query()->findOrFail($more['id'])->payslips()->pluck('staff_id')->all());
+
+        // Nobody left to pay.
+        $this->postJson('/api/v1/payroll-runs', ['month' => $this->month, 'period' => 'month', 'pay_date' => now()->toDateString()])
+            ->assertUnprocessable()->assertJsonValidationErrors(['period']);
+    }
+
+    public function test_the_second_half_uses_each_staff_members_own_first_half_run(): void
+    {
+        $this->staffOnTwoMillion();
+        $this->createRun('first_half');
+        $late = $this->staffOnTwoMillion();
+        $this->createRun('first_half');
+
+        // Tax and NSSF on the whole month for the staff member from the second first-half run too.
+        $slip = collect($this->createRun('second_half')['payslips'])->firstWhere('staff.id', $late->id);
+        $this->assertSame(24000.0, (float) $slip['social_security_employee']);
+        $this->assertSame(23800.0, (float) $slip['tax']);
+        $this->assertSame(952200.0, (float) $slip['net_pay']);
     }
 
     public function test_a_15_day_payroll_takes_tax_and_nssf_on_the_whole_month_in_the_second_half(): void

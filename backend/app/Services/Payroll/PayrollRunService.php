@@ -56,16 +56,8 @@ final class PayrollRunService
             default => [$start, $start->endOfMonth()->startOfDay()],
         };
 
-        // A whole-month run and a half-month run of the same month would pay twice.
-        $clash = PayrollRun::query()
-            ->where('month', $month)
-            ->whereIn('status', PayrollRun::STATUSES_HOLDING)
-            ->where(fn ($q) => $period === PayrollRun::PERIOD_MONTH ? $q : $q->whereIn('period', [PayrollRun::PERIOD_MONTH, $period]))
-            ->first();
-        if ($clash !== null) {
-            throw ValidationException::withMessages(['period' => "Payroll {$clash->reference} already covers this pay period. Cancel it first to start again."]);
-        }
-
+        // A period can have more than one run (e.g. staff added after the first was paid):
+        // the calculator leaves out staff already on another run of the period.
         return DB::connection('tenant')->transaction(function () use ($month, $period, $from, $to, $payDate, $note, $actor) {
             $run = PayrollRun::query()->create([
                 'reference' => $this->reference($month, $period),
