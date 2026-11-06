@@ -4026,6 +4026,8 @@ const km: MessageSchema = {
       actionTranslations: 'ការបកប្រែ',
       actionLanguages: 'ភាសា',
       actionManageAll: 'គ្រប់គ្រងគ្រប់ថ្នាក់',
+      searchMenus: 'ស្វែងរកម៉ឺនុយ ឬផ្ទាំង...',
+      noMenusFound: 'រកមិនឃើញម៉ឺនុយ ឬផ្ទាំងទេ។',
       actionRequest: 'ស្នើសុំ',
       actionEnter: 'បញ្ចូល',
       actionRun: 'ដំណើរការ',

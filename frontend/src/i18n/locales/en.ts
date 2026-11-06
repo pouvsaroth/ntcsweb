@@ -4030,6 +4030,8 @@ const en = {
       actionTranslations: 'Translations',
       actionLanguages: 'Languages',
       actionManageAll: 'Manage All Classes',
+      searchMenus: 'Search menus or tabs...',
+      noMenusFound: 'No menu or tab matches.',
       actionRequest: 'Request',
       actionEnter: 'Enter',
       actionRun: 'Run',

@@ -446,6 +446,45 @@ function toggleAll(checked: boolean) {
     : form.permissions.filter((p) => !allSlugs.value.includes(p))
 }
 
+/** A row's own actions, in the usual order (View, Create, Update, Delete, ...). */
+function moduleActions(module: ModuleEntry): Action[] {
+  return COLUMNS.filter((action) => module.actions[action])
+}
+
+/** Some but not all of these rows' boxes ticked: shown as a dash in the row's own box. */
+function isGroupPartlyChecked(modules: ModuleEntry[]): boolean {
+  const slugs = groupSlugs(modules)
+  const ticked = slugs.filter((slug) => isChecked(slug)).length
+  return ticked > 0 && ticked < slugs.length
+}
+
+// Search: a row matches on its own name, its menu's or its main menu's.
+const search = ref('')
+const visibleGroups = computed(() => {
+  const term = search.value.trim().toLowerCase()
+  if (term === '') return groupedModules.value
+  const hit = (text: string) => text.toLowerCase().includes(term)
+  return groupedModules.value
+    .map((group) => {
+      if (hit(groupLabel(group.name))) return group
+      const children = group.children
+        .map((child): GroupChild | null => {
+          if (child.kind === 'module') return hit(child.module.name) ? child : null
+          if (hit(child.name)) return child
+          const modules = child.modules.filter((module) => hit(module.name))
+          return modules.length > 0 ? { ...child, modules } : null
+        })
+        .filter((child): child is GroupChild => child !== null)
+      return children.length > 0 ? { ...group, children } : null
+    })
+    .filter((group): group is NonNullable<typeof group> => group !== null)
+})
+
+/** Open unless collapsed; a search opens everything it found. */
+function isOpen(key: string): boolean {
+  return search.value.trim() !== '' || !isGroupCollapsed(key)
+}
+
 function moduleSlugs(module: (typeof MODULES)[number]): string[] {
   return Object.values(module.actions) as string[]
 }
@@ -559,7 +598,7 @@ async function submit() {
     <form class="space-y-4" @submit.prevent="submit">
       <BaseAlert v-if="generalError" variant="danger">{{ generalError }}</BaseAlert>
 
-      <div class="grid grid-cols-3 gap-4">
+      <div class="grid gap-4 sm:grid-cols-3">
         <BaseInput
           v-model="form.name"
           required
@@ -600,117 +639,115 @@ async function submit() {
             </button>
           </div>
         </div>
-        <div class="max-h-[60vh] overflow-auto rounded-lg border border-neutral-200">
-          <table class="min-w-full text-sm">
-            <thead class="sticky top-0 z-20 bg-neutral-50 text-xs font-semibold uppercase tracking-wide text-neutral-500">
-              <tr>
-                <th class="w-px whitespace-nowrap border-r border-neutral-200 bg-neutral-50 px-3 py-2 text-left lg:sticky lg:left-0 lg:z-30">
-                  {{ t('admin.roles.module') }}
-                </th>
-                <th v-for="column in COLUMNS" :key="column" class="px-3 py-2 text-center">{{ columnLabel(column) }}</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-neutral-100">
-              <template v-for="group in groupedModules" :key="group.name">
-                <tr class="bg-neutral-50/80">
-                  <td :colspan="COLUMNS.length + 1" class="px-3 py-1.5">
-                    <label class="flex items-center gap-2 font-semibold text-neutral-800">
-                      <button
-                        type="button"
-                        class="w-4 text-neutral-400 hover:text-neutral-600"
-                        :aria-label="isGroupCollapsed(group.name) ? t('common.expand') : t('common.collapse')"
-                        @click="toggleGroupCollapsed(group.name)"
-                      >
-                        {{ isGroupCollapsed(group.name) ? '▸' : '▾' }}
-                      </button>
+        <input
+          v-model="search"
+          type="search"
+          :placeholder="t('admin.roles.searchMenus')"
+          class="mb-2 block w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200 sm:max-w-sm"
+        />
+        <!-- A tree, not a matrix: each row shows only the actions it has, next to its name. -->
+        <div class="max-h-[60vh] overflow-auto rounded-lg border border-neutral-200 text-sm">
+          <template v-for="group in visibleGroups" :key="group.name">
+            <div class="sticky top-0 z-10 flex items-center gap-2 border-b border-neutral-200 bg-neutral-50 px-3 py-2 font-semibold text-neutral-800">
+              <button
+                type="button"
+                class="w-4 text-neutral-400 hover:text-neutral-600"
+                :aria-label="isGroupCollapsed(group.name) ? t('common.expand') : t('common.collapse')"
+                @click="toggleGroupCollapsed(group.name)"
+              >
+                {{ isOpen(group.name) ? '▾' : '▸' }}
+              </button>
+              <input
+                type="checkbox"
+                :checked="isGroupFullyChecked(group.modules)"
+                :indeterminate.prop="isGroupPartlyChecked(group.modules)"
+                class="rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+                @change="toggleGroup(group.modules, ($event.target as HTMLInputElement).checked)"
+              />
+              <span class="cursor-pointer" @click="toggleGroupCollapsed(group.name)">{{ groupLabel(group.name) }}</span>
+            </div>
+
+            <template v-if="isOpen(group.name)">
+              <template v-for="child in group.children" :key="child.key">
+                <!-- A menu with no tabs. -->
+                <div v-if="child.kind === 'module'" class="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-neutral-100 py-2 pl-9 pr-3 hover:bg-neutral-50/60">
+                  <label class="flex min-w-0 flex-1 basis-60 items-center gap-2 text-neutral-800">
+                    <input
+                      type="checkbox"
+                      :checked="isModuleFullyChecked(child.module)"
+                      :indeterminate.prop="isGroupPartlyChecked([child.module])"
+                      class="rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+                      @change="toggleModule(child.module, ($event.target as HTMLInputElement).checked)"
+                    />
+                    <span>{{ child.module.name }}</span>
+                  </label>
+                  <div class="flex flex-wrap gap-x-3 gap-y-1">
+                    <label v-for="action in moduleActions(child.module)" :key="action" class="flex items-center gap-1.5 whitespace-nowrap text-neutral-600">
                       <input
                         type="checkbox"
-                        :checked="isGroupFullyChecked(group.modules)"
+                        :checked="isChecked(child.module.actions[action]!)"
                         class="rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
-                        @change="toggleGroup(group.modules, ($event.target as HTMLInputElement).checked)"
+                        @change="toggle(child.module.actions[action]!, ($event.target as HTMLInputElement).checked)"
                       />
-                      <span class="cursor-pointer" @click="toggleGroupCollapsed(group.name)">{{ groupLabel(group.name) }}</span>
+                      {{ columnLabel(action) }}
                     </label>
-                  </td>
-                </tr>
+                  </div>
+                </div>
 
-                <template v-for="child in group.children" :key="child.key">
-                  <!-- A single module, listed directly under the group. -->
-                  <tr v-if="child.kind === 'module'" v-show="!isGroupCollapsed(group.name)">
-                    <td class="w-px whitespace-nowrap border-r border-neutral-200 bg-white py-2 pl-16 pr-3 text-neutral-700 lg:sticky lg:left-0 lg:z-10">
-                      <label class="flex items-center gap-2">
+                <!-- A menu whose page has tabs: the menu, then a row per tab. -->
+                <template v-else>
+                  <div class="flex items-center gap-2 border-b border-neutral-100 py-2 pl-9 pr-3 font-medium text-neutral-800">
+                    <button
+                      type="button"
+                      class="w-4 text-neutral-400 hover:text-neutral-600"
+                      :aria-label="isGroupCollapsed(child.key) ? t('common.expand') : t('common.collapse')"
+                      @click="toggleGroupCollapsed(child.key)"
+                    >
+                      {{ isOpen(child.key) ? '▾' : '▸' }}
+                    </button>
+                    <input
+                      type="checkbox"
+                      :checked="isGroupFullyChecked(child.modules)"
+                      :indeterminate.prop="isGroupPartlyChecked(child.modules)"
+                      class="rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+                      @change="toggleGroup(child.modules, ($event.target as HTMLInputElement).checked)"
+                    />
+                    <span class="cursor-pointer" @click="toggleGroupCollapsed(child.key)">{{ child.name }}</span>
+                  </div>
+                  <template v-if="isOpen(child.key)">
+                    <div
+                      v-for="module in child.modules"
+                      :key="module.name"
+                      class="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-neutral-100 py-2 pl-16 pr-3 hover:bg-neutral-50/60"
+                    >
+                      <label class="flex min-w-0 flex-1 basis-60 items-center gap-2 text-neutral-700">
                         <input
                           type="checkbox"
-                          :checked="isModuleFullyChecked(child.module)"
+                          :checked="isModuleFullyChecked(module)"
+                          :indeterminate.prop="isGroupPartlyChecked([module])"
                           class="rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
-                          @change="toggleModule(child.module, ($event.target as HTMLInputElement).checked)"
+                          @change="toggleModule(module, ($event.target as HTMLInputElement).checked)"
                         />
-                        {{ child.module.name }}
+                        <span>{{ module.name }}</span>
                       </label>
-                    </td>
-                    <td v-for="column in COLUMNS" :key="column" class="px-3 py-2 text-center">
-                      <input
-                        v-if="child.module.actions[column]"
-                        type="checkbox"
-                        :checked="isChecked(child.module.actions[column]!)"
-                        class="rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
-                        @change="toggle(child.module.actions[column]!, ($event.target as HTMLInputElement).checked)"
-                      />
-                      <span v-else class="text-neutral-300">—</span>
-                    </td>
-                  </tr>
-
-                  <!-- One page whose own tab bar switches between several modules (Programs, Study Building) — nested one level deeper still. -->
-                  <template v-else>
-                    <tr v-show="!isGroupCollapsed(group.name)">
-                      <td :colspan="COLUMNS.length + 1" class="py-1.5 pl-9 pr-3">
-                        <label class="flex items-center gap-2 font-medium text-neutral-700">
-                          <button
-                            type="button"
-                            class="w-4 text-neutral-400 hover:text-neutral-600"
-                            :aria-label="isGroupCollapsed(child.key) ? t('common.expand') : t('common.collapse')"
-                            @click="toggleGroupCollapsed(child.key)"
-                          >
-                            {{ isGroupCollapsed(child.key) ? '▸' : '▾' }}
-                          </button>
+                      <div class="flex flex-wrap gap-x-3 gap-y-1">
+                        <label v-for="action in moduleActions(module)" :key="action" class="flex items-center gap-1.5 whitespace-nowrap text-neutral-600">
                           <input
                             type="checkbox"
-                            :checked="isGroupFullyChecked(child.modules)"
+                            :checked="isChecked(module.actions[action]!)"
                             class="rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
-                            @change="toggleGroup(child.modules, ($event.target as HTMLInputElement).checked)"
+                            @change="toggle(module.actions[action]!, ($event.target as HTMLInputElement).checked)"
                           />
-                          <span class="cursor-pointer" @click="toggleGroupCollapsed(child.key)">{{ child.name }}</span>
+                          {{ columnLabel(action) }}
                         </label>
-                      </td>
-                    </tr>
-                    <tr v-for="module in child.modules" v-show="!isGroupCollapsed(group.name) && !isGroupCollapsed(child.key)" :key="module.name">
-                      <td class="w-px whitespace-nowrap border-r border-neutral-200 bg-white py-2 pl-24 pr-3 text-neutral-700 lg:sticky lg:left-0 lg:z-10">
-                        <label class="flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            :checked="isModuleFullyChecked(module)"
-                            class="rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
-                            @change="toggleModule(module, ($event.target as HTMLInputElement).checked)"
-                          />
-                          {{ module.name }}
-                        </label>
-                      </td>
-                      <td v-for="column in COLUMNS" :key="column" class="px-3 py-2 text-center">
-                        <input
-                          v-if="module.actions[column]"
-                          type="checkbox"
-                          :checked="isChecked(module.actions[column]!)"
-                          class="rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
-                          @change="toggle(module.actions[column]!, ($event.target as HTMLInputElement).checked)"
-                        />
-                        <span v-else class="text-neutral-300">—</span>
-                      </td>
-                    </tr>
+                      </div>
+                    </div>
                   </template>
                 </template>
               </template>
-            </tbody>
-          </table>
+            </template>
+          </template>
+          <p v-if="visibleGroups.length === 0" class="px-3 py-6 text-center text-neutral-500">{{ t('admin.roles.noMenusFound') }}</p>
         </div>
       </div>
     </form>

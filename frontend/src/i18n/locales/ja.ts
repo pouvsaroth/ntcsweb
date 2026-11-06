@@ -4026,6 +4026,8 @@ const ja: MessageSchema = {
       actionTranslations: '翻訳',
       actionLanguages: '言語',
       actionManageAll: '全クラスを管理',
+      searchMenus: 'メニューやタブを検索...',
+      noMenusFound: '一致するメニューやタブはありません。',
       actionRequest: '申請',
       actionEnter: '入力',
       actionRun: '実行',

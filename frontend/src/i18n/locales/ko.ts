@@ -4026,6 +4026,8 @@ const ko: MessageSchema = {
       actionTranslations: '번역',
       actionLanguages: '언어',
       actionManageAll: '전체 학급 관리',
+      searchMenus: '메뉴 또는 탭 검색...',
+      noMenusFound: '일치하는 메뉴나 탭이 없습니다.',
       actionRequest: '요청',
       actionEnter: '입력',
       actionRun: '실행',

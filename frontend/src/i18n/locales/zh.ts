@@ -4025,6 +4025,8 @@ const zh: MessageSchema = {
       actionTranslations: '翻译',
       actionLanguages: '语言',
       actionManageAll: '管理所有班级',
+      searchMenus: '搜索菜单或标签...',
+      noMenusFound: '没有匹配的菜单或标签。',
       actionRequest: '申请',
       actionEnter: '录入',
       actionRun: '执行',
