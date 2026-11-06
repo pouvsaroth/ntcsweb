@@ -71,10 +71,10 @@ onMounted(async () => {
 
   try {
     ;[categories.value, locations.value, departments.value, suppliers.value] = await Promise.all([
-      assetCategoriesService.listAll(),
-      assetLocationsService.listAll(),
-      departmentsService.listAll(),
-      suppliersService.listAll(),
+      assetCategoriesService.listAll().catch(() => []),
+      assetLocationsService.listAll().catch(() => []),
+      departmentsService.listAll().catch(() => []),
+      suppliersService.listAll().catch(() => []),
     ])
 
     if (assetId.value) {

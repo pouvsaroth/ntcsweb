@@ -332,7 +332,7 @@ onMounted(load)
                           {{ t('admin.payments.downloadReceipt') }}
                         </button>
                         <button
-                          v-if="payment.status === 'COMPLETED'"
+                          v-if="payment.status === 'COMPLETED' && auth.can('payments.cancel')"
                           type="button"
                           class="font-medium text-danger-600 hover:text-red-700"
                           @click="cancelPayment(payment)"

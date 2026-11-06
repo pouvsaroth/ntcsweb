@@ -196,9 +196,9 @@ async function submit() {
 onMounted(async () => {
   try {
     const [loadedPrograms, loadedClasses, loadedPackages] = await Promise.all([
-      academicProgramsService.listAll(),
-      classesService.listCompanyClasses(),
-      coursePackagesService.listAll(),
+      academicProgramsService.listAll().catch(() => []),
+      classesService.listCompanyClasses().catch(() => []),
+      coursePackagesService.listAll().catch(() => []),
     ])
     programs.value = loadedPrograms
     // Upcoming classes too: a company class is often set up before it starts.

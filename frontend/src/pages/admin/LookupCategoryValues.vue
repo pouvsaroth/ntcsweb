@@ -72,7 +72,7 @@ async function load() {
   loadError.value = null
 
   try {
-    ;[category.value, languages.value] = await Promise.all([lookupCategoriesService.get(categoryId), languagesService.listAll()]);
+    ;[category.value, languages.value] = await Promise.all([lookupCategoriesService.get(categoryId), languagesService.listAll().catch(() => [])]);
     await loadValues()
   } catch (error) {
     loadError.value = error instanceof ApiRequestError ? error.message : t('admin.lookupValues.loadFailed')

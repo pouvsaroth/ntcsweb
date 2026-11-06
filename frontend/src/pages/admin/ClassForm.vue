@@ -143,9 +143,9 @@ async function load() {
 
   try {
     const [positions, loadedClassrooms, loadedPrograms, loadedGrades, loadedYears, loadedCompanies] = await Promise.all([
-      positionsService.listAll(),
-      classroomsService.listAll(),
-      academicProgramsService.listAll(),
+      positionsService.listAll().catch(() => []),
+      classroomsService.listAll().catch(() => []),
+      academicProgramsService.listAll().catch(() => []),
       gradeLevelsService.list(true).catch(() => [] as GradeLevel[]),
       academicYearsService.listAll().catch(() => [] as AcademicYear[]),
       auth.can('companies.view') ? companiesService.listAll().catch(() => [] as Company[]) : Promise.resolve([] as Company[]),

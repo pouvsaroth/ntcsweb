@@ -55,9 +55,10 @@ watch(
     loadingOptions.value = true
     try {
       const [staffResult, studentResult] = await Promise.all([
-        staffService.list({ page: 1, per_page: 200 }),
-        studentsService.list({ page: 1, per_page: 200 }),
+        staffService.list({ page: 1, per_page: 200 }).catch(() => ({ data: [] })),
+        studentsService.list({ page: 1, per_page: 200 }).catch(() => ({ data: [] })),
       ])
+      // Either list may be refused (no Staff or Students access): assign to whom they can see.
       staffOptions.value = staffResult.data
       studentOptions.value = studentResult.data
     } finally {

@@ -229,12 +229,12 @@ onMounted(load)
             <ul v-if="(expense.attachments ?? []).length > 0" class="mb-3 divide-y divide-neutral-100 rounded-lg border border-neutral-200">
               <li v-for="attachment in expense.attachments" :key="attachment.id" class="flex items-center justify-between px-3 py-2 text-sm">
                 <a :href="attachment.url" target="_blank" rel="noopener noreferrer" class="text-primary-700 hover:underline">{{ attachment.file_name }}</a>
-                <button type="button" class="text-danger-600 hover:text-red-700" @click="removeAttachment(attachment.id)">{{ t('common.remove') }}</button>
+                <button v-if="auth.can('expense.update')" type="button" class="text-danger-600 hover:text-red-700" @click="removeAttachment(attachment.id)">{{ t('common.remove') }}</button>
               </li>
             </ul>
             <p v-else class="mb-3 text-sm text-neutral-400">{{ t('admin.expenses.noAttachments') }}</p>
 
-            <label class="inline-flex cursor-pointer items-center gap-2 text-sm font-medium text-primary-700">
+            <label v-if="auth.can('expense.update')" class="inline-flex cursor-pointer items-center gap-2 text-sm font-medium text-primary-700">
               <input type="file" class="hidden" :disabled="uploading" accept=".pdf,.jpg,.jpeg,.png,.webp" @change="onFileSelected" />
               {{ uploading ? t('common.loading') : t('admin.expenses.addAttachment') }}
             </label>

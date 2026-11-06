@@ -387,9 +387,9 @@ onMounted(async () => {
   loading.value = true
   try {
     ;[programs.value, classes.value, packages.value] = await Promise.all([
-      academicProgramsService.listAll(),
-      classesService.listAll(),
-      coursePackagesService.listAll(),
+      academicProgramsService.listAll().catch(() => []),
+      classesService.listAll().catch(() => []),
+      coursePackagesService.listAll().catch(() => []),
     ])
 
     // Pre-select a program so the form is ready to use on first load: the

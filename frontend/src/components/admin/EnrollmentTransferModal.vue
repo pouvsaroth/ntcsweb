@@ -123,8 +123,8 @@ watch(
     loadingTables.value = true
     try {
       ;[classes.value, packages.value, tables.value] = await Promise.all([
-        classesService.listAll(),
-        coursePackagesService.listAll(),
+        classesService.listAll().catch(() => []),
+        coursePackagesService.listAll().catch(() => []),
         classesService.availableTables(enrollment.class.id),
       ])
     } finally {

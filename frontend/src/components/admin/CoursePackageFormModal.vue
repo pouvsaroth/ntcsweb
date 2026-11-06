@@ -83,7 +83,7 @@ function toggleBook(bookId: number, checked: boolean) {
 }
 
 onMounted(async () => {
-  ;[programs.value, books.value] = await Promise.all([academicProgramsService.listAll(), booksService.listAll()])
+  ;[programs.value, books.value] = await Promise.all([academicProgramsService.listAll().catch(() => []), booksService.listAll().catch(() => [])])
 })
 
 // Changing the program invalidates whatever books were picked for the

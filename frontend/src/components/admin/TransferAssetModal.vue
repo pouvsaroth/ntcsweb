@@ -35,7 +35,7 @@ const locationOptions = computed(() => [{ value: '', label: t('admin.assets.noLo
 const departmentOptions = computed(() => [{ value: '', label: t('admin.assets.noDepartment') }, ...departments.value.map((d) => ({ value: String(d.id), label: d.name }))])
 
 onMounted(async () => {
-  ;[locations.value, departments.value] = await Promise.all([assetLocationsService.listAll(), departmentsService.listAll()])
+  ;[locations.value, departments.value] = await Promise.all([assetLocationsService.listAll().catch(() => []), departmentsService.listAll().catch(() => [])])
 })
 
 watch(

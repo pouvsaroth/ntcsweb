@@ -104,7 +104,7 @@ async function onClassChange(value: string) {
   loadingClass.value = true
   try {
     const [enrollments, invoices] = await Promise.all([
-      enrollmentsService.listAll({ class_id: form.class_id }),
+      enrollmentsService.listAll({ class_id: form.class_id }).catch(() => []),
       invoicesService.list({ page: 1, per_page: 20, filter: { class_id: String(form.class_id) } }),
     ])
     const seen = new Set<number>()
