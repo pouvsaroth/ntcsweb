@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useAuthStore } from '@/stores/auth'
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -16,6 +17,7 @@ import { formatMoney } from '@/utils/currency'
 import { formatDate, formatMonth } from '@/utils/date'
 
 const { t } = useI18n()
+const auth = useAuthStore()
 
 const { items, meta, loading, error, setPage, setFilter, fetch } = usePaginatedResource<FinancialTransaction>((query) => incomeService.list(query))
 
@@ -49,7 +51,7 @@ onMounted(() => fetch())
         <h1 class="text-xl font-semibold text-neutral-900">{{ t('admin.income.title') }}</h1>
         <p class="mt-1 text-sm text-neutral-500">{{ t('admin.income.pageSubtitle') }}</p>
       </div>
-      <BaseButton @click="modalOpen = true">{{ t('admin.income.addIncome') }}</BaseButton>
+      <BaseButton v-if="auth.can('income.create')" @click="modalOpen = true">{{ t('admin.income.addIncome') }}</BaseButton>
     </div>
 
     <div class="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

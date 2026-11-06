@@ -23,10 +23,12 @@ import { type LookupOption, lookupsService } from '@/services/lookups'
 import { studentsService, type Student } from '@/services/students'
 import { ApiRequestError } from '@/types/api'
 import { formatDate } from '@/utils/date'
+import { useAuthStore } from '@/stores/auth'
 import { useConfirmDialogStore } from '@/stores/confirmDialog'
 
 const { t, locale } = useI18n()
 const confirmDialog = useConfirmDialogStore()
+const auth = useAuthStore()
 
 const { items, meta, loading, error, sort, setPage, setSort, setFilter, fetch } = usePaginatedResource<Enrollment>((query) =>
   enrollmentsService.list(query),
@@ -233,8 +235,8 @@ onMounted(() => {
           class="w-48"
           @update:model-value="onStatusFilterChange"
         />
-        <BaseButton variant="outline" to="/admin/enrollments/class">{{ t('admin.enrollments.batchTitle') }}</BaseButton>
-        <BaseButton to="/admin/enrollments/new">{{ t('admin.enrollments.createPackageTitle') }}</BaseButton>
+        <BaseButton v-if="auth.can('enrollments.create')" variant="outline" to="/admin/enrollments/class">{{ t('admin.enrollments.batchTitle') }}</BaseButton>
+        <BaseButton v-if="auth.can('enrollments.create')" to="/admin/enrollments/new">{{ t('admin.enrollments.createPackageTitle') }}</BaseButton>
       </div>
     </div>
 
@@ -259,8 +261,8 @@ onMounted(() => {
             <div v-if="row.status_date" class="flex gap-1"><dt class="text-neutral-500">{{ t('admin.enrollments.columnStatusDate') }}:</dt><dd class="font-medium text-neutral-800">{{ formatDate(row.status_date) }}</dd></div>
           </dl>
           <div class="mt-2 flex justify-end gap-3">
-            <EditIconButton @click="openEdit(row)" />
-            <button v-if="row.status !== 'dropped'" type="button" class="text-sm font-medium text-secondary-700" @click="openStatus(row)">{{ t('admin.enrollments.changeStatus') }}</button>
+            <EditIconButton v-if="auth.can('enrollments.update')" @click="openEdit(row)" />
+            <button v-if="row.status !== 'dropped' && auth.can('enrollments.change-status')" type="button" class="text-sm font-medium text-secondary-700" @click="openStatus(row)">{{ t('admin.enrollments.changeStatus') }}</button>
           </div>
         </div>
       </div>
@@ -293,14 +295,14 @@ onMounted(() => {
       </template>
       <template #cell-actions="{ row }">
         <div class="flex flex-wrap items-center justify-end gap-x-1 gap-y-1">
-          <EditIconButton @click="openEdit(row)" />
+          <EditIconButton v-if="auth.can('enrollments.update')" @click="openEdit(row)" />
           <ActionIconButton :title="t('admin.enrollments.statusHistory')" @click="openHistory(row)">
             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </ActionIconButton>
           <template v-if="row.status !== 'dropped'">
-            <ActionIconButton :title="t('admin.enrollments.changeStatus')" @click="openStatus(row)">
+            <ActionIconButton v-if="auth.can('enrollments.change-status')" :title="t('admin.enrollments.changeStatus')" @click="openStatus(row)">
               <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path
                   stroke-linecap="round"
@@ -309,13 +311,13 @@ onMounted(() => {
                 />
               </svg>
             </ActionIconButton>
-            <ActionIconButton v-if="row.status === 'active'" :title="t('admin.enrollments.changeClass')" @click="openTransfer(row)">
+            <ActionIconButton v-if="row.status === 'active' && auth.can('enrollments.transfer')" :title="t('admin.enrollments.changeClass')" @click="openTransfer(row)">
               <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
               </svg>
             </ActionIconButton>
           </template>
-          <ActionIconButton variant="danger" :title="t('admin.enrollments.delete')" @click="remove(row)">
+          <ActionIconButton v-if="auth.can('enrollments.delete')" variant="danger" :title="t('admin.enrollments.delete')" @click="remove(row)">
             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path
                 stroke-linecap="round"

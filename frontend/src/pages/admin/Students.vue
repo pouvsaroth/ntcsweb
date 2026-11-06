@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useAuthStore } from '@/stores/auth'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -20,6 +21,7 @@ import { useAdminUiStore } from '@/stores/adminUi'
 import { genderLabel as builtInGenderLabel } from '@/utils/gender'
 
 const { t, locale } = useI18n()
+const auth = useAuthStore()
 const adminUi = useAdminUiStore()
 
 /** code -> translated label, e.g. "male" -> "Male" / "ប្រុស" — same GENDER category LookupSelect uses on the form. */
@@ -118,7 +120,7 @@ onMounted(() => {
       <BaseSelect class="w-40" :model-value="filters.status" :options="statusOptions" @update:model-value="onFilter('status', $event)" />
       <BaseSelect v-if="years.length" class="w-40" :model-value="filters.academic_year_id" :options="yearOptions" @update:model-value="onFilter('academic_year_id', $event)" />
       <BaseSelect v-if="classes.length" class="w-48" :model-value="filters.class_id" :options="classOptions" @update:model-value="onFilter('class_id', $event)" />
-      <BaseButton class="ml-auto" to="/admin/students/new">{{ t('admin.students.registerTitle') }}</BaseButton>
+      <BaseButton v-if="auth.can('students.create')" class="ml-auto" to="/admin/students/new">{{ t('admin.students.registerTitle') }}</BaseButton>
     </div>
 
     <BaseAlert v-if="error" variant="danger" class="mb-4">{{ error }}</BaseAlert>

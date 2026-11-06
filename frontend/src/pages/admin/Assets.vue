@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useAuthStore } from '@/stores/auth'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -17,6 +18,7 @@ import { ApiRequestError } from '@/types/api'
 import { useConfirmDialogStore } from '@/stores/confirmDialog'
 
 const { t } = useI18n()
+const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
 const adminUi = useAdminUiStore()
 
@@ -122,7 +124,7 @@ onMounted(async () => {
         :placeholder="t('admin.assets.filterAllCategories')"
         @update:model-value="onCategoryFilterChange"
       />
-      <BaseButton to="/admin/assets/new">{{ t('admin.assets.addAsset') }}</BaseButton>
+      <BaseButton v-if="auth.can('assets.create')" to="/admin/assets/new">{{ t('admin.assets.addAsset') }}</BaseButton>
     </div>
 
     <DataTable
@@ -144,9 +146,9 @@ onMounted(async () => {
       <template #cell-condition="{ row }">{{ t(`admin.assets.condition${row.condition.charAt(0)}${row.condition.slice(1).toLowerCase()}`) }}</template>
       <template #cell-location="{ row }">{{ row.location?.name ?? '—' }}</template>
       <template #cell-actions="{ row }">
-        <div class="flex justify-end gap-2">
-          <EditIconButton :to="`/admin/assets/${row.id}/edit`" />
-          <button type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row)">
+        <div v-if="auth.can('assets.update')" class="flex justify-end gap-2">
+          <EditIconButton v-if="auth.can('assets.update')" :to="`/admin/assets/${row.id}/edit`" />
+          <button v-if="auth.can('assets.delete')" type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row)">
             {{ t('admin.assets.delete') }}
           </button>
         </div>

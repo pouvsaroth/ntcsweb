@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useAuthStore } from '@/stores/auth'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
@@ -16,6 +17,7 @@ import { classStatuses, classesService, type ClassStatus, type SchoolClass } fro
 import { useConfirmDialogStore } from '@/stores/confirmDialog'
 
 const { t } = useI18n()
+const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
 const router = useRouter()
 
@@ -114,7 +116,7 @@ onMounted(() => {
         <BaseButton variant="outline" :disabled="selectedIds.length === 0" @click="viewSelected">
           {{ t('admin.classes.viewSelected', { count: selectedIds.length }) }}
         </BaseButton>
-        <BaseButton to="/admin/classes/new">{{ t('admin.classes.addClass') }}</BaseButton>
+        <BaseButton v-if="auth.can('classes.create')" to="/admin/classes/new">{{ t('admin.classes.addClass') }}</BaseButton>
       </div>
     </div>
 
@@ -157,7 +159,7 @@ onMounted(() => {
             <p class="text-xs text-neutral-500">{{ t('admin.classes.columnActiveStudents') }}: <span class="font-medium text-neutral-800">{{ row.active_students_count ?? 0 }}</span></p>
             <div class="flex items-center gap-3">
               <EditIconButton :to="`/admin/classes/${row.id}/edit`" />
-              <button type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row)">
+              <button v-if="auth.can('classes.delete')" type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row)">
                 {{ t('admin.classes.delete') }}
               </button>
             </div>
@@ -200,7 +202,7 @@ onMounted(() => {
         <template #cell-actions="{ row }">
           <div class="flex justify-end gap-2">
             <EditIconButton :to="`/admin/classes/${row.id}/edit`" />
-            <button type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row)">
+            <button v-if="auth.can('classes.delete')" type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row)">
               {{ t('admin.classes.delete') }}
             </button>
           </div>

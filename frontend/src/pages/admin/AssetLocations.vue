@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useAuthStore } from '@/stores/auth'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -15,6 +16,7 @@ import { ApiRequestError } from '@/types/api'
 import { useConfirmDialogStore } from '@/stores/confirmDialog'
 
 const { t } = useI18n()
+const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
 
 const { items, meta, loading, error, setPage, setSearch, fetch } = usePaginatedResource<AssetLocation>((query) =>
@@ -72,7 +74,7 @@ onMounted(() => fetch())
         class="block w-full max-w-sm rounded-lg border border-neutral-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
         @input="setSearch(($event.target as HTMLInputElement).value)"
       />
-      <BaseButton @click="openCreate">{{ t('admin.assetLocations.addLocation') }}</BaseButton>
+      <BaseButton v-if="auth.can('assets.create')" @click="openCreate">{{ t('admin.assetLocations.addLocation') }}</BaseButton>
     </div>
 
     <BaseAlert v-if="error || deleteError" variant="danger" class="mb-4">{{ error || deleteError }}</BaseAlert>
@@ -93,8 +95,8 @@ onMounted(() => fetch())
       </template>
       <template #cell-actions="{ row }">
         <div class="flex justify-end gap-2">
-          <EditIconButton @click="openEdit(row)" />
-          <button type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row)">
+          <EditIconButton v-if="auth.can('assets.update')" @click="openEdit(row)" />
+          <button v-if="auth.can('assets.delete')" type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row)">
             {{ t('admin.assetLocations.delete') }}
           </button>
         </div>

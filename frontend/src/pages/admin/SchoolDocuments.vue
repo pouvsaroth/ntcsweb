@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useAuthStore } from '@/stores/auth'
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -14,6 +15,7 @@ import { ApiRequestError } from '@/types/api'
  * a document library.
  */
 const { t } = useI18n()
+const auth = useAuthStore()
 
 const regulationFile = ref<File | null>(null)
 const attendancePolicyFile = ref<File | null>(null)
@@ -139,7 +141,7 @@ onMounted(load)
       </section>
 
       <div class="flex flex-wrap items-center gap-3">
-        <BaseButton type="submit" :loading="saving">{{ t('common.save') }}</BaseButton>
+        <BaseButton v-if="auth.can('tenant-settings.update')" type="submit" :loading="saving">{{ t('common.save') }}</BaseButton>
         <BaseAlert v-if="saveError" variant="danger">{{ saveError }}</BaseAlert>
         <BaseAlert v-if="saved" variant="success">{{ t('admin.schoolDocuments.saveSuccess') }}</BaseAlert>
       </div>

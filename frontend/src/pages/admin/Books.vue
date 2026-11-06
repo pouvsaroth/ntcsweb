@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useAuthStore } from '@/stores/auth'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -18,6 +19,7 @@ import { gradeLevelsService, type GradeLevel } from '@/services/schoolSetup'
 import { useConfirmDialogStore } from '@/stores/confirmDialog'
 
 const { t } = useI18n()
+const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
 
 const { items, meta, loading, error, setPage, setSearch, setFilter, fetch } = usePaginatedResource<Book>((query) =>
@@ -84,7 +86,7 @@ onMounted(async () => {
         @input="setSearch(($event.target as HTMLInputElement).value)"
       />
       <BaseSelect v-if="gradeLevels.length" class="w-44" :model-value="gradeFilter" :options="gradeOptions" @update:model-value="onGrade" />
-      <BaseButton class="ml-auto" @click="openCreate">{{ t('admin.books.addBook') }}</BaseButton>
+      <BaseButton v-if="auth.can('books.create')" class="ml-auto" @click="openCreate">{{ t('admin.books.addBook') }}</BaseButton>
     </div>
 
     <BaseAlert v-if="error" variant="danger" class="mb-4">{{ error }}</BaseAlert>
@@ -106,8 +108,8 @@ onMounted(async () => {
           <p class="text-xs text-neutral-500">{{ [row.academic_program?.name, row.book_category?.name, row.author].filter(Boolean).join(' · ') || '—' }}</p>
           <p v-if="gradesOf(row)" class="text-xs text-neutral-500">{{ t('schoolSetup.books.gradeLevels') }}: {{ gradesOf(row) }}</p>
           <div class="mt-2 flex justify-end gap-3">
-            <EditIconButton @click="openEdit(row)" />
-            <button type="button" class="text-sm font-medium text-danger-600" @click="remove(row)">{{ t('admin.books.delete') }}</button>
+            <EditIconButton v-if="auth.can('books.update')" @click="openEdit(row)" />
+            <button v-if="auth.can('books.delete')" type="button" class="text-sm font-medium text-danger-600" @click="remove(row)">{{ t('admin.books.delete') }}</button>
           </div>
         </div>
       </div>
@@ -128,8 +130,8 @@ onMounted(async () => {
       </template>
       <template #cell-actions="{ row }">
         <div class="flex justify-end gap-2">
-          <EditIconButton @click="openEdit(row)" />
-          <button type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row)">
+          <EditIconButton v-if="auth.can('books.update')" @click="openEdit(row)" />
+          <button v-if="auth.can('books.delete')" type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row)">
             {{ t('admin.books.delete') }}
           </button>
         </div>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useAuthStore } from '@/stores/auth'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -14,6 +15,7 @@ import { formatDate } from '@/utils/date'
 import { useConfirmDialogStore } from '@/stores/confirmDialog'
 
 const { t } = useI18n()
+const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
 
 const { items, meta, loading, error, setPage, setSearch, setFilter, fetch } = usePaginatedResource<AssetMaintenance>((query) =>
@@ -102,10 +104,10 @@ onMounted(() => fetch())
       <template #cell-status="{ row }">{{ t(`admin.assetMaintenance.maintenanceStatus${statusKey(row.status)}`) }}</template>
       <template #cell-actions="{ row }">
         <div class="flex justify-end gap-3">
-          <button v-if="row.status === 'SCHEDULED'" type="button" class="text-sm font-medium text-primary-700 hover:underline" @click="completeMaintenance(row)">
+          <button v-if="(row.status === 'SCHEDULED') && (auth.can('assets.maintenance.update'))" type="button" class="text-sm font-medium text-primary-700 hover:underline" @click="completeMaintenance(row)">
             {{ t('admin.assetMaintenance.complete') }}
           </button>
-          <button v-if="row.status === 'SCHEDULED'" type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="cancelMaintenance(row)">
+          <button v-if="(row.status === 'SCHEDULED') && (auth.can('assets.maintenance.update'))" type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="cancelMaintenance(row)">
             {{ t('common.cancel') }}
           </button>
         </div>

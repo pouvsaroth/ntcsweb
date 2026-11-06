@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useAuthStore } from '@/stores/auth'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
@@ -27,6 +28,7 @@ import { ApiRequestError } from '@/types/api'
  * fetched entry since AttendanceRosterEntry itself doesn't carry one.
  */
 const { t } = useI18n()
+const auth = useAuthStore()
 const route = useRoute()
 const router = useRouter()
 
@@ -250,7 +252,7 @@ onMounted(async () => {
           </div>
 
           <div class="mt-5">
-            <BaseButton :loading="saving" @click="save">{{ t('admin.attendance.save') }}</BaseButton>
+            <BaseButton v-if="auth.can('attendance.create') || auth.can('attendance.update')" :loading="saving" @click="save">{{ t('admin.attendance.save') }}</BaseButton>
           </div>
         </template>
 

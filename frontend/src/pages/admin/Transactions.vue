@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useAuthStore } from '@/stores/auth'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -15,6 +16,7 @@ import { financialTransactionsService, transactionTypes, type FinancialTransacti
 import { formatDate } from '@/utils/date'
 
 const { t } = useI18n()
+const auth = useAuthStore()
 
 const { items, meta, loading, error, setPage, setFilter, fetch } = usePaginatedResource<FinancialTransaction>((query) =>
   financialTransactionsService.list(query),
@@ -65,8 +67,8 @@ onMounted(() => fetch())
         <p class="mt-1 text-sm text-neutral-500">{{ t('admin.transactions.pageSubtitle') }}</p>
       </div>
       <div class="flex gap-2">
-        <BaseButton variant="outline" @click="adjustmentModalOpen = true">{{ t('admin.transactions.newAdjustment') }}</BaseButton>
-        <BaseButton @click="transferModalOpen = true">{{ t('admin.transactions.newTransfer') }}</BaseButton>
+        <BaseButton v-if="auth.can('accounting.adjustment.create')" variant="outline" @click="adjustmentModalOpen = true">{{ t('admin.transactions.newAdjustment') }}</BaseButton>
+        <BaseButton v-if="auth.can('transactions.create')" @click="transferModalOpen = true">{{ t('admin.transactions.newTransfer') }}</BaseButton>
       </div>
     </div>
 

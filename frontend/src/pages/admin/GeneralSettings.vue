@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useAuthStore } from '@/stores/auth'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -9,6 +10,7 @@ import { generalSettingsService } from '@/services/settings'
 import { ApiRequestError } from '@/types/api'
 
 const { t } = useI18n()
+const auth = useAuthStore()
 
 const studentIdPrefix = ref('')
 const staffIdPrefix = ref('')
@@ -120,7 +122,7 @@ onMounted(load)
         </p>
       </section>
 
-      <BaseButton type="submit" :loading="saving">{{ t('common.save') }}</BaseButton>
+      <BaseButton v-if="auth.can('tenant-settings.update')" type="submit" :loading="saving">{{ t('common.save') }}</BaseButton>
     </form>
   </div>
 </template>

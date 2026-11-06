@@ -11,6 +11,7 @@ use App\Http\Resources\RoleResource;
 use App\Http\Responses\ApiResponse;
 use App\Models\Permission;
 use App\Models\Role;
+use App\Support\Authorization\PermissionRegistry;
 use App\Support\Query\ApiQuery;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
@@ -95,5 +96,9 @@ final class RoleController extends Controller
         $ids = Permission::query()->whereIn('slug', $slugs)->pluck('id');
 
         $role->permissions()->sync($ids);
+
+        // Role::saved already invalidated, but before this sync: a request in
+        // between could re-cache the old set for the cache TTL (15 minutes).
+        app(PermissionRegistry::class)->invalidate($role->tenant_id);
     }
 }

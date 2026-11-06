@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useAuthStore } from '@/stores/auth'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
@@ -26,6 +27,7 @@ import { formatMoney } from '@/utils/currency'
 import { formatDate, formatDateTime } from '@/utils/date'
 
 const { t } = useI18n()
+const auth = useAuthStore()
 const route = useRoute()
 const router = useRouter()
 
@@ -226,26 +228,26 @@ onMounted(load)
       <div class="mb-6 flex flex-wrap gap-2">
         <BaseButton size="sm" variant="outline" @click="downloadInvoice">{{ t('admin.invoices.downloadInvoice') }}</BaseButton>
         <BaseButton size="sm" variant="outline" @click="shareInvoiceImage">{{ t('admin.invoices.imageAction') }}</BaseButton>
-        <BaseButton size="sm" variant="outline" @click="sendModalOpen = true">{{ t('admin.invoices.sendAction') }}</BaseButton>
+        <BaseButton v-if="auth.can('notifications.send')" size="sm" variant="outline" @click="sendModalOpen = true">{{ t('admin.invoices.sendAction') }}</BaseButton>
         <BaseButton
-          v-if="!isInvoiceClosed(invoice.status) && invoice.balance > 0"
+          v-if="(!isInvoiceClosed(invoice.status) && invoice.balance > 0) && (auth.can('payments.create'))"
           size="sm"
           @click="paymentModalOpen = true"
         >
           {{ t('admin.invoices.recordPaymentAction') }}
         </BaseButton>
         <BaseButton
-          v-if="!isInvoiceClosed(invoice.status) && invoice.paid_amount > 0 && invoice.balance > 0"
+          v-if="(!isInvoiceClosed(invoice.status) && invoice.paid_amount > 0 && invoice.balance > 0) && (auth.can('invoices.cancel'))"
           size="sm"
           variant="outline"
           @click="openReason('stop')"
         >
           {{ t('admin.invoices.stopAction') }}
         </BaseButton>
-        <BaseButton v-if="!isInvoiceClosed(invoice.status)" size="sm" variant="outline" @click="openReason('void')">
+        <BaseButton v-if="(!isInvoiceClosed(invoice.status)) && (auth.can('invoices.cancel'))" size="sm" variant="outline" @click="openReason('void')">
           {{ t('admin.invoices.voidAction') }}
         </BaseButton>
-        <BaseButton v-if="!isInvoiceClosed(invoice.status)" size="sm" variant="danger" @click="openReason('cancel')">
+        <BaseButton v-if="(!isInvoiceClosed(invoice.status)) && (auth.can('invoices.cancel'))" size="sm" variant="danger" @click="openReason('cancel')">
           {{ t('admin.invoices.cancelAction') }}
         </BaseButton>
       </div>

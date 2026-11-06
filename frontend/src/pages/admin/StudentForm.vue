@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useAuthStore } from '@/stores/auth'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
@@ -16,6 +17,7 @@ import { studentsService, type StudentEducation, type StudentGuardian, type Stud
 import { ApiRequestError } from '@/types/api'
 
 const { t } = useI18n()
+const auth = useAuthStore()
 const route = useRoute()
 const router = useRouter()
 
@@ -475,7 +477,7 @@ onMounted(load)
       </section>
 
       <div class="flex gap-3">
-        <BaseButton type="submit" :loading="submitting">{{ t('common.save') }}</BaseButton>
+        <BaseButton v-if="isEditing ? auth.can('students.update') : auth.can('students.create')" type="submit" :loading="submitting">{{ t('common.save') }}</BaseButton>
         <BaseButton type="button" variant="outline" @click="router.push('/admin/students')">{{ t('common.cancel') }}</BaseButton>
       </div>
     </form>

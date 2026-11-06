@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useAuthStore } from '@/stores/auth'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
@@ -19,6 +20,7 @@ import { classesService, type SchoolClass } from '@/services/classes'
 import { ApiRequestError } from '@/types/api'
 
 const { t } = useI18n()
+const auth = useAuthStore()
 const route = useRoute()
 
 /** yyyy-MM-dd in the viewer's local time — matches EnrollmentPackageForm's own helper. */
@@ -224,7 +226,7 @@ onMounted(async () => {
           </div>
 
           <div class="mt-4">
-            <BaseButton :loading="saving" @click="save">{{ t('admin.attendance.save') }}</BaseButton>
+            <BaseButton v-if="auth.can('attendance.create') || auth.can('attendance.update')" :loading="saving" @click="save">{{ t('admin.attendance.save') }}</BaseButton>
           </div>
         </template>
 

@@ -102,7 +102,7 @@ const adminRoutes: RouteRecordRaw[] = [
     path: 'student-imports',
     name: 'admin.student-imports',
     component: () => import('@/pages/admin/StudentImports.vue'),
-    meta: { titleKey: 'adminNav.items.studentImports' },
+    meta: { permission: 'students.create', titleKey: 'adminNav.items.studentImports' },
   },
   {
     path: 'programs',
@@ -120,7 +120,7 @@ const adminRoutes: RouteRecordRaw[] = [
     path: 'students/new',
     name: 'admin.students.new',
     component: () => import('@/pages/admin/StudentForm.vue'),
-    meta: { titleKey: 'adminNav.items.studentsList', pageTitleKey: 'admin.students.registerTitle' },
+    meta: { permission: 'students.create', titleKey: 'adminNav.items.studentsList', pageTitleKey: 'admin.students.registerTitle' },
   },
   {
     // Student record (docs/academics/student-record.md).
@@ -205,7 +205,7 @@ const adminRoutes: RouteRecordRaw[] = [
     path: 'classes/new',
     name: 'admin.classes.new',
     component: () => import('@/pages/admin/ClassForm.vue'),
-    meta: { titleKey: 'adminNav.items.classes' },
+    meta: { permission: 'classes.create', titleKey: 'adminNav.items.classes' },
   },
   {
     path: 'classes/:id/edit',
@@ -244,13 +244,13 @@ const adminRoutes: RouteRecordRaw[] = [
     path: 'enrollments/new',
     name: 'admin.enrollments.new',
     component: () => import('@/pages/admin/EnrollmentPackageForm.vue'),
-    meta: { titleKey: 'adminNav.items.enrollments' },
+    meta: { permission: 'enrollments.create', titleKey: 'adminNav.items.enrollments' },
   },
   {
     path: 'enrollments/class',
     name: 'admin.enrollments.class',
     component: () => import('@/pages/admin/EnrollClassBatch.vue'),
-    meta: { titleKey: 'adminNav.items.enrollments' },
+    meta: { permission: 'enrollments.create', titleKey: 'adminNav.items.enrollments' },
   },
   {
     path: 'attendance',
@@ -903,13 +903,13 @@ const adminRoutes: RouteRecordRaw[] = [
     path: 'invoices/new',
     name: 'admin.invoices.new',
     component: () => import('@/pages/admin/InvoiceForm.vue'),
-    meta: { titleKey: 'adminNav.items.invoices' },
+    meta: { permission: 'invoices.create', titleKey: 'adminNav.items.invoices' },
   },
   {
     path: 'invoices/company-class',
     name: 'admin.invoices.company-class',
     component: () => import('@/pages/admin/CompanyInvoiceForm.vue'),
-    meta: { titleKey: 'adminNav.items.invoices' },
+    meta: { permission: 'invoices.create', titleKey: 'adminNav.items.invoices' },
   },
   {
     path: 'invoices/monthly',
@@ -985,7 +985,7 @@ const adminRoutes: RouteRecordRaw[] = [
     path: 'expenses/new',
     name: 'admin.expenses.new',
     component: () => import('@/pages/admin/ExpenseForm.vue'),
-    meta: { titleKey: 'adminNav.items.expenses' },
+    meta: { permission: 'expense.create', titleKey: 'adminNav.items.expenses' },
   },
   {
     path: 'expenses/:id',
@@ -1027,13 +1027,13 @@ const adminRoutes: RouteRecordRaw[] = [
     path: 'assets/new',
     name: 'admin.assets.new',
     component: () => import('@/pages/admin/AssetForm.vue'),
-    meta: { titleKey: 'adminNav.items.assets' },
+    meta: { permission: 'assets.create', titleKey: 'adminNav.items.assets' },
   },
   {
     path: 'assets/:id/edit',
     name: 'admin.assets.edit',
     component: () => import('@/pages/admin/AssetForm.vue'),
-    meta: { titleKey: 'adminNav.items.assets' },
+    meta: { permission: 'assets.update', titleKey: 'adminNav.items.assets' },
   },
   {
     path: 'assets/:id',
@@ -1196,6 +1196,15 @@ router.beforeEach(async (to) => {
   // Permissions::defaultsForSystemRoles()).
   if (to.name === 'admin.dashboard' && !canReachDashboard(auth)) {
     const fallback = firstAccessibleAdminPath(auth)
+    if (fallback && fallback !== to.path) return { path: fallback }
+  }
+
+  // A page that needs a permission (e.g. Register student needs
+  // students.create): without it, go to the dashboard instead — the server
+  // refuses the save anyway, this just keeps the form from opening.
+  const needed = to.meta.permission as string | string[] | undefined
+  if (to.meta.requiresAuth && needed && !(Array.isArray(needed) ? needed : [needed]).some((p) => auth.can(p))) {
+    const fallback = canReachDashboard(auth) ? '/admin' : firstAccessibleAdminPath(auth)
     if (fallback && fallback !== to.path) return { path: fallback }
   }
 

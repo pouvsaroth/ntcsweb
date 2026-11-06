@@ -106,7 +106,7 @@ onMounted(() => fetch())
             @update:model-value="setSearch"
           />
         </div>
-        <BaseButton @click="modalOpen = true">{{ t('admin.users.addUser') }}</BaseButton>
+        <BaseButton v-if="auth.can('users.create')" @click="modalOpen = true">{{ t('admin.users.addUser') }}</BaseButton>
       </div>
     </div>
 
@@ -137,8 +137,8 @@ onMounted(() => fetch())
       </template>
       <template #cell-actions="{ row }">
         <div class="flex justify-end gap-1">
-          <EditIconButton @click="openEdit(row)" />
-          <ActionIconButton v-if="row.id !== auth.user?.id" :title="t('admin.users.resetPasswordTitle')" @click="openResetPassword(row)">
+          <EditIconButton v-if="auth.can('users.update')" @click="openEdit(row)" />
+          <ActionIconButton v-if="row.id !== auth.user?.id && auth.can('users.update')" :title="t('admin.users.resetPasswordTitle')" @click="openResetPassword(row)">
             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path
                 stroke-linecap="round"
@@ -148,7 +148,7 @@ onMounted(() => fetch())
             </svg>
           </ActionIconButton>
           <ActionIconButton
-            v-if="row.id !== auth.user?.id"
+            v-if="row.id !== auth.user?.id && auth.can('users.update')"
             variant="danger"
             :title="t('admin.users.forceLogoutTitle')"
             @click="forceLogout(row)"

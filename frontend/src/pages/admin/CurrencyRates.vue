@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useAuthStore } from '@/stores/auth'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -14,6 +15,7 @@ import { formatDate } from '@/utils/date'
 import { useConfirmDialogStore } from '@/stores/confirmDialog'
 
 const { t } = useI18n()
+const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
 
 const { items, meta, loading, error, setPage, fetch } = usePaginatedResource<CurrencyRate>((query) =>
@@ -56,7 +58,7 @@ onMounted(() => fetch())
         <h1 class="text-xl font-semibold text-neutral-900">{{ t('admin.currencyRates.title') }}</h1>
         <p class="mt-1 text-sm text-neutral-500">{{ t('admin.currencyRates.subtitle') }}</p>
       </div>
-      <BaseButton @click="openCreate">{{ t('admin.currencyRates.addRate') }}</BaseButton>
+      <BaseButton v-if="auth.can('currency-rates.create')" @click="openCreate">{{ t('admin.currencyRates.addRate') }}</BaseButton>
     </div>
 
     <BaseAlert v-if="error" variant="danger" class="mb-4">{{ error }}</BaseAlert>
@@ -73,8 +75,8 @@ onMounted(() => fetch())
       <template #cell-created_by="{ row }">{{ row.created_by ?? '—' }}</template>
       <template #cell-actions="{ row }">
         <div class="flex justify-end gap-2">
-          <EditIconButton @click="openEdit(row)" />
-          <button type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row)">
+          <EditIconButton v-if="auth.can('currency-rates.update')" @click="openEdit(row)" />
+          <button v-if="auth.can('currency-rates.delete')" type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row)">
             {{ t('admin.currencyRates.delete') }}
           </button>
         </div>

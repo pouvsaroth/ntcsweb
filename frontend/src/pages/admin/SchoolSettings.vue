@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useAuthStore } from '@/stores/auth'
 import { onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -11,6 +12,7 @@ import { useSiteStore } from '@/stores/site'
 import { ApiRequestError } from '@/types/api'
 
 const { t } = useI18n()
+const auth = useAuthStore()
 const site = useSiteStore()
 
 const localeOptions: { value: InvoiceLocale; label: string }[] = [
@@ -279,7 +281,7 @@ onMounted(load)
       <div class="sticky bottom-0 z-10 -mx-1 flex flex-wrap items-center justify-end gap-3 border-t border-neutral-200 bg-neutral-50/95 px-1 py-3 backdrop-blur">
         <BaseAlert v-if="saveError" variant="danger" class="mr-auto">{{ saveError }}</BaseAlert>
         <p v-else-if="saved" class="mr-auto text-sm text-success-600" role="status">{{ t('admin.school.saveSuccess') }}</p>
-        <BaseButton type="submit" :loading="saving">{{ t('common.save') }}</BaseButton>
+        <BaseButton v-if="auth.can('tenant-settings.update')" type="submit" :loading="saving">{{ t('common.save') }}</BaseButton>
       </div>
     </form>
   </div>

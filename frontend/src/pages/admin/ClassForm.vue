@@ -345,7 +345,7 @@ onMounted(load)
       </section>
 
       <div class="flex gap-3">
-        <BaseButton type="submit" :loading="submitting">{{ t('common.save') }}</BaseButton>
+        <BaseButton v-if="isEditing ? auth.can('classes.update') : auth.can('classes.create')" type="submit" :loading="submitting">{{ t('common.save') }}</BaseButton>
         <BaseButton type="button" variant="outline" @click="router.push('/admin/classes')">{{ t('common.cancel') }}</BaseButton>
       </div>
     </form>

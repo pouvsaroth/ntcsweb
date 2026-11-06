@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useAuthStore } from '@/stores/auth'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
@@ -22,6 +23,7 @@ import { formatMoney } from '@/utils/currency'
 import { formatDate } from '@/utils/date'
 
 const { t } = useI18n()
+const auth = useAuthStore()
 
 const { items, meta, loading, error, setPage, setSort, sort, setSearch, setFilter, fetch } = usePaginatedResource<Payment>((query) =>
   paymentsService.list(query),
@@ -175,10 +177,10 @@ onMounted(() => fetch())
             {{ t('admin.payments.downloadReceipt') }}
           </button>
           <template v-if="row.status === 'COMPLETED'">
-            <button type="button" class="text-sm font-medium text-amber-700 hover:text-amber-800" @click="openRefund(row)">
+            <button v-if="auth.can('payments.cancel')" type="button" class="text-sm font-medium text-amber-700 hover:text-amber-800" @click="openRefund(row)">
               {{ t('admin.payments.refundAction') }}
             </button>
-            <button type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="openCancel(row)">
+            <button v-if="auth.can('payments.cancel')" type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="openCancel(row)">
               {{ t('admin.payments.cancelAction') }}
             </button>
           </template>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useAuthStore } from '@/stores/auth'
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -14,6 +15,7 @@ import { programsService, type Program, type ProgramLevel } from '@/services/pro
 import { useConfirmDialogStore } from '@/stores/confirmDialog'
 
 const { t } = useI18n()
+const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
 
 const { items, meta, loading, error, setPage, setSort, sort, fetch } = usePaginatedResource<Program>((query) =>
@@ -65,7 +67,7 @@ onMounted(() => fetch())
       <div>
         <h1 class="text-xl font-semibold text-neutral-900">{{ t('admin.programs.title') }}</h1>
       </div>
-      <BaseButton @click="openCreate">{{ t('admin.programs.addProgram') }}</BaseButton>
+      <BaseButton v-if="auth.can('programs.create')" @click="openCreate">{{ t('admin.programs.addProgram') }}</BaseButton>
     </div>
 
     <BaseAlert v-if="error" variant="danger" class="mb-4">{{ error }}</BaseAlert>
@@ -105,8 +107,8 @@ onMounted(() => fetch())
       </template>
       <template #cell-actions="{ row }">
         <div class="flex justify-end gap-2">
-          <EditIconButton @click="openEdit(row)" />
-          <button type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row)">
+          <EditIconButton v-if="auth.can('programs.update')" @click="openEdit(row)" />
+          <button v-if="auth.can('programs.delete')" type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row)">
             {{ t('admin.programs.delete') }}
           </button>
         </div>

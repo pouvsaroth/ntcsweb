@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useAuthStore } from '@/stores/auth'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
@@ -24,6 +25,7 @@ import { formatMoney } from '@/utils/currency'
 import { formatDate } from '@/utils/date'
 
 const { t } = useI18n()
+const auth = useAuthStore()
 
 const { items, meta, loading, error, setPage, setSort, sort, setSearch, setFilter } = usePaginatedResource<Invoice>((query) =>
   invoicesService.list(query),
@@ -120,8 +122,8 @@ onMounted(() => setFilter('status', selectedStatuses.value.length > 0 ? selected
         :placeholder="t('admin.invoices.filterAllPaymentTypes')"
         @update:model-value="onPaymentTypeFilterChange"
       />
-      <BaseButton variant="outline" to="/admin/invoices/company-class">{{ t('admin.invoices.companyInvoiceTitle') }}</BaseButton>
-      <BaseButton to="/admin/invoices/new">{{ t('admin.invoices.addInvoice') }}</BaseButton>
+      <BaseButton v-if="auth.can('invoices.create')" variant="outline" to="/admin/invoices/company-class">{{ t('admin.invoices.companyInvoiceTitle') }}</BaseButton>
+      <BaseButton v-if="auth.can('invoices.create')" to="/admin/invoices/new">{{ t('admin.invoices.addInvoice') }}</BaseButton>
     </div>
 
     <DataTable

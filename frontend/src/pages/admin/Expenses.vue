@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useAuthStore } from '@/stores/auth'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -17,6 +18,7 @@ import { formatMoney } from '@/utils/currency'
 import { formatDate, formatMonth } from '@/utils/date'
 
 const { t } = useI18n()
+const auth = useAuthStore()
 
 const { items, meta, loading, error, setPage, setSort, sort, setSearch, setFilter, fetch } = usePaginatedResource<Expense>(
   (query) => expensesService.list(query),
@@ -107,7 +109,7 @@ onMounted(() => {
         @update:model-value="onEntityFilterChange"
       />
       <BaseInput :model-value="selectedMonth" type="month" :label="t('admin.expenses.filterForMonth')" @update:model-value="onMonthFilterChange" />
-      <BaseButton to="/admin/expenses/new">{{ t('admin.expenses.addExpense') }}</BaseButton>
+      <BaseButton v-if="auth.can('expense.create')" to="/admin/expenses/new">{{ t('admin.expenses.addExpense') }}</BaseButton>
     </div>
 
     <!-- Cards on small screens — below sm: this replaces the DataTable

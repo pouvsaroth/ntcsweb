@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useAuthStore } from '@/stores/auth'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -15,6 +16,7 @@ import { productsService, productTypes, type Product, type ProductType } from '@
 import { useConfirmDialogStore } from '@/stores/confirmDialog'
 
 const { t } = useI18n()
+const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
 
 const { items, meta, loading, error, setPage, setSort, sort, setSearch, setFilter, fetch } = usePaginatedResource<Product>(
@@ -86,7 +88,7 @@ onMounted(() => fetch())
         :placeholder="t('admin.products.filterAllTypes')"
         @update:model-value="onTypeFilterChange"
       />
-      <BaseButton @click="openCreate">{{ t('admin.products.addProduct') }}</BaseButton>
+      <BaseButton v-if="auth.can('products.create')" @click="openCreate">{{ t('admin.products.addProduct') }}</BaseButton>
     </div>
 
     <DataTable
@@ -107,8 +109,8 @@ onMounted(() => fetch())
       </template>
       <template #cell-actions="{ row }">
         <div class="flex justify-end gap-2">
-          <EditIconButton @click="openEdit(row)" />
-          <button type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row)">
+          <EditIconButton v-if="auth.can('products.update')" @click="openEdit(row)" />
+          <button v-if="auth.can('products.delete')" type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row)">
             {{ t('admin.products.delete') }}
           </button>
         </div>

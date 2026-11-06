@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useAuthStore } from '@/stores/auth'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -11,6 +12,7 @@ import EditIconButton from '@/components/ui/EditIconButton.vue'
 import { rolesService, type Role } from '@/services/roles'
 
 const { t } = useI18n()
+const auth = useAuthStore()
 
 const items = ref<Role[]>([])
 const loading = ref(false)
@@ -58,7 +60,7 @@ onMounted(load)
       <div>
         <h1 class="text-xl font-semibold text-neutral-900">{{ t('admin.roles.title') }}</h1>
       </div>
-      <BaseButton @click="openCreate">{{ t('admin.roles.addRole') }}</BaseButton>
+      <BaseButton v-if="auth.can('roles.create')" @click="openCreate">{{ t('admin.roles.addRole') }}</BaseButton>
     </div>
 
     <BaseAlert v-if="error" variant="danger" class="mb-4">{{ error }}</BaseAlert>
@@ -75,7 +77,7 @@ onMounted(load)
              RolePolicy::update() and UpdateRoleRequest for the backend side
              of that split. -->
         <div class="flex justify-end">
-          <EditIconButton @click="openEdit(row)" />
+          <EditIconButton v-if="auth.can('roles.update')" @click="openEdit(row)" />
         </div>
       </template>
     </DataTable>

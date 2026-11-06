@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useAuthStore } from '@/stores/auth'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
@@ -16,6 +17,7 @@ import { useConfirmDialogStore } from '@/stores/confirmDialog'
 import { ApiRequestError } from '@/types/api'
 
 const { t } = useI18n()
+const auth = useAuthStore()
 const route = useRoute()
 const confirmDialog = useConfirmDialogStore()
 const classroomId = Number(route.params.id)
@@ -119,7 +121,7 @@ onMounted(load)
           <h1 class="text-xl font-semibold text-neutral-900">{{ classroom.name }}</h1>
           <p class="mt-1 text-sm text-neutral-500">{{ t('admin.classroomTables.pageSubtitle') }}</p>
         </div>
-        <BaseButton class="shrink-0 whitespace-nowrap" @click="openCreate">{{ t('admin.classroomTables.addTable') }}</BaseButton>
+        <BaseButton v-if="auth.can('classrooms.create')" class="shrink-0 whitespace-nowrap" @click="openCreate">{{ t('admin.classroomTables.addTable') }}</BaseButton>
       </div>
 
       <BaseAlert v-if="savedNote" variant="success" class="mb-4">{{ savedNote }}</BaseAlert>
@@ -148,8 +150,8 @@ onMounted(load)
                 {{ t('admin.classroomTables.columnAllowMany') }}
               </label>
               <div class="flex gap-3">
-                <EditIconButton @click="openEdit(row)" />
-                <button type="button" class="text-sm font-medium text-danger-600" @click="remove(row)">{{ t('admin.classroomTables.delete') }}</button>
+                <EditIconButton v-if="auth.can('classrooms.update')" @click="openEdit(row)" />
+                <button v-if="auth.can('classrooms.delete')" type="button" class="text-sm font-medium text-danger-600" @click="remove(row)">{{ t('admin.classroomTables.delete') }}</button>
               </div>
             </div>
           </div>
@@ -172,8 +174,8 @@ onMounted(load)
         </template>
         <template #cell-actions="{ row }">
           <div class="flex justify-end gap-2">
-            <EditIconButton @click="openEdit(row)" />
-            <button type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row)">
+            <EditIconButton v-if="auth.can('classrooms.update')" @click="openEdit(row)" />
+            <button v-if="auth.can('classrooms.delete')" type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row)">
               {{ t('admin.classroomTables.delete') }}
             </button>
           </div>

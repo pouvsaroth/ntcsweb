@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useAuthStore } from '@/stores/auth'
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -17,6 +18,7 @@ import { formatDate } from '@/utils/date'
 import { useConfirmDialogStore } from '@/stores/confirmDialog'
 
 const { t } = useI18n()
+const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
 
 const { items, meta, loading, error, setPage, fetch } = usePaginatedResource<AcademicYear>((query) => academicYearsService.list(query))
@@ -67,7 +69,7 @@ onMounted(() => fetch())
         <h1 class="text-xl font-semibold text-neutral-900">{{ t('admin.academicYears.title') }}</h1>
         <p class="mt-1 text-sm text-neutral-500">{{ t('admin.academicYears.pageSubtitle') }}</p>
       </div>
-      <BaseButton @click="openCreate">{{ t('admin.academicYears.addYear') }}</BaseButton>
+      <BaseButton v-if="auth.can('academic-years.create')" @click="openCreate">{{ t('admin.academicYears.addYear') }}</BaseButton>
     </div>
 
     <BaseAlert v-if="error || deleteError" variant="danger" class="mb-4">{{ error || deleteError }}</BaseAlert>
@@ -81,8 +83,8 @@ onMounted(() => fetch())
       </template>
       <template #cell-actions="{ row }">
         <div class="flex justify-end gap-2">
-          <EditIconButton @click="openEdit(row)" />
-          <button type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row)">
+          <EditIconButton v-if="auth.can('academic-years.update')" @click="openEdit(row)" />
+          <button v-if="auth.can('academic-years.delete')" type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row)">
             {{ t('admin.academicYears.delete') }}
           </button>
         </div>

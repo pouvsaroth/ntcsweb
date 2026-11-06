@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useAuthStore } from '@/stores/auth'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -15,6 +16,7 @@ import { accountsService, accountTypes, type Account, type AccountType } from '@
 import { useConfirmDialogStore } from '@/stores/confirmDialog'
 
 const { t } = useI18n()
+const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
 
 const { items, meta, loading, error, setPage, setSort, sort, setSearch, setFilter, fetch } = usePaginatedResource<Account>(
@@ -88,7 +90,7 @@ onMounted(() => fetch())
         :placeholder="t('admin.accounts.filterAllTypes')"
         @update:model-value="onTypeFilterChange"
       />
-      <BaseButton @click="openCreate">{{ t('admin.accounts.addAccount') }}</BaseButton>
+      <BaseButton v-if="auth.can('accounts.create')" @click="openCreate">{{ t('admin.accounts.addAccount') }}</BaseButton>
     </div>
 
     <DataTable
@@ -112,8 +114,8 @@ onMounted(() => fetch())
       </template>
       <template #cell-actions="{ row }">
         <div class="flex justify-end gap-2">
-          <EditIconButton @click="openEdit(row)" />
-          <button type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="toggleActive(row)">
+          <EditIconButton v-if="auth.can('accounts.update')" @click="openEdit(row)" />
+          <button v-if="auth.can('accounts.deactivate')" type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="toggleActive(row)">
             {{ row.is_active ? t('admin.accounts.deactivate') : t('admin.accounts.reactivate') }}
           </button>
         </div>

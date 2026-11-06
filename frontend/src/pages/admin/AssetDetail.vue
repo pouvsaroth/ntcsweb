@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useAuthStore } from '@/stores/auth'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
@@ -29,6 +30,7 @@ import { formatDate, formatDateTime } from '@/utils/date'
 import { useConfirmDialogStore } from '@/stores/confirmDialog'
 
 const { t } = useI18n()
+const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
 const route = useRoute()
 const router = useRouter()
@@ -453,7 +455,7 @@ onMounted(load)
           <p class="mt-1 text-sm text-neutral-500">{{ asset.category?.name ?? '—' }}</p>
         </div>
         <div class="flex gap-2">
-          <BaseButton variant="outline" :to="`/admin/assets/${asset.id}/edit`">{{ t('common.edit') }}</BaseButton>
+          <BaseButton v-if="auth.can('assets.update')" variant="outline" :to="`/admin/assets/${asset.id}/edit`">{{ t('common.edit') }}</BaseButton>
           <BaseButton variant="ghost" @click="router.push('/admin/assets')">{{ t('common.change') }}</BaseButton>
         </div>
       </div>
@@ -461,17 +463,17 @@ onMounted(load)
       <BaseAlert v-if="actionError" variant="danger" class="mb-4">{{ actionError }}</BaseAlert>
 
       <div class="mb-6 flex flex-wrap gap-3">
-        <BaseButton v-if="!isClosed && !isAssigned" @click="assignModalOpen = true">{{ t('admin.assets.assign') }}</BaseButton>
-        <BaseButton v-if="isAssigned" variant="outline" @click="returnAsset">{{ t('admin.assets.returnAsset') }}</BaseButton>
-        <BaseButton v-if="!isClosed" variant="outline" @click="transferModalOpen = true">{{ t('admin.assets.transfer') }}</BaseButton>
-        <BaseButton v-if="asset.status !== 'DISPOSED'" variant="outline" @click="conditionModalOpen = true">{{ t('admin.assets.changeCondition') }}</BaseButton>
-        <BaseButton v-if="!isClosed" variant="outline" @click="reportIssueModalOpen = true">{{ t('admin.assetIssues.report') }}</BaseButton>
-        <BaseButton v-if="!isClosed" variant="outline" @click="sendToRepairModalOpen = true">{{ t('admin.assetRepairs.sendToRepair') }}</BaseButton>
-        <BaseButton v-if="!isClosed" variant="outline" @click="scheduleMaintenanceModalOpen = true">{{ t('admin.assetMaintenance.schedule') }}</BaseButton>
-        <BaseButton v-if="isLostOrMissing" @click="markFound">{{ t('admin.assets.markFound') }}</BaseButton>
-        <BaseButton v-if="!isClosed && !isLostOrMissing" variant="outline" @click="markLostModalOpen = true">{{ t('admin.assets.markLost') }}</BaseButton>
-        <BaseButton v-if="asset.status !== 'RETIRED' && asset.status !== 'DISPOSED'" variant="outline" @click="retireModalOpen = true">{{ t('admin.assets.retire') }}</BaseButton>
-        <BaseButton v-if="asset.status !== 'DISPOSED'" variant="danger" @click="disposeModalOpen = true">{{ t('admin.assets.dispose') }}</BaseButton>
+        <BaseButton v-if="(!isClosed && !isAssigned) && (auth.can('assets.assign'))" @click="assignModalOpen = true">{{ t('admin.assets.assign') }}</BaseButton>
+        <BaseButton v-if="(isAssigned) && (auth.can('assets.return'))" variant="outline" @click="returnAsset">{{ t('admin.assets.returnAsset') }}</BaseButton>
+        <BaseButton v-if="(!isClosed) && (auth.can('assets.transfer'))" variant="outline" @click="transferModalOpen = true">{{ t('admin.assets.transfer') }}</BaseButton>
+        <BaseButton v-if="(asset.status !== 'DISPOSED') && (auth.can('assets.update'))" variant="outline" @click="conditionModalOpen = true">{{ t('admin.assets.changeCondition') }}</BaseButton>
+        <BaseButton v-if="(!isClosed) && (auth.can('assets.issue.create'))" variant="outline" @click="reportIssueModalOpen = true">{{ t('admin.assetIssues.report') }}</BaseButton>
+        <BaseButton v-if="(!isClosed) && (auth.can('assets.repair.create'))" variant="outline" @click="sendToRepairModalOpen = true">{{ t('admin.assetRepairs.sendToRepair') }}</BaseButton>
+        <BaseButton v-if="(!isClosed) && (auth.can('assets.maintenance.create'))" variant="outline" @click="scheduleMaintenanceModalOpen = true">{{ t('admin.assetMaintenance.schedule') }}</BaseButton>
+        <BaseButton v-if="(isLostOrMissing) && (auth.can('assets.mark_found'))" @click="markFound">{{ t('admin.assets.markFound') }}</BaseButton>
+        <BaseButton v-if="(!isClosed && !isLostOrMissing) && (auth.can('assets.mark_lost'))" variant="outline" @click="markLostModalOpen = true">{{ t('admin.assets.markLost') }}</BaseButton>
+        <BaseButton v-if="(asset.status !== 'RETIRED' && asset.status !== 'DISPOSED') && (auth.can('assets.retire'))" variant="outline" @click="retireModalOpen = true">{{ t('admin.assets.retire') }}</BaseButton>
+        <BaseButton v-if="(asset.status !== 'DISPOSED') && (auth.can('assets.dispose'))" variant="danger" @click="disposeModalOpen = true">{{ t('admin.assets.dispose') }}</BaseButton>
       </div>
 
       <div class="mb-4 flex flex-wrap gap-2 border-b border-neutral-200">
@@ -683,10 +685,10 @@ onMounted(load)
           <template #cell-status="{ row }">{{ t(`admin.assetMaintenance.maintenanceStatus${row.status.toLowerCase().split('_').map((p: string) => p.charAt(0).toUpperCase() + p.slice(1)).join('')}`) }}</template>
           <template #cell-actions="{ row }">
             <div class="flex justify-end gap-3">
-              <button v-if="row.status === 'SCHEDULED'" type="button" class="text-sm font-medium text-primary-700 hover:underline" @click="completeMaintenance(row)">
+              <button v-if="(row.status === 'SCHEDULED') && (auth.can('assets.maintenance.update'))" type="button" class="text-sm font-medium text-primary-700 hover:underline" @click="completeMaintenance(row)">
                 {{ t('admin.assetMaintenance.complete') }}
               </button>
-              <button v-if="row.status === 'SCHEDULED'" type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="cancelMaintenance(row)">
+              <button v-if="(row.status === 'SCHEDULED') && (auth.can('assets.maintenance.update'))" type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="cancelMaintenance(row)">
                 {{ t('common.cancel') }}
               </button>
             </div>
@@ -703,13 +705,13 @@ onMounted(load)
           <ul v-if="documents.length > 0" class="mb-3 divide-y divide-neutral-100 rounded-lg border border-neutral-200">
             <li v-for="document in documents" :key="document.id" class="flex items-center justify-between px-3 py-2 text-sm">
               <a :href="document.url" target="_blank" rel="noopener noreferrer" class="text-primary-700 hover:underline">{{ document.file_name }}</a>
-              <button type="button" class="text-danger-600 hover:text-red-700" @click="removeDocument(document)">{{ t('common.remove') }}</button>
+              <button v-if="auth.can('assets.update')" type="button" class="text-danger-600 hover:text-red-700" @click="removeDocument(document)">{{ t('common.remove') }}</button>
             </li>
           </ul>
           <p v-else class="mb-3 text-sm text-neutral-400">{{ t('admin.assets.noDocuments') }}</p>
         </template>
 
-        <label class="inline-flex cursor-pointer items-center gap-2 text-sm font-medium text-primary-700">
+        <label v-if="auth.can('assets.update')" class="inline-flex cursor-pointer items-center gap-2 text-sm font-medium text-primary-700">
           <input type="file" class="hidden" :disabled="uploading" accept=".pdf,.jpg,.jpeg,.png,.webp" @change="onFileSelected" />
           {{ uploading ? t('common.loading') : t('admin.assets.uploadDocument') }}
         </label>

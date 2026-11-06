@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useAuthStore } from '@/stores/auth'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
@@ -16,6 +17,7 @@ import { suppliersService, type Supplier } from '@/services/suppliers'
 import { ApiRequestError } from '@/types/api'
 
 const { t } = useI18n()
+const auth = useAuthStore()
 const route = useRoute()
 const router = useRouter()
 
@@ -238,7 +240,7 @@ async function submit() {
       </section>
 
       <div class="flex gap-3">
-        <BaseButton type="submit" :loading="submitting" :disabled="!form.category_id">{{ t('common.save') }}</BaseButton>
+        <BaseButton v-if="isEditing ? auth.can('assets.update') : auth.can('assets.create')" type="submit" :loading="submitting" :disabled="!form.category_id">{{ t('common.save') }}</BaseButton>
         <BaseButton type="button" variant="outline" @click="router.push('/admin/assets')">{{ t('common.cancel') }}</BaseButton>
       </div>
     </form>

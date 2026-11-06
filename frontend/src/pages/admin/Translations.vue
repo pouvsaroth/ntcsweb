@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useAuthStore } from '@/stores/auth'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { onBeforeRouteLeave } from 'vue-router'
@@ -22,6 +23,7 @@ import { buildTranslationTree, type TranslationNode } from '@/utils/translationT
  * translationTree.ts. An empty box means "use the built-in text".
  */
 const { t, locale: uiLocale } = useI18n()
+const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
 const adminUi = useAdminUiStore()
 
@@ -173,8 +175,8 @@ onBeforeRouteLeave(async () => changes.value.length === 0 || (await confirmDialo
       <span v-if="savedMessage && changes.length === 0" class="text-sm text-success-600">{{ t('admin.translations.saved') }}</span>
       <template v-else>
         <span class="text-sm text-neutral-600">{{ t('admin.translations.unsavedCount', { count: changes.length }) }}</span>
-        <BaseButton variant="outline" :disabled="saving" @click="resetDrafts">{{ t('admin.translations.discard') }}</BaseButton>
-        <BaseButton :loading="saving" @click="save">{{ t('common.save') }}</BaseButton>
+        <BaseButton v-if="auth.can('base-data.manage-translations')" variant="outline" :disabled="saving" @click="resetDrafts">{{ t('admin.translations.discard') }}</BaseButton>
+        <BaseButton v-if="auth.can('base-data.manage-translations')" :loading="saving" @click="save">{{ t('common.save') }}</BaseButton>
       </template>
     </div>
   </div>

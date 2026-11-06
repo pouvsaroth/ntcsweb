@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useAuthStore } from '@/stores/auth'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
@@ -17,6 +18,7 @@ import { ApiRequestError } from '@/types/api'
 import { useConfirmDialogStore } from '@/stores/confirmDialog'
 
 const { t } = useI18n()
+const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
 const route = useRoute()
 const categoryId = Number(route.params.id)
@@ -97,7 +99,7 @@ onMounted(load)
           <h1 class="text-xl font-semibold text-neutral-900">{{ category.code }} — {{ category.name }}</h1>
           <p class="mt-1 text-sm text-neutral-500">{{ category.description || t('admin.lookupValues.pageSubtitle') }}</p>
         </div>
-        <BaseButton @click="openCreate">{{ t('admin.lookupValues.addValue') }}</BaseButton>
+        <BaseButton v-if="auth.can('base-data.create')" @click="openCreate">{{ t('admin.lookupValues.addValue') }}</BaseButton>
       </div>
 
       <BaseAlert v-if="deleteError" variant="danger" class="mb-4">{{ deleteError }}</BaseAlert>
@@ -113,8 +115,8 @@ onMounted(load)
         </template>
         <template #cell-actions="{ row }">
           <div class="flex justify-end gap-2">
-            <EditIconButton @click="openEdit(row)" />
-            <button type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row)">
+            <EditIconButton v-if="auth.can('base-data.update') || auth.can('base-data.manage-translations')" @click="openEdit(row)" />
+            <button v-if="auth.can('base-data.delete')" type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row)">
               {{ t('admin.lookupValues.delete') }}
             </button>
           </div>
