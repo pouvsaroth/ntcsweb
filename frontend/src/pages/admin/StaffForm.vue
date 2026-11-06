@@ -30,8 +30,8 @@ const router = useRouter()
 const staffId = computed(() => (route.params.id ? Number(route.params.id) : null))
 const isEditing = computed(() => staffId.value !== null)
 const auth = useAuthStore()
-/** Editing their own profile (staff.update-own): work fields are read-only; the server ignores them too. */
-const ownOnly = computed(() => auth.can('staff.update-own') && !auth.can('staff.update'))
+/** Own staff profile only (staff.update-own wins, except for School Admin — same as StaffPolicy): work fields hidden; the server ignores them too. */
+const ownOnly = computed(() => auth.can('staff.update-own') && !auth.isSuperAdmin && !auth.hasRole('school-admin'))
 
 // "Current Info" holds the staff form itself; Education (StaffEducationTab)
 // the list tabs (StaffRecordsTab, see recordTabs) and Documents

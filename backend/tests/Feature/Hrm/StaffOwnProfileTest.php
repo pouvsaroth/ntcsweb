@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Tests\Feature\Hrm;
 
 use App\Models\Position;
+use App\Models\Role;
 use App\Models\Staff;
+use App\Support\Authorization\PermissionRegistry;
 use App\Support\Authorization\Permissions;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\HasAcademicAdmin;
@@ -64,9 +66,34 @@ class StaffOwnProfileTest extends TestCase
         $this->deleteJson("/api/v1/staff/{$own->id}")->assertForbidden();
     }
 
-    public function test_hr_with_staff_update_still_sees_and_edits_everyone(): void
+    public function test_own_profile_only_wins_over_staff_view_and_update(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::STAFF_VIEW, Permissions::STAFF_UPDATE, Permissions::STAFF_UPDATE_OWN]);
+        $own = $this->ownStaff();
+        $other = Staff::factory()->create();
+
+        $this->getJson('/api/v1/staff')->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $own->id);
+        $this->getJson("/api/v1/staff/{$other->id}")->assertForbidden();
+        $this->deleteJson("/api/v1/staff/{$other->id}")->assertForbidden();
+    }
+
+    public function test_school_admin_is_never_limited_to_their_own_profile(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::STAFF_VIEW, Permissions::STAFF_UPDATE, Permissions::STAFF_UPDATE_OWN]);
+        $schoolAdmin = Role::query()->where('tenant_id', $this->tenant->id)->where('slug', Role::SCHOOL_ADMIN)->first()
+            ?? Role::factory()->forTenant($this->tenant)->create(['name' => 'School Admin', 'slug' => Role::SCHOOL_ADMIN]);
+        $this->admin->attachRoles($schoolAdmin);
+        app(PermissionRegistry::class)->invalidate($this->tenant->id);
+        $this->actingAsTenantUser($this->admin->fresh());
+        $this->ownStaff();
+        Staff::factory()->create();
+
+        $this->getJson('/api/v1/staff')->assertOk()->assertJsonCount(2, 'data');
+    }
+
+    public function test_hr_with_staff_update_still_sees_and_edits_everyone(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::STAFF_VIEW, Permissions::STAFF_UPDATE]);
         $this->ownStaff();
         $other = Staff::factory()->create();
         $position = Position::factory()->create();

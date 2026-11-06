@@ -22,9 +22,11 @@ import { useConfirmDialogStore } from '@/stores/confirmDialog'
 const { t, locale } = useI18n()
 const confirmDialog = useConfirmDialogStore()
 const auth = useAuthStore()
-/** Their own record (staff.update-own) or anyone's (staff.update). */
+/** Own staff profile only (staff.update-own wins, except for School Admin — same as StaffPolicy): just their own row. */
+const ownOnly = computed(() => auth.can('staff.update-own') && !auth.isSuperAdmin && !auth.hasRole('school-admin'))
 function canEditRow(row: Staff): boolean {
-  return auth.can('staff.update') || (auth.can('staff.update-own') && row.user?.id === auth.user?.id)
+  if (ownOnly.value) return row.user?.id === auth.user?.id
+  return auth.can('staff.update')
 }
 
 const { items, meta, loading, error, setPage, setSearch, setFilter, fetch } = usePaginatedResource<Staff>((query) =>
@@ -181,7 +183,7 @@ onMounted(() => {
       <template #cell-actions="{ row }">
         <div class="flex justify-end gap-1">
           <EditIconButton :to="`/admin/staff/${row.id}/edit`" />
-          <ActionIconButton v-if="auth.can('staff.change-status')" :title="t('admin.staff.changeStatus')" @click="openStatusModal(row)">
+          <ActionIconButton v-if="!ownOnly && auth.can('staff.change-status')" :title="t('admin.staff.changeStatus')" @click="openStatusModal(row)">
             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path
                 stroke-linecap="round"
@@ -190,7 +192,7 @@ onMounted(() => {
               />
             </svg>
           </ActionIconButton>
-          <ActionIconButton v-if="auth.can('staff.delete')" variant="danger" :title="t('admin.staff.delete')" @click="remove(row)">
+          <ActionIconButton v-if="!ownOnly && auth.can('staff.delete')" variant="danger" :title="t('admin.staff.delete')" @click="remove(row)">
             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path
                 stroke-linecap="round"
