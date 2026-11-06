@@ -110,130 +110,89 @@ type GroupChild =
   | { kind: 'module'; key: string; module: ModuleEntry }
   | { kind: 'parent'; key: string; name: string; modules: ModuleEntry[] }
 
+/**
+ * Listed in sidebar order: main menu (group) > menu > tabs. A menu whose page
+ * has a tab bar is a `parent`, and its rows are that page's tabs — tabs that
+ * share one permission are named together in one row (see router/*Tabs.ts).
+ * A permission used in two places (e.g. My requests) shows in both, as one
+ * shared checkbox.
+ */
 const MODULES: ModuleEntry[] = [
+  // ── Dashboard ──
   { name: 'Dashboard', group: 'Dashboard', actions: { view: 'dashboard.view' } },
-  // Every dashboard card is its own dedicated permission, independent of
-  // that page's real CRUD permission below (e.g. "Register student card"
-  // is dashboard.cards.register-student, not students.create) — so a school
-  // can give Teacher the Classes/Attendance cards and Staff the Enrollment/
-  // Students cards without changing who can actually create/update those
-  // records. See Permissions::DASHBOARD_CARDS_REGISTER_STUDENT etc. and
-  // Dashboard.vue, which checks these instead of the module permission for
-  // every tile.
-  { name: 'Register student card', group: 'Dashboard', actions: { view: 'dashboard.cards.register-student' } },
-  { name: 'Enrollment card', group: 'Dashboard', actions: { view: 'dashboard.cards.enrollment' } },
-  { name: 'Classes card', group: 'Dashboard', actions: { view: 'dashboard.cards.classes' } },
-  { name: 'Student payment card', group: 'Dashboard', actions: { view: 'dashboard.cards.student-payment' } },
-  { name: 'Invoices card', group: 'Dashboard', actions: { view: 'dashboard.cards.invoices' } },
-  { name: 'Expense card', group: 'Dashboard', actions: { view: 'dashboard.cards.expense' } },
-  { name: 'Student attendance card', group: 'Dashboard', actions: { view: 'dashboard.cards.student-attendance' } },
-  { name: 'Teacher attendance card', group: 'Dashboard', actions: { view: 'dashboard.cards.teacher-attendance' } },
-  { name: 'Users card', group: 'Dashboard', actions: { view: 'dashboard.cards.users' } },
-  { name: 'Roles card', group: 'Dashboard', actions: { view: 'dashboard.cards.roles' } },
-  // These three never had a CRUD permission of their own to reuse in the
-  // first place — any role reaching the dashboard saw them unconditionally
-  // until Permissions::DASHBOARD_ATTENDANCE_VIEW etc. were added.
-  { name: 'Attendance stat cards', group: 'Dashboard', actions: { view: 'dashboard.attendance.view' } },
-  { name: 'Financial & enrollment stat cards', group: 'Dashboard', actions: { view: 'dashboard.finance.view' } },
-  { name: 'Monthly payment alerts', group: 'Dashboard', actions: { view: 'dashboard.payment-alerts.view' } },
-  { name: 'Registration pending card', group: 'Dashboard', actions: { view: 'dashboard.cards.registration-pending' } },
-  { name: 'Borrowings card (total owed)', group: 'Dashboard', actions: { view: 'dashboard.cards.borrowings' } },
-  { name: 'School settings', group: 'Settings', actions: { view: 'tenant-settings.view', update: 'tenant-settings.update' } },
-  { name: 'Users', group: 'Settings', actions: { view: 'users.view', create: 'users.create', update: 'users.update', delete: 'users.delete' } },
-  {
-    name: 'Roles',
-    group: 'Settings',
-    actions: {
-      view: 'roles.view',
-      create: 'roles.create',
-      update: 'roles.update',
-      delete: 'roles.delete',
-      assign: 'roles.assign',
-    },
-  },
+  // Every dashboard card has its own permission, independent of the page it links to
+  // (e.g. Register student card ≠ students.create) — see Dashboard.vue.
+  { name: 'Stat cards: attendance', group: 'Dashboard', parent: 'Dashboard cards', actions: { view: 'dashboard.attendance.view' } },
+  { name: 'Stat cards: financial & enrollment', group: 'Dashboard', parent: 'Dashboard cards', actions: { view: 'dashboard.finance.view' } },
+  { name: 'Monthly payment alerts', group: 'Dashboard', parent: 'Dashboard cards', actions: { view: 'dashboard.payment-alerts.view' } },
+  { name: 'Register student card', group: 'Dashboard', parent: 'Dashboard cards', actions: { view: 'dashboard.cards.register-student' } },
+  { name: 'Registration pending card', group: 'Dashboard', parent: 'Dashboard cards', actions: { view: 'dashboard.cards.registration-pending' } },
+  { name: 'Enrollment card', group: 'Dashboard', parent: 'Dashboard cards', actions: { view: 'dashboard.cards.enrollment' } },
+  { name: 'Classes card', group: 'Dashboard', parent: 'Dashboard cards', actions: { view: 'dashboard.cards.classes' } },
+  { name: 'Student payment card', group: 'Dashboard', parent: 'Dashboard cards', actions: { view: 'dashboard.cards.student-payment' } },
+  { name: 'Invoices card', group: 'Dashboard', parent: 'Dashboard cards', actions: { view: 'dashboard.cards.invoices' } },
+  { name: 'Expense card', group: 'Dashboard', parent: 'Dashboard cards', actions: { view: 'dashboard.cards.expense' } },
+  { name: 'Borrowings card (total owed)', group: 'Dashboard', parent: 'Dashboard cards', actions: { view: 'dashboard.cards.borrowings' } },
+  { name: 'Student attendance card', group: 'Dashboard', parent: 'Dashboard cards', actions: { view: 'dashboard.cards.student-attendance' } },
+  { name: 'Teacher attendance card', group: 'Dashboard', parent: 'Dashboard cards', actions: { view: 'dashboard.cards.teacher-attendance' } },
+  { name: 'Users card', group: 'Dashboard', parent: 'Dashboard cards', actions: { view: 'dashboard.cards.users' } },
+  { name: 'Roles card', group: 'Dashboard', parent: 'Dashboard cards', actions: { view: 'dashboard.cards.roles' } },
+
+  // ── Project Management ──
   { name: 'Projects', group: 'Project Management', actions: { view: 'projects.view', create: 'projects.create', update: 'projects.update', delete: 'projects.delete' } },
-  { name: 'Inquiries', group: 'Front Office', actions: { view: 'inquiries.view', create: 'inquiries.create', update: 'inquiries.update', delete: 'inquiries.delete' } },
-  { name: 'Meetings', group: 'Front Office', actions: { view: 'meetings.view', create: 'meetings.create', update: 'meetings.update', delete: 'meetings.delete' } },
-  { name: 'Appointments', group: 'Front Office', actions: { view: 'appointments.view', create: 'appointments.create', update: 'appointments.update', delete: 'appointments.delete' } },
-  { name: 'Visitors', group: 'Front Office', actions: { view: 'visitors.view', create: 'visitors.create', update: 'visitors.update', delete: 'visitors.delete' } },
-  { name: 'Positions', group: 'Staff', actions: { view: 'positions.view', create: 'positions.create', update: 'positions.update', delete: 'positions.delete' } },
-  {
-    name: 'Recruitment',
-    group: 'Staff',
-    actions: { view: 'recruitment.view', create: 'recruitment.create', update: 'recruitment.update', delete: 'recruitment.delete' },
-  },
-  { name: 'Manpower requests', group: 'Staff', actions: { approve: 'manpower-requests.approve', reject: 'manpower-requests.reject' } },
-  { name: 'Staff attendance (Attendance & Time)', group: 'Staff', actions: { view: 'staff-attendance.view', manage: 'staff-attendance.manage' } },
-  { name: 'Overtime requests', group: 'Staff', actions: { approve: 'overtime-requests.approve', reject: 'overtime-requests.reject' } },
-  { name: 'Attendance corrections', group: 'Staff', actions: { approve: 'attendance-corrections.approve', reject: 'attendance-corrections.reject' } },
-  { name: 'Attendance sign-off (lock a month)', group: 'Staff', actions: { approve: 'staff-attendance.approve' } },
-  { name: 'Leave management (types, policies, balances)', group: 'Staff', actions: { view: 'leave-management.view', manage: 'leave-management.manage' } },
-  { name: 'Payroll set-up and rules (salaries, allowances, bonuses, deductions, overtime, tax, NSSF, loans)', group: 'Staff', actions: { view: 'payroll.view', manage: 'payroll.manage' } },
-  { name: 'Payroll runs (work out, send for approval and pay; approve)', group: 'Staff', actions: { create: 'payroll.run', approve: 'payroll.approve' } },
-  { name: 'Performance (KPIs, goals, evaluation forms, reviews, promotion recommendations)', group: 'Staff', actions: { view: 'performance.view', manage: 'performance.manage', approve: 'performance.approve-promotion' } },
-  { name: 'Professional development (trainings, records, certificates, observations, coaching, development plans)', group: 'Staff', actions: { view: 'professional-development.view', manage: 'professional-development.manage' } },
-  // HRM > Organization Management's Branch/Department/Team/Job grade/Job level tabs share one set.
-  {
-    name: 'Organization (branches, departments, teams, job grades, job levels)',
-    group: 'Staff',
-    actions: { view: 'organization.view', create: 'organization.create', update: 'organization.update', delete: 'organization.delete' },
-  },
-  {
-    name: 'Staff',
-    group: 'Staff',
-    actions: { view: 'staff.view', create: 'staff.create', update: 'staff.update', delete: 'staff.delete', status: 'staff.change-status' },
-  },
-  // Same slug as "Staff" above (its own sidebar entry just reuses staff.view
-  // — see adminNav.ts's staff group) — a separate row here purely so this
-  // matrix lists every HRM sidebar item, not because it's a distinct
-  // permission.
-  { name: 'Staff status history', group: 'Staff', actions: { view: 'staff.view' } },
-  { name: 'Own staff profile only (see and edit just their own)', group: 'Staff', actions: { update: 'staff.update-own' } },
-  { name: 'Teachers (qualifications, assignments, load, availability, substitutes, documents)', group: 'Staff', actions: { view: 'teachers.view', manage: 'teachers.manage' } },
-  // Also its own sidebar entry (Staff/HRM > "Request Leave") reusing the
-  // same self-service slug as "My requests" under E-Approvals below —
-  // toggling either row flips the same checkbox.
-  { name: 'Request Leave', group: 'Staff', actions: { view: 'my-requests.view' } },
-  { name: 'Leave requests', group: 'Other', actions: { view: 'leave-requests.view', approve: 'leave-requests.approve', reject: 'leave-requests.reject' } },
-  { name: 'Backup (own school database)', group: 'Settings', actions: { view: 'database-backups.download' } },
-  { name: 'Make-up class requests', group: 'Other', actions: { view: 'make-up-class-requests.view', approve: 'make-up-class-requests.approve', reject: 'make-up-class-requests.reject' } },
-  { name: 'Class change requests', group: 'Other', actions: { view: 'class-change-requests.view', approve: 'class-change-requests.approve', reject: 'class-change-requests.reject' } },
-  { name: 'Help & Support (help articles, FAQ, NewTech contacts, support tickets)', group: 'Other', actions: { view: 'help-support.view' } },
-  { name: 'Resignation requests', group: 'Staff', actions: { view: 'resignation-requests.view', approve: 'resignation-requests.approve', reject: 'resignation-requests.reject' } },
-  {
-    name: 'Students',
-    group: 'Students',
-    actions: {
-      view: 'students.view',
-      create: 'students.create',
-      update: 'students.update',
-      delete: 'students.delete',
-      approve: 'students.approve-registration',
-    },
-  },
+
+  // ── Front Office (one page, four tabs) ──
+  { name: 'Inquiries', group: 'Front Office', parent: 'Front Office', actions: { view: 'inquiries.view', create: 'inquiries.create', update: 'inquiries.update', delete: 'inquiries.delete' } },
+  { name: 'Meetings', group: 'Front Office', parent: 'Front Office', actions: { view: 'meetings.view', create: 'meetings.create', update: 'meetings.update', delete: 'meetings.delete' } },
+  { name: 'Appointments', group: 'Front Office', parent: 'Front Office', actions: { view: 'appointments.view', create: 'appointments.create', update: 'appointments.update', delete: 'appointments.delete' } },
+  { name: 'Visitors', group: 'Front Office', parent: 'Front Office', actions: { view: 'visitors.view', create: 'visitors.create', update: 'visitors.update', delete: 'visitors.delete' } },
+
+  // ── Academic ──
+  // Not the website's "Programs" (Website group) — this is the internal program catalog.
+  { name: 'Academic programs', group: 'Academic', parent: 'Programs', actions: { view: 'academic-programs.view', create: 'academic-programs.create', update: 'academic-programs.update', delete: 'academic-programs.delete' } },
+  { name: 'Academic years', group: 'Academic', parent: 'Programs', actions: { view: 'academic-years.view', create: 'academic-years.create', update: 'academic-years.update', delete: 'academic-years.delete' } },
+  { name: 'Course packages', group: 'Academic', parent: 'Programs', actions: { view: 'course-packages.view', create: 'course-packages.create', update: 'course-packages.update', delete: 'course-packages.delete' } },
+  { name: 'Books', group: 'Academic', parent: 'Programs', actions: { view: 'books.view', create: 'books.create', update: 'books.update', delete: 'books.delete' } },
+  { name: 'Book categories', group: 'Academic', parent: 'Programs', actions: { view: 'book-categories.view', create: 'book-categories.create', update: 'book-categories.update', delete: 'book-categories.delete' } },
+  { name: 'Terms / semesters', group: 'Academic', parent: 'School Setup', actions: { view: 'academic-terms.view', manage: 'academic-terms.manage' } },
+  { name: 'Grade levels', group: 'Academic', parent: 'School Setup', actions: { view: 'grade-levels.view', manage: 'grade-levels.manage' } },
+  { name: 'Curriculum', group: 'Academic', parent: 'School Setup', actions: { view: 'curriculum.view', manage: 'curriculum.manage' } },
+  { name: 'School calendar', group: 'Academic', parent: 'School Setup', actions: { view: 'school-calendar.view', manage: 'school-calendar.manage' } },
+  { name: 'Promotion rules', group: 'Academic', parent: 'School Setup', actions: { view: 'promotion-rules.view', manage: 'promotion-rules.manage' } },
+  { name: 'Promote students', group: 'Academic', parent: 'School Setup', actions: { view: 'student-promotions.view', run: 'student-promotions.run' } },
+  { name: 'Videos', group: 'Academic', actions: { view: 'videos.view', create: 'videos.create', update: 'videos.update', delete: 'videos.delete' } },
   { name: 'Buildings', group: 'Academic', parent: 'Study Building', actions: { view: 'buildings.view', create: 'buildings.create', update: 'buildings.update', delete: 'buildings.delete' } },
   { name: 'Classrooms', group: 'Academic', parent: 'Study Building', actions: { view: 'classrooms.view', create: 'classrooms.create', update: 'classrooms.update', delete: 'classrooms.delete' } },
-  { name: 'Books', group: 'Academic', parent: 'Programs', actions: { view: 'books.view', create: 'books.create', update: 'books.update', delete: 'books.delete' } },
-  {
-    name: 'Book categories',
-    group: 'Academic',
-    parent: 'Programs',
-    actions: { view: 'book-categories.view', create: 'book-categories.create', update: 'book-categories.update', delete: 'book-categories.delete' },
-  },
-  {
-    name: 'Course packages',
-    group: 'Academic',
-    parent: 'Programs',
-    actions: { view: 'course-packages.view', create: 'course-packages.create', update: 'course-packages.update', delete: 'course-packages.delete' },
-  },
-  {
-    name: 'Academic years',
-    group: 'Academic',
-    parent: 'Programs',
-    actions: { view: 'academic-years.view', create: 'academic-years.create', update: 'academic-years.update', delete: 'academic-years.delete' },
-  },
-  { name: 'Academic reports', group: 'Academic', actions: { view: 'academic-reports.view', export: 'academic-reports.export' } },
   { name: 'Classes', group: 'Academic', actions: { view: 'classes.view', create: 'classes.create', update: 'classes.update', delete: 'classes.delete' } },
+  // Manage = edit the timetable and decide schedule change requests.
+  { name: 'Class, Teacher, Room, Subjects, Conflicts', group: 'Academic', parent: 'Timetable', actions: { view: 'timetable.view', manage: 'timetable.manage' } },
+  { name: 'Schedule changes', group: 'Academic', parent: 'Timetable', actions: { request: 'timetable.request', manage: 'timetable.manage' } },
+  // Create = write lesson plans and the teaching log.
+  { name: 'Lesson plans, This week, Teaching log, Progress, Delays', group: 'Academic', parent: 'Lesson Plans', actions: { view: 'lesson-plans.view', create: 'lesson-plans.write' } },
+  { name: 'Review', group: 'Academic', parent: 'Lesson Plans', actions: { approve: 'lesson-plans.review' } },
+  { name: 'Attendance, Summary', group: 'Academic', parent: 'Attendance', actions: { view: 'attendance.view', create: 'attendance.create', update: 'attendance.update' } },
+  { name: 'Examination menu', group: 'Academic', parent: 'Examination', actions: { view: 'examination.view' } },
+  { name: 'Assessment Setup', group: 'Academic', parent: 'Examination', actions: { view: 'assessment.view', manage: 'assessment.manage' } },
+  { name: 'Exam Schedule', group: 'Academic', parent: 'Examination', actions: { view: 'exam-schedules.view', manage: 'exam-schedules.manage' } },
+  // View/Enter = own classes and subjects; Manage all = every class.
+  {
+    name: 'Grade Entry, Validation, Score Calculation, Result Approval, Grade Correction, Transcript, Student Progress, Remedial Teaching, Result Export',
+    group: 'Academic',
+    parent: 'Examination',
+    actions: { view: 'gradebook.view', enter: 'gradebook.enter', manageAll: 'gradebook.manage-all', approve: 'gradebook.approve' },
+  },
+  {
+    name: 'Exams, Make-up Exam, Certificate',
+    group: 'Academic',
+    parent: 'Examination',
+    actions: { view: 'exam-applications.view', create: 'exam-applications.create', update: 'exam-applications.update', delete: 'exam-applications.delete', approve: 'exam-applications.approve', reject: 'exam-applications.reject' },
+  },
+  { name: 'Grades', group: 'Academic', parent: 'Examination', actions: { view: 'exam-scores.view', update: 'exam-scores.update', manageAll: 'exam-scores.manage-all' } },
+  { name: 'Academic reports', group: 'Academic', actions: { view: 'academic-reports.view', export: 'academic-reports.export' } },
+
+  // ── Students ──
+  // Create also opens Student imports; Approve = approve online registrations.
+  { name: 'Students (and Student imports)', group: 'Students', actions: { view: 'students.view', create: 'students.create', update: 'students.update', delete: 'students.delete', approve: 'students.approve-registration' } },
   {
     name: 'Enrollments',
     group: 'Students',
@@ -250,48 +209,52 @@ const MODULES: ModuleEntry[] = [
       responsibleStaff: 'enrollments.responsible-staff',
     },
   },
-  { name: 'Attendance', group: 'Academic', actions: { view: 'attendance.view', create: 'attendance.create', update: 'attendance.update' } },
-  {
-    name: 'Base data',
-    group: 'Settings',
-    actions: {
-      view: 'base-data.view',
-      create: 'base-data.create',
-      update: 'base-data.update',
-      delete: 'base-data.delete',
-      translations: 'base-data.manage-translations',
-      languages: 'base-data.manage-languages',
-    },
-  },
-  // Not the same as "Programs" below — this is the internal academic-program
-  // catalog (Academic > Programs in the sidebar); "Programs" is the public
-  // website content page. Two distinct permission slugs, easy to conflate.
-  {
-    name: 'Academic programs',
-    group: 'Academic',
-    parent: 'Programs',
-    actions: { view: 'academic-programs.view', create: 'academic-programs.create', update: 'academic-programs.update', delete: 'academic-programs.delete' },
-  },
-  { name: 'Videos', group: 'Academic', actions: { view: 'videos.view', create: 'videos.create', update: 'videos.update', delete: 'videos.delete' } },
-  { name: 'Programs', group: 'Website', actions: { view: 'programs.view', create: 'programs.create', update: 'programs.update', delete: 'programs.delete' } },
+
+  // ── HRM ──
+  { name: 'Staff list', group: 'Staff', parent: 'Staff', actions: { view: 'staff.view', create: 'staff.create', update: 'staff.update', delete: 'staff.delete', status: 'staff.change-status' } },
+  { name: 'Own staff profile only (see and edit just their own)', group: 'Staff', parent: 'Staff', actions: { update: 'staff.update-own' } },
+  { name: 'Qualifications, Assignments, Homeroom, Load, Availability, Substitutes, Documents', group: 'Staff', parent: 'Teachers', actions: { view: 'teachers.view', manage: 'teachers.manage' } },
+  { name: 'Staff status history', group: 'Staff', actions: { view: 'staff.view' } },
+  { name: 'School', group: 'Staff', parent: 'Organization Management', actions: { view: 'tenant-settings.view', update: 'tenant-settings.update' } },
+  { name: 'Branch, Department, Team, Job grade, Job level, Reporting manager, Hierarchy', group: 'Staff', parent: 'Organization Management', actions: { view: 'organization.view', create: 'organization.create', update: 'organization.update', delete: 'organization.delete' } },
+  { name: 'Position', group: 'Staff', parent: 'Organization Management', actions: { view: 'positions.view', create: 'positions.create', update: 'positions.update', delete: 'positions.delete' } },
+  { name: 'Manpower requests, Job positions, Job postings, Applicants, CVs, Interviews, Evaluations, Selection, Offers, Pipeline', group: 'Staff', parent: 'Recruitment', actions: { view: 'recruitment.view', create: 'recruitment.create', update: 'recruitment.update', delete: 'recruitment.delete' } },
+  { name: 'Manpower request approval', group: 'Staff', parent: 'Recruitment', actions: { approve: 'manpower-requests.approve', reject: 'manpower-requests.reject' } },
+  { name: 'Employees, Check-ins, Records, Shifts, Work schedules, Holidays, Late, Early leave, Absence, Overtime, Corrections', group: 'Staff', parent: 'Time & Attendance', actions: { view: 'staff-attendance.view', manage: 'staff-attendance.manage' } },
+  { name: 'Approval (sign off a month)', group: 'Staff', parent: 'Time & Attendance', actions: { approve: 'staff-attendance.approve' } },
+  { name: 'Overtime requests', group: 'Staff', parent: 'Time & Attendance', actions: { approve: 'overtime-requests.approve', reject: 'overtime-requests.reject' } },
+  { name: 'Attendance corrections', group: 'Staff', parent: 'Time & Attendance', actions: { approve: 'attendance-corrections.approve', reject: 'attendance-corrections.reject' } },
+  { name: 'Types, Policies, Balances, Workflow, Calendar, Carry forward, Reports', group: 'Staff', parent: 'Leave Management', actions: { view: 'leave-management.view', manage: 'leave-management.manage' } },
+  { name: 'Leave requests', group: 'Staff', parent: 'Leave Management', actions: { view: 'leave-requests.view', approve: 'leave-requests.approve', reject: 'leave-requests.reject' } },
+  { name: 'Salary structures, Basic salary, Allowances, Bonuses, Deductions, Overtime, Tax, NSSF, Loan/advance, Calculation, Payslip, History', group: 'Staff', parent: 'Payroll', actions: { view: 'payroll.view', manage: 'payroll.manage' } },
+  // Create = work out a payroll, send it for approval and pay it.
+  { name: 'Payroll runs', group: 'Staff', parent: 'Payroll', actions: { create: 'payroll.run' } },
+  { name: 'Approval', group: 'Staff', parent: 'Payroll', actions: { approve: 'payroll.approve' } },
+  // Approve = apply promotion recommendations.
+  { name: 'KPI, Goals, Review, Evaluation forms, Score, Promotion', group: 'Staff', parent: 'Performance', actions: { view: 'performance.view', manage: 'performance.manage', approve: 'performance.approve-promotion' } },
+  { name: 'Self assessment, Manager assessment (every staff account)', group: 'Staff', parent: 'Performance', actions: { view: 'my-requests.view' } },
+  { name: 'Training records, Calendar, Certificates, Observations, Coaching, Development plans, Reports', group: 'Staff', parent: 'Professional Development', actions: { view: 'professional-development.view', manage: 'professional-development.manage' } },
+  // The same self-service slug as E-Approvals > My requests: one shared checkbox.
+  { name: 'My check-in, Request Leave, Resignation Form', group: 'Staff', actions: { view: 'my-requests.view' } },
+  { name: 'Resignation requests', group: 'Staff', actions: { view: 'resignation-requests.view', approve: 'resignation-requests.approve', reject: 'resignation-requests.reject' } },
+
+  // ── Billing ──
+  { name: 'Billing dashboard & reports', group: 'Billing', actions: { view: 'billing-reports.view' } },
   { name: 'Products', group: 'Billing', actions: { view: 'products.view', create: 'products.create', update: 'products.update', delete: 'products.delete' } },
-  { name: 'Invoices', group: 'Billing', actions: { view: 'invoices.view', create: 'invoices.create', update: 'invoices.update', cancel: 'invoices.cancel' } },
+  { name: 'Invoices, Monthly', group: 'Billing', parent: 'Invoices', actions: { view: 'invoices.view', create: 'invoices.create', update: 'invoices.update', cancel: 'invoices.cancel' } },
   { name: 'Payments', group: 'Billing', actions: { view: 'payments.view', create: 'payments.create', update: 'payments.update', cancel: 'payments.cancel' } },
   { name: 'Receipts', group: 'Billing', actions: { view: 'receipts.view' } },
-  { name: 'Billing reports', group: 'Billing', actions: { view: 'billing-reports.view' } },
   { name: 'Billing notifications', group: 'Billing', actions: { send: 'notifications.send' } },
-  {
-    name: 'Currency rates',
-    group: 'Billing',
-    actions: { view: 'currency-rates.view', create: 'currency-rates.create', update: 'currency-rates.update', delete: 'currency-rates.delete' },
-  },
-  { name: 'Accounting', group: 'Accounting', actions: { view: 'accounting.view' } },
+  { name: 'Companies', group: 'Billing', actions: { view: 'companies.view', create: 'companies.create', update: 'companies.update', delete: 'companies.delete' } },
+  { name: 'Currency rates', group: 'Billing', actions: { view: 'currency-rates.view', create: 'currency-rates.create', update: 'currency-rates.update', delete: 'currency-rates.delete' } },
+
+  // ── Accounting ──
+  { name: 'Accounting (module access)', group: 'Accounting', actions: { view: 'accounting.view' } },
   { name: 'Accounting dashboard', group: 'Accounting', actions: { view: 'accounting.dashboard.view' } },
-  { name: 'Accounting periods', group: 'Accounting', actions: { close: 'accounting.period.close', create: 'accounting.adjustment.create' } },
   { name: 'Accounts', group: 'Accounting', actions: { view: 'accounts.view', create: 'accounts.create', update: 'accounts.update', deactivate: 'accounts.deactivate' } },
   { name: 'Income', group: 'Accounting', actions: { view: 'income.view', create: 'income.create', update: 'income.update', cancel: 'income.cancel' } },
   {
-    name: 'Expenses',
+    name: 'Expenses (also Expense for, Vendors)',
     group: 'Accounting',
     actions: {
       view: 'expense.view',
@@ -303,14 +266,16 @@ const MODULES: ModuleEntry[] = [
       cancel: 'expense.cancel',
     },
   },
+  { name: 'Loans, Repayments, Lenders, Reports', group: 'Accounting', parent: 'Borrowings', actions: { view: 'borrowings.view', manage: 'borrowings.manage' } },
   { name: 'Transactions', group: 'Accounting', actions: { view: 'transactions.view', create: 'transactions.create' } },
-  { name: 'Financial reports', group: 'Accounting', actions: { view: 'reports.financial.view', export: 'reports.financial.export' } },
+  { name: 'Accounting reports', group: 'Accounting', actions: { view: 'reports.financial.view', export: 'reports.financial.export' } },
+  { name: 'Accounting periods', group: 'Accounting', actions: { close: 'accounting.period.close', create: 'accounting.adjustment.create' } },
+
+  // ── Assets ──
+  { name: 'Asset dashboard & Asset reports', group: 'Assets', actions: { view: 'assets.reports.view', export: 'assets.reports.export' } },
   {
-    // Categories/Locations/Departments/Suppliers all share these exact same
-    // four slugs (see AssetCategoryPolicy and friends) rather than getting
-    // their own near-duplicate rows here — toggling "Assets" already
-    // controls all of them together.
-    name: 'Assets',
+    // Categories/Locations/Departments/Suppliers share these slugs (see AssetCategoryPolicy and friends).
+    name: 'Assets (also Categories, Locations, Departments, Suppliers)',
     group: 'Assets',
     actions: {
       view: 'assets.view',
@@ -326,52 +291,55 @@ const MODULES: ModuleEntry[] = [
       found: 'assets.mark_found',
     },
   },
+  { name: 'My assets', group: 'Assets', actions: { view: 'my-assets.view' } },
   { name: 'Asset issues', group: 'Assets', actions: { view: 'assets.issue.view', create: 'assets.issue.create', update: 'assets.issue.update', resolve: 'assets.issue.resolve' } },
   { name: 'Asset repairs', group: 'Assets', actions: { view: 'assets.repair.view', create: 'assets.repair.create', update: 'assets.repair.update', complete: 'assets.repair.complete' } },
   { name: 'Repair shops', group: 'Assets', actions: { view: 'assets.repair.view', create: 'assets.create', update: 'assets.update', delete: 'assets.delete' } },
   { name: 'Asset maintenance', group: 'Assets', actions: { view: 'assets.maintenance.view', create: 'assets.maintenance.create', update: 'assets.maintenance.update' } },
-  { name: 'Asset reports', group: 'Assets', actions: { view: 'assets.reports.view', export: 'assets.reports.export' } },
-  { name: 'My assets', group: 'Assets', actions: { view: 'my-assets.view' } },
+
+  // ── Website ──
+  { name: 'Programs (website page)', group: 'Website', actions: { view: 'programs.view', create: 'programs.create', update: 'programs.update', delete: 'programs.delete' } },
+
+  // ── Communication ──
   { name: 'Contact messages', group: 'Communication', actions: { view: 'contact-messages.view' } },
   { name: 'Notifications', group: 'Communication', actions: { view: 'notifications.view' } },
-  { name: 'Examination', group: 'Academic', actions: { view: 'examination.view' } },
+  { name: 'Student feedback', group: 'Communication', actions: { view: 'student-feedback.view', reply: 'student-feedback.reply' } },
+
+  // ── Settings ──
+  // Update also covers Telegram groups.
+  { name: 'Settings, School documents, Telegram groups', group: 'Settings', actions: { view: 'tenant-settings.view', update: 'tenant-settings.update' } },
+  { name: 'Users', group: 'Settings', actions: { view: 'users.view', create: 'users.create', update: 'users.update', delete: 'users.delete' } },
+  { name: 'Roles', group: 'Settings', actions: { view: 'roles.view', create: 'roles.create', update: 'roles.update', delete: 'roles.delete', assign: 'roles.assign' } },
+  { name: 'Audit logs', group: 'Settings', actions: { view: 'audit-logs.view', delete: 'audit-logs.delete' } },
+  {
+    name: 'Lookup categories, Languages, Translations',
+    group: 'Settings',
+    actions: {
+      view: 'base-data.view',
+      create: 'base-data.create',
+      update: 'base-data.update',
+      delete: 'base-data.delete',
+      translations: 'base-data.manage-translations',
+      languages: 'base-data.manage-languages',
+    },
+  },
+  { name: 'Backup (own school database)', group: 'Settings', actions: { view: 'database-backups.download' } },
+
+  // ── E-Approvals ──
   { name: 'Forms', group: 'E-Approvals', actions: { view: 'forms.view' } },
   { name: 'My requests', group: 'E-Approvals', actions: { view: 'my-requests.view' } },
-  { name: 'Approvals', group: 'E-Approvals', actions: { view: 'approval-requests.view', approve: 'approval-requests.approve', reject: 'approval-requests.reject' } },
+  // The Approvals queue shows each kind of request its permission allows.
+  { name: 'Form requests', group: 'E-Approvals', parent: 'Approvals', actions: { view: 'approval-requests.view', approve: 'approval-requests.approve', reject: 'approval-requests.reject' } },
+  { name: 'Make-up class requests', group: 'E-Approvals', parent: 'Approvals', actions: { view: 'make-up-class-requests.view', approve: 'make-up-class-requests.approve', reject: 'make-up-class-requests.reject' } },
+  { name: 'Class change requests', group: 'E-Approvals', parent: 'Approvals', actions: { view: 'class-change-requests.view', approve: 'class-change-requests.approve', reject: 'class-change-requests.reject' } },
   { name: 'Form categories', group: 'E-Approvals', actions: { manage: 'form-categories.manage' } },
   { name: 'Form templates', group: 'E-Approvals', actions: { manage: 'form-templates.manage' } },
-  { name: 'Approval groups', group: 'Approval Flow', actions: { manage: 'approval-groups.manage' } },
-  { name: 'Student feedback', group: 'Communication', actions: { view: 'student-feedback.view', reply: 'student-feedback.reply' } },
-  { name: 'Exam applications', group: 'Academic', actions: { view: 'exam-applications.view', create: 'exam-applications.create', update: 'exam-applications.update', delete: 'exam-applications.delete', approve: 'exam-applications.approve', reject: 'exam-applications.reject' } },
-  // The Examination tab bar has four tabs (Exams, Approvals, Grades,
-  // Make-up Exam) — this row and the next two make each one's own
-  // requirement visible here, even though Make-up Exam deliberately reuses
-  // "Exam applications"' own view permission rather than getting a
-  // dedicated one (see ExaminationTabs.vue). Exam Scores previously had no
-  // row here at all — the Grades tab's permission existed on the backend
-  // but a school admin had no way to grant or revoke it from this screen.
-  { name: 'Make-up exam', group: 'Academic', actions: { view: 'exam-applications.view' } },
-  {
-    name: 'Exam scores',
-    group: 'Academic',
-    actions: { view: 'exam-scores.view', update: 'exam-scores.update', manageAll: 'exam-scores.manage-all' },
-  },
-  { name: 'System', group: 'Settings', actions: { view: 'audit-logs.view', delete: 'audit-logs.delete' } },
-  { name: 'Terms / semesters', group: 'Academic', actions: { view: 'academic-terms.view', manage: 'academic-terms.manage' } },
-  { name: 'Grade levels', group: 'Academic', actions: { view: 'grade-levels.view', manage: 'grade-levels.manage' } },
-  { name: 'Curriculum (subjects, hours, lessons per grade)', group: 'Academic', actions: { view: 'curriculum.view', manage: 'curriculum.manage' } },
-  { name: 'School calendar', group: 'Academic', actions: { view: 'school-calendar.view', manage: 'school-calendar.manage' } },
-  { name: 'Promotion rules', group: 'Academic', actions: { view: 'promotion-rules.view', manage: 'promotion-rules.manage' } },
-  { name: 'Student promotions (pass to the next grade)', group: 'Academic', actions: { view: 'student-promotions.view', run: 'student-promotions.run' } },
-  { name: 'Assessment (components, weights, bands, competency levels)', group: 'Academic', actions: { view: 'assessment.view', manage: 'assessment.manage' } },
-  { name: 'Exam schedule', group: 'Academic', actions: { view: 'exam-schedules.view', manage: 'exam-schedules.manage' } },
-  // view/enter = own classes and subjects; Manage all = every class.
-  { name: 'Gradebook (scores and results)', group: 'Academic', actions: { view: 'gradebook.view', enter: 'gradebook.enter', manageAll: 'gradebook.manage-all', approve: 'gradebook.approve' } },
-  // Create = write lesson plans and the teaching log; Approve = review them.
-  { name: 'Lesson plans and teaching log', group: 'Academic', actions: { view: 'lesson-plans.view', create: 'lesson-plans.write', approve: 'lesson-plans.review' } },
-  { name: 'Timetable', group: 'Academic', actions: { view: 'timetable.view', manage: 'timetable.manage', request: 'timetable.request' } },
-  { name: 'Companies', group: 'Billing', actions: { view: 'companies.view', create: 'companies.create', update: 'companies.update', delete: 'companies.delete' } },
-  { name: 'Borrowings (loans, lenders, repayments, reports)', group: 'Accounting', actions: { view: 'borrowings.view', manage: 'borrowings.manage' } },
+
+  // ── Approval Flow ──
+  { name: 'Approval groups, Flow setting', group: 'Approval Flow', actions: { manage: 'approval-groups.manage' } },
+
+  // ── Other ──
+  { name: 'Help & Support (help articles, FAQ, NewTech contacts, support tickets)', group: 'Other', actions: { view: 'help-support.view' } },
 ]
 
 const COLUMNS: Action[] = [
@@ -415,38 +383,32 @@ function toggle(slug: string, checked: boolean) {
 }
 
 /**
- * One tree node per sidebar group, in the same order as adminNav.ts,
- * modules alphabetical within each — a long module list is easy to scan
- * rather than scattered in catalog-declaration order. A group with no
- * modules in it (shouldn't happen, but cheap to guard) is dropped rather
- * than shown as an empty, uncollapsible header.
+ * One tree node per sidebar group, in the same order as adminNav.ts, and
+ * menus/tabs in MODULES' own (sidebar) order. A group with no modules in it
+ * (shouldn't happen, but cheap to guard) is dropped rather than shown as an
+ * empty, uncollapsible header.
  */
 const groupedModules = computed(() =>
   GROUPS.map((group) => {
     const modulesInGroup = MODULES.filter((module) => module.group === group)
 
-    const parents = new Map<string, ModuleEntry[]>()
-    const standalone: ModuleEntry[] = []
+    // Sidebar order (MODULES' own order): a menu with tabs becomes one parent
+    // node, placed where its first tab row is declared.
+    const children: GroupChild[] = []
+    const parents = new Map<string, Extract<GroupChild, { kind: 'parent' }>>()
     for (const module of modulesInGroup) {
-      if (module.parent) {
-        if (!parents.has(module.parent)) parents.set(module.parent, [])
-        parents.get(module.parent)!.push(module)
-      } else {
-        standalone.push(module)
+      if (!module.parent) {
+        children.push({ kind: 'module', key: module.name, module })
+        continue
       }
+      let node = parents.get(module.parent)
+      if (!node) {
+        node = { kind: 'parent', key: `${group}::${module.parent}`, name: module.parent, modules: [] }
+        parents.set(module.parent, node)
+        children.push(node)
+      }
+      node.modules.push(module)
     }
-
-    const children: GroupChild[] = [
-      ...standalone.map((module): GroupChild => ({ kind: 'module', key: module.name, module })),
-      ...Array.from(parents.entries()).map(
-        ([name, modules]): GroupChild => ({
-          kind: 'parent',
-          key: `${group}::${name}`,
-          name,
-          modules: [...modules].sort((a, b) => a.name.localeCompare(b.name)),
-        }),
-      ),
-    ].sort((a, b) => (a.kind === 'module' ? a.module.name : a.name).localeCompare(b.kind === 'module' ? b.module.name : b.name))
 
     return { name: group, modules: modulesInGroup, children }
   }).filter((group) => group.children.length > 0),
