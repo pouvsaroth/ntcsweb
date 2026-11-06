@@ -183,6 +183,7 @@ const MODULES: ModuleEntry[] = [
   // matrix lists every HRM sidebar item, not because it's a distinct
   // permission.
   { name: 'Staff status history', group: 'Staff', actions: { view: 'staff.view' } },
+  { name: 'Own staff profile only (see and edit just their own)', group: 'Staff', actions: { update: 'staff.update-own' } },
   // Also its own sidebar entry (Staff/HRM > "Request Leave") reusing the
   // same self-service slug as "My requests" under E-Approvals below —
   // toggling either row flips the same checkbox.

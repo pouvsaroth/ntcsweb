@@ -13,6 +13,7 @@ use App\Http\Responses\ApiResponse;
 use App\Models\Position;
 use App\Models\Staff;
 use App\Models\StaffStatusHistory;
+use App\Policies\StaffPolicy;
 use App\Services\Academic\StaffIdGenerator;
 use App\Services\Auth\UserProvisioningService;
 use App\Support\Audit\AuditAction;
@@ -52,7 +53,12 @@ final class StaffController extends Controller
     {
         $this->authorize('viewAny', Staff::class);
 
-        $staff = ApiQuery::for(Staff::query()->with(self::RELATIONS), $request)
+        $query = Staff::query()->with(self::RELATIONS);
+        if (StaffPolicy::ownProfileOnly($request->user())) {
+            $query->where('user_id', $request->user()->id);
+        }
+
+        $staff = ApiQuery::for($query, $request)
             ->searchable('first_name', 'last_name', 'employee_code', 'email')
             ->filterable(['status', 'position_id', 'branch_id', 'department_id', 'team_id', 'reports_to_staff_id'])
             ->sortable(['first_name', 'last_name', 'employee_code', 'hire_date', 'created_at'], default: '-created_at')

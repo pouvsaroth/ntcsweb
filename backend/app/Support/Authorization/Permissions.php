@@ -423,6 +423,9 @@ final class Permissions
 
     public const STAFF_CHANGE_STATUS = 'staff.change-status';
 
+    /** Own profile only: HRM > Staff shows just their own record, editable except work fields — see StaffPolicy. */
+    public const STAFF_UPDATE_OWN = 'staff.update-own';
+
     // Products — the sellable catalog every invoice item bills against.
     public const PRODUCTS_VIEW = 'products.view';
 
@@ -1054,6 +1057,7 @@ final class Permissions
                 self::STAFF_UPDATE => 'Update staff',
                 self::STAFF_DELETE => 'Delete staff',
                 self::STAFF_CHANGE_STATUS => 'Change a staff member\'s status (probation, on leave, suspended, ...)',
+                self::STAFF_UPDATE_OWN => 'See and update only their own staff profile (work fields stay locked)',
             ],
             'Products' => [
                 self::PRODUCTS_VIEW => 'View products',
@@ -1506,6 +1510,8 @@ final class Permissions
                 self::POSITIONS_VIEW,
                 self::ORGANIZATION_VIEW,
                 self::STAFF_VIEW,
+                // HRM > Staff shows only their own record, which they can edit.
+                self::STAFF_UPDATE_OWN,
                 self::ATTENDANCE_VIEW,
                 self::ATTENDANCE_CREATE,
                 self::ATTENDANCE_UPDATE,

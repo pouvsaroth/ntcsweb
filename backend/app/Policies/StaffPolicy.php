@@ -12,16 +12,35 @@ use App\Support\Authorization\Permissions;
  * Staff uses BelongsToTenant, so its global scope already makes a
  * cross-tenant Staff row unreachable before a policy method runs — these only
  * check the permission itself.
+ *
+ * staff.update-own (without staff.update) narrows HRM > Staff to the user's
+ * own record: they see only it and can edit it, every tab included, except
+ * the work fields in UpdateStaffRequest::OWN_PROFILE_LOCKED.
  */
 class StaffPolicy
 {
+    /** True when HRM > Staff is limited to the user's own record. */
+    public static function ownProfileOnly(User $user): bool
+    {
+        return $user->hasPermission(Permissions::STAFF_UPDATE_OWN) && ! $user->hasPermission(Permissions::STAFF_UPDATE);
+    }
+
+    private static function isOwn(User $user, Staff $staff): bool
+    {
+        return $staff->user_id !== null && $staff->user_id === $user->id;
+    }
+
     public function viewAny(User $user): bool
     {
-        return $user->hasPermission(Permissions::STAFF_VIEW);
+        return $user->hasPermission(Permissions::STAFF_VIEW) || self::ownProfileOnly($user);
     }
 
     public function view(User $user, Staff $staff): bool
     {
+        if (self::ownProfileOnly($user)) {
+            return self::isOwn($user, $staff);
+        }
+
         return $user->hasPermission(Permissions::STAFF_VIEW);
     }
 
@@ -32,6 +51,10 @@ class StaffPolicy
 
     public function update(User $user, Staff $staff): bool
     {
+        if (self::ownProfileOnly($user)) {
+            return self::isOwn($user, $staff);
+        }
+
         return $user->hasPermission(Permissions::STAFF_UPDATE);
     }
 

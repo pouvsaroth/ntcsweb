@@ -6,6 +6,7 @@ namespace App\Http\Requests\Api\V1\Admin;
 
 use App\Http\Requests\Api\V1\Admin\Concerns\ValidatesStaffOrganization;
 use App\Models\Staff;
+use App\Policies\StaffPolicy;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -20,6 +21,27 @@ use Illuminate\Validation\Validator;
 class UpdateStaffRequest extends FormRequest
 {
     use ValidatesStaffOrganization;
+
+    /** Work fields a staff member editing their own profile can't change (Position also sets their login role). */
+    public const OWN_PROFILE_LOCKED = [
+        'position_id', 'hire_date', 'status',
+        'branch_id', 'department_id', 'team_id', 'job_grade_id', 'job_level_id', 'reports_to_staff_id',
+    ];
+
+    /** Own-profile edits: the locked work fields are dropped, so they keep their saved values. */
+    protected function prepareForValidation(): void
+    {
+        $user = $this->user();
+        if ($user !== null && StaffPolicy::ownProfileOnly($user)) {
+            foreach (self::OWN_PROFILE_LOCKED as $field) {
+                $this->request->remove($field);
+                $this->query->remove($field);
+                if ($this->isJson()) {
+                    $this->json()->remove($field);
+                }
+            }
+        }
+    }
 
     public function authorize(): bool
     {

@@ -23,7 +23,8 @@ const props = defineProps<{ staffId: number | null }>()
 const { t } = useI18n()
 const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
-const canManage = computed(() => auth.can('staff.update'))
+// staff.update-own only ever reaches their own record (StaffPolicy).
+const canManage = computed(() => auth.can('staff.update') || auth.can('staff.update-own'))
 
 const rows = ref<StaffEducation[]>([])
 const loading = ref(false)

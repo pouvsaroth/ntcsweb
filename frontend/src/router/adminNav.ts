@@ -190,7 +190,7 @@ export const adminNav: AdminNavGroup[] = [
     labelKey: 'adminNav.groups.staff',
     icon: 'briefcase',
     items: [
-      { labelKey: 'adminNav.items.staffList', icon: 'user', to: '/admin/staff', permission: 'staff.view' },
+      { labelKey: 'adminNav.items.staffList', icon: 'user', to: '/admin/staff', permission: ['staff.view', 'staff.update-own'] },
       // Staff in a teacher position: qualifications, assignments, homeroom, load, ... (teacherTabs.ts).
       { labelKey: 'adminNav.items.teachers', icon: 'academic', to: '/admin/teachers', permission: teacherTabs.map((tab) => tab.permission), module: 'hrm' },
       { labelKey: 'adminNav.items.staffStatusHistory', icon: 'clock', to: '/admin/staff-status-history', permission: 'staff.view' },

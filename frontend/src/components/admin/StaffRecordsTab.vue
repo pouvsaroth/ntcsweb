@@ -26,7 +26,8 @@ const props = defineProps<{ staffId: number | null; config: StaffRecordKind }>()
 const { t } = useI18n()
 const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
-const canManage = computed(() => auth.can('staff.update'))
+// staff.update-own only ever reaches their own record (StaffPolicy).
+const canManage = computed(() => auth.can('staff.update') || auth.can('staff.update-own'))
 
 const k = (key: string, params?: Record<string, unknown>) => t(`admin.staff.records.${props.config.i18n}.${key}`, params ?? {})
 const label = (f: StaffRecordField) => k(`fields.${f.key}`)

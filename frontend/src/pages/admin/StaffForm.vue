@@ -18,6 +18,7 @@ import { offerLettersService, type OfferLetter } from '@/services/offerLetters'
 import { organizationUnitsService, type OrganizationUnit } from '@/services/organizationUnits'
 import { positionsService, type Position } from '@/services/positions'
 import { staffService, type Staff, type StaffInput } from '@/services/staff'
+import { useAuthStore } from '@/stores/auth'
 import { ApiRequestError } from '@/types/api'
 import { optionalOptions } from '@/utils/organizationOptions'
 import { EMERGENCY_CONTACTS, FAMILY_MEMBERS, JOB_EXPERIENCES, LANGUAGES, OTHER_SKILLS, type StaffRecordKind } from '@/utils/staffRecordKinds'
@@ -28,6 +29,9 @@ const router = useRouter()
 
 const staffId = computed(() => (route.params.id ? Number(route.params.id) : null))
 const isEditing = computed(() => staffId.value !== null)
+const auth = useAuthStore()
+/** Editing their own profile (staff.update-own): work fields are read-only; the server ignores them too. */
+const ownOnly = computed(() => auth.can('staff.update-own') && !auth.can('staff.update'))
 
 // "Current Info" holds the staff form itself; Education (StaffEducationTab)
 // the list tabs (StaffRecordsTab, see recordTabs) and Documents
@@ -132,6 +136,8 @@ const teams = ref<OrganizationUnit[]>([])
 const jobGrades = ref<OrganizationUnit[]>([])
 const jobLevels = ref<OrganizationUnit[]>([])
 const colleagues = ref<Staff[]>([])
+// Own-profile users only list themselves, so keep their saved manager as an option to show its name.
+const currentManager = ref<Staff['reports_to']>(null)
 
 const noneLabel = computed(() => t('admin.organization.none'))
 const branchOptions = computed(() => optionalOptions(branches.value, noneLabel.value))
@@ -147,7 +153,9 @@ const jobGradeOptions = computed(() => optionalOptions(jobGrades.value, noneLabe
 const jobLevelOptions = computed(() => optionalOptions(jobLevels.value, noneLabel.value))
 const managerOptions = computed(() =>
   optionalOptions(
-    colleagues.value.filter((staff) => staff.id !== staffId.value).map((staff) => ({ id: staff.id, name: `${staff.full_name} (${staff.employee_code})` })),
+    [...colleagues.value, ...(currentManager.value && !colleagues.value.some((staff) => staff.id === currentManager.value?.id) ? [currentManager.value] : [])]
+      .filter((staff) => staff.id !== staffId.value)
+      .map((staff) => ({ id: staff.id, name: `${staff.full_name} (${staff.employee_code})` })),
     noneLabel.value,
   ),
 )
@@ -369,6 +377,7 @@ async function load() {
     form.job_grade_id = staff.job_grade_id
     form.job_level_id = staff.job_level_id
     form.reports_to_staff_id = staff.reports_to_staff_id
+    currentManager.value = staff.reports_to ?? null
     photoPreview.value = staff.photo_url
     nationalIdPhotoPreview.value = staff.national_id_photo_url
     signaturePreview.value = staff.signature_url
@@ -505,10 +514,11 @@ onMounted(load)
                 :placeholder="t('admin.staff.selectPosition')"
                 :label="t('admin.staff.position')"
                 :error="errors.position_id?.[0]"
+                :disabled="ownOnly"
                 @update:model-value="(value: string) => (form.position_id = value ? Number(value) : null)"
               />
-              <BaseInput v-model="form.hire_date" type="date" :label="t('admin.staff.hireDate')" :error="errors.hire_date?.[0]" />
-              <LookupSelect v-model="form.status" category="STAFF_STATUS" :label="t('admin.staff.status')" />
+              <BaseInput v-model="form.hire_date" type="date" :disabled="ownOnly" :label="t('admin.staff.hireDate')" :error="errors.hire_date?.[0]" />
+              <LookupSelect v-model="form.status" category="STAFF_STATUS" :disabled="ownOnly" :label="t('admin.staff.status')" />
             </div>
           </section>
 
@@ -521,6 +531,7 @@ onMounted(load)
                 :options="branchOptions"
                 :label="t('admin.organization.tabs.branch')"
                 :error="errors.branch_id?.[0]"
+                :disabled="ownOnly"
                 @update:model-value="(value: string) => (form.branch_id = toId(value))"
               />
               <BaseSelect
@@ -528,6 +539,7 @@ onMounted(load)
                 :options="departmentOptions"
                 :label="t('admin.organization.tabs.department')"
                 :error="errors.department_id?.[0]"
+                :disabled="ownOnly"
                 @update:model-value="(value: string) => (form.department_id = toId(value))"
               />
               <BaseSelect
@@ -535,6 +547,7 @@ onMounted(load)
                 :options="teamOptions"
                 :label="t('admin.organization.tabs.team')"
                 :error="errors.team_id?.[0]"
+                :disabled="ownOnly"
                 @update:model-value="(value: string) => (form.team_id = toId(value))"
               />
               <BaseSelect
@@ -542,6 +555,7 @@ onMounted(load)
                 :options="managerOptions"
                 :label="t('admin.organization.reportingManager')"
                 :error="errors.reports_to_staff_id?.[0]"
+                :disabled="ownOnly"
                 @update:model-value="(value: string) => (form.reports_to_staff_id = toId(value))"
               />
               <BaseSelect
@@ -549,6 +563,7 @@ onMounted(load)
                 :options="jobGradeOptions"
                 :label="t('admin.organization.tabs.jobGrade')"
                 :error="errors.job_grade_id?.[0]"
+                :disabled="ownOnly"
                 @update:model-value="(value: string) => (form.job_grade_id = toId(value))"
               />
               <BaseSelect
@@ -556,6 +571,7 @@ onMounted(load)
                 :options="jobLevelOptions"
                 :label="t('admin.organization.tabs.jobLevel')"
                 :error="errors.job_level_id?.[0]"
+                :disabled="ownOnly"
                 @update:model-value="(value: string) => (form.job_level_id = toId(value))"
               />
             </div>

@@ -14,10 +14,14 @@ import StaffStatusModal from '@/components/admin/StaffStatusModal.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { lookupsService } from '@/services/lookups'
 import { staffService, type Staff } from '@/services/staff'
+import { useAuthStore } from '@/stores/auth'
 import { useConfirmDialogStore } from '@/stores/confirmDialog'
 
 const { t, locale } = useI18n()
 const confirmDialog = useConfirmDialogStore()
+const auth = useAuthStore()
+/** Own profile only (staff.update-own): the list holds just their record — no add, status or delete. */
+const ownOnly = computed(() => auth.can('staff.update-own') && !auth.can('staff.update'))
 
 const { items, meta, loading, error, setPage, setSearch, fetch } = usePaginatedResource<Staff>((query) =>
   staffService.list(query),
@@ -96,7 +100,7 @@ onMounted(() => {
         class="block w-full max-w-sm rounded-lg border border-neutral-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
         @input="setSearch(($event.target as HTMLInputElement).value)"
       />
-      <BaseButton to="/admin/staff/new">{{ t('admin.staff.addStaff') }}</BaseButton>
+      <BaseButton v-if="!ownOnly" to="/admin/staff/new">{{ t('admin.staff.addStaff') }}</BaseButton>
     </div>
 
     <BaseAlert v-if="error" variant="danger" class="mb-4">{{ error }}</BaseAlert>
@@ -135,7 +139,7 @@ onMounted(() => {
       <template #cell-actions="{ row }">
         <div class="flex justify-end gap-1">
           <EditIconButton :to="`/admin/staff/${row.id}/edit`" />
-          <ActionIconButton :title="t('admin.staff.changeStatus')" @click="openStatusModal(row)">
+          <ActionIconButton v-if="!ownOnly" :title="t('admin.staff.changeStatus')" @click="openStatusModal(row)">
             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path
                 stroke-linecap="round"
@@ -144,7 +148,7 @@ onMounted(() => {
               />
             </svg>
           </ActionIconButton>
-          <ActionIconButton variant="danger" :title="t('admin.staff.delete')" @click="remove(row)">
+          <ActionIconButton v-if="!ownOnly" variant="danger" :title="t('admin.staff.delete')" @click="remove(row)">
             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path
                 stroke-linecap="round"
