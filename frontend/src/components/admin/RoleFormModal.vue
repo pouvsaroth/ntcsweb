@@ -50,6 +50,9 @@ type Action =
   | 'translations'
   | 'languages'
   | 'manageAll'
+  | 'request'
+  | 'enter'
+  | 'run'
 
 /**
  * The same section headings as AdminSidebar.vue's own adminNav.ts, so a
@@ -133,6 +136,8 @@ const MODULES: ModuleEntry[] = [
   { name: 'Attendance stat cards', group: 'Dashboard', actions: { view: 'dashboard.attendance.view' } },
   { name: 'Financial & enrollment stat cards', group: 'Dashboard', actions: { view: 'dashboard.finance.view' } },
   { name: 'Monthly payment alerts', group: 'Dashboard', actions: { view: 'dashboard.payment-alerts.view' } },
+  { name: 'Registration pending card', group: 'Dashboard', actions: { view: 'dashboard.cards.registration-pending' } },
+  { name: 'Borrowings card (total owed)', group: 'Dashboard', actions: { view: 'dashboard.cards.borrowings' } },
   { name: 'School settings', group: 'Settings', actions: { view: 'tenant-settings.view', update: 'tenant-settings.update' } },
   { name: 'Users', group: 'Settings', actions: { view: 'users.view', create: 'users.create', update: 'users.update', delete: 'users.delete' } },
   {
@@ -184,6 +189,7 @@ const MODULES: ModuleEntry[] = [
   // permission.
   { name: 'Staff status history', group: 'Staff', actions: { view: 'staff.view' } },
   { name: 'Own staff profile only (see and edit just their own)', group: 'Staff', actions: { update: 'staff.update-own' } },
+  { name: 'Teachers (qualifications, assignments, load, availability, substitutes, documents)', group: 'Staff', actions: { view: 'teachers.view', manage: 'teachers.manage' } },
   // Also its own sidebar entry (Staff/HRM > "Request Leave") reusing the
   // same self-service slug as "My requests" under E-Approvals below —
   // toggling either row flips the same checkbox.
@@ -351,12 +357,27 @@ const MODULES: ModuleEntry[] = [
     actions: { view: 'exam-scores.view', update: 'exam-scores.update', manageAll: 'exam-scores.manage-all' },
   },
   { name: 'System', group: 'Settings', actions: { view: 'audit-logs.view', delete: 'audit-logs.delete' } },
+  { name: 'Terms / semesters', group: 'Academic', actions: { view: 'academic-terms.view', manage: 'academic-terms.manage' } },
+  { name: 'Grade levels', group: 'Academic', actions: { view: 'grade-levels.view', manage: 'grade-levels.manage' } },
+  { name: 'Curriculum (subjects, hours, lessons per grade)', group: 'Academic', actions: { view: 'curriculum.view', manage: 'curriculum.manage' } },
+  { name: 'School calendar', group: 'Academic', actions: { view: 'school-calendar.view', manage: 'school-calendar.manage' } },
+  { name: 'Promotion rules', group: 'Academic', actions: { view: 'promotion-rules.view', manage: 'promotion-rules.manage' } },
+  { name: 'Student promotions (pass to the next grade)', group: 'Academic', actions: { view: 'student-promotions.view', run: 'student-promotions.run' } },
+  { name: 'Assessment (components, weights, bands, competency levels)', group: 'Academic', actions: { view: 'assessment.view', manage: 'assessment.manage' } },
+  { name: 'Exam schedule', group: 'Academic', actions: { view: 'exam-schedules.view', manage: 'exam-schedules.manage' } },
+  // view/enter = own classes and subjects; Manage all = every class.
+  { name: 'Gradebook (scores and results)', group: 'Academic', actions: { view: 'gradebook.view', enter: 'gradebook.enter', manageAll: 'gradebook.manage-all', approve: 'gradebook.approve' } },
+  // Create = write lesson plans and the teaching log; Approve = review them.
+  { name: 'Lesson plans and teaching log', group: 'Academic', actions: { view: 'lesson-plans.view', create: 'lesson-plans.write', approve: 'lesson-plans.review' } },
+  { name: 'Timetable', group: 'Academic', actions: { view: 'timetable.view', manage: 'timetable.manage', request: 'timetable.request' } },
+  { name: 'Companies', group: 'Billing', actions: { view: 'companies.view', create: 'companies.create', update: 'companies.update', delete: 'companies.delete' } },
+  { name: 'Borrowings (loans, lenders, repayments, reports)', group: 'Accounting', actions: { view: 'borrowings.view', manage: 'borrowings.manage' } },
 ]
 
 const COLUMNS: Action[] = [
   'view', 'create', 'update', 'delete', 'approve', 'reject', 'pay', 'cancel', 'deactivate', 'export', 'send', 'assign',
   'return', 'transfer', 'table', 'note', 'responsibleStaff', 'retire', 'dispose', 'lost', 'found', 'resolve', 'complete',
-  'status', 'manage', 'reply', 'close', 'translations', 'languages', 'manageAll',
+  'status', 'manage', 'reply', 'close', 'translations', 'languages', 'manageAll', 'request', 'enter', 'run',
 ]
 
 const isEditing = computed(() => props.role != null)
@@ -456,8 +477,11 @@ const allSlugs = computed(() => Array.from(new Set(MODULES.flatMap((module) => O
 
 const allChecked = computed(() => allSlugs.value.length > 0 && allSlugs.value.every((slug) => isChecked(slug)))
 
+// Only the slugs listed here: a permission without a row (e.g. added later) is never dropped by Select all.
 function toggleAll(checked: boolean) {
-  form.permissions = checked ? [...allSlugs.value] : []
+  form.permissions = checked
+    ? Array.from(new Set([...form.permissions, ...allSlugs.value]))
+    : form.permissions.filter((p) => !allSlugs.value.includes(p))
 }
 
 function moduleSlugs(module: (typeof MODULES)[number]): string[] {
