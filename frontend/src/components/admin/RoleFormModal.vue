@@ -716,12 +716,32 @@ function resetForm() {
   form.permissions = props.role?.permissions ?? []
   errors.value = {}
   generalError.value = null
+  copiedFrom.value = null
+}
+
+// Copy from another role: replaces every tick here (hidden tabs included)
+// with that role's, nothing kept. Saved only with Save.
+const otherRoles = ref<Role[]>([])
+const copiedFrom = ref<string | null>(null)
+
+async function loadOtherRoles() {
+  otherRoles.value = (await rolesService.listAll().catch(() => [] as Role[])).filter((r) => r.id !== props.role?.id)
+}
+
+function copyFrom(id: string) {
+  const source = otherRoles.value.find((r) => String(r.id) === id)
+  if (!source) return
+  form.permissions = [...(source.permissions ?? [])]
+  copiedFrom.value = source.name
 }
 
 watch(
   () => [props.modelValue, props.role] as const,
   ([open]) => {
-    if (open) resetForm()
+    if (open) {
+      resetForm()
+      void loadOtherRoles()
+    }
   },
   { immediate: true },
 )
@@ -803,12 +823,25 @@ async function submit() {
             </button>
           </div>
         </div>
-        <input
-          v-model="search"
-          type="search"
-          :placeholder="t('admin.roles.searchMenus')"
-          class="mb-2 block w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200 sm:max-w-sm"
-        />
+        <div class="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center">
+          <input
+            v-model="search"
+            type="search"
+            :placeholder="t('admin.roles.searchMenus')"
+            class="block w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200 sm:max-w-sm"
+          />
+          <select
+            v-if="otherRoles.length > 0"
+            :value="''"
+            :title="t('admin.roles.copyFromHint')"
+            class="block w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200 sm:max-w-xs"
+            @change="copyFrom(($event.target as HTMLSelectElement).value); ($event.target as HTMLSelectElement).value = ''"
+          >
+            <option value="" disabled>{{ t('admin.roles.copyFrom') }}</option>
+            <option v-for="r in otherRoles" :key="r.id" :value="String(r.id)">{{ r.name }}</option>
+          </select>
+        </div>
+        <p v-if="copiedFrom" class="mb-2 rounded-lg bg-primary-50 px-3 py-2 text-sm text-primary-900">{{ t('admin.roles.copiedFrom', { name: copiedFrom }) }}</p>
         <!-- A tree, not a matrix: each row shows only the actions it has, next to its name. -->
         <div class="max-h-[60vh] overflow-auto rounded-lg border border-neutral-200 text-sm">
           <template v-for="group in visibleGroups" :key="group.name">
