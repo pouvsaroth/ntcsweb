@@ -3677,6 +3677,7 @@ const ja: MessageSchema = {
       emptyMessage: 'No exchange rates yet. Add one so mixed-currency totals can be converted.',
     },
     staff: {
+      filterAllStatuses: 'すべてのステータス',
       title: 'スタッフ',
       pageSubtitle: '教員以外の職員 — 会計、人事、司書、IT担当者などの役職。',
       addStaff: 'スタッフを追加',

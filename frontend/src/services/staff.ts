@@ -133,7 +133,7 @@ function toFormData(input: StaffInput, methodOverride?: 'PUT'): FormData {
 export const staffService = {
   async list(query: PaginatedQuery): Promise<PaginatedResult<Staff>> {
     const result = await apiGetWithMeta<Staff[]>('/staff', {
-      params: { page: query.page, per_page: query.per_page, search: query.search, sort: query.sort },
+      params: { page: query.page, per_page: query.per_page, search: query.search, sort: query.sort, filter: query.filter },
     })
 
     return { data: result.data, pagination: result.meta?.pagination as LengthAwarePaginationMeta }

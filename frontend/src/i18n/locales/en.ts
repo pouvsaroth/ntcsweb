@@ -3681,6 +3681,7 @@ const en = {
       emptyMessage: 'No exchange rates yet. Add one so mixed-currency totals can be converted.',
     },
     staff: {
+      filterAllStatuses: 'All statuses',
       title: 'Staff',
       pageSubtitle: 'Non-teaching personnel — Accountant, HR, Librarian, IT Officer, and similar roles.',
       addStaff: 'Add Staff',

@@ -3676,6 +3676,7 @@ const zh: MessageSchema = {
       emptyMessage: 'No exchange rates yet. Add one so mixed-currency totals can be converted.',
     },
     staff: {
+      filterAllStatuses: '所有状态',
       title: '员工',
       pageSubtitle: '非教学人员——会计、人事、图书管理员、IT 专员等类似职位。',
       addStaff: '添加员工',

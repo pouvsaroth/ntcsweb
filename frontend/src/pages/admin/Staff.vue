@@ -7,6 +7,7 @@ import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BasePagination from '@/components/ui/BasePagination.vue'
+import BaseSelect from '@/components/ui/BaseSelect.vue'
 import DataTable from '@/components/ui/DataTable.vue'
 import EditIconButton from '@/components/ui/EditIconButton.vue'
 import StaffSignatureModal from '@/components/admin/StaffSignatureModal.vue'
@@ -25,9 +26,17 @@ function canEditRow(row: Staff): boolean {
   return auth.can('staff.update') || (auth.can('staff.update-own') && row.user?.id === auth.user?.id)
 }
 
-const { items, meta, loading, error, setPage, setSearch, fetch } = usePaginatedResource<Staff>((query) =>
+const { items, meta, loading, error, setPage, setSearch, setFilter, fetch } = usePaginatedResource<Staff>((query) =>
   staffService.list(query),
 )
+
+// Opens on active staff; "All statuses" (empty) shows everyone.
+const selectedStatus = ref('active')
+function onStatusFilterChange(value: string) {
+  selectedStatus.value = value
+  setFilter('status', value || undefined)
+}
+const statusOptions = computed(() => Object.entries(statusLabels.value).map(([value, label]) => ({ value, label })))
 
 const columns = computed(() => [
   { key: 'full_name', label: t('admin.staff.columnName') },
@@ -88,20 +97,23 @@ async function remove(staff: Staff) {
 }
 
 onMounted(() => {
-  void fetch()
+  setFilter('status', selectedStatus.value)
   void loadStatusLabels()
 })
 </script>
 
 <template>
   <div>
-    <div class="mb-6 flex items-center justify-between">
-      <input
-        type="search"
-        :placeholder="t('common.searchPlaceholder')"
-        class="block w-full max-w-sm rounded-lg border border-neutral-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
-        @input="setSearch(($event.target as HTMLInputElement).value)"
-      />
+    <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex w-full flex-wrap items-center gap-3 sm:w-auto">
+        <input
+          type="search"
+          :placeholder="t('common.searchPlaceholder')"
+          class="block w-full rounded-lg sm:w-80 border border-neutral-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+          @input="setSearch(($event.target as HTMLInputElement).value)"
+        />
+        <BaseSelect :model-value="selectedStatus" :options="statusOptions" :placeholder="t('admin.staff.filterAllStatuses')" @update:model-value="onStatusFilterChange" />
+      </div>
       <BaseButton v-if="auth.can('staff.create')" to="/admin/staff/new">{{ t('admin.staff.addStaff') }}</BaseButton>
     </div>
 

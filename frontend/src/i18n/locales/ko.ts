@@ -3677,6 +3677,7 @@ const ko: MessageSchema = {
       emptyMessage: 'No exchange rates yet. Add one so mixed-currency totals can be converted.',
     },
     staff: {
+      filterAllStatuses: '모든 상태',
       title: '직원',
       pageSubtitle: '비교육직 인력 — 회계, 인사, 사서, IT 담당자 등과 유사한 직책.',
       addStaff: '직원 추가',
