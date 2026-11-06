@@ -93,8 +93,10 @@ export interface Borrowing {
   interest_type: InterestType
   interest_rate: string
   interest_period: InterestPeriod
-  term_months: number
-  first_payment_on: string
+  /** Empty on a flexible loan: no fixed plan, paid any date, any amount. */
+  term_months: number | null
+  first_payment_on: string | null
+  flexible: boolean
   last_payment_on: string | null
   purpose: string | null
   contract_name: string | null
@@ -109,6 +111,8 @@ export interface Borrowing {
   outstanding: number
   late_count: number
   next_payment: ScheduleRow | null
+  /** One month's interest on what is owed now (suggested on a flexible loan). */
+  month_interest: number
   schedule?: ScheduleRow[]
   repayments?: BorrowingRepayment[]
   created_at: string
@@ -125,8 +129,8 @@ export interface BorrowingInput {
   interest_type: InterestType
   interest_rate: number
   interest_period: InterestPeriod
-  term_months: number
-  first_payment_on: string
+  term_months: number | null
+  first_payment_on: string | null
   purpose: string | null
 }
 

@@ -184,4 +184,40 @@ class BorrowingRepaymentTest extends TestCase
             ->assertJsonPath('data.0.id', $late['id'])
             ->assertJsonPath('data.0.next_payment.late', true);
     }
+
+    public function test_a_loan_without_months_is_flexible_paid_any_date_any_amount_or_interest_only(): void
+    {
+        $loan = $this->borrow(['term_months' => null, 'first_payment_on' => null, 'interest_type' => 'reducing', 'interest_rate' => 2]);
+
+        $this->assertTrue($loan['flexible']);
+        $this->assertNull($loan['next_payment']);
+        $this->assertSame(0, $loan['late_count']);
+        $this->assertEquals(24, $loan['month_interest']);
+
+        // Interest only: the debt stays the same.
+        $paid = $this->postJson("/api/v1/borrowings/{$loan['id']}/repayments", ['paid_on' => now()->subDays(40)->toDateString(), 'interest' => 24, 'cash_account_id' => $this->cashAccount->id])
+            ->assertCreated()->json('data');
+        $this->assertEquals(1200, $paid['outstanding']);
+
+        // Any amount, any date; interest then runs on what is still owed.
+        $paid = $this->postJson("/api/v1/borrowings/{$loan['id']}/repayments", ['paid_on' => now()->subDays(3)->toDateString(), 'principal' => 450.5, 'cash_account_id' => $this->cashAccount->id])
+            ->assertCreated()->json('data');
+        $this->assertEquals(749.5, $paid['outstanding']);
+        $this->assertEquals(14.99, $paid['month_interest']);
+        $this->assertSame([], $paid['schedule']);
+
+        // Listed on the Repayments tab after the dated loans.
+        $dated = $this->borrow();
+        $this->getJson('/api/v1/borrowings/due')->assertOk()->assertJsonCount(2, 'data')
+            ->assertJsonPath('data.0.id', $dated['id'])
+            ->assertJsonPath('data.1.id', $loan['id']);
+    }
+
+    public function test_months_without_a_first_payment_start_a_month_after_receiving(): void
+    {
+        $loan = $this->borrow(['first_payment_on' => null, 'received_on' => '2026-11-15']);
+
+        $this->assertFalse($loan['flexible']);
+        $this->assertSame('2027-11-15', $loan['last_payment_on']);
+    }
 }

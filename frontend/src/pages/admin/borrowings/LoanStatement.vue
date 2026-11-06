@@ -71,7 +71,8 @@ onMounted(async () => {
       </div>
 
       <p class="mt-3 text-sm text-neutral-700">
-        {{ t('admin.borrowings.termsLine', { amount: money(loan.amount), date: formatDate(loan.received_on), interest: interestText, months: loan.term_months, first: formatDate(loan.first_payment_on) }) }}
+        <template v-if="loan.flexible">{{ t('admin.borrowings.termsLineFlexible', { amount: money(loan.amount), date: formatDate(loan.received_on), interest: interestText }) }}</template>
+        <template v-else>{{ t('admin.borrowings.termsLine', { amount: money(loan.amount), date: formatDate(loan.received_on), interest: interestText, months: loan.term_months, first: formatDate(loan.schedule?.[0]?.due_on ?? loan.first_payment_on) }) }}</template>
       </p>
       <p v-if="loan.purpose" class="text-sm text-neutral-500">{{ loan.purpose }}</p>
 
@@ -82,6 +83,7 @@ onMounted(async () => {
         <div><dt class="text-neutral-500">{{ t('admin.borrowings.outstanding') }}</dt><dd class="font-semibold text-primary-800">{{ money(loan.outstanding) }}</dd></div>
       </dl>
 
+      <template v-if="!loan.flexible">
       <h2 class="mb-2 mt-5 text-sm font-semibold text-neutral-800">{{ t('admin.borrowings.schedule') }}</h2>
       <div class="overflow-x-auto">
         <table class="w-full text-left text-sm">
@@ -121,6 +123,7 @@ onMounted(async () => {
           </tfoot>
         </table>
       </div>
+      </template>
 
       <h2 class="mb-2 mt-5 text-sm font-semibold text-neutral-800">{{ t('admin.borrowings.history') }}</h2>
       <p v-if="!loan.repayments || loan.repayments.length === 0" class="text-sm text-neutral-500">{{ t('admin.borrowings.noRepayments') }}</p>

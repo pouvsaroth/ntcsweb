@@ -13,6 +13,8 @@ use Illuminate\Support\Carbon;
  *  - flat: interest on the full amount every month, the amount split evenly;
  *  - reducing: interest on what is still owed, equal monthly payments.
  * KHR rounds to whole riel, USD to cents; the last month takes the rest.
+ * A loan without months to pay has no plan (flexible); without a first
+ * payment date, the plan starts a month after the money was received.
  */
 final class BorrowingSchedule
 {
@@ -21,6 +23,11 @@ final class BorrowingSchedule
      */
     public static function for(Borrowing $loan): array
     {
+        // No months to pay: a flexible loan, paid any time, so no plan.
+        if (! $loan->term_months) {
+            return [];
+        }
+
         return self::make(
             (float) $loan->amount,
             (string) $loan->currency,
@@ -28,7 +35,9 @@ final class BorrowingSchedule
             (float) $loan->interest_rate,
             (string) $loan->interest_period,
             (int) $loan->term_months,
-            Carbon::parse($loan->first_payment_on),
+            $loan->first_payment_on
+                ? Carbon::parse($loan->first_payment_on)
+                : Carbon::parse($loan->received_on)->addMonthNoOverflow(),
         );
     }
 
@@ -96,6 +105,21 @@ final class BorrowingSchedule
                 'due_principal' => $paid ? 0.0 : round(min($row['principal'], $cumulative - max($before, $paidPrincipal)), 2),
             ];
         }, $rows);
+    }
+
+    /**
+     * One month's interest on a loan as it stands: flat on the full amount,
+     * reducing on what is still owed. Suggested when paying a flexible loan.
+     */
+    public static function monthInterest(Borrowing $loan, float $outstanding): float
+    {
+        if ($loan->interest_type === 'none' || $outstanding <= 0) {
+            return 0.0;
+        }
+        $monthly = ($loan->interest_period === 'year' ? (float) $loan->interest_rate / 12 : (float) $loan->interest_rate) / 100;
+        $base = $loan->interest_type === 'flat' ? (float) $loan->amount : $outstanding;
+
+        return (float) round($base * $monthly, strtoupper((string) $loan->currency) === 'KHR' ? 0 : 2);
     }
 
     /**

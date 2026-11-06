@@ -171,7 +171,8 @@ final class BorrowingController extends Controller
 
     /**
      * Repayments tab: what is due in the next `days` (30) days and what is
-     * late — the next unpaid month of every active loan.
+     * late — the next unpaid month of every active loan — then the active
+     * flexible loans, which have no due date.
      */
     public function due(Request $request): JsonResponse
     {
@@ -180,8 +181,9 @@ final class BorrowingController extends Controller
         $until = now()->addDays(max(0, min(366, (int) $request->input('days', 30))))->toDateString();
         $rows = Borrowing::query()->where('status', 'active')->with(self::RELATIONS)->withSum('repayments', 'principal')->withSum('repayments', 'interest')->get()
             ->map(fn (Borrowing $loan) => (new BorrowingResource($loan))->resolve($request))
-            ->filter(fn (array $loan) => $loan['next_payment'] !== null && $loan['next_payment']['due_on'] <= $until)
-            ->sortBy(fn (array $loan) => $loan['next_payment']['due_on'])
+            ->filter(fn (array $loan) => $loan['flexible'] || ($loan['next_payment'] !== null && $loan['next_payment']['due_on'] <= $until))
+            // Flexible loans (no fixed plan, paid any time) come after the dated ones.
+            ->sortBy(fn (array $loan) => $loan['next_payment']['due_on'] ?? '9999-12-31')
             ->values();
 
         return ApiResponse::success($rows);
@@ -392,8 +394,8 @@ final class BorrowingController extends Controller
             'interest_type' => [...$sometimes, 'required', Rule::in(Borrowing::INTEREST_TYPES)],
             'interest_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'interest_period' => ['nullable', Rule::in(Borrowing::INTEREST_PERIODS)],
-            'term_months' => [...$sometimes, 'required', 'integer', 'min:1', 'max:600'],
-            'first_payment_on' => [...$sometimes, 'required', 'date'],
+            'term_months' => ['nullable', 'integer', 'min:1', 'max:600'],
+            'first_payment_on' => ['nullable', 'date'],
             'purpose' => ['nullable', 'string', 'max:2000'],
         ];
     }

@@ -127,7 +127,7 @@ const form = reactive({
   interest_type: 'none' as InterestType,
   interest_rate: '',
   interest_period: 'month' as InterestPeriod,
-  term_months: '12',
+  term_months: '',
   first_payment_on: '',
   purpose: '',
 })
@@ -159,8 +159,8 @@ async function openForm(loan: Borrowing | null) {
   form.interest_type = loan?.interest_type ?? 'none'
   form.interest_rate = loan && loan.interest_type !== 'none' ? String(Number(loan.interest_rate)) : ''
   form.interest_period = loan?.interest_period ?? 'month'
-  form.term_months = loan ? String(loan.term_months) : '12'
-  form.first_payment_on = loan?.first_payment_on ?? monthAfter(form.received_on)
+  form.term_months = loan?.term_months ? String(loan.term_months) : ''
+  form.first_payment_on = loan?.first_payment_on ?? ''
   form.purpose = loan?.purpose ?? ''
   errors.value = {}
   saveError.value = null
@@ -168,14 +168,6 @@ async function openForm(loan: Borrowing | null) {
   if (lenders.value.length === 0 || entities.value.length === 0) await loadLookups()
   if (!loan && entities.value.length === 1) form.expense_entity_id = String(entities.value[0]!.id)
 }
-
-// First payment follows the received date (one month later) on a new loan.
-watch(
-  () => form.received_on,
-  (date, old) => {
-    if (!editing.value && date && old && form.first_payment_on === monthAfter(old)) form.first_payment_on = monthAfter(date)
-  },
-)
 
 function onLenderSaved(lender: Lender) {
   if (!lender.is_active) return
@@ -201,8 +193,9 @@ function input(): BorrowingInput {
     interest_type: form.interest_type,
     interest_rate: form.interest_type === 'none' ? 0 : Number(form.interest_rate || 0),
     interest_period: form.interest_period,
-    term_months: Number(form.term_months || 0),
-    first_payment_on: form.first_payment_on,
+    // No months: a flexible loan (any date, any amount, interest only).
+    term_months: Number(form.term_months) > 0 ? Number(form.term_months) : null,
+    first_payment_on: Number(form.term_months) > 0 ? form.first_payment_on || null : null,
     purpose: form.purpose.trim() || null,
   }
 }
@@ -211,18 +204,21 @@ function input(): BorrowingInput {
 const preview = ref<{ schedule: ScheduleRow[]; totals: ScheduleTotals } | null>(null)
 let previewTimer: ReturnType<typeof setTimeout> | undefined
 watch(
-  () => [formOpen.value, form.amount, form.currency, form.interest_type, form.interest_rate, form.interest_period, form.term_months, form.first_payment_on],
+  () => [formOpen.value, form.amount, form.currency, form.interest_type, form.interest_rate, form.interest_period, form.term_months, form.first_payment_on, form.received_on],
   () => {
     clearTimeout(previewTimer)
     const i = input()
-    const ready = formOpen.value && i.amount > 0 && i.term_months > 0 && i.first_payment_on && (i.interest_type === 'none' || i.interest_rate > 0)
+    const months = i.term_months ?? 0
+    // Without a first payment date the plan starts a month after receiving (as on the server).
+    const first = i.first_payment_on || (form.received_on ? monthAfter(form.received_on) : '')
+    const ready = formOpen.value && i.amount > 0 && months > 0 && first && (i.interest_type === 'none' || i.interest_rate > 0)
     if (!ready) {
       preview.value = null
       return
     }
     previewTimer = setTimeout(async () => {
       preview.value = await borrowingsService
-        .preview({ amount: i.amount, currency: i.currency, interest_type: i.interest_type, interest_rate: i.interest_rate, interest_period: i.interest_period, term_months: i.term_months, first_payment_on: i.first_payment_on })
+        .preview({ amount: i.amount, currency: i.currency, interest_type: i.interest_type, interest_rate: i.interest_rate, interest_period: i.interest_period, term_months: months, first_payment_on: first })
         .catch(() => null)
     }, 300)
   },
@@ -386,7 +382,8 @@ onMounted(() => {
             <span v-if="loan.status === 'active'" class="font-normal text-neutral-500">· {{ t('admin.borrowings.outstanding') }} {{ money(loan.outstanding, loan.currency) }}</span>
           </p>
           <p class="text-xs text-neutral-500">
-            {{ t('admin.borrowings.monthlyOf', { amount: money(loan.monthly_payment, loan.currency), months: loan.term_months }) }}
+            <template v-if="loan.flexible">{{ t('admin.borrowings.flexible') }}</template>
+            <template v-else>{{ t('admin.borrowings.monthlyOf', { amount: money(loan.monthly_payment, loan.currency), months: loan.term_months }) }}</template>
             <template v-if="loan.next_payment"> · {{ t('admin.borrowings.nextDue', { date: formatDate(loan.next_payment.due_on) }) }}</template>
           </p>
         </button>
@@ -416,7 +413,8 @@ onMounted(() => {
               <td class="px-4 py-3 text-right tabular-nums">{{ money(loan.amount, loan.currency) }}</td>
               <td class="px-4 py-3 text-right font-semibold tabular-nums">{{ money(loan.outstanding, loan.currency) }}</td>
               <td class="px-4 py-3 text-neutral-700">{{ interestLabel(loan) }}</td>
-              <td class="px-4 py-3 text-right tabular-nums">
+              <td v-if="loan.flexible" class="px-4 py-3 text-right text-neutral-500">{{ t('admin.borrowings.flexible') }}</td>
+              <td v-else class="px-4 py-3 text-right tabular-nums">
                 {{ money(loan.monthly_payment, loan.currency) }}
                 <p class="text-xs text-neutral-500">× {{ loan.term_months }}</p>
               </td>
@@ -492,14 +490,22 @@ onMounted(() => {
         </div>
 
         <div class="grid gap-4 sm:grid-cols-2">
-          <BaseInput v-model="form.term_months" type="number" required :label="t('admin.borrowings.termMonths')" :error="errors.term_months?.[0]" />
-          <BaseInput v-model="form.first_payment_on" type="date" required :label="t('admin.borrowings.firstPayment')" :error="errors.first_payment_on?.[0]" />
+          <BaseInput v-model="form.term_months" type="number" :label="t('admin.borrowings.termMonths')" :hint="t('admin.borrowings.termMonthsHint')" :error="errors.term_months?.[0]" />
+          <BaseInput
+            v-model="form.first_payment_on"
+            type="date"
+            :disabled="!(Number(form.term_months) > 0)"
+            :label="t('admin.borrowings.firstPayment')"
+            :hint="t('admin.borrowings.firstPaymentHint')"
+            :error="errors.first_payment_on?.[0]"
+          />
         </div>
         </fieldset>
 
         <BaseInput v-model="form.purpose" :label="t('admin.borrowings.purpose')" :error="errors.purpose?.[0]" />
 
-        <div v-if="preview && !locked" class="rounded-lg bg-primary-50 px-3 py-2 text-sm text-primary-900">
+        <div v-if="!locked && !(Number(form.term_months) > 0)" class="rounded-lg bg-primary-50 px-3 py-2 text-sm text-primary-900">{{ t('admin.borrowings.flexibleHint') }}</div>
+        <div v-else-if="preview && !locked" class="rounded-lg bg-primary-50 px-3 py-2 text-sm text-primary-900">
           {{
             t('admin.borrowings.previewLine', {
               monthly: money(preview.schedule[0]?.total ?? 0, form.currency),
@@ -528,8 +534,14 @@ onMounted(() => {
           <div><dt class="text-neutral-500">{{ t('admin.borrowings.status') }}</dt><dd><BaseBadge :variant="statusVariant[detail.status]">{{ t(`admin.borrowings.statuses.${detail.status}`) }}</BaseBadge></dd></div>
           <div><dt class="text-neutral-500">{{ t('admin.borrowings.outstanding') }}</dt><dd class="font-semibold text-primary-800">{{ money(detail.outstanding, detail.currency) }}</dd></div>
           <div><dt class="text-neutral-500">{{ t('admin.borrowings.paidSoFar') }}</dt><dd class="font-semibold">{{ money(detail.paid_principal + detail.paid_interest, detail.currency) }}</dd></div>
-          <div><dt class="text-neutral-500">{{ t('admin.borrowings.totalInterest') }}</dt><dd class="font-semibold">{{ money(detail.totals.interest, detail.currency) }}</dd></div>
-          <div><dt class="text-neutral-500">{{ t('admin.borrowings.totalToPay') }}</dt><dd class="font-semibold">{{ money(detail.totals.total, detail.currency) }}</dd></div>
+          <template v-if="detail.flexible">
+            <div><dt class="text-neutral-500">{{ t('admin.borrowings.plan') }}</dt><dd class="font-semibold">{{ t('admin.borrowings.flexible') }}</dd></div>
+            <div><dt class="text-neutral-500">{{ t('admin.borrowings.interestPaidSoFar') }}</dt><dd class="font-semibold">{{ money(detail.paid_interest, detail.currency) }}</dd></div>
+          </template>
+          <template v-else>
+            <div><dt class="text-neutral-500">{{ t('admin.borrowings.totalInterest') }}</dt><dd class="font-semibold">{{ money(detail.totals.interest, detail.currency) }}</dd></div>
+            <div><dt class="text-neutral-500">{{ t('admin.borrowings.totalToPay') }}</dt><dd class="font-semibold">{{ money(detail.totals.total, detail.currency) }}</dd></div>
+          </template>
           <div><dt class="text-neutral-500">{{ t('admin.borrowings.receivedInto') }}</dt><dd class="font-semibold">{{ detail.cash_account?.name ?? '—' }}</dd></div>
           <div><dt class="text-neutral-500">{{ t('admin.borrowings.reference') }}</dt><dd class="font-semibold">{{ detail.reference ?? '—' }}</dd></div>
         </dl>
@@ -546,9 +558,10 @@ onMounted(() => {
           </label>
         </div>
 
-        <h3 class="mb-2 mt-4 text-sm font-semibold text-neutral-800">{{ t('admin.borrowings.schedule') }}</h3>
+        <p v-if="detail.flexible" class="mt-4 rounded-lg bg-neutral-50 px-3 py-3 text-sm text-neutral-600">{{ t('admin.borrowings.flexibleHint') }}</p>
+        <h3 v-else class="mb-2 mt-4 text-sm font-semibold text-neutral-800">{{ t('admin.borrowings.schedule') }}</h3>
         <div v-if="detailLoading" class="flex justify-center py-4"><BaseSpinner /></div>
-        <div v-else-if="detail.schedule" class="max-h-80 overflow-auto rounded-lg border border-neutral-200">
+        <div v-else-if="detail.schedule && !detail.flexible" class="max-h-80 overflow-auto rounded-lg border border-neutral-200">
           <table class="w-full text-left text-sm">
             <thead class="sticky top-0 bg-neutral-50 text-neutral-500">
               <tr>

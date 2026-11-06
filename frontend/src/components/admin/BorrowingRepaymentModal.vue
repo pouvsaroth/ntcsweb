@@ -44,8 +44,9 @@ watch(
     if (!open || !loan) return
     const next = loan.next_payment
     form.paid_on = today()
+    // A flexible loan has no plan: suggest one month's interest, no principal.
     form.principal = next ? String(next.due_principal ?? next.principal) : ''
-    form.interest = next ? String(next.interest) : ''
+    form.interest = next ? String(next.interest) : loan.month_interest > 0 ? String(loan.month_interest) : ''
     form.cash_account_id = loan.cash_account ? String(loan.cash_account.id) : ''
     form.note = ''
     errors.value = {}
@@ -60,6 +61,18 @@ watch(
   },
   { immediate: true },
 )
+
+// Quick choices; any amount and any date can still be typed.
+function interestOnly() {
+  if (!props.loan) return
+  form.principal = '0'
+  form.interest = String(props.loan.next_payment?.interest ?? props.loan.month_interest ?? 0)
+}
+
+function payOff() {
+  if (!props.loan) return
+  form.principal = String(props.loan.outstanding)
+}
 
 async function save() {
   if (!props.loan) return
@@ -94,6 +107,11 @@ async function save() {
         <template v-if="loan.borrowed_for"> · {{ t('admin.borrowings.forName', { name: loan.borrowed_for.name }) }}</template>
       </p>
       <p v-if="loan.next_payment" class="text-xs text-neutral-500">{{ t('admin.borrowings.suggestedHint', { no: loan.next_payment.no }) }}</p>
+      <p class="text-xs text-neutral-500">{{ t('admin.borrowings.payAnyHint') }}</p>
+      <div class="flex flex-wrap gap-2">
+        <button type="button" class="rounded-lg bg-primary-50 px-2.5 py-1 text-xs font-medium text-primary-700 hover:bg-primary-100" @click="interestOnly">{{ t('admin.borrowings.interestOnly') }}</button>
+        <button type="button" class="rounded-lg bg-primary-50 px-2.5 py-1 text-xs font-medium text-primary-700 hover:bg-primary-100" @click="payOff">{{ t('admin.borrowings.payOffAll') }}</button>
+      </div>
       <div class="grid gap-4 sm:grid-cols-2">
         <BaseInput v-model="form.principal" type="number" :label="t('admin.borrowings.principalPaid')" :error="errors.principal?.[0]" />
         <BaseInput v-model="form.interest" type="number" :label="t('admin.borrowings.interestPaid')" :error="errors.interest?.[0]" />

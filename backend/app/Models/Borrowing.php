@@ -15,7 +15,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 /**
  * Tenant-owned. Accounting > Borrowings > Loans: money borrowed from a
  * lender, for one "Borrowed for" (Newtech, Flexi, Family...). Paid back
- * monthly over `term_months` from `first_payment_on` (see BorrowingSchedule).
+ * monthly over `term_months` from `first_payment_on` (see BorrowingSchedule),
+ * or, without `term_months`, flexibly: any date, any amount, interest only.
  */
 #[Fillable([
     'lender_id', 'expense_entity_id', 'reference', 'amount', 'currency', 'received_on', 'cash_account_id',

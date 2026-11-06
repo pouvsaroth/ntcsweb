@@ -119,7 +119,11 @@ onMounted(async () => {
             <BaseBadge v-if="loan.next_payment?.late" variant="danger">{{ t('admin.borrowings.late') }}</BaseBadge>
           </div>
           <div class="mt-2 flex items-end justify-between gap-2">
-            <div>
+            <div v-if="loan.flexible">
+              <p class="text-lg font-semibold text-neutral-900">{{ money(loan.outstanding, loan.currency) }}</p>
+              <p class="text-xs text-neutral-500">{{ t('admin.borrowings.outstanding') }} · {{ t('admin.borrowings.flexible') }}</p>
+            </div>
+            <div v-else>
               <p class="text-lg font-semibold text-neutral-900">{{ money((loan.next_payment?.due_principal ?? 0) + (loan.next_payment?.interest ?? 0), loan.currency) }}</p>
               <p class="text-xs text-neutral-500">
                 {{ t('admin.borrowings.monthNo', { no: loan.next_payment?.no }) }} · {{ formatDate(loan.next_payment?.due_on) }}
