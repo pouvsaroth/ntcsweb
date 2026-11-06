@@ -1216,6 +1216,8 @@ final class Permissions
                 self::AUDIT_LOGS_VIEW => 'View audit logs',
                 self::AUDIT_LOGS_DELETE => 'Clear audit logs by date range',
             ],
+            // Marks, not grants: a role holding one has that tab hidden (see TabVisibility).
+            'Hidden tabs' => TabVisibility::catalog(),
         ];
     }
 

@@ -2,6 +2,7 @@ import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 
 import { firstAccessibleAdminPath } from '@/router/adminNav'
 import { canOpenOrganizationTab, organizationTabs } from '@/router/organizationTabs'
+import { nextShownTab } from '@/router/tabVisibility'
 import { attendanceRecordTabs, attendanceTabs } from '@/router/attendanceTabs'
 import { leaveTabs } from '@/router/leaveTabs'
 import { borrowingsTabs } from '@/router/borrowingsTabs'
@@ -275,7 +276,7 @@ const adminRoutes: RouteRecordRaw[] = [
     component: { render: () => null },
     beforeEnter: () => {
       const auth = useAuthStore()
-      return (examinationTabs.find((tab) => tab.permission.some((p) => auth.can(p))) ?? examinationTabs.find((tab) => tab.to === '/admin/exams')!).to
+      return (examinationTabs.find((tab) => !auth.tabHidden(tab.to) && tab.permission.some((p) => auth.can(p))) ?? examinationTabs.find((tab) => !auth.tabHidden(tab.to) && tab.to === '/admin/exams')!).to
     },
   },
   {
@@ -535,7 +536,7 @@ const adminRoutes: RouteRecordRaw[] = [
         name: 'admin.organization',
         redirect: () => {
           const auth = useAuthStore()
-          return (organizationTabs.find((tab) => canOpenOrganizationTab(tab, auth.can)) ?? organizationTabs[0]).to
+          return (organizationTabs.find((tab) => !auth.tabHidden(tab.to) && canOpenOrganizationTab(tab, auth.can)) ?? organizationTabs[0]).to
         },
       },
       { path: 'school', name: 'admin.school-settings', component: () => import('@/pages/admin/SchoolSettings.vue') },
@@ -560,7 +561,7 @@ const adminRoutes: RouteRecordRaw[] = [
         name: 'admin.front-office',
         redirect: () => {
           const auth = useAuthStore()
-          return (frontOfficeTabs.find((tab) => auth.can(tab.permission)) ?? frontOfficeTabs[0]!).to
+          return (frontOfficeTabs.find((tab) => !auth.tabHidden(tab.to) && auth.can(tab.permission)) ?? frontOfficeTabs[0]!).to
         },
       },
       { path: 'inquiries', name: 'admin.front-office.inquiries', component: () => import('@/pages/admin/frontOffice/Inquiries.vue') },
@@ -580,7 +581,7 @@ const adminRoutes: RouteRecordRaw[] = [
         name: 'admin.recruitment',
         redirect: () => {
           const auth = useAuthStore()
-          return (recruitmentTabs.find((tab) => auth.can(tab.permission)) ?? recruitmentTabs[0]!).to
+          return (recruitmentTabs.find((tab) => !auth.tabHidden(tab.to) && auth.can(tab.permission)) ?? recruitmentTabs[0]!).to
         },
       },
       { path: 'manpower-requests', name: 'admin.recruitment.manpower-requests', component: () => import('@/pages/admin/recruitment/ManpowerRequests.vue') },
@@ -606,7 +607,7 @@ const adminRoutes: RouteRecordRaw[] = [
         name: 'admin.lessons',
         redirect: () => {
           const auth = useAuthStore()
-          return (lessonTabs.find((tab) => tab.permission.some((p) => auth.can(p))) ?? lessonTabs[0]!).to
+          return (lessonTabs.find((tab) => !auth.tabHidden(tab.to) && tab.permission.some((p) => auth.can(p))) ?? lessonTabs[0]!).to
         },
       },
       { path: 'plans', name: 'admin.lessons.plans', component: () => import('@/pages/admin/lessons/Plans.vue') },
@@ -628,7 +629,7 @@ const adminRoutes: RouteRecordRaw[] = [
         name: 'admin.timetable',
         redirect: () => {
           const auth = useAuthStore()
-          return (timetableTabs.find((tab) => auth.can(tab.permission)) ?? timetableTabs[0]!).to
+          return (timetableTabs.find((tab) => !auth.tabHidden(tab.to) && auth.can(tab.permission)) ?? timetableTabs[0]!).to
         },
       },
       { path: 'class', name: 'admin.timetable.class', component: () => import('@/pages/admin/timetable/ClassTimetable.vue') },
@@ -650,7 +651,7 @@ const adminRoutes: RouteRecordRaw[] = [
         name: 'admin.teachers',
         redirect: () => {
           const auth = useAuthStore()
-          return (teacherTabs.find((tab) => auth.can(tab.permission)) ?? teacherTabs[0]!).to
+          return (teacherTabs.find((tab) => !auth.tabHidden(tab.to) && auth.can(tab.permission)) ?? teacherTabs[0]!).to
         },
       },
       { path: 'qualifications', name: 'admin.teachers.qualifications', component: () => import('@/pages/admin/teachers/Qualifications.vue') },
@@ -673,7 +674,7 @@ const adminRoutes: RouteRecordRaw[] = [
         name: 'admin.school-setup',
         redirect: () => {
           const auth = useAuthStore()
-          return (schoolSetupTabs.find((tab) => auth.can(tab.permission)) ?? schoolSetupTabs[0]!).to
+          return (schoolSetupTabs.find((tab) => !auth.tabHidden(tab.to) && auth.can(tab.permission)) ?? schoolSetupTabs[0]!).to
         },
       },
       { path: 'terms', name: 'admin.school-setup.terms', component: () => import('@/pages/admin/schoolSetup/Terms.vue') },
@@ -695,7 +696,7 @@ const adminRoutes: RouteRecordRaw[] = [
         name: 'admin.time-attendance',
         redirect: () => {
           const auth = useAuthStore()
-          return (attendanceTabs.find((tab) => auth.can(tab.permission)) ?? attendanceTabs[0]!).to
+          return (attendanceTabs.find((tab) => !auth.tabHidden(tab.to) && auth.can(tab.permission)) ?? attendanceTabs[0]!).to
         },
       },
       { path: 'employees', name: 'admin.time-attendance.employees', component: () => import('@/pages/admin/timeAttendance/EmployeeAttendance.vue') },
@@ -710,7 +711,7 @@ const adminRoutes: RouteRecordRaw[] = [
             name: 'admin.time-attendance.records',
             redirect: () => {
               const auth = useAuthStore()
-              return (attendanceRecordTabs.find((tab) => auth.can(tab.permission)) ?? attendanceRecordTabs[0]!).to
+              return (attendanceRecordTabs.find((tab) => !auth.tabHidden(tab.to) && auth.can(tab.permission)) ?? attendanceRecordTabs[0]!).to
             },
           },
           { path: 'late', name: 'admin.time-attendance.late', component: () => import('@/pages/admin/timeAttendance/AttendanceReport.vue'), props: { type: 'late' } },
@@ -739,7 +740,7 @@ const adminRoutes: RouteRecordRaw[] = [
         name: 'admin.leave-management',
         redirect: () => {
           const auth = useAuthStore()
-          return (leaveTabs.find((tab) => auth.can(tab.permission)) ?? leaveTabs[0]!).to
+          return (leaveTabs.find((tab) => !auth.tabHidden(tab.to) && auth.can(tab.permission)) ?? leaveTabs[0]!).to
         },
       },
       { path: 'types', name: 'admin.leave-management.types', component: () => import('@/pages/admin/leaveManagement/LeaveTypes.vue') },
@@ -763,7 +764,7 @@ const adminRoutes: RouteRecordRaw[] = [
         name: 'admin.payroll',
         redirect: () => {
           const auth = useAuthStore()
-          return (payrollTabs.find((tab) => auth.can(tab.permission)) ?? payrollTabs[0]!).to
+          return (payrollTabs.find((tab) => !auth.tabHidden(tab.to) && auth.can(tab.permission)) ?? payrollTabs[0]!).to
         },
       },
       { path: 'salary-structures', name: 'admin.payroll.salary-structures', component: () => import('@/pages/admin/payroll/SalaryStructures.vue') },
@@ -795,7 +796,7 @@ const adminRoutes: RouteRecordRaw[] = [
         name: 'admin.performance',
         redirect: () => {
           const auth = useAuthStore()
-          return (performanceTabs.find((tab) => auth.can(tab.permission)) ?? performanceTabs[0]!).to
+          return (performanceTabs.find((tab) => !auth.tabHidden(tab.to) && auth.can(tab.permission)) ?? performanceTabs[0]!).to
         },
       },
       { path: 'kpis', name: 'admin.performance.kpis', component: () => import('@/pages/admin/performance/Kpis.vue') },
@@ -819,7 +820,7 @@ const adminRoutes: RouteRecordRaw[] = [
         name: 'admin.professional-development',
         redirect: () => {
           const auth = useAuthStore()
-          return (professionalDevelopmentTabs.find((tab) => canOpenProfessionalDevelopmentTab(tab, auth.can)) ?? professionalDevelopmentTabs[0]!).to
+          return (professionalDevelopmentTabs.find((tab) => !auth.tabHidden(tab.to) && canOpenProfessionalDevelopmentTab(tab, auth.can)) ?? professionalDevelopmentTabs[0]!).to
         },
       },
       { path: 'records', name: 'admin.professional-development.records', component: () => import('@/pages/admin/professionalDevelopment/TrainingRecords.vue') },
@@ -964,7 +965,7 @@ const adminRoutes: RouteRecordRaw[] = [
         name: 'admin.borrowings',
         redirect: () => {
           const auth = useAuthStore()
-          return (borrowingsTabs.find((tab) => auth.can(tab.permission)) ?? borrowingsTabs[0]!).to
+          return (borrowingsTabs.find((tab) => !auth.tabHidden(tab.to) && auth.can(tab.permission)) ?? borrowingsTabs[0]!).to
         },
       },
       { path: 'loans', name: 'admin.borrowings.loans', component: () => import('@/pages/admin/borrowings/Loans.vue') },
@@ -1205,6 +1206,13 @@ router.beforeEach(async (to) => {
   const needed = to.meta.permission as string | string[] | undefined
   if (to.meta.requiresAuth && needed && !(Array.isArray(needed) ? needed : [needed]).some((p) => auth.can(p))) {
     const fallback = canReachDashboard(auth) ? '/admin' : firstAccessibleAdminPath(auth)
+    if (fallback && fallback !== to.path) return { path: fallback }
+  }
+
+  // A tab this role hid (Settings > Roles): the next tab on that page it can see.
+  if (to.meta.requiresAuth && auth.tabHidden(to.path)) {
+    const next = nextShownTab(to.path, auth.tabHidden)
+    const fallback = next ?? (canReachDashboard(auth) ? '/admin' : firstAccessibleAdminPath(auth))
     if (fallback && fallback !== to.path) return { path: fallback }
   }
 

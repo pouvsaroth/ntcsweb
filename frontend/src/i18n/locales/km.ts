@@ -4027,6 +4027,8 @@ const km: MessageSchema = {
       actionLanguages: 'ភាសា',
       actionManageAll: 'គ្រប់គ្រងគ្រប់ថ្នាក់',
       searchMenus: 'ស្វែងរកម៉ឺនុយ ឬផ្ទាំង...',
+      tabHidden: 'លាក់',
+      tabNeedsMenu: 'ធីក «មើល» របស់ម៉ឺនុយជាមុនសិន បន្ទាប់មកដកធីកផ្ទាំងដើម្បីលាក់វា។',
       noMenusFound: 'រកមិនឃើញម៉ឺនុយ ឬផ្ទាំងទេ។',
       actionRequest: 'ស្នើសុំ',
       actionEnter: 'បញ្ចូល',

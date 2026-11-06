@@ -24,7 +24,7 @@ const tabs = computed(() => examinationTabs.filter((tab) => tab.permission.some(
   <!-- h-12 in AdminHeader's own row below the header on phone, h-16 inline in the header from sm up. -->
   <nav class="-mb-px flex h-12 min-w-0 gap-x-6 overflow-x-auto [scrollbar-width:none] sm:h-16 [&::-webkit-scrollbar]:hidden">
     <RouterLink
-      v-for="tab in tabs"
+      v-for="tab in tabs.filter((tab) => !auth.tabHidden(tab.to))"
       :key="tab.to"
       :to="tab.to"
       class="flex shrink-0 items-center whitespace-nowrap border-b-2 px-1 text-sm font-medium"

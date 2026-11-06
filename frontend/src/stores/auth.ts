@@ -1,3 +1,4 @@
+import { hideTabSlug } from '@/router/hideTabSlug'
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 
@@ -41,6 +42,12 @@ export const useAuthStore = defineStore('auth', () => {
   function can(permission: string): boolean {
     if (isSuperAdmin.value) return true
     return (permissions.value as string[]).includes(permission)
+  }
+
+  /** A tab this role's Settings > Roles hid (see router/tabVisibility.ts). Never for a super admin. */
+  function tabHidden(to: string): boolean {
+    if (isSuperAdmin.value) return false
+    return (permissions.value as string[]).includes(hideTabSlug(to))
   }
 
   /**
@@ -238,6 +245,7 @@ export const useAuthStore = defineStore('auth', () => {
     user,
     permissions,
     isSuperAdmin,
+    tabHidden,
     tenantName,
     tenantDefaultCurrency,
     khrPerUsdRate,

@@ -22,7 +22,7 @@ const tabs = computed(() => attendanceRecordTabs.filter((tab) => auth.can(tab.pe
   <div>
     <nav class="-mt-2 mb-5 flex gap-2 overflow-x-auto [scrollbar-width:none] sm:flex-wrap sm:overflow-visible [&::-webkit-scrollbar]:hidden">
       <RouterLink
-        v-for="tab in tabs"
+        v-for="tab in tabs.filter((tab) => !auth.tabHidden(tab.to))"
         :key="tab.to"
         :to="tab.to"
         class="whitespace-nowrap rounded-full border px-3 py-1.5 text-sm font-medium"

@@ -6,6 +6,7 @@ import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
+import { hideTabSlug } from '@/router/hideTabSlug'
 import { rolesService, type Role } from '@/services/roles'
 import { ApiRequestError } from '@/types/api'
 
@@ -91,9 +92,11 @@ const GROUPS = [
  * "View, Create, Update, Delete, View, Create, Update, Delete, …" with no
  * visual distinction between them at a glance.
  */
+type Group = (typeof GROUPS)[number]
+
 interface ModuleEntry {
   name: string
-  group: (typeof GROUPS)[number]
+  group: Group
   /**
    * Some sidebar entries are one page with a tab bar switching between
    * several otherwise-unrelated permission modules (see ProgramsTabs.vue,
@@ -102,21 +105,37 @@ interface ModuleEntry {
    * of listing them as flat siblings of everything else in the group.
    */
   parent?: string
+  /** The menu's own row of a page with tabs: its actions show on the menu line. */
+  menu?: boolean
+  /** A tab row: the tab's path. Its main box is "Show" (see router/tabVisibility.ts). */
+  tab?: string
+  /** A tab row: the permissions that open the tab (any one). Show only matters once one is ticked. */
+  needs?: string[]
   actions: Partial<Record<Action, string>>
 }
 
 /** One node in the permission tree below a top-level group: either a single module, or a "parent" bucket for a page whose own tab bar switches between several modules (see ModuleEntry.parent). */
 type GroupChild =
   | { kind: 'module'; key: string; module: ModuleEntry }
-  | { kind: 'parent'; key: string; name: string; modules: ModuleEntry[] }
+  | { kind: 'parent'; key: string; name: string; menuRow?: ModuleEntry; modules: ModuleEntry[] }
 
 /**
  * Listed in sidebar order: main menu (group) > menu > tabs. A menu whose page
- * has a tab bar is a `parent`, and its rows are that page's tabs — tabs that
- * share one permission are named together in one row (see router/*Tabs.ts).
- * A permission used in two places (e.g. My requests) shows in both, as one
- * shared checkbox.
+ * has a tab bar is a `parent`: its `menu` row's actions sit on the menu line
+ * (e.g. Payroll: View, Manage), and every tab has its own row with a Show box
+ * (`tab`) plus any action only that tab has. A permission used in two places
+ * shows in both, as one shared checkbox.
  */
+const tab = (group: Group, parent: string, name: string, to: string, needs: string[], actions: ModuleEntry['actions'] = {}): ModuleEntry => ({
+  name,
+  group,
+  parent,
+  tab: to,
+  needs,
+  actions,
+})
+const crud = (slug: string) => ({ view: `${slug}.view`, create: `${slug}.create`, update: `${slug}.update`, delete: `${slug}.delete` })
+
 const MODULES: ModuleEntry[] = [
   // ── Dashboard ──
   { name: 'Dashboard', group: 'Dashboard', actions: { view: 'dashboard.view' } },
@@ -139,68 +158,90 @@ const MODULES: ModuleEntry[] = [
   { name: 'Roles card', group: 'Dashboard', parent: 'Dashboard cards', actions: { view: 'dashboard.cards.roles' } },
 
   // ── Project Management ──
-  { name: 'Projects', group: 'Project Management', actions: { view: 'projects.view', create: 'projects.create', update: 'projects.update', delete: 'projects.delete' } },
+  { name: 'Projects', group: 'Project Management', actions: crud('projects') },
 
-  // ── Front Office (one page, four tabs) ──
-  { name: 'Inquiries', group: 'Front Office', parent: 'Front Office', actions: { view: 'inquiries.view', create: 'inquiries.create', update: 'inquiries.update', delete: 'inquiries.delete' } },
-  { name: 'Meetings', group: 'Front Office', parent: 'Front Office', actions: { view: 'meetings.view', create: 'meetings.create', update: 'meetings.update', delete: 'meetings.delete' } },
-  { name: 'Appointments', group: 'Front Office', parent: 'Front Office', actions: { view: 'appointments.view', create: 'appointments.create', update: 'appointments.update', delete: 'appointments.delete' } },
-  { name: 'Visitors', group: 'Front Office', parent: 'Front Office', actions: { view: 'visitors.view', create: 'visitors.create', update: 'visitors.update', delete: 'visitors.delete' } },
+  // ── Front Office ──
+  tab('Front Office', 'Front Office', 'Inquiry', '/admin/front-office/inquiries', ['inquiries.view'], crud('inquiries')),
+  tab('Front Office', 'Front Office', 'Meeting arrangement', '/admin/front-office/meetings', ['meetings.view'], crud('meetings')),
+  tab('Front Office', 'Front Office', 'Appointment', '/admin/front-office/appointments', ['appointments.view'], crud('appointments')),
+  tab('Front Office', 'Front Office', 'Visitor', '/admin/front-office/visitors', ['visitors.view'], crud('visitors')),
 
   // ── Academic ──
   // Not the website's "Programs" (Website group) — this is the internal program catalog.
-  { name: 'Academic programs', group: 'Academic', parent: 'Programs', actions: { view: 'academic-programs.view', create: 'academic-programs.create', update: 'academic-programs.update', delete: 'academic-programs.delete' } },
-  { name: 'Academic years', group: 'Academic', parent: 'Programs', actions: { view: 'academic-years.view', create: 'academic-years.create', update: 'academic-years.update', delete: 'academic-years.delete' } },
-  { name: 'Course packages', group: 'Academic', parent: 'Programs', actions: { view: 'course-packages.view', create: 'course-packages.create', update: 'course-packages.update', delete: 'course-packages.delete' } },
-  { name: 'Books', group: 'Academic', parent: 'Programs', actions: { view: 'books.view', create: 'books.create', update: 'books.update', delete: 'books.delete' } },
-  { name: 'Book categories', group: 'Academic', parent: 'Programs', actions: { view: 'book-categories.view', create: 'book-categories.create', update: 'book-categories.update', delete: 'book-categories.delete' } },
-  { name: 'Terms / semesters', group: 'Academic', parent: 'School Setup', actions: { view: 'academic-terms.view', manage: 'academic-terms.manage' } },
-  { name: 'Grade levels', group: 'Academic', parent: 'School Setup', actions: { view: 'grade-levels.view', manage: 'grade-levels.manage' } },
-  { name: 'Curriculum', group: 'Academic', parent: 'School Setup', actions: { view: 'curriculum.view', manage: 'curriculum.manage' } },
-  { name: 'School calendar', group: 'Academic', parent: 'School Setup', actions: { view: 'school-calendar.view', manage: 'school-calendar.manage' } },
-  { name: 'Promotion rules', group: 'Academic', parent: 'School Setup', actions: { view: 'promotion-rules.view', manage: 'promotion-rules.manage' } },
-  { name: 'Promote students', group: 'Academic', parent: 'School Setup', actions: { view: 'student-promotions.view', run: 'student-promotions.run' } },
-  { name: 'Videos', group: 'Academic', actions: { view: 'videos.view', create: 'videos.create', update: 'videos.update', delete: 'videos.delete' } },
-  { name: 'Buildings', group: 'Academic', parent: 'Study Building', actions: { view: 'buildings.view', create: 'buildings.create', update: 'buildings.update', delete: 'buildings.delete' } },
-  { name: 'Classrooms', group: 'Academic', parent: 'Study Building', actions: { view: 'classrooms.view', create: 'classrooms.create', update: 'classrooms.update', delete: 'classrooms.delete' } },
-  { name: 'Classes', group: 'Academic', actions: { view: 'classes.view', create: 'classes.create', update: 'classes.update', delete: 'classes.delete' } },
+  tab('Academic', 'Programs', 'Academic Programs', '/admin/academic-programs', ['academic-programs.view'], crud('academic-programs')),
+  tab('Academic', 'Programs', 'Academic Years', '/admin/academic-years', ['academic-years.view'], crud('academic-years')),
+  tab('Academic', 'Programs', 'Course', '/admin/course-packages', ['course-packages.view'], crud('course-packages')),
+  tab('Academic', 'Programs', 'Books', '/admin/books', ['books.view'], crud('books')),
+  tab('Academic', 'Programs', 'Book Categories', '/admin/book-categories', ['book-categories.view'], crud('book-categories')),
+  tab('Academic', 'School Setup', 'Terms / Semesters', '/admin/school-setup/terms', ['academic-terms.view'], { view: 'academic-terms.view', manage: 'academic-terms.manage' }),
+  tab('Academic', 'School Setup', 'Grade levels', '/admin/school-setup/grade-levels', ['grade-levels.view'], { view: 'grade-levels.view', manage: 'grade-levels.manage' }),
+  tab('Academic', 'School Setup', 'Curriculum', '/admin/school-setup/curriculum', ['curriculum.view'], { view: 'curriculum.view', manage: 'curriculum.manage' }),
+  tab('Academic', 'School Setup', 'School calendar', '/admin/school-setup/calendar', ['school-calendar.view'], { view: 'school-calendar.view', manage: 'school-calendar.manage' }),
+  tab('Academic', 'School Setup', 'Promotion rules', '/admin/school-setup/promotion-rules', ['promotion-rules.view'], { view: 'promotion-rules.view', manage: 'promotion-rules.manage' }),
+  tab('Academic', 'School Setup', 'Promote students', '/admin/school-setup/promote', ['student-promotions.view'], { view: 'student-promotions.view', run: 'student-promotions.run' }),
+  { name: 'Videos', group: 'Academic', actions: crud('videos') },
+  tab('Academic', 'Study Building', 'Buildings', '/admin/buildings', ['buildings.view'], crud('buildings')),
+  tab('Academic', 'Study Building', 'Classrooms', '/admin/classrooms', ['classrooms.view'], crud('classrooms')),
+  { name: 'Classes', group: 'Academic', actions: crud('classes') },
   // Manage = edit the timetable and decide schedule change requests.
-  { name: 'Class, Teacher, Room, Subjects, Conflicts', group: 'Academic', parent: 'Timetable', actions: { view: 'timetable.view', manage: 'timetable.manage' } },
-  { name: 'Schedule changes', group: 'Academic', parent: 'Timetable', actions: { request: 'timetable.request', manage: 'timetable.manage' } },
+  { name: 'Timetable', group: 'Academic', parent: 'Timetable', menu: true, actions: { view: 'timetable.view', manage: 'timetable.manage' } },
+  tab('Academic', 'Timetable', 'Class', '/admin/timetable/class', ['timetable.view']),
+  tab('Academic', 'Timetable', 'Teacher', '/admin/timetable/teacher', ['timetable.view']),
+  tab('Academic', 'Timetable', 'Room', '/admin/timetable/room', ['timetable.view']),
+  tab('Academic', 'Timetable', 'Subject hours', '/admin/timetable/subjects', ['timetable.view']),
+  tab('Academic', 'Timetable', 'Conflicts', '/admin/timetable/conflicts', ['timetable.view']),
+  tab('Academic', 'Timetable', 'Schedule changes', '/admin/timetable/changes', ['timetable.request'], { request: 'timetable.request' }),
   // Create = write lesson plans and the teaching log.
-  { name: 'Lesson plans, This week, Teaching log, Progress, Delays', group: 'Academic', parent: 'Lesson Plans', actions: { view: 'lesson-plans.view', create: 'lesson-plans.write' } },
-  { name: 'Review', group: 'Academic', parent: 'Lesson Plans', actions: { approve: 'lesson-plans.review' } },
-  { name: 'Attendance, Summary', group: 'Academic', parent: 'Attendance', actions: { view: 'attendance.view', create: 'attendance.create', update: 'attendance.update' } },
-  { name: 'Examination menu', group: 'Academic', parent: 'Examination', actions: { view: 'examination.view' } },
-  { name: 'Assessment Setup', group: 'Academic', parent: 'Examination', actions: { view: 'assessment.view', manage: 'assessment.manage' } },
-  { name: 'Exam Schedule', group: 'Academic', parent: 'Examination', actions: { view: 'exam-schedules.view', manage: 'exam-schedules.manage' } },
-  // View/Enter = own classes and subjects; Manage all = every class.
-  {
-    name: 'Grade Entry, Validation, Score Calculation, Result Approval, Grade Correction, Transcript, Student Progress, Remedial Teaching, Result Export',
-    group: 'Academic',
-    parent: 'Examination',
-    actions: { view: 'gradebook.view', enter: 'gradebook.enter', manageAll: 'gradebook.manage-all', approve: 'gradebook.approve' },
-  },
-  {
-    name: 'Exams, Make-up Exam, Certificate',
-    group: 'Academic',
-    parent: 'Examination',
-    actions: { view: 'exam-applications.view', create: 'exam-applications.create', update: 'exam-applications.update', delete: 'exam-applications.delete', approve: 'exam-applications.approve', reject: 'exam-applications.reject' },
-  },
-  { name: 'Grades', group: 'Academic', parent: 'Examination', actions: { view: 'exam-scores.view', update: 'exam-scores.update', manageAll: 'exam-scores.manage-all' } },
+  { name: 'Lesson Plans', group: 'Academic', parent: 'Lesson Plans', menu: true, actions: { view: 'lesson-plans.view', create: 'lesson-plans.write' } },
+  tab('Academic', 'Lesson Plans', 'Lesson plans', '/admin/lessons/plans', ['lesson-plans.view', 'lesson-plans.write', 'lesson-plans.review']),
+  tab('Academic', 'Lesson Plans', 'Weekly plan', '/admin/lessons/week', ['lesson-plans.view', 'lesson-plans.write', 'lesson-plans.review']),
+  tab('Academic', 'Lesson Plans', 'Teaching log', '/admin/lessons/log', ['lesson-plans.view', 'lesson-plans.write']),
+  tab('Academic', 'Lesson Plans', 'Review', '/admin/lessons/review', ['lesson-plans.review'], { approve: 'lesson-plans.review' }),
+  tab('Academic', 'Lesson Plans', 'Curriculum progress', '/admin/lessons/progress', ['lesson-plans.view', 'lesson-plans.write']),
+  tab('Academic', 'Lesson Plans', 'Delays', '/admin/lessons/delays', ['lesson-plans.view', 'lesson-plans.write']),
+  { name: 'Attendance', group: 'Academic', parent: 'Attendance', menu: true, actions: { view: 'attendance.view', create: 'attendance.create', update: 'attendance.update' } },
+  tab('Academic', 'Attendance', 'Enrollments', '/admin/attendance', ['attendance.view']),
+  tab('Academic', 'Attendance', 'Attendance Summary', '/admin/attendance/summary', ['attendance.view']),
+  { name: 'Examination', group: 'Academic', parent: 'Examination', menu: true, actions: { view: 'examination.view' } },
+  tab('Academic', 'Examination', 'Assessment Setup', '/admin/examination/setup', ['assessment.view'], { view: 'assessment.view', manage: 'assessment.manage' }),
+  tab('Academic', 'Examination', 'Exam Schedule', '/admin/examination/schedule', ['exam-schedules.view'], { view: 'exam-schedules.view', manage: 'exam-schedules.manage' }),
+  // The nine grade tabs below all follow these: View/Enter = own classes and subjects; Manage all = every class.
+  { name: 'Gradebook (the grade tabs below)', group: 'Academic', parent: 'Examination', actions: { view: 'gradebook.view', enter: 'gradebook.enter', manageAll: 'gradebook.manage-all', approve: 'gradebook.approve' } },
+  ...(
+    [
+      ['Grade Entry', 'entry'],
+      ['Grade Validation', 'validation'],
+      ['Score Calculation', 'calculation'],
+      ['Result Approval', 'approval'],
+      ['Grade Correction', 'corrections'],
+      ['Academic Transcript', 'transcript'],
+      ['Student Progress', 'progress'],
+      ['Remedial Teaching', 'remedial'],
+      ['Result Export', 'export'],
+    ] as const
+  ).map(([name, path]) => tab('Academic', 'Examination', name, `/admin/examination/${path}`, ['gradebook.view', 'gradebook.enter', 'gradebook.manage-all', 'gradebook.approve'])),
+  tab('Academic', 'Examination', 'Exams', '/admin/exams', ['exam-applications.view'], {
+    view: 'exam-applications.view',
+    create: 'exam-applications.create',
+    update: 'exam-applications.update',
+    delete: 'exam-applications.delete',
+    approve: 'exam-applications.approve',
+    reject: 'exam-applications.reject',
+  }),
+  tab('Academic', 'Examination', 'Grades', '/admin/grades', ['exam-scores.view', 'exam-scores.manage-all'], { view: 'exam-scores.view', update: 'exam-scores.update', manageAll: 'exam-scores.manage-all' }),
+  // These two open with Exams: View.
+  tab('Academic', 'Examination', 'Make-up Exam', '/admin/exams/make-up', ['exam-applications.view']),
+  tab('Academic', 'Examination', 'Certificate', '/admin/exams/certificate', ['exam-applications.view']),
   { name: 'Academic reports', group: 'Academic', actions: { view: 'academic-reports.view', export: 'academic-reports.export' } },
 
   // ── Students ──
   // Create also opens Student imports; Approve = approve online registrations.
-  { name: 'Students (and Student imports)', group: 'Students', actions: { view: 'students.view', create: 'students.create', update: 'students.update', delete: 'students.delete', approve: 'students.approve-registration' } },
+  { name: 'Students (and Student imports)', group: 'Students', actions: { ...crud('students'), approve: 'students.approve-registration' } },
   {
     name: 'Enrollments',
     group: 'Students',
     actions: {
-      view: 'enrollments.view',
-      create: 'enrollments.create',
-      update: 'enrollments.update',
-      delete: 'enrollments.delete',
+      ...crud('enrollments'),
       cancel: 'enrollments.cancel',
       transfer: 'enrollments.transfer',
       table: 'enrollments.change-table',
@@ -211,42 +252,129 @@ const MODULES: ModuleEntry[] = [
   },
 
   // ── HRM ──
-  { name: 'Staff list', group: 'Staff', parent: 'Staff', actions: { view: 'staff.view', create: 'staff.create', update: 'staff.update', delete: 'staff.delete', status: 'staff.change-status' } },
-  { name: 'Own staff profile only (see and edit just their own)', group: 'Staff', parent: 'Staff', actions: { update: 'staff.update-own' } },
-  { name: 'Qualifications, Assignments, Homeroom, Load, Availability, Substitutes, Documents', group: 'Staff', parent: 'Teachers', actions: { view: 'teachers.view', manage: 'teachers.manage' } },
+  { name: 'Staff', group: 'Staff', actions: { ...crud('staff'), status: 'staff.change-status' } },
+  { name: 'Own staff profile only (see and edit just their own)', group: 'Staff', actions: { update: 'staff.update-own' } },
+  { name: 'Teachers', group: 'Staff', parent: 'Teachers', menu: true, actions: { view: 'teachers.view', manage: 'teachers.manage' } },
+  ...(
+    [
+      ['Qualification', 'qualifications'],
+      ['Assignment', 'assignments'],
+      ['Homeroom', 'homeroom'],
+      ['Teaching load', 'load'],
+      ['Availability', 'availability'],
+      ['Substitute', 'substitutes'],
+      ['Documents', 'documents'],
+    ] as const
+  ).map(([name, path]) => tab('Staff', 'Teachers', name, `/admin/teachers/${path}`, ['teachers.view'])),
   { name: 'Staff status history', group: 'Staff', actions: { view: 'staff.view' } },
-  { name: 'School', group: 'Staff', parent: 'Organization Management', actions: { view: 'tenant-settings.view', update: 'tenant-settings.update' } },
-  { name: 'Branch, Department, Team, Job grade, Job level, Reporting manager, Hierarchy', group: 'Staff', parent: 'Organization Management', actions: { view: 'organization.view', create: 'organization.create', update: 'organization.update', delete: 'organization.delete' } },
-  { name: 'Position', group: 'Staff', parent: 'Organization Management', actions: { view: 'positions.view', create: 'positions.create', update: 'positions.update', delete: 'positions.delete' } },
-  { name: 'Manpower requests, Job positions, Job postings, Applicants, CVs, Interviews, Evaluations, Selection, Offers, Pipeline', group: 'Staff', parent: 'Recruitment', actions: { view: 'recruitment.view', create: 'recruitment.create', update: 'recruitment.update', delete: 'recruitment.delete' } },
-  { name: 'Manpower request approval', group: 'Staff', parent: 'Recruitment', actions: { approve: 'manpower-requests.approve', reject: 'manpower-requests.reject' } },
-  { name: 'Employees, Check-ins, Records, Shifts, Work schedules, Holidays, Late, Early leave, Absence, Overtime, Corrections', group: 'Staff', parent: 'Time & Attendance', actions: { view: 'staff-attendance.view', manage: 'staff-attendance.manage' } },
-  { name: 'Approval (sign off a month)', group: 'Staff', parent: 'Time & Attendance', actions: { approve: 'staff-attendance.approve' } },
-  { name: 'Overtime requests', group: 'Staff', parent: 'Time & Attendance', actions: { approve: 'overtime-requests.approve', reject: 'overtime-requests.reject' } },
-  { name: 'Attendance corrections', group: 'Staff', parent: 'Time & Attendance', actions: { approve: 'attendance-corrections.approve', reject: 'attendance-corrections.reject' } },
-  { name: 'Types, Policies, Balances, Workflow, Calendar, Carry forward, Reports', group: 'Staff', parent: 'Leave Management', actions: { view: 'leave-management.view', manage: 'leave-management.manage' } },
-  { name: 'Leave requests', group: 'Staff', parent: 'Leave Management', actions: { view: 'leave-requests.view', approve: 'leave-requests.approve', reject: 'leave-requests.reject' } },
-  { name: 'Salary structures, Basic salary, Allowances, Bonuses, Deductions, Overtime, Tax, NSSF, Loan/advance, Calculation, Payslip, History', group: 'Staff', parent: 'Payroll', actions: { view: 'payroll.view', manage: 'payroll.manage' } },
-  // Create = work out a payroll, send it for approval and pay it.
-  { name: 'Payroll runs', group: 'Staff', parent: 'Payroll', actions: { create: 'payroll.run' } },
-  { name: 'Approval', group: 'Staff', parent: 'Payroll', actions: { approve: 'payroll.approve' } },
+  // Branch … Hierarchy tabs follow these.
+  { name: 'Organization Management', group: 'Staff', parent: 'Organization Management', menu: true, actions: crud('organization') },
+  tab('Staff', 'Organization Management', 'School', '/admin/organization/school', ['tenant-settings.view'], { view: 'tenant-settings.view', update: 'tenant-settings.update' }),
+  tab('Staff', 'Organization Management', 'Branch', '/admin/organization/branches', ['organization.view']),
+  tab('Staff', 'Organization Management', 'Department', '/admin/organization/departments', ['organization.view', 'assets.view']),
+  tab('Staff', 'Organization Management', 'Team', '/admin/organization/teams', ['organization.view']),
+  tab('Staff', 'Organization Management', 'Position', '/admin/organization/positions', ['positions.view'], crud('positions')),
+  tab('Staff', 'Organization Management', 'Job grade', '/admin/organization/job-grades', ['organization.view']),
+  tab('Staff', 'Organization Management', 'Job level', '/admin/organization/job-levels', ['organization.view']),
+  tab('Staff', 'Organization Management', 'Reporting manager', '/admin/organization/reporting', ['organization.view']),
+  tab('Staff', 'Organization Management', 'Organization hierarchy', '/admin/organization/hierarchy', ['organization.view']),
+  { name: 'Recruitment', group: 'Staff', parent: 'Recruitment', menu: true, actions: crud('recruitment') },
+  tab('Staff', 'Recruitment', 'Manpower request', '/admin/recruitment/manpower-requests', ['recruitment.view'], { approve: 'manpower-requests.approve', reject: 'manpower-requests.reject' }),
+  ...(
+    [
+      ['Job positions', 'job-positions'],
+      ['Job postings', 'job-postings'],
+      ['Applicant management', 'applicants'],
+      ['CV/resume', 'cvs'],
+      ['Interview', 'interviews'],
+      ['Interview evaluation', 'evaluations'],
+      ['Candidate selection', 'selection'],
+      ['Offer letter', 'offers'],
+      ['Recruitment pipeline', 'pipeline'],
+    ] as const
+  ).map(([name, path]) => tab('Staff', 'Recruitment', name, `/admin/recruitment/${path}`, ['recruitment.view'])),
+  { name: 'Time & Attendance', group: 'Staff', parent: 'Time & Attendance', menu: true, actions: { view: 'staff-attendance.view', manage: 'staff-attendance.manage' } },
+  ...(
+    [
+      ['Employee attendance', 'employees'],
+      ['Check-in / check-out', 'check-ins'],
+      ['Attendance records', 'records'],
+      ['Shift', 'shifts'],
+      ['Staff shift', 'work-schedules'],
+      ['Holidays', 'holidays'],
+    ] as const
+  ).map(([name, path]) => tab('Staff', 'Time & Attendance', name, `/admin/time-attendance/${path}`, ['staff-attendance.view'])),
+  // Approve = sign off (lock) a month.
+  tab('Staff', 'Time & Attendance', 'Attendance approval', '/admin/time-attendance/approval', ['staff-attendance.view'], { approve: 'staff-attendance.approve' }),
+  tab('Staff', 'Time & Attendance', 'Late', '/admin/time-attendance/records/late', ['staff-attendance.view']),
+  tab('Staff', 'Time & Attendance', 'Early leave', '/admin/time-attendance/records/early-leave', ['staff-attendance.view']),
+  tab('Staff', 'Time & Attendance', 'Absence', '/admin/time-attendance/records/absence', ['staff-attendance.view']),
+  tab('Staff', 'Time & Attendance', 'Overtime', '/admin/time-attendance/records/overtime', ['staff-attendance.view'], { approve: 'overtime-requests.approve', reject: 'overtime-requests.reject' }),
+  tab('Staff', 'Time & Attendance', 'Attendance correction', '/admin/time-attendance/records/corrections', ['staff-attendance.view'], { approve: 'attendance-corrections.approve', reject: 'attendance-corrections.reject' }),
+  { name: 'Leave Management', group: 'Staff', parent: 'Leave Management', menu: true, actions: { view: 'leave-management.view', manage: 'leave-management.manage' } },
+  tab('Staff', 'Leave Management', 'Leave types', '/admin/leave-management/types', ['leave-management.view']),
+  tab('Staff', 'Leave Management', 'Leave policies', '/admin/leave-management/policies', ['leave-management.view']),
+  tab('Staff', 'Leave Management', 'Leave balance', '/admin/leave-management/balances', ['leave-management.view']),
+  tab('Staff', 'Leave Management', 'Leave request', '/admin/leave-management/requests', ['leave-requests.view'], { view: 'leave-requests.view', approve: 'leave-requests.approve', reject: 'leave-requests.reject' }),
+  tab('Staff', 'Leave Management', 'Approval workflow', '/admin/leave-management/workflow', ['leave-management.view']),
+  tab('Staff', 'Leave Management', 'Leave calendar', '/admin/leave-management/calendar', ['leave-management.view']),
+  tab('Staff', 'Leave Management', 'Carry forward', '/admin/leave-management/carry-forward', ['leave-management.view']),
+  tab('Staff', 'Leave Management', 'Leave reports', '/admin/leave-management/reports', ['leave-management.view']),
+  { name: 'Payroll', group: 'Staff', parent: 'Payroll', menu: true, actions: { view: 'payroll.view', manage: 'payroll.manage' } },
+  ...(
+    [
+      ['Salary structure', 'salary-structures'],
+      ['Basic salary', 'basic-salary'],
+      ['Allowances', 'allowances'],
+      ['Bonuses', 'bonuses'],
+      ['Deductions', 'deductions'],
+      ['Overtime', 'overtime'],
+      ['Attendance deduction', 'attendance-deduction'],
+      ['Tax', 'tax'],
+      ['Social security', 'social-security'],
+      ['Loan/advance', 'loans'],
+    ] as const
+  ).map(([name, path]) => tab('Staff', 'Payroll', name, `/admin/payroll/${path}`, ['payroll.view'])),
+  // Work out = start a payroll, send it for approval and pay it.
+  tab('Staff', 'Payroll', 'Payroll calculation', '/admin/payroll/calculation', ['payroll.view'], { run: 'payroll.run' }),
+  tab('Staff', 'Payroll', 'Payslip', '/admin/payroll/payslips', ['payroll.view']),
+  tab('Staff', 'Payroll', 'Payroll approval', '/admin/payroll/approval', ['payroll.approve'], { approve: 'payroll.approve' }),
+  tab('Staff', 'Payroll', 'Payroll history', '/admin/payroll/history', ['payroll.view']),
   // Approve = apply promotion recommendations.
-  { name: 'KPI, Goals, Review, Evaluation forms, Score, Promotion', group: 'Staff', parent: 'Performance', actions: { view: 'performance.view', manage: 'performance.manage', approve: 'performance.approve-promotion' } },
-  { name: 'Self assessment, Manager assessment (every staff account)', group: 'Staff', parent: 'Performance', actions: { view: 'my-requests.view' } },
-  { name: 'Training records, Calendar, Certificates, Observations, Coaching, Development plans, Reports', group: 'Staff', parent: 'Professional Development', actions: { view: 'professional-development.view', manage: 'professional-development.manage' } },
+  { name: 'Performance', group: 'Staff', parent: 'Performance', menu: true, actions: { view: 'performance.view', manage: 'performance.manage', approve: 'performance.approve-promotion' } },
+  tab('Staff', 'Performance', 'KPI', '/admin/performance/kpis', ['performance.view']),
+  tab('Staff', 'Performance', 'Goals', '/admin/performance/goals', ['performance.view']),
+  tab('Staff', 'Performance', 'Performance review', '/admin/performance/reviews', ['performance.view']),
+  tab('Staff', 'Performance', 'Evaluation forms', '/admin/performance/forms', ['performance.view']),
+  // Self-service: every staff account (the My requests permission).
+  tab('Staff', 'Performance', 'Employee self-assessment', '/admin/performance/self-assessment', ['my-requests.view']),
+  tab('Staff', 'Performance', 'Manager assessment', '/admin/performance/manager-assessment', ['my-requests.view']),
+  tab('Staff', 'Performance', 'Performance score', '/admin/performance/scores', ['performance.view']),
+  tab('Staff', 'Performance', 'Promotion recommendation', '/admin/performance/promotions', ['performance.view']),
+  { name: 'Professional Development', group: 'Staff', parent: 'Professional Development', menu: true, actions: { view: 'professional-development.view', manage: 'professional-development.manage' } },
+  tab('Staff', 'Professional Development', 'Training records', '/admin/professional-development/records', ['professional-development.view']),
+  tab('Staff', 'Professional Development', 'Training calendar', '/admin/professional-development/calendar', ['professional-development.view']),
+  tab('Staff', 'Professional Development', 'Certificates', '/admin/professional-development/certificates', ['professional-development.view']),
+  // These three are also self-service for every staff account.
+  tab('Staff', 'Professional Development', 'Classroom observation', '/admin/professional-development/observations', ['professional-development.view', 'my-requests.view']),
+  tab('Staff', 'Professional Development', 'Coaching & mentoring', '/admin/professional-development/coaching', ['professional-development.view', 'my-requests.view']),
+  tab('Staff', 'Professional Development', 'Development plan', '/admin/professional-development/plans', ['professional-development.view', 'my-requests.view']),
+  tab('Staff', 'Professional Development', 'Training reports', '/admin/professional-development/reports', ['professional-development.view']),
   // The same self-service slug as E-Approvals > My requests: one shared checkbox.
   { name: 'My check-in, Request Leave, Resignation Form', group: 'Staff', actions: { view: 'my-requests.view' } },
   { name: 'Resignation requests', group: 'Staff', actions: { view: 'resignation-requests.view', approve: 'resignation-requests.approve', reject: 'resignation-requests.reject' } },
 
   // ── Billing ──
   { name: 'Billing dashboard & reports', group: 'Billing', actions: { view: 'billing-reports.view' } },
-  { name: 'Products', group: 'Billing', actions: { view: 'products.view', create: 'products.create', update: 'products.update', delete: 'products.delete' } },
-  { name: 'Invoices, Monthly', group: 'Billing', parent: 'Invoices', actions: { view: 'invoices.view', create: 'invoices.create', update: 'invoices.update', cancel: 'invoices.cancel' } },
+  { name: 'Products', group: 'Billing', actions: crud('products') },
+  { name: 'Invoices', group: 'Billing', parent: 'Invoices', menu: true, actions: { view: 'invoices.view', create: 'invoices.create', update: 'invoices.update', cancel: 'invoices.cancel' } },
+  tab('Billing', 'Invoices', 'Invoices', '/admin/invoices', ['invoices.view']),
+  tab('Billing', 'Invoices', 'Monthly Invoice', '/admin/invoices/monthly', ['invoices.view']),
   { name: 'Payments', group: 'Billing', actions: { view: 'payments.view', create: 'payments.create', update: 'payments.update', cancel: 'payments.cancel' } },
   { name: 'Receipts', group: 'Billing', actions: { view: 'receipts.view' } },
   { name: 'Billing notifications', group: 'Billing', actions: { send: 'notifications.send' } },
-  { name: 'Companies', group: 'Billing', actions: { view: 'companies.view', create: 'companies.create', update: 'companies.update', delete: 'companies.delete' } },
-  { name: 'Currency rates', group: 'Billing', actions: { view: 'currency-rates.view', create: 'currency-rates.create', update: 'currency-rates.update', delete: 'currency-rates.delete' } },
+  { name: 'Companies', group: 'Billing', actions: crud('companies') },
+  { name: 'Currency rates', group: 'Billing', actions: crud('currency-rates') },
 
   // ── Accounting ──
   { name: 'Accounting (module access)', group: 'Accounting', actions: { view: 'accounting.view' } },
@@ -266,7 +394,11 @@ const MODULES: ModuleEntry[] = [
       cancel: 'expense.cancel',
     },
   },
-  { name: 'Loans, Repayments, Lenders, Reports', group: 'Accounting', parent: 'Borrowings', actions: { view: 'borrowings.view', manage: 'borrowings.manage' } },
+  { name: 'Borrowings', group: 'Accounting', parent: 'Borrowings', menu: true, actions: { view: 'borrowings.view', manage: 'borrowings.manage' } },
+  tab('Accounting', 'Borrowings', 'Loans', '/admin/borrowings/loans', ['borrowings.view']),
+  tab('Accounting', 'Borrowings', 'Repayments', '/admin/borrowings/repayments', ['borrowings.view']),
+  tab('Accounting', 'Borrowings', 'Lenders', '/admin/borrowings/lenders', ['borrowings.view']),
+  tab('Accounting', 'Borrowings', 'Reports', '/admin/borrowings/reports', ['borrowings.view']),
   { name: 'Transactions', group: 'Accounting', actions: { view: 'transactions.view', create: 'transactions.create' } },
   { name: 'Accounting reports', group: 'Accounting', actions: { view: 'reports.financial.view', export: 'reports.financial.export' } },
   { name: 'Accounting periods', group: 'Accounting', actions: { close: 'accounting.period.close', create: 'accounting.adjustment.create' } },
@@ -278,10 +410,7 @@ const MODULES: ModuleEntry[] = [
     name: 'Assets (also Categories, Locations, Departments, Suppliers)',
     group: 'Assets',
     actions: {
-      view: 'assets.view',
-      create: 'assets.create',
-      update: 'assets.update',
-      delete: 'assets.delete',
+      ...crud('assets'),
       assign: 'assets.assign',
       return: 'assets.return',
       transfer: 'assets.transfer',
@@ -298,7 +427,7 @@ const MODULES: ModuleEntry[] = [
   { name: 'Asset maintenance', group: 'Assets', actions: { view: 'assets.maintenance.view', create: 'assets.maintenance.create', update: 'assets.maintenance.update' } },
 
   // ── Website ──
-  { name: 'Programs (website page)', group: 'Website', actions: { view: 'programs.view', create: 'programs.create', update: 'programs.update', delete: 'programs.delete' } },
+  { name: 'Programs (website page)', group: 'Website', actions: crud('programs') },
 
   // ── Communication ──
   { name: 'Contact messages', group: 'Communication', actions: { view: 'contact-messages.view' } },
@@ -308,17 +437,14 @@ const MODULES: ModuleEntry[] = [
   // ── Settings ──
   // Update also covers Telegram groups.
   { name: 'Settings, School documents, Telegram groups', group: 'Settings', actions: { view: 'tenant-settings.view', update: 'tenant-settings.update' } },
-  { name: 'Users', group: 'Settings', actions: { view: 'users.view', create: 'users.create', update: 'users.update', delete: 'users.delete' } },
-  { name: 'Roles', group: 'Settings', actions: { view: 'roles.view', create: 'roles.create', update: 'roles.update', delete: 'roles.delete', assign: 'roles.assign' } },
+  { name: 'Users', group: 'Settings', actions: crud('users') },
+  { name: 'Roles', group: 'Settings', actions: { ...crud('roles'), assign: 'roles.assign' } },
   { name: 'Audit logs', group: 'Settings', actions: { view: 'audit-logs.view', delete: 'audit-logs.delete' } },
   {
     name: 'Lookup categories, Languages, Translations',
     group: 'Settings',
     actions: {
-      view: 'base-data.view',
-      create: 'base-data.create',
-      update: 'base-data.update',
-      delete: 'base-data.delete',
+      ...crud('base-data'),
       translations: 'base-data.manage-translations',
       languages: 'base-data.manage-languages',
     },
@@ -382,6 +508,28 @@ function toggle(slug: string, checked: boolean) {
   form.permissions = checked ? [...form.permissions, slug] : form.permissions.filter((p) => p !== slug)
 }
 
+/** A tab this role hides (its `hide-tab.*` mark is on the role). */
+function isTabHidden(to: string): boolean {
+  return form.permissions.includes(hideTabSlug(to))
+}
+
+/** Whether the role can open this tab at all (one of its permissions ticked) — Show only matters then. */
+function canOpenTab(module: ModuleEntry): boolean {
+  return !module.needs || module.needs.some((slug) => isChecked(slug))
+}
+
+/** Show or hide tabs: removes or adds their hide marks. */
+function setTabsShown(tabs: string[], shown: boolean) {
+  const marks = tabs.map(hideTabSlug)
+  form.permissions = shown
+    ? form.permissions.filter((p) => !marks.includes(p))
+    : Array.from(new Set([...form.permissions, ...marks]))
+}
+
+function tabsOf(modules: ModuleEntry[]): string[] {
+  return modules.flatMap((module) => (module.tab ? [module.tab] : []))
+}
+
 /**
  * One tree node per sidebar group, in the same order as adminNav.ts, and
  * menus/tabs in MODULES' own (sidebar) order. A group with no modules in it
@@ -407,7 +555,8 @@ const groupedModules = computed(() =>
         parents.set(module.parent, node)
         children.push(node)
       }
-      node.modules.push(module)
+      if (module.menu) node.menuRow = module
+      else node.modules.push(module)
     }
 
     return { name: group, modules: modulesInGroup, children }
@@ -437,13 +586,17 @@ const allCollapsibleKeys = computed(() => groupedModules.value.flatMap((group) =
 /** Every distinct permission slug across every module — several modules deliberately share slugs (e.g. Repair shops reuses assets.*), so this de-dupes. */
 const allSlugs = computed(() => Array.from(new Set(MODULES.flatMap((module) => Object.values(module.actions) as string[]))))
 
-const allChecked = computed(() => allSlugs.value.length > 0 && allSlugs.value.every((slug) => isChecked(slug)))
+const allTabs = tabsOf(MODULES)
+
+const allChecked = computed(() => allSlugs.value.length > 0 && allSlugs.value.every((slug) => isChecked(slug)) && !allTabs.some(isTabHidden))
 
 // Only the slugs listed here: a permission without a row (e.g. added later) is never dropped by Select all.
+// Select all also shows every tab; clearing all removes the hide marks too (nothing left to hide).
 function toggleAll(checked: boolean) {
+  const marks = allTabs.map(hideTabSlug)
   form.permissions = checked
-    ? Array.from(new Set([...form.permissions, ...allSlugs.value]))
-    : form.permissions.filter((p) => !allSlugs.value.includes(p))
+    ? Array.from(new Set([...form.permissions, ...allSlugs.value])).filter((p) => !marks.includes(p))
+    : form.permissions.filter((p) => !allSlugs.value.includes(p) && !marks.includes(p))
 }
 
 /** A row's own actions, in the usual order (View, Create, Update, Delete, ...). */
@@ -455,7 +608,7 @@ function moduleActions(module: ModuleEntry): Action[] {
 function isGroupPartlyChecked(modules: ModuleEntry[]): boolean {
   const slugs = groupSlugs(modules)
   const ticked = slugs.filter((slug) => isChecked(slug)).length
-  return ticked > 0 && ticked < slugs.length
+  return ticked > 0 && (ticked < slugs.length || tabsOf(modules).some(isTabHidden))
 }
 
 // Search: a row matches on its own name, its menu's or its main menu's.
@@ -491,14 +644,17 @@ function moduleSlugs(module: (typeof MODULES)[number]): string[] {
 
 function isModuleFullyChecked(module: (typeof MODULES)[number]): boolean {
   const slugs = moduleSlugs(module)
+  if (module.tab) return canOpenTab(module) && !isTabHidden(module.tab) && slugs.every((slug) => isChecked(slug))
   return slugs.length > 0 && slugs.every((slug) => isChecked(slug))
 }
 
+/** A tab row's box shows or hides the tab (with its own actions); any other row's box ticks all its actions. */
 function toggleModule(module: (typeof MODULES)[number], checked: boolean) {
   const slugs = moduleSlugs(module)
   form.permissions = checked
     ? Array.from(new Set([...form.permissions, ...slugs]))
     : form.permissions.filter((p) => !slugs.includes(p))
+  if (module.tab) setTabsShown([module.tab], checked)
 }
 
 /**
@@ -535,14 +691,22 @@ function groupSlugs(modules: (typeof MODULES)[number][]): string[] {
 
 function isGroupFullyChecked(modules: (typeof MODULES)[number][]): boolean {
   const slugs = groupSlugs(modules)
-  return slugs.length > 0 && slugs.every((slug) => isChecked(slug))
+  return slugs.length > 0 && slugs.every((slug) => isChecked(slug)) && !tabsOf(modules).some(isTabHidden)
 }
 
+// Ticking a whole menu shows all its tabs; unticking only removes its permissions (no hide marks,
+// so ticking View again later brings every tab back).
 function toggleGroup(modules: (typeof MODULES)[number][], checked: boolean) {
   const slugs = groupSlugs(modules)
   form.permissions = checked
     ? Array.from(new Set([...form.permissions, ...slugs]))
     : form.permissions.filter((p) => !slugs.includes(p))
+  if (checked) setTabsShown(tabsOf(modules), true)
+}
+
+/** A parent's rows: its menu row (if any) and its tabs. */
+function parentRows(child: Extract<GroupChild, { kind: 'parent' }>): ModuleEntry[] {
+  return child.menuRow ? [child.menuRow, ...child.modules] : child.modules
 }
 
 function resetForm() {
@@ -707,12 +871,24 @@ async function submit() {
                     </button>
                     <input
                       type="checkbox"
-                      :checked="isGroupFullyChecked(child.modules)"
-                      :indeterminate.prop="isGroupPartlyChecked(child.modules)"
+                      :checked="isGroupFullyChecked(parentRows(child))"
+                      :indeterminate.prop="isGroupPartlyChecked(parentRows(child))"
                       class="rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
-                      @change="toggleGroup(child.modules, ($event.target as HTMLInputElement).checked)"
+                      @change="toggleGroup(parentRows(child), ($event.target as HTMLInputElement).checked)"
                     />
-                    <span class="cursor-pointer" @click="toggleGroupCollapsed(child.key)">{{ child.name }}</span>
+                    <span class="min-w-0 flex-1 cursor-pointer" @click="toggleGroupCollapsed(child.key)">{{ child.name }}</span>
+                    <!-- The menu's own actions, which its tabs follow. -->
+                    <div v-if="child.menuRow" class="flex flex-wrap gap-x-3 gap-y-1 font-normal">
+                      <label v-for="action in moduleActions(child.menuRow)" :key="action" class="flex items-center gap-1.5 whitespace-nowrap text-neutral-600">
+                        <input
+                          type="checkbox"
+                          :checked="isChecked(child.menuRow.actions[action]!)"
+                          class="rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+                          @change="toggle(child.menuRow.actions[action]!, ($event.target as HTMLInputElement).checked)"
+                        />
+                        {{ columnLabel(action) }}
+                      </label>
+                    </div>
                   </div>
                   <template v-if="isOpen(child.key)">
                     <div
@@ -720,15 +896,21 @@ async function submit() {
                       :key="module.name"
                       class="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-neutral-100 py-2 pl-16 pr-3 hover:bg-neutral-50/60"
                     >
-                      <label class="flex min-w-0 flex-1 basis-60 items-center gap-2 text-neutral-700">
+                      <label
+                        class="flex min-w-0 flex-1 basis-60 items-center gap-2"
+                        :class="module.tab && !canOpenTab(module) ? 'text-neutral-400' : 'text-neutral-700'"
+                        :title="module.tab && !canOpenTab(module) ? t('admin.roles.tabNeedsMenu') : undefined"
+                      >
                         <input
                           type="checkbox"
                           :checked="isModuleFullyChecked(module)"
                           :indeterminate.prop="isGroupPartlyChecked([module])"
-                          class="rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+                          :disabled="!!module.tab && !canOpenTab(module)"
+                          class="rounded border-neutral-300 text-primary-600 focus:ring-primary-500 disabled:opacity-40"
                           @change="toggleModule(module, ($event.target as HTMLInputElement).checked)"
                         />
                         <span>{{ module.name }}</span>
+                        <span v-if="module.tab && isTabHidden(module.tab)" class="rounded bg-neutral-100 px-1.5 py-0.5 text-xs text-neutral-500">{{ t('admin.roles.tabHidden') }}</span>
                       </label>
                       <div class="flex flex-wrap gap-x-3 gap-y-1">
                         <label v-for="action in moduleActions(module)" :key="action" class="flex items-center gap-1.5 whitespace-nowrap text-neutral-600">

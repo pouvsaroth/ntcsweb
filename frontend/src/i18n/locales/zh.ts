@@ -4026,6 +4026,8 @@ const zh: MessageSchema = {
       actionLanguages: '语言',
       actionManageAll: '管理所有班级',
       searchMenus: '搜索菜单或标签...',
+      tabHidden: '已隐藏',
+      tabNeedsMenu: '先勾选菜单的“查看”，再取消勾选要隐藏的标签。',
       noMenusFound: '没有匹配的菜单或标签。',
       actionRequest: '申请',
       actionEnter: '录入',

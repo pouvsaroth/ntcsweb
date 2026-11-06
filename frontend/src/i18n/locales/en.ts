@@ -4031,6 +4031,8 @@ const en = {
       actionLanguages: 'Languages',
       actionManageAll: 'Manage All Classes',
       searchMenus: 'Search menus or tabs...',
+      tabHidden: 'hidden',
+      tabNeedsMenu: 'Tick View on the menu first, then untick a tab to hide it.',
       noMenusFound: 'No menu or tab matches.',
       actionRequest: 'Request',
       actionEnter: 'Enter',

@@ -37,7 +37,7 @@ const tabs = computed(() =>
   <div class="mb-6 border-b border-neutral-200">
     <nav class="-mb-px flex gap-x-6 overflow-x-auto [scrollbar-width:none] sm:flex-wrap sm:gap-y-1 sm:overflow-visible [&::-webkit-scrollbar]:hidden">
       <RouterLink
-        v-for="tab in tabs"
+        v-for="tab in tabs.filter((tab) => !auth.tabHidden(tab.to))"
         :key="tab.to"
         :to="tab.to"
         class="whitespace-nowrap border-b-2 px-1 py-3 text-sm font-medium"

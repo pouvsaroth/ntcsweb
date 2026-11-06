@@ -4027,6 +4027,8 @@ const ko: MessageSchema = {
       actionLanguages: '언어',
       actionManageAll: '전체 학급 관리',
       searchMenus: '메뉴 또는 탭 검색...',
+      tabHidden: '숨김',
+      tabNeedsMenu: '먼저 메뉴의 보기를 선택한 뒤, 숨길 탭의 선택을 해제하세요.',
       noMenusFound: '일치하는 메뉴나 탭이 없습니다.',
       actionRequest: '요청',
       actionEnter: '입력',

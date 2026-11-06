@@ -4027,6 +4027,8 @@ const ja: MessageSchema = {
       actionLanguages: '言語',
       actionManageAll: '全クラスを管理',
       searchMenus: 'メニューやタブを検索...',
+      tabHidden: '非表示',
+      tabNeedsMenu: 'まずメニューの「表示」にチェックを入れ、隠したいタブのチェックを外します。',
       noMenusFound: '一致するメニューやタブはありません。',
       actionRequest: '申請',
       actionEnter: '入力',

@@ -2,6 +2,8 @@
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 
+import { useAuthStore } from '@/stores/auth'
+
 /**
  * Shared tab bar between "Student Attendance" (take/review attendance) and
  * "Attendance Summary" (per-student totals) — mirrors InvoicesTabs.vue.
@@ -9,6 +11,7 @@ import { useRoute } from 'vue-router'
 const { t } = useI18n()
 const route = useRoute()
 
+const auth = useAuthStore()
 const tabs = [
   { to: '/admin/attendance', labelKey: 'admin.attendance.title' },
   { to: '/admin/attendance/summary', labelKey: 'admin.attendance.summaryTab' },
@@ -19,7 +22,7 @@ const tabs = [
   <div class="mb-6 border-b border-neutral-200">
     <nav class="-mb-px flex gap-x-6 overflow-x-auto [scrollbar-width:none] sm:flex-wrap sm:gap-y-1 sm:overflow-visible [&::-webkit-scrollbar]:hidden">
       <RouterLink
-        v-for="tab in tabs"
+        v-for="tab in tabs.filter((tab) => !auth.tabHidden(tab.to))"
         :key="tab.to"
         :to="tab.to"
         class="whitespace-nowrap border-b-2 px-1 py-3 text-sm font-medium"
