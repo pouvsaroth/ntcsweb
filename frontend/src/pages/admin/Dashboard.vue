@@ -16,7 +16,9 @@ import { leaveRequestsService } from '@/services/leaveRequests'
 import { makeUpClassCourseLabel, makeUpClassRequestsService } from '@/services/makeUpClassRequests'
 import type { MonthlyInvoice } from '@/services/monthlyInvoices'
 import { monthlyPaymentAlertsService } from '@/services/monthlyPaymentAlerts'
+import { clock, currentLocation, type MyToday, myStaffAttendanceService } from '@/services/staffAttendance'
 import { type TermStudyAlert, termStudyAlertsService } from '@/services/termStudyAlerts'
+import { ApiRequestError } from '@/types/api'
 import { resignationRequestsService } from '@/services/resignationRequests'
 import { useAuthStore } from '@/stores/auth'
 import { formatMoney } from '@/utils/currency'
@@ -434,9 +436,44 @@ const STALE_AFTER_MS = 5 * 60 * 1000
 let loadedDay = ''
 let loadedAt = 0
 
+/**
+ * Quick access Check in / Check out tile: the same as My check-in's button
+ * (HRM), shown to staff who can open My check-in. Not a staff member (403)
+ * or no HRM: no tile.
+ */
+const myToday = ref<MyToday | null>(null)
+const punching = ref(false)
+const punchMessage = ref<{ ok: boolean; text: string } | null>(null)
+
+async function loadMyToday(): Promise<void> {
+  if (!auth.can('my-requests.view') || !auth.hasModule('hrm')) return
+  myToday.value = await myStaffAttendanceService.today().catch(() => null)
+}
+
+async function punch(): Promise<void> {
+  const kind = myToday.value?.can_check_in ? 'in' : myToday.value?.can_check_out ? 'out' : null
+  if (!kind || punching.value) return
+  punching.value = true
+  punchMessage.value = null
+  try {
+    const location = await currentLocation()
+    const record = kind === 'in' ? await myStaffAttendanceService.checkIn(location) : await myStaffAttendanceService.checkOut(location)
+    punchMessage.value = {
+      ok: true,
+      text: t(kind === 'in' ? 'admin.timeAttendance.my.checkedIn' : 'admin.timeAttendance.my.checkedOut', { time: clock(kind === 'in' ? record.check_in_at : record.check_out_at) }),
+    }
+    await loadMyToday()
+  } catch (e) {
+    punchMessage.value = { ok: false, text: e instanceof ApiRequestError ? e.message : t('admin.timeAttendance.my.failed') }
+  } finally {
+    punching.value = false
+  }
+}
+
 function loadAll(): void {
   loadedDay = today()
   loadedAt = Date.now()
+  if (!auth.isSuperAdmin && !auth.hasRole('student')) void loadMyToday()
   if (!auth.isSuperAdmin && !auth.hasRole('student')) void loadStats()
   if (auth.hasRole('student')) void loadMyHours()
 }
@@ -532,6 +569,31 @@ onBeforeUnmount(() => {
     <template v-else-if="!auth.isSuperAdmin">
       <h2 class="mt-8 text-sm font-semibold uppercase tracking-wide text-neutral-500">{{ t('admin.dashboard.quickAccess') }}</h2>
       <div class="mt-3 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+        <!-- Check in / Check out: tap to punch now; once done for today it opens My check-in. -->
+        <component
+          :is="myToday.can_check_in || myToday.can_check_out ? 'button' : RouterLink"
+          v-if="myToday"
+          v-bind="myToday.can_check_in || myToday.can_check_out ? { type: 'button', disabled: punching } : { to: '/admin/my-check-in' }"
+          class="relative flex flex-col items-center gap-2 rounded-[--radius-card] border p-4 text-center shadow-[--shadow-card] transition-shadow hover:shadow-[--shadow-card-hover] disabled:opacity-60"
+          :class="myToday.can_check_in ? 'border-primary-300 bg-primary-50' : myToday.can_check_out ? 'border-red-200 bg-red-50' : 'border-neutral-200 bg-white'"
+          @click="myToday.can_check_in || myToday.can_check_out ? punch() : undefined"
+        >
+          <span
+            class="flex h-10 w-10 items-center justify-center rounded-full"
+            :class="myToday.can_check_out ? 'bg-red-100 text-red-700' : myToday.can_check_in ? 'bg-primary-100 text-primary-700' : 'bg-green-100 text-green-700'"
+          >
+            <svg class="h-5 w-5" :class="punching ? 'animate-pulse' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </span>
+          <span class="text-xs font-medium text-neutral-700">
+            {{ myToday.can_check_in ? t('admin.timeAttendance.my.checkIn') : myToday.can_check_out ? t('admin.timeAttendance.my.checkOut') : t('admin.timeAttendance.my.allDone') }}
+          </span>
+          <span v-if="punchMessage" class="text-[11px] leading-tight" :class="punchMessage.ok ? 'text-green-700' : 'text-red-700'">{{ punchMessage.text }}</span>
+          <span v-else-if="myToday.record?.check_in_at" class="text-[11px] leading-tight text-neutral-500">
+            {{ t('admin.timeAttendance.checkIn') }} {{ clock(myToday.record.check_in_at) }}<template v-if="myToday.record.check_out_at"> · {{ t('admin.timeAttendance.checkOut') }} {{ clock(myToday.record.check_out_at) }}</template>
+          </span>
+        </component>
         <RouterLink
           v-for="item in quickAccessItems"
           v-show="canSee(item)"
