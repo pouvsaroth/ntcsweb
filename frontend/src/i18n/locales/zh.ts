@@ -5381,6 +5381,8 @@ const zh: MessageSchema = {
         noShift: '今天没有班次。',
         checkIn: '上班打卡',
         checkOut: '下班打卡',
+        confirmCheckIn: '现在 {time} 签到吗？',
+        confirmCheckOut: '现在 {time} 签退吗？',
         checkedIn: '已于 {time} 上班打卡。',
         checkedOut: '已于 {time} 下班打卡。',
         allDone: '今天已完成。',

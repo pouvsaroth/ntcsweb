@@ -5382,6 +5382,8 @@ const ja: MessageSchema = {
         noShift: '今日はシフトがありません。',
         checkIn: '出勤',
         checkOut: '退勤',
+        confirmCheckIn: '{time} に出勤を記録しますか？',
+        confirmCheckOut: '{time} に退勤を記録しますか？',
         checkedIn: '{time} に出勤しました。',
         checkedOut: '{time} に退勤しました。',
         allDone: '今日は完了です。',

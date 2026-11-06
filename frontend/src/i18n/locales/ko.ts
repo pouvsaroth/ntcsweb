@@ -5382,6 +5382,8 @@ const ko: MessageSchema = {
         noShift: '오늘은 근무조가 없습니다.',
         checkIn: '출근',
         checkOut: '퇴근',
+        confirmCheckIn: '지금 {time}에 출근 체크할까요?',
+        confirmCheckOut: '지금 {time}에 퇴근 체크할까요?',
         checkedIn: '{time}에 출근했습니다.',
         checkedOut: '{time}에 퇴근했습니다.',
         allDone: '오늘은 완료했습니다.',

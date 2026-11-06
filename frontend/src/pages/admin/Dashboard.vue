@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
 
 import BaseBadge from '@/components/ui/BaseBadge.vue'
+import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseCard from '@/components/ui/BaseCard.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import { accountingReportsService, type IncomeDetail } from '@/services/accounting'
@@ -437,9 +438,9 @@ let loadedDay = ''
 let loadedAt = 0
 
 /**
- * Quick access Check in / Check out tile: the same as My check-in's button
- * (HRM), shown to staff who can open My check-in. Not a staff member (403)
- * or no HRM: no tile.
+ * Check in / Check out card above Quick access: the same as My check-in's
+ * button (HRM), after a confirm, shown to staff who can open My check-in.
+ * Not a staff member (403) or no HRM: no card.
  */
 const myToday = ref<MyToday | null>(null)
 const punching = ref(false)
@@ -450,8 +451,19 @@ async function loadMyToday(): Promise<void> {
   myToday.value = await myStaffAttendanceService.today().catch(() => null)
 }
 
+// Confirm first: which one, and the time it will record.
+const confirmKind = ref<'in' | 'out' | null>(null)
+const confirmTime = ref('')
+
+function askPunch(kind: 'in' | 'out'): void {
+  const now = new Date()
+  confirmTime.value = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+  confirmKind.value = kind
+}
+
 async function punch(): Promise<void> {
-  const kind = myToday.value?.can_check_in ? 'in' : myToday.value?.can_check_out ? 'out' : null
+  const kind = confirmKind.value
+  confirmKind.value = null
   if (!kind || punching.value) return
   punching.value = true
   punchMessage.value = null
@@ -567,33 +579,39 @@ onBeforeUnmount(() => {
     </template>
 
     <template v-else-if="!auth.isSuperAdmin">
-      <h2 class="mt-8 text-sm font-semibold uppercase tracking-wide text-neutral-500">{{ t('admin.dashboard.quickAccess') }}</h2>
-      <div class="mt-3 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-        <!-- Check in / Check out: tap to punch now; once done for today it opens My check-in. -->
-        <component
-          :is="myToday.can_check_in || myToday.can_check_out ? 'button' : RouterLink"
-          v-if="myToday"
-          v-bind="myToday.can_check_in || myToday.can_check_out ? { type: 'button', disabled: punching } : { to: '/admin/my-check-in' }"
-          class="relative flex flex-col items-center gap-2 rounded-[--radius-card] border p-4 text-center shadow-[--shadow-card] transition-shadow hover:shadow-[--shadow-card-hover] disabled:opacity-60"
-          :class="myToday.can_check_in ? 'border-primary-300 bg-primary-50' : myToday.can_check_out ? 'border-red-200 bg-red-50' : 'border-neutral-200 bg-white'"
-          @click="myToday.can_check_in || myToday.can_check_out ? punch() : undefined"
-        >
+      <!-- Check in / Check out (above Quick access): asks to confirm, then records the time. -->
+      <section v-if="myToday" class="mt-8 flex flex-col gap-3 rounded-[--radius-card] border border-neutral-200 bg-white p-4 shadow-[--shadow-card] sm:flex-row sm:items-center sm:justify-between">
+        <div class="flex items-center gap-3">
           <span
-            class="flex h-10 w-10 items-center justify-center rounded-full"
+            class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full"
             :class="myToday.can_check_out ? 'bg-red-100 text-red-700' : myToday.can_check_in ? 'bg-primary-100 text-primary-700' : 'bg-green-100 text-green-700'"
           >
-            <svg class="h-5 w-5" :class="punching ? 'animate-pulse' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </span>
-          <span class="text-xs font-medium text-neutral-700">
-            {{ myToday.can_check_in ? t('admin.timeAttendance.my.checkIn') : myToday.can_check_out ? t('admin.timeAttendance.my.checkOut') : t('admin.timeAttendance.my.allDone') }}
-          </span>
-          <span v-if="punchMessage" class="text-[11px] leading-tight" :class="punchMessage.ok ? 'text-green-700' : 'text-red-700'">{{ punchMessage.text }}</span>
-          <span v-else-if="myToday.record?.check_in_at" class="text-[11px] leading-tight text-neutral-500">
-            {{ t('admin.timeAttendance.checkIn') }} {{ clock(myToday.record.check_in_at) }}<template v-if="myToday.record.check_out_at"> · {{ t('admin.timeAttendance.checkOut') }} {{ clock(myToday.record.check_out_at) }}</template>
-          </span>
-        </component>
+          <div class="min-w-0">
+            <p class="text-sm font-semibold text-neutral-900">{{ t('admin.timeAttendance.my.title') }}</p>
+            <p v-if="punchMessage" class="text-sm" :class="punchMessage.ok ? 'text-green-700' : 'text-red-700'">{{ punchMessage.text }}</p>
+            <p v-else class="text-sm text-neutral-500">
+              <template v-if="myToday.record?.check_in_at">
+                {{ t('admin.timeAttendance.checkIn') }} {{ clock(myToday.record.check_in_at) }}<template v-if="myToday.record.check_out_at"> · {{ t('admin.timeAttendance.checkOut') }} {{ clock(myToday.record.check_out_at) }}</template>
+              </template>
+              <template v-else-if="myToday.shift">{{ t('admin.timeAttendance.my.todayShift', { name: myToday.shift.name, from: myToday.shift.start_time, to: myToday.shift.end_time }) }}</template>
+              <template v-else>{{ t('admin.timeAttendance.my.noShift') }}</template>
+            </p>
+          </div>
+        </div>
+        <div class="flex items-center gap-3">
+          <RouterLink to="/admin/my-check-in" class="text-sm font-medium text-primary-700 hover:underline">{{ t('admin.timeAttendance.my.myMonth') }}</RouterLink>
+          <BaseButton v-if="myToday.can_check_in" :loading="punching" @click="askPunch('in')">{{ t('admin.timeAttendance.my.checkIn') }}</BaseButton>
+          <BaseButton v-else-if="myToday.can_check_out" variant="danger" :loading="punching" @click="askPunch('out')">{{ t('admin.timeAttendance.my.checkOut') }}</BaseButton>
+          <span v-else class="text-sm font-medium text-green-700">{{ t('admin.timeAttendance.my.allDone') }}</span>
+        </div>
+      </section>
+
+      <h2 class="mt-8 text-sm font-semibold uppercase tracking-wide text-neutral-500">{{ t('admin.dashboard.quickAccess') }}</h2>
+      <div class="mt-3 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
         <RouterLink
           v-for="item in quickAccessItems"
           v-show="canSee(item)"
@@ -885,6 +903,14 @@ onBeforeUnmount(() => {
         </div>
       </template>
     </template>
+
+    <BaseModal :model-value="confirmKind !== null" :title="confirmKind === 'out' ? t('admin.timeAttendance.my.checkOut') : t('admin.timeAttendance.my.checkIn')" @update:model-value="confirmKind = null">
+      <p class="text-sm text-neutral-700">{{ t(confirmKind === 'out' ? 'admin.timeAttendance.my.confirmCheckOut' : 'admin.timeAttendance.my.confirmCheckIn', { time: confirmTime }) }}</p>
+      <template #footer>
+        <BaseButton variant="outline" @click="confirmKind = null">{{ t('common.cancel') }}</BaseButton>
+        <BaseButton :variant="confirmKind === 'out' ? 'danger' : 'primary'" @click="punch()">{{ t('common.confirm') }}</BaseButton>
+      </template>
+    </BaseModal>
 
     <BaseModal v-model="incomeDetailOpen" :title="t(DETAIL_TEXT[detailKind][detailRange].title)" size="lg">
       <p v-if="incomeDetailLoading" class="py-6 text-center text-sm text-neutral-500">{{ t('common.loading') }}</p>

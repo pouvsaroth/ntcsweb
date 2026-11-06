@@ -5386,6 +5386,8 @@ const en = {
         noShift: 'No shift today.',
         checkIn: 'Check in',
         checkOut: 'Check out',
+        confirmCheckIn: 'Check in now at {time}?',
+        confirmCheckOut: 'Check out now at {time}?',
         checkedIn: 'Checked in at {time}.',
         checkedOut: 'Checked out at {time}.',
         allDone: 'Done for today.',

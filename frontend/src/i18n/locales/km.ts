@@ -5382,6 +5382,8 @@ const km: MessageSchema = {
         noShift: 'ថ្ងៃនេះគ្មានវេនទេ។',
         checkIn: 'ចុះវត្តមានចូល',
         checkOut: 'ចុះវត្តមានចេញ',
+        confirmCheckIn: 'ចុះឈ្មោះចូលឥឡូវនេះ ម៉ោង {time}?',
+        confirmCheckOut: 'ចុះឈ្មោះចេញឥឡូវនេះ ម៉ោង {time}?',
         checkedIn: 'បានចុះចូលម៉ោង {time}។',
         checkedOut: 'បានចុះចេញម៉ោង {time}។',
         allDone: 'រួចរាល់សម្រាប់ថ្ងៃនេះ។',
