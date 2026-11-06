@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponse;
 use App\Models\Account;
 use App\Models\Enrollment;
+use App\Models\Expense;
 use App\Models\FinancialTransaction;
 use App\Models\Invoice;
 use App\Models\Payment;
@@ -127,6 +128,83 @@ final class AccountingDashboardController extends Controller
             'total' => $this->reports->totalRevenue($validated['date_from'], $validated['date_to']),
             'items' => $rows,
         ]);
+    }
+
+    /**
+     * The rows behind the dashboard's expense tiles — every posting that
+     * touches an Expense account in the range, oldest first. Signed the way
+     * totalExpenses() nets them (debit to expense +, credit to expense −), so
+     * the rows add up to `total`, the tile's figure. Same shape as income().
+     */
+    public function expenses(Request $request): JsonResponse
+    {
+        abort_unless($request->user()?->hasPermission(Permissions::ACCOUNTING_DASHBOARD_VIEW), 403);
+
+        $validated = $request->validate([
+            'date_from' => ['required', 'date'],
+            'date_to' => ['required', 'date', 'after_or_equal:date_from'],
+        ]);
+
+        $expenseIds = Account::query()->where('type', AccountType::EXPENSE)->pluck('id')->all();
+
+        $transactions = FinancialTransaction::query()
+            ->whereDate('transaction_date', '>=', $validated['date_from'])
+            ->whereDate('transaction_date', '<=', $validated['date_to'])
+            ->where(fn ($query) => $query->whereIn('debit_account_id', $expenseIds)->orWhereIn('credit_account_id', $expenseIds))
+            ->orderBy('transaction_date')
+            ->orderBy('id')
+            ->get(['id', 'transaction_date', 'description', 'amount', 'currency', 'debit_account_id', 'credit_account_id', 'reference_type', 'reference_id']);
+
+        $expenseMorph = (new Expense)->getMorphClass();
+        $expenses = Expense::query()
+            ->whereIn('id', $transactions->where('reference_type', $expenseMorph)->pluck('reference_id')->unique())
+            ->with(['account', 'supplier', 'expenseEntity'])
+            ->get()
+            ->keyBy('id');
+
+        $rows = $transactions
+            ->map(function (FinancialTransaction $transaction) use ($expenseIds, $expenses, $expenseMorph) {
+                $sign = (in_array($transaction->debit_account_id, $expenseIds) ? 1 : 0)
+                    - (in_array($transaction->credit_account_id, $expenseIds) ? 1 : 0);
+                $expense = $transaction->reference_type === $expenseMorph ? $expenses->get($transaction->reference_id) : null;
+
+                return $sign === 0 ? null : [
+                    'id' => $transaction->id,
+                    'date' => $transaction->transaction_date?->toDateString(),
+                    'description' => $this->expenseDescription($transaction, $expense),
+                    'amount' => $sign * (float) $transaction->amount,
+                    'currency' => $transaction->currency,
+                ];
+            })
+            ->filter()
+            ->values();
+
+        return ApiResponse::success([
+            'currency' => $this->tenantContext->getOrFail()->default_currency,
+            'total' => $this->reports->totalExpenses($validated['date_from'], $validated['date_to']),
+            'items' => $rows,
+        ]);
+    }
+
+    /**
+     * "Category — Vendor — Description (Expense for)" for a paid expense; the
+     * ledger's own description for anything else (adjustments, reversals).
+     */
+    private function expenseDescription(FinancialTransaction $transaction, ?Expense $expense): ?string
+    {
+        if ($expense === null) {
+            return $transaction->description;
+        }
+
+        $vendor = $expense->supplier?->name ?? $expense->vendor;
+        // Skip the vendor when the description already names it (e.g. "Loan interest — Lender").
+        if ($vendor !== null && $expense->description !== null && str_contains($expense->description, $vendor)) {
+            $vendor = null;
+        }
+        $parts = array_filter([$expense->account?->name, $vendor, $expense->description]);
+        $text = $parts === [] ? (string) $transaction->description : implode(' — ', $parts);
+
+        return $expense->expenseEntity ? "{$text} ({$expense->expenseEntity->name})" : $text;
     }
 
     /**

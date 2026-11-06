@@ -123,7 +123,6 @@ const MODULES: ModuleEntry[] = [
   { name: 'Student payment card', group: 'Dashboard', actions: { view: 'dashboard.cards.student-payment' } },
   { name: 'Invoices card', group: 'Dashboard', actions: { view: 'dashboard.cards.invoices' } },
   { name: 'Expense card', group: 'Dashboard', actions: { view: 'dashboard.cards.expense' } },
-  { name: 'Borrowings card (total owed)', group: 'Dashboard', actions: { view: 'dashboard.cards.borrowings' } },
   { name: 'Student attendance card', group: 'Dashboard', actions: { view: 'dashboard.cards.student-attendance' } },
   { name: 'Teacher attendance card', group: 'Dashboard', actions: { view: 'dashboard.cards.teacher-attendance' } },
   { name: 'Users card', group: 'Dashboard', actions: { view: 'dashboard.cards.users' } },

@@ -127,6 +127,10 @@ export const accountingReportsService = {
   income: (params: Required<DateRangeFilter>) =>
     apiGetWithMeta<IncomeDetail>('/accounting/dashboard/income', { params }).then((r) => r.data),
 
+  /** The paid expenses behind the dashboard's expense tiles — same shape as income(). */
+  expenseDetail: (params: Required<DateRangeFilter>) =>
+    apiGetWithMeta<IncomeDetail>('/accounting/dashboard/expenses', { params }).then((r) => r.data),
+
   revenue: (params: DateRangeFilter = {}) =>
     apiGetWithMeta<{ lines: ReportLine[]; total: number }>('/accounting/reports/revenue', { params }).then((r) => r.data),
 

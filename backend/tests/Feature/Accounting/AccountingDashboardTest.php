@@ -134,6 +134,34 @@ class AccountingDashboardTest extends TestCase
         $this->assertSame("{$student->fullName()} — {$course->name}", $response->json('data.items.0.description'));
     }
 
+    public function test_the_expense_detail_lists_each_paid_expense_and_adds_up_to_the_tile(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::ACCOUNTING_DASHBOARD_VIEW]);
+        $this->setUpChartOfAccounts();
+
+        $supplier = \App\Models\Supplier::factory()->create(['name' => 'EDC']);
+        $today = now()->toDateString();
+        $yesterday = now()->subDay()->toDateString();
+        $ledger = app(\App\Services\Accounting\FinancialTransactionService::class);
+        foreach ([[$yesterday, 40, 'March bill'], [$today, 25, 'April bill']] as [$date, $amount, $description]) {
+            $expense = \App\Models\Expense::factory()->create([
+                'account_id' => $this->electricityAccount->id, 'expense_entity_id' => $this->expenseEntity->id,
+                'supplier_id' => $supplier->id, 'amount' => $amount, 'currency' => 'USD', 'description' => $description,
+            ]);
+            $ledger->postExpensePayment($this->electricityAccount, $this->cashAccount, $amount, $date, $expense, $this->admin);
+        }
+
+        $response = $this->getJson("/api/v1/accounting/dashboard/expenses?date_from={$yesterday}&date_to={$today}")->assertOk();
+
+        $this->assertSame([$yesterday, $today], array_column($response->json('data.items'), 'date'));
+        $this->assertEquals([40, 25], array_column($response->json('data.items'), 'amount'));
+        $this->assertEqualsWithDelta(65.0, $response->json('data.total'), 0.001);
+        $this->assertSame('Electricity — EDC — March bill (Newtech)', $response->json('data.items.0.description'));
+
+        $todayOnly = $this->getJson("/api/v1/accounting/dashboard/expenses?date_from={$today}&date_to={$today}")->assertOk();
+        $this->assertEqualsWithDelta(25.0, $todayOnly->json('data.total'), 0.001);
+    }
+
     public function test_the_dashboard_requires_the_accounting_dashboard_view_permission(): void
     {
         $this->actingAsAdminWithPermissions([]);

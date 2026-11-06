@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
 
@@ -19,7 +19,6 @@ import { monthlyPaymentAlertsService } from '@/services/monthlyPaymentAlerts'
 import { type TermStudyAlert, termStudyAlertsService } from '@/services/termStudyAlerts'
 import { resignationRequestsService } from '@/services/resignationRequests'
 import { useAuthStore } from '@/stores/auth'
-import { borrowingsService, type BorrowingSummary } from '@/services/borrowings'
 import { formatMoney } from '@/utils/currency'
 import { formatDate } from '@/utils/date'
 
@@ -249,18 +248,6 @@ async function loadUnpaidInvoices(): Promise<void> {
 
 let currency: 'USD' | 'KHR' = 'USD'
 
-// Accounting > Borrowings card: total still owed, per currency, and the next payment.
-const borrowings = ref<BorrowingSummary | null>(null)
-async function loadBorrowings(): Promise<void> {
-  if (!auth.can('dashboard.cards.borrowings')) return
-  try {
-    borrowings.value = await borrowingsService.summary()
-  } catch {
-    // No card — most likely the signed-in admin just lacks borrowings.view.
-  }
-}
-const owedText = computed(() => (borrowings.value?.owed.length ? borrowings.value.owed.map((o) => amount(o.amount, o.currency)).join(' · ') : amount(0, auth.tenantDefaultCurrency === 'KHR' ? 'KHR' : 'USD')))
-
 function money(amount: number): string {
   return formatMoney(amount, currency)
 }
@@ -328,21 +315,41 @@ function yesterday(): string {
   return toDateString(date)
 }
 
+type DetailKind = 'income' | 'expense'
+type DetailRange = 'month' | 'today'
+
+const DETAIL_TEXT: Record<DetailKind, Record<DetailRange, { title: string; empty: string }>> = {
+  income: {
+    month: { title: 'admin.dashboard.statMonthlyIncome', empty: 'admin.dashboard.incomeDetailEmpty' },
+    today: { title: 'admin.dashboard.statDailyIncome', empty: 'admin.dashboard.incomeDetailEmptyToday' },
+  },
+  expense: {
+    month: { title: 'admin.dashboard.statMonthlyExpense', empty: 'admin.dashboard.expenseDetailEmpty' },
+    today: { title: 'admin.dashboard.statDailyExpense', empty: 'admin.dashboard.expenseDetailEmptyToday' },
+  },
+}
+
 const incomeDetailOpen = ref(false)
 const incomeDetail = ref<IncomeDetail | null>(null)
 const incomeDetailLoading = ref(false)
 const incomeDetailError = ref<string | null>(null)
+const detailKind = ref<DetailKind>('income')
+const detailRange = ref<DetailRange>('month')
 
-/** Same range as the Monthly Income tile, so the rows add up to its figure. */
-async function openIncomeDetail(): Promise<void> {
+/** Same range as the tile that was clicked, so the rows add up to its figure. */
+async function openIncomeDetail(kind: DetailKind, range: DetailRange): Promise<void> {
+  detailKind.value = kind
+  detailRange.value = range
+  incomeDetail.value = null
   incomeDetailOpen.value = true
   incomeDetailLoading.value = true
   incomeDetailError.value = null
 
+  const params = { date_from: range === 'month' ? firstOfMonth() : today(), date_to: today() }
   try {
-    incomeDetail.value = await accountingReportsService.income({ date_from: firstOfMonth(), date_to: today() })
+    incomeDetail.value = kind === 'income' ? await accountingReportsService.income(params) : await accountingReportsService.expenseDetail(params)
   } catch {
-    incomeDetailError.value = t('admin.dashboard.incomeDetailLoadFailed')
+    incomeDetailError.value = t(kind === 'income' ? 'admin.dashboard.incomeDetailLoadFailed' : 'admin.dashboard.expenseDetailLoadFailed')
   } finally {
     incomeDetailLoading.value = false
   }
@@ -370,8 +377,6 @@ async function loadPendingApprovals(): Promise<void> {
 
 async function loadStats(): Promise<void> {
   void loadPendingApprovals()
-
-  void loadBorrowings()
 
   if (auth.can('dashboard.finance.view')) {
     try {
@@ -791,61 +796,58 @@ onBeforeUnmount(() => {
               <p class="mt-1 text-3xl font-bold text-neutral-900">{{ studyingEnrollmentsCount }}</p>
             </BaseCard>
           </RouterLink>
-          <button type="button" class="rounded-[--radius-card] text-left transition hover:ring-2 hover:ring-primary-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500" @click="openIncomeDetail">
+          <button type="button" class="rounded-[--radius-card] text-left transition hover:ring-2 hover:ring-primary-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500" @click="openIncomeDetail('income', 'month')">
             <BaseCard class="h-full">
               <p class="text-sm font-medium text-neutral-500">{{ t('admin.dashboard.statMonthlyIncome') }}</p>
               <p class="mt-1 text-3xl font-bold text-neutral-900">{{ maskedText(monthlyIncome) }}</p>
             </BaseCard>
           </button>
-          <BaseCard>
-            <p class="text-sm font-medium text-neutral-500">{{ t('admin.dashboard.statDailyIncome') }}</p>
-            <p class="mt-1 text-3xl font-bold text-neutral-900">{{ maskedText(dailyIncome) }}</p>
-          </BaseCard>
-          <BaseCard>
-            <p class="text-sm font-medium text-neutral-500">{{ t('admin.dashboard.statMonthlyExpense') }}</p>
-            <p class="mt-1 text-3xl font-bold text-neutral-900">{{ maskedText(monthlyExpense) }}</p>
-          </BaseCard>
-          <BaseCard>
-            <p class="text-sm font-medium text-neutral-500">{{ t('admin.dashboard.statDailyExpense') }}</p>
-            <p class="mt-1 text-3xl font-bold text-neutral-900">{{ maskedText(dailyExpense) }}</p>
-          </BaseCard>
+          <button type="button" class="rounded-[--radius-card] text-left transition hover:ring-2 hover:ring-primary-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500" @click="openIncomeDetail('income', 'today')">
+            <BaseCard class="h-full">
+              <p class="text-sm font-medium text-neutral-500">{{ t('admin.dashboard.statDailyIncome') }}</p>
+              <p class="mt-1 text-3xl font-bold text-neutral-900">{{ maskedText(dailyIncome) }}</p>
+            </BaseCard>
+          </button>
+          <button type="button" class="rounded-[--radius-card] text-left transition hover:ring-2 hover:ring-primary-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500" @click="openIncomeDetail('expense', 'month')">
+            <BaseCard class="h-full">
+              <p class="text-sm font-medium text-neutral-500">{{ t('admin.dashboard.statMonthlyExpense') }}</p>
+              <p class="mt-1 text-3xl font-bold text-neutral-900">{{ maskedText(monthlyExpense) }}</p>
+            </BaseCard>
+          </button>
+          <button type="button" class="rounded-[--radius-card] text-left transition hover:ring-2 hover:ring-primary-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500" @click="openIncomeDetail('expense', 'today')">
+            <BaseCard class="h-full">
+              <p class="text-sm font-medium text-neutral-500">{{ t('admin.dashboard.statDailyExpense') }}</p>
+              <p class="mt-1 text-3xl font-bold text-neutral-900">{{ maskedText(dailyExpense) }}</p>
+            </BaseCard>
+          </button>
         </div>
       </template>
-
-      <div v-if="borrowings && auth.can('dashboard.cards.borrowings')" class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <RouterLink
-          to="/admin/borrowings/reports"
-          class="rounded-[--radius-card] transition hover:ring-2 hover:ring-primary-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
-        >
-          <BaseCard class="h-full">
-            <div class="flex items-start justify-between gap-2">
-              <p class="text-sm font-medium text-neutral-500">{{ t('admin.dashboard.statBorrowingsOwed') }}</p>
-              <BaseBadge v-if="borrowings.late_loans" variant="danger">{{ t('admin.borrowings.lateCount', { count: borrowings.late_loans }) }}</BaseBadge>
-            </div>
-            <p class="mt-1 text-2xl font-bold text-neutral-900">{{ owedText }}</p>
-            <p v-if="borrowings.next_payment" class="mt-1 text-xs" :class="borrowings.next_payment.late ? 'text-danger-700' : 'text-neutral-500'">
-              {{
-                t('admin.dashboard.borrowingsNext', {
-                  amount: amount(borrowings.next_payment.amount, borrowings.next_payment.currency),
-                  date: formatDate(borrowings.next_payment.due_on),
-                  lender: borrowings.next_payment.lender ?? '—',
-                })
-              }}
-            </p>
-            <p v-else class="mt-1 text-xs text-neutral-500">{{ t('admin.dashboard.borrowingsNone') }}</p>
-          </BaseCard>
-        </RouterLink>
-      </div>
     </template>
 
-    <BaseModal v-model="incomeDetailOpen" :title="t('admin.dashboard.incomeDetailTitle')" size="lg">
+    <BaseModal v-model="incomeDetailOpen" :title="t(DETAIL_TEXT[detailKind][detailRange].title)" size="lg">
       <p v-if="incomeDetailLoading" class="py-6 text-center text-sm text-neutral-500">{{ t('common.loading') }}</p>
       <p v-else-if="incomeDetailError" class="py-6 text-center text-sm text-danger-600">{{ incomeDetailError }}</p>
       <p v-else-if="incomeDetail && incomeDetail.items.length === 0" class="py-6 text-center text-sm text-neutral-500">
-        {{ t('admin.dashboard.incomeDetailEmpty') }}
+        {{ t(DETAIL_TEXT[detailKind][detailRange].empty) }}
       </p>
       <div v-else-if="incomeDetail" class="max-h-[60vh] overflow-auto">
-        <table class="min-w-full text-sm">
+        <!-- Phone: one card per row. -->
+        <ul class="divide-y divide-neutral-100 sm:hidden">
+          <li v-for="item in incomeDetail.items" :key="item.id" class="flex items-start justify-between gap-3 py-2">
+            <div class="min-w-0">
+              <p class="text-sm text-neutral-900">{{ item.description ?? '—' }}</p>
+              <p class="text-xs text-neutral-500">{{ formatDate(item.date) }}</p>
+            </div>
+            <p class="whitespace-nowrap text-sm font-medium" :class="item.amount < 0 ? 'text-danger-600' : 'text-neutral-900'">
+              {{ showMoney && item.amount < 0 ? '-' : '' }}{{ amount(Math.abs(item.amount), item.currency) }}
+            </p>
+          </li>
+          <li class="flex justify-between border-t border-neutral-200 py-2 text-sm font-semibold text-neutral-900">
+            <span>{{ t('admin.dashboard.incomeDetailTotal') }}</span>
+            <span>{{ amount(incomeDetail.total, incomeDetail.currency) }}</span>
+          </li>
+        </ul>
+        <table class="hidden min-w-full text-sm sm:table">
           <thead class="sticky top-0 bg-neutral-50 text-left text-xs font-semibold uppercase tracking-wide text-neutral-500">
             <tr>
               <th class="px-3 py-2">{{ t('admin.dashboard.incomeDetailDate') }}</th>
