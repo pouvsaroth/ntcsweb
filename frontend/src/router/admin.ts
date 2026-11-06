@@ -414,7 +414,7 @@ const adminRoutes: RouteRecordRaw[] = [
     path: 'staff/new',
     name: 'admin.staff.new',
     component: () => import('@/pages/admin/StaffForm.vue'),
-    meta: { titleKey: 'adminNav.items.staffList' },
+    meta: { permission: 'staff.create', titleKey: 'adminNav.items.staffList' },
   },
   {
     path: 'staff/:id/edit',

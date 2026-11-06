@@ -377,7 +377,8 @@ async function load() {
 
   try {
     const [allPositions] = await Promise.all([
-      positionsService.listAll(),
+      // Not fatal: the form still opens (with their current position) if the list is refused.
+      positionsService.listAll().catch(() => [] as Position[]),
       geographyService.provinces().then((rows) => (provinces.value = rows)),
       loadOrganization(),
     ])
@@ -406,6 +407,7 @@ async function load() {
     form.telegram = staff.telegram ?? ''
     form.other_contact = staff.other_contact ?? ''
     form.position_id = staff.position?.id ?? null
+    if (staff.position && !positions.value.some((position) => position.id === staff.position?.id)) positions.value = [...positions.value, staff.position]
     form.hire_date = staff.hire_date ?? ''
     form.status = staff.status
     form.branch_id = staff.branch_id
@@ -766,7 +768,7 @@ onMounted(load)
           </section>
 
           <div class="flex gap-3">
-            <BaseButton type="submit" :loading="submitting">{{ t('common.save') }}</BaseButton>
+            <BaseButton v-if="isEditing ? auth.can('staff.update') || ownOnly : auth.can('staff.create')" type="submit" :loading="submitting">{{ t('common.save') }}</BaseButton>
             <BaseButton type="button" variant="outline" @click="router.push('/admin/staff')">{{ t('common.cancel') }}</BaseButton>
           </div>
         </form>

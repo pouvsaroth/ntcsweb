@@ -17,7 +17,11 @@ class PositionPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->hasPermission(Permissions::POSITIONS_VIEW);
+        // The staff form picks a Position, so whoever adds or edits staff
+        // may list them (names only) without the Positions menu itself.
+        return $user->hasPermission(Permissions::POSITIONS_VIEW)
+            || $user->hasPermission(Permissions::STAFF_CREATE)
+            || $user->hasPermission(Permissions::STAFF_UPDATE);
     }
 
     public function view(User $user, Position $position): bool

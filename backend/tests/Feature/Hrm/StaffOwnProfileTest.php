@@ -75,4 +75,20 @@ class StaffOwnProfileTest extends TestCase
         $this->putJson("/api/v1/staff/{$other->id}", ['position_id' => $position->id])->assertOk();
         $this->assertSame($position->id, $other->refresh()->position_id);
     }
+
+    public function test_staff_editors_can_list_positions_for_the_form_without_the_positions_menu(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::STAFF_VIEW, Permissions::STAFF_UPDATE]);
+        Position::factory()->create();
+
+        $this->getJson('/api/v1/positions')->assertOk();
+        $this->getJson('/api/v1/staff')->assertOk();
+    }
+
+    public function test_view_only_staff_users_cannot_list_positions(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::STAFF_VIEW]);
+
+        $this->getJson('/api/v1/positions')->assertForbidden();
+    }
 }

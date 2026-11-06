@@ -20,8 +20,10 @@ import { useConfirmDialogStore } from '@/stores/confirmDialog'
 const { t, locale } = useI18n()
 const confirmDialog = useConfirmDialogStore()
 const auth = useAuthStore()
-/** Own profile only (staff.update-own): the list holds just their record — no add, status or delete. */
-const ownOnly = computed(() => auth.can('staff.update-own') && !auth.can('staff.update'))
+/** Their own record (staff.update-own) or anyone's (staff.update). */
+function canEditRow(row: Staff): boolean {
+  return auth.can('staff.update') || (auth.can('staff.update-own') && row.user?.id === auth.user?.id)
+}
 
 const { items, meta, loading, error, setPage, setSearch, fetch } = usePaginatedResource<Staff>((query) =>
   staffService.list(query),
@@ -100,7 +102,7 @@ onMounted(() => {
         class="block w-full max-w-sm rounded-lg border border-neutral-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
         @input="setSearch(($event.target as HTMLInputElement).value)"
       />
-      <BaseButton v-if="!ownOnly" to="/admin/staff/new">{{ t('admin.staff.addStaff') }}</BaseButton>
+      <BaseButton v-if="auth.can('staff.create')" to="/admin/staff/new">{{ t('admin.staff.addStaff') }}</BaseButton>
     </div>
 
     <BaseAlert v-if="error" variant="danger" class="mb-4">{{ error }}</BaseAlert>
@@ -130,6 +132,7 @@ onMounted(() => {
           class="flex h-9 w-20 items-center justify-center overflow-hidden rounded border text-xs font-medium"
           :class="row.signature_url ? 'border-neutral-200 bg-white hover:ring-2 hover:ring-primary-300' : 'border-dashed border-neutral-300 text-primary-700 hover:bg-primary-50'"
           :title="t('admin.staff.uploadSignature')"
+          :disabled="!canEditRow(row)"
           @click="openSignature(row)"
         >
           <img v-if="row.signature_url" :src="row.signature_url" alt="" class="h-full w-full object-contain" />
@@ -139,7 +142,7 @@ onMounted(() => {
       <template #cell-actions="{ row }">
         <div class="flex justify-end gap-1">
           <EditIconButton :to="`/admin/staff/${row.id}/edit`" />
-          <ActionIconButton v-if="!ownOnly" :title="t('admin.staff.changeStatus')" @click="openStatusModal(row)">
+          <ActionIconButton v-if="auth.can('staff.change-status')" :title="t('admin.staff.changeStatus')" @click="openStatusModal(row)">
             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path
                 stroke-linecap="round"
@@ -148,7 +151,7 @@ onMounted(() => {
               />
             </svg>
           </ActionIconButton>
-          <ActionIconButton v-if="!ownOnly" variant="danger" :title="t('admin.staff.delete')" @click="remove(row)">
+          <ActionIconButton v-if="auth.can('staff.delete')" variant="danger" :title="t('admin.staff.delete')" @click="remove(row)">
             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path
                 stroke-linecap="round"
