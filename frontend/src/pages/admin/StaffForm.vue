@@ -549,6 +549,7 @@ onMounted(load)
               <BaseInput v-model="form.other_name" :label="t('admin.staff.otherName')" :hint="t('admin.staff.otherNameHint')" :error="errors.other_name?.[0]" />
 
               <BaseSelect
+                v-if="!ownOnly"
                 :model-value="form.position_id ? String(form.position_id) : ''"
                 required
                 :options="positionOptions"
@@ -558,13 +559,40 @@ onMounted(load)
                 :disabled="ownOnly"
                 @update:model-value="(value: string) => (form.position_id = value ? Number(value) : null)"
               />
-              <BaseInput v-model="form.hire_date" type="date" :disabled="ownOnly" :label="t('admin.staff.hireDate')" :error="errors.hire_date?.[0]" />
-              <LookupSelect v-model="form.status" category="STAFF_STATUS" :disabled="ownOnly" :label="t('admin.staff.status')" />
+              <template v-if="!ownOnly">
+                <BaseInput v-model="form.hire_date" type="date" :label="t('admin.staff.hireDate')" :error="errors.hire_date?.[0]" />
+                <LookupSelect v-model="form.status" category="STAFF_STATUS" :label="t('admin.staff.status')" />
+              </template>
             </div>
           </section>
 
-          <!-- Organization: where they sit in HRM > Organization Management -->
-          <section>
+          <!-- Bank QR (KHQR) for salary: only the staff member adds it -->
+          <section v-if="isEditing">
+            <h2 class="mb-1 text-sm font-semibold text-neutral-800">{{ t('admin.staff.bankQr') }}</h2>
+            <div class="mt-4">
+              <p class="mb-2 text-xs text-neutral-500">{{ isOwnProfile ? t('admin.staff.bankQrHintOwn') : t('admin.staff.bankQrHintOthers') }}</p>
+              <a v-if="bankQrUrl" :href="bankQrUrl" target="_blank" rel="noopener" class="mb-3 flex h-36 w-36 items-center justify-center overflow-hidden rounded-lg border border-neutral-200 bg-white">
+                <img :src="bankQrUrl" :alt="t('admin.staff.bankQr')" class="h-full w-full object-contain" />
+              </a>
+              <p v-else class="mb-3 text-sm text-neutral-500">{{ t('admin.staff.bankQrNone') }}</p>
+              <template v-if="isOwnProfile">
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  :disabled="bankQrBusy"
+                  class="block w-full text-sm text-neutral-600 file:mr-3 file:rounded-lg file:border-0 file:bg-primary-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-primary-800 hover:file:bg-primary-100"
+                  @change="onBankQrChange"
+                />
+                <button v-if="bankQrUrl" type="button" class="mt-2 text-sm font-medium text-danger-600 hover:underline disabled:opacity-50" :disabled="bankQrBusy" @click="removeBankQr">
+                  {{ t('admin.staff.bankQrRemove') }}
+                </button>
+              </template>
+              <p v-if="bankQrError" class="mt-1.5 text-sm text-danger-600">{{ bankQrError }}</p>
+            </div>
+          </section>
+
+          <!-- Organization: where they sit in HRM > Organization Management (hidden on their own profile: HR sets it) -->
+          <section v-if="!ownOnly">
             <h2 class="mb-1 text-sm font-semibold text-neutral-800">{{ t('admin.staff.organizationSection') }}</h2>
             <div class="mt-4 grid gap-4 sm:grid-cols-2">
               <BaseSelect
@@ -687,27 +715,6 @@ onMounted(load)
                 <p v-if="errors.signature?.[0]" class="mt-1.5 text-sm text-danger-600">{{ errors.signature[0] }}</p>
               </div>
 
-              <div v-if="isEditing">
-                <label class="mb-1.5 block text-sm font-medium text-neutral-700">{{ t('admin.staff.bankQr') }}</label>
-                <p class="mb-2 text-xs text-neutral-500">{{ isOwnProfile ? t('admin.staff.bankQrHintOwn') : t('admin.staff.bankQrHintOthers') }}</p>
-                <a v-if="bankQrUrl" :href="bankQrUrl" target="_blank" rel="noopener" class="mb-3 flex h-36 w-36 items-center justify-center overflow-hidden rounded-lg border border-neutral-200 bg-white">
-                  <img :src="bankQrUrl" :alt="t('admin.staff.bankQr')" class="h-full w-full object-contain" />
-                </a>
-                <p v-else class="mb-3 text-sm text-neutral-500">{{ t('admin.staff.bankQrNone') }}</p>
-                <template v-if="isOwnProfile">
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    :disabled="bankQrBusy"
-                    class="block w-full text-sm text-neutral-600 file:mr-3 file:rounded-lg file:border-0 file:bg-primary-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-primary-800 hover:file:bg-primary-100"
-                    @change="onBankQrChange"
-                  />
-                  <button v-if="bankQrUrl" type="button" class="mt-2 text-sm font-medium text-danger-600 hover:underline disabled:opacity-50" :disabled="bankQrBusy" @click="removeBankQr">
-                    {{ t('admin.staff.bankQrRemove') }}
-                  </button>
-                </template>
-                <p v-if="bankQrError" class="mt-1.5 text-sm text-danger-600">{{ bankQrError }}</p>
-              </div>
             </div>
           </section>
 

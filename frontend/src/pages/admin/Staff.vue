@@ -10,6 +10,7 @@ import BasePagination from '@/components/ui/BasePagination.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
 import DataTable from '@/components/ui/DataTable.vue'
 import EditIconButton from '@/components/ui/EditIconButton.vue'
+import StaffBankQrModal from '@/components/admin/StaffBankQrModal.vue'
 import StaffSignatureModal from '@/components/admin/StaffSignatureModal.vue'
 import StaffStatusModal from '@/components/admin/StaffStatusModal.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
@@ -45,6 +46,7 @@ const columns = computed(() => [
   { key: 'phone', label: t('admin.staff.columnPhone') },
   { key: 'status', label: t('admin.staff.columnStatus') },
   { key: 'signature', label: t('admin.staff.signature') },
+  { key: 'bank_qr', label: t('admin.staff.bankQrColumn') },
   { key: 'actions', label: t('admin.staff.columnActions'), align: 'text-right' },
 ])
 
@@ -80,6 +82,17 @@ const activeStaff = ref<Staff | null>(null)
 function openStatusModal(staff: Staff) {
   activeStaff.value = staff
   statusModalOpen.value = true
+}
+
+// Bank QR column: view it large; the staff member adds/replaces their own here too.
+const bankQrOpen = ref(false)
+const bankQrStaff = ref<Staff | null>(null)
+function isOwnRow(row: Staff): boolean {
+  return row.user?.id != null && row.user.id === auth.user?.id
+}
+function openBankQr(staff: Staff) {
+  bankQrStaff.value = staff
+  bankQrOpen.value = true
 }
 
 // Signature column: upload/replace without opening the Staff form.
@@ -151,6 +164,20 @@ onMounted(() => {
           <template v-else>{{ t('admin.staff.uploadSignature') }}</template>
         </button>
       </template>
+      <template #cell-bank_qr="{ row }">
+        <button
+          v-if="row.bank_qr_url || isOwnRow(row)"
+          type="button"
+          class="flex h-12 w-12 items-center justify-center overflow-hidden rounded border text-xs font-medium"
+          :class="row.bank_qr_url ? 'border-neutral-200 bg-white hover:ring-2 hover:ring-primary-300' : 'border-dashed border-neutral-300 text-primary-700 hover:bg-primary-50'"
+          :title="t('admin.staff.bankQr')"
+          @click="openBankQr(row)"
+        >
+          <img v-if="row.bank_qr_url" :src="row.bank_qr_url" :alt="t('admin.staff.bankQr')" class="h-full w-full object-contain" />
+          <template v-else>{{ t('admin.staff.bankQrAdd') }}</template>
+        </button>
+        <span v-else class="text-neutral-400">—</span>
+      </template>
       <template #cell-actions="{ row }">
         <div class="flex justify-end gap-1">
           <EditIconButton :to="`/admin/staff/${row.id}/edit`" />
@@ -179,6 +206,7 @@ onMounted(() => {
     <BasePagination v-if="meta" :meta="meta" sticky class="mt-4" @update:page="setPage" />
 
     <StaffStatusModal v-model="statusModalOpen" :staff="activeStaff" @saved="fetch" />
+    <StaffBankQrModal v-model="bankQrOpen" :staff="bankQrStaff" @saved="fetch" />
     <StaffSignatureModal v-model="signatureOpen" :staff="signatureStaff" @saved="fetch()" />
   </div>
 </template>
