@@ -12,7 +12,8 @@ class BuildingPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->hasPermission(Permissions::BUILDINGS_VIEW);
+        // The classroom form picks a building.
+        return $user->hasAnyPermission(Permissions::BUILDINGS_VIEW, Permissions::CLASSROOMS_CREATE, Permissions::CLASSROOMS_UPDATE);
     }
 
     public function view(User $user, Building $building): bool

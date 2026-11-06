@@ -12,7 +12,8 @@ class RolePolicy
 {
     public function viewAny(User $actor): bool
     {
-        return $actor->hasPermission(Permissions::ROLES_VIEW);
+        // The user and position forms pick a role.
+        return $actor->hasAnyPermission(Permissions::ROLES_VIEW, Permissions::USERS_CREATE, Permissions::USERS_UPDATE, Permissions::POSITIONS_CREATE, Permissions::POSITIONS_UPDATE);
     }
 
     public function view(User $actor, Role $role): bool

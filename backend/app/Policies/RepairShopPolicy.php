@@ -13,7 +13,8 @@ class RepairShopPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->hasPermission(Permissions::ASSET_REPAIRS_VIEW);
+        // Send to repair and Schedule maintenance pick a shop.
+        return $user->hasAnyPermission(Permissions::ASSET_REPAIRS_VIEW, Permissions::ASSET_REPAIRS_CREATE, Permissions::ASSET_MAINTENANCE_CREATE, Permissions::ASSET_MAINTENANCE_UPDATE);
     }
 
     public function view(User $user, RepairShop $repairShop): bool

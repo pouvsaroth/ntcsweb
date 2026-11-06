@@ -12,7 +12,8 @@ class AccountPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->hasPermission(Permissions::ACCOUNTS_VIEW);
+        // Expense/income/transfer/adjustment forms, Pay expense and Complete repair pick an account.
+        return $user->hasAnyPermission(Permissions::ACCOUNTS_VIEW, Permissions::ACCOUNTS_CREATE, Permissions::ACCOUNTS_UPDATE, Permissions::EXPENSE_CREATE, Permissions::EXPENSE_UPDATE, Permissions::EXPENSE_PAY, Permissions::INCOME_CREATE, Permissions::INCOME_UPDATE, Permissions::TRANSACTIONS_CREATE, Permissions::ACCOUNTING_ADJUSTMENT_CREATE, Permissions::ASSET_REPAIRS_COMPLETE);
     }
 
     public function view(User $user, Account $account): bool

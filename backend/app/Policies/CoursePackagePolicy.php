@@ -12,7 +12,8 @@ class CoursePackagePolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->hasPermission(Permissions::COURSE_PACKAGES_VIEW);
+        // The video form, new enrollments and Change class pick a package.
+        return $user->hasAnyPermission(Permissions::COURSE_PACKAGES_VIEW, Permissions::VIDEOS_CREATE, Permissions::VIDEOS_UPDATE, Permissions::ENROLLMENTS_CREATE, Permissions::ENROLLMENTS_TRANSFER);
     }
 
     public function view(User $user, CoursePackage $coursePackage): bool
