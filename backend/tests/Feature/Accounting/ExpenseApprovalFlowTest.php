@@ -35,7 +35,7 @@ class ExpenseApprovalFlowTest extends TestCase
         parent::setUp();
 
         $this->actingAsAdminWithPermissions([
-            Permissions::EXPENSE_VIEW, Permissions::EXPENSE_CREATE, Permissions::EXPENSE_APPROVE, Permissions::APPROVAL_GROUPS_MANAGE,
+            Permissions::EXPENSE_VIEW, Permissions::EXPENSE_CREATE, Permissions::EXPENSE_APPROVE, Permissions::APPROVAL_GROUPS_VIEW, Permissions::APPROVAL_GROUPS_CREATE, Permissions::APPROVAL_FLOWS_VIEW, Permissions::APPROVAL_FLOWS_UPDATE,
         ]);
         $this->setUpChartOfAccounts();
 

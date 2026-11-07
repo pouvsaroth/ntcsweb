@@ -44,7 +44,7 @@ class ApprovalRequestTest extends TestCase
 
         $this->postJson('/api/v1/form-categories', ['name' => 'Finance'])->assertForbidden();
 
-        $this->actingAsAdminWithPermissions([Permissions::FORM_CATEGORIES_MANAGE]);
+        $this->actingAsAdminWithPermissions([Permissions::FORM_CATEGORIES_VIEW, Permissions::FORM_CATEGORIES_CREATE, Permissions::FORM_CATEGORIES_UPDATE, Permissions::FORM_CATEGORIES_DELETE]);
         $response = $this->postJson('/api/v1/form-categories', ['name' => 'Finance']);
 
         $response->assertCreated();
@@ -53,7 +53,7 @@ class ApprovalRequestTest extends TestCase
 
     public function test_creating_a_form_template_requires_the_manage_permission_and_a_valid_category(): void
     {
-        $this->actingAsAdminWithPermissions([Permissions::FORM_TEMPLATES_MANAGE]);
+        $this->actingAsAdminWithPermissions([Permissions::FORM_TEMPLATES_VIEW, Permissions::FORM_TEMPLATES_CREATE, Permissions::FORM_TEMPLATES_UPDATE, Permissions::FORM_TEMPLATES_DELETE]);
         $category = FormCategory::factory()->create();
 
         $response = $this->postJson('/api/v1/form-templates', [

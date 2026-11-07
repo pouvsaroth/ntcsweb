@@ -15,7 +15,7 @@ const route = useRoute()
 const router = useRouter()
 
 const allTabs = [
-  { to: '/admin/languages', labelKey: 'admin.languages.tabLanguage', permission: 'base-data.manage-languages' },
+  { to: '/admin/languages', labelKey: 'admin.languages.tabLanguage', permission: 'languages.view' },
   { to: '/admin/languages/translations', labelKey: 'admin.languages.tabTranslation', permission: 'base-data.manage-translations' },
 ]
 

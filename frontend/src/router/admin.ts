@@ -479,25 +479,25 @@ const adminRoutes: RouteRecordRaw[] = [
     path: 'approval-flow/groups',
     name: 'admin.approval-flow.groups',
     component: () => import('@/pages/admin/approvalFlow/ApprovalGroups.vue'),
-    meta: { titleKey: 'adminNav.items.approvalGroups' },
+    meta: { titleKey: 'adminNav.items.approvalGroups', permission: 'approval-groups.view' },
   },
   {
     path: 'approval-flow/settings',
     name: 'admin.approval-flow.settings',
     component: () => import('@/pages/admin/approvalFlow/FlowSettings.vue'),
-    meta: { titleKey: 'adminNav.items.flowSetting' },
+    meta: { titleKey: 'adminNav.items.flowSetting', permission: 'approval-flows.view' },
   },
   {
     path: 'form-categories',
     name: 'admin.form-categories',
     component: () => import('@/pages/admin/FormCategories.vue'),
-    meta: { titleKey: 'adminNav.items.formCategories' },
+    meta: { titleKey: 'adminNav.items.formCategories', permission: 'form-categories.view' },
   },
   {
     path: 'form-templates',
     name: 'admin.form-templates',
     component: () => import('@/pages/admin/FormTemplates.vue'),
-    meta: { titleKey: 'adminNav.items.formTemplates' },
+    meta: { titleKey: 'adminNav.items.formTemplates', permission: 'form-templates.view' },
   },
   {
     path: 'approvals/forms',
@@ -862,7 +862,7 @@ const adminRoutes: RouteRecordRaw[] = [
     path: 'telegram-notifications',
     name: 'admin.telegram-notifications',
     component: () => import('@/pages/admin/TelegramGroups.vue'),
-    meta: { titleKey: 'adminNav.items.telegramGroups', permission: 'tenant-settings.update' },
+    meta: { titleKey: 'adminNav.items.telegramGroups', permission: 'telegram-groups.view' },
   },
   {
     path: 'school-documents',

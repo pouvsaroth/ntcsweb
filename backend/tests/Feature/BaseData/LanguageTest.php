@@ -16,7 +16,7 @@ class LanguageTest extends TestCase
 
     public function test_it_creates_a_language(): void
     {
-        $this->actingAsAdminWithPermissions([Permissions::BASE_DATA_MANAGE_LANGUAGES]);
+        $this->actingAsAdminWithPermissions([Permissions::LANGUAGES_VIEW, Permissions::LANGUAGES_CREATE, Permissions::LANGUAGES_UPDATE, Permissions::LANGUAGES_DELETE]);
 
         $response = $this->postJson('/api/v1/languages', [
             'code' => 'th', 'name' => 'Thai', 'native_name' => 'ไทย',
@@ -28,7 +28,7 @@ class LanguageTest extends TestCase
 
     public function test_a_duplicate_language_code_is_rejected(): void
     {
-        $this->actingAsAdminWithPermissions([Permissions::BASE_DATA_MANAGE_LANGUAGES]);
+        $this->actingAsAdminWithPermissions([Permissions::LANGUAGES_VIEW, Permissions::LANGUAGES_CREATE, Permissions::LANGUAGES_UPDATE, Permissions::LANGUAGES_DELETE]);
         Language::factory()->create(['code' => 'th']);
 
         $this->postJson('/api/v1/languages', ['code' => 'th', 'name' => 'Thai', 'native_name' => 'ไทย'])
@@ -38,7 +38,7 @@ class LanguageTest extends TestCase
 
     public function test_it_updates_a_language(): void
     {
-        $this->actingAsAdminWithPermissions([Permissions::BASE_DATA_MANAGE_LANGUAGES]);
+        $this->actingAsAdminWithPermissions([Permissions::LANGUAGES_VIEW, Permissions::LANGUAGES_CREATE, Permissions::LANGUAGES_UPDATE, Permissions::LANGUAGES_DELETE]);
         $language = Language::factory()->create(['name' => 'Thai']);
 
         $this->putJson("/api/v1/languages/{$language->id}", ['name' => 'ThaiLang'])
@@ -48,7 +48,7 @@ class LanguageTest extends TestCase
 
     public function test_it_activates_and_deactivates_a_language(): void
     {
-        $this->actingAsAdminWithPermissions([Permissions::BASE_DATA_MANAGE_LANGUAGES]);
+        $this->actingAsAdminWithPermissions([Permissions::LANGUAGES_VIEW, Permissions::LANGUAGES_CREATE, Permissions::LANGUAGES_UPDATE, Permissions::LANGUAGES_DELETE]);
         $language = Language::factory()->create(['is_active' => true]);
 
         $this->putJson("/api/v1/languages/{$language->id}", ['is_active' => false])
@@ -58,7 +58,7 @@ class LanguageTest extends TestCase
 
     public function test_setting_a_language_as_default_unsets_the_previous_default(): void
     {
-        $this->actingAsAdminWithPermissions([Permissions::BASE_DATA_MANAGE_LANGUAGES]);
+        $this->actingAsAdminWithPermissions([Permissions::LANGUAGES_VIEW, Permissions::LANGUAGES_CREATE, Permissions::LANGUAGES_UPDATE, Permissions::LANGUAGES_DELETE]);
         $first = Language::factory()->default()->create();
         $second = Language::factory()->create();
 
@@ -70,7 +70,7 @@ class LanguageTest extends TestCase
 
     public function test_the_default_language_cannot_be_deactivated(): void
     {
-        $this->actingAsAdminWithPermissions([Permissions::BASE_DATA_MANAGE_LANGUAGES]);
+        $this->actingAsAdminWithPermissions([Permissions::LANGUAGES_VIEW, Permissions::LANGUAGES_CREATE, Permissions::LANGUAGES_UPDATE, Permissions::LANGUAGES_DELETE]);
         $language = Language::factory()->default()->create();
 
         $this->putJson("/api/v1/languages/{$language->id}", ['is_active' => false])->assertStatus(422);
@@ -79,7 +79,7 @@ class LanguageTest extends TestCase
 
     public function test_the_default_language_cannot_be_deleted(): void
     {
-        $this->actingAsAdminWithPermissions([Permissions::BASE_DATA_MANAGE_LANGUAGES]);
+        $this->actingAsAdminWithPermissions([Permissions::LANGUAGES_VIEW, Permissions::LANGUAGES_CREATE, Permissions::LANGUAGES_UPDATE, Permissions::LANGUAGES_DELETE]);
         $language = Language::factory()->default()->create();
 
         $this->deleteJson("/api/v1/languages/{$language->id}")->assertStatus(422);

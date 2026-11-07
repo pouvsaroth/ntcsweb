@@ -19,14 +19,14 @@ use Illuminate\Validation\Rule;
 /**
  * Approval Flow → Flow Setting: for each approvable item, the ordered
  * groups that approve it (see ApprovalFlow for how they're enforced).
- * Shares approval-groups.manage with the Groups tab.
+ * approval-flows.view to read it, approval-flows.update to change it.
  */
 final class ApprovalFlowController extends Controller
 {
     /** Every item, with its steps in order (an empty list = no flow). */
     public function index(Request $request): JsonResponse
     {
-        $this->authorizeManage($request);
+        abort_unless($request->user()?->hasPermission(Permissions::APPROVAL_FLOWS_VIEW), 403);
 
         $steps = ApprovalFlowStep::query()->with('group.members')->orderBy('step_order')->get()->groupBy('document_type');
 
@@ -48,7 +48,7 @@ final class ApprovalFlowController extends Controller
     /** Replaces one item's whole flow — `group_ids` in approval order; empty = remove the flow. */
     public function update(Request $request, string $documentType): JsonResponse
     {
-        $this->authorizeManage($request);
+        abort_unless($request->user()?->hasPermission(Permissions::APPROVAL_FLOWS_UPDATE), 403);
         abort_unless(in_array($documentType, DocumentType::all(), true), 404);
 
         $validated = $request->validate([
@@ -70,10 +70,5 @@ final class ApprovalFlowController extends Controller
         });
 
         return $this->index($request);
-    }
-
-    private function authorizeManage(Request $request): void
-    {
-        abort_unless($request->user()?->hasPermission(Permissions::APPROVAL_GROUPS_MANAGE), 403);
     }
 }

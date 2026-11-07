@@ -31,7 +31,7 @@ class SupportTicketTest extends TestCase
 
     public function test_a_ticket_goes_from_school_to_newtech_and_back(): void
     {
-        $user = $this->actingAsAdminWithPermissions([Permissions::HELP_SUPPORT_VIEW]);
+        $user = $this->actingAsAdminWithPermissions([Permissions::HELP_SUPPORT_VIEW, Permissions::HELP_TICKETS_CREATE]);
 
         $this->getJson('/api/v1/support-tickets/options')->assertOk()->assertJsonFragment(['code' => 'academics']);
         $this->post('/api/v1/support-tickets', ['subject' => 'Cannot print invoices'], ['Accept' => 'application/json'])
@@ -85,13 +85,16 @@ class SupportTicketTest extends TestCase
 
     public function test_only_the_owner_with_the_permission_and_only_answerers_reply(): void
     {
-        $owner = $this->actingAsAdminWithPermissions([Permissions::HELP_SUPPORT_VIEW]);
+        $owner = $this->actingAsAdminWithPermissions([Permissions::HELP_SUPPORT_VIEW, Permissions::HELP_TICKETS_CREATE]);
         $id = $this->postJson('/api/v1/support-tickets', ['subject' => 'Mine', 'priority' => 'low', 'body' => 'Private'])->assertCreated()->json('data.id');
 
         // A colleague in the same school does not see it.
         $this->actingAsAdminWithPermissions([Permissions::HELP_SUPPORT_VIEW]);
         $this->getJson('/api/v1/support-tickets')->assertOk()->assertJsonCount(0, 'data');
         $this->getJson("/api/v1/support-tickets/{$id}")->assertNotFound();
+
+        // Help & Support without "Open a new ticket": may read, not open one.
+        $this->postJson('/api/v1/support-tickets', ['subject' => 'X', 'priority' => 'low', 'body' => 'Y'])->assertForbidden();
 
         // No Help & Support in the role: no tickets.
         $this->actingAsAdminWithPermissions([]);

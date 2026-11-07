@@ -33,6 +33,20 @@ final class Permissions
 
     public const TENANT_SETTINGS_UPDATE = 'tenant-settings.update';
 
+    /** Settings > School Documents (school regulation, attendance policy). */
+    public const SCHOOL_DOCUMENTS_VIEW = 'school-documents.view';
+
+    public const SCHOOL_DOCUMENTS_UPDATE = 'school-documents.update';
+
+    /** Settings > Telegram groups. Update also covers linking, testing and unlinking a group. */
+    public const TELEGRAM_GROUPS_VIEW = 'telegram-groups.view';
+
+    public const TELEGRAM_GROUPS_CREATE = 'telegram-groups.create';
+
+    public const TELEGRAM_GROUPS_UPDATE = 'telegram-groups.update';
+
+    public const TELEGRAM_GROUPS_DELETE = 'telegram-groups.delete';
+
     // User management, inside a school.
     public const USERS_VIEW = 'users.view';
 
@@ -311,7 +325,14 @@ final class Permissions
 
     public const BASE_DATA_MANAGE_TRANSLATIONS = 'base-data.manage-translations';
 
-    public const BASE_DATA_MANAGE_LANGUAGES = 'base-data.manage-languages';
+    /** Settings > Language > Language tab. Reading the language list itself stays on base-data.view (see LanguagePolicy). */
+    public const LANGUAGES_VIEW = 'languages.view';
+
+    public const LANGUAGES_CREATE = 'languages.create';
+
+    public const LANGUAGES_UPDATE = 'languages.update';
+
+    public const LANGUAGES_DELETE = 'languages.delete';
 
     // Programs — the public marketing catalog of courses (not to be confused
     // with `classes`, an actual scheduled teaching group).
@@ -602,9 +623,21 @@ final class Permissions
     // requests with no permission required (see FormCategoryController,
     // FormTemplateController, MyApprovalRequestController); these gate the
     // catalog-management screens and the approval queue only.
-    public const FORM_CATEGORIES_MANAGE = 'form-categories.manage';
+    public const FORM_CATEGORIES_VIEW = 'form-categories.view';
 
-    public const FORM_TEMPLATES_MANAGE = 'form-templates.manage';
+    public const FORM_CATEGORIES_CREATE = 'form-categories.create';
+
+    public const FORM_CATEGORIES_UPDATE = 'form-categories.update';
+
+    public const FORM_CATEGORIES_DELETE = 'form-categories.delete';
+
+    public const FORM_TEMPLATES_VIEW = 'form-templates.view';
+
+    public const FORM_TEMPLATES_CREATE = 'form-templates.create';
+
+    public const FORM_TEMPLATES_UPDATE = 'form-templates.update';
+
+    public const FORM_TEMPLATES_DELETE = 'form-templates.delete';
 
     public const APPROVAL_REQUESTS_VIEW = 'approval-requests.view';
 
@@ -614,7 +647,18 @@ final class Permissions
 
     // Approval Flow — groups of users (and, later, the flows built from
     // them) that decide who approves what.
-    public const APPROVAL_GROUPS_MANAGE = 'approval-groups.manage';
+    public const APPROVAL_GROUPS_VIEW = 'approval-groups.view';
+
+    public const APPROVAL_GROUPS_CREATE = 'approval-groups.create';
+
+    public const APPROVAL_GROUPS_UPDATE = 'approval-groups.update';
+
+    public const APPROVAL_GROUPS_DELETE = 'approval-groups.delete';
+
+    /** Approval Flow > Flow setting: which groups approve each kind of document, in order. */
+    public const APPROVAL_FLOWS_VIEW = 'approval-flows.view';
+
+    public const APPROVAL_FLOWS_UPDATE = 'approval-flows.update';
 
     // Projects — a Kanban-style project management module. Any staff/admin
     // can use it (see ProjectPolicy's docblock); columns and tasks ride on
@@ -788,6 +832,9 @@ final class Permissions
     // help articles, FAQ, contacts and support tickets, by role.
     public const HELP_SUPPORT_VIEW = 'help-support.view';
 
+    /** Help & Support > Support tickets: open a new ticket (needs help-support.view too). */
+    public const HELP_TICKETS_CREATE = 'help-tickets.create';
+
     /**
      * Every permission, grouped for the admin UI checkbox list.
      *
@@ -823,6 +870,12 @@ final class Permissions
             'School settings' => [
                 self::TENANT_SETTINGS_VIEW => 'View school settings',
                 self::TENANT_SETTINGS_UPDATE => 'Update school settings',
+                self::SCHOOL_DOCUMENTS_VIEW => 'View school documents',
+                self::SCHOOL_DOCUMENTS_UPDATE => 'Update school documents',
+                self::TELEGRAM_GROUPS_VIEW => 'View Telegram groups',
+                self::TELEGRAM_GROUPS_CREATE => 'Add Telegram groups',
+                self::TELEGRAM_GROUPS_UPDATE => 'Update Telegram groups (edit, link, test, unlink)',
+                self::TELEGRAM_GROUPS_DELETE => 'Delete Telegram groups',
             ],
             'Users' => [
                 self::USERS_VIEW => 'View users',
@@ -995,7 +1048,10 @@ final class Permissions
                 self::BASE_DATA_UPDATE => 'Update lookup categories & values',
                 self::BASE_DATA_DELETE => 'Delete lookup categories & values',
                 self::BASE_DATA_MANAGE_TRANSLATIONS => 'Manage translations (lookup values and the app\'s own words)',
-                self::BASE_DATA_MANAGE_LANGUAGES => 'Manage supported languages',
+                self::LANGUAGES_VIEW => 'View supported languages',
+                self::LANGUAGES_CREATE => 'Add supported languages',
+                self::LANGUAGES_UPDATE => 'Update supported languages',
+                self::LANGUAGES_DELETE => 'Delete supported languages',
             ],
             'Programs' => [
                 self::PROGRAMS_VIEW => 'View programs',
@@ -1160,6 +1216,7 @@ final class Permissions
             ],
             'Help & Support' => [
                 self::HELP_SUPPORT_VIEW => 'Open Help & Support: help articles, FAQ, NewTech contacts and support tickets',
+                self::HELP_TICKETS_CREATE => 'Open a new support ticket',
             ],
             'Front Office' => [
                 self::INQUIRIES_VIEW => 'View inquiries',
@@ -1186,14 +1243,25 @@ final class Permissions
                 self::PROJECTS_DELETE => 'Delete projects',
             ],
             'eApprovals' => [
-                self::FORM_CATEGORIES_MANAGE => 'Manage form categories',
-                self::FORM_TEMPLATES_MANAGE => 'Manage form templates',
+                self::FORM_CATEGORIES_VIEW => 'View form categories',
+                self::FORM_CATEGORIES_CREATE => 'Add form categories',
+                self::FORM_CATEGORIES_UPDATE => 'Update form categories',
+                self::FORM_CATEGORIES_DELETE => 'Delete form categories',
+                self::FORM_TEMPLATES_VIEW => 'View form templates',
+                self::FORM_TEMPLATES_CREATE => 'Add form templates',
+                self::FORM_TEMPLATES_UPDATE => 'Update form templates',
+                self::FORM_TEMPLATES_DELETE => 'Delete form templates',
                 self::APPROVAL_REQUESTS_VIEW => 'View the approval queue',
                 self::APPROVAL_REQUESTS_APPROVE => 'Approve requests',
                 self::APPROVAL_REQUESTS_REJECT => 'Reject requests',
             ],
             'Approval Flow' => [
-                self::APPROVAL_GROUPS_MANAGE => 'Manage approval groups',
+                self::APPROVAL_GROUPS_VIEW => 'View approval groups',
+                self::APPROVAL_GROUPS_CREATE => 'Add approval groups',
+                self::APPROVAL_GROUPS_UPDATE => 'Update approval groups',
+                self::APPROVAL_GROUPS_DELETE => 'Delete approval groups',
+                self::APPROVAL_FLOWS_VIEW => 'View the flow setting',
+                self::APPROVAL_FLOWS_UPDATE => 'Change the flow setting',
             ],
             'Student Feedback' => [
                 self::STUDENT_FEEDBACK_VIEW => "View students' requests and comments",
@@ -1324,9 +1392,11 @@ final class Permissions
         // Every role can still submit/view its own requests regardless —
         // that's identity-gated in MyApprovalRequestController, not RBAC.
         $eApprovals = [
-            self::FORM_CATEGORIES_MANAGE, self::FORM_TEMPLATES_MANAGE,
+            self::FORM_CATEGORIES_VIEW, self::FORM_CATEGORIES_CREATE, self::FORM_CATEGORIES_UPDATE, self::FORM_CATEGORIES_DELETE,
+            self::FORM_TEMPLATES_VIEW, self::FORM_TEMPLATES_CREATE, self::FORM_TEMPLATES_UPDATE, self::FORM_TEMPLATES_DELETE,
             self::APPROVAL_REQUESTS_VIEW, self::APPROVAL_REQUESTS_APPROVE, self::APPROVAL_REQUESTS_REJECT,
-            self::APPROVAL_GROUPS_MANAGE,
+            self::APPROVAL_GROUPS_VIEW, self::APPROVAL_GROUPS_CREATE, self::APPROVAL_GROUPS_UPDATE, self::APPROVAL_GROUPS_DELETE,
+            self::APPROVAL_FLOWS_VIEW, self::APPROVAL_FLOWS_UPDATE,
         ];
 
         // Unlike billing/accounting/assets above, Projects is meant to be a
@@ -1352,7 +1422,7 @@ final class Permissions
         // of these on a custom role via the Role editor; this is only the
         // out-of-the-box default.
         $selfServiceForEveryone = [
-            self::DASHBOARD_VIEW, self::MY_ASSETS_VIEW, self::FORMS_VIEW, self::MY_REQUESTS_VIEW, self::HELP_SUPPORT_VIEW,
+            self::DASHBOARD_VIEW, self::MY_ASSETS_VIEW, self::FORMS_VIEW, self::MY_REQUESTS_VIEW, self::HELP_SUPPORT_VIEW, self::HELP_TICKETS_CREATE,
             self::DASHBOARD_ATTENDANCE_VIEW, self::DASHBOARD_FINANCE_VIEW, self::DASHBOARD_PAYMENT_ALERTS_VIEW,
         ];
 
@@ -1377,6 +1447,12 @@ final class Permissions
                 ...$comingSoonPlaceholders,
                 self::TENANT_SETTINGS_VIEW,
                 self::TENANT_SETTINGS_UPDATE,
+                self::SCHOOL_DOCUMENTS_VIEW,
+                self::SCHOOL_DOCUMENTS_UPDATE,
+                self::TELEGRAM_GROUPS_VIEW,
+                self::TELEGRAM_GROUPS_CREATE,
+                self::TELEGRAM_GROUPS_UPDATE,
+                self::TELEGRAM_GROUPS_DELETE,
                 self::USERS_VIEW,
                 self::USERS_CREATE,
                 self::USERS_UPDATE,
@@ -1393,7 +1469,10 @@ final class Permissions
                 self::BASE_DATA_UPDATE,
                 self::BASE_DATA_DELETE,
                 self::BASE_DATA_MANAGE_TRANSLATIONS,
-                self::BASE_DATA_MANAGE_LANGUAGES,
+                self::LANGUAGES_VIEW,
+                self::LANGUAGES_CREATE,
+                self::LANGUAGES_UPDATE,
+                self::LANGUAGES_DELETE,
                 self::ATTENDANCE_VIEW,
                 self::ATTENDANCE_CREATE,
                 self::ATTENDANCE_UPDATE,

@@ -45,7 +45,7 @@ class ApprovalGroupTest extends TestCase
 
     public function test_a_group_can_be_created_with_members(): void
     {
-        $this->actingAsAdminWithPermissions([Permissions::APPROVAL_GROUPS_MANAGE]);
+        $this->actingAsAdminWithPermissions([Permissions::APPROVAL_GROUPS_VIEW, Permissions::APPROVAL_GROUPS_CREATE, Permissions::APPROVAL_GROUPS_UPDATE, Permissions::APPROVAL_GROUPS_DELETE, Permissions::APPROVAL_FLOWS_VIEW, Permissions::APPROVAL_FLOWS_UPDATE]);
         $sokha = $this->staffUser(['name' => 'Sokha']);
         $dara = $this->staffUser(['name' => 'Dara']);
 
@@ -64,7 +64,7 @@ class ApprovalGroupTest extends TestCase
 
     public function test_updating_a_group_replaces_its_member_list(): void
     {
-        $this->actingAsAdminWithPermissions([Permissions::APPROVAL_GROUPS_MANAGE]);
+        $this->actingAsAdminWithPermissions([Permissions::APPROVAL_GROUPS_VIEW, Permissions::APPROVAL_GROUPS_CREATE, Permissions::APPROVAL_GROUPS_UPDATE, Permissions::APPROVAL_GROUPS_DELETE, Permissions::APPROVAL_FLOWS_VIEW, Permissions::APPROVAL_FLOWS_UPDATE]);
         [$kept, $removed, $added] = [$this->staffUser(), $this->staffUser(), $this->staffUser()];
         $group = ApprovalGroup::factory()->create(['name' => 'Finance']);
         $group->members()->create(['user_id' => $kept->id]);
@@ -82,7 +82,7 @@ class ApprovalGroupTest extends TestCase
 
     public function test_the_list_shows_each_groups_members(): void
     {
-        $this->actingAsAdminWithPermissions([Permissions::APPROVAL_GROUPS_MANAGE]);
+        $this->actingAsAdminWithPermissions([Permissions::APPROVAL_GROUPS_VIEW, Permissions::APPROVAL_GROUPS_CREATE, Permissions::APPROVAL_GROUPS_UPDATE, Permissions::APPROVAL_GROUPS_DELETE, Permissions::APPROVAL_FLOWS_VIEW, Permissions::APPROVAL_FLOWS_UPDATE]);
         $user = $this->staffUser(['name' => 'Sokha']);
         $group = ApprovalGroup::factory()->create(['name' => 'Finance']);
         $group->members()->create(['user_id' => $user->id]);
@@ -99,7 +99,7 @@ class ApprovalGroupTest extends TestCase
 
     public function test_users_of_another_school_cannot_be_added(): void
     {
-        $this->actingAsAdminWithPermissions([Permissions::APPROVAL_GROUPS_MANAGE]);
+        $this->actingAsAdminWithPermissions([Permissions::APPROVAL_GROUPS_VIEW, Permissions::APPROVAL_GROUPS_CREATE, Permissions::APPROVAL_GROUPS_UPDATE, Permissions::APPROVAL_GROUPS_DELETE, Permissions::APPROVAL_FLOWS_VIEW, Permissions::APPROVAL_FLOWS_UPDATE]);
         $outsider = User::factory()->forTenant(Tenant::factory()->create())->create();
 
         $this->postJson('/api/v1/approval-groups', ['name' => 'Finance', 'user_ids' => [$outsider->id]])
@@ -109,7 +109,7 @@ class ApprovalGroupTest extends TestCase
 
     public function test_a_name_is_required(): void
     {
-        $this->actingAsAdminWithPermissions([Permissions::APPROVAL_GROUPS_MANAGE]);
+        $this->actingAsAdminWithPermissions([Permissions::APPROVAL_GROUPS_VIEW, Permissions::APPROVAL_GROUPS_CREATE, Permissions::APPROVAL_GROUPS_UPDATE, Permissions::APPROVAL_GROUPS_DELETE, Permissions::APPROVAL_FLOWS_VIEW, Permissions::APPROVAL_FLOWS_UPDATE]);
 
         $this->postJson('/api/v1/approval-groups', ['user_ids' => []])
             ->assertUnprocessable()
@@ -118,7 +118,7 @@ class ApprovalGroupTest extends TestCase
 
     public function test_a_group_can_be_deleted(): void
     {
-        $this->actingAsAdminWithPermissions([Permissions::APPROVAL_GROUPS_MANAGE]);
+        $this->actingAsAdminWithPermissions([Permissions::APPROVAL_GROUPS_VIEW, Permissions::APPROVAL_GROUPS_CREATE, Permissions::APPROVAL_GROUPS_UPDATE, Permissions::APPROVAL_GROUPS_DELETE, Permissions::APPROVAL_FLOWS_VIEW, Permissions::APPROVAL_FLOWS_UPDATE]);
         $group = ApprovalGroup::factory()->create();
 
         $this->deleteJson("/api/v1/approval-groups/{$group->id}")->assertNoContent();
@@ -128,7 +128,7 @@ class ApprovalGroupTest extends TestCase
 
     public function test_the_member_picker_lists_only_working_staff_of_this_school(): void
     {
-        $admin = $this->actingAsAdminWithPermissions([Permissions::APPROVAL_GROUPS_MANAGE]);
+        $admin = $this->actingAsAdminWithPermissions([Permissions::APPROVAL_GROUPS_VIEW, Permissions::APPROVAL_GROUPS_CREATE, Permissions::APPROVAL_GROUPS_UPDATE, Permissions::APPROVAL_GROUPS_DELETE, Permissions::APPROVAL_FLOWS_VIEW, Permissions::APPROVAL_FLOWS_UPDATE]);
         $staff = $this->staffUser();
         $onLeave = $this->staffUser([], Staff::STATUS_ON_LEAVE);
         $resigned = $this->staffUser([], Staff::STATUS_RESIGNED);
@@ -151,7 +151,7 @@ class ApprovalGroupTest extends TestCase
 
     public function test_a_user_without_a_working_staff_record_cannot_be_added(): void
     {
-        $this->actingAsAdminWithPermissions([Permissions::APPROVAL_GROUPS_MANAGE]);
+        $this->actingAsAdminWithPermissions([Permissions::APPROVAL_GROUPS_VIEW, Permissions::APPROVAL_GROUPS_CREATE, Permissions::APPROVAL_GROUPS_UPDATE, Permissions::APPROVAL_GROUPS_DELETE, Permissions::APPROVAL_FLOWS_VIEW, Permissions::APPROVAL_FLOWS_UPDATE]);
         $noStaffRecord = User::factory()->forTenant($this->tenant)->create();
         $resigned = $this->staffUser([], Staff::STATUS_RESIGNED);
 
@@ -162,7 +162,7 @@ class ApprovalGroupTest extends TestCase
 
     public function test_a_member_who_has_since_left_can_stay_until_removed(): void
     {
-        $this->actingAsAdminWithPermissions([Permissions::APPROVAL_GROUPS_MANAGE]);
+        $this->actingAsAdminWithPermissions([Permissions::APPROVAL_GROUPS_VIEW, Permissions::APPROVAL_GROUPS_CREATE, Permissions::APPROVAL_GROUPS_UPDATE, Permissions::APPROVAL_GROUPS_DELETE, Permissions::APPROVAL_FLOWS_VIEW, Permissions::APPROVAL_FLOWS_UPDATE]);
         $leaver = $this->staffUser();
         $group = ApprovalGroup::factory()->create();
         $group->members()->create(['user_id' => $leaver->id]);

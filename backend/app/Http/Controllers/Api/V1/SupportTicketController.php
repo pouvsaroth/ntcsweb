@@ -78,6 +78,7 @@ final class SupportTicketController extends Controller
     {
         return SupportViewSession::inUtc(function () use ($request): JsonResponse {
             $user = $this->requester($request);
+            abort_unless($user->hasPermission(Permissions::HELP_TICKETS_CREATE), 403);
             $enabled = $this->modules->enabled($user->tenant_id) ?? array_keys(Modules::catalog());
             $data = $request->validate([
                 'subject' => ['required', 'string', 'max:200'],

@@ -70,7 +70,7 @@ const FILTERS: Filter[] = ['active', 'done', 'all']
           {{ t(`help.tickets.filters.${f}`) }}
         </button>
       </div>
-      <BaseButton v-if="!readOnly" class="ml-auto" @click="formOpen = true">{{ t('help.tickets.new') }}</BaseButton>
+      <BaseButton v-if="!readOnly && auth.can('help-tickets.create')" class="ml-auto" @click="formOpen = true">{{ t('help.tickets.new') }}</BaseButton>
     </div>
 
     <BaseAlert v-if="failed" variant="danger">{{ t('help.loadFailed') }}</BaseAlert>

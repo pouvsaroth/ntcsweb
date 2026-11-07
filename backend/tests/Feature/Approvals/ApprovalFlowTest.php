@@ -49,7 +49,7 @@ class ApprovalFlowTest extends TestCase
     {
         parent::setUp();
 
-        $this->manager = $this->actingAsAdminWithPermissions([Permissions::APPROVAL_GROUPS_MANAGE]);
+        $this->manager = $this->actingAsAdminWithPermissions([Permissions::APPROVAL_GROUPS_VIEW, Permissions::APPROVAL_GROUPS_CREATE, Permissions::APPROVAL_GROUPS_UPDATE, Permissions::APPROVAL_GROUPS_DELETE, Permissions::APPROVAL_FLOWS_VIEW, Permissions::APPROVAL_FLOWS_UPDATE]);
         [$this->a, $this->b, $this->c] = User::factory()->forTenant($this->tenant)->count(3)->create()->all();
 
         $this->group1 = ApprovalGroup::factory()->create(['name' => 'Group 1']);

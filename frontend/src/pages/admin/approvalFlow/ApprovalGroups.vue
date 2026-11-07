@@ -12,10 +12,12 @@ import DataTable from '@/components/ui/DataTable.vue'
 import EditIconButton from '@/components/ui/EditIconButton.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { approvalGroupsService, type ApprovalGroup } from '@/services/approvalGroups'
+import { useAuthStore } from '@/stores/auth'
 import { useConfirmDialogStore } from '@/stores/confirmDialog'
 import { ApiRequestError } from '@/types/api'
 
 const { t } = useI18n()
+const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
 
 const { items, meta, loading, error, setPage, setSearch, fetch } = usePaginatedResource<ApprovalGroup>(
@@ -69,7 +71,7 @@ onMounted(() => fetch())
         <h1 class="text-xl font-semibold text-neutral-900">{{ t('admin.approvalGroups.title') }}</h1>
         <p class="mt-1 text-sm text-neutral-500">{{ t('admin.approvalGroups.subtitle') }}</p>
       </div>
-      <BaseButton @click="openCreate">{{ t('admin.approvalGroups.addGroup') }}</BaseButton>
+      <BaseButton v-if="auth.can('approval-groups.create')" @click="openCreate">{{ t('admin.approvalGroups.addGroup') }}</BaseButton>
     </div>
 
     <input
@@ -97,8 +99,8 @@ onMounted(() => fetch())
       </template>
       <template #cell-actions="{ row }">
         <div class="flex justify-end gap-2">
-          <EditIconButton @click="openEdit(row)" />
-          <button type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row)">
+          <EditIconButton v-if="auth.can('approval-groups.update')" @click="openEdit(row)" />
+          <button v-if="auth.can('approval-groups.delete')" type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row)">
             {{ t('admin.approvalGroups.delete') }}
           </button>
         </div>

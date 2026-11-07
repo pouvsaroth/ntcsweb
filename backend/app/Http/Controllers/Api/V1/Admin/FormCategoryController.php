@@ -18,7 +18,7 @@ use Illuminate\Http\Request;
  * index() is deliberately unguarded by a permission — every authenticated
  * user browses this catalog to submit a request from the Forms page (see
  * FormCategoryPolicy's docblock). Only create/update/delete require
- * form-categories.manage.
+ * form-categories.create/update/delete.
  */
 final class FormCategoryController extends Controller
 {

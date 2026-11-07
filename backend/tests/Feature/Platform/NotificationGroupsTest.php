@@ -51,7 +51,7 @@ class NotificationGroupsTest extends TestCase
     public function test_a_bell_notification_also_goes_to_the_members_telegram_group(): void
     {
         $this->tenant = Tenant::factory()->create(['locale' => 'en']);
-        $admin = $this->actingAsAdminWithPermissions([Permissions::TENANT_SETTINGS_UPDATE]);
+        $admin = $this->actingAsAdminWithPermissions([Permissions::TELEGRAM_GROUPS_VIEW, Permissions::TELEGRAM_GROUPS_CREATE, Permissions::TELEGRAM_GROUPS_UPDATE, Permissions::TELEGRAM_GROUPS_DELETE]);
         $this->group([$admin]);
 
         app(NotificationService::class)->notify($admin, 'leave_request_submitted', ['student_name' => 'Sok Dara'], '/admin/leave-requests/5');
@@ -93,7 +93,7 @@ class NotificationGroupsTest extends TestCase
 
     public function test_the_school_manages_its_groups_and_links_one_with_a_code(): void
     {
-        $admin = $this->actingAsAdminWithPermissions([Permissions::TENANT_SETTINGS_UPDATE]);
+        $admin = $this->actingAsAdminWithPermissions([Permissions::TELEGRAM_GROUPS_VIEW, Permissions::TELEGRAM_GROUPS_CREATE, Permissions::TELEGRAM_GROUPS_UPDATE, Permissions::TELEGRAM_GROUPS_DELETE]);
 
         $id = $this->postJson('/api/v1/settings/notification-groups', ['name' => 'HR', 'user_ids' => [$admin->id]])->assertCreated()
             ->assertJsonPath('data.users.0.id', $admin->id)->json('data.id');
@@ -118,7 +118,7 @@ class NotificationGroupsTest extends TestCase
 
     public function test_an_expired_or_unknown_code_links_nothing(): void
     {
-        $this->actingAsAdminWithPermissions([Permissions::TENANT_SETTINGS_UPDATE]);
+        $this->actingAsAdminWithPermissions([Permissions::TELEGRAM_GROUPS_VIEW, Permissions::TELEGRAM_GROUPS_CREATE, Permissions::TELEGRAM_GROUPS_UPDATE, Permissions::TELEGRAM_GROUPS_DELETE]);
         $g = NotificationGroup::query()->create(['tenant_id' => $this->tenant->id, 'name' => 'Old', 'link_code' => 'ABC123', 'link_code_expires_at' => now()->subMinute()]);
         $this->updates = [
             ['update_id' => 1, 'message' => ['text' => '/link ABC123', 'chat' => ['id' => -1, 'type' => 'group', 'title' => 'X']]],
@@ -131,7 +131,7 @@ class NotificationGroupsTest extends TestCase
 
     public function test_only_this_schools_users_and_groups_and_only_with_the_settings_permission(): void
     {
-        $this->actingAsAdminWithPermissions([Permissions::TENANT_SETTINGS_UPDATE]);
+        $this->actingAsAdminWithPermissions([Permissions::TELEGRAM_GROUPS_VIEW, Permissions::TELEGRAM_GROUPS_CREATE, Permissions::TELEGRAM_GROUPS_UPDATE, Permissions::TELEGRAM_GROUPS_DELETE]);
         $otherSchool = Tenant::factory()->create();
         $stranger = User::factory()->forTenant($otherSchool)->create();
         $foreign = NotificationGroup::query()->create(['tenant_id' => $otherSchool->id, 'name' => 'Theirs']);

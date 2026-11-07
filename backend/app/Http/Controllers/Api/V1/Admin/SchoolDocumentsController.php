@@ -7,9 +7,11 @@ namespace App\Http\Controllers\Api\V1\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Admin\UpdateSchoolDocumentsRequest;
 use App\Http\Responses\ApiResponse;
+use App\Support\Authorization\Permissions;
 use App\Support\Content\SchoolDocumentsContent;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -21,10 +23,11 @@ final class SchoolDocumentsController extends Controller
 {
     public function __construct(private readonly TenantContext $context) {}
 
-    public function show(): JsonResponse
+    // Its own permissions (school-documents.*), apart from the other settings.
+    public function show(Request $request): JsonResponse
     {
         $tenant = $this->context->getOrFail();
-        $this->authorize('view', $tenant);
+        abort_unless($request->user()?->belongsToTenant($tenant) && $request->user()->hasPermission(Permissions::SCHOOL_DOCUMENTS_VIEW), 403);
 
         return ApiResponse::success(SchoolDocumentsContent::forTenant($tenant));
     }
@@ -32,7 +35,7 @@ final class SchoolDocumentsController extends Controller
     public function update(UpdateSchoolDocumentsRequest $request): JsonResponse
     {
         $tenant = $this->context->getOrFail();
-        $this->authorize('update', $tenant);
+        abort_unless($request->user()?->belongsToTenant($tenant), 403);
 
         // Read-modify-write on the same JSON column every other setting also
         // lives in — see AboutPageController::update() for why this refresh

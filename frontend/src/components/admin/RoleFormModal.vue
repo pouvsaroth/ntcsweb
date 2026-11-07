@@ -435,20 +435,18 @@ const MODULES: ModuleEntry[] = [
   { name: 'Student feedback', group: 'Communication', actions: { view: 'student-feedback.view', reply: 'student-feedback.reply' } },
 
   // ── Settings ──
-  // Update also covers Telegram groups.
-  { name: 'Settings, School documents, Telegram groups', group: 'Settings', actions: { view: 'tenant-settings.view', update: 'tenant-settings.update' } },
+  // Sidebar order: School Documents, Settings, Telegram groups (each its own permissions since 2026-11-07).
+  { name: 'School Documents', group: 'Settings', actions: { view: 'school-documents.view', update: 'school-documents.update' } },
+  { name: 'Settings (also Organization > School)', group: 'Settings', actions: { view: 'tenant-settings.view', update: 'tenant-settings.update' } },
+  // Update also covers linking, testing and unlinking a group.
+  { name: 'Telegram groups', group: 'Settings', actions: crud('telegram-groups') },
   { name: 'Users', group: 'Settings', actions: crud('users') },
   { name: 'Roles', group: 'Settings', actions: { ...crud('roles'), assign: 'roles.assign' } },
   { name: 'Audit logs', group: 'Settings', actions: { view: 'audit-logs.view', delete: 'audit-logs.delete' } },
-  {
-    name: 'Lookup categories, Languages, Translations',
-    group: 'Settings',
-    actions: {
-      ...crud('base-data'),
-      translations: 'base-data.manage-translations',
-      languages: 'base-data.manage-languages',
-    },
-  },
+  // Settings > Language: its two tabs each have their own permissions.
+  { name: 'Language: Language tab', group: 'Settings', actions: crud('languages') },
+  { name: 'Language: Translation tab', group: 'Settings', actions: { update: 'base-data.manage-translations' } },
+  { name: 'Lookup categories', group: 'Settings', actions: crud('base-data') },
   { name: 'Backup (own school database)', group: 'Settings', actions: { view: 'database-backups.download' } },
 
   // ── E-Approvals ──
@@ -458,14 +456,21 @@ const MODULES: ModuleEntry[] = [
   { name: 'Form requests', group: 'E-Approvals', parent: 'Approvals', actions: { view: 'approval-requests.view', approve: 'approval-requests.approve', reject: 'approval-requests.reject' } },
   { name: 'Make-up class requests', group: 'E-Approvals', parent: 'Approvals', actions: { view: 'make-up-class-requests.view', approve: 'make-up-class-requests.approve', reject: 'make-up-class-requests.reject' } },
   { name: 'Class change requests', group: 'E-Approvals', parent: 'Approvals', actions: { view: 'class-change-requests.view', approve: 'class-change-requests.approve', reject: 'class-change-requests.reject' } },
-  { name: 'Form categories', group: 'E-Approvals', actions: { manage: 'form-categories.manage' } },
-  { name: 'Form templates', group: 'E-Approvals', actions: { manage: 'form-templates.manage' } },
+  { name: 'Form categories', group: 'E-Approvals', actions: crud('form-categories') },
+  { name: 'Form templates', group: 'E-Approvals', actions: crud('form-templates') },
 
   // ── Approval Flow ──
-  { name: 'Approval groups, Flow setting', group: 'Approval Flow', actions: { manage: 'approval-groups.manage' } },
+  { name: 'Approval groups', group: 'Approval Flow', actions: crud('approval-groups') },
+  // View also lists the groups to pick from.
+  { name: 'Flow setting', group: 'Approval Flow', actions: { view: 'approval-flows.view', update: 'approval-flows.update' } },
 
   // ── Other ──
-  { name: 'Help & Support (help articles, FAQ, NewTech contacts, support tickets)', group: 'Other', actions: { view: 'help-support.view' } },
+  { name: 'Help & Support', group: 'Other', parent: 'Help & Support', menu: true, actions: { view: 'help-support.view' } },
+  tab('Other', 'Help & Support', 'Help articles', '/admin/help/articles', ['help-support.view']),
+  tab('Other', 'Help & Support', 'FAQ', '/admin/help/faq', ['help-support.view']),
+  // Add = open a new support ticket.
+  tab('Other', 'Help & Support', 'Support tickets', '/admin/help/tickets', ['help-support.view'], { create: 'help-tickets.create' }),
+  tab('Other', 'Help & Support', 'Contact NewTech', '/admin/help/contact', ['help-support.view']),
 ]
 
 const COLUMNS: Action[] = [

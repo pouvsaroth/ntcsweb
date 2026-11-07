@@ -145,6 +145,10 @@ final class TabVisibility
         'hide-tab.borrowings.repayments' => 'Borrowings > Repayments',
         'hide-tab.borrowings.lenders' => 'Borrowings > Lenders',
         'hide-tab.borrowings.reports' => 'Borrowings > Reports',
+        'hide-tab.help.articles' => 'Help & Support > Help articles',
+        'hide-tab.help.faq' => 'Help & Support > FAQ',
+        'hide-tab.help.tickets' => 'Help & Support > Support tickets',
+        'hide-tab.help.contact' => 'Help & Support > Contact NewTech',
     ];
 
     /** @return array<string, string> slug => catalog description */

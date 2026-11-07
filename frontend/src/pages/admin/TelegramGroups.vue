@@ -7,6 +7,7 @@ import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import { notificationGroupsService, type GroupMember, type NotificationGroup } from '@/services/notificationGroups'
+import { useAuthStore } from '@/stores/auth'
 import { useConfirmDialogStore } from '@/stores/confirmDialog'
 import { ApiRequestError } from '@/types/api'
 
@@ -16,6 +17,8 @@ import { ApiRequestError } from '@/types/api'
  * notification of its members there.
  */
 const { t } = useI18n()
+const auth = useAuthStore()
+const canUpdate = computed(() => auth.can('telegram-groups.update'))
 const confirmDialog = useConfirmDialogStore()
 
 const groups = ref<NotificationGroup[]>([])
@@ -170,7 +173,7 @@ onBeforeUnmount(() => clearInterval(checkTimer))
         <h1 class="text-xl font-semibold text-neutral-900">{{ t('telegramGroups.title') }}</h1>
         <p class="mt-1 text-sm text-neutral-600">{{ t('telegramGroups.intro') }}</p>
       </div>
-      <BaseButton @click="openForm(null)">{{ t('telegramGroups.add') }}</BaseButton>
+      <BaseButton v-if="auth.can('telegram-groups.create')" @click="openForm(null)">{{ t('telegramGroups.add') }}</BaseButton>
     </div>
 
     <BaseAlert v-if="!botReady" variant="warning" class="mb-4">{{ t('telegramGroups.botNotReady') }}</BaseAlert>
@@ -191,8 +194,8 @@ onBeforeUnmount(() => clearInterval(checkTimer))
             <p v-else class="mt-0.5 text-sm text-amber-700">{{ t('telegramGroups.notLinked') }}</p>
           </div>
           <div class="flex flex-wrap gap-2">
-            <BaseButton size="sm" variant="outline" @click="openForm(g)">{{ t('telegramGroups.edit') }}</BaseButton>
-            <BaseButton size="sm" variant="ghost" class="!text-red-600" @click="remove(g)">{{ t('telegramGroups.remove') }}</BaseButton>
+            <BaseButton v-if="canUpdate" size="sm" variant="outline" @click="openForm(g)">{{ t('telegramGroups.edit') }}</BaseButton>
+            <BaseButton v-if="auth.can('telegram-groups.delete')" size="sm" variant="ghost" class="!text-red-600" @click="remove(g)">{{ t('telegramGroups.remove') }}</BaseButton>
           </div>
         </div>
 
@@ -201,7 +204,8 @@ onBeforeUnmount(() => clearInterval(checkTimer))
           <span v-if="g.users.length === 0" class="text-xs text-neutral-400">{{ t('telegramGroups.noMembers') }}</span>
         </div>
 
-        <!-- Linking -->
+        <!-- Linking: part of Update -->
+        <template v-if="canUpdate">
         <div v-if="!g.linked" class="mt-4 rounded-lg bg-neutral-50 p-4 text-sm">
           <template v-if="g.link_code">
             <ol class="list-decimal space-y-1.5 pl-5 text-neutral-700">
@@ -228,6 +232,7 @@ onBeforeUnmount(() => clearInterval(checkTimer))
           <BaseButton size="sm" variant="outline" :loading="busy === g.id" @click="sendTest(g)">{{ t('telegramGroups.test') }}</BaseButton>
           <BaseButton size="sm" variant="ghost" @click="unlink(g)">{{ t('telegramGroups.unlink') }}</BaseButton>
         </div>
+        </template>
         <p v-if="notice[g.id]" class="mt-2 text-sm" :class="notice[g.id].ok ? 'text-green-700' : 'text-red-600'">{{ notice[g.id].text }}</p>
       </section>
     </div>

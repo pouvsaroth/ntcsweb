@@ -20,7 +20,7 @@ import { formatDate } from '@/utils/date'
 const { t } = useI18n()
 const auth = useAuthStore()
 
-const canEditFlow = computed(() => auth.can('approval-groups.manage'))
+const canEditFlow = computed(() => auth.can('approval-flows.view'))
 const canOpenQueue = computed(() => auth.can('leave-requests.view') || auth.can('leave-requests.approve'))
 
 const workflow = ref<LeaveWorkflow | null>(null)

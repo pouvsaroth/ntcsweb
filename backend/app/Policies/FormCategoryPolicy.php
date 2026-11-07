@@ -18,16 +18,16 @@ class FormCategoryPolicy
 {
     public function create(User $user): bool
     {
-        return $user->hasPermission(Permissions::FORM_CATEGORIES_MANAGE);
+        return $user->hasPermission(Permissions::FORM_CATEGORIES_CREATE);
     }
 
     public function update(User $user, FormCategory $formCategory): bool
     {
-        return $user->hasPermission(Permissions::FORM_CATEGORIES_MANAGE);
+        return $user->hasPermission(Permissions::FORM_CATEGORIES_UPDATE);
     }
 
     public function delete(User $user, FormCategory $formCategory): bool
     {
-        return $user->hasPermission(Permissions::FORM_CATEGORIES_MANAGE);
+        return $user->hasPermission(Permissions::FORM_CATEGORIES_DELETE);
     }
 }

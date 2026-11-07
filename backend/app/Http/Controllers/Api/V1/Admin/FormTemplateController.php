@@ -18,7 +18,7 @@ use Illuminate\Http\Request;
  * index() is deliberately unguarded by a permission — every authenticated
  * user browses this catalog to submit a request from the Forms page (see
  * FormTemplatePolicy's docblock). Only create/update/delete require
- * form-templates.manage.
+ * form-templates.create/update/delete.
  */
 final class FormTemplateController extends Controller
 {

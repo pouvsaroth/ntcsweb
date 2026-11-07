@@ -17,16 +17,16 @@ class FormTemplatePolicy
 {
     public function create(User $user): bool
     {
-        return $user->hasPermission(Permissions::FORM_TEMPLATES_MANAGE);
+        return $user->hasPermission(Permissions::FORM_TEMPLATES_CREATE);
     }
 
     public function update(User $user, FormTemplate $formTemplate): bool
     {
-        return $user->hasPermission(Permissions::FORM_TEMPLATES_MANAGE);
+        return $user->hasPermission(Permissions::FORM_TEMPLATES_UPDATE);
     }
 
     public function delete(User $user, FormTemplate $formTemplate): bool
     {
-        return $user->hasPermission(Permissions::FORM_TEMPLATES_MANAGE);
+        return $user->hasPermission(Permissions::FORM_TEMPLATES_DELETE);
     }
 }

@@ -10,9 +10,11 @@ import DataTable from '@/components/ui/DataTable.vue'
 import EditIconButton from '@/components/ui/EditIconButton.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { formCategoriesService, type FormCategory } from '@/services/formCategories'
+import { useAuthStore } from '@/stores/auth'
 import { useConfirmDialogStore } from '@/stores/confirmDialog'
 
 const { t } = useI18n()
+const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
 
 const { items, meta, loading, error, setPage, fetch } = usePaginatedResource<FormCategory>((query) =>
@@ -55,7 +57,7 @@ onMounted(() => fetch())
         <h1 class="text-xl font-semibold text-neutral-900">{{ t('admin.formCategories.title') }}</h1>
         <p class="mt-1 text-sm text-neutral-500">{{ t('admin.formCategories.subtitle') }}</p>
       </div>
-      <BaseButton @click="openCreate">{{ t('admin.formCategories.addCategory') }}</BaseButton>
+      <BaseButton v-if="auth.can('form-categories.create')" @click="openCreate">{{ t('admin.formCategories.addCategory') }}</BaseButton>
     </div>
 
     <BaseAlert v-if="error" variant="danger" class="mb-4">{{ error }}</BaseAlert>
@@ -69,8 +71,8 @@ onMounted(() => fetch())
     >
       <template #cell-actions="{ row }">
         <div class="flex justify-end gap-2">
-          <EditIconButton @click="openEdit(row)" />
-          <button type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row)">
+          <EditIconButton v-if="auth.can('form-categories.update')" @click="openEdit(row)" />
+          <button v-if="auth.can('form-categories.delete')" type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row)">
             {{ t('admin.formCategories.delete') }}
           </button>
         </div>

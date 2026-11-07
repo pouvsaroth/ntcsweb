@@ -11,9 +11,11 @@ import DataTable from '@/components/ui/DataTable.vue'
 import EditIconButton from '@/components/ui/EditIconButton.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { formTemplatesService, type FormTemplate } from '@/services/formTemplates'
+import { useAuthStore } from '@/stores/auth'
 import { useConfirmDialogStore } from '@/stores/confirmDialog'
 
 const { t } = useI18n()
+const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
 
 const { items, meta, loading, error, setPage, fetch } = usePaginatedResource<FormTemplate>((query) =>
@@ -58,7 +60,7 @@ onMounted(() => fetch())
         <h1 class="text-xl font-semibold text-neutral-900">{{ t('admin.formTemplates.title') }}</h1>
         <p class="mt-1 text-sm text-neutral-500">{{ t('admin.formTemplates.subtitle') }}</p>
       </div>
-      <BaseButton @click="openCreate">{{ t('admin.formTemplates.addTemplate') }}</BaseButton>
+      <BaseButton v-if="auth.can('form-templates.create')" @click="openCreate">{{ t('admin.formTemplates.addTemplate') }}</BaseButton>
     </div>
 
     <BaseAlert v-if="error" variant="danger" class="mb-4">{{ error }}</BaseAlert>
@@ -78,8 +80,8 @@ onMounted(() => fetch())
       </template>
       <template #cell-actions="{ row }">
         <div class="flex justify-end gap-2">
-          <EditIconButton @click="openEdit(row)" />
-          <button type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row)">
+          <EditIconButton v-if="auth.can('form-templates.update')" @click="openEdit(row)" />
+          <button v-if="auth.can('form-templates.delete')" type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row)">
             {{ t('admin.formTemplates.delete') }}
           </button>
         </div>

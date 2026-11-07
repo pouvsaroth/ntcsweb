@@ -21,7 +21,8 @@ use Illuminate\Validation\ValidationException;
 /**
  * Settings → Telegram notification groups (docs/backoffice/stage-11-telegram-notifications.md):
  * groups of this school's users, each linked to one Telegram group. Needs
- * the school settings permission.
+ * telegram-groups.view; add, update (also link, test, unlink) and delete each
+ * have their own permission.
  */
 final class NotificationGroupController extends Controller
 {
@@ -32,7 +33,7 @@ final class NotificationGroupController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $this->allowed($request);
+        $this->allowed($request, Permissions::TELEGRAM_GROUPS_VIEW);
         $groups = NotificationGroup::query()->where('tenant_id', $this->tenantId())->with('users:id,name,email')->orderBy('name')->get();
 
         return ApiResponse::success([
@@ -46,7 +47,7 @@ final class NotificationGroupController extends Controller
     /** The school's staff users to pick from (not students). */
     public function users(Request $request): JsonResponse
     {
-        $this->allowed($request);
+        $this->allowed($request, Permissions::TELEGRAM_GROUPS_VIEW);
         $users = User::query()->inTenant($this->tenantId())->active()
             ->whereDoesntHave('roles', fn ($q) => $q->where('slug', Role::STUDENT))
             ->orderBy('name')->get(['id', 'name', 'email']);
@@ -56,7 +57,7 @@ final class NotificationGroupController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $this->allowed($request);
+        $this->allowed($request, Permissions::TELEGRAM_GROUPS_CREATE);
         $data = $this->validated($request);
         $group = NotificationGroup::query()->create(['tenant_id' => $this->tenantId(), 'name' => $data['name']]);
         $group->users()->sync($data['user_ids'] ?? []);
@@ -66,7 +67,7 @@ final class NotificationGroupController extends Controller
 
     public function update(Request $request, int $group): JsonResponse
     {
-        $this->allowed($request);
+        $this->allowed($request, Permissions::TELEGRAM_GROUPS_UPDATE);
         $model = $this->find($group);
         $data = $this->validated($request);
         $model->update(['name' => $data['name']]);
@@ -77,7 +78,7 @@ final class NotificationGroupController extends Controller
 
     public function destroy(Request $request, int $group): JsonResponse
     {
-        $this->allowed($request);
+        $this->allowed($request, Permissions::TELEGRAM_GROUPS_DELETE);
         $this->find($group)->delete();
 
         return ApiResponse::noContent();
@@ -86,7 +87,7 @@ final class NotificationGroupController extends Controller
     /** A fresh "/link CODE", valid 30 minutes. */
     public function linkCode(Request $request, int $group): JsonResponse
     {
-        $this->allowed($request);
+        $this->allowed($request, Permissions::TELEGRAM_GROUPS_UPDATE);
         $model = $this->find($group);
         do {
             $code = strtoupper(Str::random(6));
@@ -99,7 +100,7 @@ final class NotificationGroupController extends Controller
     /** "Check now": read the bot's messages at once instead of waiting for the minute. */
     public function check(Request $request, int $group): JsonResponse
     {
-        $this->allowed($request);
+        $this->allowed($request, Permissions::TELEGRAM_GROUPS_UPDATE);
         $this->telegram->readUpdates();
 
         return ApiResponse::success($this->present($this->find($group)->load('users:id,name,email')));
@@ -107,7 +108,7 @@ final class NotificationGroupController extends Controller
 
     public function test(Request $request, int $group): JsonResponse
     {
-        $this->allowed($request);
+        $this->allowed($request, Permissions::TELEGRAM_GROUPS_UPDATE);
         $model = $this->find($group);
         abort_unless($model->isLinked(), 422, __('Link this group to Telegram first.'));
         $school = $this->context->getOrFail()->name;
@@ -117,7 +118,7 @@ final class NotificationGroupController extends Controller
 
     public function unlink(Request $request, int $group): JsonResponse
     {
-        $this->allowed($request);
+        $this->allowed($request, Permissions::TELEGRAM_GROUPS_UPDATE);
         $model = $this->find($group);
         $model->forceFill(['telegram_chat_id' => null, 'telegram_title' => null, 'linked_at' => null])->save();
 
@@ -153,9 +154,9 @@ final class NotificationGroupController extends Controller
         return (int) $this->context->getOrFail()->getKey();
     }
 
-    private function allowed(Request $request): void
+    private function allowed(Request $request, string $permission): void
     {
-        abort_unless($request->user()?->hasPermission(Permissions::TENANT_SETTINGS_UPDATE), 403);
+        abort_unless($request->user()?->hasPermission($permission), 403);
     }
 
     /** @return array<string, mixed> */

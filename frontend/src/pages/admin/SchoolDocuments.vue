@@ -141,7 +141,7 @@ onMounted(load)
       </section>
 
       <div class="flex flex-wrap items-center gap-3">
-        <BaseButton v-if="auth.can('tenant-settings.update')" type="submit" :loading="saving">{{ t('common.save') }}</BaseButton>
+        <BaseButton v-if="auth.can('school-documents.update')" type="submit" :loading="saving">{{ t('common.save') }}</BaseButton>
         <BaseAlert v-if="saveError" variant="danger">{{ saveError }}</BaseAlert>
         <BaseAlert v-if="saved" variant="success">{{ t('admin.schoolDocuments.saveSuccess') }}</BaseAlert>
       </div>

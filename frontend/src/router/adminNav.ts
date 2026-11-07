@@ -304,14 +304,14 @@ export const adminNav: AdminNavGroup[] = [
     icon: 'cog',
     items: [
       // School regulation and student attendance policy: an Academics item (stage 9d).
-      { labelKey: 'adminNav.items.schoolDocuments', icon: 'folder', to: '/admin/school-documents', permission: 'tenant-settings.view', module: 'academics' },
+      { labelKey: 'adminNav.items.schoolDocuments', icon: 'folder', to: '/admin/school-documents', permission: 'school-documents.view', module: 'academics' },
       { labelKey: 'adminNav.items.settings', icon: 'cog', to: '/admin/settings', permission: 'tenant-settings.view' },
       // Bell notifications to Telegram groups (stage 11).
-      { labelKey: 'adminNav.items.telegramGroups', icon: 'send', to: '/admin/telegram-notifications', permission: 'tenant-settings.update' },
+      { labelKey: 'adminNav.items.telegramGroups', icon: 'send', to: '/admin/telegram-notifications', permission: 'telegram-groups.view' },
       { labelKey: 'adminNav.items.users', icon: 'users', to: '/admin/users', permission: 'users.view' },
       { labelKey: 'adminNav.items.roles', icon: 'key', to: '/admin/roles', permission: 'roles.view' },
       { labelKey: 'adminNav.items.auditLogs', icon: 'shield', to: '/admin/audit-logs', permission: 'audit-logs.view' },
-      { labelKey: 'adminNav.items.languages', icon: 'translate', to: '/admin/languages', permission: ['base-data.manage-languages', 'base-data.manage-translations'] },
+      { labelKey: 'adminNav.items.languages', icon: 'translate', to: '/admin/languages', permission: ['languages.view', 'base-data.manage-translations'] },
       { labelKey: 'adminNav.items.lookupCategories', icon: 'list', to: '/admin/lookup-categories', permission: 'base-data.view' },
       // Super Admin: any database. database-backups.download (school-admin by
       // default): only their own school's — see DatabaseBackupController.
@@ -331,8 +331,8 @@ export const adminNav: AdminNavGroup[] = [
       // Pending student self-registrations are decided here too (they used
       // to have their own Students > Registrations page).
       { labelKey: 'adminNav.items.approvals', icon: 'clipboardCheck', to: '/admin/approvals/queue', permission: ['approval-requests.view', 'leave-requests.view', 'make-up-class-requests.view', 'class-change-requests.view', 'students.approve-registration', 'gradebook.approve'], flowApprover: true },
-      { labelKey: 'adminNav.items.formCategories', icon: 'folder', to: '/admin/form-categories', permission: 'form-categories.manage' },
-      { labelKey: 'adminNav.items.formTemplates', icon: 'duplicate', to: '/admin/form-templates', permission: 'form-templates.manage' },
+      { labelKey: 'adminNav.items.formCategories', icon: 'folder', to: '/admin/form-categories', permission: 'form-categories.view' },
+      { labelKey: 'adminNav.items.formTemplates', icon: 'duplicate', to: '/admin/form-templates', permission: 'form-templates.view' },
     ],
   },
   {
@@ -340,8 +340,8 @@ export const adminNav: AdminNavGroup[] = [
     labelKey: 'adminNav.groups.approvalFlow',
     icon: 'share',
     items: [
-      { labelKey: 'adminNav.items.approvalGroups', icon: 'userGroup', to: '/admin/approval-flow/groups', permission: 'approval-groups.manage' },
-      { labelKey: 'adminNav.items.flowSetting', icon: 'share', to: '/admin/approval-flow/settings', permission: 'approval-groups.manage' },
+      { labelKey: 'adminNav.items.approvalGroups', icon: 'userGroup', to: '/admin/approval-flow/groups', permission: 'approval-groups.view' },
+      { labelKey: 'adminNav.items.flowSetting', icon: 'share', to: '/admin/approval-flow/settings', permission: 'approval-flows.view' },
     ],
   },
 ]

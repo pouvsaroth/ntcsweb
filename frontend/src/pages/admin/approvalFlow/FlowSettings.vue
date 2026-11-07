@@ -10,6 +10,7 @@ import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import EditIconButton from '@/components/ui/EditIconButton.vue'
 import { approvalFlowsService, type ApprovalDocumentType, type ApprovalFlow } from '@/services/approvalFlows'
 import { approvalGroupsService, type ApprovalGroup } from '@/services/approvalGroups'
+import { useAuthStore } from '@/stores/auth'
 import { ApiRequestError } from '@/types/api'
 
 /**
@@ -20,6 +21,8 @@ import { ApiRequestError } from '@/types/api'
  * permission decides.
  */
 const { t } = useI18n()
+const auth = useAuthStore()
+const canUpdate = computed(() => auth.can('approval-flows.update'))
 
 const flows = ref<ApprovalFlow[]>([])
 const groups = ref<ApprovalGroup[]>([])
@@ -68,7 +71,7 @@ onMounted(load)
         <h1 class="text-xl font-semibold text-neutral-900">{{ t('admin.approvalFlows.title') }}</h1>
         <p class="mt-1 max-w-3xl text-sm text-neutral-500">{{ t('admin.approvalFlows.subtitle') }}</p>
       </div>
-      <BaseButton :disabled="loading || unconfigured.length === 0" @click="openAdd">{{ t('admin.approvalFlows.addFlow') }}</BaseButton>
+      <BaseButton v-if="canUpdate" :disabled="loading || unconfigured.length === 0" @click="openAdd">{{ t('admin.approvalFlows.addFlow') }}</BaseButton>
     </div>
 
     <BaseAlert v-if="error" variant="danger" class="mb-4">{{ error }}</BaseAlert>
@@ -84,7 +87,7 @@ onMounted(load)
         >
           <div class="flex items-start justify-between gap-3">
             <h2 class="font-medium text-neutral-900">{{ t(`admin.approvalFlows.types.${flow.document_type}`) }}</h2>
-            <EditIconButton @click="openEdit(flow)" />
+            <EditIconButton v-if="canUpdate" @click="openEdit(flow)" />
           </div>
           <ol class="mt-3 flex flex-wrap items-center gap-2">
             <template v-for="(step, index) in flow.steps" :key="step.step_order">
@@ -103,7 +106,7 @@ onMounted(load)
         {{ t('admin.approvalFlows.emptyMessage') }}
       </p>
 
-      <div v-if="unconfigured.length > 0" class="mt-6">
+      <div v-if="canUpdate && unconfigured.length > 0" class="mt-6">
         <h2 class="text-sm font-medium text-neutral-700">{{ t('admin.approvalFlows.noFlowTitle') }}</h2>
         <p class="mt-1 text-xs text-neutral-500">{{ t('admin.approvalFlows.noFlowHint') }}</p>
         <div class="mt-2 flex flex-wrap gap-2">

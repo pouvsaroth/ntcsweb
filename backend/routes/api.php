@@ -767,7 +767,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::post('exam-scores', [ExamScoreController::class, 'store'])->name('exam-scores.store');
 
         // Approval Flow — groups of users that approval flows are built from.
-        // See ApprovalGroupPolicy (approval-groups.manage).
+        // See ApprovalGroupPolicy (approval-groups.view/create/update/delete; approval-flows.view also lists them).
         Route::get('approval-groups/users', [ApprovalGroupController::class, 'users'])->name('approval-groups.users');
         Route::apiResource('approval-groups', ApprovalGroupController::class);
         Route::get('approval-flows', [ApprovalFlowController::class, 'index'])->name('approval-flows.index');

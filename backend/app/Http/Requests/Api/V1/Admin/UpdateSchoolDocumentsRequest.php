@@ -16,7 +16,7 @@ class UpdateSchoolDocumentsRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->hasPermission(Permissions::TENANT_SETTINGS_UPDATE) ?? false;
+        return $this->user()?->hasPermission(Permissions::SCHOOL_DOCUMENTS_UPDATE) ?? false;
     }
 
     public function rules(): array

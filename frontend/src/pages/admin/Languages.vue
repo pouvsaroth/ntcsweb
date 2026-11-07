@@ -66,7 +66,7 @@ onMounted(() => fetch())
         <h1 class="text-xl font-semibold text-neutral-900">{{ t('admin.languages.title') }}</h1>
         <p class="mt-1 text-sm text-neutral-500">{{ t('admin.languages.pageSubtitle') }}</p>
       </div>
-      <BaseButton v-if="auth.can('base-data.manage-languages')" @click="openCreate">{{ t('admin.languages.addLanguage') }}</BaseButton>
+      <BaseButton v-if="auth.can('languages.create')" @click="openCreate">{{ t('admin.languages.addLanguage') }}</BaseButton>
     </div>
 
     <BaseAlert v-if="error || deleteError" variant="danger" class="mb-4">{{ error || deleteError }}</BaseAlert>
@@ -83,8 +83,8 @@ onMounted(() => fetch())
       </template>
       <template #cell-actions="{ row }">
         <div class="flex justify-end gap-2">
-          <EditIconButton v-if="auth.can('base-data.manage-languages')" @click="openEdit(row)" />
-          <button v-if="auth.can('base-data.manage-languages')" type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row)">
+          <EditIconButton v-if="auth.can('languages.update')" @click="openEdit(row)" />
+          <button v-if="auth.can('languages.delete')" type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row)">
             {{ t('admin.languages.delete') }}
           </button>
         </div>

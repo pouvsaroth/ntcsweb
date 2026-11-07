@@ -27,7 +27,7 @@ export { hideTabSlug } from '@/router/hideTabSlug'
 
 /**
  * Every tab bar's tab paths, one list per page. Programs, Study Building,
- * Invoices and Attendance draw their own tab bars (components/admin/*Tabs.vue);
+ * Invoices, Attendance and Help & Support draw their own tab bars (components/admin/*Tabs.vue);
  * their paths are repeated here.
  */
 export const TAB_BARS: string[][] = [
@@ -52,6 +52,7 @@ export const TAB_BARS: string[][] = [
     ['/admin/buildings', '/admin/classrooms'],
     ['/admin/invoices', '/admin/invoices/monthly'],
     ['/admin/attendance', '/admin/attendance/summary'],
+    ['/admin/help/articles', '/admin/help/faq', '/admin/help/tickets', '/admin/help/contact'],
   ])
 
 /** A hidden tab's next tab on the same page that isn't hidden (null: all hidden). */
