@@ -24,7 +24,11 @@ import { ApiRequestError } from '@/types/api'
 const { t } = useI18n()
 const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
-const canManage = computed(() => auth.can('grade-levels.manage'))
+const canCreate = computed(() => auth.can('grade-levels.create'))
+const canUpdate = computed(() => auth.can('grade-levels.update'))
+const canDelete = computed(() => auth.can('grade-levels.delete'))
+/** Any row action (edit or delete). */
+const canManage = computed(() => canUpdate.value || canDelete.value)
 
 const levels = ref<GradeLevel[]>([])
 const loading = ref(true)
@@ -134,7 +138,7 @@ onMounted(load)
   <div>
     <div class="mb-4 flex flex-wrap items-center gap-2">
       <p class="text-sm text-neutral-500">{{ t('schoolSetup.grades.hint') }}</p>
-      <div v-if="canManage" class="ml-auto flex flex-wrap gap-2">
+      <div v-if="canCreate" class="ml-auto flex flex-wrap gap-2">
         <BaseButton variant="outline" :loading="seeding" @click="seedDefaults">{{ t('schoolSetup.grades.seed') }}</BaseButton>
         <BaseButton @click="open(null)">{{ t('schoolSetup.grades.add') }}</BaseButton>
       </div>
@@ -157,8 +161,8 @@ onMounted(load)
           </div>
           <p class="text-xs text-neutral-500">{{ stageLabel(row.stage) }} · {{ t('schoolSetup.grades.classesN', { count: row.classes_count }) }}</p>
           <div v-if="canManage" class="mt-2 flex justify-end gap-3">
-            <EditIconButton @click="open(row)" />
-            <button type="button" class="text-sm font-medium text-danger-600" @click="remove(row)">{{ t('schoolSetup.delete') }}</button>
+            <EditIconButton v-if="canUpdate" @click="open(row)" />
+            <button v-if="canDelete" type="button" class="text-sm font-medium text-danger-600" @click="remove(row)">{{ t('schoolSetup.delete') }}</button>
           </div>
         </div>
       </div>
@@ -176,8 +180,8 @@ onMounted(load)
         <template #cell-classes="{ row }">{{ row.classes_count }}</template>
         <template #cell-actions="{ row }">
           <div class="flex justify-end gap-2">
-            <EditIconButton @click="open(row as GradeLevel)" />
-            <button type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row as GradeLevel)">{{ t('schoolSetup.delete') }}</button>
+            <EditIconButton v-if="canUpdate" @click="open(row as GradeLevel)" />
+            <button v-if="canDelete" type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row as GradeLevel)">{{ t('schoolSetup.delete') }}</button>
           </div>
         </template>
       </DataTable>

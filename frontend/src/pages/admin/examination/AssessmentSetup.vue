@@ -32,7 +32,9 @@ import { ApiRequestError } from '@/types/api'
 const { t, locale } = useI18n()
 const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
-const canManage = computed(() => auth.can('assessment.manage'))
+const canCreate = computed(() => auth.can('assessment.create'))
+const canUpdate = computed(() => auth.can('assessment.update'))
+const canDelete = computed(() => auth.can('assessment.delete'))
 
 const schemes = ref<AssessmentScheme[]>([])
 const grades = ref<GradeLevel[]>([])
@@ -211,7 +213,7 @@ onMounted(async () => {
   <div>
     <div class="mb-4 flex flex-wrap items-start gap-3">
       <p class="min-w-0 flex-1 text-sm text-neutral-600">{{ t('gradebook.setup.hint') }}</p>
-      <BaseButton v-if="canManage" :disabled="gradeOptions.length === 0" @click="open(null)">{{ t('gradebook.setup.add') }}</BaseButton>
+      <BaseButton v-if="canCreate" :disabled="gradeOptions.length === 0" @click="open(null)">{{ t('gradebook.setup.add') }}</BaseButton>
     </div>
     <BaseAlert variant="warning" class="mb-4">{{ t('gradebook.setup.ministryNote') }}</BaseAlert>
     <BaseAlert v-if="error" variant="danger" class="mb-4">{{ error }}</BaseAlert>
@@ -254,10 +256,10 @@ onMounted(async () => {
           <BaseBadge v-for="w in s.warnings" :key="w" variant="warning">{{ t(`gradebook.warnings.${w}`) }}</BaseBadge>
         </div>
 
-        <div v-if="canManage" class="mt-auto flex flex-wrap gap-3 pt-3 text-sm">
-          <button type="button" class="font-medium text-secondary-700 hover:underline" @click="open(s)">{{ t('gradebook.edit') }}</button>
-          <button v-if="isEmpty(s)" type="button" class="font-medium text-secondary-700 hover:underline" @click="starter(s)">{{ t('gradebook.setup.starter') }}</button>
-          <button type="button" class="ml-auto text-red-600 hover:underline" @click="remove(s)">{{ t('gradebook.delete') }}</button>
+        <div v-if="canUpdate || canDelete" class="mt-auto flex flex-wrap gap-3 pt-3 text-sm">
+          <button v-if="canUpdate" type="button" class="font-medium text-secondary-700 hover:underline" @click="open(s)">{{ t('gradebook.edit') }}</button>
+          <button v-if="canUpdate && isEmpty(s)" type="button" class="font-medium text-secondary-700 hover:underline" @click="starter(s)">{{ t('gradebook.setup.starter') }}</button>
+          <button v-if="canDelete" type="button" class="ml-auto text-red-600 hover:underline" @click="remove(s)">{{ t('gradebook.delete') }}</button>
         </div>
       </div>
     </div>

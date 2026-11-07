@@ -37,7 +37,7 @@ final class StudentPromotionController extends Controller
     /** Set the rule of one grade level (or the default rule when grade_level_id is empty). */
     public function saveRule(Request $request): JsonResponse
     {
-        abort_unless($request->user()->hasPermission(Permissions::PROMOTION_RULES_MANAGE), 403);
+        abort_unless($request->user()->hasAnyPermission(Permissions::PROMOTION_RULES_CREATE, Permissions::PROMOTION_RULES_UPDATE), 403);
         $data = $request->validate([
             'grade_level_id' => ['nullable', 'integer', Rule::exists('tenant.grade_levels', 'id')],
             'min_average' => ['nullable', 'numeric', 'min:0', 'max:100'],
@@ -48,6 +48,8 @@ final class StudentPromotionController extends Controller
         ]);
 
         $rule = PromotionRule::query()->firstOrNew(['grade_level_id' => $data['grade_level_id'] ?? null]);
+        // A grade without a rule yet is an Add; changing its rule is an Update.
+        abort_unless($request->user()->hasPermission($rule->exists ? Permissions::PROMOTION_RULES_UPDATE : Permissions::PROMOTION_RULES_CREATE), 403);
         $rule->fill($data)->save();
 
         return ApiResponse::success($this->rule($rule->load('gradeLevel:id,name,code,level_order')));
@@ -55,7 +57,7 @@ final class StudentPromotionController extends Controller
 
     public function destroyRule(Request $request, PromotionRule $promotionRule): JsonResponse
     {
-        abort_unless($request->user()->hasPermission(Permissions::PROMOTION_RULES_MANAGE), 403);
+        abort_unless($request->user()->hasPermission(Permissions::PROMOTION_RULES_DELETE), 403);
 
         $promotionRule->delete();
 

@@ -14,7 +14,7 @@ import { useAuthStore } from '@/stores/auth'
 const { t } = useI18n()
 const auth = useAuthStore()
 
-const tabs = computed(() => timetableTabs.filter((tab) => auth.can(tab.permission) || (tab.permission === 'timetable.request' && auth.can('timetable.manage'))))
+const tabs = computed(() => timetableTabs.filter((tab) => auth.can(tab.permission) || (tab.permission === 'timetable.request' && (auth.can('timetable.approve') || auth.can('timetable.reject')))))
 </script>
 
 <template>

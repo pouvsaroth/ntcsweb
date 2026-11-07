@@ -26,7 +26,7 @@ class TimetableTest extends TestCase
 
     private Position $teacherPosition;
 
-    private function school(array $permissions = [Permissions::TIMETABLE_VIEW, Permissions::TIMETABLE_MANAGE, Permissions::TIMETABLE_REQUEST]): void
+    private function school(array $permissions = [Permissions::TIMETABLE_VIEW, Permissions::TIMETABLE_CREATE, Permissions::TIMETABLE_UPDATE, Permissions::TIMETABLE_DELETE, Permissions::TIMETABLE_APPROVE, Permissions::TIMETABLE_REJECT, Permissions::TIMETABLE_REQUEST]): void
     {
         $this->actingAsAdminWithPermissions($permissions);
         $role = Role::factory()->forTenant($this->tenant)->system()->create(['slug' => Role::TEACHER, 'name' => 'Teacher', 'level' => Role::LEVELS[Role::TEACHER]]);
@@ -50,7 +50,7 @@ class TimetableTest extends TestCase
 
     public function test_a_slot_has_its_subject_teacher_and_room_and_the_class_form_keeps_them(): void
     {
-        $this->school([Permissions::TIMETABLE_VIEW, Permissions::TIMETABLE_MANAGE, Permissions::CLASSES_UPDATE]);
+        $this->school([Permissions::TIMETABLE_VIEW, Permissions::TIMETABLE_CREATE, Permissions::TIMETABLE_UPDATE, Permissions::TIMETABLE_DELETE, Permissions::TIMETABLE_APPROVE, Permissions::TIMETABLE_REJECT, Permissions::CLASSES_UPDATE]);
         $dara = $this->teacher('Dara');
         $room = Classroom::factory()->create(['name' => 'R1']);
         $class = $this->liveClass('7A', $dara);
@@ -125,7 +125,7 @@ class TimetableTest extends TestCase
         $this->postJson("/api/v1/timetable/changes/{$id}/approve")->assertForbidden();
         $this->getJson('/api/v1/timetable/changes')->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.mine', true);
 
-        $this->actingAsAdminWithPermissions([Permissions::TIMETABLE_VIEW, Permissions::TIMETABLE_MANAGE]);
+        $this->actingAsAdminWithPermissions([Permissions::TIMETABLE_VIEW, Permissions::TIMETABLE_CREATE, Permissions::TIMETABLE_UPDATE, Permissions::TIMETABLE_DELETE, Permissions::TIMETABLE_APPROVE, Permissions::TIMETABLE_REJECT]);
         $this->postJson("/api/v1/timetable/changes/{$id}/approve")->assertOk()->assertJsonPath('data.status', 'approved');
         $this->assertSame([4, '13:00'], [(int) $mySlot->fresh()->day_of_week, substr((string) $mySlot->fresh()->start_time, 0, 5)]);
         $this->postJson("/api/v1/timetable/changes/{$id}/reject")->assertUnprocessable();

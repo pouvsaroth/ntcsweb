@@ -31,8 +31,8 @@ final class ScheduleChangeController extends Controller
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();
-        abort_unless($user->hasAnyPermission(Permissions::TIMETABLE_MANAGE, Permissions::TIMETABLE_REQUEST), 403);
-        $manager = $user->hasPermission(Permissions::TIMETABLE_MANAGE);
+        abort_unless($user->hasAnyPermission(Permissions::TIMETABLE_APPROVE, Permissions::TIMETABLE_REJECT, Permissions::TIMETABLE_REQUEST), 403);
+        $manager = $this->decides($user);
 
         $rows = DB::connection('tenant')->table('schedule_change_requests as r')
             ->join('class_schedules as s', 's.id', '=', 'r.class_schedule_id')
@@ -70,7 +70,7 @@ final class ScheduleChangeController extends Controller
     public function store(Request $request): JsonResponse
     {
         $user = $request->user();
-        abort_unless($user->hasAnyPermission(Permissions::TIMETABLE_REQUEST, Permissions::TIMETABLE_MANAGE), 403);
+        abort_unless($user->hasAnyPermission(Permissions::TIMETABLE_REQUEST, Permissions::TIMETABLE_APPROVE, Permissions::TIMETABLE_REJECT), 403);
         $data = $request->validate([
             'class_schedule_id' => ['required', 'integer', Rule::exists('tenant.class_schedules', 'id')],
             'new_day_of_week' => ['required', 'integer', 'between:1,7'],
@@ -82,7 +82,7 @@ final class ScheduleChangeController extends Controller
         ]);
 
         // A teacher asks only for the times they teach.
-        if (! $user->hasPermission(Permissions::TIMETABLE_MANAGE)) {
+        if (! $this->decides($user)) {
             $staffId = Staff::query()->where('user_id', $user->getKey())->value('id');
             $slot = $this->timetable->slots(fn ($q) => $q->whereKey($data['class_schedule_id']))->first();
             if ($staffId === null || $slot === null || ! in_array((int) $staffId, array_column($slot['teachers'], 'id'), true)) {
@@ -106,7 +106,7 @@ final class ScheduleChangeController extends Controller
     /** Approve: the weekly time moves; the answer lists any conflict it now has. */
     public function approve(Request $request, int $changeRequest): JsonResponse
     {
-        abort_unless($request->user()->hasPermission(Permissions::TIMETABLE_MANAGE), 403);
+        abort_unless($request->user()->hasPermission(Permissions::TIMETABLE_APPROVE), 403);
         $r = $this->pending($changeRequest);
         /** @var ClassSchedule $slot */
         $slot = ClassSchedule::query()->findOrFail($r->class_schedule_id);
@@ -139,7 +139,7 @@ final class ScheduleChangeController extends Controller
 
     public function reject(Request $request, int $changeRequest): JsonResponse
     {
-        abort_unless($request->user()->hasPermission(Permissions::TIMETABLE_MANAGE), 403);
+        abort_unless($request->user()->hasPermission(Permissions::TIMETABLE_REJECT), 403);
         $this->pending($changeRequest);
         $this->decide($changeRequest, 'rejected', $request);
 
@@ -175,5 +175,11 @@ final class ScheduleChangeController extends Controller
             'decision_note' => $request->input('note'),
             'updated_at' => now(),
         ]);
+    }
+
+    /** Decides schedule changes: sees everyone's requests and may ask for any time. */
+    private function decides(User $user): bool
+    {
+        return $user->hasAnyPermission(Permissions::TIMETABLE_APPROVE, Permissions::TIMETABLE_REJECT);
     }
 }

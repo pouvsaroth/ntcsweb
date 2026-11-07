@@ -147,7 +147,7 @@ final class TimetableController extends Controller
 
     public function storeSlot(Request $request): JsonResponse
     {
-        $this->can($request, Permissions::TIMETABLE_MANAGE);
+        $this->can($request, Permissions::TIMETABLE_CREATE);
         $data = $this->validatedSlot($request);
         $slot = ClassSchedule::query()->create($data);
 
@@ -156,7 +156,7 @@ final class TimetableController extends Controller
 
     public function updateSlot(Request $request, ClassSchedule $schedule): JsonResponse
     {
-        $this->can($request, Permissions::TIMETABLE_MANAGE);
+        $this->can($request, Permissions::TIMETABLE_UPDATE);
         $schedule->update($this->validatedSlot($request, $schedule));
 
         return ApiResponse::success($this->afterSave($schedule));
@@ -164,7 +164,7 @@ final class TimetableController extends Controller
 
     public function destroySlot(Request $request, ClassSchedule $schedule): JsonResponse
     {
-        $this->can($request, Permissions::TIMETABLE_MANAGE);
+        $this->can($request, Permissions::TIMETABLE_DELETE);
         $schedule->delete();
 
         return ApiResponse::noContent();

@@ -36,7 +36,7 @@ class SchoolSetupTest extends TestCase
 
     public function test_terms_belong_to_a_year_and_their_names_are_unique_within_it(): void
     {
-        $this->actingAsAdminWithPermissions([Permissions::ACADEMIC_TERMS_VIEW, Permissions::ACADEMIC_TERMS_MANAGE]);
+        $this->actingAsAdminWithPermissions([Permissions::ACADEMIC_TERMS_VIEW, Permissions::ACADEMIC_TERMS_CREATE, Permissions::ACADEMIC_TERMS_UPDATE, Permissions::ACADEMIC_TERMS_DELETE]);
         $year = AcademicYear::factory()->create(['name' => '2026-2027']);
         $other = AcademicYear::factory()->create(['name' => '2027-2028']);
 
@@ -62,7 +62,7 @@ class SchoolSetupTest extends TestCase
 
     public function test_grade_1_to_12_in_one_click_and_a_used_grade_cannot_be_deleted(): void
     {
-        $this->actingAsAdminWithPermissions([Permissions::GRADE_LEVELS_VIEW, Permissions::GRADE_LEVELS_MANAGE]);
+        $this->actingAsAdminWithPermissions([Permissions::GRADE_LEVELS_VIEW, Permissions::GRADE_LEVELS_CREATE, Permissions::GRADE_LEVELS_UPDATE, Permissions::GRADE_LEVELS_DELETE]);
 
         $this->postJson('/api/v1/grade-levels/defaults')->assertOk()->assertJsonPath('data.added', 12);
         $this->postJson('/api/v1/grade-levels/defaults')->assertOk()->assertJsonPath('data.added', 0);
@@ -99,7 +99,7 @@ class SchoolSetupTest extends TestCase
 
     public function test_the_curriculum_of_a_grade_subjects_hours_and_lessons(): void
     {
-        $this->actingAsAdminWithPermissions([Permissions::CURRICULUM_VIEW, Permissions::CURRICULUM_MANAGE, Permissions::BOOKS_VIEW]);
+        $this->actingAsAdminWithPermissions([Permissions::CURRICULUM_VIEW, Permissions::CURRICULUM_CREATE, Permissions::CURRICULUM_UPDATE, Permissions::CURRICULUM_DELETE, Permissions::BOOKS_VIEW]);
         $grade = GradeLevel::query()->create(['code' => 'G7', 'name' => 'Grade 7', 'level_order' => 7]);
         $math = Book::factory()->create(['title' => 'Mathematics']);
         $khmer = Book::factory()->create(['title' => 'Khmer']);
@@ -134,7 +134,7 @@ class SchoolSetupTest extends TestCase
 
     public function test_the_calendar_shows_its_days_the_holidays_and_the_terms(): void
     {
-        $this->actingAsAdminWithPermissions([Permissions::SCHOOL_CALENDAR_VIEW, Permissions::SCHOOL_CALENDAR_MANAGE]);
+        $this->actingAsAdminWithPermissions([Permissions::SCHOOL_CALENDAR_VIEW, Permissions::SCHOOL_CALENDAR_CREATE, Permissions::SCHOOL_CALENDAR_UPDATE, Permissions::SCHOOL_CALENDAR_DELETE]);
         $year = AcademicYear::factory()->create();
         AcademicTerm::query()->create(['academic_year_id' => $year->id, 'name' => 'Semester 1', 'start_date' => '2026-11-01', 'end_date' => '2027-03-31']);
         Holiday::query()->create(['name' => 'Water Festival', 'start_date' => '2026-11-04', 'end_date' => '2026-11-06']);
@@ -155,7 +155,7 @@ class SchoolSetupTest extends TestCase
 
     public function test_promotion_rules_a_default_and_one_per_grade(): void
     {
-        $this->actingAsAdminWithPermissions([Permissions::PROMOTION_RULES_VIEW, Permissions::PROMOTION_RULES_MANAGE]);
+        $this->actingAsAdminWithPermissions([Permissions::PROMOTION_RULES_VIEW, Permissions::PROMOTION_RULES_CREATE, Permissions::PROMOTION_RULES_UPDATE, Permissions::PROMOTION_RULES_DELETE]);
         $grade = GradeLevel::query()->create(['code' => 'G9', 'name' => 'Grade 9', 'level_order' => 9]);
 
         $this->putJson('/api/v1/promotion-rules', ['min_average' => 50, 'pass_mark' => 50])->assertOk();
@@ -173,7 +173,7 @@ class SchoolSetupTest extends TestCase
     public function test_students_are_checked_against_the_rule_then_promoted_or_kept(): void
     {
         $this->actingAsAdminWithPermissions([
-            Permissions::STUDENT_PROMOTIONS_VIEW, Permissions::STUDENT_PROMOTIONS_RUN, Permissions::PROMOTION_RULES_MANAGE,
+            Permissions::STUDENT_PROMOTIONS_VIEW, Permissions::STUDENT_PROMOTIONS_RUN, Permissions::PROMOTION_RULES_CREATE, Permissions::PROMOTION_RULES_UPDATE, Permissions::PROMOTION_RULES_DELETE,
         ]);
         $g7 = GradeLevel::query()->create(['code' => 'G7', 'name' => 'Grade 7', 'level_order' => 7]);
         $g8 = GradeLevel::query()->create(['code' => 'G8', 'name' => 'Grade 8', 'level_order' => 8]);

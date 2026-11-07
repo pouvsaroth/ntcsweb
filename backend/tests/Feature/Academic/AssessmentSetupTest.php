@@ -46,7 +46,7 @@ class AssessmentSetupTest extends TestCase
 
     public function test_a_scheme_is_saved_whole_and_its_children_keep_their_ids(): void
     {
-        $this->actingAsAdminWithPermissions([Permissions::ASSESSMENT_VIEW, Permissions::ASSESSMENT_MANAGE]);
+        $this->actingAsAdminWithPermissions([Permissions::ASSESSMENT_VIEW, Permissions::ASSESSMENT_CREATE, Permissions::ASSESSMENT_UPDATE, Permissions::ASSESSMENT_DELETE]);
 
         $created = $this->postJson('/api/v1/assessment-schemes', $this->scheme())->assertCreated()
             ->assertJsonPath('data.weights_total', 100)
@@ -76,7 +76,7 @@ class AssessmentSetupTest extends TestCase
 
     public function test_one_default_and_one_scheme_per_grade(): void
     {
-        $this->actingAsAdminWithPermissions([Permissions::ASSESSMENT_VIEW, Permissions::ASSESSMENT_MANAGE]);
+        $this->actingAsAdminWithPermissions([Permissions::ASSESSMENT_VIEW, Permissions::ASSESSMENT_CREATE, Permissions::ASSESSMENT_UPDATE, Permissions::ASSESSMENT_DELETE]);
         $g7 = $this->grade();
 
         $this->postJson('/api/v1/assessment-schemes', $this->scheme())->assertCreated();
@@ -96,7 +96,7 @@ class AssessmentSetupTest extends TestCase
 
     public function test_validation_of_components_bands_and_levels(): void
     {
-        $this->actingAsAdminWithPermissions([Permissions::ASSESSMENT_VIEW, Permissions::ASSESSMENT_MANAGE]);
+        $this->actingAsAdminWithPermissions([Permissions::ASSESSMENT_VIEW, Permissions::ASSESSMENT_CREATE, Permissions::ASSESSMENT_UPDATE, Permissions::ASSESSMENT_DELETE]);
 
         $this->postJson('/api/v1/assessment-schemes', $this->scheme([
             'mode' => 'letters',
@@ -110,7 +110,7 @@ class AssessmentSetupTest extends TestCase
 
     public function test_competency_mode_and_the_starter_setups(): void
     {
-        $this->actingAsAdminWithPermissions([Permissions::ASSESSMENT_VIEW, Permissions::ASSESSMENT_MANAGE]);
+        $this->actingAsAdminWithPermissions([Permissions::ASSESSMENT_VIEW, Permissions::ASSESSMENT_CREATE, Permissions::ASSESSMENT_UPDATE, Permissions::ASSESSMENT_DELETE]);
         $g1 = $this->grade('G1', 1);
         $maths = Book::factory()->create(['title' => 'Mathematics']);
 
@@ -168,7 +168,7 @@ class AssessmentSetupTest extends TestCase
 
     public function test_exams_are_scheduled_for_a_grade_or_a_class_and_listed_by_date(): void
     {
-        $this->actingAsAdminWithPermissions([Permissions::EXAM_SCHEDULES_VIEW, Permissions::EXAM_SCHEDULES_MANAGE]);
+        $this->actingAsAdminWithPermissions([Permissions::EXAM_SCHEDULES_VIEW, Permissions::EXAM_SCHEDULES_CREATE, Permissions::EXAM_SCHEDULES_UPDATE, Permissions::EXAM_SCHEDULES_DELETE]);
         [$year, $g7, $a, , $maths, $khmer] = $this->examSetup();
         $term = AcademicTerm::query()->create(['academic_year_id' => $year->id, 'name' => 'Semester 1']);
 
@@ -192,7 +192,7 @@ class AssessmentSetupTest extends TestCase
 
     public function test_overlapping_exams_may_not_share_students_room_or_invigilator(): void
     {
-        $this->actingAsAdminWithPermissions([Permissions::EXAM_SCHEDULES_VIEW, Permissions::EXAM_SCHEDULES_MANAGE]);
+        $this->actingAsAdminWithPermissions([Permissions::EXAM_SCHEDULES_VIEW, Permissions::EXAM_SCHEDULES_CREATE, Permissions::EXAM_SCHEDULES_UPDATE, Permissions::EXAM_SCHEDULES_DELETE]);
         [$year, $g7, $a, $b, $maths, $khmer] = $this->examSetup();
         $room = Classroom::factory()->create(['name' => 'Room 1']);
         $teacher = Staff::factory()->create();

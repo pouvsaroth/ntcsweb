@@ -84,7 +84,7 @@ final class SchoolCalendarController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        abort_unless($request->user()->hasPermission(Permissions::SCHOOL_CALENDAR_MANAGE), 403);
+        abort_unless($request->user()->hasPermission(Permissions::SCHOOL_CALENDAR_CREATE), 403);
 
         $event = SchoolCalendarEvent::query()->create($this->validated($request));
 
@@ -93,7 +93,7 @@ final class SchoolCalendarController extends Controller
 
     public function update(Request $request, SchoolCalendarEvent $schoolCalendarEvent): JsonResponse
     {
-        abort_unless($request->user()->hasPermission(Permissions::SCHOOL_CALENDAR_MANAGE), 403);
+        abort_unless($request->user()->hasPermission(Permissions::SCHOOL_CALENDAR_UPDATE), 403);
 
         $schoolCalendarEvent->update($this->validated($request));
 
@@ -102,7 +102,7 @@ final class SchoolCalendarController extends Controller
 
     public function destroy(Request $request, SchoolCalendarEvent $schoolCalendarEvent): JsonResponse
     {
-        abort_unless($request->user()->hasPermission(Permissions::SCHOOL_CALENDAR_MANAGE), 403);
+        abort_unless($request->user()->hasPermission(Permissions::SCHOOL_CALENDAR_DELETE), 403);
 
         $schoolCalendarEvent->delete();
 

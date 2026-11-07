@@ -21,7 +21,11 @@ import { formatDate } from '@/utils/date'
 const { t } = useI18n()
 const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
-const canManage = computed(() => auth.can('academic-terms.manage'))
+const canCreate = computed(() => auth.can('academic-terms.create'))
+const canUpdate = computed(() => auth.can('academic-terms.update'))
+const canDelete = computed(() => auth.can('academic-terms.delete'))
+/** Any row action (edit or delete). */
+const canManage = computed(() => canUpdate.value || canDelete.value)
 
 const years = ref<AcademicYear[]>([])
 const yearId = ref<string>('')
@@ -129,7 +133,7 @@ onMounted(async () => {
     <div class="mb-4 flex flex-wrap items-center gap-2">
       <BaseSelect class="w-56" :model-value="yearId" :options="yearOptions" @update:model-value="onYear" />
       <RouterLink to="/admin/academic-years" class="text-sm text-secondary-700 hover:underline">{{ t('schoolSetup.terms.manageYears') }}</RouterLink>
-      <BaseButton v-if="canManage" class="ml-auto" :disabled="years.length === 0" @click="open(null)">{{ t('schoolSetup.terms.add') }}</BaseButton>
+      <BaseButton v-if="canCreate" class="ml-auto" :disabled="years.length === 0" @click="open(null)">{{ t('schoolSetup.terms.add') }}</BaseButton>
     </div>
 
     <BaseAlert v-if="error" variant="danger" class="mb-4">{{ error }}</BaseAlert>
@@ -149,8 +153,8 @@ onMounted(async () => {
           </div>
           <p class="text-xs text-neutral-500">{{ range(row) }}</p>
           <div v-if="canManage" class="mt-2 flex justify-end gap-3">
-            <EditIconButton @click="open(row)" />
-            <button type="button" class="text-sm font-medium text-danger-600" @click="remove(row)">{{ t('schoolSetup.delete') }}</button>
+            <EditIconButton v-if="canUpdate" @click="open(row)" />
+            <button v-if="canDelete" type="button" class="text-sm font-medium text-danger-600" @click="remove(row)">{{ t('schoolSetup.delete') }}</button>
           </div>
         </div>
       </div>
@@ -163,8 +167,8 @@ onMounted(async () => {
         <template #cell-dates="{ row }">{{ range(row as AcademicTerm) }}</template>
         <template #cell-actions="{ row }">
           <div class="flex justify-end gap-2">
-            <EditIconButton @click="open(row as AcademicTerm)" />
-            <button type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row as AcademicTerm)">{{ t('schoolSetup.delete') }}</button>
+            <EditIconButton v-if="canUpdate" @click="open(row as AcademicTerm)" />
+            <button v-if="canDelete" type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row as AcademicTerm)">{{ t('schoolSetup.delete') }}</button>
           </div>
         </template>
       </DataTable>

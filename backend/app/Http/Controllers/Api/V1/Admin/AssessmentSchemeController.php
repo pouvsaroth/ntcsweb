@@ -45,7 +45,7 @@ final class AssessmentSchemeController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        abort_unless($request->user()->hasPermission(Permissions::ASSESSMENT_MANAGE), 403);
+        abort_unless($request->user()->hasPermission(Permissions::ASSESSMENT_CREATE), 403);
 
         $data = $this->validated($request);
         $scheme = DB::connection('tenant')->transaction(function () use ($data) {
@@ -60,7 +60,7 @@ final class AssessmentSchemeController extends Controller
 
     public function update(Request $request, AssessmentScheme $assessmentScheme): JsonResponse
     {
-        abort_unless($request->user()->hasPermission(Permissions::ASSESSMENT_MANAGE), 403);
+        abort_unless($request->user()->hasPermission(Permissions::ASSESSMENT_UPDATE), 403);
 
         $data = $this->validated($request, $assessmentScheme);
         DB::connection('tenant')->transaction(function () use ($assessmentScheme, $data) {
@@ -73,7 +73,7 @@ final class AssessmentSchemeController extends Controller
 
     public function destroy(Request $request, AssessmentScheme $assessmentScheme): JsonResponse
     {
-        abort_unless($request->user()->hasPermission(Permissions::ASSESSMENT_MANAGE), 403);
+        abort_unless($request->user()->hasPermission(Permissions::ASSESSMENT_DELETE), 403);
 
         $assessmentScheme->delete();
 
@@ -88,7 +88,7 @@ final class AssessmentSchemeController extends Controller
      */
     public function starter(Request $request, AssessmentScheme $assessmentScheme): JsonResponse
     {
-        abort_unless($request->user()->hasPermission(Permissions::ASSESSMENT_MANAGE), 403);
+        abort_unless($request->user()->hasPermission(Permissions::ASSESSMENT_UPDATE), 403);
 
         DB::connection('tenant')->transaction(function () use ($assessmentScheme) {
             if ($assessmentScheme->mode === AssessmentScheme::MODE_SCORE) {

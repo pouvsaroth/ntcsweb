@@ -38,7 +38,7 @@ final class GradeLevelController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        abort_unless($request->user()->hasPermission(Permissions::GRADE_LEVELS_MANAGE), 403);
+        abort_unless($request->user()->hasPermission(Permissions::GRADE_LEVELS_CREATE), 403);
 
         $level = GradeLevel::query()->create($this->validated($request));
 
@@ -47,7 +47,7 @@ final class GradeLevelController extends Controller
 
     public function update(Request $request, GradeLevel $gradeLevel): JsonResponse
     {
-        abort_unless($request->user()->hasPermission(Permissions::GRADE_LEVELS_MANAGE), 403);
+        abort_unless($request->user()->hasPermission(Permissions::GRADE_LEVELS_UPDATE), 403);
 
         $gradeLevel->update($this->validated($request, $gradeLevel));
 
@@ -56,7 +56,7 @@ final class GradeLevelController extends Controller
 
     public function destroy(Request $request, GradeLevel $gradeLevel): JsonResponse
     {
-        abort_unless($request->user()->hasPermission(Permissions::GRADE_LEVELS_MANAGE), 403);
+        abort_unless($request->user()->hasPermission(Permissions::GRADE_LEVELS_DELETE), 403);
 
         if ($gradeLevel->classes()->exists()) {
             throw ValidationException::withMessages(['grade_level' => __('Classes use this grade level. Make it inactive instead, or move the classes first.')]);
@@ -73,7 +73,7 @@ final class GradeLevelController extends Controller
      */
     public function seedDefaults(Request $request): JsonResponse
     {
-        abort_unless($request->user()->hasPermission(Permissions::GRADE_LEVELS_MANAGE), 403);
+        abort_unless($request->user()->hasPermission(Permissions::GRADE_LEVELS_CREATE), 403);
 
         $added = DB::connection('tenant')->transaction(function () {
             $added = 0;

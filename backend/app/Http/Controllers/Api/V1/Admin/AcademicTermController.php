@@ -29,7 +29,7 @@ final class AcademicTermController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        abort_unless($request->user()->hasPermission(Permissions::ACADEMIC_TERMS_MANAGE), 403);
+        abort_unless($request->user()->hasPermission(Permissions::ACADEMIC_TERMS_CREATE), 403);
 
         $term = AcademicTerm::query()->create($this->validated($request));
 
@@ -38,7 +38,7 @@ final class AcademicTermController extends Controller
 
     public function update(Request $request, AcademicTerm $academicTerm): JsonResponse
     {
-        abort_unless($request->user()->hasPermission(Permissions::ACADEMIC_TERMS_MANAGE), 403);
+        abort_unless($request->user()->hasPermission(Permissions::ACADEMIC_TERMS_UPDATE), 403);
 
         $academicTerm->update($this->validated($request, $academicTerm));
 
@@ -47,7 +47,7 @@ final class AcademicTermController extends Controller
 
     public function destroy(Request $request, AcademicTerm $academicTerm): JsonResponse
     {
-        abort_unless($request->user()->hasPermission(Permissions::ACADEMIC_TERMS_MANAGE), 403);
+        abort_unless($request->user()->hasPermission(Permissions::ACADEMIC_TERMS_DELETE), 403);
 
         $academicTerm->delete();
 

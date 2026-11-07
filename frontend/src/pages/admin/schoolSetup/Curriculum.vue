@@ -22,7 +22,9 @@ import { ApiRequestError } from '@/types/api'
 const { t } = useI18n()
 const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
-const canManage = computed(() => auth.can('curriculum.manage'))
+const canCreate = computed(() => auth.can('curriculum.create'))
+const canUpdate = computed(() => auth.can('curriculum.update'))
+const canDelete = computed(() => auth.can('curriculum.delete'))
 
 const grades = ref<GradeLevel[]>([])
 const gradeId = ref('')
@@ -169,7 +171,7 @@ onMounted(async () => {
     <div class="mb-4 flex flex-wrap items-center gap-2">
       <BaseSelect class="w-56" :model-value="gradeId" :options="gradeOptions" :placeholder="t('schoolSetup.chooseGrade')" @update:model-value="onGrade" />
       <p v-if="data" class="text-sm text-neutral-500">{{ t('schoolSetup.curriculum.total', { hours: data.hours_per_week, count: data.subjects.length }) }}</p>
-      <BaseButton v-if="canManage && data" class="ml-auto" :disabled="subjectOptions.length === 0" @click="openSubject(null)">{{ t('schoolSetup.curriculum.addSubject') }}</BaseButton>
+      <BaseButton v-if="canCreate && data" class="ml-auto" :disabled="subjectOptions.length === 0" @click="openSubject(null)">{{ t('schoolSetup.curriculum.addSubject') }}</BaseButton>
     </div>
 
     <BaseAlert v-if="error" variant="danger" class="mb-4">{{ error }}</BaseAlert>
@@ -198,9 +200,9 @@ onMounted(async () => {
             </p>
             <div class="mt-2 flex flex-wrap justify-end gap-3">
               <button type="button" class="text-sm font-medium text-secondary-700" @click="openLessons(row)">{{ t('schoolSetup.curriculum.lessons') }}</button>
-              <template v-if="canManage">
-                <EditIconButton @click="openSubject(row)" />
-                <button type="button" class="text-sm font-medium text-danger-600" @click="removeSubject(row)">{{ t('schoolSetup.remove') }}</button>
+              <template v-if="canUpdate || canDelete">
+                <EditIconButton v-if="canUpdate" @click="openSubject(row)" />
+                <button v-if="canDelete" type="button" class="text-sm font-medium text-danger-600" @click="removeSubject(row)">{{ t('schoolSetup.remove') }}</button>
               </template>
             </div>
           </div>
@@ -217,9 +219,9 @@ onMounted(async () => {
             </button>
           </template>
           <template #cell-actions="{ row }">
-            <div v-if="canManage" class="flex justify-end gap-2">
-              <EditIconButton @click="openSubject(row as CurriculumSubject)" />
-              <button type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="removeSubject(row as CurriculumSubject)">{{ t('schoolSetup.remove') }}</button>
+            <div v-if="canUpdate || canDelete" class="flex justify-end gap-2">
+              <EditIconButton v-if="canUpdate" @click="openSubject(row as CurriculumSubject)" />
+              <button v-if="canDelete" type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="removeSubject(row as CurriculumSubject)">{{ t('schoolSetup.remove') }}</button>
             </div>
           </template>
         </DataTable>
@@ -258,14 +260,14 @@ onMounted(async () => {
               <p v-if="lesson.description" class="text-xs text-neutral-500">{{ lesson.description }}</p>
             </div>
             <span class="shrink-0 text-xs text-neutral-500">{{ lesson.hours != null ? t('schoolSetup.curriculum.hoursN', { hours: lesson.hours }) : '' }}</span>
-            <div v-if="canManage" class="flex shrink-0 gap-2">
-              <EditIconButton @click="editLesson(lesson)" />
-              <button type="button" class="text-xs font-medium text-danger-600" @click="removeLesson(lesson)">{{ t('schoolSetup.delete') }}</button>
+            <div v-if="canUpdate || canDelete" class="flex shrink-0 gap-2">
+              <EditIconButton v-if="canUpdate" @click="editLesson(lesson)" />
+              <button v-if="canDelete" type="button" class="text-xs font-medium text-danger-600" @click="removeLesson(lesson)">{{ t('schoolSetup.delete') }}</button>
             </div>
           </li>
         </ol>
 
-        <form v-if="canManage" class="space-y-3 rounded-lg bg-neutral-50 p-3" @submit.prevent="saveLesson">
+        <form v-if="lessonEditing ? canUpdate : canCreate" class="space-y-3 rounded-lg bg-neutral-50 p-3" @submit.prevent="saveLesson">
           <p class="text-sm font-medium text-neutral-700">{{ lessonEditing ? t('schoolSetup.curriculum.editLesson') : t('schoolSetup.curriculum.addLesson') }}</p>
           <div class="grid gap-3 sm:grid-cols-[1fr_8rem]">
             <BaseInput v-model="lessonForm.title" required :label="t('schoolSetup.curriculum.lessonTitle')" :error="lessonErrors.title?.[0] ?? lessonErrors.book_id?.[0]" />

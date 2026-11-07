@@ -13,7 +13,7 @@ class ClassroomPolicy
     public function viewAny(User $user): bool
     {
         // Class, exam application and exam schedule forms pick a room.
-        return $user->hasAnyPermission(Permissions::CLASSROOMS_VIEW, Permissions::CLASSES_CREATE, Permissions::CLASSES_UPDATE, Permissions::EXAM_APPLICATIONS_CREATE, Permissions::EXAM_APPLICATIONS_UPDATE, Permissions::EXAM_SCHEDULES_MANAGE);
+        return $user->hasAnyPermission(Permissions::CLASSROOMS_VIEW, Permissions::CLASSES_CREATE, Permissions::CLASSES_UPDATE, Permissions::EXAM_APPLICATIONS_CREATE, Permissions::EXAM_APPLICATIONS_UPDATE, Permissions::EXAM_SCHEDULES_CREATE, Permissions::EXAM_SCHEDULES_UPDATE);
     }
 
     public function view(User $user, Classroom $classroom): bool

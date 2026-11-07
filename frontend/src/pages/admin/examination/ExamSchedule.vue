@@ -30,7 +30,11 @@ import { formatDate } from '@/utils/date'
 const { t, locale } = useI18n()
 const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
-const canManage = computed(() => auth.can('exam-schedules.manage'))
+const canCreate = computed(() => auth.can('exam-schedules.create'))
+const canUpdate = computed(() => auth.can('exam-schedules.update'))
+const canDelete = computed(() => auth.can('exam-schedules.delete'))
+/** Any row action (edit or delete). */
+const canManage = computed(() => canUpdate.value || canDelete.value)
 
 const years = ref<AcademicYear[]>([])
 const terms = ref<AcademicTerm[]>([])
@@ -206,8 +210,8 @@ onMounted(async () => {
     gradeLevelsService.list(true).catch(() => []),
     safe(auth.can('classes.view'), () => classesService.listAll()),
     safe(auth.can('books.view'), () => booksService.listAll()),
-    safe(auth.can('classrooms.view') && canManage.value, () => classroomsService.listAll()),
-    safe(auth.can('staff.view') && canManage.value, () => staffService.listAll()),
+    safe(auth.can('classrooms.view') && (canCreate.value || canUpdate.value), () => classroomsService.listAll()),
+    safe(auth.can('staff.view') && (canCreate.value || canUpdate.value), () => staffService.listAll()),
     safe(auth.can('assessment.view'), () => assessmentSchemesService.list()),
   ])
   const current = years.value.find((y) => y.is_current) ?? years.value[0]
@@ -225,7 +229,7 @@ onMounted(async () => {
       <BaseSelect class="lg:w-44" :model-value="filter.class" :options="classFilterOptions" @update:model-value="(v) => setFilter('class', v)" />
       <div class="flex gap-2 sm:col-span-2 lg:ml-auto">
         <BaseButton variant="outline" :disabled="rows.length === 0" @click="printPage">{{ t('gradebook.print') }}</BaseButton>
-        <BaseButton v-if="canManage" :disabled="years.length === 0" @click="open(null)">{{ t('gradebook.schedule.add') }}</BaseButton>
+        <BaseButton v-if="canCreate" :disabled="years.length === 0" @click="open(null)">{{ t('gradebook.schedule.add') }}</BaseButton>
       </div>
     </div>
 
@@ -245,13 +249,13 @@ onMounted(async () => {
               <p class="font-semibold text-neutral-900">{{ r.book?.title }}</p>
               <p class="text-sm text-neutral-700">{{ who(r) }}<span v-if="r.component"> · {{ pick(r.component.name, r.component.name_km) }}</span></p>
             </div>
-            <EditIconButton v-if="canManage" @click="open(r)" />
+            <EditIconButton v-if="canUpdate" @click="open(r)" />
           </div>
           <p class="mt-1 text-sm text-neutral-800">{{ formatDate(r.exam_date) }} · {{ time(r) }}</p>
           <p class="text-xs text-neutral-500">
             {{ r.classroom?.name ?? '—' }} · {{ r.invigilator?.name ?? '—' }}<span v-if="r.term"> · {{ r.term.name }}</span>
           </p>
-          <button v-if="canManage" type="button" class="mt-2 text-sm text-red-600 hover:underline" @click="remove(r)">{{ t('gradebook.delete') }}</button>
+          <button v-if="canDelete" type="button" class="mt-2 text-sm text-red-600 hover:underline" @click="remove(r)">{{ t('gradebook.delete') }}</button>
         </div>
       </div>
     </div>
@@ -271,8 +275,8 @@ onMounted(async () => {
         <template #cell-invigilator="{ row }">{{ row.invigilator?.name ?? '—' }}</template>
         <template #cell-actions="{ row }">
           <div class="flex items-center justify-end gap-3 print:hidden">
-            <EditIconButton @click="open(row)" />
-            <button type="button" class="text-sm text-red-600 hover:underline" @click="remove(row)">{{ t('gradebook.delete') }}</button>
+            <EditIconButton v-if="canUpdate" @click="open(row)" />
+            <button v-if="canDelete" type="button" class="text-sm text-red-600 hover:underline" @click="remove(row)">{{ t('gradebook.delete') }}</button>
           </div>
         </template>
       </DataTable>

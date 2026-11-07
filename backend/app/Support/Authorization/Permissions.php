@@ -239,23 +239,43 @@ final class Permissions
     // curriculum, school calendar, promotion rules and promoting students.
     public const ACADEMIC_TERMS_VIEW = 'academic-terms.view';
 
-    public const ACADEMIC_TERMS_MANAGE = 'academic-terms.manage';
+    public const ACADEMIC_TERMS_CREATE = 'academic-terms.create';
+
+    public const ACADEMIC_TERMS_UPDATE = 'academic-terms.update';
+
+    public const ACADEMIC_TERMS_DELETE = 'academic-terms.delete';
 
     public const GRADE_LEVELS_VIEW = 'grade-levels.view';
 
-    public const GRADE_LEVELS_MANAGE = 'grade-levels.manage';
+    public const GRADE_LEVELS_CREATE = 'grade-levels.create';
+
+    public const GRADE_LEVELS_UPDATE = 'grade-levels.update';
+
+    public const GRADE_LEVELS_DELETE = 'grade-levels.delete';
 
     public const CURRICULUM_VIEW = 'curriculum.view';
 
-    public const CURRICULUM_MANAGE = 'curriculum.manage';
+    public const CURRICULUM_CREATE = 'curriculum.create';
+
+    public const CURRICULUM_UPDATE = 'curriculum.update';
+
+    public const CURRICULUM_DELETE = 'curriculum.delete';
 
     public const SCHOOL_CALENDAR_VIEW = 'school-calendar.view';
 
-    public const SCHOOL_CALENDAR_MANAGE = 'school-calendar.manage';
+    public const SCHOOL_CALENDAR_CREATE = 'school-calendar.create';
+
+    public const SCHOOL_CALENDAR_UPDATE = 'school-calendar.update';
+
+    public const SCHOOL_CALENDAR_DELETE = 'school-calendar.delete';
 
     public const PROMOTION_RULES_VIEW = 'promotion-rules.view';
 
-    public const PROMOTION_RULES_MANAGE = 'promotion-rules.manage';
+    public const PROMOTION_RULES_CREATE = 'promotion-rules.create';
+
+    public const PROMOTION_RULES_UPDATE = 'promotion-rules.update';
+
+    public const PROMOTION_RULES_DELETE = 'promotion-rules.delete';
 
     public const STUDENT_PROMOTIONS_VIEW = 'student-promotions.view';
 
@@ -265,11 +285,19 @@ final class Permissions
     // assessed (components, weights, bands / competency levels) and the exam schedule.
     public const ASSESSMENT_VIEW = 'assessment.view';
 
-    public const ASSESSMENT_MANAGE = 'assessment.manage';
+    public const ASSESSMENT_CREATE = 'assessment.create';
+
+    public const ASSESSMENT_UPDATE = 'assessment.update';
+
+    public const ASSESSMENT_DELETE = 'assessment.delete';
 
     public const EXAM_SCHEDULES_VIEW = 'exam-schedules.view';
 
-    public const EXAM_SCHEDULES_MANAGE = 'exam-schedules.manage';
+    public const EXAM_SCHEDULES_CREATE = 'exam-schedules.create';
+
+    public const EXAM_SCHEDULES_UPDATE = 'exam-schedules.update';
+
+    public const EXAM_SCHEDULES_DELETE = 'exam-schedules.delete';
 
     // Gradebook (7b): view = own classes (teacher list, assignment or
     // homeroom), enter = own subjects, manage-all = every class and subject.
@@ -298,7 +326,16 @@ final class Permissions
 
     public const LESSON_PLANS_REVIEW = 'lesson-plans.review';
 
-    public const TIMETABLE_MANAGE = 'timetable.manage';
+    public const TIMETABLE_CREATE = 'timetable.create';
+
+    public const TIMETABLE_UPDATE = 'timetable.update';
+
+    public const TIMETABLE_DELETE = 'timetable.delete';
+
+    /** Decide schedule change requests (and see everyone's). */
+    public const TIMETABLE_APPROVE = 'timetable.approve';
+
+    public const TIMETABLE_REJECT = 'timetable.reject';
 
     public const TIMETABLE_REQUEST = 'timetable.request';
 
@@ -988,23 +1025,33 @@ final class Permissions
             ],
             'Academic Terms' => [
                 self::ACADEMIC_TERMS_VIEW => 'View terms / semesters',
-                self::ACADEMIC_TERMS_MANAGE => 'Add, edit and delete terms / semesters',
+                self::ACADEMIC_TERMS_CREATE => 'Add terms / semesters',
+                self::ACADEMIC_TERMS_UPDATE => 'Update terms / semesters',
+                self::ACADEMIC_TERMS_DELETE => 'Delete terms / semesters',
             ],
             'Grade Levels' => [
                 self::GRADE_LEVELS_VIEW => 'View grade levels',
-                self::GRADE_LEVELS_MANAGE => 'Add, edit and delete grade levels',
+                self::GRADE_LEVELS_CREATE => 'Add grade levels',
+                self::GRADE_LEVELS_UPDATE => 'Update grade levels',
+                self::GRADE_LEVELS_DELETE => 'Delete grade levels',
             ],
             'Curriculum' => [
                 self::CURRICULUM_VIEW => 'View the curriculum (subjects, hours, lessons per grade)',
-                self::CURRICULUM_MANAGE => 'Set up the curriculum',
+                self::CURRICULUM_CREATE => 'Add curriculum subjects and lessons',
+                self::CURRICULUM_UPDATE => 'Update curriculum subjects and lessons',
+                self::CURRICULUM_DELETE => 'Delete curriculum subjects and lessons',
             ],
             'School Calendar' => [
                 self::SCHOOL_CALENDAR_VIEW => 'View the school calendar',
-                self::SCHOOL_CALENDAR_MANAGE => 'Add, edit and delete school calendar days',
+                self::SCHOOL_CALENDAR_CREATE => 'Add school calendar days',
+                self::SCHOOL_CALENDAR_UPDATE => 'Update school calendar days',
+                self::SCHOOL_CALENDAR_DELETE => 'Delete school calendar days',
             ],
             'Promotion Rules' => [
                 self::PROMOTION_RULES_VIEW => 'View promotion rules',
-                self::PROMOTION_RULES_MANAGE => 'Set promotion rules',
+                self::PROMOTION_RULES_CREATE => 'Add promotion rules',
+                self::PROMOTION_RULES_UPDATE => 'Update promotion rules',
+                self::PROMOTION_RULES_DELETE => 'Delete promotion rules',
             ],
             'Student Promotions' => [
                 self::STUDENT_PROMOTIONS_VIEW => 'View who passes to the next grade',
@@ -1012,11 +1059,15 @@ final class Permissions
             ],
             'Assessment Setup' => [
                 self::ASSESSMENT_VIEW => 'View how each grade is assessed',
-                self::ASSESSMENT_MANAGE => 'Set up assessment (components, weights, bands, competency levels)',
+                self::ASSESSMENT_CREATE => 'Add assessment setups (components, weights, bands, competency levels)',
+                self::ASSESSMENT_UPDATE => 'Update assessment setups (components, weights, bands, competency levels)',
+                self::ASSESSMENT_DELETE => 'Delete assessment setups (components, weights, bands, competency levels)',
             ],
             'Exam Schedule' => [
                 self::EXAM_SCHEDULES_VIEW => 'View the exam schedule',
-                self::EXAM_SCHEDULES_MANAGE => 'Add, edit and delete exams in the schedule',
+                self::EXAM_SCHEDULES_CREATE => 'Add exams in the schedule',
+                self::EXAM_SCHEDULES_UPDATE => 'Update exams in the schedule',
+                self::EXAM_SCHEDULES_DELETE => 'Delete exams in the schedule',
             ],
             'Gradebook' => [
                 self::GRADEBOOK_VIEW => 'View scores and results of your own classes',
@@ -1031,7 +1082,11 @@ final class Permissions
             ],
             'Timetable' => [
                 self::TIMETABLE_VIEW => 'View class, teacher and room timetables',
-                self::TIMETABLE_MANAGE => 'Edit the timetable and decide schedule change requests',
+                self::TIMETABLE_CREATE => 'Add timetable times',
+                self::TIMETABLE_UPDATE => 'Update timetable times',
+                self::TIMETABLE_DELETE => 'Delete timetable times',
+                self::TIMETABLE_APPROVE => 'Approve schedule change requests',
+                self::TIMETABLE_REJECT => 'Reject schedule change requests',
                 self::TIMETABLE_REQUEST => 'Ask for a schedule change',
             ],
             'Teachers' => [
@@ -1322,17 +1377,17 @@ final class Permissions
             self::COURSE_PACKAGES_VIEW, self::COURSE_PACKAGES_CREATE, self::COURSE_PACKAGES_UPDATE, self::COURSE_PACKAGES_DELETE,
             self::VIDEOS_VIEW, self::VIDEOS_CREATE, self::VIDEOS_UPDATE, self::VIDEOS_DELETE,
             self::ACADEMIC_YEARS_VIEW, self::ACADEMIC_YEARS_CREATE, self::ACADEMIC_YEARS_UPDATE, self::ACADEMIC_YEARS_DELETE,
-            self::ACADEMIC_TERMS_VIEW, self::ACADEMIC_TERMS_MANAGE,
-            self::GRADE_LEVELS_VIEW, self::GRADE_LEVELS_MANAGE,
-            self::CURRICULUM_VIEW, self::CURRICULUM_MANAGE,
-            self::SCHOOL_CALENDAR_VIEW, self::SCHOOL_CALENDAR_MANAGE,
-            self::PROMOTION_RULES_VIEW, self::PROMOTION_RULES_MANAGE,
+            self::ACADEMIC_TERMS_VIEW, self::ACADEMIC_TERMS_CREATE, self::ACADEMIC_TERMS_UPDATE, self::ACADEMIC_TERMS_DELETE,
+            self::GRADE_LEVELS_VIEW, self::GRADE_LEVELS_CREATE, self::GRADE_LEVELS_UPDATE, self::GRADE_LEVELS_DELETE,
+            self::CURRICULUM_VIEW, self::CURRICULUM_CREATE, self::CURRICULUM_UPDATE, self::CURRICULUM_DELETE,
+            self::SCHOOL_CALENDAR_VIEW, self::SCHOOL_CALENDAR_CREATE, self::SCHOOL_CALENDAR_UPDATE, self::SCHOOL_CALENDAR_DELETE,
+            self::PROMOTION_RULES_VIEW, self::PROMOTION_RULES_CREATE, self::PROMOTION_RULES_UPDATE, self::PROMOTION_RULES_DELETE,
             self::STUDENT_PROMOTIONS_VIEW, self::STUDENT_PROMOTIONS_RUN,
-            self::ASSESSMENT_VIEW, self::ASSESSMENT_MANAGE,
-            self::EXAM_SCHEDULES_VIEW, self::EXAM_SCHEDULES_MANAGE,
+            self::ASSESSMENT_VIEW, self::ASSESSMENT_CREATE, self::ASSESSMENT_UPDATE, self::ASSESSMENT_DELETE,
+            self::EXAM_SCHEDULES_VIEW, self::EXAM_SCHEDULES_CREATE, self::EXAM_SCHEDULES_UPDATE, self::EXAM_SCHEDULES_DELETE,
             self::GRADEBOOK_VIEW, self::GRADEBOOK_ENTER, self::GRADEBOOK_MANAGE_ALL, self::GRADEBOOK_APPROVE,
             self::TEACHERS_VIEW, self::TEACHERS_MANAGE,
-            self::TIMETABLE_VIEW, self::TIMETABLE_MANAGE, self::TIMETABLE_REQUEST,
+            self::TIMETABLE_VIEW, self::TIMETABLE_CREATE, self::TIMETABLE_UPDATE, self::TIMETABLE_DELETE, self::TIMETABLE_APPROVE, self::TIMETABLE_REJECT, self::TIMETABLE_REQUEST,
             self::LESSON_PLANS_VIEW, self::LESSON_PLANS_WRITE, self::LESSON_PLANS_REVIEW,
             self::ACADEMIC_REPORTS_VIEW, self::ACADEMIC_REPORTS_EXPORT,
             self::PROGRAMS_VIEW, self::PROGRAMS_CREATE, self::PROGRAMS_UPDATE, self::PROGRAMS_DELETE,

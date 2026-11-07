@@ -20,7 +20,7 @@ import { formatDate } from '@/utils/date'
  */
 const { t } = useI18n()
 const auth = useAuthStore()
-const canRequest = computed(() => auth.can('timetable.request') && !auth.can('timetable.manage'))
+const canRequest = computed(() => auth.can('timetable.request') && !auth.can('timetable.approve') && !auth.can('timetable.reject'))
 
 const options = ref<TimetableOptions>({ classes: [], teachers: [], rooms: [], subjects: [], me: null })
 const staffId = ref('')

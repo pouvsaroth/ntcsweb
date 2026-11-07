@@ -20,7 +20,8 @@ import { formatDate } from '@/utils/date'
 const { t } = useI18n()
 const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
-const canManage = computed(() => auth.can('timetable.manage'))
+const canApprove = computed(() => auth.can('timetable.approve'))
+const canReject = computed(() => auth.can('timetable.reject'))
 
 const rows = ref<ScheduleChange[]>([])
 const status = ref<'' | ScheduleChange['status']>('pending')
@@ -103,9 +104,9 @@ onMounted(load)
         </div>
         <div v-if="r.status === 'pending'" class="mt-3 flex flex-wrap justify-end gap-2">
           <BaseButton v-if="r.mine" variant="ghost" size="sm" @click="act(r, 'cancel')">{{ t('timetable.change.cancel') }}</BaseButton>
-          <template v-if="canManage">
-            <BaseButton variant="outline" size="sm" @click="act(r, 'reject')">{{ t('timetable.change.reject') }}</BaseButton>
-            <BaseButton size="sm" @click="act(r, 'approve')">{{ t('timetable.change.approve') }}</BaseButton>
+          <template v-if="canApprove || canReject">
+            <BaseButton v-if="canReject" variant="outline" size="sm" @click="act(r, 'reject')">{{ t('timetable.change.reject') }}</BaseButton>
+            <BaseButton v-if="canApprove" size="sm" @click="act(r, 'approve')">{{ t('timetable.change.approve') }}</BaseButton>
           </template>
         </div>
       </div>

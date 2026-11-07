@@ -63,7 +63,7 @@ final class ExamScheduleController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        abort_unless($request->user()->hasPermission(Permissions::EXAM_SCHEDULES_MANAGE), 403);
+        abort_unless($request->user()->hasPermission(Permissions::EXAM_SCHEDULES_CREATE), 403);
 
         $data = $this->validated($request);
         $this->ensureNoClash($data);
@@ -74,7 +74,7 @@ final class ExamScheduleController extends Controller
 
     public function update(Request $request, ExamSchedule $examSchedule): JsonResponse
     {
-        abort_unless($request->user()->hasPermission(Permissions::EXAM_SCHEDULES_MANAGE), 403);
+        abort_unless($request->user()->hasPermission(Permissions::EXAM_SCHEDULES_UPDATE), 403);
 
         $data = $this->validated($request);
         $this->ensureNoClash($data, $examSchedule->getKey());
@@ -85,7 +85,7 @@ final class ExamScheduleController extends Controller
 
     public function destroy(Request $request, ExamSchedule $examSchedule): JsonResponse
     {
-        abort_unless($request->user()->hasPermission(Permissions::EXAM_SCHEDULES_MANAGE), 403);
+        abort_unless($request->user()->hasPermission(Permissions::EXAM_SCHEDULES_DELETE), 403);
 
         $examSchedule->delete();
 

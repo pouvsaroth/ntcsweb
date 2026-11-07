@@ -25,7 +25,11 @@ const { t } = useI18n()
 const route = useRoute()
 const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
-const canManage = computed(() => auth.can('timetable.manage'))
+const canCreate = computed(() => auth.can('timetable.create'))
+const canUpdate = computed(() => auth.can('timetable.update'))
+const canDelete = computed(() => auth.can('timetable.delete'))
+/** Clicking a time opens it to edit or delete. */
+const canManage = computed(() => canUpdate.value || canDelete.value)
 const canRequest = computed(() => auth.can('timetable.request'))
 
 const options = ref<TimetableOptions>({ classes: [], teachers: [], rooms: [], subjects: [], me: null })
@@ -162,7 +166,7 @@ onMounted(async () => {
       <BaseSpinner v-if="loading" class="h-4 w-4" />
       <div class="ml-auto flex flex-wrap gap-2">
         <BaseButton v-if="classId" variant="outline" @click="printPage">{{ t('timetable.print') }}</BaseButton>
-        <BaseButton v-if="canManage && classId" @click="open(null)">{{ t('timetable.addTime') }}</BaseButton>
+        <BaseButton v-if="canCreate && classId" @click="open(null)">{{ t('timetable.addTime') }}</BaseButton>
       </div>
     </div>
 
@@ -199,9 +203,9 @@ onMounted(async () => {
         <p class="text-xs text-neutral-500">{{ t('timetable.formHint') }}</p>
       </form>
       <template #footer>
-        <BaseButton v-if="editing" variant="danger" class="mr-auto" @click="remove">{{ t('timetable.delete') }}</BaseButton>
+        <BaseButton v-if="editing && canDelete" variant="danger" class="mr-auto" @click="remove">{{ t('timetable.delete') }}</BaseButton>
         <BaseButton variant="outline" @click="formOpen = false">{{ t('common.close') }}</BaseButton>
-        <BaseButton :loading="saving" :disabled="!form.start || !form.end" @click="save">{{ t('common.save') }}</BaseButton>
+        <BaseButton v-if="editing ? canUpdate : canCreate" :loading="saving" :disabled="!form.start || !form.end" @click="save">{{ t('common.save') }}</BaseButton>
       </template>
     </BaseModal>
 

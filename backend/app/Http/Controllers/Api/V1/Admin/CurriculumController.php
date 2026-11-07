@@ -62,7 +62,7 @@ final class CurriculumController extends Controller
     /** Add a subject to a grade level, or change its hours per week. */
     public function saveSubject(Request $request): JsonResponse
     {
-        abort_unless($request->user()->hasPermission(Permissions::CURRICULUM_MANAGE), 403);
+        abort_unless($request->user()->hasAnyPermission(Permissions::CURRICULUM_CREATE, Permissions::CURRICULUM_UPDATE), 403);
         $data = $request->validate([
             'grade_level_id' => ['required', 'integer', Rule::exists('tenant.grade_levels', 'id')],
             'book_id' => ['required', 'integer', Rule::exists('tenant.books', 'id')->whereNull('deleted_at')],
@@ -71,6 +71,9 @@ final class CurriculumController extends Controller
 
         /** @var GradeLevel $grade */
         $grade = GradeLevel::query()->findOrFail($data['grade_level_id']);
+        // A subject new to the grade is an Add; changing its hours is an Update.
+        $exists = $grade->subjects()->where('books.id', $data['book_id'])->exists();
+        abort_unless($request->user()->hasPermission($exists ? Permissions::CURRICULUM_UPDATE : Permissions::CURRICULUM_CREATE), 403);
         $grade->subjects()->syncWithoutDetaching([$data['book_id'] => ['hours_per_week' => $data['hours_per_week'] ?? null]]);
 
         return ApiResponse::success(['saved' => true]);
@@ -79,7 +82,7 @@ final class CurriculumController extends Controller
     /** Take a subject off a grade level, with its lessons there. */
     public function removeSubject(Request $request): JsonResponse
     {
-        abort_unless($request->user()->hasPermission(Permissions::CURRICULUM_MANAGE), 403);
+        abort_unless($request->user()->hasPermission(Permissions::CURRICULUM_DELETE), 403);
         $data = $request->validate([
             'grade_level_id' => ['required', 'integer', Rule::exists('tenant.grade_levels', 'id')],
             'book_id' => ['required', 'integer'],
@@ -95,7 +98,7 @@ final class CurriculumController extends Controller
 
     public function storeLesson(Request $request): JsonResponse
     {
-        abort_unless($request->user()->hasPermission(Permissions::CURRICULUM_MANAGE), 403);
+        abort_unless($request->user()->hasPermission(Permissions::CURRICULUM_CREATE), 403);
         $data = $this->validatedLesson($request);
 
         $data['sort_order'] ??= (int) CurriculumLesson::query()
@@ -106,7 +109,7 @@ final class CurriculumController extends Controller
 
     public function updateLesson(Request $request, CurriculumLesson $lesson): JsonResponse
     {
-        abort_unless($request->user()->hasPermission(Permissions::CURRICULUM_MANAGE), 403);
+        abort_unless($request->user()->hasPermission(Permissions::CURRICULUM_UPDATE), 403);
         $data = $this->validatedLesson($request, $lesson);
         $data['sort_order'] ??= $lesson->sort_order;
 
@@ -117,7 +120,7 @@ final class CurriculumController extends Controller
 
     public function destroyLesson(Request $request, CurriculumLesson $lesson): JsonResponse
     {
-        abort_unless($request->user()->hasPermission(Permissions::CURRICULUM_MANAGE), 403);
+        abort_unless($request->user()->hasPermission(Permissions::CURRICULUM_DELETE), 403);
 
         $lesson->delete();
 

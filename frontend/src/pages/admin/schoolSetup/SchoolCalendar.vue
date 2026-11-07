@@ -27,7 +27,9 @@ const { t, locale } = useI18n()
 const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
 const router = useRouter()
-const canManage = computed(() => auth.can('school-calendar.manage'))
+const canCreate = computed(() => auth.can('school-calendar.create'))
+const canUpdate = computed(() => auth.can('school-calendar.update'))
+const canDelete = computed(() => auth.can('school-calendar.delete'))
 const canManageHolidays = computed(() => auth.can('staff-attendance.manage'))
 
 const pad = (n: number) => String(n).padStart(2, '0')
@@ -157,7 +159,7 @@ const saveError = ref<string | null>(null)
 const saving = ref(false)
 
 function open(event: CalendarEvent | null, day?: string) {
-  if (!canManage.value) return
+  if (event ? !(canUpdate.value || canDelete.value) : !canCreate.value) return
   editing.value = event
   const current = years.value.find((y) => y.is_current)
   form.title = event?.title ?? ''
@@ -226,7 +228,7 @@ onMounted(async () => {
       <BaseSpinner v-if="loading" class="h-4 w-4" />
       <div class="ml-auto flex flex-wrap items-center gap-2">
         <RouterLink v-if="canManageHolidays" to="/admin/time-attendance/holidays" class="text-sm text-secondary-700 hover:underline">{{ t('schoolSetup.calendar.manageHolidays') }}</RouterLink>
-        <BaseButton v-if="canManage" @click="open(null)">{{ t('schoolSetup.calendar.add') }}</BaseButton>
+        <BaseButton v-if="canCreate" @click="open(null)">{{ t('schoolSetup.calendar.add') }}</BaseButton>
       </div>
     </div>
 
@@ -248,7 +250,7 @@ onMounted(async () => {
           v-for="d in days"
           :key="d.day"
           class="group min-h-24 border-r border-b border-neutral-100 p-1.5"
-          :class="[d.weekend ? 'bg-neutral-50/70' : '', canManage ? 'cursor-pointer hover:bg-primary-50/40' : '']"
+          :class="[d.weekend ? 'bg-neutral-50/70' : '', canCreate ? 'cursor-pointer hover:bg-primary-50/40' : '']"
           @click="open(null, d.day)"
         >
           <div class="flex items-center justify-between">
@@ -283,7 +285,7 @@ onMounted(async () => {
           v-for="item in agenda"
           :key="item.key"
           class="flex items-center gap-3 rounded-[--radius-card] border border-neutral-200 bg-white p-3 shadow-[--shadow-card]"
-          :class="{ 'cursor-pointer hover:bg-neutral-50': (item.event && canManage) || item.meeting }"
+          :class="{ 'cursor-pointer hover:bg-neutral-50': (item.event && (canUpdate || canDelete)) || item.meeting }"
           @click="openItem(item)"
         >
           <span class="shrink-0 rounded-full px-2 py-0.5 text-xs" :class="colours[item.kind]">{{ kindLabel(item.kind) }}</span>
@@ -317,9 +319,9 @@ onMounted(async () => {
         <BaseInput v-model="form.description" :label="t('schoolSetup.description')" />
       </form>
       <template #footer>
-        <BaseButton v-if="editing" variant="danger" class="mr-auto" @click="remove">{{ t('schoolSetup.delete') }}</BaseButton>
+        <BaseButton v-if="editing && canDelete" variant="danger" class="mr-auto" @click="remove">{{ t('schoolSetup.delete') }}</BaseButton>
         <BaseButton variant="outline" @click="formOpen = false">{{ t('common.close') }}</BaseButton>
-        <BaseButton :loading="saving" @click="save">{{ t('common.save') }}</BaseButton>
+        <BaseButton v-if="editing ? canUpdate : canCreate" :loading="saving" @click="save">{{ t('common.save') }}</BaseButton>
       </template>
     </BaseModal>
 

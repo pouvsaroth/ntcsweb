@@ -279,7 +279,7 @@ class GradebookTest extends TestCase
         $this->save($this->cells($chan, 10, 10, 50))->assertOk();
 
         // A component with scores cannot be removed from the setup.
-        $this->actingAsAdminWithPermissions([Permissions::ASSESSMENT_VIEW, Permissions::ASSESSMENT_MANAGE]);
+        $this->actingAsAdminWithPermissions([Permissions::ASSESSMENT_VIEW, Permissions::ASSESSMENT_CREATE, Permissions::ASSESSMENT_UPDATE, Permissions::ASSESSMENT_DELETE]);
         $components = $this->scheme->components()->get();
         $this->putJson("/api/v1/assessment-schemes/{$this->scheme->id}", [
             'mode' => 'score', 'name' => 'Secondary', 'max_score' => 50,
