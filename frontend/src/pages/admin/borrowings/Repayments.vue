@@ -27,7 +27,8 @@ import { formatDate } from '@/utils/date'
 const { t } = useI18n()
 const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
-const canManage = computed(() => auth.can('borrowings.manage'))
+const canPay = computed(() => auth.can('borrowing-repayments.create'))
+const canManage = computed(() => auth.can('borrowing-repayments.delete'))
 
 const money = (value: number | string, currency: BorrowingCurrency) => formatMoney(Number(value), currency)
 
@@ -130,7 +131,7 @@ onMounted(async () => {
                 <template v-if="loan.late_count > 1"> · {{ t('admin.borrowings.lateCount', { count: loan.late_count }) }}</template>
               </p>
             </div>
-            <BaseButton v-if="canManage" size="sm" @click="pay(loan)">{{ t('admin.borrowings.recordPayment') }}</BaseButton>
+            <BaseButton v-if="canPay" size="sm" @click="pay(loan)">{{ t('admin.borrowings.recordPayment') }}</BaseButton>
           </div>
         </div>
       </div>

@@ -253,9 +253,9 @@ export const adminNav: AdminNavGroup[] = [
       { labelKey: 'adminNav.items.income', icon: 'trendingUp', to: '/admin/income', permission: 'income.view' },
       { labelKey: 'adminNav.items.expenses', icon: 'trendingDown', to: '/admin/expenses', permission: 'expense.view' },
       // Who an expense is for (Newtech, Flexi, Family...).
-      { labelKey: 'adminNav.items.expenseFor', icon: 'tag', to: '/admin/expense-for', permission: 'expense.view' },
+      { labelKey: 'adminNav.items.expenseFor', icon: 'tag', to: '/admin/expense-for', permission: 'expense-for.view' },
       // Same list as Assets > Suppliers: who an expense is paid to.
-      { labelKey: 'adminNav.items.vendors', icon: 'truck', to: '/admin/suppliers', permission: 'expense.view' },
+      { labelKey: 'adminNav.items.vendors', icon: 'truck', to: '/admin/suppliers', permission: 'suppliers.view' },
       // Money borrowed from companies and people; Loans, Lenders, ... are tabs on the page (see borrowingsTabs.ts).
       { labelKey: 'adminNav.items.borrowings', icon: 'cash', to: '/admin/borrowings', permission: 'borrowings.view' },
       { labelKey: 'adminNav.items.transactions', icon: 'switchVertical', to: '/admin/transactions', permission: 'transactions.view' },
@@ -279,7 +279,7 @@ export const adminNav: AdminNavGroup[] = [
       { labelKey: 'adminNav.items.assetCategories', icon: 'collection', to: '/admin/asset-categories', permission: 'assets.view' },
       { labelKey: 'adminNav.items.assetLocations', icon: 'location', to: '/admin/asset-locations', permission: 'assets.view' },
       { labelKey: 'adminNav.items.departments', icon: 'template', to: '/admin/departments', permission: 'assets.view' },
-      { labelKey: 'adminNav.items.suppliers', icon: 'truck', to: '/admin/suppliers', permission: 'assets.view' },
+      { labelKey: 'adminNav.items.suppliers', icon: 'truck', to: '/admin/suppliers', permission: 'suppliers.view' },
       { labelKey: 'adminNav.items.assetReports', icon: 'report', to: '/admin/asset-reports', permission: 'assets.reports.view' },
     ],
   },

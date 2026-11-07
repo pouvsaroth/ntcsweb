@@ -383,7 +383,7 @@ const MODULES: ModuleEntry[] = [
   { name: 'Accounts', group: 'Accounting', actions: { view: 'accounts.view', create: 'accounts.create', update: 'accounts.update', deactivate: 'accounts.deactivate' } },
   { name: 'Income', group: 'Accounting', actions: { view: 'income.view', create: 'income.create', update: 'income.update', cancel: 'income.cancel' } },
   {
-    name: 'Expenses (also Expense for, Vendors)',
+    name: 'Expenses',
     group: 'Accounting',
     actions: {
       view: 'expense.view',
@@ -395,10 +395,13 @@ const MODULES: ModuleEntry[] = [
       cancel: 'expense.cancel',
     },
   },
-  { name: 'Borrowings', group: 'Accounting', parent: 'Borrowings', menu: true, actions: { view: 'borrowings.view', manage: 'borrowings.manage' } },
-  tab('Accounting', 'Borrowings', 'Loans', '/admin/borrowings/loans', ['borrowings.view']),
-  tab('Accounting', 'Borrowings', 'Repayments', '/admin/borrowings/repayments', ['borrowings.view']),
-  tab('Accounting', 'Borrowings', 'Lenders', '/admin/borrowings/lenders', ['borrowings.view']),
+  { name: 'Expense for', group: 'Accounting', actions: crud('expense-for') },
+  // One list: Accounting > Vendors and Assets > Suppliers.
+  { name: 'Vendors / Suppliers', group: 'Accounting', actions: crud('suppliers') },
+  { name: 'Borrowings', group: 'Accounting', parent: 'Borrowings', menu: true, actions: { view: 'borrowings.view' } },
+  tab('Accounting', 'Borrowings', 'Loans', '/admin/borrowings/loans', ['borrowings.view'], tabCud('borrowing-loans')),
+  tab('Accounting', 'Borrowings', 'Repayments', '/admin/borrowings/repayments', ['borrowings.view'], { create: 'borrowing-repayments.create', delete: 'borrowing-repayments.delete' }),
+  tab('Accounting', 'Borrowings', 'Lenders', '/admin/borrowings/lenders', ['borrowings.view'], tabCud('lenders')),
   tab('Accounting', 'Borrowings', 'Reports', '/admin/borrowings/reports', ['borrowings.view']),
   { name: 'Transactions', group: 'Accounting', actions: { view: 'transactions.view', create: 'transactions.create' } },
   { name: 'Accounting reports', group: 'Accounting', actions: { view: 'reports.financial.view', export: 'reports.financial.export' } },
@@ -407,8 +410,8 @@ const MODULES: ModuleEntry[] = [
   // ── Assets ──
   { name: 'Asset dashboard & Asset reports', group: 'Assets', actions: { view: 'assets.reports.view', export: 'assets.reports.export' } },
   {
-    // Categories/Locations/Departments/Suppliers share these slugs (see AssetCategoryPolicy and friends).
-    name: 'Assets (also Categories, Locations, Departments, Suppliers)',
+    // Categories/Locations/Departments share these slugs (see AssetCategoryPolicy and friends).
+    name: 'Assets (also Categories, Locations, Departments)',
     group: 'Assets',
     actions: {
       ...crud('assets'),
@@ -425,6 +428,7 @@ const MODULES: ModuleEntry[] = [
   { name: 'Asset issues', group: 'Assets', actions: { view: 'assets.issue.view', create: 'assets.issue.create', update: 'assets.issue.update', resolve: 'assets.issue.resolve' } },
   { name: 'Asset repairs', group: 'Assets', actions: { view: 'assets.repair.view', create: 'assets.repair.create', update: 'assets.repair.update', complete: 'assets.repair.complete' } },
   { name: 'Repair shops', group: 'Assets', actions: { view: 'assets.repair.view', create: 'assets.create', update: 'assets.update', delete: 'assets.delete' } },
+  { name: 'Suppliers (same list as Vendors)', group: 'Assets', actions: crud('suppliers') },
   { name: 'Asset maintenance', group: 'Assets', actions: { view: 'assets.maintenance.view', create: 'assets.maintenance.create', update: 'assets.maintenance.update' } },
 
   // ── Website ──

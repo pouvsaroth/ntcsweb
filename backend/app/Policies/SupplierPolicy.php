@@ -13,26 +13,26 @@ class SupplierPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->hasPermission(Permissions::ASSETS_VIEW) || $user->hasPermission(Permissions::EXPENSE_VIEW);
+        return $user->hasAnyPermission(Permissions::SUPPLIERS_VIEW, Permissions::ASSETS_VIEW, Permissions::EXPENSE_VIEW);
     }
 
     public function view(User $user, Supplier $supplier): bool
     {
-        return $user->hasPermission(Permissions::ASSETS_VIEW) || $user->hasPermission(Permissions::EXPENSE_VIEW);
+        return $user->hasAnyPermission(Permissions::SUPPLIERS_VIEW, Permissions::ASSETS_VIEW, Permissions::EXPENSE_VIEW);
     }
 
     public function create(User $user): bool
     {
-        return $user->hasPermission(Permissions::ASSETS_CREATE) || $user->hasPermission(Permissions::EXPENSE_CREATE);
+        return $user->hasPermission(Permissions::SUPPLIERS_CREATE);
     }
 
     public function update(User $user, Supplier $supplier): bool
     {
-        return $user->hasPermission(Permissions::ASSETS_UPDATE) || $user->hasPermission(Permissions::EXPENSE_UPDATE);
+        return $user->hasPermission(Permissions::SUPPLIERS_UPDATE);
     }
 
     public function delete(User $user, Supplier $supplier): bool
     {
-        return $user->hasPermission(Permissions::ASSETS_DELETE) || $user->hasPermission(Permissions::EXPENSE_UPDATE);
+        return $user->hasPermission(Permissions::SUPPLIERS_DELETE);
     }
 }

@@ -23,8 +23,10 @@ const confirmDialog = useConfirmDialogStore()
 
 const { items, meta, loading, error, setPage, setSearch, fetch } = usePaginatedResource<ExpenseEntity>((query) => expenseEntitiesService.list(query))
 
-const canCreate = computed(() => auth.can('expense.create'))
-const canEdit = computed(() => auth.can('expense.update'))
+const canCreate = computed(() => auth.can('expense-for.create'))
+const canUpdate = computed(() => auth.can('expense-for.update'))
+const canDelete = computed(() => auth.can('expense-for.delete'))
+const canEdit = computed(() => canUpdate.value || canDelete.value)
 
 const columns = computed(() => [
   { key: 'name', label: t('admin.expenseEntities.columnName') },
@@ -99,8 +101,8 @@ onMounted(() => fetch())
           <div class="mt-2 flex items-center justify-between gap-2">
             <p class="text-xs text-neutral-500">{{ t('admin.expenseEntities.columnExpenses') }}: {{ row.expenses_count ?? 0 }}</p>
             <div v-if="canEdit" class="flex items-center gap-3">
-              <EditIconButton @click="openEdit(row)" />
-              <button type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row)">
+              <EditIconButton v-if="canUpdate" @click="openEdit(row)" />
+              <button v-if="canDelete" type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row)">
                 {{ t('admin.expenseEntities.delete') }}
               </button>
             </div>
@@ -119,8 +121,8 @@ onMounted(() => fetch())
       </template>
       <template #cell-actions="{ row }">
         <div class="flex justify-end gap-2">
-          <EditIconButton @click="openEdit(row)" />
-          <button type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row)">
+          <EditIconButton v-if="canUpdate" @click="openEdit(row)" />
+          <button v-if="canDelete" type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row)">
             {{ t('admin.expenseEntities.delete') }}
           </button>
         </div>

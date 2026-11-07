@@ -19,7 +19,7 @@ class ExpenseVendorTest extends TestCase
 
     public function test_an_expense_user_can_list_and_add_vendors_without_asset_permissions(): void
     {
-        $this->actingAsAdminWithPermissions([Permissions::EXPENSE_VIEW, Permissions::EXPENSE_CREATE]);
+        $this->actingAsAdminWithPermissions([Permissions::EXPENSE_VIEW, Permissions::EXPENSE_CREATE, Permissions::SUPPLIERS_CREATE]);
 
         $this->postJson('/api/v1/suppliers', ['name' => 'EDC'])->assertCreated();
         $this->getJson('/api/v1/suppliers')->assertOk()->assertJsonPath('data.0.name', 'EDC');
@@ -54,7 +54,7 @@ class ExpenseVendorTest extends TestCase
 
     public function test_a_vendor_used_by_an_expense_cannot_be_deleted(): void
     {
-        $this->actingAsAdminWithPermissions([Permissions::EXPENSE_CREATE, Permissions::EXPENSE_UPDATE]);
+        $this->actingAsAdminWithPermissions([Permissions::EXPENSE_CREATE, Permissions::EXPENSE_UPDATE, Permissions::SUPPLIERS_DELETE]);
         $this->setUpChartOfAccounts();
         $supplier = Supplier::factory()->create();
         Expense::factory()->create(['account_id' => $this->electricityAccount->id, 'expense_entity_id' => $this->expenseEntity->id, 'supplier_id' => $supplier->id]);

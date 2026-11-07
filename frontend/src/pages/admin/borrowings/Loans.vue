@@ -48,7 +48,11 @@ const { t } = useI18n()
 const router = useRouter()
 const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
-const canManage = computed(() => auth.can('borrowings.manage'))
+const canCreate = computed(() => auth.can('borrowing-loans.create'))
+const canUpdate = computed(() => auth.can('borrowing-loans.update'))
+const canDelete = computed(() => auth.can('borrowing-loans.delete'))
+const canPay = computed(() => auth.can('borrowing-repayments.create'))
+const canRemovePayment = computed(() => auth.can('borrowing-repayments.delete'))
 
 const money = (value: number | string, currency: BorrowingCurrency) => formatMoney(Number(value), currency)
 
@@ -352,7 +356,7 @@ onMounted(() => {
       <BaseSelect class="w-full sm:w-40" :model-value="statusFilter" :options="statusOptions" @update:model-value="statusFilter = $event as BorrowingStatus | ''" />
       <SearchableSelect v-model="lenderFilter" class="w-full sm:w-48" :options="lenderOptions" :placeholder="t('admin.borrowings.allLenders')" />
       <SearchableSelect v-model="entityFilter" class="w-full sm:w-48" :options="entityOptions" :placeholder="t('admin.borrowings.allBorrowedFor')" />
-      <BaseButton v-if="canManage" class="w-full sm:ml-auto sm:w-auto" @click="openForm(null)">{{ t('admin.borrowings.addLoan') }}</BaseButton>
+      <BaseButton v-if="canCreate" class="w-full sm:ml-auto sm:w-auto" @click="openForm(null)">{{ t('admin.borrowings.addLoan') }}</BaseButton>
     </div>
 
     <BaseAlert v-if="error" variant="danger" class="mb-4">{{ error }}</BaseAlert>
@@ -445,7 +449,7 @@ onMounted(() => {
         <div class="grid gap-4 sm:grid-cols-2">
           <div>
             <SearchableSelect v-model="form.lender_id" required :options="lenderOptions" :label="t('admin.borrowings.lender')" :placeholder="t('admin.borrowings.selectLender')" :error="errors.lender_id?.[0]" />
-            <button type="button" class="mt-1 text-xs font-medium text-primary-600 hover:text-primary-700" @click="lenderModalOpen = true">{{ t('admin.expenses.addExpenseFor') }}</button>
+            <button v-if="auth.can('lenders.create')" type="button" class="mt-1 text-xs font-medium text-primary-600 hover:text-primary-700" @click="lenderModalOpen = true">{{ t('admin.expenses.addExpenseFor') }}</button>
           </div>
           <div>
             <SearchableSelect
@@ -456,7 +460,7 @@ onMounted(() => {
               :placeholder="t('admin.borrowings.selectBorrowedFor')"
               :error="errors.expense_entity_id?.[0]"
             />
-            <button v-if="auth.can('expense.create')" type="button" class="mt-1 text-xs font-medium text-primary-600 hover:text-primary-700" @click="entityModalOpen = true">
+            <button v-if="auth.can('expense-for.create')" type="button" class="mt-1 text-xs font-medium text-primary-600 hover:text-primary-700" @click="entityModalOpen = true">
               {{ t('admin.expenses.addExpenseFor') }}
             </button>
           </div>
@@ -552,7 +556,7 @@ onMounted(() => {
           <span class="text-neutral-500">{{ t('admin.borrowings.contract') }}:</span>
           <button v-if="detail.has_contract" type="button" class="font-medium text-primary-700 hover:underline" @click="downloadContract(detail)">{{ detail.contract_name }}</button>
           <span v-else class="text-neutral-400">{{ t('admin.borrowings.noContract') }}</span>
-          <label v-if="canManage" class="cursor-pointer rounded-lg bg-primary-50 px-2.5 py-1 text-xs font-medium text-primary-700 hover:bg-primary-100">
+          <label v-if="canUpdate" class="cursor-pointer rounded-lg bg-primary-50 px-2.5 py-1 text-xs font-medium text-primary-700 hover:bg-primary-100">
             {{ uploading ? t('admin.borrowings.uploading') : detail.has_contract ? t('admin.borrowings.replaceContract') : t('admin.borrowings.uploadContract') }}
             <input type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx" :disabled="uploading" @change="onContract" />
           </label>
@@ -604,17 +608,17 @@ onMounted(() => {
                 <template v-if="row.note"> · {{ row.note }}</template>
               </p>
             </div>
-            <button v-if="canManage && detail.status !== 'cancelled'" type="button" class="shrink-0 text-sm font-medium text-danger-600" @click="removeRepayment(row)">{{ t('admin.borrowings.delete') }}</button>
+            <button v-if="canRemovePayment && detail.status !== 'cancelled'" type="button" class="shrink-0 text-sm font-medium text-danger-600" @click="removeRepayment(row)">{{ t('admin.borrowings.delete') }}</button>
           </li>
         </ul>
       </template>
       <template #footer>
         <BaseButton v-if="detail" variant="outline" @click="router.push(`/admin/borrowings/loans/${detail.id}/statement`)">{{ t('admin.borrowings.statement') }}</BaseButton>
-        <template v-if="detail && canManage">
-          <BaseButton v-if="detail.status === 'active'" @click="payOpen = true">{{ t('admin.borrowings.recordPayment') }}</BaseButton>
-          <BaseButton v-if="detail.status === 'active'" variant="outline" @click="openForm(detail)">{{ t('admin.borrowings.edit') }}</BaseButton>
-          <BaseButton v-if="detail.status === 'active' && !hasPayments(detail)" variant="outline" @click="cancelLoan(detail)">{{ t('admin.borrowings.cancelLoan') }}</BaseButton>
-          <BaseButton v-if="!hasPayments(detail)" variant="danger" @click="removeLoan(detail)">{{ t('admin.borrowings.delete') }}</BaseButton>
+        <template v-if="detail">
+          <BaseButton v-if="canPay && detail.status === 'active'" @click="payOpen = true">{{ t('admin.borrowings.recordPayment') }}</BaseButton>
+          <BaseButton v-if="canUpdate && detail.status === 'active'" variant="outline" @click="openForm(detail)">{{ t('admin.borrowings.edit') }}</BaseButton>
+          <BaseButton v-if="canUpdate && detail.status === 'active' && !hasPayments(detail)" variant="outline" @click="cancelLoan(detail)">{{ t('admin.borrowings.cancelLoan') }}</BaseButton>
+          <BaseButton v-if="canDelete && !hasPayments(detail)" variant="danger" @click="removeLoan(detail)">{{ t('admin.borrowings.delete') }}</BaseButton>
         </template>
         <BaseButton variant="outline" @click="detail = null">{{ t('common.close') }}</BaseButton>
       </template>

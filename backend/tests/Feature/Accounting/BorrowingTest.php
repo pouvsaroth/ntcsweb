@@ -22,7 +22,7 @@ class BorrowingTest extends TestCase
 {
     use HasAcademicAdmin, HasChartOfAccounts, RefreshDatabase;
 
-    private const ALL = [Permissions::BORROWINGS_VIEW, Permissions::BORROWINGS_MANAGE];
+    private const ALL = [Permissions::BORROWINGS_VIEW, Permissions::BORROWING_LOANS_CREATE, Permissions::BORROWING_LOANS_UPDATE, Permissions::BORROWING_LOANS_DELETE, Permissions::BORROWING_REPAYMENTS_CREATE, Permissions::BORROWING_REPAYMENTS_DELETE, Permissions::LENDERS_CREATE, Permissions::LENDERS_UPDATE, Permissions::LENDERS_DELETE];
 
     public function test_lenders_can_be_added_listed_and_searched(): void
     {

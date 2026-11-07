@@ -28,7 +28,7 @@ class BorrowingRepaymentTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->actingAsAdminWithPermissions([Permissions::BORROWINGS_VIEW, Permissions::BORROWINGS_MANAGE, Permissions::REPORTS_FINANCIAL_VIEW]);
+        $this->actingAsAdminWithPermissions([Permissions::BORROWINGS_VIEW, Permissions::BORROWING_LOANS_CREATE, Permissions::BORROWING_LOANS_UPDATE, Permissions::BORROWING_LOANS_DELETE, Permissions::BORROWING_REPAYMENTS_CREATE, Permissions::BORROWING_REPAYMENTS_DELETE, Permissions::LENDERS_CREATE, Permissions::LENDERS_UPDATE, Permissions::LENDERS_DELETE, Permissions::REPORTS_FINANCIAL_VIEW]);
         $this->setUpChartOfAccounts();
         $this->family = ExpenseEntity::factory()->create(['name' => 'Family']);
     }

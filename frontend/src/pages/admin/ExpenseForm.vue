@@ -35,7 +35,7 @@ const loadingAccounts = ref(true)
 const entities = ref<ExpenseEntity[]>([])
 const entityOptions = computed(() => entities.value.map((e) => ({ value: String(e.id), label: e.name })))
 const entityModalOpen = ref(false)
-const canAddEntity = computed(() => auth.can('expense.create'))
+const canAddEntity = computed(() => auth.can('expense-for.create'))
 
 function onEntitySaved(entity: ExpenseEntity) {
   if (entity.is_active) entities.value = [...entities.value, entity].sort((a, b) => a.name.localeCompare(b.name))
@@ -46,7 +46,7 @@ function onEntitySaved(entity: ExpenseEntity) {
 const suppliers = ref<Supplier[]>([])
 const supplierOptions = computed(() => suppliers.value.map((s) => ({ value: String(s.id), label: s.name })))
 const supplierModalOpen = ref(false)
-const canAddSupplier = computed(() => auth.can('expense.create') || auth.can('assets.create'))
+const canAddSupplier = computed(() => auth.can('suppliers.create'))
 
 function onSupplierSaved(supplier: Supplier) {
   suppliers.value = [...suppliers.value, supplier].sort((a, b) => a.name.localeCompare(b.name))

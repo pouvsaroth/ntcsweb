@@ -31,7 +31,7 @@ final class LenderController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $this->authorize('create', Lender::class);
+        $this->authorize('create', [Lender::class, Lender::class]);
 
         $lender = Lender::query()->create($request->validate($this->rules(required: true)));
 

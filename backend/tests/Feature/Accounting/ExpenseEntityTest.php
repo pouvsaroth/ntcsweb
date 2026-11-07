@@ -19,7 +19,7 @@ class ExpenseEntityTest extends TestCase
 
     public function test_an_expense_user_can_add_and_list_expense_for_entries(): void
     {
-        $this->actingAsAdminWithPermissions([Permissions::EXPENSE_VIEW, Permissions::EXPENSE_CREATE]);
+        $this->actingAsAdminWithPermissions([Permissions::EXPENSE_VIEW, Permissions::EXPENSE_CREATE, Permissions::EXPENSE_FOR_CREATE]);
 
         $this->postJson('/api/v1/expense-entities', ['name' => 'Flexi'])->assertCreated()->assertJsonPath('data.is_active', true);
         $this->postJson('/api/v1/expense-entities', ['name' => ''])->assertUnprocessable();
@@ -56,7 +56,7 @@ class ExpenseEntityTest extends TestCase
 
     public function test_an_entry_used_by_an_expense_cannot_be_deleted(): void
     {
-        $this->actingAsAdminWithPermissions([Permissions::EXPENSE_CREATE, Permissions::EXPENSE_UPDATE]);
+        $this->actingAsAdminWithPermissions([Permissions::EXPENSE_CREATE, Permissions::EXPENSE_UPDATE, Permissions::EXPENSE_FOR_DELETE]);
         $this->setUpChartOfAccounts();
         Expense::factory()->create(['account_id' => $this->electricityAccount->id, 'expense_entity_id' => $this->expenseEntity->id]);
         $unused = ExpenseEntity::factory()->create();

@@ -13,6 +13,7 @@ use App\Models\BorrowingRepayment;
 use App\Models\Tenant;
 use App\Services\Borrowings\BorrowingSchedule;
 use App\Services\Borrowings\BorrowingService;
+use App\Support\Authorization\Permissions;
 use App\Support\Query\ApiQuery;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
@@ -347,7 +348,7 @@ final class BorrowingController extends Controller
 
     public function repay(Request $request, Borrowing $borrowing): JsonResponse
     {
-        $this->authorize('update', $borrowing);
+        abort_unless($request->user()->hasPermission(Permissions::BORROWING_REPAYMENTS_CREATE), 403);
 
         $data = $request->validate([
             'paid_on' => ['required', 'date'],
@@ -364,7 +365,7 @@ final class BorrowingController extends Controller
 
     public function removeRepayment(Request $request, BorrowingRepayment $repayment): JsonResponse
     {
-        $this->authorize('update', $repayment->borrowing);
+        abort_unless($request->user()->hasPermission(Permissions::BORROWING_REPAYMENTS_DELETE), 403);
 
         $loan = $this->loans->removeRepayment($repayment, $request->user());
 

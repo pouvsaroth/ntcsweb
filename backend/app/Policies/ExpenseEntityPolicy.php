@@ -14,7 +14,7 @@ class ExpenseEntityPolicy
     public function viewAny(User $user): bool
     {
         // Borrowings pick "Borrowed for" from the same list.
-        return $user->hasPermission(Permissions::EXPENSE_VIEW) || $user->hasPermission(Permissions::EXPENSE_CREATE) || $user->hasPermission(Permissions::BORROWINGS_VIEW);
+        return $user->hasAnyPermission(Permissions::EXPENSE_FOR_VIEW, Permissions::EXPENSE_VIEW, Permissions::EXPENSE_CREATE, Permissions::BORROWINGS_VIEW);
     }
 
     public function view(User $user, ExpenseEntity $entity): bool
@@ -24,16 +24,16 @@ class ExpenseEntityPolicy
 
     public function create(User $user): bool
     {
-        return $user->hasPermission(Permissions::EXPENSE_CREATE);
+        return $user->hasPermission(Permissions::EXPENSE_FOR_CREATE);
     }
 
     public function update(User $user, ExpenseEntity $entity): bool
     {
-        return $user->hasPermission(Permissions::EXPENSE_UPDATE);
+        return $user->hasPermission(Permissions::EXPENSE_FOR_UPDATE);
     }
 
     public function delete(User $user, ExpenseEntity $entity): bool
     {
-        return $user->hasPermission(Permissions::EXPENSE_UPDATE);
+        return $user->hasPermission(Permissions::EXPENSE_FOR_DELETE);
     }
 }

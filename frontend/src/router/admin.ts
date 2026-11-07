@@ -980,7 +980,7 @@ const adminRoutes: RouteRecordRaw[] = [
     path: 'expense-for',
     name: 'admin.expense-for',
     component: () => import('@/pages/admin/ExpenseEntities.vue'),
-    meta: { titleKey: 'adminNav.items.expenseFor' },
+    meta: { titleKey: 'adminNav.items.expenseFor', permission: 'expense-for.view' },
   },
   {
     path: 'expenses/new',
@@ -1094,7 +1094,7 @@ const adminRoutes: RouteRecordRaw[] = [
     path: 'suppliers',
     name: 'admin.suppliers',
     component: () => import('@/pages/admin/Suppliers.vue'),
-    meta: { titleKey: 'adminNav.items.suppliers' },
+    meta: { titleKey: 'adminNav.items.suppliers', permission: 'suppliers.view' },
   },
   {
     path: 'asset-reports',

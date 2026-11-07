@@ -759,7 +759,41 @@ final class Permissions
 
     public const BORROWINGS_VIEW = 'borrowings.view';
 
-    public const BORROWINGS_MANAGE = 'borrowings.manage';
+    // Borrowings tabs: Loans (update also cancels and uploads the contract),
+    // Repayments, Lenders.
+    public const BORROWING_LOANS_CREATE = 'borrowing-loans.create';
+
+    public const BORROWING_LOANS_UPDATE = 'borrowing-loans.update';
+
+    public const BORROWING_LOANS_DELETE = 'borrowing-loans.delete';
+
+    public const BORROWING_REPAYMENTS_CREATE = 'borrowing-repayments.create';
+
+    public const BORROWING_REPAYMENTS_DELETE = 'borrowing-repayments.delete';
+
+    public const LENDERS_CREATE = 'lenders.create';
+
+    public const LENDERS_UPDATE = 'lenders.update';
+
+    public const LENDERS_DELETE = 'lenders.delete';
+
+    // Accounting > Expense for (Newtech, Flexi, Family...).
+    public const EXPENSE_FOR_VIEW = 'expense-for.view';
+
+    public const EXPENSE_FOR_CREATE = 'expense-for.create';
+
+    public const EXPENSE_FOR_UPDATE = 'expense-for.update';
+
+    public const EXPENSE_FOR_DELETE = 'expense-for.delete';
+
+    // Suppliers: one list, shown as Accounting > Vendors and Assets > Suppliers.
+    public const SUPPLIERS_VIEW = 'suppliers.view';
+
+    public const SUPPLIERS_CREATE = 'suppliers.create';
+
+    public const SUPPLIERS_UPDATE = 'suppliers.update';
+
+    public const SUPPLIERS_DELETE = 'suppliers.delete';
 
     public const TRANSACTIONS_VIEW = 'transactions.view';
 
@@ -1482,7 +1516,22 @@ final class Permissions
                 self::EXPENSE_CANCEL => 'Cancel expenses',
                 self::EXPENSE_PAY => 'Pay expenses',
                 self::BORROWINGS_VIEW => 'View borrowings and lenders',
-                self::BORROWINGS_MANAGE => 'Add and edit borrowings and lenders',
+                self::BORROWING_LOANS_CREATE => 'Add loans',
+                self::BORROWING_LOANS_UPDATE => 'Update loans (also cancel, upload the contract)',
+                self::BORROWING_LOANS_DELETE => 'Delete loans with no repayments',
+                self::BORROWING_REPAYMENTS_CREATE => 'Record loan repayments',
+                self::BORROWING_REPAYMENTS_DELETE => 'Delete loan repayments',
+                self::LENDERS_CREATE => 'Add lenders',
+                self::LENDERS_UPDATE => 'Update lenders',
+                self::LENDERS_DELETE => 'Delete lenders',
+                self::EXPENSE_FOR_VIEW => 'View the Expense for list',
+                self::EXPENSE_FOR_CREATE => 'Add to the Expense for list',
+                self::EXPENSE_FOR_UPDATE => 'Update the Expense for list',
+                self::EXPENSE_FOR_DELETE => 'Delete from the Expense for list',
+                self::SUPPLIERS_VIEW => 'View suppliers / vendors',
+                self::SUPPLIERS_CREATE => 'Add suppliers / vendors',
+                self::SUPPLIERS_UPDATE => 'Update suppliers / vendors',
+                self::SUPPLIERS_DELETE => 'Delete suppliers / vendors',
                 self::TRANSACTIONS_VIEW => 'View the general ledger',
                 self::TRANSACTIONS_CREATE => 'Create transfers and adjustments',
                 self::REPORTS_FINANCIAL_VIEW => 'View financial reports',
@@ -1688,7 +1737,12 @@ final class Permissions
             self::INCOME_VIEW, self::INCOME_CREATE, self::INCOME_UPDATE, self::INCOME_CANCEL,
             self::EXPENSE_VIEW, self::EXPENSE_CREATE, self::EXPENSE_UPDATE,
             self::EXPENSE_APPROVE, self::EXPENSE_REJECT, self::EXPENSE_CANCEL, self::EXPENSE_PAY,
-            self::BORROWINGS_VIEW, self::BORROWINGS_MANAGE, self::DASHBOARD_CARDS_BORROWINGS,
+            self::BORROWINGS_VIEW, self::DASHBOARD_CARDS_BORROWINGS,
+            self::BORROWING_LOANS_CREATE, self::BORROWING_LOANS_UPDATE, self::BORROWING_LOANS_DELETE,
+            self::BORROWING_REPAYMENTS_CREATE, self::BORROWING_REPAYMENTS_DELETE,
+            self::LENDERS_CREATE, self::LENDERS_UPDATE, self::LENDERS_DELETE,
+            self::EXPENSE_FOR_VIEW, self::EXPENSE_FOR_CREATE, self::EXPENSE_FOR_UPDATE, self::EXPENSE_FOR_DELETE,
+            self::SUPPLIERS_VIEW, self::SUPPLIERS_CREATE, self::SUPPLIERS_UPDATE, self::SUPPLIERS_DELETE,
             self::TRANSACTIONS_VIEW, self::TRANSACTIONS_CREATE,
             self::REPORTS_FINANCIAL_VIEW, self::REPORTS_FINANCIAL_EXPORT,
             self::ACCOUNTING_PERIOD_CLOSE, self::ACCOUNTING_ADJUSTMENT_CREATE,

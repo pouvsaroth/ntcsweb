@@ -20,7 +20,11 @@ import { ApiRequestError } from '@/types/api'
 const { t } = useI18n()
 const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
-const canManage = computed(() => auth.can('borrowings.manage'))
+const canCreate = computed(() => auth.can('lenders.create'))
+const canUpdate = computed(() => auth.can('lenders.update'))
+const canDelete = computed(() => auth.can('lenders.delete'))
+/** Any row action (edit or delete). */
+const canManage = computed(() => canUpdate.value || canDelete.value)
 
 const { items, meta, loading, error, setPage, setSearch, fetch } = usePaginatedResource<Lender>((query) => lendersService.list(query))
 
@@ -65,7 +69,7 @@ onMounted(() => fetch())
         class="block w-full max-w-sm rounded-lg border border-neutral-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
         @input="setSearch(($event.target as HTMLInputElement).value)"
       />
-      <BaseButton v-if="canManage" class="shrink-0" @click="open(null)">{{ t('admin.borrowings.addLender') }}</BaseButton>
+      <BaseButton v-if="canCreate" class="shrink-0" @click="open(null)">{{ t('admin.borrowings.addLender') }}</BaseButton>
     </div>
 
     <BaseAlert v-if="error || deleteError" variant="danger" class="mb-4">{{ error || deleteError }}</BaseAlert>
@@ -88,8 +92,8 @@ onMounted(() => fetch())
           <div class="mt-2 flex items-center justify-between gap-2">
             <p class="text-xs text-neutral-500">{{ t('admin.borrowings.loansCount') }}: {{ row.borrowings_count ?? 0 }}</p>
             <div v-if="canManage" class="flex items-center gap-3">
-              <EditIconButton @click="open(row)" />
-              <button type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row)">{{ t('admin.borrowings.delete') }}</button>
+              <EditIconButton v-if="canUpdate" @click="open(row)" />
+              <button v-if="canDelete" type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row)">{{ t('admin.borrowings.delete') }}</button>
             </div>
           </div>
         </div>
@@ -109,8 +113,8 @@ onMounted(() => fetch())
       </template>
       <template #cell-actions="{ row }">
         <div class="flex justify-end gap-2">
-          <EditIconButton @click="open(row)" />
-          <button type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row)">{{ t('admin.borrowings.delete') }}</button>
+          <EditIconButton v-if="canUpdate" @click="open(row)" />
+          <button v-if="canDelete" type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row)">{{ t('admin.borrowings.delete') }}</button>
         </div>
       </template>
     </DataTable>
