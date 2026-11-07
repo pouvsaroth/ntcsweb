@@ -35,7 +35,11 @@ const { t } = useI18n()
 const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
 
-const canManage = computed(() => auth.can('payroll.manage'))
+const canCreate = computed(() => auth.can('payroll-salary-structures.create'))
+const canUpdate = computed(() => auth.can('payroll-salary-structures.update'))
+const canDelete = computed(() => auth.can('payroll-salary-structures.delete'))
+/** Any row action (edit or delete). */
+const canManage = computed(() => canUpdate.value || canDelete.value)
 
 const { items, meta, loading, error, setPage, fetch } = usePaginatedResource<SalaryStructure>((query) => salaryStructuresService.list(query))
 
@@ -155,7 +159,7 @@ onMounted(() => fetch())
   <div>
     <div class="mb-4 flex items-center justify-between gap-3">
       <p class="text-sm text-neutral-500">{{ t('admin.payroll.structures.hint') }}</p>
-      <BaseButton v-if="canManage" @click="open(null)">{{ t('admin.payroll.structures.add') }}</BaseButton>
+      <BaseButton v-if="canCreate" @click="open(null)">{{ t('admin.payroll.structures.add') }}</BaseButton>
     </div>
 
     <BaseAlert v-if="error || actionError" variant="danger" class="mb-4">{{ error || actionError }}</BaseAlert>
@@ -175,8 +179,8 @@ onMounted(() => fetch())
           <p class="mt-1 text-sm text-neutral-700">{{ itemsSummary(row) }}</p>
           <p class="text-xs text-neutral-500">{{ t('admin.payroll.structures.staffN', { count: row.salaries_count ?? 0 }) }}</p>
           <div v-if="canManage" class="mt-2 flex justify-end gap-3">
-            <EditIconButton @click="open(row)" />
-            <button type="button" class="text-sm font-medium text-danger-600" @click="remove(row)">{{ t('admin.organization.delete') }}</button>
+            <EditIconButton v-if="canUpdate" @click="open(row)" />
+            <button v-if="canDelete" type="button" class="text-sm font-medium text-danger-600" @click="remove(row)">{{ t('admin.organization.delete') }}</button>
           </div>
         </div>
       </div>
@@ -196,8 +200,8 @@ onMounted(() => fetch())
         </template>
         <template #cell-actions="{ row }">
           <div class="flex justify-end gap-2">
-            <EditIconButton @click="open(row as SalaryStructure)" />
-            <button type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row as SalaryStructure)">{{ t('admin.organization.delete') }}</button>
+            <EditIconButton v-if="canUpdate" @click="open(row as SalaryStructure)" />
+            <button v-if="canDelete" type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row as SalaryStructure)">{{ t('admin.organization.delete') }}</button>
           </div>
         </template>
       </DataTable>

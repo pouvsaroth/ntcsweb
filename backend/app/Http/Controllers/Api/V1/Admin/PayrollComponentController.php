@@ -9,6 +9,7 @@ use App\Http\Requests\Api\V1\Admin\PayrollComponentRequest;
 use App\Http\Resources\PayrollComponentResource;
 use App\Http\Responses\ApiResponse;
 use App\Models\PayrollComponent;
+use App\Policies\PayrollPolicy;
 use App\Support\Query\ApiQuery;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -32,7 +33,7 @@ final class PayrollComponentController extends Controller
 
     public function store(PayrollComponentRequest $request): JsonResponse
     {
-        $this->authorize('create', PayrollComponent::class);
+        $this->authorize('create', [PayrollComponent::class, PayrollPolicy::kindTab($request->validated('kind'))]);
 
         $component = PayrollComponent::query()->create($request->validated());
 

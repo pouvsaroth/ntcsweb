@@ -446,7 +446,55 @@ final class Permissions
     // deduction, tax, social security, loans); manage changes them.
     public const PAYROLL_VIEW = 'payroll.view';
 
-    public const PAYROLL_MANAGE = 'payroll.manage';
+
+    // HRM > Payroll, per tab (replaced payroll.manage). Slug: payroll-<tab>.<action>.
+    public const PAYROLL_SALARY_STRUCTURES_CREATE = 'payroll-salary-structures.create';
+
+    public const PAYROLL_SALARY_STRUCTURES_UPDATE = 'payroll-salary-structures.update';
+
+    public const PAYROLL_SALARY_STRUCTURES_DELETE = 'payroll-salary-structures.delete';
+
+    public const PAYROLL_BASIC_SALARY_CREATE = 'payroll-basic-salary.create';
+
+    public const PAYROLL_BASIC_SALARY_UPDATE = 'payroll-basic-salary.update';
+
+    public const PAYROLL_BASIC_SALARY_DELETE = 'payroll-basic-salary.delete';
+
+    public const PAYROLL_ALLOWANCES_CREATE = 'payroll-allowances.create';
+
+    public const PAYROLL_ALLOWANCES_UPDATE = 'payroll-allowances.update';
+
+    public const PAYROLL_ALLOWANCES_DELETE = 'payroll-allowances.delete';
+
+    public const PAYROLL_BONUSES_CREATE = 'payroll-bonuses.create';
+
+    public const PAYROLL_BONUSES_UPDATE = 'payroll-bonuses.update';
+
+    public const PAYROLL_BONUSES_DELETE = 'payroll-bonuses.delete';
+
+    public const PAYROLL_DEDUCTIONS_CREATE = 'payroll-deductions.create';
+
+    public const PAYROLL_DEDUCTIONS_UPDATE = 'payroll-deductions.update';
+
+    public const PAYROLL_DEDUCTIONS_DELETE = 'payroll-deductions.delete';
+
+    public const PAYROLL_OVERTIME_UPDATE = 'payroll-overtime.update';
+
+    public const PAYROLL_ATTENDANCE_DEDUCTION_UPDATE = 'payroll-attendance-deduction.update';
+
+    public const PAYROLL_TAX_UPDATE = 'payroll-tax.update';
+
+    public const PAYROLL_SOCIAL_SECURITY_CREATE = 'payroll-social-security.create';
+
+    public const PAYROLL_SOCIAL_SECURITY_UPDATE = 'payroll-social-security.update';
+
+    public const PAYROLL_SOCIAL_SECURITY_DELETE = 'payroll-social-security.delete';
+
+    public const PAYROLL_LOANS_CREATE = 'payroll-loans.create';
+
+    public const PAYROLL_LOANS_UPDATE = 'payroll-loans.update';
+
+    public const PAYROLL_LOANS_DELETE = 'payroll-loans.delete';
 
     // HRM > Performance Management: view reads KPIs, goals, evaluation
     // forms, review cycles and scores; manage sets them up.
@@ -1149,7 +1197,30 @@ final class Permissions
             ],
             'Payroll' => [
                 self::PAYROLL_VIEW => 'View payroll set-up and rules: salaries, allowances, bonuses, deductions, overtime, tax, social security and loans',
-                self::PAYROLL_MANAGE => 'Manage payroll set-up and rules: salaries, allowances, bonuses, deductions, overtime, tax, social security and loans',
+                self::PAYROLL_SALARY_STRUCTURES_CREATE => 'Add salary structures',
+                self::PAYROLL_SALARY_STRUCTURES_UPDATE => 'Update salary structures',
+                self::PAYROLL_SALARY_STRUCTURES_DELETE => 'Delete salary structures',
+                self::PAYROLL_BASIC_SALARY_CREATE => 'Add basic salaries',
+                self::PAYROLL_BASIC_SALARY_UPDATE => 'Update basic salaries',
+                self::PAYROLL_BASIC_SALARY_DELETE => 'Delete basic salaries',
+                self::PAYROLL_ALLOWANCES_CREATE => 'Add allowances (types and given to staff)',
+                self::PAYROLL_ALLOWANCES_UPDATE => 'Update allowances (types and given to staff)',
+                self::PAYROLL_ALLOWANCES_DELETE => 'Delete allowances (types and given to staff)',
+                self::PAYROLL_BONUSES_CREATE => 'Add bonuses (types and given to staff)',
+                self::PAYROLL_BONUSES_UPDATE => 'Update bonuses (types and given to staff)',
+                self::PAYROLL_BONUSES_DELETE => 'Delete bonuses (types and given to staff)',
+                self::PAYROLL_DEDUCTIONS_CREATE => 'Add deductions (types and given to staff)',
+                self::PAYROLL_DEDUCTIONS_UPDATE => 'Update deductions (types and given to staff)',
+                self::PAYROLL_DEDUCTIONS_DELETE => 'Delete deductions (types and given to staff)',
+                self::PAYROLL_OVERTIME_UPDATE => 'Update the overtime rules',
+                self::PAYROLL_ATTENDANCE_DEDUCTION_UPDATE => 'Update the attendance deduction rules',
+                self::PAYROLL_TAX_UPDATE => 'Update the tax rules and staff tax profiles',
+                self::PAYROLL_SOCIAL_SECURITY_CREATE => 'Add NSSF schemes (update also staff NSSF profiles)',
+                self::PAYROLL_SOCIAL_SECURITY_UPDATE => 'Update NSSF schemes (update also staff NSSF profiles)',
+                self::PAYROLL_SOCIAL_SECURITY_DELETE => 'Delete NSSF schemes (update also staff NSSF profiles)',
+                self::PAYROLL_LOANS_CREATE => 'Add loans / advances (update also cancel and repayments)',
+                self::PAYROLL_LOANS_UPDATE => 'Update loans / advances (update also cancel and repayments)',
+                self::PAYROLL_LOANS_DELETE => 'Delete loans / advances (update also cancel and repayments)',
                 self::PAYROLL_RUN => 'Work out a payroll, send it for approval, and pay it',
                 self::PAYROLL_APPROVE => 'Approve or reject a payroll',
             ],
@@ -1553,7 +1624,16 @@ final class Permissions
                 self::LEAVE_MANAGEMENT_VIEW,
                 self::LEAVE_MANAGEMENT_MANAGE,
                 self::PAYROLL_VIEW,
-                self::PAYROLL_MANAGE,
+                self::PAYROLL_SALARY_STRUCTURES_CREATE, self::PAYROLL_SALARY_STRUCTURES_UPDATE, self::PAYROLL_SALARY_STRUCTURES_DELETE,
+                self::PAYROLL_BASIC_SALARY_CREATE, self::PAYROLL_BASIC_SALARY_UPDATE, self::PAYROLL_BASIC_SALARY_DELETE,
+                self::PAYROLL_ALLOWANCES_CREATE, self::PAYROLL_ALLOWANCES_UPDATE, self::PAYROLL_ALLOWANCES_DELETE,
+                self::PAYROLL_BONUSES_CREATE, self::PAYROLL_BONUSES_UPDATE, self::PAYROLL_BONUSES_DELETE,
+                self::PAYROLL_DEDUCTIONS_CREATE, self::PAYROLL_DEDUCTIONS_UPDATE, self::PAYROLL_DEDUCTIONS_DELETE,
+                self::PAYROLL_OVERTIME_UPDATE,
+                self::PAYROLL_ATTENDANCE_DEDUCTION_UPDATE,
+                self::PAYROLL_TAX_UPDATE,
+                self::PAYROLL_SOCIAL_SECURITY_CREATE, self::PAYROLL_SOCIAL_SECURITY_UPDATE, self::PAYROLL_SOCIAL_SECURITY_DELETE,
+                self::PAYROLL_LOANS_CREATE, self::PAYROLL_LOANS_UPDATE, self::PAYROLL_LOANS_DELETE,
                 self::PAYROLL_RUN,
                 self::PAYROLL_APPROVE,
                 self::PERFORMANCE_VIEW,

@@ -42,13 +42,18 @@ const { t } = useI18n()
 const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
 
-const canManage = computed(() => auth.can('payroll.manage'))
 const view = ref<'staff' | 'types'>('staff')
 const currentOnly = ref(true)
 const actionError = ref<string | null>(null)
 
 /** "allowances.add", "bonuses.add", ... — this tab's own wording. */
 const k = computed(() => ({ allowance: 'allowances', bonus: 'bonuses', deduction: 'deductions' })[props.kind])
+// This tab's own Add / Update / Delete: payroll-allowances.create and so on.
+const canCreate = computed(() => auth.can(`payroll-${k.value}.create`))
+const canUpdate = computed(() => auth.can(`payroll-${k.value}.update`))
+const canDelete = computed(() => auth.can(`payroll-${k.value}.delete`))
+/** Any row action (edit or delete). */
+const canManage = computed(() => canUpdate.value || canDelete.value)
 
 // --- Types (components) ---------------------------------------------------------------
 
@@ -271,7 +276,7 @@ onMounted(() => {
           {{ t(`admin.payroll.${k}.types`) }}
         </button>
       </div>
-      <template v-if="canManage">
+      <template v-if="canCreate">
         <BaseButton v-if="view === 'staff'" :disabled="types.length === 0" @click="open(null)">{{ t(`admin.payroll.${k}.give`) }}</BaseButton>
         <BaseButton v-else @click="openType(null)">{{ t(`admin.payroll.${k}.addType`) }}</BaseButton>
       </template>
@@ -306,8 +311,8 @@ onMounted(() => {
             <p class="text-xs text-neutral-500">{{ periodOf(row) }}</p>
             <p v-if="row.note" class="text-xs text-neutral-600">{{ row.note }}</p>
             <div v-if="canManage" class="mt-2 flex justify-end gap-3">
-              <EditIconButton @click="open(row)" />
-              <button type="button" class="text-sm font-medium text-danger-600" @click="remove(row)">{{ t('admin.organization.delete') }}</button>
+              <EditIconButton v-if="canUpdate" @click="open(row)" />
+              <button v-if="canDelete" type="button" class="text-sm font-medium text-danger-600" @click="remove(row)">{{ t('admin.organization.delete') }}</button>
             </div>
           </div>
         </div>
@@ -336,8 +341,8 @@ onMounted(() => {
                 <td class="px-4 py-3 text-neutral-600">{{ row.note ?? '—' }}</td>
                 <td v-if="canManage" class="px-4 py-3">
                   <div class="flex justify-end gap-2">
-                    <EditIconButton @click="open(row)" />
-                    <button type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row)">{{ t('admin.organization.delete') }}</button>
+                    <EditIconButton v-if="canUpdate" @click="open(row)" />
+                    <button v-if="canDelete" type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row)">{{ t('admin.organization.delete') }}</button>
                   </div>
                 </td>
               </tr>
@@ -366,8 +371,8 @@ onMounted(() => {
           <p class="text-xs text-neutral-500">{{ t('admin.payroll.components.usage', { staff: type.staff_assignments_count ?? 0, structures: type.structure_items_count ?? 0 }) }}</p>
           <p v-if="type.description" class="text-xs text-neutral-600">{{ type.description }}</p>
           <div v-if="canManage" class="mt-2 flex justify-end gap-3">
-            <EditIconButton @click="openType(type)" />
-            <button type="button" class="text-sm font-medium text-danger-600" @click="removeType(type)">{{ t('admin.organization.delete') }}</button>
+            <EditIconButton v-if="canUpdate" @click="openType(type)" />
+            <button v-if="canDelete" type="button" class="text-sm font-medium text-danger-600" @click="removeType(type)">{{ t('admin.organization.delete') }}</button>
           </div>
         </div>
       </div>

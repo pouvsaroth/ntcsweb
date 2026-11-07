@@ -8,8 +8,10 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Admin\StaffPayComponentRequest;
 use App\Http\Resources\StaffPayComponentResource;
 use App\Http\Responses\ApiResponse;
+use App\Models\PayrollComponent;
 use App\Models\StaffPayComponent;
 use App\Models\StaffSalary;
+use App\Policies\PayrollPolicy;
 use App\Support\Query\ApiQuery;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -46,7 +48,8 @@ final class StaffPayComponentController extends Controller
 
     public function store(StaffPayComponentRequest $request): JsonResponse
     {
-        $this->authorize('create', StaffPayComponent::class);
+        $kind = PayrollComponent::query()->whereKey($request->validated('payroll_component_id'))->value('kind');
+        $this->authorize('create', [StaffPayComponent::class, PayrollPolicy::kindTab($kind)]);
 
         $assignment = StaffPayComponent::query()->create([...$request->validated(), 'created_by' => $request->user()->getKey()]);
 

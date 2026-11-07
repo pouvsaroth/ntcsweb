@@ -88,7 +88,7 @@ final class StaffSalaryController extends Controller
 
     public function store(StaffSalaryRequest $request): JsonResponse
     {
-        $this->authorize('create', StaffSalary::class);
+        $this->authorize('create', [StaffSalary::class, 'basic-salary']);
 
         $salary = DB::connection('tenant')->transaction(function () use ($request) {
             $salary = StaffSalary::query()->create([...$request->salaryData(), 'created_by' => $request->user()->getKey()]);

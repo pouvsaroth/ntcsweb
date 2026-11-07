@@ -12,6 +12,7 @@ use App\Models\StaffPayrollProfile;
 use App\Models\TaxBracket;
 use App\Models\Tenant;
 use App\Services\Payroll\PayrollRules;
+use App\Support\Authorization\Permissions;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -25,6 +26,23 @@ use Illuminate\Validation\ValidationException;
  */
 final class PayrollRulesController extends Controller
 {
+    /** The Update permission of each settings tab. */
+    private const SETTING_TABS = [
+        'overtime' => Permissions::PAYROLL_OVERTIME_UPDATE,
+        'attendance-deduction' => Permissions::PAYROLL_ATTENDANCE_DEDUCTION_UPDATE,
+        'tax' => Permissions::PAYROLL_TAX_UPDATE,
+    ];
+
+    /** Which tab's Update a settings field needs. */
+    private static function settingPermission(string $field): string
+    {
+        return match (true) {
+            str_starts_with($field, 'tax_') => self::SETTING_TABS['tax'],
+            str_starts_with($field, 'deduct_'), str_starts_with($field, 'late_') => self::SETTING_TABS['attendance-deduction'],
+            default => self::SETTING_TABS['overtime'], // working days, hours per day, overtime rates
+        };
+    }
+
     public function __construct(
         private readonly PayrollRules $rules,
     ) {}
@@ -39,9 +57,9 @@ final class PayrollRulesController extends Controller
     public function updateSettings(Request $request): JsonResponse
     {
         $settings = PayrollSetting::current();
-        $this->authorize('update', $settings);
+        abort_unless($request->user()->hasAnyPermission(...array_values(self::SETTING_TABS)), 403);
 
-        $settings->update($request->validate([
+        $data = $request->validate([
             'working_days_per_month' => ['sometimes', 'numeric', 'min:1', 'max:31'],
             'hours_per_day' => ['sometimes', 'numeric', 'min:1', 'max:24'],
             'overtime_normal_rate' => ['sometimes', 'numeric', 'min:1', 'max:5'],
@@ -57,7 +75,12 @@ final class PayrollRulesController extends Controller
             'tax_spouse_allowance' => ['sometimes', 'numeric', 'min:0', 'max:1000000000'],
             'tax_child_allowance' => ['sometimes', 'numeric', 'min:0', 'max:1000000000'],
             'tax_non_resident_rate' => ['sometimes', 'numeric', 'min:0', 'max:100'],
-        ]));
+        ]);
+        // Each field is on one tab (Overtime, Attendance deduction, Tax) and needs that tab's Update.
+        foreach (array_keys($data) as $field) {
+            abort_unless($request->user()->hasPermission(self::settingPermission($field)), 403);
+        }
+        $settings->update($data);
 
         $this->rules->refresh();
 
@@ -67,7 +90,7 @@ final class PayrollRulesController extends Controller
     /** Replaces the whole bracket list — lowest first, each starting where the one before ends, only the last open-ended. */
     public function replaceBrackets(Request $request): JsonResponse
     {
-        $this->authorize('update', PayrollSetting::current());
+        abort_unless($request->user()->hasPermission(Permissions::PAYROLL_TAX_UPDATE), 403);
 
         $data = $request->validate([
             'brackets' => ['required', 'array', 'min:1', 'max:20'],
@@ -111,7 +134,7 @@ final class PayrollRulesController extends Controller
 
     public function storeScheme(Request $request): JsonResponse
     {
-        $this->authorize('create', SocialSecurityScheme::class);
+        $this->authorize('create', [SocialSecurityScheme::class, 'social-security']);
 
         SocialSecurityScheme::query()->create($this->validateScheme($request, null));
         $this->rules->refresh();

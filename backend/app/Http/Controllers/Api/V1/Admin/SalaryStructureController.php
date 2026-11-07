@@ -35,7 +35,7 @@ final class SalaryStructureController extends Controller
 
     public function store(SalaryStructureRequest $request): JsonResponse
     {
-        $this->authorize('create', SalaryStructure::class);
+        $this->authorize('create', [SalaryStructure::class, 'salary-structures']);
 
         $structure = DB::connection('tenant')->transaction(function () use ($request) {
             $structure = SalaryStructure::query()->create($request->safe()->except('items'));

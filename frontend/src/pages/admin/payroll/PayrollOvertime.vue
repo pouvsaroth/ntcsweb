@@ -31,7 +31,7 @@ import { formatDate } from '@/utils/date'
  */
 const { t } = useI18n()
 const auth = useAuthStore()
-const canManage = computed(() => auth.can('payroll.manage'))
+const canManage = computed(() => auth.can('payroll-overtime.update'))
 
 const settings = ref<PayrollSettings | null>(null)
 const month = ref(currentMonth())

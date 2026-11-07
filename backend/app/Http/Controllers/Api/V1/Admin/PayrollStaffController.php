@@ -11,6 +11,7 @@ use App\Models\PayrollSetting;
 use App\Models\Staff;
 use App\Models\StaffPayrollProfile;
 use App\Services\Payroll\PayrollAttendance;
+use App\Support\Authorization\Permissions;
 use App\Support\Query\ApiQuery;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
@@ -51,15 +52,21 @@ final class PayrollStaffController extends Controller
     public function updateProfile(Request $request, Staff $staff): JsonResponse
     {
         $profile = StaffPayrollProfile::forStaff($staff->id);
-        $this->authorize('update', PayrollSetting::current());
+        abort_unless($request->user()->hasAnyPermission(Permissions::PAYROLL_TAX_UPDATE, Permissions::PAYROLL_SOCIAL_SECURITY_UPDATE), 403);
 
-        $profile->fill($request->validate([
+        $data = $request->validate([
             'tax_resident' => ['sometimes', 'boolean'],
             'spouse_dependent' => ['sometimes', 'boolean'],
             'child_dependents' => ['sometimes', 'integer', 'min:0', 'max:20'],
             'social_security_enrolled' => ['sometimes', 'boolean'],
             'social_security_number' => ['nullable', 'string', 'max:50'],
-        ]))->save();
+        ]);
+        // Tax fields are the Tax tab's, NSSF fields the Social security tab's.
+        foreach (array_keys($data) as $field) {
+            $needs = str_starts_with($field, 'social_security_') ? Permissions::PAYROLL_SOCIAL_SECURITY_UPDATE : Permissions::PAYROLL_TAX_UPDATE;
+            abort_unless($request->user()->hasPermission($needs), 403);
+        }
+        $profile->fill($data)->save();
 
         return ApiResponse::success(['staff' => $this->staffRow($staff), 'profile' => $this->profileRow($profile)]);
     }

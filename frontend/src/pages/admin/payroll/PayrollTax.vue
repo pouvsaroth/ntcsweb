@@ -29,7 +29,7 @@ import { ApiRequestError } from '@/types/api'
  */
 const { t } = useI18n()
 const auth = useAuthStore()
-const canManage = computed(() => auth.can('payroll.manage'))
+const canManage = computed(() => auth.can('payroll-tax.update'))
 
 const rules = ref<PayrollRules | null>(null)
 const loading = ref(false)

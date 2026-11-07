@@ -47,7 +47,7 @@ final class StaffLoanController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $this->authorize('create', StaffLoan::class);
+        $this->authorize('create', [StaffLoan::class, 'loans']);
 
         $data = $request->validate([
             'staff_id' => ['required', 'integer', Rule::exists('tenant.staff', 'id')],

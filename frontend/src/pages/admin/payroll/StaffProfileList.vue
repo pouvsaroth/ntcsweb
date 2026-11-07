@@ -23,7 +23,8 @@ const props = defineProps<{ mode: 'tax' | 'nssf' }>()
 
 const { t } = useI18n()
 const auth = useAuthStore()
-const canManage = computed(() => auth.can('payroll.manage'))
+/** Tax profiles are the Tax tab's, NSSF profiles the Social security tab's. */
+const canManage = computed(() => auth.can(props.mode === 'tax' ? 'payroll-tax.update' : 'payroll-social-security.update'))
 
 const { items, meta, loading, error, setPage, setSearch, fetch } = usePaginatedResource<StaffProfileRow>((query) => staffPayrollProfilesService.list(query))
 

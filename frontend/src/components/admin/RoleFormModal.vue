@@ -135,6 +135,8 @@ const tab = (group: Group, parent: string, name: string, to: string, needs: stri
   actions,
 })
 const crud = (slug: string) => ({ view: `${slug}.view`, create: `${slug}.create`, update: `${slug}.update`, delete: `${slug}.delete` })
+/** Add / Update / Delete of a tab whose View is the menu's. */
+const tabCud = (slug: string) => ({ create: `${slug}.create`, update: `${slug}.update`, delete: `${slug}.delete` })
 
 const MODULES: ModuleEntry[] = [
   // ── Dashboard ──
@@ -321,7 +323,8 @@ const MODULES: ModuleEntry[] = [
   tab('Staff', 'Leave Management', 'Leave calendar', '/admin/leave-management/calendar', ['leave-management.view']),
   tab('Staff', 'Leave Management', 'Carry forward', '/admin/leave-management/carry-forward', ['leave-management.view']),
   tab('Staff', 'Leave Management', 'Leave reports', '/admin/leave-management/reports', ['leave-management.view']),
-  { name: 'Payroll', group: 'Staff', parent: 'Payroll', menu: true, actions: { view: 'payroll.view', manage: 'payroll.manage' } },
+  // View opens every Payroll tab; each set-up tab has its own Add / Update / Delete (payroll-<tab>.*).
+  { name: 'Payroll', group: 'Staff', parent: 'Payroll', menu: true, actions: { view: 'payroll.view' } },
   ...(
     [
       ['Salary structure', 'salary-structures'],
@@ -329,13 +332,17 @@ const MODULES: ModuleEntry[] = [
       ['Allowances', 'allowances'],
       ['Bonuses', 'bonuses'],
       ['Deductions', 'deductions'],
-      ['Overtime', 'overtime'],
-      ['Attendance deduction', 'attendance-deduction'],
-      ['Tax', 'tax'],
-      ['Social security', 'social-security'],
-      ['Loan/advance', 'loans'],
     ] as const
-  ).map(([name, path]) => tab('Staff', 'Payroll', name, `/admin/payroll/${path}`, ['payroll.view'])),
+  ).map(([name, path]) => tab('Staff', 'Payroll', name, `/admin/payroll/${path}`, ['payroll.view'], tabCud(`payroll-${path}`))),
+  // Rules held in one setting: Update only.
+  tab('Staff', 'Payroll', 'Overtime', '/admin/payroll/overtime', ['payroll.view'], { update: 'payroll-overtime.update' }),
+  tab('Staff', 'Payroll', 'Attendance deduction', '/admin/payroll/attendance-deduction', ['payroll.view'], { update: 'payroll-attendance-deduction.update' }),
+  // Update also covers each staff member's tax profile.
+  tab('Staff', 'Payroll', 'Tax', '/admin/payroll/tax', ['payroll.view'], { update: 'payroll-tax.update' }),
+  // Update also covers each staff member's NSSF profile.
+  tab('Staff', 'Payroll', 'Social security', '/admin/payroll/social-security', ['payroll.view'], tabCud('payroll-social-security')),
+  // Update also covers cancelling a loan and cash repayments.
+  tab('Staff', 'Payroll', 'Loan/advance', '/admin/payroll/loans', ['payroll.view'], tabCud('payroll-loans')),
   // Work out = start a payroll, send it for approval and pay it.
   tab('Staff', 'Payroll', 'Payroll calculation', '/admin/payroll/calculation', ['payroll.view'], { run: 'payroll.run' }),
   tab('Staff', 'Payroll', 'Payslip', '/admin/payroll/payslips', ['payroll.view']),

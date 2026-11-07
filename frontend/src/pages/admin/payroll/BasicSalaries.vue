@@ -41,7 +41,11 @@ const { t } = useI18n()
 const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
 
-const canManage = computed(() => auth.can('payroll.manage'))
+const canCreate = computed(() => auth.can('payroll-basic-salary.create'))
+const canUpdate = computed(() => auth.can('payroll-basic-salary.update'))
+const canDelete = computed(() => auth.can('payroll-basic-salary.delete'))
+/** Any row action (edit or delete). */
+const canManage = computed(() => canUpdate.value || canDelete.value)
 const missingOnly = ref(false)
 
 const { items, meta, loading, error, setPage, setSearch, fetch } = usePaginatedResource<StaffSalaryRow>((query) =>
@@ -397,7 +401,7 @@ onMounted(() => fetch())
       <template v-else>
         <div class="mb-3 flex items-center justify-between gap-3">
           <h3 class="text-sm font-semibold text-neutral-800">{{ t('admin.payroll.salaries.history') }}</h3>
-          <BaseButton v-if="canManage" size="sm" @click="openForm(null)">{{ t('admin.payroll.salaries.set') }}</BaseButton>
+          <BaseButton v-if="canCreate" size="sm" @click="openForm(null)">{{ t('admin.payroll.salaries.set') }}</BaseButton>
         </div>
         <div v-if="detailLoading" class="flex justify-center py-8"><BaseSpinner /></div>
         <p v-else-if="history.length === 0" class="rounded-lg bg-neutral-50 px-3 py-6 text-center text-sm text-neutral-500">{{ t('admin.payroll.salaries.noHistory') }}</p>
@@ -419,8 +423,8 @@ onMounted(() => fetch())
               <p v-if="salary.note" class="text-xs text-neutral-600">{{ salary.note }}</p>
             </div>
             <div v-if="canManage" class="flex shrink-0 gap-3">
-              <button type="button" class="text-sm font-medium text-primary-700 hover:underline" @click="openForm(salary)">{{ t('admin.payroll.edit') }}</button>
-              <button type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="removeSalary(salary)">{{ t('admin.organization.delete') }}</button>
+              <button v-if="canUpdate" type="button" class="text-sm font-medium text-primary-700 hover:underline" @click="openForm(salary)">{{ t('admin.payroll.edit') }}</button>
+              <button v-if="canDelete" type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="removeSalary(salary)">{{ t('admin.organization.delete') }}</button>
             </div>
           </li>
         </ul>

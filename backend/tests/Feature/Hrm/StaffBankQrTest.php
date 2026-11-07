@@ -42,7 +42,7 @@ class StaffBankQrTest extends TestCase
     public function test_hr_and_payroll_cannot_change_someone_elses_qr(): void
     {
         Storage::fake('public');
-        $this->actingAsAdminWithPermissions([Permissions::STAFF_VIEW, Permissions::STAFF_UPDATE, Permissions::PAYROLL_MANAGE]);
+        $this->actingAsAdminWithPermissions([Permissions::STAFF_VIEW, Permissions::STAFF_UPDATE, Permissions::PAYROLL_SALARY_STRUCTURES_CREATE, Permissions::PAYROLL_SALARY_STRUCTURES_UPDATE, Permissions::PAYROLL_SALARY_STRUCTURES_DELETE, Permissions::PAYROLL_BASIC_SALARY_CREATE, Permissions::PAYROLL_BASIC_SALARY_UPDATE, Permissions::PAYROLL_BASIC_SALARY_DELETE, Permissions::PAYROLL_ALLOWANCES_CREATE, Permissions::PAYROLL_ALLOWANCES_UPDATE, Permissions::PAYROLL_ALLOWANCES_DELETE, Permissions::PAYROLL_BONUSES_CREATE, Permissions::PAYROLL_BONUSES_UPDATE, Permissions::PAYROLL_BONUSES_DELETE, Permissions::PAYROLL_DEDUCTIONS_CREATE, Permissions::PAYROLL_DEDUCTIONS_UPDATE, Permissions::PAYROLL_DEDUCTIONS_DELETE, Permissions::PAYROLL_OVERTIME_UPDATE, Permissions::PAYROLL_ATTENDANCE_DEDUCTION_UPDATE, Permissions::PAYROLL_TAX_UPDATE, Permissions::PAYROLL_SOCIAL_SECURITY_CREATE, Permissions::PAYROLL_SOCIAL_SECURITY_UPDATE, Permissions::PAYROLL_SOCIAL_SECURITY_DELETE, Permissions::PAYROLL_LOANS_CREATE, Permissions::PAYROLL_LOANS_UPDATE, Permissions::PAYROLL_LOANS_DELETE]);
         $other = Staff::factory()->create();
 
         $this->postJson("/api/v1/staff/{$other->id}/bank-qr", ['bank_qr' => UploadedFile::fake()->image('qr.png')])->assertForbidden();

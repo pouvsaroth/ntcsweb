@@ -24,7 +24,11 @@ import { ApiRequestError } from '@/types/api'
 const { t } = useI18n()
 const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
-const canManage = computed(() => auth.can('payroll.manage'))
+const canCreate = computed(() => auth.can('payroll-social-security.create'))
+const canUpdate = computed(() => auth.can('payroll-social-security.update'))
+const canDelete = computed(() => auth.can('payroll-social-security.delete'))
+/** Any row action (edit or delete). */
+const canManage = computed(() => canUpdate.value || canDelete.value)
 
 const schemes = ref<SocialSecurityScheme[]>([])
 const loading = ref(false)
@@ -114,7 +118,7 @@ onMounted(() => load())
           <h2 class="text-sm font-semibold text-neutral-800">{{ t('admin.payroll.nssf.schemes') }}</h2>
           <p class="text-sm text-neutral-500">{{ t('admin.payroll.nssf.hint') }}</p>
         </div>
-        <BaseButton v-if="canManage" @click="open(null)">{{ t('admin.payroll.nssf.add') }}</BaseButton>
+        <BaseButton v-if="canCreate" @click="open(null)">{{ t('admin.payroll.nssf.add') }}</BaseButton>
       </div>
 
       <BaseAlert v-if="error" variant="danger" class="mb-3">{{ error }}</BaseAlert>
@@ -130,8 +134,8 @@ onMounted(() => load())
             <p class="text-sm text-neutral-700">{{ t('admin.payroll.nssf.staffShare') }} {{ scheme.employee_rate }}% · {{ t('admin.payroll.nssf.schoolShare') }} {{ scheme.employer_rate }}%</p>
             <p class="text-xs text-neutral-500">{{ wageRange(scheme) }}<template v-if="scheme.reduces_taxable"> · {{ t('admin.payroll.components.beforeTax') }}</template></p>
             <div v-if="canManage" class="mt-2 flex justify-end gap-3">
-              <button type="button" class="text-sm font-medium text-primary-700" @click="open(scheme)">{{ t('admin.payroll.edit') }}</button>
-              <button type="button" class="text-sm font-medium text-danger-600" @click="remove(scheme)">{{ t('admin.organization.delete') }}</button>
+              <button v-if="canUpdate" type="button" class="text-sm font-medium text-primary-700" @click="open(scheme)">{{ t('admin.payroll.edit') }}</button>
+              <button v-if="canDelete" type="button" class="text-sm font-medium text-danger-600" @click="remove(scheme)">{{ t('admin.organization.delete') }}</button>
             </div>
           </div>
         </div>
@@ -161,8 +165,8 @@ onMounted(() => load())
                 </td>
                 <td v-if="canManage" class="px-4 py-3">
                   <div class="flex justify-end gap-3">
-                    <button type="button" class="text-sm font-medium text-primary-700 hover:underline" @click="open(scheme)">{{ t('admin.payroll.edit') }}</button>
-                    <button type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(scheme)">{{ t('admin.organization.delete') }}</button>
+                    <button v-if="canUpdate" type="button" class="text-sm font-medium text-primary-700 hover:underline" @click="open(scheme)">{{ t('admin.payroll.edit') }}</button>
+                    <button v-if="canDelete" type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(scheme)">{{ t('admin.organization.delete') }}</button>
                   </div>
                 </td>
               </tr>

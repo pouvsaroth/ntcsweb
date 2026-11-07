@@ -28,7 +28,11 @@ import { formatDate } from '@/utils/date'
 const { t } = useI18n()
 const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
-const canManage = computed(() => auth.can('payroll.manage'))
+const canCreate = computed(() => auth.can('payroll-loans.create'))
+const canUpdate = computed(() => auth.can('payroll-loans.update'))
+const canDelete = computed(() => auth.can('payroll-loans.delete'))
+/** Any row action (edit or delete). */
+const canManage = computed(() => canUpdate.value || canDelete.value)
 
 const statusFilter = ref<LoanStatus | ''>('active')
 const { items, meta, loading, error, setPage, setFilter, fetch } = usePaginatedResource<StaffLoan>((query) => staffLoansService.list(query))
@@ -204,7 +208,7 @@ onMounted(() => {
   <div>
     <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
       <BaseSelect class="w-full sm:w-48" :model-value="statusFilter" :options="statusOptions" @update:model-value="statusFilter = $event as LoanStatus | ''" />
-      <BaseButton v-if="canManage" @click="openForm(null)">{{ t('admin.payroll.loans.add') }}</BaseButton>
+      <BaseButton v-if="canCreate" @click="openForm(null)">{{ t('admin.payroll.loans.add') }}</BaseButton>
     </div>
     <p class="mb-4 text-sm text-neutral-500">{{ t('admin.payroll.loans.hint') }}</p>
 
@@ -313,11 +317,11 @@ onMounted(() => {
               <p class="font-medium text-neutral-800">{{ money(detail, repayment.amount) }} <span class="font-normal text-neutral-500">· {{ formatDate(repayment.paid_on) }} · {{ t(`admin.payroll.loans.method.${repayment.method}`) }}</span></p>
               <p v-if="repayment.note" class="text-xs text-neutral-600">{{ repayment.note }}</p>
             </div>
-            <button v-if="canManage && repayment.method === 'cash' && detail.status !== 'cancelled'" type="button" class="text-sm font-medium text-danger-600" @click="removeRepayment(repayment.id)">{{ t('admin.organization.delete') }}</button>
+            <button v-if="canUpdate && repayment.method === 'cash' && detail.status !== 'cancelled'" type="button" class="text-sm font-medium text-danger-600" @click="removeRepayment(repayment.id)">{{ t('admin.organization.delete') }}</button>
           </li>
         </ul>
 
-        <form v-if="canManage && detail.status === 'active'" class="mt-4 grid items-end gap-2 sm:grid-cols-[8rem_10rem_minmax(0,1fr)_auto]" @submit.prevent="recordRepayment">
+        <form v-if="canUpdate && detail.status === 'active'" class="mt-4 grid items-end gap-2 sm:grid-cols-[8rem_10rem_minmax(0,1fr)_auto]" @submit.prevent="recordRepayment">
           <BaseInput v-model="repay.amount" type="number" :label="t('admin.payroll.loans.cashRepayment')" :error="repayErrors.amount?.[0]" />
           <BaseInput v-model="repay.paid_on" type="date" :label="t('admin.payroll.loans.paidOn')" :error="repayErrors.paid_on?.[0]" />
           <BaseInput v-model="repay.note" :label="t('admin.payroll.note')" />
@@ -326,9 +330,9 @@ onMounted(() => {
       </template>
       <template #footer>
         <template v-if="detail && canManage">
-          <BaseButton v-if="detail.status !== 'cancelled'" variant="outline" @click="openForm(detail)">{{ t('admin.payroll.edit') }}</BaseButton>
-          <BaseButton v-if="detail.status === 'active'" variant="outline" @click="cancel(detail)">{{ t('admin.payroll.loans.cancel') }}</BaseButton>
-          <BaseButton v-if="!detail.repayments || detail.repayments.length === 0" variant="danger" @click="remove(detail)">{{ t('admin.organization.delete') }}</BaseButton>
+          <BaseButton v-if="canUpdate && detail.status !== 'cancelled'" variant="outline" @click="openForm(detail)">{{ t('admin.payroll.edit') }}</BaseButton>
+          <BaseButton v-if="canUpdate && detail.status === 'active'" variant="outline" @click="cancel(detail)">{{ t('admin.payroll.loans.cancel') }}</BaseButton>
+          <BaseButton v-if="canDelete && (!detail.repayments || detail.repayments.length === 0)" variant="danger" @click="remove(detail)">{{ t('admin.organization.delete') }}</BaseButton>
         </template>
         <BaseButton variant="outline" @click="detail = null">{{ t('common.close') }}</BaseButton>
       </template>

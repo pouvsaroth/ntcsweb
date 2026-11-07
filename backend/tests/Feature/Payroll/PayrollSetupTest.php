@@ -24,7 +24,7 @@ class PayrollSetupTest extends TestCase
 {
     use HasAcademicAdmin, RefreshDatabase;
 
-    private const ALL = [Permissions::PAYROLL_VIEW, Permissions::PAYROLL_MANAGE];
+    private const ALL = [Permissions::PAYROLL_VIEW, Permissions::PAYROLL_SALARY_STRUCTURES_CREATE, Permissions::PAYROLL_SALARY_STRUCTURES_UPDATE, Permissions::PAYROLL_SALARY_STRUCTURES_DELETE, Permissions::PAYROLL_BASIC_SALARY_CREATE, Permissions::PAYROLL_BASIC_SALARY_UPDATE, Permissions::PAYROLL_BASIC_SALARY_DELETE, Permissions::PAYROLL_ALLOWANCES_CREATE, Permissions::PAYROLL_ALLOWANCES_UPDATE, Permissions::PAYROLL_ALLOWANCES_DELETE, Permissions::PAYROLL_BONUSES_CREATE, Permissions::PAYROLL_BONUSES_UPDATE, Permissions::PAYROLL_BONUSES_DELETE, Permissions::PAYROLL_DEDUCTIONS_CREATE, Permissions::PAYROLL_DEDUCTIONS_UPDATE, Permissions::PAYROLL_DEDUCTIONS_DELETE, Permissions::PAYROLL_OVERTIME_UPDATE, Permissions::PAYROLL_ATTENDANCE_DEDUCTION_UPDATE, Permissions::PAYROLL_TAX_UPDATE, Permissions::PAYROLL_SOCIAL_SECURITY_CREATE, Permissions::PAYROLL_SOCIAL_SECURITY_UPDATE, Permissions::PAYROLL_SOCIAL_SECURITY_DELETE, Permissions::PAYROLL_LOANS_CREATE, Permissions::PAYROLL_LOANS_UPDATE, Permissions::PAYROLL_LOANS_DELETE];
 
     public function test_viewing_needs_view_and_changing_needs_manage(): void
     {
