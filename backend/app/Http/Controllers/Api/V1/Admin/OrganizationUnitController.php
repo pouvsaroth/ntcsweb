@@ -50,7 +50,7 @@ abstract class OrganizationUnitController extends Controller
     public function store(OrganizationUnitRequest $request): JsonResponse
     {
         $class = $this->modelClass();
-        $this->authorize('create', $class);
+        $this->authorize('create', [$class, $class]);
 
         $unit = $class::query()->create($request->validated());
 

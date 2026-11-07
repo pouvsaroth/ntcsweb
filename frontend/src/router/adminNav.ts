@@ -278,7 +278,7 @@ export const adminNav: AdminNavGroup[] = [
       { labelKey: 'adminNav.items.assetMaintenance', icon: 'refresh', to: '/admin/asset-maintenance', permission: 'assets.maintenance.view' },
       { labelKey: 'adminNav.items.assetCategories', icon: 'collection', to: '/admin/asset-categories', permission: 'asset-categories.view' },
       { labelKey: 'adminNav.items.assetLocations', icon: 'location', to: '/admin/asset-locations', permission: 'asset-locations.view' },
-      { labelKey: 'adminNav.items.departments', icon: 'template', to: '/admin/departments', permission: 'assets.view' },
+      { labelKey: 'adminNav.items.departments', icon: 'template', to: '/admin/departments', permission: 'departments.view' },
       { labelKey: 'adminNav.items.suppliers', icon: 'truck', to: '/admin/suppliers', permission: 'suppliers.view' },
       { labelKey: 'adminNav.items.assetReports', icon: 'report', to: '/admin/asset-reports', permission: 'assets.reports.view' },
     ],

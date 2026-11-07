@@ -17,7 +17,8 @@ class DepartmentPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->hasPermission(Permissions::ASSETS_VIEW) || $user->hasPermission(Permissions::ORGANIZATION_VIEW);
+        // Asset and staff forms pick a department from the list.
+        return $user->hasAnyPermission(Permissions::DEPARTMENTS_VIEW, Permissions::ORGANIZATION_VIEW, Permissions::ASSETS_VIEW);
     }
 
     public function view(User $user, Department $department): bool
@@ -27,16 +28,16 @@ class DepartmentPolicy
 
     public function create(User $user): bool
     {
-        return $user->hasPermission(Permissions::ASSETS_CREATE) || $user->hasPermission(Permissions::ORGANIZATION_CREATE);
+        return $user->hasPermission(Permissions::DEPARTMENTS_CREATE);
     }
 
     public function update(User $user, Department $department): bool
     {
-        return $user->hasPermission(Permissions::ASSETS_UPDATE) || $user->hasPermission(Permissions::ORGANIZATION_UPDATE);
+        return $user->hasPermission(Permissions::DEPARTMENTS_UPDATE);
     }
 
     public function delete(User $user, Department $department): bool
     {
-        return $user->hasPermission(Permissions::ASSETS_DELETE) || $user->hasPermission(Permissions::ORGANIZATION_DELETE);
+        return $user->hasPermission(Permissions::DEPARTMENTS_DELETE);
     }
 }

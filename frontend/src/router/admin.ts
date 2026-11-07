@@ -1088,7 +1088,7 @@ const adminRoutes: RouteRecordRaw[] = [
     path: 'departments',
     name: 'admin.departments',
     component: () => import('@/pages/admin/Departments.vue'),
-    meta: { titleKey: 'adminNav.items.departments' },
+    meta: { titleKey: 'adminNav.items.departments', permission: 'departments.view' },
   },
   {
     path: 'suppliers',

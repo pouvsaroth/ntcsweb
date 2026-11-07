@@ -29,9 +29,10 @@ const auth = useAuthStore()
 const service = organizationUnitsService(props.kind)
 const { items, meta, loading, error, setPage, setSearch, fetch } = usePaginatedResource<OrganizationUnit>((query) => service.list(query))
 
-const canCreate = computed(() => auth.can('organization.create'))
-const canUpdate = computed(() => auth.can('organization.update'))
-const canDelete = computed(() => auth.can('organization.delete'))
+// Each list has its own Add / Update / Delete: branches.create, teams.update, ...
+const canCreate = computed(() => auth.can(`${props.kind}.create`))
+const canUpdate = computed(() => auth.can(`${props.kind}.update`))
+const canDelete = computed(() => auth.can(`${props.kind}.delete`))
 
 const columns = computed(() => [
   { key: 'code', label: t('admin.organization.code') },

@@ -15,8 +15,8 @@ export const organizationTabs: OrganizationTab[] = [
   { to: '/admin/organization/school', labelKey: 'admin.organization.tabs.school', permission: 'tenant-settings.view' },
   { to: '/admin/organization/branches', labelKey: 'admin.organization.tabs.branch', permission: 'organization.view' },
   // Same departments the Assets menu manages (and still links to) — one list,
-  // two ways in, so either permission opens it (see DepartmentPolicy).
-  { to: '/admin/organization/departments', labelKey: 'admin.organization.tabs.department', permission: ['organization.view', 'assets.view'] },
+  // two ways in (see DepartmentPolicy).
+  { to: '/admin/organization/departments', labelKey: 'admin.organization.tabs.department', permission: ['organization.view', 'departments.view'] },
   { to: '/admin/organization/teams', labelKey: 'admin.organization.tabs.team', permission: 'organization.view' },
   { to: '/admin/organization/positions', labelKey: 'admin.organization.tabs.position', permission: 'positions.view' },
   { to: '/admin/organization/job-grades', labelKey: 'admin.organization.tabs.jobGrade', permission: 'organization.view' },

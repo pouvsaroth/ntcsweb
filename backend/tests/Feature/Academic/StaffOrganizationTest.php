@@ -113,7 +113,7 @@ class StaffOrganizationTest extends TestCase
 
     public function test_a_unit_still_in_use_cannot_be_deleted(): void
     {
-        $this->actingAsAdminWithPermissions([Permissions::ORGANIZATION_DELETE]);
+        $this->actingAsAdminWithPermissions([Permissions::BRANCHES_DELETE, Permissions::DEPARTMENTS_DELETE, Permissions::TEAMS_DELETE, Permissions::JOB_GRADES_DELETE, Permissions::JOB_LEVELS_DELETE]);
         $branch = Branch::factory()->create();
         Department::factory()->create(['branch_id' => $branch->id]);
         $grade = JobGrade::factory()->create();
@@ -127,7 +127,7 @@ class StaffOrganizationTest extends TestCase
 
     public function test_a_department_with_staff_or_teams_cannot_be_deleted(): void
     {
-        $this->actingAsAdminWithPermissions([Permissions::ORGANIZATION_DELETE]);
+        $this->actingAsAdminWithPermissions([Permissions::BRANCHES_DELETE, Permissions::DEPARTMENTS_DELETE, Permissions::TEAMS_DELETE, Permissions::JOB_GRADES_DELETE, Permissions::JOB_LEVELS_DELETE]);
         $withTeam = Department::factory()->create();
         Team::factory()->create(['department_id' => $withTeam->id]);
         $withStaff = Department::factory()->create();
@@ -139,7 +139,7 @@ class StaffOrganizationTest extends TestCase
 
     public function test_departments_sit_in_a_branch_and_teams_in_a_department(): void
     {
-        $this->actingAsAdminWithPermissions([Permissions::ORGANIZATION_VIEW, Permissions::ORGANIZATION_CREATE]);
+        $this->actingAsAdminWithPermissions([Permissions::ORGANIZATION_VIEW, Permissions::BRANCHES_CREATE, Permissions::DEPARTMENTS_CREATE, Permissions::TEAMS_CREATE, Permissions::JOB_GRADES_CREATE, Permissions::JOB_LEVELS_CREATE]);
         $branch = Branch::factory()->create(['name' => 'Siem Reap']);
 
         $departmentId = $this->postJson('/api/v1/departments', ['code' => 'ACA', 'name' => 'Academic', 'branch_id' => $branch->id])

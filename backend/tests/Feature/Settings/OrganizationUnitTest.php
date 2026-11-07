@@ -37,8 +37,8 @@ class OrganizationUnitTest extends TestCase
     public function test_it_creates_lists_updates_and_deletes_a_unit(string $uri, string $class): void
     {
         $this->actingAsAdminWithPermissions([
-            Permissions::ORGANIZATION_VIEW, Permissions::ORGANIZATION_CREATE,
-            Permissions::ORGANIZATION_UPDATE, Permissions::ORGANIZATION_DELETE,
+            Permissions::ORGANIZATION_VIEW, Permissions::BRANCHES_CREATE, Permissions::DEPARTMENTS_CREATE, Permissions::TEAMS_CREATE, Permissions::JOB_GRADES_CREATE, Permissions::JOB_LEVELS_CREATE,
+            Permissions::BRANCHES_UPDATE, Permissions::DEPARTMENTS_UPDATE, Permissions::TEAMS_UPDATE, Permissions::JOB_GRADES_UPDATE, Permissions::JOB_LEVELS_UPDATE, Permissions::BRANCHES_DELETE, Permissions::DEPARTMENTS_DELETE, Permissions::TEAMS_DELETE, Permissions::JOB_GRADES_DELETE, Permissions::JOB_LEVELS_DELETE,
         ]);
 
         $id = $this->postJson("/api/v1/{$uri}", ['code' => 'A1', 'name' => 'First'])
@@ -61,7 +61,7 @@ class OrganizationUnitTest extends TestCase
     #[DataProvider('units')]
     public function test_codes_are_unique_within_a_list_but_editing_keeps_its_own(string $uri, string $class): void
     {
-        $this->actingAsAdminWithPermissions([Permissions::ORGANIZATION_CREATE, Permissions::ORGANIZATION_UPDATE]);
+        $this->actingAsAdminWithPermissions([Permissions::BRANCHES_CREATE, Permissions::DEPARTMENTS_CREATE, Permissions::TEAMS_CREATE, Permissions::JOB_GRADES_CREATE, Permissions::JOB_LEVELS_CREATE, Permissions::BRANCHES_UPDATE, Permissions::DEPARTMENTS_UPDATE, Permissions::TEAMS_UPDATE, Permissions::JOB_GRADES_UPDATE, Permissions::JOB_LEVELS_UPDATE]);
         $existing = $class::factory()->create(['code' => 'DUP']);
 
         $this->postJson("/api/v1/{$uri}", ['code' => 'DUP', 'name' => 'Again'])
@@ -93,7 +93,7 @@ class OrganizationUnitTest extends TestCase
 
     public function test_only_a_branch_carries_phone_and_address(): void
     {
-        $this->actingAsAdminWithPermissions([Permissions::ORGANIZATION_CREATE]);
+        $this->actingAsAdminWithPermissions([Permissions::BRANCHES_CREATE, Permissions::DEPARTMENTS_CREATE, Permissions::TEAMS_CREATE, Permissions::JOB_GRADES_CREATE, Permissions::JOB_LEVELS_CREATE]);
 
         $this->postJson('/api/v1/branches', ['code' => 'MAIN', 'name' => 'Main Campus', 'phone' => '012 345 678', 'address' => 'Phnom Penh'])
             ->assertCreated()
@@ -107,7 +107,7 @@ class OrganizationUnitTest extends TestCase
 
     public function test_departments_open_to_the_organization_permissions(): void
     {
-        $this->actingAsAdminWithPermissions([Permissions::ORGANIZATION_VIEW, Permissions::ORGANIZATION_CREATE]);
+        $this->actingAsAdminWithPermissions([Permissions::ORGANIZATION_VIEW, Permissions::BRANCHES_CREATE, Permissions::DEPARTMENTS_CREATE, Permissions::TEAMS_CREATE, Permissions::JOB_GRADES_CREATE, Permissions::JOB_LEVELS_CREATE]);
 
         $this->postJson('/api/v1/departments', ['code' => 'HR', 'name' => 'Human Resources'])->assertCreated();
         $this->getJson('/api/v1/departments')->assertOk()->assertJsonPath('data.0.code', 'HR');

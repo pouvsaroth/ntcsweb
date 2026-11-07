@@ -417,16 +417,43 @@ final class Permissions
 
     public const POSITIONS_DELETE = 'positions.delete';
 
-    // Organization — HRM > Organization Management's lists (Branch, Team,
-    // Job grade, Job level; also Department, alongside assets.*). One set
-    // for all of them — see OrganizationUnitPolicy.
+    // Organization — HRM > Organization Management: organization.view opens
+    // the tabs; each list has its own Add / Update / Delete (see
+    // OrganizationUnitPolicy). Departments also has its own View: the same
+    // list is Assets > Departments (see DepartmentPolicy).
     public const ORGANIZATION_VIEW = 'organization.view';
 
-    public const ORGANIZATION_CREATE = 'organization.create';
+    public const BRANCHES_CREATE = 'branches.create';
 
-    public const ORGANIZATION_UPDATE = 'organization.update';
+    public const BRANCHES_UPDATE = 'branches.update';
 
-    public const ORGANIZATION_DELETE = 'organization.delete';
+    public const BRANCHES_DELETE = 'branches.delete';
+
+    public const DEPARTMENTS_VIEW = 'departments.view';
+
+    public const DEPARTMENTS_CREATE = 'departments.create';
+
+    public const DEPARTMENTS_UPDATE = 'departments.update';
+
+    public const DEPARTMENTS_DELETE = 'departments.delete';
+
+    public const TEAMS_CREATE = 'teams.create';
+
+    public const TEAMS_UPDATE = 'teams.update';
+
+    public const TEAMS_DELETE = 'teams.delete';
+
+    public const JOB_GRADES_CREATE = 'job-grades.create';
+
+    public const JOB_GRADES_UPDATE = 'job-grades.update';
+
+    public const JOB_GRADES_DELETE = 'job-grades.delete';
+
+    public const JOB_LEVELS_CREATE = 'job-levels.create';
+
+    public const JOB_LEVELS_UPDATE = 'job-levels.update';
+
+    public const JOB_LEVELS_DELETE = 'job-levels.delete';
 
     // Recruitment — HRM > Recruitment's tabs. MANPOWER_REQUESTS_APPROVE/
     // REJECT decide a manpower request in E-Approvals when it has no flow.
@@ -1373,10 +1400,23 @@ final class Permissions
                 self::POSITIONS_DELETE => 'Delete positions',
             ],
             'Organization' => [
-                self::ORGANIZATION_VIEW => 'View branches, departments, teams, job grades and job levels',
-                self::ORGANIZATION_CREATE => 'Create branches, departments, teams, job grades and job levels',
-                self::ORGANIZATION_UPDATE => 'Update branches, departments, teams, job grades and job levels',
-                self::ORGANIZATION_DELETE => 'Delete branches, departments, teams, job grades and job levels',
+                self::ORGANIZATION_VIEW => 'View branches, departments, teams, job grades, job levels and the hierarchy',
+                self::BRANCHES_CREATE => 'Add branches',
+                self::BRANCHES_UPDATE => 'Update branches',
+                self::BRANCHES_DELETE => 'Delete branches',
+                self::DEPARTMENTS_VIEW => 'View departments',
+                self::DEPARTMENTS_CREATE => 'Add departments',
+                self::DEPARTMENTS_UPDATE => 'Update departments',
+                self::DEPARTMENTS_DELETE => 'Delete departments',
+                self::TEAMS_CREATE => 'Add teams',
+                self::TEAMS_UPDATE => 'Update teams',
+                self::TEAMS_DELETE => 'Delete teams',
+                self::JOB_GRADES_CREATE => 'Add job grades',
+                self::JOB_GRADES_UPDATE => 'Update job grades',
+                self::JOB_GRADES_DELETE => 'Delete job grades',
+                self::JOB_LEVELS_CREATE => 'Add job levels',
+                self::JOB_LEVELS_UPDATE => 'Update job levels',
+                self::JOB_LEVELS_DELETE => 'Delete job levels',
             ],
             'Recruitment' => [
                 self::RECRUITMENT_VIEW => 'View recruitment',
@@ -1746,7 +1786,9 @@ final class Permissions
             self::ACADEMIC_REPORTS_VIEW, self::ACADEMIC_REPORTS_EXPORT,
             self::PROGRAMS_VIEW, self::PROGRAMS_CREATE, self::PROGRAMS_UPDATE, self::PROGRAMS_DELETE,
             self::POSITIONS_VIEW, self::POSITIONS_CREATE, self::POSITIONS_UPDATE, self::POSITIONS_DELETE,
-            self::ORGANIZATION_VIEW, self::ORGANIZATION_CREATE, self::ORGANIZATION_UPDATE, self::ORGANIZATION_DELETE,
+            self::ORGANIZATION_VIEW,
+            self::BRANCHES_CREATE, self::BRANCHES_UPDATE, self::BRANCHES_DELETE, self::DEPARTMENTS_VIEW, self::DEPARTMENTS_CREATE, self::DEPARTMENTS_UPDATE, self::DEPARTMENTS_DELETE,
+            self::TEAMS_CREATE, self::TEAMS_UPDATE, self::TEAMS_DELETE, self::JOB_GRADES_CREATE, self::JOB_GRADES_UPDATE, self::JOB_GRADES_DELETE, self::JOB_LEVELS_CREATE, self::JOB_LEVELS_UPDATE, self::JOB_LEVELS_DELETE,
             self::STAFF_VIEW, self::STAFF_CREATE, self::STAFF_UPDATE, self::STAFF_DELETE, self::STAFF_CHANGE_STATUS,
         ];
 

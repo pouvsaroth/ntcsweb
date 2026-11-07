@@ -267,14 +267,14 @@ const MODULES: ModuleEntry[] = [
   tab('Staff', 'Teachers', 'Documents', '/admin/teachers/documents', ['teachers.view'], { create: 'teacher-documents.create', delete: 'teacher-documents.delete' }),
   { name: 'Staff status history', group: 'Staff', actions: { view: 'staff.view' } },
   // Branch … Hierarchy tabs follow these.
-  { name: 'Organization Management', group: 'Staff', parent: 'Organization Management', menu: true, actions: crud('organization') },
+  { name: 'Organization Management', group: 'Staff', parent: 'Organization Management', menu: true, actions: { view: 'organization.view' } },
   tab('Staff', 'Organization Management', 'School', '/admin/organization/school', ['tenant-settings.view'], { view: 'tenant-settings.view', update: 'tenant-settings.update' }),
-  tab('Staff', 'Organization Management', 'Branch', '/admin/organization/branches', ['organization.view']),
-  tab('Staff', 'Organization Management', 'Department', '/admin/organization/departments', ['organization.view', 'assets.view']),
-  tab('Staff', 'Organization Management', 'Team', '/admin/organization/teams', ['organization.view']),
+  tab('Staff', 'Organization Management', 'Branch', '/admin/organization/branches', ['organization.view'], tabCud('branches')),
+  tab('Staff', 'Organization Management', 'Department', '/admin/organization/departments', ['organization.view', 'departments.view'], crud('departments')),
+  tab('Staff', 'Organization Management', 'Team', '/admin/organization/teams', ['organization.view'], tabCud('teams')),
   tab('Staff', 'Organization Management', 'Position', '/admin/organization/positions', ['positions.view'], crud('positions')),
-  tab('Staff', 'Organization Management', 'Job grade', '/admin/organization/job-grades', ['organization.view']),
-  tab('Staff', 'Organization Management', 'Job level', '/admin/organization/job-levels', ['organization.view']),
+  tab('Staff', 'Organization Management', 'Job grade', '/admin/organization/job-grades', ['organization.view'], tabCud('job-grades')),
+  tab('Staff', 'Organization Management', 'Job level', '/admin/organization/job-levels', ['organization.view'], tabCud('job-levels')),
   tab('Staff', 'Organization Management', 'Reporting manager', '/admin/organization/reporting', ['organization.view']),
   tab('Staff', 'Organization Management', 'Organization hierarchy', '/admin/organization/hierarchy', ['organization.view']),
   { name: 'Recruitment', group: 'Staff', parent: 'Recruitment', menu: true, actions: crud('recruitment') },
@@ -410,7 +410,6 @@ const MODULES: ModuleEntry[] = [
   // ── Assets ──
   { name: 'Asset dashboard & Asset reports', group: 'Assets', actions: { view: 'assets.reports.view', export: 'assets.reports.export' } },
   {
-    // Assets > Departments still shares these with Organization (DepartmentPolicy).
     name: 'Assets',
     group: 'Assets',
     actions: {
@@ -428,6 +427,7 @@ const MODULES: ModuleEntry[] = [
   { name: 'Asset issues', group: 'Assets', actions: { view: 'assets.issue.view', create: 'assets.issue.create', update: 'assets.issue.update', resolve: 'assets.issue.resolve' } },
   { name: 'Asset repairs', group: 'Assets', actions: { view: 'assets.repair.view', create: 'assets.repair.create', update: 'assets.repair.update', complete: 'assets.repair.complete' } },
   { name: 'Repair shops', group: 'Assets', actions: crud('repair-shops') },
+  { name: 'Departments (same list as Organization > Department)', group: 'Assets', actions: crud('departments') },
   { name: 'Asset categories', group: 'Assets', actions: crud('asset-categories') },
   { name: 'Asset locations', group: 'Assets', actions: crud('asset-locations') },
   { name: 'Suppliers (same list as Vendors)', group: 'Assets', actions: crud('suppliers') },
