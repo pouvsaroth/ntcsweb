@@ -33,9 +33,9 @@ const auth = useAuthStore()
 const site = useSiteStore()
 const confirmDialog = useConfirmDialogStore()
 
-const canUpdate = computed(() => auth.can('recruitment.update'))
-const canDelete = computed(() => auth.can('recruitment.delete'))
-const canHire = computed(() => auth.can('recruitment.update') && auth.can('staff.create'))
+const canUpdate = computed(() => auth.can('offer-letters.update'))
+const canDelete = computed(() => auth.can('offer-letters.delete'))
+const canHire = computed(() => auth.can('offer-letters.update') && auth.can('staff.create'))
 
 const { items, meta, loading, error, setPage, setSearch, setFilter, fetch } = usePaginatedResource<OfferLetter>((query) => offerLettersService.list(query))
 

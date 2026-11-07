@@ -38,7 +38,7 @@ final class ApplicantController extends Controller
 
     public function store(ApplicantRequest $request): JsonResponse
     {
-        $this->authorize('create', Applicant::class);
+        $this->authorize('create', [Applicant::class, Applicant::class]);
 
         $applicant = $this->applicants->create($request->safe()->except('cv'), $request->file('cv'), $request->user());
 

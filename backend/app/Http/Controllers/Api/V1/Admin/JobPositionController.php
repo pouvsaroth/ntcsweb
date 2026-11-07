@@ -39,7 +39,7 @@ final class JobPositionController extends Controller
 
     public function store(JobPositionRequest $request): JsonResponse
     {
-        $this->authorize('create', JobPosition::class);
+        $this->authorize('create', [JobPosition::class, JobPosition::class]);
 
         $position = JobPosition::query()->create([
             'opened_on' => now()->toDateString(),

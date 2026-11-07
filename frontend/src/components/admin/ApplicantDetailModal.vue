@@ -37,9 +37,10 @@ const { t } = useI18n()
 const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
 
-const canUpdate = computed(() => auth.can('recruitment.update'))
-const canCreate = computed(() => auth.can('recruitment.create'))
-const canDelete = computed(() => auth.can('recruitment.delete'))
+const canUpdate = computed(() => auth.can('applicants.update'))
+/** Documents follow the CV/resume tab. */
+const canCreate = computed(() => auth.can('applicant-documents.create'))
+const canDelete = computed(() => auth.can('applicant-documents.delete'))
 
 const applicant = ref<Applicant | null>(null)
 const loading = ref(false)

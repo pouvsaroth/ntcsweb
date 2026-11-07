@@ -29,9 +29,9 @@ const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
 const router = useRouter()
 
-const canCreate = computed(() => auth.can('recruitment.create'))
-const canUpdate = computed(() => auth.can('recruitment.update'))
-const canDelete = computed(() => auth.can('recruitment.delete'))
+const canCreate = computed(() => auth.can('manpower-requests.create'))
+const canUpdate = computed(() => auth.can('manpower-requests.update'))
+const canDelete = computed(() => auth.can('manpower-requests.delete'))
 
 const { items, meta, loading, error, setPage, setSearch, setFilter, fetch } = usePaginatedResource<ManpowerRequest>((query) => manpowerRequestsService.list(query))
 

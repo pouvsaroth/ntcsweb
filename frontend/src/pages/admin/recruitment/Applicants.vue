@@ -28,8 +28,8 @@ const { t } = useI18n()
 const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
 
-const canCreate = computed(() => auth.can('recruitment.create'))
-const canDelete = computed(() => auth.can('recruitment.delete'))
+const canCreate = computed(() => auth.can('applicants.create'))
+const canDelete = computed(() => auth.can('applicants.delete'))
 
 const { items, meta, loading, error, setPage, setSearch, setFilter, fetch } = usePaginatedResource<Applicant>((query) => applicantsService.list(query))
 

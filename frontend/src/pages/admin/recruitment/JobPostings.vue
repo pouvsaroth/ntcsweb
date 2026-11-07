@@ -27,9 +27,9 @@ const { t } = useI18n()
 const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
 
-const canCreate = computed(() => auth.can('recruitment.create'))
-const canUpdate = computed(() => auth.can('recruitment.update'))
-const canDelete = computed(() => auth.can('recruitment.delete'))
+const canCreate = computed(() => auth.can('job-postings.create'))
+const canUpdate = computed(() => auth.can('job-postings.update'))
+const canDelete = computed(() => auth.can('job-postings.delete'))
 
 const { items, meta, loading, error, setPage, setFilter, fetch } = usePaginatedResource<JobPosting>((query) => jobPostingsService.list(query))
 

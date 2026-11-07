@@ -29,8 +29,9 @@ const { t } = useI18n()
 const router = useRouter()
 const auth = useAuthStore()
 
-const canCreate = computed(() => auth.can('recruitment.create'))
-const canUpdate = computed(() => auth.can('recruitment.update'))
+/** Make offer = Offer letter's Add; Reject = Applicant's Update. */
+const canCreate = computed(() => auth.can('offer-letters.create'))
+const canUpdate = computed(() => auth.can('applicants.update'))
 
 const jobs = ref<JobPosition[]>([])
 const jobId = ref('')

@@ -27,17 +27,17 @@ class ManpowerRequestPolicy
 
     public function create(User $user): bool
     {
-        return $user->hasPermission(Permissions::RECRUITMENT_CREATE);
+        return $user->hasPermission(Permissions::MANPOWER_REQUESTS_CREATE);
     }
 
     public function update(User $user, ManpowerRequest $request): bool
     {
-        return $request->status === ManpowerRequest::STATUS_PENDING && $user->hasPermission(Permissions::RECRUITMENT_UPDATE);
+        return $request->status === ManpowerRequest::STATUS_PENDING && $user->hasPermission(Permissions::MANPOWER_REQUESTS_UPDATE);
     }
 
     public function delete(User $user, ManpowerRequest $request): bool
     {
-        return $request->status !== ManpowerRequest::STATUS_APPROVED && $user->hasPermission(Permissions::RECRUITMENT_DELETE);
+        return $request->status !== ManpowerRequest::STATUS_APPROVED && $user->hasPermission(Permissions::MANPOWER_REQUESTS_DELETE);
     }
 
     public function approve(User $user, ManpowerRequest $request): bool

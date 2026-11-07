@@ -35,7 +35,7 @@ class ManpowerRequestTest extends TestCase
     public function test_submitting_puts_it_in_the_approval_queue_and_notifies_approvers(): void
     {
         $admin = $this->actingAsAdminWithPermissions([
-            Permissions::RECRUITMENT_VIEW, Permissions::RECRUITMENT_CREATE, Permissions::MANPOWER_REQUESTS_APPROVE,
+            Permissions::RECRUITMENT_VIEW, Permissions::MANPOWER_REQUESTS_CREATE, Permissions::JOB_POSITIONS_CREATE, Permissions::JOB_POSTINGS_CREATE, Permissions::APPLICANTS_CREATE, Permissions::APPLICANT_DOCUMENTS_CREATE, Permissions::INTERVIEWS_CREATE, Permissions::OFFER_LETTERS_CREATE, Permissions::MANPOWER_REQUESTS_APPROVE,
         ]);
         $department = Department::factory()->create(['name' => 'Academic']);
 
@@ -66,7 +66,7 @@ class ManpowerRequestTest extends TestCase
 
     public function test_only_a_pending_request_can_be_edited_and_an_approved_one_never_deleted(): void
     {
-        $this->actingAsAdminWithPermissions([Permissions::RECRUITMENT_UPDATE, Permissions::RECRUITMENT_DELETE]);
+        $this->actingAsAdminWithPermissions([Permissions::MANPOWER_REQUESTS_UPDATE, Permissions::JOB_POSITIONS_UPDATE, Permissions::JOB_POSTINGS_UPDATE, Permissions::APPLICANTS_UPDATE, Permissions::INTERVIEWS_UPDATE, Permissions::INTERVIEW_EVALUATIONS_CREATE, Permissions::OFFER_LETTERS_UPDATE, Permissions::MANPOWER_REQUESTS_DELETE, Permissions::JOB_POSITIONS_DELETE, Permissions::JOB_POSTINGS_DELETE, Permissions::APPLICANTS_DELETE, Permissions::APPLICANT_DOCUMENTS_DELETE, Permissions::INTERVIEWS_DELETE, Permissions::INTERVIEW_EVALUATIONS_DELETE, Permissions::OFFER_LETTERS_DELETE]);
         $pending = ManpowerRequest::factory()->create();
         $approved = ManpowerRequest::factory()->create(['status' => ManpowerRequest::STATUS_APPROVED]);
 
@@ -89,7 +89,7 @@ class ManpowerRequestTest extends TestCase
 
     public function test_the_job_and_reason_are_required(): void
     {
-        $this->actingAsAdminWithPermissions([Permissions::RECRUITMENT_CREATE]);
+        $this->actingAsAdminWithPermissions([Permissions::MANPOWER_REQUESTS_CREATE, Permissions::JOB_POSITIONS_CREATE, Permissions::JOB_POSTINGS_CREATE, Permissions::APPLICANTS_CREATE, Permissions::APPLICANT_DOCUMENTS_CREATE, Permissions::INTERVIEWS_CREATE, Permissions::OFFER_LETTERS_CREATE]);
 
         $this->postJson('/api/v1/manpower-requests', ['employment_type' => 'freelance'])
             ->assertUnprocessable()

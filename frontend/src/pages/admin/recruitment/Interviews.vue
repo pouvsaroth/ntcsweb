@@ -39,9 +39,9 @@ const { t } = useI18n()
 const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
 
-const canCreate = computed(() => auth.can('recruitment.create'))
-const canUpdate = computed(() => auth.can('recruitment.update'))
-const canDelete = computed(() => auth.can('recruitment.delete'))
+const canCreate = computed(() => auth.can('interviews.create'))
+const canUpdate = computed(() => auth.can('interviews.update'))
+const canDelete = computed(() => auth.can('interviews.delete'))
 
 const when = ref<'upcoming' | 'past' | ''>('upcoming')
 const jobFilter = ref('')

@@ -55,7 +55,7 @@ final class ApplicantDocumentController extends Controller
 
     public function store(ApplicantDocumentRequest $request): JsonResponse
     {
-        $this->authorize('create', ApplicantDocument::class);
+        $this->authorize('create', [ApplicantDocument::class, ApplicantDocument::class]);
 
         $applicant = Applicant::query()->findOrFail($request->validated('applicant_id'));
         $document = $this->applicants->attach($applicant, $request->file('file'), $request->validated('type'), $request->user());

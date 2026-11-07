@@ -40,7 +40,7 @@ final class OfferLetterController extends Controller
 
     public function store(OfferLetterRequest $request): JsonResponse
     {
-        $this->authorize('create', OfferLetter::class);
+        $this->authorize('create', [OfferLetter::class, OfferLetter::class]);
 
         $offer = $this->offers->create($request->safe()->except('status'), $request->user());
 

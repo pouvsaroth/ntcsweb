@@ -277,21 +277,20 @@ const MODULES: ModuleEntry[] = [
   tab('Staff', 'Organization Management', 'Job level', '/admin/organization/job-levels', ['organization.view'], tabCud('job-levels')),
   tab('Staff', 'Organization Management', 'Reporting manager', '/admin/organization/reporting', ['organization.view']),
   tab('Staff', 'Organization Management', 'Organization hierarchy', '/admin/organization/hierarchy', ['organization.view']),
-  { name: 'Recruitment', group: 'Staff', parent: 'Recruitment', menu: true, actions: crud('recruitment') },
-  tab('Staff', 'Recruitment', 'Manpower request', '/admin/recruitment/manpower-requests', ['recruitment.view'], { approve: 'manpower-requests.approve', reject: 'manpower-requests.reject' }),
-  ...(
-    [
-      ['Job positions', 'job-positions'],
-      ['Job postings', 'job-postings'],
-      ['Applicant management', 'applicants'],
-      ['CV/resume', 'cvs'],
-      ['Interview', 'interviews'],
-      ['Interview evaluation', 'evaluations'],
-      ['Candidate selection', 'selection'],
-      ['Offer letter', 'offers'],
-      ['Recruitment pipeline', 'pipeline'],
-    ] as const
-  ).map(([name, path]) => tab('Staff', 'Recruitment', name, `/admin/recruitment/${path}`, ['recruitment.view'])),
+  { name: 'Recruitment', group: 'Staff', parent: 'Recruitment', menu: true, actions: { view: 'recruitment.view' } },
+  tab('Staff', 'Recruitment', 'Manpower request', '/admin/recruitment/manpower-requests', ['recruitment.view'], { ...tabCud('manpower-requests'), approve: 'manpower-requests.approve', reject: 'manpower-requests.reject' }),
+  tab('Staff', 'Recruitment', 'Job positions', '/admin/recruitment/job-positions', ['recruitment.view'], tabCud('job-positions')),
+  tab('Staff', 'Recruitment', 'Job postings', '/admin/recruitment/job-postings', ['recruitment.view'], tabCud('job-postings')),
+  tab('Staff', 'Recruitment', 'Applicant management', '/admin/recruitment/applicants', ['recruitment.view'], tabCud('applicants')),
+  tab('Staff', 'Recruitment', 'CV/resume', '/admin/recruitment/cvs', ['recruitment.view'], { create: 'applicant-documents.create', delete: 'applicant-documents.delete' }),
+  tab('Staff', 'Recruitment', 'Interview', '/admin/recruitment/interviews', ['recruitment.view'], tabCud('interviews')),
+  // Interviewers always add / delete their own evaluations; these are anyone's.
+  tab('Staff', 'Recruitment', 'Interview evaluation', '/admin/recruitment/evaluations', ['recruitment.view'], { create: 'interview-evaluations.create', delete: 'interview-evaluations.delete' }),
+  // Make offer = Offer letter's Create; Reject = Applicant management's Update.
+  tab('Staff', 'Recruitment', 'Candidate selection', '/admin/recruitment/selection', ['recruitment.view'], { create: 'offer-letters.create', update: 'applicants.update' }),
+  tab('Staff', 'Recruitment', 'Offer letter', '/admin/recruitment/offers', ['recruitment.view'], tabCud('offer-letters')),
+  // Moving a card = Applicant management's Update.
+  tab('Staff', 'Recruitment', 'Recruitment pipeline', '/admin/recruitment/pipeline', ['recruitment.view'], { update: 'applicants.update' }),
   { name: 'Time & Attendance', group: 'Staff', parent: 'Time & Attendance', menu: true, actions: { view: 'staff-attendance.view' } },
   // Editing a day on Employee attendance is Check-in / check-out's Add / Update.
   tab('Staff', 'Time & Attendance', 'Employee attendance', '/admin/time-attendance/employees', ['staff-attendance.view'], { create: 'check-ins.create', update: 'check-ins.update' }),

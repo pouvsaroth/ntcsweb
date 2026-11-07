@@ -459,11 +459,49 @@ final class Permissions
     // REJECT decide a manpower request in E-Approvals when it has no flow.
     public const RECRUITMENT_VIEW = 'recruitment.view';
 
-    public const RECRUITMENT_CREATE = 'recruitment.create';
+    public const MANPOWER_REQUESTS_CREATE = 'manpower-requests.create';
 
-    public const RECRUITMENT_UPDATE = 'recruitment.update';
+    public const MANPOWER_REQUESTS_UPDATE = 'manpower-requests.update';
 
-    public const RECRUITMENT_DELETE = 'recruitment.delete';
+    public const MANPOWER_REQUESTS_DELETE = 'manpower-requests.delete';
+
+    public const JOB_POSITIONS_CREATE = 'job-positions.create';
+
+    public const JOB_POSITIONS_UPDATE = 'job-positions.update';
+
+    public const JOB_POSITIONS_DELETE = 'job-positions.delete';
+
+    public const JOB_POSTINGS_CREATE = 'job-postings.create';
+
+    public const JOB_POSTINGS_UPDATE = 'job-postings.update';
+
+    public const JOB_POSTINGS_DELETE = 'job-postings.delete';
+
+    public const APPLICANTS_CREATE = 'applicants.create';
+
+    public const APPLICANTS_UPDATE = 'applicants.update';
+
+    public const APPLICANTS_DELETE = 'applicants.delete';
+
+    public const APPLICANT_DOCUMENTS_CREATE = 'applicant-documents.create';
+
+    public const APPLICANT_DOCUMENTS_DELETE = 'applicant-documents.delete';
+
+    public const INTERVIEWS_CREATE = 'interviews.create';
+
+    public const INTERVIEWS_UPDATE = 'interviews.update';
+
+    public const INTERVIEWS_DELETE = 'interviews.delete';
+
+    public const INTERVIEW_EVALUATIONS_CREATE = 'interview-evaluations.create';
+
+    public const INTERVIEW_EVALUATIONS_DELETE = 'interview-evaluations.delete';
+
+    public const OFFER_LETTERS_CREATE = 'offer-letters.create';
+
+    public const OFFER_LETTERS_UPDATE = 'offer-letters.update';
+
+    public const OFFER_LETTERS_DELETE = 'offer-letters.delete';
 
     public const MANPOWER_REQUESTS_APPROVE = 'manpower-requests.approve';
 
@@ -1420,9 +1458,28 @@ final class Permissions
             ],
             'Recruitment' => [
                 self::RECRUITMENT_VIEW => 'View recruitment',
-                self::RECRUITMENT_CREATE => 'Create recruitment records',
-                self::RECRUITMENT_UPDATE => 'Update recruitment records',
-                self::RECRUITMENT_DELETE => 'Delete recruitment records',
+                self::MANPOWER_REQUESTS_CREATE => 'Add manpower requests',
+                self::MANPOWER_REQUESTS_UPDATE => 'Update manpower requests',
+                self::MANPOWER_REQUESTS_DELETE => 'Delete manpower requests',
+                self::JOB_POSITIONS_CREATE => 'Add job positions',
+                self::JOB_POSITIONS_UPDATE => 'Update job positions',
+                self::JOB_POSITIONS_DELETE => 'Delete job positions',
+                self::JOB_POSTINGS_CREATE => 'Add job postings',
+                self::JOB_POSTINGS_UPDATE => 'Update job postings',
+                self::JOB_POSTINGS_DELETE => 'Delete job postings',
+                self::APPLICANTS_CREATE => 'Add applicants (Update also moves them in the pipeline / rejects)',
+                self::APPLICANTS_UPDATE => 'Update applicants (Update also moves them in the pipeline / rejects)',
+                self::APPLICANTS_DELETE => 'Delete applicants (Update also moves them in the pipeline / rejects)',
+                self::APPLICANT_DOCUMENTS_CREATE => 'Add applicant CVs / documents',
+                self::APPLICANT_DOCUMENTS_DELETE => 'Delete applicant CVs / documents',
+                self::INTERVIEWS_CREATE => 'Add interviews',
+                self::INTERVIEWS_UPDATE => 'Update interviews',
+                self::INTERVIEWS_DELETE => 'Delete interviews',
+                self::INTERVIEW_EVALUATIONS_CREATE => 'Add any interview evaluation (interviewers always do their own)',
+                self::INTERVIEW_EVALUATIONS_DELETE => 'Delete any interview evaluation (interviewers always do their own)',
+                self::OFFER_LETTERS_CREATE => 'Add offer letters',
+                self::OFFER_LETTERS_UPDATE => 'Update offer letters',
+                self::OFFER_LETTERS_DELETE => 'Delete offer letters',
                 self::MANPOWER_REQUESTS_APPROVE => 'Approve manpower requests',
                 self::MANPOWER_REQUESTS_REJECT => 'Reject manpower requests',
             ],
@@ -1942,9 +1999,28 @@ final class Permissions
                 self::RESIGNATION_REQUESTS_APPROVE,
                 self::RESIGNATION_REQUESTS_REJECT,
                 self::RECRUITMENT_VIEW,
-                self::RECRUITMENT_CREATE,
-                self::RECRUITMENT_UPDATE,
-                self::RECRUITMENT_DELETE,
+                self::MANPOWER_REQUESTS_CREATE,
+                self::MANPOWER_REQUESTS_UPDATE,
+                self::MANPOWER_REQUESTS_DELETE,
+                self::JOB_POSITIONS_CREATE,
+                self::JOB_POSITIONS_UPDATE,
+                self::JOB_POSITIONS_DELETE,
+                self::JOB_POSTINGS_CREATE,
+                self::JOB_POSTINGS_UPDATE,
+                self::JOB_POSTINGS_DELETE,
+                self::APPLICANTS_CREATE,
+                self::APPLICANTS_UPDATE,
+                self::APPLICANTS_DELETE,
+                self::APPLICANT_DOCUMENTS_CREATE,
+                self::APPLICANT_DOCUMENTS_DELETE,
+                self::INTERVIEWS_CREATE,
+                self::INTERVIEWS_UPDATE,
+                self::INTERVIEWS_DELETE,
+                self::INTERVIEW_EVALUATIONS_CREATE,
+                self::INTERVIEW_EVALUATIONS_DELETE,
+                self::OFFER_LETTERS_CREATE,
+                self::OFFER_LETTERS_UPDATE,
+                self::OFFER_LETTERS_DELETE,
                 self::MANPOWER_REQUESTS_APPROVE,
                 self::MANPOWER_REQUESTS_REJECT,
                 self::STAFF_ATTENDANCE_VIEW,

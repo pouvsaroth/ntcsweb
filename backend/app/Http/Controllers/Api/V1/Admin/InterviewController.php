@@ -81,7 +81,7 @@ final class InterviewController extends Controller
 
     public function store(InterviewRequest $request): JsonResponse
     {
-        $this->authorize('create', Interview::class);
+        $this->authorize('create', [Interview::class, Interview::class]);
 
         $interview = $this->interviews->schedule(
             $request->safe()->except('interviewer_ids'),

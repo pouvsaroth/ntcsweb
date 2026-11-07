@@ -32,7 +32,7 @@ final class JobPostingController extends Controller
 
     public function store(JobPostingRequest $request): JsonResponse
     {
-        $this->authorize('create', JobPosting::class);
+        $this->authorize('create', [JobPosting::class, JobPosting::class]);
 
         $posting = JobPosting::query()->create($request->validated());
 

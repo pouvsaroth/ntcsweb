@@ -53,7 +53,7 @@ final class InterviewEvaluationController extends Controller
         $user = $request->user();
         $interview = Interview::query()->with('interviewerRows')->findOrFail($request->validated('interview_id'));
 
-        abort_unless($interview->isInterviewer($user) || $user->hasPermission(Permissions::RECRUITMENT_UPDATE), 403, 'Only an interviewer on this interview can evaluate it.');
+        abort_unless($interview->isInterviewer($user) || $user->hasPermission(Permissions::INTERVIEW_EVALUATIONS_CREATE), 403, 'Only an interviewer on this interview can evaluate it.');
 
         if ($interview->status === 'cancelled') {
             return ApiResponse::error('This interview was cancelled.', 422);
@@ -78,7 +78,7 @@ final class InterviewEvaluationController extends Controller
     public function destroy(Request $request, InterviewEvaluation $interviewEvaluation): JsonResponse
     {
         $user = $request->user();
-        abort_unless((int) $interviewEvaluation->evaluator_id === (int) $user->getKey() || $user->hasPermission(Permissions::RECRUITMENT_DELETE), 403);
+        abort_unless((int) $interviewEvaluation->evaluator_id === (int) $user->getKey() || $user->hasPermission(Permissions::INTERVIEW_EVALUATIONS_DELETE), 403);
 
         $interviewEvaluation->delete();
 

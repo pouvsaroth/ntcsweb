@@ -24,7 +24,7 @@ class OfferLetterTest extends TestCase
     use HasAcademicAdmin, RefreshDatabase;
 
     private const ALL = [
-        Permissions::RECRUITMENT_VIEW, Permissions::RECRUITMENT_CREATE, Permissions::RECRUITMENT_UPDATE, Permissions::RECRUITMENT_DELETE,
+        Permissions::RECRUITMENT_VIEW, Permissions::MANPOWER_REQUESTS_CREATE, Permissions::JOB_POSITIONS_CREATE, Permissions::JOB_POSTINGS_CREATE, Permissions::APPLICANTS_CREATE, Permissions::APPLICANT_DOCUMENTS_CREATE, Permissions::INTERVIEWS_CREATE, Permissions::OFFER_LETTERS_CREATE, Permissions::MANPOWER_REQUESTS_UPDATE, Permissions::JOB_POSITIONS_UPDATE, Permissions::JOB_POSTINGS_UPDATE, Permissions::APPLICANTS_UPDATE, Permissions::INTERVIEWS_UPDATE, Permissions::INTERVIEW_EVALUATIONS_CREATE, Permissions::OFFER_LETTERS_UPDATE, Permissions::MANPOWER_REQUESTS_DELETE, Permissions::JOB_POSITIONS_DELETE, Permissions::JOB_POSTINGS_DELETE, Permissions::APPLICANTS_DELETE, Permissions::APPLICANT_DOCUMENTS_DELETE, Permissions::INTERVIEWS_DELETE, Permissions::INTERVIEW_EVALUATIONS_DELETE, Permissions::OFFER_LETTERS_DELETE,
         Permissions::STAFF_CREATE,
     ];
 

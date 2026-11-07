@@ -22,7 +22,7 @@ import { formatDate } from '@/utils/date'
 const { t } = useI18n()
 const auth = useAuthStore()
 
-const canUpdate = computed(() => auth.can('recruitment.update'))
+const canUpdate = computed(() => auth.can('applicants.update'))
 
 const jobs = ref<JobPosition[]>([])
 const jobFilter = ref('')
