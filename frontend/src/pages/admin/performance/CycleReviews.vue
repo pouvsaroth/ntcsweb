@@ -40,7 +40,11 @@ import { ApiRequestError } from '@/types/api'
 const { t } = useI18n()
 const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
-const canManage = computed(() => auth.can('performance.manage'))
+const canCreate = computed(() => auth.can('performance-reviews.create'))
+const canUpdate = computed(() => auth.can('performance-reviews.update'))
+const canDelete = computed(() => auth.can('performance-reviews.delete'))
+/** Any row action (edit or delete). */
+const canManage = computed(() => canUpdate.value || canDelete.value)
 
 const cycles = ref<PerformanceCycle[]>([])
 const cycleId = ref('')
@@ -186,7 +190,7 @@ onMounted(() => loadCycles())
         <h2 class="text-sm font-semibold text-neutral-800">{{ t('admin.performance.review.reviewsTitle') }}</h2>
         <p class="text-sm text-neutral-500">{{ t('admin.performance.review.reviewsHint') }}</p>
       </div>
-      <BaseButton v-if="canManage && cycleId" @click="openLaunch">{{ t('admin.performance.review.launch') }}</BaseButton>
+      <BaseButton v-if="canCreate && cycleId" @click="openLaunch">{{ t('admin.performance.review.launch') }}</BaseButton>
     </div>
 
     <div class="mb-3 flex flex-wrap items-center gap-3">
@@ -280,18 +284,18 @@ onMounted(() => loadCycles())
         <BaseAlert v-if="detailError" variant="danger" class="mb-3">{{ detailError }}</BaseAlert>
         <div class="mb-4 flex flex-wrap items-end gap-3 rounded-lg bg-neutral-50 p-3">
           <BaseBadge :variant="reviewStatusVariant[open.status]">{{ t(`admin.performance.review.status.${open.status}`) }}</BaseBadge>
-          <SearchableSelect v-if="canManage" v-model="reviewerId" class="min-w-56 flex-1" :options="staffOptions" :label="t('admin.performance.review.manager')" />
+          <SearchableSelect v-if="canUpdate" v-model="reviewerId" class="min-w-56 flex-1" :options="staffOptions" :label="t('admin.performance.review.manager')" />
           <span v-else class="text-sm text-neutral-700">{{ t('admin.performance.review.manager') }}: {{ open.reviewer?.name ?? '—' }}</span>
-          <BaseButton v-if="canManage && reviewerId !== String(open.reviewer?.id ?? '')" size="sm" :loading="busy" @click="saveReviewer">{{ t('common.save') }}</BaseButton>
+          <BaseButton v-if="canUpdate && reviewerId !== String(open.reviewer?.id ?? '')" size="sm" :loading="busy" @click="saveReviewer">{{ t('common.save') }}</BaseButton>
         </div>
         <ReviewForm :review="open" side="hr" :editable="false" />
       </template>
       <template #footer>
         <template v-if="open && canManage">
-          <BaseButton v-if="open.status !== 'completed'" variant="outline" :disabled="busy" @click="openKpis">{{ t('admin.performance.review.editKpis') }}</BaseButton>
-          <BaseButton v-if="open.status === 'self_assessment'" variant="outline" :loading="busy" @click="sendToManager">{{ t('admin.performance.review.skipSelf') }}</BaseButton>
-          <BaseButton v-if="open.status === 'completed'" variant="outline" :loading="busy" @click="reopen">{{ t('admin.performance.review.reopen') }}</BaseButton>
-          <BaseButton v-if="open.status !== 'completed'" variant="danger" :disabled="busy" @click="remove">{{ t('admin.organization.delete') }}</BaseButton>
+          <BaseButton v-if="canUpdate && open.status !== 'completed'" variant="outline" :disabled="busy" @click="openKpis">{{ t('admin.performance.review.editKpis') }}</BaseButton>
+          <BaseButton v-if="canUpdate && open.status === 'self_assessment'" variant="outline" :loading="busy" @click="sendToManager">{{ t('admin.performance.review.skipSelf') }}</BaseButton>
+          <BaseButton v-if="canUpdate && open.status === 'completed'" variant="outline" :loading="busy" @click="reopen">{{ t('admin.performance.review.reopen') }}</BaseButton>
+          <BaseButton v-if="canDelete && open.status !== 'completed'" variant="danger" :disabled="busy" @click="remove">{{ t('admin.organization.delete') }}</BaseButton>
         </template>
         <BaseButton variant="outline" @click="open = null">{{ t('common.close') }}</BaseButton>
       </template>

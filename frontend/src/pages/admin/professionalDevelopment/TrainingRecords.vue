@@ -31,7 +31,7 @@ import { attendanceVariant, resultVariant, trainingDays } from '@/utils/professi
  */
 const { t } = useI18n()
 const auth = useAuthStore()
-const canManage = computed(() => auth.can('professional-development.manage'))
+const canManage = computed(() => auth.can('trainings.create'))
 
 const staffId = ref('')
 const year = ref('')

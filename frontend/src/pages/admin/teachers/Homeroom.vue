@@ -13,7 +13,7 @@ import { ApiRequestError } from '@/types/api'
 /** HRM > Teacher > Homeroom: the homeroom teacher of each class; changes save at once. */
 const { t } = useI18n()
 const auth = useAuthStore()
-const canManage = computed(() => auth.can('teachers.manage'))
+const canManage = computed(() => auth.can('teacher-homeroom.update'))
 
 const teachers = ref<Teacher[]>([])
 const years = ref<TeacherOptions['academic_years']>([])

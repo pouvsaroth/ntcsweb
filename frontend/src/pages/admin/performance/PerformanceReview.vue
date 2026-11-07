@@ -34,7 +34,11 @@ import { formatDate } from '@/utils/date'
 const { t } = useI18n()
 const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
-const canManage = computed(() => auth.can('performance.manage'))
+const canCreate = computed(() => auth.can('performance-reviews.create'))
+const canUpdate = computed(() => auth.can('performance-reviews.update'))
+const canDelete = computed(() => auth.can('performance-reviews.delete'))
+/** Any row action (edit or delete). */
+const canManage = computed(() => canUpdate.value || canDelete.value)
 
 const { items, meta, loading, error, setPage, fetch } = usePaginatedResource<PerformanceCycle>((query) => performanceCyclesService.list(query))
 const actionError = ref<string | null>(null)
@@ -156,7 +160,7 @@ onMounted(async () => {
           <h2 class="text-sm font-semibold text-neutral-800">{{ t('admin.performance.weights.title') }}</h2>
           <p class="text-sm text-neutral-500">{{ t('admin.performance.weights.hint') }}</p>
         </div>
-        <BaseButton v-if="canManage && weights" size="sm" variant="outline" @click="openWeights">{{ t('admin.performance.edit') }}</BaseButton>
+        <BaseButton v-if="canUpdate && weights" size="sm" variant="outline" @click="openWeights">{{ t('admin.performance.edit') }}</BaseButton>
       </div>
       <dl v-if="weights" class="grid grid-cols-3 gap-3 text-sm">
         <div><dt class="text-neutral-500">{{ t('admin.performance.tabs.kpi') }}</dt><dd class="text-lg font-semibold">{{ weights.kpi_weight }}%</dd></div>
@@ -172,7 +176,7 @@ onMounted(async () => {
           <h2 class="text-sm font-semibold text-neutral-800">{{ t('admin.performance.cycles.title') }}</h2>
           <p class="text-sm text-neutral-500">{{ t('admin.performance.cycles.hint') }}</p>
         </div>
-        <BaseButton v-if="canManage" @click="open(null)">{{ t('admin.performance.cycles.add') }}</BaseButton>
+        <BaseButton v-if="canCreate" @click="open(null)">{{ t('admin.performance.cycles.add') }}</BaseButton>
       </div>
 
       <BaseAlert v-if="error || actionError" variant="danger" class="mb-3">{{ error || actionError }}</BaseAlert>
@@ -188,8 +192,8 @@ onMounted(async () => {
             <p class="text-xs text-neutral-600">{{ formatDate(cycle.start_date) }} – {{ formatDate(cycle.end_date) }}</p>
             <p class="text-xs text-neutral-500">{{ cycle.evaluation_form?.name ?? t('admin.performance.cycles.noForm') }} · {{ t('admin.performance.cycles.goalsN', { count: cycle.goals_count ?? 0 }) }}</p>
             <div v-if="canManage" class="mt-2 flex justify-end gap-3">
-              <EditIconButton @click="open(cycle)" />
-              <button v-if="cycle.status === 'draft'" type="button" class="text-sm font-medium text-danger-600" @click="remove(cycle)">{{ t('admin.organization.delete') }}</button>
+              <EditIconButton v-if="canUpdate" @click="open(cycle)" />
+              <button v-if="canDelete && (cycle.status === 'draft')" type="button" class="text-sm font-medium text-danger-600" @click="remove(cycle)">{{ t('admin.organization.delete') }}</button>
             </div>
           </div>
         </div>
@@ -219,8 +223,8 @@ onMounted(async () => {
                 <td class="px-4 py-3"><BaseBadge :variant="statusVariant[cycle.status]">{{ t(`admin.performance.cycles.status.${cycle.status}`) }}</BaseBadge></td>
                 <td v-if="canManage" class="px-4 py-3">
                   <div class="flex justify-end gap-2">
-                    <EditIconButton @click="open(cycle)" />
-                    <button v-if="cycle.status === 'draft'" type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(cycle)">{{ t('admin.organization.delete') }}</button>
+                    <EditIconButton v-if="canUpdate" @click="open(cycle)" />
+                    <button v-if="canDelete && (cycle.status === 'draft')" type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(cycle)">{{ t('admin.organization.delete') }}</button>
                   </div>
                 </td>
               </tr>

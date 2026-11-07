@@ -23,7 +23,11 @@ import { ApiRequestError } from '@/types/api'
 const { t } = useI18n()
 const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
-const canManage = computed(() => auth.can('teachers.manage'))
+const canCreate = computed(() => auth.can('teacher-assignments.create'))
+const canUpdate = computed(() => auth.can('teacher-assignments.update'))
+const canDelete = computed(() => auth.can('teacher-assignments.delete'))
+/** Any row action (edit or delete). */
+const canManage = computed(() => canUpdate.value || canDelete.value)
 
 const teachers = ref<Teacher[]>([])
 const options = ref<TeacherOptions>({ classes: [], subjects: [], academic_years: [] })
@@ -140,7 +144,7 @@ onMounted(async () => {
       <BaseSelect class="w-56" :model-value="filter.staff_id" :options="[all(t('teacherMgmt.allTeachers')), ...teacherOptions]" @update:model-value="setFilter('staff_id', $event)" />
       <BaseSelect class="w-48" :model-value="filter.class_id" :options="[all(t('teacherMgmt.allClasses')), ...classOptions]" @update:model-value="setFilter('class_id', $event)" />
       <BaseSpinner v-if="loading" class="h-4 w-4" />
-      <BaseButton v-if="canManage" class="ml-auto" :disabled="teachers.length === 0" @click="open(null)">{{ t('teacherMgmt.assign.add') }}</BaseButton>
+      <BaseButton v-if="canCreate" class="ml-auto" :disabled="teachers.length === 0" @click="open(null)">{{ t('teacherMgmt.assign.add') }}</BaseButton>
     </div>
 
     <BaseAlert v-if="error" variant="danger" class="mb-4">{{ error }}</BaseAlert>
@@ -154,8 +158,8 @@ onMounted(async () => {
         <p class="text-xs text-neutral-500">{{ [row.class, row.subject, row.academic_year].filter(Boolean).join(' · ') }}</p>
         <p v-if="row.hours_per_week != null" class="text-xs text-neutral-500">{{ t('teacherMgmt.hoursWeekN', { hours: row.hours_per_week }) }}</p>
         <div v-if="canManage" class="mt-2 flex justify-end gap-3">
-          <EditIconButton @click="open(row)" />
-          <button type="button" class="text-sm font-medium text-danger-600" @click="remove(row)">{{ t('teacherMgmt.delete') }}</button>
+          <EditIconButton v-if="canUpdate" @click="open(row)" />
+          <button v-if="canDelete" type="button" class="text-sm font-medium text-danger-600" @click="remove(row)">{{ t('teacherMgmt.delete') }}</button>
         </div>
       </div>
     </div>
@@ -169,8 +173,8 @@ onMounted(async () => {
         <template #cell-hours="{ row }">{{ row.hours_per_week ?? '—' }}</template>
         <template #cell-actions="{ row }">
           <div class="flex justify-end gap-2">
-            <EditIconButton @click="open(row as Assignment)" />
-            <button type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row as Assignment)">{{ t('teacherMgmt.delete') }}</button>
+            <EditIconButton v-if="canUpdate" @click="open(row as Assignment)" />
+            <button v-if="canDelete" type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row as Assignment)">{{ t('teacherMgmt.delete') }}</button>
           </div>
         </template>
       </DataTable>

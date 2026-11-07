@@ -24,7 +24,8 @@ import { trainingDays } from '@/utils/professionalDevelopment'
 const { t } = useI18n()
 const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
-const canManage = computed(() => auth.can('professional-development.manage'))
+const canIssue = computed(() => auth.can('training-certificates.create'))
+const canRevoke = computed(() => auth.can('training-certificates.delete'))
 
 const state = ref<CertificateState>('issued')
 const staffId = ref('')
@@ -154,10 +155,10 @@ onMounted(async () => {
         <template #cell-actions="{ row }">
           <div class="flex items-center justify-end gap-3 text-sm">
             <button v-if="row.certificate?.has_file" type="button" class="font-medium text-secondary-700 hover:underline" @click="download(row)">{{ t('proDev.certificates.download') }}</button>
-            <button v-if="canManage" type="button" class="font-medium text-secondary-700 hover:underline" @click="openIssue(row)">
+            <button v-if="canIssue" type="button" class="font-medium text-secondary-700 hover:underline" @click="openIssue(row)">
               {{ row.certificate ? t('proDev.edit') : t('proDev.certificates.issue') }}
             </button>
-            <button v-if="canManage && row.certificate" type="button" class="font-medium text-danger-600 hover:text-red-700" @click="revoke(row)">{{ t('proDev.certificates.revoke') }}</button>
+            <button v-if="canRevoke && row.certificate" type="button" class="font-medium text-danger-600 hover:text-red-700" @click="revoke(row)">{{ t('proDev.certificates.revoke') }}</button>
           </div>
         </template>
       </DataTable>
@@ -181,10 +182,10 @@ onMounted(async () => {
         </p>
         <div class="mt-2 flex flex-wrap gap-3 text-sm">
           <button v-if="row.certificate?.has_file" type="button" class="font-medium text-secondary-700 hover:underline" @click="download(row)">{{ t('proDev.certificates.download') }}</button>
-          <button v-if="canManage" type="button" class="font-medium text-secondary-700 hover:underline" @click="openIssue(row)">
+          <button v-if="canIssue" type="button" class="font-medium text-secondary-700 hover:underline" @click="openIssue(row)">
             {{ row.certificate ? t('proDev.edit') : t('proDev.certificates.issue') }}
           </button>
-          <button v-if="canManage && row.certificate" type="button" class="font-medium text-danger-600" @click="revoke(row)">{{ t('proDev.certificates.revoke') }}</button>
+          <button v-if="canRevoke && row.certificate" type="button" class="font-medium text-danger-600" @click="revoke(row)">{{ t('proDev.certificates.revoke') }}</button>
         </div>
       </div>
     </div>

@@ -97,7 +97,7 @@ final class ClassroomObservationController extends Controller
     /** Teachers, observers, forms, classes (with their teachers) and subjects, for scheduling. */
     public function options(Request $request): JsonResponse
     {
-        abort_unless($this->access->canManage($request->user()), 403);
+        abort_unless($this->access->can($request->user(), ProfessionalDevelopmentAccess::OBSERVATIONS, 'create') || $this->access->canManage($request->user(), ProfessionalDevelopmentAccess::OBSERVATIONS), 403);
 
         $teacherPositions = Position::teacherPositionIds();
         $staff = Staff::query()->active()->orderBy('first_name')->orderBy('last_name')->get(['id', 'first_name', 'last_name', 'employee_code', 'position_id']);
@@ -118,7 +118,7 @@ final class ClassroomObservationController extends Controller
     public function store(Request $request): JsonResponse
     {
         $user = $request->user();
-        abort_unless($this->access->canManage($user), 403);
+        abort_unless($this->access->can($user, ProfessionalDevelopmentAccess::OBSERVATIONS, 'create'), 403);
         $data = $this->validated($request, true);
 
         $observation = DB::connection('tenant')->transaction(function () use ($data, $user) {
@@ -146,7 +146,7 @@ final class ClassroomObservationController extends Controller
     public function update(Request $request, ClassroomObservation $observation): JsonResponse
     {
         $user = $request->user();
-        abort_unless($this->access->canManage($user), 403);
+        abort_unless($this->access->canManage($user, ProfessionalDevelopmentAccess::OBSERVATIONS), 403);
         $data = $this->validated($request, false);
 
         DB::connection('tenant')->transaction(function () use ($observation, $data) {
@@ -172,7 +172,7 @@ final class ClassroomObservationController extends Controller
         $user = $request->user();
         $me = $this->access->staffId($user);
         $isObserver = $me !== null && $me === (int) $observation->observer_staff_id;
-        abort_unless($this->access->canManage($user) || $isObserver, 403);
+        abort_unless($this->access->canManage($user, ProfessionalDevelopmentAccess::OBSERVATIONS) || $isObserver, 403);
         abort_if($observation->status === 'cancelled', 422, __('This observation was cancelled.'));
         abort_if($observation->acknowledged_at !== null, 422, __('The teacher has already acknowledged this observation.'));
 
@@ -225,7 +225,7 @@ final class ClassroomObservationController extends Controller
 
     public function destroy(Request $request, ClassroomObservation $observation): JsonResponse
     {
-        abort_unless($this->access->canManage($request->user()), 403);
+        abort_unless($this->access->can($request->user(), ProfessionalDevelopmentAccess::OBSERVATIONS, 'delete'), 403);
 
         $observation->delete();
 
@@ -304,7 +304,7 @@ final class ClassroomObservationController extends Controller
     {
         $isTeacher = $me !== null && $me === (int) $o->staff_id;
         $isObserver = $me !== null && $me === (int) $o->observer_staff_id;
-        $canManage = $this->access->canManage($user);
+        $canManage = $this->access->canManage($user, ProfessionalDevelopmentAccess::OBSERVATIONS);
         // The observed teacher sees the outcome only once it is completed.
         $showOutcome = $o->status === 'completed' || $canManage || $isObserver || $this->access->canViewAll($user);
         $person = fn (?Staff $s) => $s ? ['id' => $s->id, 'name' => $s->fullName(), 'employee_code' => $s->employee_code] : null;
@@ -339,6 +339,7 @@ final class ClassroomObservationController extends Controller
             'can' => [
                 'record' => ($canManage || $isObserver) && $o->status !== 'cancelled' && $o->acknowledged_at === null,
                 'manage' => $canManage,
+                'delete' => $this->access->can($user, ProfessionalDevelopmentAccess::OBSERVATIONS, 'delete'),
                 'acknowledge' => $isTeacher && $o->status === 'completed' && $o->acknowledged_at === null,
             ],
         ];

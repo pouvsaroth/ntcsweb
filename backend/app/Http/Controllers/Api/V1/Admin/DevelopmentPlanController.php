@@ -93,7 +93,7 @@ final class DevelopmentPlanController extends Controller
     /** Trainings and (for one staff member) coachings a goal can point to. */
     public function options(Request $request): JsonResponse
     {
-        abort_unless($this->access->canManage($request->user()), 403);
+        abort_unless($this->access->can($request->user(), ProfessionalDevelopmentAccess::PLANS, 'create') || $this->access->canManage($request->user(), ProfessionalDevelopmentAccess::PLANS), 403);
 
         $trainings = Training::query()->where('status', '!=', 'cancelled')
             ->where('start_date', '>=', now()->subYears(2)->toDateString())
@@ -112,7 +112,7 @@ final class DevelopmentPlanController extends Controller
     public function store(Request $request): JsonResponse
     {
         $user = $request->user();
-        abort_unless($this->access->canManage($user), 403);
+        abort_unless($this->access->can($user, ProfessionalDevelopmentAccess::PLANS, 'create'), 403);
         $data = $this->validated($request, true);
 
         $plan = DB::connection('tenant')->transaction(function () use ($data, $user) {
@@ -151,7 +151,7 @@ final class DevelopmentPlanController extends Controller
         $user = $request->user();
         $wasDraft = $plan->status === 'draft';
 
-        if ($this->access->canManage($user)) {
+        if ($this->access->canManage($user, ProfessionalDevelopmentAccess::PLANS)) {
             $data = $this->validated($request, false);
         } else {
             abort_unless($this->isReviewer($plan, $user) && $plan->status !== 'draft', 403);
@@ -181,7 +181,7 @@ final class DevelopmentPlanController extends Controller
 
     public function destroy(Request $request, DevelopmentPlan $plan): JsonResponse
     {
-        abort_unless($this->access->canManage($request->user()), 403);
+        abort_unless($this->access->can($request->user(), ProfessionalDevelopmentAccess::PLANS, 'delete'), 403);
 
         $plan->delete();
 
@@ -295,7 +295,7 @@ final class DevelopmentPlanController extends Controller
     private function canUpdateProgress(DevelopmentPlan $plan, User $user): bool
     {
         return $plan->status === 'active'
-            && ($this->access->canManage($user) || $this->isOwner($plan, $user) || $this->isReviewer($plan, $user));
+            && ($this->access->canManage($user, ProfessionalDevelopmentAccess::PLANS) || $this->isOwner($plan, $user) || $this->isReviewer($plan, $user));
     }
 
     /** @return array<string, mixed> */
@@ -338,8 +338,9 @@ final class DevelopmentPlanController extends Controller
             'goals_done' => (int) ($attrs['goals_done_count'] ?? 0),
             'progress' => $avg !== null ? (int) round((float) $avg) : 0,
             'can' => [
-                'manage' => $this->access->canManage($user),
-                'review' => $p->status !== 'draft' && ($this->access->canManage($user) || $this->isReviewer($p, $user)),
+                'manage' => $this->access->canManage($user, ProfessionalDevelopmentAccess::PLANS),
+                'delete' => $this->access->can($user, ProfessionalDevelopmentAccess::PLANS, 'delete'),
+                'review' => $p->status !== 'draft' && ($this->access->canManage($user, ProfessionalDevelopmentAccess::PLANS) || $this->isReviewer($p, $user)),
                 'progress' => $this->canUpdateProgress($p, $user),
             ],
         ];

@@ -39,7 +39,11 @@ const { t } = useI18n()
 const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
 const canViewAll = computed(() => auth.can('professional-development.view'))
-const canManage = computed(() => auth.can('professional-development.manage'))
+const canCreate = computed(() => auth.can('classroom-observations.create'))
+const canUpdate = computed(() => auth.can('classroom-observations.update'))
+const canDelete = computed(() => auth.can('classroom-observations.delete'))
+/** Any row action (edit or delete). */
+const canManage = computed(() => canUpdate.value || canDelete.value)
 
 const view = ref<'observations' | 'forms'>('observations')
 const mine = ref<ObservationMine>('')
@@ -224,9 +228,9 @@ onMounted(refresh)
           class="block w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200 sm:max-w-xs"
           @input="setSearch(($event.target as HTMLInputElement).value)"
         />
-        <BaseButton v-if="canManage" class="sm:ml-auto" @click="openSchedule(null)">{{ t('proDev.observations.add') }}</BaseButton>
+        <BaseButton v-if="canCreate" class="sm:ml-auto" @click="openSchedule(null)">{{ t('proDev.observations.add') }}</BaseButton>
       </template>
-      <BaseButton v-else-if="canManage" class="sm:ml-auto" @click="openForm(null)">{{ t('proDev.forms.add') }}</BaseButton>
+      <BaseButton v-else-if="canCreate" class="sm:ml-auto" @click="openForm(null)">{{ t('proDev.forms.add') }}</BaseButton>
     </div>
 
     <!-- Observations -->
@@ -295,8 +299,8 @@ onMounted(refresh)
             <li v-if="f.criteria.length > 4" class="list-none text-xs text-neutral-500">{{ t('proDev.more', { count: f.criteria.length - 4 }) }}</li>
           </ul>
           <div v-if="canManage" class="mt-3 flex gap-3 text-sm">
-            <button type="button" class="font-medium text-secondary-700 hover:underline" @click="openForm(f)">{{ t('proDev.edit') }}</button>
-            <button type="button" class="font-medium text-danger-600 hover:text-red-700" @click="removeForm(f)">{{ t('proDev.delete') }}</button>
+            <button v-if="canUpdate" type="button" class="font-medium text-secondary-700 hover:underline" @click="openForm(f)">{{ t('proDev.edit') }}</button>
+            <button v-if="canDelete" type="button" class="font-medium text-danger-600 hover:text-red-700" @click="removeForm(f)">{{ t('proDev.delete') }}</button>
           </div>
         </div>
       </div>

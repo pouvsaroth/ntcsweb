@@ -27,7 +27,7 @@ class DevelopmentPlanReportTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->manager = $this->actingAsAdminWithPermissions([Permissions::PROFESSIONAL_DEVELOPMENT_VIEW, Permissions::PROFESSIONAL_DEVELOPMENT_MANAGE]);
+        $this->manager = $this->actingAsAdminWithPermissions([Permissions::PROFESSIONAL_DEVELOPMENT_VIEW, Permissions::TRAININGS_CREATE, Permissions::TRAININGS_UPDATE, Permissions::TRAININGS_DELETE, Permissions::TRAINING_CERTIFICATES_CREATE, Permissions::TRAINING_CERTIFICATES_DELETE, Permissions::CLASSROOM_OBSERVATIONS_CREATE, Permissions::CLASSROOM_OBSERVATIONS_UPDATE, Permissions::CLASSROOM_OBSERVATIONS_DELETE, Permissions::COACHING_CREATE, Permissions::COACHING_UPDATE, Permissions::COACHING_DELETE, Permissions::DEVELOPMENT_PLANS_CREATE, Permissions::DEVELOPMENT_PLANS_UPDATE, Permissions::DEVELOPMENT_PLANS_DELETE]);
     }
 
     /** A staff member with a login that holds only the self-service permission. */

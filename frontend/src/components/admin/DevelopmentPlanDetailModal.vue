@@ -238,8 +238,8 @@ const fieldClass =
 
     <template #footer>
       <div v-if="plan" class="flex w-full flex-wrap justify-end gap-2">
+        <BaseButton v-if="plan.can.delete" variant="outline" class="mr-auto text-danger-600" @click="remove">{{ t('proDev.delete') }}</BaseButton>
         <template v-if="plan.can.manage">
-          <BaseButton variant="outline" class="mr-auto text-danger-600" @click="remove">{{ t('proDev.delete') }}</BaseButton>
           <BaseButton variant="outline" @click="emit('edit', plan)">{{ t('proDev.edit') }}</BaseButton>
           <BaseButton v-if="plan.status === 'active'" variant="outline" :loading="saving" @click="setStatus('cancelled')">{{ t('proDev.plans.cancel') }}</BaseButton>
           <BaseButton v-if="plan.status === 'draft'" :loading="saving" @click="setStatus('active')">{{ t('proDev.plans.share') }}</BaseButton>
@@ -250,7 +250,7 @@ const fieldClass =
             {{ t('proDev.plans.reopen') }}
           </BaseButton>
         </template>
-        <BaseButton v-if="!plan.can.manage && !plan.can.review" variant="outline" @click="emit('update:modelValue', false)">{{ t('common.close') }}</BaseButton>
+        <BaseButton v-if="!plan.can.manage && !plan.can.delete && !plan.can.review" variant="outline" @click="emit('update:modelValue', false)">{{ t('common.close') }}</BaseButton>
       </div>
     </template>
   </BaseModal>

@@ -31,7 +31,7 @@ import { coachingStatusVariant } from '@/utils/professionalDevelopment'
 const { t } = useI18n()
 const auth = useAuthStore()
 const canViewAll = computed(() => auth.can('professional-development.view'))
-const canManage = computed(() => auth.can('professional-development.manage'))
+const canManage = computed(() => auth.can('coaching.create'))
 
 const mine = ref<CoachingMine>('')
 const status = ref('active')

@@ -86,7 +86,7 @@ final class TrainingRecordController extends Controller
     /** Issue (or edit) a certificate; the number is made up when left blank; a file is optional. */
     public function issueCertificate(Request $request, TrainingParticipant $participant): JsonResponse
     {
-        $this->authorizeManage($request);
+        $this->authorizeManage($request, Permissions::TRAINING_CERTIFICATES_CREATE);
 
         $data = $request->validate([
             'certificate_no' => ['nullable', 'string', 'max:100'],
@@ -114,7 +114,7 @@ final class TrainingRecordController extends Controller
 
     public function revokeCertificate(Request $request, TrainingParticipant $participant): JsonResponse
     {
-        $this->authorizeManage($request);
+        $this->authorizeManage($request, Permissions::TRAINING_CERTIFICATES_DELETE);
 
         $this->certificates->revoke($participant);
 
@@ -164,8 +164,8 @@ final class TrainingRecordController extends Controller
         abort_unless($request->user()->hasPermission(Permissions::PROFESSIONAL_DEVELOPMENT_VIEW), 403);
     }
 
-    private function authorizeManage(Request $request): void
+    private function authorizeManage(Request $request, string $permission): void
     {
-        abort_unless($request->user()->hasPermission(Permissions::PROFESSIONAL_DEVELOPMENT_MANAGE), 403);
+        abort_unless($request->user()->hasPermission($permission), 403);
     }
 }

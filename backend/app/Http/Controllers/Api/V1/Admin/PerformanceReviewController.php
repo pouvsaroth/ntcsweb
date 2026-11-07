@@ -77,7 +77,7 @@ final class PerformanceReviewController extends Controller
 
     public function launch(Request $request, PerformanceCycle $performanceCycle): JsonResponse
     {
-        $this->authorize('create', PerformanceReview::class);
+        $this->authorize('create', [PerformanceReview::class, PerformanceReview::class]);
 
         $data = $request->validate([
             'staff_ids' => ['required', 'array', 'min:1', 'max:1000'],

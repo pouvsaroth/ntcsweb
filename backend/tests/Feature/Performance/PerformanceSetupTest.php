@@ -20,7 +20,7 @@ class PerformanceSetupTest extends TestCase
 {
     use HasAcademicAdmin, RefreshDatabase;
 
-    private const ALL = [Permissions::PERFORMANCE_VIEW, Permissions::PERFORMANCE_MANAGE];
+    private const ALL = [Permissions::PERFORMANCE_VIEW, Permissions::PERFORMANCE_KPIS_CREATE, Permissions::PERFORMANCE_KPIS_UPDATE, Permissions::PERFORMANCE_KPIS_DELETE, Permissions::PERFORMANCE_GOALS_CREATE, Permissions::PERFORMANCE_GOALS_UPDATE, Permissions::PERFORMANCE_GOALS_DELETE, Permissions::PERFORMANCE_REVIEWS_CREATE, Permissions::PERFORMANCE_REVIEWS_UPDATE, Permissions::PERFORMANCE_REVIEWS_DELETE, Permissions::PERFORMANCE_FORMS_CREATE, Permissions::PERFORMANCE_FORMS_UPDATE, Permissions::PERFORMANCE_FORMS_DELETE, Permissions::PERFORMANCE_PROMOTIONS_CREATE, Permissions::PERFORMANCE_PROMOTIONS_UPDATE];
 
     public function test_viewing_needs_view_and_changing_needs_manage(): void
     {

@@ -230,7 +230,7 @@ export interface Observation {
   improvements: string | null
   next_steps: string | null
   ratings: ObservationRating[] | null
-  can: { record: boolean; manage: boolean; acknowledge: boolean }
+  can: { record: boolean; manage: boolean; delete: boolean; acknowledge: boolean }
 }
 
 export interface ObservationInput {
@@ -322,7 +322,7 @@ export interface Coaching {
   last_session_date: string | null
   observation?: { id: number; observed_on: string; form_name: string | null } | null
   sessions?: CoachingSession[]
-  can: { manage: boolean; sessions: boolean; close: boolean }
+  can: { manage: boolean; delete: boolean; sessions: boolean; close: boolean }
 }
 
 export interface CoachingInput {
@@ -406,7 +406,7 @@ export interface DevelopmentPlan {
   goals_count: number
   goals_done: number
   progress: number
-  can: { manage: boolean; review: boolean; progress: boolean }
+  can: { manage: boolean; delete: boolean; review: boolean; progress: boolean }
   goals?: PlanGoal[]
 }
 

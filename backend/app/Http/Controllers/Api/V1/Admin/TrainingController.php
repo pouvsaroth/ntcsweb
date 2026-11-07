@@ -135,7 +135,7 @@ final class TrainingController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $this->authorizeManage($request);
+        $this->authorizeManage($request, Permissions::TRAININGS_CREATE);
 
         $data = $this->validated($request, true);
         $participantIds = array_map('intval', $data['participant_ids'] ?? []);
@@ -172,7 +172,7 @@ final class TrainingController extends Controller
      */
     public function update(Request $request, Training $training): JsonResponse
     {
-        $this->authorizeManage($request);
+        $this->authorizeManage($request, Permissions::TRAININGS_UPDATE);
 
         $data = $this->validated($request, false);
         $before = $training->participants()->pluck('staff_id')->map(fn ($id) => (int) $id)->all();
@@ -215,7 +215,7 @@ final class TrainingController extends Controller
      */
     public function attendance(Request $request, Training $training): JsonResponse
     {
-        $this->authorizeManage($request);
+        $this->authorizeManage($request, Permissions::TRAININGS_UPDATE);
 
         $data = $request->validate([
             'rows' => ['required', 'array', 'max:500'],
@@ -247,7 +247,7 @@ final class TrainingController extends Controller
 
     public function destroy(Request $request, Training $training): JsonResponse
     {
-        $this->authorizeManage($request);
+        $this->authorizeManage($request, Permissions::TRAININGS_DELETE);
 
         DB::connection('tenant')->transaction(function () use ($training) {
             foreach ($training->participants()->get() as $participant) {
@@ -315,8 +315,8 @@ final class TrainingController extends Controller
         abort_unless($request->user()->hasPermission(Permissions::PROFESSIONAL_DEVELOPMENT_VIEW), 403);
     }
 
-    private function authorizeManage(Request $request): void
+    private function authorizeManage(Request $request, string $permission): void
     {
-        abort_unless($request->user()->hasPermission(Permissions::PROFESSIONAL_DEVELOPMENT_MANAGE), 403);
+        abort_unless($request->user()->hasPermission($permission), 403);
     }
 }

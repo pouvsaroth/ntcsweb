@@ -28,7 +28,11 @@ import { ApiRequestError } from '@/types/api'
 const { t } = useI18n()
 const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
-const canManage = computed(() => auth.can('performance.manage'))
+const canCreate = computed(() => auth.can('performance-kpis.create'))
+const canUpdate = computed(() => auth.can('performance-kpis.update'))
+const canDelete = computed(() => auth.can('performance-kpis.delete'))
+/** Any row action (edit or delete). */
+const canManage = computed(() => canUpdate.value || canDelete.value)
 
 const { items, meta, loading, error, setPage, setSearch, fetch } = usePaginatedResource<Kpi>((query) => kpisService.list(query))
 const actionError = ref<string | null>(null)
@@ -133,7 +137,7 @@ onMounted(() => fetch())
         class="block w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200 sm:max-w-xs"
         @input="setSearch(($event.target as HTMLInputElement).value)"
       />
-      <BaseButton v-if="canManage" @click="open(null)">{{ t('admin.performance.kpis.add') }}</BaseButton>
+      <BaseButton v-if="canCreate" @click="open(null)">{{ t('admin.performance.kpis.add') }}</BaseButton>
     </div>
     <p class="mb-4 text-sm text-neutral-500">{{ t('admin.performance.kpis.hint') }}</p>
 
@@ -151,8 +155,8 @@ onMounted(() => fetch())
           <p class="text-sm text-neutral-700">{{ t('admin.performance.kpis.target') }}: {{ targetLabel(kpi) }}</p>
           <p class="text-xs text-neutral-500">{{ forWhom(kpi) }}<template v-if="kpi.measurement"> · {{ kpi.measurement }}</template></p>
           <div v-if="canManage" class="mt-2 flex justify-end gap-3">
-            <EditIconButton @click="open(kpi)" />
-            <button type="button" class="text-sm font-medium text-danger-600" @click="remove(kpi)">{{ t('admin.organization.delete') }}</button>
+            <EditIconButton v-if="canUpdate" @click="open(kpi)" />
+            <button v-if="canDelete" type="button" class="text-sm font-medium text-danger-600" @click="remove(kpi)">{{ t('admin.organization.delete') }}</button>
           </div>
         </div>
       </div>
@@ -182,8 +186,8 @@ onMounted(() => fetch())
               <td class="px-4 py-3"><BaseBadge :variant="kpi.is_active ? 'success' : 'neutral'">{{ kpi.is_active ? t('admin.organization.statusActive') : t('admin.organization.statusInactive') }}</BaseBadge></td>
               <td v-if="canManage" class="px-4 py-3">
                 <div class="flex justify-end gap-2">
-                  <EditIconButton @click="open(kpi)" />
-                  <button type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(kpi)">{{ t('admin.organization.delete') }}</button>
+                  <EditIconButton v-if="canUpdate" @click="open(kpi)" />
+                  <button v-if="canDelete" type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(kpi)">{{ t('admin.organization.delete') }}</button>
                 </div>
               </td>
             </tr>

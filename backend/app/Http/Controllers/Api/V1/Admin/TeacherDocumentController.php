@@ -40,7 +40,7 @@ final class TeacherDocumentController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        abort_unless($request->user()->hasPermission(Permissions::TEACHERS_MANAGE), 403);
+        abort_unless($request->user()->hasPermission(Permissions::TEACHER_DOCUMENTS_CREATE), 403);
         $data = $request->validate([
             'staff_id' => ['required', 'integer', Rule::exists('tenant.staff', 'id')->whereIn('position_id', Position::teacherPositionIds())->whereNull('deleted_at')],
             'type' => ['required', Rule::in(TeacherDocument::TYPES)],
@@ -82,7 +82,7 @@ final class TeacherDocumentController extends Controller
 
     public function destroy(Request $request, TeacherDocument $document): JsonResponse
     {
-        abort_unless($request->user()->hasPermission(Permissions::TEACHERS_MANAGE), 403);
+        abort_unless($request->user()->hasPermission(Permissions::TEACHER_DOCUMENTS_DELETE), 403);
 
         Storage::disk('local')->delete($document->file_path);
         $document->delete();

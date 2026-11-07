@@ -25,7 +25,11 @@ import { ApiRequestError } from '@/types/api'
 const { t } = useI18n()
 const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
-const canManage = computed(() => auth.can('performance.manage'))
+const canCreate = computed(() => auth.can('performance-forms.create'))
+const canUpdate = computed(() => auth.can('performance-forms.update'))
+const canDelete = computed(() => auth.can('performance-forms.delete'))
+/** Any row action (edit or delete). */
+const canManage = computed(() => canUpdate.value || canDelete.value)
 
 const { items, meta, loading, error, setPage, fetch } = usePaginatedResource<EvaluationForm>((query) => evaluationFormsService.list(query))
 const actionError = ref<string | null>(null)
@@ -121,7 +125,7 @@ onMounted(() => fetch())
   <div>
     <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
       <p class="text-sm text-neutral-500">{{ t('admin.performance.forms.hint') }}</p>
-      <BaseButton v-if="canManage" @click="open(null)">{{ t('admin.performance.forms.add') }}</BaseButton>
+      <BaseButton v-if="canCreate" @click="open(null)">{{ t('admin.performance.forms.add') }}</BaseButton>
     </div>
 
     <BaseAlert v-if="error || actionError" variant="danger" class="mb-4">{{ error || actionError }}</BaseAlert>
@@ -147,8 +151,8 @@ onMounted(() => fetch())
           </ol>
         </div>
         <div v-if="canManage" class="mt-3 flex justify-end gap-3 border-t border-neutral-100 pt-2">
-          <EditIconButton @click="open(evaluation)" />
-          <button type="button" class="text-sm font-medium text-danger-600" @click="remove(evaluation)">{{ t('admin.organization.delete') }}</button>
+          <EditIconButton v-if="canUpdate" @click="open(evaluation)" />
+          <button v-if="canDelete" type="button" class="text-sm font-medium text-danger-600" @click="remove(evaluation)">{{ t('admin.organization.delete') }}</button>
         </div>
       </div>
     </div>

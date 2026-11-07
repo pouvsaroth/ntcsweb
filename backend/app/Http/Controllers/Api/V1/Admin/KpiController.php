@@ -31,7 +31,7 @@ final class KpiController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $this->authorize('create', Kpi::class);
+        $this->authorize('create', [Kpi::class, Kpi::class]);
 
         $kpi = Kpi::query()->create($this->validated($request, null));
 

@@ -37,7 +37,7 @@ final class EvaluationFormController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $this->authorize('create', EvaluationForm::class);
+        $this->authorize('create', [EvaluationForm::class, EvaluationForm::class]);
         $data = $this->validated($request, true);
 
         $form = DB::connection('tenant')->transaction(function () use ($data) {

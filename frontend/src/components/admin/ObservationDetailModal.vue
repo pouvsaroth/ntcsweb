@@ -245,8 +245,8 @@ const fieldClass =
 
     <template #footer>
       <div v-if="obs" class="flex w-full flex-wrap justify-end gap-2">
+        <BaseButton v-if="obs.can.delete" variant="outline" class="mr-auto text-danger-600" @click="remove">{{ t('proDev.delete') }}</BaseButton>
         <template v-if="obs.can.manage">
-          <BaseButton variant="outline" class="mr-auto text-danger-600" @click="remove">{{ t('proDev.delete') }}</BaseButton>
           <BaseButton v-if="obs.status === 'scheduled'" variant="outline" @click="cancelIt">{{ t('proDev.observations.cancel') }}</BaseButton>
           <BaseButton v-if="obs.status === 'scheduled'" variant="outline" @click="emit('edit', obs)">{{ t('proDev.edit') }}</BaseButton>
           <BaseButton v-if="obs.status === 'completed'" variant="outline" @click="emit('coach', obs)">{{ t('proDev.observations.startCoaching') }}</BaseButton>
@@ -256,7 +256,7 @@ const fieldClass =
           <BaseButton v-if="obs.status === 'scheduled'" :loading="saving" @click="save(true)">{{ t('proDev.observations.complete') }}</BaseButton>
         </template>
         <BaseButton v-if="obs.can.acknowledge" :loading="saving" @click="acknowledge">{{ t('proDev.observations.acknowledge') }}</BaseButton>
-        <BaseButton v-if="!obs.can.manage && !canRecord && !obs.can.acknowledge" variant="outline" @click="emit('update:modelValue', false)">{{ t('common.close') }}</BaseButton>
+        <BaseButton v-if="!obs.can.manage && !obs.can.delete && !canRecord && !obs.can.acknowledge" variant="outline" @click="emit('update:modelValue', false)">{{ t('common.close') }}</BaseButton>
       </div>
     </template>
   </BaseModal>

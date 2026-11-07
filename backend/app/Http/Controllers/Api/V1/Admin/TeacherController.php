@@ -79,14 +79,14 @@ final class TeacherController extends Controller
 
     public function storeQualification(Request $request): JsonResponse
     {
-        $this->can($request, Permissions::TEACHERS_MANAGE);
+        $this->can($request, Permissions::TEACHER_QUALIFICATIONS_CREATE);
 
         return ApiResponse::created($this->qualification(TeacherQualification::query()->create($this->validatedQualification($request))));
     }
 
     public function updateQualification(Request $request, TeacherQualification $qualification): JsonResponse
     {
-        $this->can($request, Permissions::TEACHERS_MANAGE);
+        $this->can($request, Permissions::TEACHER_QUALIFICATIONS_UPDATE);
         $qualification->update($this->validatedQualification($request));
 
         return ApiResponse::success($this->qualification($qualification));
@@ -94,7 +94,7 @@ final class TeacherController extends Controller
 
     public function destroyQualification(Request $request, TeacherQualification $qualification): JsonResponse
     {
-        $this->can($request, Permissions::TEACHERS_MANAGE);
+        $this->can($request, Permissions::TEACHER_QUALIFICATIONS_DELETE);
         $qualification->delete();
 
         return ApiResponse::noContent();
@@ -103,7 +103,7 @@ final class TeacherController extends Controller
     /** The subjects a teacher specialises in (replaces the list). */
     public function saveSubjects(Request $request): JsonResponse
     {
-        $this->can($request, Permissions::TEACHERS_MANAGE);
+        $this->can($request, Permissions::TEACHER_QUALIFICATIONS_UPDATE);
         $data = $request->validate([
             'staff_id' => ['required', 'integer', $this->teacherRule()],
             'book_ids' => ['present', 'array'],
@@ -139,7 +139,7 @@ final class TeacherController extends Controller
 
     public function storeAssignment(Request $request): JsonResponse
     {
-        $this->can($request, Permissions::TEACHERS_MANAGE);
+        $this->can($request, Permissions::TEACHER_ASSIGNMENTS_CREATE);
         $assignment = DB::connection('tenant')->transaction(function () use ($request) {
             $assignment = TeacherAssignment::query()->create($this->validatedAssignment($request));
             $this->teachClass($assignment);
@@ -152,7 +152,7 @@ final class TeacherController extends Controller
 
     public function updateAssignment(Request $request, TeacherAssignment $assignment): JsonResponse
     {
-        $this->can($request, Permissions::TEACHERS_MANAGE);
+        $this->can($request, Permissions::TEACHER_ASSIGNMENTS_UPDATE);
         DB::connection('tenant')->transaction(function () use ($request, $assignment) {
             $assignment->update($this->validatedAssignment($request, $assignment));
             $this->teachClass($assignment);
@@ -163,7 +163,7 @@ final class TeacherController extends Controller
 
     public function destroyAssignment(Request $request, TeacherAssignment $assignment): JsonResponse
     {
-        $this->can($request, Permissions::TEACHERS_MANAGE);
+        $this->can($request, Permissions::TEACHER_ASSIGNMENTS_DELETE);
         // The class keeps the teacher (Classes form): they may teach it for another reason.
         $assignment->delete();
 
@@ -194,7 +194,7 @@ final class TeacherController extends Controller
 
     public function saveHomeroom(Request $request, SchoolClass $class): JsonResponse
     {
-        $this->can($request, Permissions::TEACHERS_MANAGE);
+        $this->can($request, Permissions::TEACHER_HOMEROOM_UPDATE);
         $data = $request->validate(['staff_id' => ['nullable', 'integer', $this->teacherRule()]]);
 
         $class->forceFill(['homeroom_staff_id' => $data['staff_id'] ?? null])->save();

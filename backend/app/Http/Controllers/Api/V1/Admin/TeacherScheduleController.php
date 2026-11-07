@@ -77,14 +77,14 @@ final class TeacherScheduleController extends Controller
 
     public function storeUnavailability(Request $request): JsonResponse
     {
-        $this->can($request, Permissions::TEACHERS_MANAGE);
+        $this->can($request, Permissions::TEACHER_AVAILABILITY_CREATE);
 
         return ApiResponse::created($this->slot(TeacherUnavailability::query()->create($this->validatedSlot($request))));
     }
 
     public function updateUnavailability(Request $request, TeacherUnavailability $unavailability): JsonResponse
     {
-        $this->can($request, Permissions::TEACHERS_MANAGE);
+        $this->can($request, Permissions::TEACHER_AVAILABILITY_UPDATE);
         $unavailability->update($this->validatedSlot($request));
 
         return ApiResponse::success($this->slot($unavailability));
@@ -92,7 +92,7 @@ final class TeacherScheduleController extends Controller
 
     public function destroyUnavailability(Request $request, TeacherUnavailability $unavailability): JsonResponse
     {
-        $this->can($request, Permissions::TEACHERS_MANAGE);
+        $this->can($request, Permissions::TEACHER_AVAILABILITY_DELETE);
         $unavailability->delete();
 
         return ApiResponse::noContent();
@@ -172,7 +172,7 @@ final class TeacherScheduleController extends Controller
 
     public function storeSubstitution(Request $request): JsonResponse
     {
-        $this->can($request, Permissions::TEACHERS_MANAGE);
+        $this->can($request, Permissions::TEACHER_SUBSTITUTES_CREATE);
         $teacher = Rule::exists('tenant.staff', 'id')->whereIn('position_id', Position::teacherPositionIds())->whereNull('deleted_at');
         $data = $request->validate([
             'class_id' => ['required', 'integer', Rule::exists('tenant.classes', 'id')->whereNull('deleted_at')],
@@ -200,7 +200,7 @@ final class TeacherScheduleController extends Controller
 
     public function destroySubstitution(Request $request, TeacherSubstitution $substitution): JsonResponse
     {
-        $this->can($request, Permissions::TEACHERS_MANAGE);
+        $this->can($request, Permissions::TEACHER_SUBSTITUTES_DELETE);
         $substitution->delete();
 
         return ApiResponse::noContent();

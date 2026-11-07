@@ -339,7 +339,34 @@ final class Permissions
 
     public const TIMETABLE_REQUEST = 'timetable.request';
 
-    public const TEACHERS_MANAGE = 'teachers.manage';
+    // HRM > Teachers: each tab has its own Add / Update / Delete.
+    public const TEACHER_QUALIFICATIONS_CREATE = 'teacher-qualifications.create';
+
+    public const TEACHER_QUALIFICATIONS_UPDATE = 'teacher-qualifications.update';
+
+    public const TEACHER_QUALIFICATIONS_DELETE = 'teacher-qualifications.delete';
+
+    public const TEACHER_ASSIGNMENTS_CREATE = 'teacher-assignments.create';
+
+    public const TEACHER_ASSIGNMENTS_UPDATE = 'teacher-assignments.update';
+
+    public const TEACHER_ASSIGNMENTS_DELETE = 'teacher-assignments.delete';
+
+    public const TEACHER_HOMEROOM_UPDATE = 'teacher-homeroom.update';
+
+    public const TEACHER_AVAILABILITY_CREATE = 'teacher-availability.create';
+
+    public const TEACHER_AVAILABILITY_UPDATE = 'teacher-availability.update';
+
+    public const TEACHER_AVAILABILITY_DELETE = 'teacher-availability.delete';
+
+    public const TEACHER_SUBSTITUTES_CREATE = 'teacher-substitutes.create';
+
+    public const TEACHER_SUBSTITUTES_DELETE = 'teacher-substitutes.delete';
+
+    public const TEACHER_DOCUMENTS_CREATE = 'teacher-documents.create';
+
+    public const TEACHER_DOCUMENTS_DELETE = 'teacher-documents.delete';
 
     public const ACADEMIC_REPORTS_VIEW = 'academic-reports.view';
 
@@ -547,10 +574,38 @@ final class Permissions
     public const PAYROLL_LOANS_DELETE = 'payroll-loans.delete';
 
     // HRM > Performance Management: view reads KPIs, goals, evaluation
-    // forms, review cycles and scores; manage sets them up.
+    // forms, review cycles and scores; each tab has its own Add / Update /
+    // Delete (performance-<tab>.<action>).
     public const PERFORMANCE_VIEW = 'performance.view';
 
-    public const PERFORMANCE_MANAGE = 'performance.manage';
+    public const PERFORMANCE_KPIS_CREATE = 'performance-kpis.create';
+
+    public const PERFORMANCE_KPIS_UPDATE = 'performance-kpis.update';
+
+    public const PERFORMANCE_KPIS_DELETE = 'performance-kpis.delete';
+
+    public const PERFORMANCE_GOALS_CREATE = 'performance-goals.create';
+
+    public const PERFORMANCE_GOALS_UPDATE = 'performance-goals.update';
+
+    public const PERFORMANCE_GOALS_DELETE = 'performance-goals.delete';
+
+    public const PERFORMANCE_REVIEWS_CREATE = 'performance-reviews.create';
+
+    public const PERFORMANCE_REVIEWS_UPDATE = 'performance-reviews.update';
+
+    public const PERFORMANCE_REVIEWS_DELETE = 'performance-reviews.delete';
+
+    public const PERFORMANCE_FORMS_CREATE = 'performance-forms.create';
+
+    public const PERFORMANCE_FORMS_UPDATE = 'performance-forms.update';
+
+    public const PERFORMANCE_FORMS_DELETE = 'performance-forms.delete';
+
+    public const PERFORMANCE_PROMOTIONS_CREATE = 'performance-promotions.create';
+
+    // Cancelling a recommendation (pending or approved, before it is applied).
+    public const PERFORMANCE_PROMOTIONS_UPDATE = 'performance-promotions.update';
 
     // Approving or rejecting a promotion recommendation (when there's no Approval Flow for it).
     public const PERFORMANCE_APPROVE_PROMOTION = 'performance.approve-promotion';
@@ -560,7 +615,34 @@ final class Permissions
     // development plans and reports; manage records and changes them.
     public const PROFESSIONAL_DEVELOPMENT_VIEW = 'professional-development.view';
 
-    public const PROFESSIONAL_DEVELOPMENT_MANAGE = 'professional-development.manage';
+    // Each tab has its own Add / Update / Delete.
+    public const TRAININGS_CREATE = 'trainings.create';
+
+    public const TRAININGS_UPDATE = 'trainings.update';
+
+    public const TRAININGS_DELETE = 'trainings.delete';
+
+    public const TRAINING_CERTIFICATES_CREATE = 'training-certificates.create';
+
+    public const TRAINING_CERTIFICATES_DELETE = 'training-certificates.delete';
+
+    public const CLASSROOM_OBSERVATIONS_CREATE = 'classroom-observations.create';
+
+    public const CLASSROOM_OBSERVATIONS_UPDATE = 'classroom-observations.update';
+
+    public const CLASSROOM_OBSERVATIONS_DELETE = 'classroom-observations.delete';
+
+    public const COACHING_CREATE = 'coaching.create';
+
+    public const COACHING_UPDATE = 'coaching.update';
+
+    public const COACHING_DELETE = 'coaching.delete';
+
+    public const DEVELOPMENT_PLANS_CREATE = 'development-plans.create';
+
+    public const DEVELOPMENT_PLANS_UPDATE = 'development-plans.update';
+
+    public const DEVELOPMENT_PLANS_DELETE = 'development-plans.delete';
 
     // Working out a payroll, sending it for approval and paying it.
     public const PAYROLL_RUN = 'payroll.run';
@@ -1189,7 +1271,20 @@ final class Permissions
             ],
             'Teachers' => [
                 self::TEACHERS_VIEW => 'View teachers (qualifications, assignments, load, availability, substitutes, documents)',
-                self::TEACHERS_MANAGE => 'Manage teachers (qualifications, assignments, homeroom, availability, substitutes, documents)',
+                self::TEACHER_QUALIFICATIONS_CREATE => 'Add teacher qualifications',
+                self::TEACHER_QUALIFICATIONS_UPDATE => 'Update teacher qualifications and subjects taught',
+                self::TEACHER_QUALIFICATIONS_DELETE => 'Delete teacher qualifications',
+                self::TEACHER_ASSIGNMENTS_CREATE => 'Add teacher assignments',
+                self::TEACHER_ASSIGNMENTS_UPDATE => 'Update teacher assignments',
+                self::TEACHER_ASSIGNMENTS_DELETE => 'Delete teacher assignments',
+                self::TEACHER_HOMEROOM_UPDATE => 'Set or change homeroom teachers',
+                self::TEACHER_AVAILABILITY_CREATE => 'Add teacher unavailable times',
+                self::TEACHER_AVAILABILITY_UPDATE => 'Update teacher unavailable times',
+                self::TEACHER_AVAILABILITY_DELETE => 'Delete teacher unavailable times',
+                self::TEACHER_SUBSTITUTES_CREATE => 'Arrange substitute teachers',
+                self::TEACHER_SUBSTITUTES_DELETE => 'Remove substitute arrangements',
+                self::TEACHER_DOCUMENTS_CREATE => 'Upload teacher documents',
+                self::TEACHER_DOCUMENTS_DELETE => 'Delete teacher documents',
             ],
             'Academic Reports' => [
                 self::ACADEMIC_REPORTS_VIEW => 'View academic/enrollment reports',
@@ -1300,12 +1395,38 @@ final class Permissions
             ],
             'Performance' => [
                 self::PERFORMANCE_VIEW => 'View KPIs, goals, evaluation forms, review cycles and performance scores',
-                self::PERFORMANCE_MANAGE => 'Manage KPIs, goals, evaluation forms, review cycles and score weights, and recommend promotions',
+                self::PERFORMANCE_KPIS_CREATE => 'Add KPIs',
+                self::PERFORMANCE_KPIS_UPDATE => 'Update KPIs',
+                self::PERFORMANCE_KPIS_DELETE => 'Delete KPIs',
+                self::PERFORMANCE_GOALS_CREATE => 'Add staff goals',
+                self::PERFORMANCE_GOALS_UPDATE => 'Update staff goals',
+                self::PERFORMANCE_GOALS_DELETE => 'Delete staff goals',
+                self::PERFORMANCE_REVIEWS_CREATE => 'Add review cycles and launch reviews',
+                self::PERFORMANCE_REVIEWS_UPDATE => 'Update review cycles, score weights and reviewers; reopen reviews',
+                self::PERFORMANCE_REVIEWS_DELETE => 'Delete review cycles and reviews',
+                self::PERFORMANCE_FORMS_CREATE => 'Add evaluation forms',
+                self::PERFORMANCE_FORMS_UPDATE => 'Update evaluation forms',
+                self::PERFORMANCE_FORMS_DELETE => 'Delete evaluation forms',
+                self::PERFORMANCE_PROMOTIONS_CREATE => 'Recommend promotions',
+                self::PERFORMANCE_PROMOTIONS_UPDATE => 'Cancel promotion recommendations',
                 self::PERFORMANCE_APPROVE_PROMOTION => 'Approve or reject a promotion recommendation',
             ],
             'Professional Development' => [
                 self::PROFESSIONAL_DEVELOPMENT_VIEW => 'View trainings, training records, certificates, observations, coaching, development plans and reports',
-                self::PROFESSIONAL_DEVELOPMENT_MANAGE => 'Plan trainings, record attendance and results, issue certificates, observe classes, coach staff and keep development plans',
+                self::TRAININGS_CREATE => 'Add trainings (also past training records)',
+                self::TRAININGS_UPDATE => 'Update trainings, attendance and results',
+                self::TRAININGS_DELETE => 'Delete trainings',
+                self::TRAINING_CERTIFICATES_CREATE => 'Issue training certificates',
+                self::TRAINING_CERTIFICATES_DELETE => 'Revoke training certificates',
+                self::CLASSROOM_OBSERVATIONS_CREATE => 'Schedule classroom observations and add observation forms',
+                self::CLASSROOM_OBSERVATIONS_UPDATE => 'Update classroom observations (record any) and observation forms',
+                self::CLASSROOM_OBSERVATIONS_DELETE => 'Delete classroom observations and observation forms',
+                self::COACHING_CREATE => 'Add coaching & mentoring',
+                self::COACHING_UPDATE => 'Update any coaching & mentoring (sessions, close)',
+                self::COACHING_DELETE => 'Delete coaching & mentoring',
+                self::DEVELOPMENT_PLANS_CREATE => 'Add development plans',
+                self::DEVELOPMENT_PLANS_UPDATE => 'Update any development plan (share, review, cancel)',
+                self::DEVELOPMENT_PLANS_DELETE => 'Delete development plans',
             ],
             'Staff' => [
                 self::STAFF_VIEW => 'View staff',
@@ -1531,7 +1652,9 @@ final class Permissions
             self::ASSESSMENT_VIEW, self::ASSESSMENT_CREATE, self::ASSESSMENT_UPDATE, self::ASSESSMENT_DELETE,
             self::EXAM_SCHEDULES_VIEW, self::EXAM_SCHEDULES_CREATE, self::EXAM_SCHEDULES_UPDATE, self::EXAM_SCHEDULES_DELETE,
             self::GRADEBOOK_VIEW, self::GRADEBOOK_ENTER, self::GRADEBOOK_MANAGE_ALL, self::GRADEBOOK_APPROVE,
-            self::TEACHERS_VIEW, self::TEACHERS_MANAGE,
+            self::TEACHERS_VIEW,
+            self::TEACHER_QUALIFICATIONS_CREATE, self::TEACHER_QUALIFICATIONS_UPDATE, self::TEACHER_QUALIFICATIONS_DELETE, self::TEACHER_ASSIGNMENTS_CREATE, self::TEACHER_ASSIGNMENTS_UPDATE, self::TEACHER_ASSIGNMENTS_DELETE, self::TEACHER_HOMEROOM_UPDATE,
+            self::TEACHER_AVAILABILITY_CREATE, self::TEACHER_AVAILABILITY_UPDATE, self::TEACHER_AVAILABILITY_DELETE, self::TEACHER_SUBSTITUTES_CREATE, self::TEACHER_SUBSTITUTES_DELETE, self::TEACHER_DOCUMENTS_CREATE, self::TEACHER_DOCUMENTS_DELETE,
             self::TIMETABLE_VIEW, self::TIMETABLE_CREATE, self::TIMETABLE_UPDATE, self::TIMETABLE_DELETE, self::TIMETABLE_APPROVE, self::TIMETABLE_REJECT, self::TIMETABLE_REQUEST,
             self::LESSON_PLANS_VIEW, self::LESSON_PLANS_WRITE, self::LESSON_PLANS_REVIEW,
             self::ACADEMIC_REPORTS_VIEW, self::ACADEMIC_REPORTS_EXPORT,
@@ -1720,10 +1843,18 @@ final class Permissions
                 self::PAYROLL_RUN,
                 self::PAYROLL_APPROVE,
                 self::PERFORMANCE_VIEW,
-                self::PERFORMANCE_MANAGE,
+                self::PERFORMANCE_KPIS_CREATE, self::PERFORMANCE_KPIS_UPDATE, self::PERFORMANCE_KPIS_DELETE,
+                self::PERFORMANCE_GOALS_CREATE, self::PERFORMANCE_GOALS_UPDATE, self::PERFORMANCE_GOALS_DELETE,
+                self::PERFORMANCE_REVIEWS_CREATE, self::PERFORMANCE_REVIEWS_UPDATE, self::PERFORMANCE_REVIEWS_DELETE,
+                self::PERFORMANCE_FORMS_CREATE, self::PERFORMANCE_FORMS_UPDATE, self::PERFORMANCE_FORMS_DELETE,
+                self::PERFORMANCE_PROMOTIONS_CREATE, self::PERFORMANCE_PROMOTIONS_UPDATE,
                 self::PERFORMANCE_APPROVE_PROMOTION,
                 self::PROFESSIONAL_DEVELOPMENT_VIEW,
-                self::PROFESSIONAL_DEVELOPMENT_MANAGE,
+                self::TRAININGS_CREATE, self::TRAININGS_UPDATE, self::TRAININGS_DELETE,
+                self::TRAINING_CERTIFICATES_CREATE, self::TRAINING_CERTIFICATES_DELETE,
+                self::CLASSROOM_OBSERVATIONS_CREATE, self::CLASSROOM_OBSERVATIONS_UPDATE, self::CLASSROOM_OBSERVATIONS_DELETE,
+                self::COACHING_CREATE, self::COACHING_UPDATE, self::COACHING_DELETE,
+                self::DEVELOPMENT_PLANS_CREATE, self::DEVELOPMENT_PLANS_UPDATE, self::DEVELOPMENT_PLANS_DELETE,
                 self::MAKE_UP_CLASS_REQUESTS_VIEW,
                 self::MAKE_UP_CLASS_REQUESTS_APPROVE,
                 self::MAKE_UP_CLASS_REQUESTS_REJECT,

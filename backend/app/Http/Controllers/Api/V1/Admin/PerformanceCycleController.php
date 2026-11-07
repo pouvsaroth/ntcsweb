@@ -36,7 +36,7 @@ final class PerformanceCycleController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $this->authorize('create', PerformanceCycle::class);
+        $this->authorize('create', [PerformanceCycle::class, PerformanceCycle::class]);
 
         $cycle = PerformanceCycle::query()->create($this->validated($request, null));
 

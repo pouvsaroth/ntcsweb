@@ -39,7 +39,9 @@ import { formatDate } from '@/utils/date'
 const { t } = useI18n()
 const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
-const canManage = computed(() => auth.can('performance.manage'))
+const canCreate = computed(() => auth.can('performance-promotions.create'))
+/** Cancelling a recommendation. */
+const canUpdate = computed(() => auth.can('performance-promotions.update'))
 
 const statusFilter = ref<PromotionStatus | ''>('')
 const { items, meta, loading, error, setPage, setFilter, fetch } = usePaginatedResource<PromotionRecommendation>((query) => promotionsService.list(query))
@@ -204,7 +206,7 @@ onMounted(async () => {
             <p class="text-sm font-medium text-neutral-800">{{ s.staff.name }} <span class="font-normal text-neutral-500">({{ s.staff.employee_code }})</span></p>
             <p class="text-xs text-neutral-500">{{ s.staff.position ?? '—' }} · {{ t('admin.performance.score.final') }} {{ s.final_score.toFixed(2) }} / 5</p>
           </div>
-          <BaseButton v-if="canManage" size="sm" variant="outline" @click="openForm(s)">{{ t('admin.performance.promotions.recommend') }}</BaseButton>
+          <BaseButton v-if="canCreate" size="sm" variant="outline" @click="openForm(s)">{{ t('admin.performance.promotions.recommend') }}</BaseButton>
         </li>
       </ul>
     </section>
@@ -213,7 +215,7 @@ onMounted(async () => {
     <section>
       <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
         <BaseSelect v-model="statusFilter" class="w-full sm:w-52" :options="statusOptions" />
-        <BaseButton v-if="canManage" @click="openForm(null)">{{ t('admin.performance.promotions.add') }}</BaseButton>
+        <BaseButton v-if="canCreate" @click="openForm(null)">{{ t('admin.performance.promotions.add') }}</BaseButton>
       </div>
       <BaseAlert v-if="error" variant="danger" class="mb-3">{{ error }}</BaseAlert>
       <div v-if="loading" class="flex justify-center py-8"><BaseSpinner /></div>
@@ -320,7 +322,7 @@ onMounted(async () => {
       </template>
       <template #footer>
         <template v-if="open">
-          <BaseButton v-if="canManage && ['pending', 'approved'].includes(open.status)" variant="ghost" :disabled="busy" @click="cancel">{{ t('admin.performance.promotions.cancel') }}</BaseButton>
+          <BaseButton v-if="canUpdate && ['pending', 'approved'].includes(open.status)" variant="ghost" :disabled="busy" @click="cancel">{{ t('admin.performance.promotions.cancel') }}</BaseButton>
           <template v-if="open.can_decide">
             <BaseButton variant="danger" :disabled="busy || !rejectReason.trim()" @click="reject">{{ t('admin.payroll.runs.reject') }}</BaseButton>
             <BaseButton :loading="busy" @click="approve">{{ t('admin.payroll.runs.approve') }}</BaseButton>

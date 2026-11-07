@@ -27,7 +27,7 @@ class TeacherManagementTest extends TestCase
 
     private Position $teacherPosition;
 
-    private function setUpSchool(array $permissions = [Permissions::TEACHERS_VIEW, Permissions::TEACHERS_MANAGE]): void
+    private function setUpSchool(array $permissions = [Permissions::TEACHERS_VIEW, Permissions::TEACHER_QUALIFICATIONS_CREATE, Permissions::TEACHER_QUALIFICATIONS_UPDATE, Permissions::TEACHER_QUALIFICATIONS_DELETE, Permissions::TEACHER_ASSIGNMENTS_CREATE, Permissions::TEACHER_ASSIGNMENTS_UPDATE, Permissions::TEACHER_ASSIGNMENTS_DELETE, Permissions::TEACHER_HOMEROOM_UPDATE, Permissions::TEACHER_AVAILABILITY_CREATE, Permissions::TEACHER_AVAILABILITY_UPDATE, Permissions::TEACHER_AVAILABILITY_DELETE, Permissions::TEACHER_SUBSTITUTES_CREATE, Permissions::TEACHER_SUBSTITUTES_DELETE, Permissions::TEACHER_DOCUMENTS_CREATE, Permissions::TEACHER_DOCUMENTS_DELETE]): void
     {
         $this->actingAsAdminWithPermissions($permissions);
         $role = Role::factory()->forTenant($this->tenant)->system()->create(['slug' => Role::TEACHER, 'name' => 'Teacher', 'level' => Role::LEVELS[Role::TEACHER]]);

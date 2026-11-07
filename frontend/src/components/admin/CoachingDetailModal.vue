@@ -260,8 +260,8 @@ const fieldClass =
 
     <template #footer>
       <div v-if="coaching" class="flex w-full flex-wrap justify-end gap-2">
+        <BaseButton v-if="coaching.can.delete" variant="outline" class="mr-auto text-danger-600" @click="remove">{{ t('proDev.delete') }}</BaseButton>
         <template v-if="coaching.can.manage">
-          <BaseButton variant="outline" class="mr-auto text-danger-600" @click="remove">{{ t('proDev.delete') }}</BaseButton>
           <BaseButton variant="outline" @click="emit('edit', coaching)">{{ t('proDev.edit') }}</BaseButton>
         </template>
         <template v-if="coaching.can.close">
@@ -269,7 +269,7 @@ const fieldClass =
           <BaseButton v-if="coaching.status === 'active' && !closing" @click="startClose">{{ t('proDev.coaching.markCompleted') }}</BaseButton>
           <BaseButton v-if="coaching.status !== 'active'" variant="outline" :loading="saving" @click="setStatus('active')">{{ t('proDev.coaching.reopen') }}</BaseButton>
         </template>
-        <BaseButton v-if="!coaching.can.manage && !coaching.can.close" variant="outline" @click="emit('update:modelValue', false)">{{ t('common.close') }}</BaseButton>
+        <BaseButton v-if="!coaching.can.manage && !coaching.can.delete && !coaching.can.close" variant="outline" @click="emit('update:modelValue', false)">{{ t('common.close') }}</BaseButton>
       </div>
     </template>
   </BaseModal>

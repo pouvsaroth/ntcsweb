@@ -31,7 +31,7 @@ import { trainingDays, trainingStatusVariant } from '@/utils/professionalDevelop
  */
 const { t, locale } = useI18n()
 const auth = useAuthStore()
-const canManage = computed(() => auth.can('professional-development.manage'))
+const canManage = computed(() => auth.can('trainings.create'))
 
 const view = ref<'month' | 'list'>('month')
 const summary = ref<TrainingSummary | null>(null)

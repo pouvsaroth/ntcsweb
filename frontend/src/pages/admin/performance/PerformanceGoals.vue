@@ -29,7 +29,11 @@ import { formatDate } from '@/utils/date'
 const { t } = useI18n()
 const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
-const canManage = computed(() => auth.can('performance.manage'))
+const canCreate = computed(() => auth.can('performance-goals.create'))
+const canUpdate = computed(() => auth.can('performance-goals.update'))
+const canDelete = computed(() => auth.can('performance-goals.delete'))
+/** Any row action (edit or delete). */
+const canManage = computed(() => canUpdate.value || canDelete.value)
 
 const cycles = ref<PerformanceCycle[]>([])
 const staff = ref<Staff[]>([])
@@ -126,7 +130,7 @@ onMounted(async () => {
         class="block w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200 sm:max-w-xs"
         @input="setSearch(($event.target as HTMLInputElement).value)"
       />
-      <BaseButton v-if="canManage" class="sm:ml-auto" @click="open(null)">{{ t('admin.performance.goals.add') }}</BaseButton>
+      <BaseButton v-if="canCreate" class="sm:ml-auto" @click="open(null)">{{ t('admin.performance.goals.add') }}</BaseButton>
     </div>
     <p class="mb-4 text-sm text-neutral-500">{{ t('admin.performance.goals.hint') }}</p>
 
@@ -145,8 +149,8 @@ onMounted(async () => {
           <div class="mt-2 h-2 overflow-hidden rounded-full bg-neutral-100"><div class="h-full bg-primary-500" :style="{ width: `${goal.progress}%` }" /></div>
           <p class="mt-1 text-xs text-neutral-500">{{ goal.progress }}%<template v-if="goal.due_date"> · {{ t('admin.performance.goals.dueOn', { date: formatDate(goal.due_date) }) }}</template></p>
           <div v-if="canManage" class="mt-2 flex justify-end gap-3">
-            <EditIconButton @click="open(goal)" />
-            <button type="button" class="text-sm font-medium text-danger-600" @click="remove(goal)">{{ t('admin.organization.delete') }}</button>
+            <EditIconButton v-if="canUpdate" @click="open(goal)" />
+            <button v-if="canDelete" type="button" class="text-sm font-medium text-danger-600" @click="remove(goal)">{{ t('admin.organization.delete') }}</button>
           </div>
         </div>
       </div>
@@ -182,8 +186,8 @@ onMounted(async () => {
               <td class="px-4 py-3"><BaseBadge :variant="statusVariant[goal.status]">{{ t(`admin.performance.goals.status.${goal.status}`) }}</BaseBadge></td>
               <td v-if="canManage" class="px-4 py-3">
                 <div class="flex justify-end gap-2">
-                  <EditIconButton @click="open(goal)" />
-                  <button type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(goal)">{{ t('admin.organization.delete') }}</button>
+                  <EditIconButton v-if="canUpdate" @click="open(goal)" />
+                  <button v-if="canDelete" type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(goal)">{{ t('admin.organization.delete') }}</button>
                 </div>
               </td>
             </tr>

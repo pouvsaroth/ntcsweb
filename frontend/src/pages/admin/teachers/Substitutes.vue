@@ -23,7 +23,10 @@ import { formatDate } from '@/utils/date'
 const { t } = useI18n()
 const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
-const canManage = computed(() => auth.can('teachers.manage'))
+const canCreate = computed(() => auth.can('teacher-substitutes.create'))
+const canDelete = computed(() => auth.can('teacher-substitutes.delete'))
+/** Any row action (edit or delete). */
+const canManage = computed(() => canDelete.value)
 
 const pad = (n: number) => String(n).padStart(2, '0')
 const iso = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
@@ -165,7 +168,7 @@ onMounted(async () => {
       </div>
       <p class="text-sm font-medium text-neutral-800">{{ formatDate(from) }} – {{ formatDate(to) }}</p>
       <BaseSpinner v-if="loading" class="h-4 w-4" />
-      <BaseButton v-if="canManage" class="ml-auto" @click="open">{{ t('teacherMgmt.subs.add') }}</BaseButton>
+      <BaseButton v-if="canCreate" class="ml-auto" @click="open">{{ t('teacherMgmt.subs.add') }}</BaseButton>
     </div>
 
     <BaseAlert v-if="error" variant="danger" class="mb-4">{{ error }}</BaseAlert>
@@ -178,7 +181,7 @@ onMounted(async () => {
         <p class="text-xs text-neutral-500">{{ row.absent }} → <span class="font-medium text-neutral-800">{{ row.substitute }}</span></p>
         <p v-if="row.reason || row.subject" class="text-xs text-neutral-500">{{ [row.subject, row.reason].filter(Boolean).join(' · ') }}</p>
         <div v-if="canManage" class="mt-2 flex justify-end">
-          <button type="button" class="text-sm font-medium text-danger-600" @click="remove(row)">{{ t('teacherMgmt.delete') }}</button>
+          <button v-if="canDelete" type="button" class="text-sm font-medium text-danger-600" @click="remove(row)">{{ t('teacherMgmt.delete') }}</button>
         </div>
       </div>
     </div>
@@ -197,7 +200,7 @@ onMounted(async () => {
         <template #cell-substitute="{ row }"><span class="font-medium text-neutral-800">{{ row.substitute }}</span></template>
         <template #cell-reason="{ row }">{{ row.reason || '—' }}</template>
         <template #cell-actions="{ row }">
-          <button type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row as Substitution)">{{ t('teacherMgmt.delete') }}</button>
+          <button v-if="canDelete" type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row as Substitution)">{{ t('teacherMgmt.delete') }}</button>
         </template>
       </DataTable>
     </div>

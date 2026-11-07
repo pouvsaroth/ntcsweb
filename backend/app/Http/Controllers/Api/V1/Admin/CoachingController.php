@@ -88,7 +88,7 @@ final class CoachingController extends Controller
     public function store(Request $request): JsonResponse
     {
         $user = $request->user();
-        abort_unless($this->access->canManage($user), 403);
+        abort_unless($this->access->can($user, ProfessionalDevelopmentAccess::COACHING, 'create'), 403);
         $data = $this->validated($request, true);
 
         $coaching = Coaching::query()->create([...$data, 'status' => 'active', 'created_by' => $user->getKey()]);
@@ -110,7 +110,7 @@ final class CoachingController extends Controller
     public function update(Request $request, Coaching $coaching): JsonResponse
     {
         $user = $request->user();
-        if ($this->access->canManage($user)) {
+        if ($this->access->canManage($user, ProfessionalDevelopmentAccess::COACHING)) {
             $data = $this->validated($request, false);
         } else {
             abort_unless($this->isCoach($coaching, $user), 403);
@@ -127,7 +127,7 @@ final class CoachingController extends Controller
 
     public function destroy(Request $request, Coaching $coaching): JsonResponse
     {
-        abort_unless($this->access->canManage($request->user()), 403);
+        abort_unless($this->access->can($request->user(), ProfessionalDevelopmentAccess::COACHING, 'delete'), 403);
 
         $coaching->delete();
 
@@ -207,7 +207,7 @@ final class CoachingController extends Controller
 
     private function canWriteSessions(Coaching $coaching, User $user): bool
     {
-        return $this->access->canManage($user) || $this->isCoach($coaching, $user);
+        return $this->access->canManage($user, ProfessionalDevelopmentAccess::COACHING) || $this->isCoach($coaching, $user);
     }
 
     private function canSee(Coaching $coaching, User $user): bool
@@ -261,9 +261,10 @@ final class CoachingController extends Controller
             'sessions_count' => (int) ($c->sessions_count ?? 0),
             'last_session_date' => $lastSession ? substr((string) $lastSession, 0, 10) : null,
             'can' => [
-                'manage' => $this->access->canManage($user),
+                'manage' => $this->access->canManage($user, ProfessionalDevelopmentAccess::COACHING),
+                'delete' => $this->access->can($user, ProfessionalDevelopmentAccess::COACHING, 'delete'),
                 'sessions' => $this->canWriteSessions($c, $user),
-                'close' => $this->access->canManage($user) || $this->isCoach($c, $user),
+                'close' => $this->access->canManage($user, ProfessionalDevelopmentAccess::COACHING) || $this->isCoach($c, $user),
             ],
         ];
     }

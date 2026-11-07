@@ -23,7 +23,11 @@ import { formatDate } from '@/utils/date'
 const { t } = useI18n()
 const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
-const canManage = computed(() => auth.can('teachers.manage'))
+const canCreate = computed(() => auth.can('teacher-availability.create'))
+const canUpdate = computed(() => auth.can('teacher-availability.update'))
+const canDelete = computed(() => auth.can('teacher-availability.delete'))
+/** Any row action (edit or delete). */
+const canManage = computed(() => canUpdate.value || canDelete.value)
 
 const teachers = ref<Teacher[]>([])
 const staffId = ref('')
@@ -131,7 +135,7 @@ onMounted(async () => {
     <div class="mb-4 flex flex-wrap items-center gap-2">
       <BaseSelect class="w-72 max-w-full" :model-value="staffId" :options="teacherOptions" :placeholder="t('teacherMgmt.chooseTeacher')" @update:model-value="onTeacher" />
       <BaseSpinner v-if="loading" class="h-4 w-4" />
-      <BaseButton v-if="canManage && staffId" class="ml-auto" @click="open(null)">{{ t('teacherMgmt.avail.add') }}</BaseButton>
+      <BaseButton v-if="canCreate && staffId" class="ml-auto" @click="open(null)">{{ t('teacherMgmt.avail.add') }}</BaseButton>
     </div>
 
     <BaseAlert v-if="error" variant="danger" class="mb-4">{{ error }}</BaseAlert>
@@ -155,8 +159,8 @@ onMounted(async () => {
                 <p v-if="u.reason" class="text-xs text-neutral-500">{{ u.reason }}</p>
               </div>
               <div v-if="canManage" class="flex shrink-0 gap-2">
-                <EditIconButton @click="open(u)" />
-                <button type="button" class="text-xs font-medium text-danger-600" @click="remove(u)">{{ t('teacherMgmt.delete') }}</button>
+                <EditIconButton v-if="canUpdate" @click="open(u)" />
+                <button v-if="canDelete" type="button" class="text-xs font-medium text-danger-600" @click="remove(u)">{{ t('teacherMgmt.delete') }}</button>
               </div>
             </li>
           </ul>

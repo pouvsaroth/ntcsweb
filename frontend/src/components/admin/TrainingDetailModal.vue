@@ -34,7 +34,9 @@ const emit = defineEmits<{ 'update:modelValue': [boolean]; changed: []; edit: [T
 const { t } = useI18n()
 const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
-const canManage = computed(() => auth.can('professional-development.manage'))
+const canManage = computed(() => auth.can('trainings.update'))
+const canDelete = computed(() => auth.can('trainings.delete'))
+const canIssue = computed(() => auth.can('training-certificates.create'))
 
 const training = ref<Training | null>(null)
 const loading = ref(false)
@@ -235,7 +237,7 @@ const selectClass =
                   </button>
                 </template>
                 <button
-                  v-if="canManage && training.status === 'completed' && row.attendance === 'attended'"
+                  v-if="canIssue && training.status === 'completed' && row.attendance === 'attended'"
                   type="button"
                   class="font-medium text-secondary-700 hover:underline"
                   @click="openCertificate(participant(row.id)!)"
@@ -261,12 +263,12 @@ const selectClass =
     </div>
 
     <template #footer>
-      <div v-if="training && canManage" class="flex w-full flex-wrap justify-end gap-2">
-        <BaseButton variant="outline" class="mr-auto text-danger-600" @click="remove">{{ t('proDev.delete') }}</BaseButton>
-        <BaseButton v-if="training.status === 'planned'" variant="outline" @click="setStatus('cancelled')">{{ t('proDev.trainings.cancelTraining') }}</BaseButton>
-        <BaseButton variant="outline" @click="emit('edit', training)">{{ t('proDev.edit') }}</BaseButton>
-        <BaseButton v-if="training.status === 'planned'" variant="outline" @click="setStatus('completed')">{{ t('proDev.trainings.markCompleted') }}</BaseButton>
-        <BaseButton v-if="rows.length > 0" :loading="saving" :disabled="!dirty" @click="saveAttendance">
+      <div v-if="training && (canManage || canDelete)" class="flex w-full flex-wrap justify-end gap-2">
+        <BaseButton v-if="canDelete" variant="outline" class="mr-auto text-danger-600" @click="remove">{{ t('proDev.delete') }}</BaseButton>
+        <BaseButton v-if="canManage && training.status === 'planned'" variant="outline" @click="setStatus('cancelled')">{{ t('proDev.trainings.cancelTraining') }}</BaseButton>
+        <BaseButton v-if="canManage" variant="outline" @click="emit('edit', training)">{{ t('proDev.edit') }}</BaseButton>
+        <BaseButton v-if="canManage && training.status === 'planned'" variant="outline" @click="setStatus('completed')">{{ t('proDev.trainings.markCompleted') }}</BaseButton>
+        <BaseButton v-if="canManage && rows.length > 0" :loading="saving" :disabled="!dirty" @click="saveAttendance">
           {{ saved && !dirty ? t('proDev.saved') : t('proDev.trainings.saveAttendance') }}
         </BaseButton>
       </div>

@@ -20,7 +20,8 @@ import { formatDate } from '@/utils/date'
 const { t } = useI18n()
 const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
-const canManage = computed(() => auth.can('teachers.manage'))
+const canCreate = computed(() => auth.can('teacher-documents.create'))
+const canDelete = computed(() => auth.can('teacher-documents.delete'))
 
 const teachers = ref<Teacher[]>([])
 const staffId = ref('')
@@ -124,7 +125,7 @@ onMounted(async () => {
     <div class="mb-4 flex flex-wrap items-center gap-2">
       <BaseSelect class="w-72 max-w-full" :model-value="staffId" :options="[{ value: '', label: t('teacherMgmt.allTeachers') }, ...teacherOptions]" @update:model-value="onTeacher" />
       <BaseSpinner v-if="loading" class="h-4 w-4" />
-      <BaseButton v-if="canManage" class="ml-auto" :disabled="teachers.length === 0" @click="open">{{ t('teacherMgmt.docs.add') }}</BaseButton>
+      <BaseButton v-if="canCreate" class="ml-auto" :disabled="teachers.length === 0" @click="open">{{ t('teacherMgmt.docs.add') }}</BaseButton>
     </div>
     <p class="mb-3 text-xs text-neutral-500">{{ t('teacherMgmt.docs.hint') }}</p>
 
@@ -142,7 +143,7 @@ onMounted(async () => {
         <p v-if="row.expires_on" class="text-xs" :class="row.expired ? 'text-red-600' : 'text-neutral-500'">{{ t('teacherMgmt.docs.expires') }}: {{ formatDate(row.expires_on) }}</p>
         <div class="mt-2 flex justify-end gap-3">
           <button type="button" class="text-sm font-medium text-secondary-700" @click="download(row)">{{ t('teacherMgmt.docs.open') }}</button>
-          <button v-if="canManage" type="button" class="text-sm font-medium text-danger-600" @click="remove(row)">{{ t('teacherMgmt.delete') }}</button>
+          <button v-if="canDelete" type="button" class="text-sm font-medium text-danger-600" @click="remove(row)">{{ t('teacherMgmt.delete') }}</button>
         </div>
       </div>
     </div>
@@ -162,7 +163,7 @@ onMounted(async () => {
         <template #cell-actions="{ row }">
           <div class="flex justify-end gap-3">
             <button type="button" class="text-sm font-medium text-secondary-700 hover:underline" @click="download(row as TeacherDocument)">{{ t('teacherMgmt.docs.open') }}</button>
-            <button v-if="canManage" type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row as TeacherDocument)">{{ t('teacherMgmt.delete') }}</button>
+            <button v-if="canDelete" type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row as TeacherDocument)">{{ t('teacherMgmt.delete') }}</button>
           </div>
         </template>
       </DataTable>

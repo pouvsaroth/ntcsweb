@@ -31,7 +31,7 @@ final class PerformanceGoalController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $this->authorize('create', PerformanceGoal::class);
+        $this->authorize('create', [PerformanceGoal::class, PerformanceGoal::class]);
 
         $goal = PerformanceGoal::query()->create([...$this->validated($request, null), 'created_by' => $request->user()->getKey()]);
 

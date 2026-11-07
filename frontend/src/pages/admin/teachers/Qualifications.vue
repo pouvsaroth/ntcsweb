@@ -20,7 +20,11 @@ import { ApiRequestError } from '@/types/api'
 const { t } = useI18n()
 const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
-const canManage = computed(() => auth.can('teachers.manage'))
+const canCreate = computed(() => auth.can('teacher-qualifications.create'))
+const canUpdate = computed(() => auth.can('teacher-qualifications.update'))
+const canDelete = computed(() => auth.can('teacher-qualifications.delete'))
+/** Any row action (edit or delete). */
+const canManage = computed(() => canUpdate.value || canDelete.value)
 
 const teachers = ref<Teacher[]>([])
 const staffId = ref('')
@@ -151,7 +155,7 @@ onMounted(async () => {
     <div class="mb-4 flex flex-wrap items-center gap-2">
       <BaseSelect class="w-72 max-w-full" :model-value="staffId" :options="teacherOptions" :placeholder="t('teacherMgmt.chooseTeacher')" @update:model-value="onTeacher" />
       <BaseSpinner v-if="loading" class="h-4 w-4" />
-      <BaseButton v-if="canManage && staffId" class="ml-auto" @click="open(null)">{{ t('teacherMgmt.qual.add') }}</BaseButton>
+      <BaseButton v-if="canCreate && staffId" class="ml-auto" @click="open(null)">{{ t('teacherMgmt.qual.add') }}</BaseButton>
     </div>
 
     <BaseAlert v-if="error" variant="danger" class="mb-4">{{ error }}</BaseAlert>
@@ -162,7 +166,7 @@ onMounted(async () => {
       <div class="mb-4 rounded-[--radius-card] border border-neutral-200 bg-white p-4 shadow-[--shadow-card]">
         <div class="flex items-center justify-between gap-2">
           <p class="text-sm font-semibold text-neutral-800">{{ t('teacherMgmt.qual.subjects') }}</p>
-          <button v-if="canManage" type="button" class="text-sm font-medium text-secondary-700 hover:underline" @click="openSubjects">{{ t('teacherMgmt.edit') }}</button>
+          <button v-if="canUpdate" type="button" class="text-sm font-medium text-secondary-700 hover:underline" @click="openSubjects">{{ t('teacherMgmt.edit') }}</button>
         </div>
         <div class="mt-2 flex flex-wrap gap-1.5">
           <span v-for="s in subjects" :key="s.id" class="rounded-full bg-secondary-50 px-2.5 py-0.5 text-xs font-medium text-secondary-800">{{ s.title }}</span>
@@ -180,8 +184,8 @@ onMounted(async () => {
           </div>
           <p class="text-xs text-neutral-500">{{ [levelText(row), row.institution, row.year].filter(Boolean).join(' · ') || '—' }}</p>
           <div v-if="canManage" class="mt-2 flex justify-end gap-3">
-            <EditIconButton @click="open(row)" />
-            <button type="button" class="text-sm font-medium text-danger-600" @click="remove(row)">{{ t('teacherMgmt.delete') }}</button>
+            <EditIconButton v-if="canUpdate" @click="open(row)" />
+            <button v-if="canDelete" type="button" class="text-sm font-medium text-danger-600" @click="remove(row)">{{ t('teacherMgmt.delete') }}</button>
           </div>
         </div>
       </div>
@@ -197,8 +201,8 @@ onMounted(async () => {
           <template #cell-year="{ row }">{{ row.year || '—' }}</template>
           <template #cell-actions="{ row }">
             <div class="flex justify-end gap-2">
-              <EditIconButton @click="open(row as Qualification)" />
-              <button type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row as Qualification)">{{ t('teacherMgmt.delete') }}</button>
+              <EditIconButton v-if="canUpdate" @click="open(row as Qualification)" />
+              <button v-if="canDelete" type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row as Qualification)">{{ t('teacherMgmt.delete') }}</button>
             </div>
           </template>
         </DataTable>

@@ -32,7 +32,7 @@ final class ObservationFormController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        abort_unless($request->user()->hasPermission(Permissions::PROFESSIONAL_DEVELOPMENT_MANAGE), 403);
+        abort_unless($request->user()->hasPermission(Permissions::CLASSROOM_OBSERVATIONS_CREATE), 403);
         $data = $this->validated($request);
 
         $form = DB::connection('tenant')->transaction(function () use ($data) {
@@ -47,7 +47,7 @@ final class ObservationFormController extends Controller
 
     public function update(Request $request, ObservationForm $observationForm): JsonResponse
     {
-        abort_unless($request->user()->hasPermission(Permissions::PROFESSIONAL_DEVELOPMENT_MANAGE), 403);
+        abort_unless($request->user()->hasPermission(Permissions::CLASSROOM_OBSERVATIONS_UPDATE), 403);
         $data = $this->validated($request);
 
         DB::connection('tenant')->transaction(function () use ($observationForm, $data) {
@@ -60,7 +60,7 @@ final class ObservationFormController extends Controller
 
     public function destroy(Request $request, ObservationForm $observationForm): JsonResponse
     {
-        abort_unless($request->user()->hasPermission(Permissions::PROFESSIONAL_DEVELOPMENT_MANAGE), 403);
+        abort_unless($request->user()->hasPermission(Permissions::CLASSROOM_OBSERVATIONS_DELETE), 403);
 
         // Past observations keep their own copy of the criteria and the form's name.
         $observationForm->delete();

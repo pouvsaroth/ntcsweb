@@ -30,7 +30,7 @@ class PromotionRecommendationTest extends TestCase
 {
     use HasAcademicAdmin, RefreshDatabase;
 
-    private const ALL = [Permissions::PERFORMANCE_VIEW, Permissions::PERFORMANCE_MANAGE, Permissions::PERFORMANCE_APPROVE_PROMOTION];
+    private const ALL = [Permissions::PERFORMANCE_VIEW, Permissions::PERFORMANCE_KPIS_CREATE, Permissions::PERFORMANCE_KPIS_UPDATE, Permissions::PERFORMANCE_KPIS_DELETE, Permissions::PERFORMANCE_GOALS_CREATE, Permissions::PERFORMANCE_GOALS_UPDATE, Permissions::PERFORMANCE_GOALS_DELETE, Permissions::PERFORMANCE_REVIEWS_CREATE, Permissions::PERFORMANCE_REVIEWS_UPDATE, Permissions::PERFORMANCE_REVIEWS_DELETE, Permissions::PERFORMANCE_FORMS_CREATE, Permissions::PERFORMANCE_FORMS_UPDATE, Permissions::PERFORMANCE_FORMS_DELETE, Permissions::PERFORMANCE_PROMOTIONS_CREATE, Permissions::PERFORMANCE_PROMOTIONS_UPDATE, Permissions::PERFORMANCE_APPROVE_PROMOTION];
 
     private User $hr;
 
@@ -125,7 +125,7 @@ class PromotionRecommendationTest extends TestCase
 
         $clerk = User::factory()->forTenant($this->tenant)->create();
         $role = Role::factory()->forTenant($this->tenant)->create(['slug' => 'hr-clerk', 'level' => 50]);
-        $role->permissions()->attach(Permission::query()->whereIn('slug', [Permissions::PERFORMANCE_VIEW, Permissions::PERFORMANCE_MANAGE])->pluck('id'));
+        $role->permissions()->attach(Permission::query()->whereIn('slug', [Permissions::PERFORMANCE_VIEW, Permissions::PERFORMANCE_KPIS_CREATE, Permissions::PERFORMANCE_KPIS_UPDATE, Permissions::PERFORMANCE_KPIS_DELETE, Permissions::PERFORMANCE_GOALS_CREATE, Permissions::PERFORMANCE_GOALS_UPDATE, Permissions::PERFORMANCE_GOALS_DELETE, Permissions::PERFORMANCE_REVIEWS_CREATE, Permissions::PERFORMANCE_REVIEWS_UPDATE, Permissions::PERFORMANCE_REVIEWS_DELETE, Permissions::PERFORMANCE_FORMS_CREATE, Permissions::PERFORMANCE_FORMS_UPDATE, Permissions::PERFORMANCE_FORMS_DELETE, Permissions::PERFORMANCE_PROMOTIONS_CREATE, Permissions::PERFORMANCE_PROMOTIONS_UPDATE])->pluck('id'));
         $clerk->attachRoles($role);
         $this->actingAsTenantUser($clerk);
         $this->postJson("/api/v1/promotion-recommendations/{$recommendation['id']}/approve")->assertForbidden();
