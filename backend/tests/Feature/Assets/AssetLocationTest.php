@@ -16,7 +16,7 @@ class AssetLocationTest extends TestCase
 
     public function test_an_admin_can_create_a_hierarchical_location(): void
     {
-        $this->actingAsAdminWithPermissions([Permissions::ASSETS_CREATE]);
+        $this->actingAsAdminWithPermissions([Permissions::ASSET_LOCATIONS_CREATE]);
 
         $campus = AssetLocation::factory()->create(['code' => 'MAIN', 'type' => AssetLocation::CAMPUS]);
 
@@ -33,7 +33,7 @@ class AssetLocationTest extends TestCase
 
     public function test_a_location_code_must_be_unique_within_the_tenant(): void
     {
-        $this->actingAsAdminWithPermissions([Permissions::ASSETS_CREATE]);
+        $this->actingAsAdminWithPermissions([Permissions::ASSET_LOCATIONS_CREATE]);
         AssetLocation::factory()->create(['code' => 'LAB1']);
 
         $this->postJson('/api/v1/asset-locations', ['code' => 'LAB1', 'name' => 'Duplicate'])->assertUnprocessable();

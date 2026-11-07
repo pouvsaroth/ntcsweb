@@ -1064,7 +1064,7 @@ const adminRoutes: RouteRecordRaw[] = [
     path: 'repair-shops',
     name: 'admin.repair-shops',
     component: () => import('@/pages/admin/RepairShops.vue'),
-    meta: { titleKey: 'adminNav.items.repairShops' },
+    meta: { titleKey: 'adminNav.items.repairShops', permission: 'repair-shops.view' },
   },
   {
     path: 'asset-maintenance',
@@ -1076,13 +1076,13 @@ const adminRoutes: RouteRecordRaw[] = [
     path: 'asset-categories',
     name: 'admin.asset-categories',
     component: () => import('@/pages/admin/AssetCategories.vue'),
-    meta: { titleKey: 'adminNav.items.assetCategories' },
+    meta: { titleKey: 'adminNav.items.assetCategories', permission: 'asset-categories.view' },
   },
   {
     path: 'asset-locations',
     name: 'admin.asset-locations',
     component: () => import('@/pages/admin/AssetLocations.vue'),
-    meta: { titleKey: 'adminNav.items.assetLocations' },
+    meta: { titleKey: 'adminNav.items.assetLocations', permission: 'asset-locations.view' },
   },
   {
     path: 'departments',

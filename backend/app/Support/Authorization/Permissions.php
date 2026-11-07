@@ -869,6 +869,31 @@ final class Permissions
 
     public const ASSET_REPORTS_EXPORT = 'assets.reports.export';
 
+    // Assets > Categories, Locations and Repair shops: their own View / Add / Update / Delete.
+    public const ASSET_CATEGORIES_VIEW = 'asset-categories.view';
+
+    public const ASSET_CATEGORIES_CREATE = 'asset-categories.create';
+
+    public const ASSET_CATEGORIES_UPDATE = 'asset-categories.update';
+
+    public const ASSET_CATEGORIES_DELETE = 'asset-categories.delete';
+
+    public const ASSET_LOCATIONS_VIEW = 'asset-locations.view';
+
+    public const ASSET_LOCATIONS_CREATE = 'asset-locations.create';
+
+    public const ASSET_LOCATIONS_UPDATE = 'asset-locations.update';
+
+    public const ASSET_LOCATIONS_DELETE = 'asset-locations.delete';
+
+    public const REPAIR_SHOPS_VIEW = 'repair-shops.view';
+
+    public const REPAIR_SHOPS_CREATE = 'repair-shops.create';
+
+    public const REPAIR_SHOPS_UPDATE = 'repair-shops.update';
+
+    public const REPAIR_SHOPS_DELETE = 'repair-shops.delete';
+
     // eApprovals — the generic form-template/request/approval module. Any
     // authenticated user can browse the catalog and submit/view their own
     // requests with no permission required (see FormCategoryController,
@@ -1569,6 +1594,18 @@ final class Permissions
                 self::ASSET_MAINTENANCE_UPDATE => 'Update/complete asset maintenance',
                 self::ASSET_REPORTS_VIEW => 'View asset reports and dashboard',
                 self::ASSET_REPORTS_EXPORT => 'Export asset reports',
+                self::ASSET_CATEGORIES_VIEW => 'View asset categories',
+                self::ASSET_CATEGORIES_CREATE => 'Add asset categories',
+                self::ASSET_CATEGORIES_UPDATE => 'Update asset categories',
+                self::ASSET_CATEGORIES_DELETE => 'Delete asset categories',
+                self::ASSET_LOCATIONS_VIEW => 'View asset locations',
+                self::ASSET_LOCATIONS_CREATE => 'Add asset locations',
+                self::ASSET_LOCATIONS_UPDATE => 'Update asset locations',
+                self::ASSET_LOCATIONS_DELETE => 'Delete asset locations',
+                self::REPAIR_SHOPS_VIEW => 'View repair shops',
+                self::REPAIR_SHOPS_CREATE => 'Add repair shops',
+                self::REPAIR_SHOPS_UPDATE => 'Update repair shops',
+                self::REPAIR_SHOPS_DELETE => 'Delete repair shops',
             ],
             'My Assets' => [
                 self::MY_ASSETS_VIEW => 'View assets assigned to you',
@@ -1760,6 +1797,9 @@ final class Permissions
             self::ASSET_REPAIRS_VIEW, self::ASSET_REPAIRS_CREATE, self::ASSET_REPAIRS_UPDATE, self::ASSET_REPAIRS_COMPLETE,
             self::ASSET_MAINTENANCE_VIEW, self::ASSET_MAINTENANCE_CREATE, self::ASSET_MAINTENANCE_UPDATE,
             self::ASSET_REPORTS_VIEW, self::ASSET_REPORTS_EXPORT,
+            self::ASSET_CATEGORIES_VIEW, self::ASSET_CATEGORIES_CREATE, self::ASSET_CATEGORIES_UPDATE, self::ASSET_CATEGORIES_DELETE,
+            self::ASSET_LOCATIONS_VIEW, self::ASSET_LOCATIONS_CREATE, self::ASSET_LOCATIONS_UPDATE, self::ASSET_LOCATIONS_DELETE,
+            self::REPAIR_SHOPS_VIEW, self::REPAIR_SHOPS_CREATE, self::REPAIR_SHOPS_UPDATE, self::REPAIR_SHOPS_DELETE,
         ];
 
         // Same reasoning as $billing/$accounting/$assets above — school-admin

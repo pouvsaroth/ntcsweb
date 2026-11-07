@@ -146,7 +146,7 @@ onMounted(async () => {
       <template #cell-condition="{ row }">{{ t(`admin.assets.condition${row.condition.charAt(0)}${row.condition.slice(1).toLowerCase()}`) }}</template>
       <template #cell-location="{ row }">{{ row.location?.name ?? '—' }}</template>
       <template #cell-actions="{ row }">
-        <div v-if="auth.can('assets.update')" class="flex justify-end gap-2">
+        <div v-if="auth.can('assets.update') || auth.can('assets.delete')" class="flex justify-end gap-2">
           <EditIconButton v-if="auth.can('assets.update')" :to="`/admin/assets/${row.id}/edit`" />
           <button v-if="auth.can('assets.delete')" type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row)">
             {{ t('admin.assets.delete') }}

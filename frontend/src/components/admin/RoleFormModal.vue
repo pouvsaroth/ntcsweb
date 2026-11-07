@@ -410,8 +410,8 @@ const MODULES: ModuleEntry[] = [
   // ── Assets ──
   { name: 'Asset dashboard & Asset reports', group: 'Assets', actions: { view: 'assets.reports.view', export: 'assets.reports.export' } },
   {
-    // Categories/Locations/Departments share these slugs (see AssetCategoryPolicy and friends).
-    name: 'Assets (also Categories, Locations, Departments)',
+    // Assets > Departments still shares these with Organization (DepartmentPolicy).
+    name: 'Assets',
     group: 'Assets',
     actions: {
       ...crud('assets'),
@@ -427,7 +427,9 @@ const MODULES: ModuleEntry[] = [
   { name: 'My assets', group: 'Assets', actions: { view: 'my-assets.view' } },
   { name: 'Asset issues', group: 'Assets', actions: { view: 'assets.issue.view', create: 'assets.issue.create', update: 'assets.issue.update', resolve: 'assets.issue.resolve' } },
   { name: 'Asset repairs', group: 'Assets', actions: { view: 'assets.repair.view', create: 'assets.repair.create', update: 'assets.repair.update', complete: 'assets.repair.complete' } },
-  { name: 'Repair shops', group: 'Assets', actions: { view: 'assets.repair.view', create: 'assets.create', update: 'assets.update', delete: 'assets.delete' } },
+  { name: 'Repair shops', group: 'Assets', actions: crud('repair-shops') },
+  { name: 'Asset categories', group: 'Assets', actions: crud('asset-categories') },
+  { name: 'Asset locations', group: 'Assets', actions: crud('asset-locations') },
   { name: 'Suppliers (same list as Vendors)', group: 'Assets', actions: crud('suppliers') },
   { name: 'Asset maintenance', group: 'Assets', actions: { view: 'assets.maintenance.view', create: 'assets.maintenance.create', update: 'assets.maintenance.update' } },
 

@@ -13,26 +13,26 @@ class AssetCategoryPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->hasPermission(Permissions::ASSETS_VIEW);
+        return $user->hasAnyPermission(Permissions::ASSET_CATEGORIES_VIEW, Permissions::ASSETS_VIEW);
     }
 
     public function view(User $user, AssetCategory $category): bool
     {
-        return $user->hasPermission(Permissions::ASSETS_VIEW);
+        return $user->hasAnyPermission(Permissions::ASSET_CATEGORIES_VIEW, Permissions::ASSETS_VIEW);
     }
 
     public function create(User $user): bool
     {
-        return $user->hasPermission(Permissions::ASSETS_CREATE);
+        return $user->hasPermission(Permissions::ASSET_CATEGORIES_CREATE);
     }
 
     public function update(User $user, AssetCategory $category): bool
     {
-        return $user->hasPermission(Permissions::ASSETS_UPDATE);
+        return $user->hasPermission(Permissions::ASSET_CATEGORIES_UPDATE);
     }
 
     public function delete(User $user, AssetCategory $category): bool
     {
-        return $user->hasPermission(Permissions::ASSETS_DELETE);
+        return $user->hasPermission(Permissions::ASSET_CATEGORIES_DELETE);
     }
 }

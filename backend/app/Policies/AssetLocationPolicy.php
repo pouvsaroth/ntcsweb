@@ -13,26 +13,26 @@ class AssetLocationPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->hasPermission(Permissions::ASSETS_VIEW);
+        return $user->hasAnyPermission(Permissions::ASSET_LOCATIONS_VIEW, Permissions::ASSETS_VIEW);
     }
 
     public function view(User $user, AssetLocation $location): bool
     {
-        return $user->hasPermission(Permissions::ASSETS_VIEW);
+        return $user->hasAnyPermission(Permissions::ASSET_LOCATIONS_VIEW, Permissions::ASSETS_VIEW);
     }
 
     public function create(User $user): bool
     {
-        return $user->hasPermission(Permissions::ASSETS_CREATE);
+        return $user->hasPermission(Permissions::ASSET_LOCATIONS_CREATE);
     }
 
     public function update(User $user, AssetLocation $location): bool
     {
-        return $user->hasPermission(Permissions::ASSETS_UPDATE);
+        return $user->hasPermission(Permissions::ASSET_LOCATIONS_UPDATE);
     }
 
     public function delete(User $user, AssetLocation $location): bool
     {
-        return $user->hasPermission(Permissions::ASSETS_DELETE);
+        return $user->hasPermission(Permissions::ASSET_LOCATIONS_DELETE);
     }
 }
