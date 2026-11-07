@@ -33,7 +33,7 @@ import { formatDate } from '@/utils/date'
 const { t } = useI18n()
 const auth = useAuthStore()
 
-const canManage = computed(() => auth.can('staff-attendance.manage'))
+const canManage = computed(() => auth.can('overtime-requests.create'))
 
 const range = thisMonthRange()
 const from = ref(range.from)

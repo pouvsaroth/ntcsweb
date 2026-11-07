@@ -27,12 +27,12 @@ class OvertimeRequestPolicy
 
     public function create(User $user): bool
     {
-        return $user->hasPermission(Permissions::STAFF_ATTENDANCE_MANAGE);
+        return $user->hasPermission(Permissions::OVERTIME_REQUESTS_CREATE);
     }
 
     public function delete(User $user, OvertimeRequest $request): bool
     {
-        return $request->status === OvertimeRequest::STATUS_PENDING && $user->hasPermission(Permissions::STAFF_ATTENDANCE_MANAGE);
+        return $request->status === OvertimeRequest::STATUS_PENDING && $user->hasPermission(Permissions::OVERTIME_REQUESTS_DELETE);
     }
 
     public function approve(User $user, OvertimeRequest $request): bool

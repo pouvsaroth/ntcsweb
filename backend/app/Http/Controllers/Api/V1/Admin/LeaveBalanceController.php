@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Api\V1\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponse;
 use App\Models\LeaveBalanceEntry;
+use App\Support\Authorization\Permissions;
 use App\Models\LeaveType;
 use App\Models\Staff;
 use App\Services\Leave\LeaveBalanceService;
@@ -86,7 +87,7 @@ final class LeaveBalanceController extends Controller
     /** HR adds (or with negative days, takes away) days of a leave type for a year, with a note. */
     public function adjust(Request $request): JsonResponse
     {
-        $this->authorize('create', LeaveBalanceEntry::class);
+        $this->authorize('create', [LeaveBalanceEntry::class, LeaveBalanceEntry::class]);
 
         $data = $request->validate([
             'staff_id' => ['required', 'integer', Rule::exists('tenant.staff', 'id')->whereNull('deleted_at')],
@@ -142,7 +143,7 @@ final class LeaveBalanceController extends Controller
     /** Runs year-end carry forward from `from_year` into the year after (again replaces the earlier run). */
     public function carryForward(Request $request): JsonResponse
     {
-        $this->authorize('create', LeaveBalanceEntry::class);
+        abort_unless($request->user()->hasPermission(Permissions::LEAVE_CARRY_FORWARD_RUN), 403);
 
         $data = $request->validate(['from_year' => ['required', 'integer', 'min:2000', 'max:2100']]);
 

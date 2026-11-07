@@ -83,7 +83,7 @@ final class LeaveRequestController extends Controller
      */
     public function store(StoreStaffLeaveRequestRequest $request): JsonResponse
     {
-        abort_unless($request->user()->hasPermission(Permissions::LEAVE_MANAGEMENT_MANAGE), 403);
+        abort_unless($request->user()->hasPermission(Permissions::LEAVE_REQUESTS_CREATE), 403);
 
         $staff = Staff::query()->findOrFail($request->integer('staff_id'));
         $leaveRequest = $this->leaveRequests->submit(null, $staff, [

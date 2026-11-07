@@ -26,7 +26,7 @@ class LeaveBalanceTest extends TestCase
 {
     use HasAcademicAdmin, RefreshDatabase;
 
-    private const ALL = [Permissions::LEAVE_MANAGEMENT_VIEW, Permissions::LEAVE_MANAGEMENT_MANAGE];
+    private const ALL = [Permissions::LEAVE_MANAGEMENT_VIEW, Permissions::LEAVE_TYPES_CREATE, Permissions::LEAVE_TYPES_UPDATE, Permissions::LEAVE_TYPES_DELETE, Permissions::LEAVE_POLICIES_CREATE, Permissions::LEAVE_POLICIES_UPDATE, Permissions::LEAVE_POLICIES_DELETE, Permissions::LEAVE_BALANCES_CREATE, Permissions::LEAVE_BALANCES_DELETE, Permissions::LEAVE_CARRY_FORWARD_RUN, Permissions::LEAVE_REQUESTS_CREATE];
 
     private Staff $staff;
 

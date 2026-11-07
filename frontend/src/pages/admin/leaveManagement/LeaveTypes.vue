@@ -28,7 +28,11 @@ const { t } = useI18n()
 const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
 
-const canManage = computed(() => auth.can('leave-management.manage'))
+const canCreate = computed(() => auth.can('leave-types.create'))
+const canUpdate = computed(() => auth.can('leave-types.update'))
+const canDelete = computed(() => auth.can('leave-types.delete'))
+/** Any row action (edit or delete). */
+const canManage = computed(() => canUpdate.value || canDelete.value)
 
 const { items, meta, loading, error, setPage, fetch } = usePaginatedResource<LeaveType>((query) => leaveTypesService.list(query))
 
@@ -130,7 +134,7 @@ onMounted(() => fetch())
   <div>
     <div class="mb-4 flex items-center justify-between gap-3">
       <p class="text-sm text-neutral-500">{{ t('admin.leaveManagement.types.hint') }}</p>
-      <BaseButton v-if="canManage" @click="open(null)">{{ t('admin.leaveManagement.types.add') }}</BaseButton>
+      <BaseButton v-if="canCreate" @click="open(null)">{{ t('admin.leaveManagement.types.add') }}</BaseButton>
     </div>
 
     <BaseAlert v-if="error || actionError" variant="danger" class="mb-4">{{ error || actionError }}</BaseAlert>
@@ -153,8 +157,8 @@ onMounted(() => fetch())
           <p class="mt-1 text-sm text-neutral-700">{{ traits(row) }}</p>
           <p class="text-xs text-neutral-500">{{ t('admin.leaveManagement.types.policiesN', { count: row.policies_count ?? 0 }) }}</p>
           <div v-if="canManage" class="mt-2 flex justify-end gap-3">
-            <EditIconButton @click="open(row)" />
-            <button type="button" class="text-sm font-medium text-danger-600" @click="remove(row)">{{ t('admin.organization.delete') }}</button>
+            <EditIconButton v-if="canUpdate" @click="open(row)" />
+            <button v-if="canDelete" type="button" class="text-sm font-medium text-danger-600" @click="remove(row)">{{ t('admin.organization.delete') }}</button>
           </div>
         </div>
       </div>
@@ -176,8 +180,8 @@ onMounted(() => fetch())
         </template>
         <template #cell-actions="{ row }">
           <div class="flex justify-end gap-2">
-            <EditIconButton @click="open(row as LeaveType)" />
-            <button type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row as LeaveType)">{{ t('admin.organization.delete') }}</button>
+            <EditIconButton v-if="canUpdate" @click="open(row as LeaveType)" />
+            <button v-if="canDelete" type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row as LeaveType)">{{ t('admin.organization.delete') }}</button>
           </div>
         </template>
       </DataTable>

@@ -26,7 +26,7 @@ const { t } = useI18n()
 const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
 
-const canManage = computed(() => auth.can('leave-management.manage'))
+const canManage = computed(() => auth.can('leave-carry-forward.run'))
 
 const thisYear = new Date().getFullYear()
 /** The year carried INTO. */

@@ -32,7 +32,7 @@ final class LeavePolicyController extends Controller
 
     public function store(LeavePolicyRequest $request): JsonResponse
     {
-        $this->authorize('create', LeavePolicy::class);
+        $this->authorize('create', [LeavePolicy::class, LeavePolicy::class]);
 
         $policy = LeavePolicy::query()->create($request->validated());
 

@@ -41,7 +41,7 @@ final class HolidayController extends Controller
 
     public function store(HolidayRequest $request): JsonResponse
     {
-        $this->authorize('create', Holiday::class);
+        $this->authorize('create', [Holiday::class, Holiday::class]);
 
         $holiday = Holiday::query()->create($request->validated());
         $holiday->cancelledPermissions = $this->leaveRequests->cancelForHoliday($holiday, $request->user());

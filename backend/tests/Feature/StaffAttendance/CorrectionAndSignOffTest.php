@@ -25,7 +25,7 @@ class CorrectionAndSignOffTest extends TestCase
     use HasAcademicAdmin, RefreshDatabase;
 
     private const ALL = [
-        Permissions::STAFF_ATTENDANCE_VIEW, Permissions::STAFF_ATTENDANCE_MANAGE, Permissions::STAFF_ATTENDANCE_APPROVE,
+        Permissions::STAFF_ATTENDANCE_VIEW, Permissions::CHECK_INS_CREATE, Permissions::CHECK_INS_UPDATE, Permissions::CHECK_INS_DELETE, Permissions::SHIFTS_CREATE, Permissions::SHIFTS_UPDATE, Permissions::SHIFTS_DELETE, Permissions::STAFF_SHIFTS_CREATE, Permissions::STAFF_SHIFTS_UPDATE, Permissions::STAFF_SHIFTS_DELETE, Permissions::HOLIDAYS_CREATE, Permissions::HOLIDAYS_UPDATE, Permissions::HOLIDAYS_DELETE, Permissions::OVERTIME_REQUESTS_CREATE, Permissions::OVERTIME_REQUESTS_DELETE, Permissions::ATTENDANCE_CORRECTIONS_CREATE, Permissions::ATTENDANCE_CORRECTIONS_DELETE, Permissions::STAFF_ATTENDANCE_APPROVE,
         Permissions::ATTENDANCE_CORRECTIONS_APPROVE, Permissions::ATTENDANCE_CORRECTIONS_REJECT,
     ];
 
@@ -97,7 +97,7 @@ class CorrectionAndSignOffTest extends TestCase
 
     public function test_signing_off_needs_its_own_permission_and_not_a_future_month(): void
     {
-        $this->actingAsAdminWithPermissions([Permissions::STAFF_ATTENDANCE_VIEW, Permissions::STAFF_ATTENDANCE_MANAGE]);
+        $this->actingAsAdminWithPermissions([Permissions::STAFF_ATTENDANCE_VIEW, Permissions::CHECK_INS_CREATE, Permissions::CHECK_INS_UPDATE, Permissions::CHECK_INS_DELETE, Permissions::SHIFTS_CREATE, Permissions::SHIFTS_UPDATE, Permissions::SHIFTS_DELETE, Permissions::STAFF_SHIFTS_CREATE, Permissions::STAFF_SHIFTS_UPDATE, Permissions::STAFF_SHIFTS_DELETE, Permissions::HOLIDAYS_CREATE, Permissions::HOLIDAYS_UPDATE, Permissions::HOLIDAYS_DELETE, Permissions::OVERTIME_REQUESTS_CREATE, Permissions::OVERTIME_REQUESTS_DELETE, Permissions::ATTENDANCE_CORRECTIONS_CREATE, Permissions::ATTENDANCE_CORRECTIONS_DELETE]);
         $staff = Staff::factory()->create();
 
         $this->postJson('/api/v1/attendance-approvals', ['month' => '2026-09', 'staff_ids' => [$staff->id]])->assertForbidden();

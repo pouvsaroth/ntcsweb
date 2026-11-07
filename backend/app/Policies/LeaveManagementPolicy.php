@@ -4,14 +4,19 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
+use App\Models\LeaveBalanceEntry;
+use App\Models\LeavePolicy;
+use App\Models\LeaveType;
 use App\Models\User;
 use App\Support\Authorization\Permissions;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * HRM > Leave Management's set-up and records (leave types, policies,
- * balances): view to read, manage to change. Deciding a leave request stays
- * with LeaveRequestPolicy / the Approvals queue.
+ * HRM > Leave Management's set-up and records: leave-management.view to read;
+ * Add / Update / Delete per tab — Leave types (leave-types.*), Leave policies
+ * (leave-policies.*), Leave balance (leave-balances.create / .delete). Carry
+ * forward is leave-carry-forward.run (LeaveBalanceController). Deciding a
+ * leave request stays with LeaveRequestPolicy / the Approvals queue.
  */
 class LeaveManagementPolicy
 {
@@ -25,18 +30,35 @@ class LeaveManagementPolicy
         return $user->hasPermission(Permissions::LEAVE_MANAGEMENT_VIEW);
     }
 
-    public function create(User $user): bool
+    /** $class names the tab: authorize('create', [LeaveType::class, LeaveType::class]). */
+    public function create(User $user, ?string $class = null): bool
     {
-        return $user->hasPermission(Permissions::LEAVE_MANAGEMENT_MANAGE);
+        $tab = self::tab($class);
+
+        return $tab !== null && $user->hasPermission("{$tab}.create");
     }
 
     public function update(User $user, Model $record): bool
     {
-        return $user->hasPermission(Permissions::LEAVE_MANAGEMENT_MANAGE);
+        $tab = self::tab($record::class);
+
+        return $tab !== null && $user->hasPermission("{$tab}.update");
     }
 
     public function delete(User $user, Model $record): bool
     {
-        return $user->hasPermission(Permissions::LEAVE_MANAGEMENT_MANAGE);
+        $tab = self::tab($record::class);
+
+        return $tab !== null && $user->hasPermission("{$tab}.delete");
+    }
+
+    private static function tab(?string $class): ?string
+    {
+        return match ($class) {
+            LeaveType::class => 'leave-types',
+            LeavePolicy::class => 'leave-policies',
+            LeaveBalanceEntry::class => 'leave-balances',
+            default => null,
+        };
     }
 }

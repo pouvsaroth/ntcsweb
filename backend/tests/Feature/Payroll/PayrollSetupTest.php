@@ -179,7 +179,7 @@ class PayrollSetupTest extends TestCase
         ])->assertOk()->assertJsonPath('data.basic_salary', '180.00');
 
         // A shift staff are paid by can't be deleted.
-        $this->actingAsAdminWithPermissions([...self::ALL, Permissions::STAFF_ATTENDANCE_MANAGE]);
+        $this->actingAsAdminWithPermissions([...self::ALL, Permissions::CHECK_INS_CREATE, Permissions::CHECK_INS_UPDATE, Permissions::CHECK_INS_DELETE, Permissions::SHIFTS_CREATE, Permissions::SHIFTS_UPDATE, Permissions::SHIFTS_DELETE, Permissions::STAFF_SHIFTS_CREATE, Permissions::STAFF_SHIFTS_UPDATE, Permissions::STAFF_SHIFTS_DELETE, Permissions::HOLIDAYS_CREATE, Permissions::HOLIDAYS_UPDATE, Permissions::HOLIDAYS_DELETE, Permissions::OVERTIME_REQUESTS_CREATE, Permissions::OVERTIME_REQUESTS_DELETE, Permissions::ATTENDANCE_CORRECTIONS_CREATE, Permissions::ATTENDANCE_CORRECTIONS_DELETE]);
         $this->deleteJson("/api/v1/shifts/{$weekend->id}")->assertUnprocessable();
 
         $this->actingAsAdminWithPermissions(self::ALL);

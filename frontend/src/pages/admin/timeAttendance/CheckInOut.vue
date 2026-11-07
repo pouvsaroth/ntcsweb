@@ -32,7 +32,11 @@ const { t } = useI18n()
 const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
 
-const canManage = computed(() => auth.can('staff-attendance.manage'))
+const canCreate = computed(() => auth.can('check-ins.create'))
+const canUpdate = computed(() => auth.can('check-ins.update'))
+const canDelete = computed(() => auth.can('check-ins.delete'))
+/** Any row action (edit or delete). */
+const canManage = computed(() => canUpdate.value || canDelete.value)
 
 function isoDay(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
@@ -152,7 +156,7 @@ onMounted(async () => {
         class="block h-[38px] w-full max-w-xs rounded-lg border border-neutral-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
         @input="setSearch(($event.target as HTMLInputElement).value)"
       />
-      <div v-if="canManage" class="ml-auto flex gap-2">
+      <div v-if="canCreate" class="ml-auto flex gap-2">
         <BaseButton variant="outline" @click="openImport">{{ t('admin.timeAttendance.import.button') }}</BaseButton>
         <BaseButton @click="openAdd">{{ t('admin.timeAttendance.entry.add') }}</BaseButton>
       </div>
@@ -182,8 +186,8 @@ onMounted(async () => {
             {{ row.check_in_source ? t(`admin.timeAttendance.sources.${row.check_in_source}`) : '' }}
           </p>
           <div v-if="canManage" class="mt-2 flex justify-end gap-3">
-            <EditIconButton @click="openEdit(row)" />
-            <button type="button" class="text-sm font-medium text-danger-600" @click="remove(row)">{{ t('admin.organization.delete') }}</button>
+            <EditIconButton v-if="canUpdate" @click="openEdit(row)" />
+            <button v-if="canDelete" type="button" class="text-sm font-medium text-danger-600" @click="remove(row)">{{ t('admin.organization.delete') }}</button>
           </div>
         </div>
       </div>
@@ -222,8 +226,8 @@ onMounted(async () => {
         </template>
         <template #cell-actions="{ row }">
           <div class="flex justify-end gap-2">
-            <EditIconButton @click="openEdit(row as StaffAttendanceRecord)" />
-            <button type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row as StaffAttendanceRecord)">{{ t('admin.organization.delete') }}</button>
+            <EditIconButton v-if="canUpdate" @click="openEdit(row as StaffAttendanceRecord)" />
+            <button v-if="canDelete" type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row as StaffAttendanceRecord)">{{ t('admin.organization.delete') }}</button>
           </div>
         </template>
       </DataTable>

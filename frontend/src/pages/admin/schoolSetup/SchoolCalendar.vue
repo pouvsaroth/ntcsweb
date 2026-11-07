@@ -30,7 +30,7 @@ const router = useRouter()
 const canCreate = computed(() => auth.can('school-calendar.create'))
 const canUpdate = computed(() => auth.can('school-calendar.update'))
 const canDelete = computed(() => auth.can('school-calendar.delete'))
-const canManageHolidays = computed(() => auth.can('staff-attendance.manage'))
+const canManageHolidays = computed(() => ['holidays.create', 'holidays.update', 'holidays.delete'].some((p) => auth.can(p)))
 
 const pad = (n: number) => String(n).padStart(2, '0')
 const iso = (y: number, m: number, d: number) => `${y}-${pad(m + 1)}-${pad(d)}`

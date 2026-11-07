@@ -195,7 +195,7 @@ class StaffLeaveRequestTest extends TestCase
         $this->postJson('/api/v1/leave-requests', ['staff_id' => $other->id, 'leave_type_id' => $this->annual->id, 'from_date' => '2026-10-05', 'to_date' => '2026-10-05', 'reason' => 'Sick'])
             ->assertForbidden();
 
-        $this->actingAsAdminWithPermissions([Permissions::LEAVE_MANAGEMENT_MANAGE, Permissions::LEAVE_REQUESTS_VIEW]);
+        $this->actingAsAdminWithPermissions([Permissions::LEAVE_TYPES_CREATE, Permissions::LEAVE_TYPES_UPDATE, Permissions::LEAVE_TYPES_DELETE, Permissions::LEAVE_POLICIES_CREATE, Permissions::LEAVE_POLICIES_UPDATE, Permissions::LEAVE_POLICIES_DELETE, Permissions::LEAVE_BALANCES_CREATE, Permissions::LEAVE_BALANCES_DELETE, Permissions::LEAVE_CARRY_FORWARD_RUN, Permissions::LEAVE_REQUESTS_CREATE, Permissions::LEAVE_REQUESTS_VIEW]);
         $this->postJson('/api/v1/leave-requests', ['staff_id' => $other->id, 'leave_type_id' => $this->annual->id, 'from_date' => '2026-10-05', 'to_date' => '2026-10-06', 'reason' => 'Sick'])
             ->assertCreated()
             ->assertJsonPath('data.staff.id', $other->id)
@@ -212,7 +212,7 @@ class StaffLeaveRequestTest extends TestCase
         $this->ask(['from_date' => '2026-10-12', 'to_date' => '2026-10-12'])->assertCreated();
         LeavePolicy::query()->delete();
 
-        $this->actingAsAdminWithPermissions([Permissions::LEAVE_MANAGEMENT_VIEW, Permissions::LEAVE_MANAGEMENT_MANAGE]);
+        $this->actingAsAdminWithPermissions([Permissions::LEAVE_MANAGEMENT_VIEW, Permissions::LEAVE_TYPES_CREATE, Permissions::LEAVE_TYPES_UPDATE, Permissions::LEAVE_TYPES_DELETE, Permissions::LEAVE_POLICIES_CREATE, Permissions::LEAVE_POLICIES_UPDATE, Permissions::LEAVE_POLICIES_DELETE, Permissions::LEAVE_BALANCES_CREATE, Permissions::LEAVE_BALANCES_DELETE, Permissions::LEAVE_CARRY_FORWARD_RUN, Permissions::LEAVE_REQUESTS_CREATE]);
         $this->deleteJson("/api/v1/leave-types/{$this->annual->id}")->assertUnprocessable();
     }
 }

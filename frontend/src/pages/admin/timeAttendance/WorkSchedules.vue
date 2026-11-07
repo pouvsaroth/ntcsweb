@@ -28,7 +28,11 @@ const { t } = useI18n()
 const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
 
-const canManage = computed(() => auth.can('staff-attendance.manage'))
+const canCreate = computed(() => auth.can('staff-shifts.create'))
+const canUpdate = computed(() => auth.can('staff-shifts.update'))
+const canDelete = computed(() => auth.can('staff-shifts.delete'))
+/** Any row action (edit or delete). */
+const canManage = computed(() => canUpdate.value || canDelete.value)
 
 const { items, loading, error, fetch } = usePaginatedResource<WorkSchedule>((query) => workSchedulesService.list({ ...query, per_page: 100 }))
 
@@ -236,9 +240,9 @@ onMounted(async () => {
   <div>
     <div class="mb-4 flex items-center justify-between gap-3">
       <p class="text-sm text-neutral-500">{{ t('admin.timeAttendance.schedules.hint') }}</p>
-      <BaseButton v-if="canManage" :disabled="shifts.length === 0" @click="open(null)">{{ t('admin.timeAttendance.schedules.add') }}</BaseButton>
+      <BaseButton v-if="canCreate" :disabled="shifts.length === 0" @click="open(null)">{{ t('admin.timeAttendance.schedules.add') }}</BaseButton>
     </div>
-    <p v-if="canManage && shifts.length === 0 && !loading" class="mb-4 text-sm text-neutral-500">{{ t('admin.timeAttendance.schedules.needShift') }}</p>
+    <p v-if="canCreate && shifts.length === 0 && !loading" class="mb-4 text-sm text-neutral-500">{{ t('admin.timeAttendance.schedules.needShift') }}</p>
 
     <BaseAlert v-if="error || actionError" variant="danger" class="mb-4">{{ error || actionError }}</BaseAlert>
 
@@ -264,8 +268,8 @@ onMounted(async () => {
             </p>
           </div>
           <div v-if="canManage" class="flex gap-3">
-            <EditIconButton @click="open(schedule)" />
-            <button type="button" class="text-sm font-medium text-danger-600" @click="remove(schedule)">{{ t('admin.organization.delete') }}</button>
+            <EditIconButton v-if="canUpdate" @click="open(schedule)" />
+            <button v-if="canDelete" type="button" class="text-sm font-medium text-danger-600" @click="remove(schedule)">{{ t('admin.organization.delete') }}</button>
           </div>
         </div>
       </section>
@@ -291,7 +295,7 @@ onMounted(async () => {
           <div v-for="row in staffRows" :key="row.member.id" class="rounded-[--radius-card] border border-neutral-200 bg-white p-3 shadow-[--shadow-card]">
             <div class="flex items-start justify-between gap-2">
               <p class="font-medium text-neutral-900">{{ row.member.full_name }}</p>
-              <EditIconButton v-if="canManage" class="-mr-1 -mt-1" @click="openMember(row.member, row.assigned)" />
+              <EditIconButton v-if="canUpdate" class="-mr-1 -mt-1" @click="openMember(row.member, row.assigned)" />
             </div>
             <p class="text-xs text-neutral-500">{{ [row.member.employee_code, row.member.position?.name].filter(Boolean).join(' · ') }}</p>
             <div class="mt-2 flex flex-wrap items-center gap-2 text-sm text-neutral-800">
@@ -322,7 +326,7 @@ onMounted(async () => {
             </div>
           </template>
           <template #cell-actions="{ row }">
-            <div class="flex justify-end"><EditIconButton @click="openMember(row.member, row.assigned)" /></div>
+            <div class="flex justify-end"><EditIconButton v-if="canUpdate" @click="openMember(row.member, row.assigned)" /></div>
           </template>
         </DataTable>
       </div>

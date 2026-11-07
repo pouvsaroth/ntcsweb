@@ -36,7 +36,8 @@ const { t } = useI18n()
 const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
 
-const canManage = computed(() => auth.can('leave-management.manage'))
+const canAdjust = computed(() => auth.can('leave-balances.create'))
+const canRemoveEntry = computed(() => auth.can('leave-balances.delete'))
 
 const thisYear = new Date().getFullYear()
 const year = ref(thisYear)
@@ -256,7 +257,7 @@ onMounted(async () => {
 
         <div class="mt-5 flex items-center justify-between gap-3">
           <h3 class="text-sm font-semibold text-neutral-800">{{ t('admin.leaveManagement.balances.history') }}</h3>
-          <BaseButton v-if="canManage && detail.balances.length > 0 && !adjustOpen" size="sm" variant="outline" @click="openAdjust">{{ t('admin.leaveManagement.balances.adjust') }}</BaseButton>
+          <BaseButton v-if="canAdjust && detail.balances.length > 0 && !adjustOpen" size="sm" variant="outline" @click="openAdjust">{{ t('admin.leaveManagement.balances.adjust') }}</BaseButton>
         </div>
 
         <form v-if="adjustOpen" class="mt-3 space-y-3 rounded-lg bg-neutral-50 p-3" @submit.prevent="saveAdjust">
@@ -294,7 +295,7 @@ onMounted(async () => {
               </p>
               <p class="text-xs text-neutral-500">{{ entry.note }}<template v-if="entry.created_by"> · {{ entry.created_by }}</template> · {{ formatDate(entry.created_at) }}</p>
             </div>
-            <button v-if="canManage && entry.kind === 'adjustment'" type="button" class="shrink-0 text-sm font-medium text-danger-600" @click="removeEntry(entry)">
+            <button v-if="canRemoveEntry && entry.kind === 'adjustment'" type="button" class="shrink-0 text-sm font-medium text-danger-600" @click="removeEntry(entry)">
               {{ t('admin.leaveManagement.balances.undo') }}
             </button>
           </li>

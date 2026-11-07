@@ -28,7 +28,11 @@ const { t, locale } = useI18n()
 const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
 
-const canManage = computed(() => auth.can('staff-attendance.manage'))
+const canCreate = computed(() => auth.can('holidays.create'))
+const canUpdate = computed(() => auth.can('holidays.update'))
+const canDelete = computed(() => auth.can('holidays.delete'))
+/** Any row action (edit or delete). */
+const canManage = computed(() => canUpdate.value || canDelete.value)
 
 const thisYear = new Date().getFullYear()
 const year = ref(thisYear)
@@ -134,7 +138,7 @@ onMounted(() => {
     <div class="mb-4 flex flex-wrap items-center gap-2">
       <BaseSelect class="w-32" :model-value="String(year)" :options="yearOptions" @update:model-value="onYear" />
       <p class="text-sm text-neutral-500">{{ t('admin.timeAttendance.holidays.total', { count: totalDays }) }}</p>
-      <BaseButton v-if="canManage" class="ml-auto" @click="open(null)">{{ t('admin.timeAttendance.holidays.add') }}</BaseButton>
+      <BaseButton v-if="canCreate" class="ml-auto" @click="open(null)">{{ t('admin.timeAttendance.holidays.add') }}</BaseButton>
     </div>
 
     <BaseAlert v-if="error || actionError" variant="danger" class="mb-4">{{ error || actionError }}</BaseAlert>
@@ -154,8 +158,8 @@ onMounted(() => {
           </div>
           <p class="text-xs text-neutral-500">{{ range(row) }} · {{ t('admin.timeAttendance.holidays.daysN', { count: row.days }) }}</p>
           <div v-if="canManage" class="mt-2 flex justify-end gap-3">
-            <EditIconButton @click="open(row)" />
-            <button type="button" class="text-sm font-medium text-danger-600" @click="remove(row)">{{ t('admin.organization.delete') }}</button>
+            <EditIconButton v-if="canUpdate" @click="open(row)" />
+            <button v-if="canDelete" type="button" class="text-sm font-medium text-danger-600" @click="remove(row)">{{ t('admin.organization.delete') }}</button>
           </div>
         </div>
       </div>
@@ -175,8 +179,8 @@ onMounted(() => {
         <template #cell-days="{ row }">{{ row.days }}</template>
         <template #cell-actions="{ row }">
           <div class="flex justify-end gap-2">
-            <EditIconButton @click="open(row as Holiday)" />
-            <button type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row as Holiday)">{{ t('admin.organization.delete') }}</button>
+            <EditIconButton v-if="canUpdate" @click="open(row as Holiday)" />
+            <button v-if="canDelete" type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row as Holiday)">{{ t('admin.organization.delete') }}</button>
           </div>
         </template>
       </DataTable>

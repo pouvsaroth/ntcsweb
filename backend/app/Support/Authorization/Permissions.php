@@ -420,7 +420,38 @@ final class Permissions
     // holidays and edits records.
     public const STAFF_ATTENDANCE_VIEW = 'staff-attendance.view';
 
-    public const STAFF_ATTENDANCE_MANAGE = 'staff-attendance.manage';
+    // Time & Attendance, per tab (replaced staff-attendance.manage).
+    public const CHECK_INS_CREATE = 'check-ins.create';
+
+    public const CHECK_INS_UPDATE = 'check-ins.update';
+
+    public const CHECK_INS_DELETE = 'check-ins.delete';
+
+    public const SHIFTS_CREATE = 'shifts.create';
+
+    public const SHIFTS_UPDATE = 'shifts.update';
+
+    public const SHIFTS_DELETE = 'shifts.delete';
+
+    public const STAFF_SHIFTS_CREATE = 'staff-shifts.create';
+
+    public const STAFF_SHIFTS_UPDATE = 'staff-shifts.update';
+
+    public const STAFF_SHIFTS_DELETE = 'staff-shifts.delete';
+
+    public const HOLIDAYS_CREATE = 'holidays.create';
+
+    public const HOLIDAYS_UPDATE = 'holidays.update';
+
+    public const HOLIDAYS_DELETE = 'holidays.delete';
+
+    public const OVERTIME_REQUESTS_CREATE = 'overtime-requests.create';
+
+    public const OVERTIME_REQUESTS_DELETE = 'overtime-requests.delete';
+
+    public const ATTENDANCE_CORRECTIONS_CREATE = 'attendance-corrections.create';
+
+    public const ATTENDANCE_CORRECTIONS_DELETE = 'attendance-corrections.delete';
 
     // Deciding overtime requests in E-Approvals when they have no flow.
     public const OVERTIME_REQUESTS_APPROVE = 'overtime-requests.approve';
@@ -439,7 +470,26 @@ final class Permissions
     // reports; manage sets up types/policies and adjusts balances.
     public const LEAVE_MANAGEMENT_VIEW = 'leave-management.view';
 
-    public const LEAVE_MANAGEMENT_MANAGE = 'leave-management.manage';
+    // Leave Management, per tab (replaced leave-management.manage).
+    public const LEAVE_TYPES_CREATE = 'leave-types.create';
+
+    public const LEAVE_TYPES_UPDATE = 'leave-types.update';
+
+    public const LEAVE_TYPES_DELETE = 'leave-types.delete';
+
+    public const LEAVE_POLICIES_CREATE = 'leave-policies.create';
+
+    public const LEAVE_POLICIES_UPDATE = 'leave-policies.update';
+
+    public const LEAVE_POLICIES_DELETE = 'leave-policies.delete';
+
+    public const LEAVE_BALANCES_CREATE = 'leave-balances.create';
+
+    public const LEAVE_BALANCES_DELETE = 'leave-balances.delete';
+
+    public const LEAVE_CARRY_FORWARD_RUN = 'leave-carry-forward.run';
+
+    public const LEAVE_REQUESTS_CREATE = 'leave-requests.create';
 
     // HRM > Payroll: view reads salary set-up (structures, salaries,
     // allowances, bonuses, deductions) and rules (overtime, attendance
@@ -1184,7 +1234,22 @@ final class Permissions
             ],
             'Staff attendance' => [
                 self::STAFF_ATTENDANCE_VIEW => 'View staff attendance, shifts, schedules and holidays',
-                self::STAFF_ATTENDANCE_MANAGE => 'Manage staff attendance, shifts, schedules and holidays',
+                self::CHECK_INS_CREATE => 'Add a check-in / check-out day (also import)',
+                self::CHECK_INS_UPDATE => 'Update check-in / check-out days (also on Employee attendance)',
+                self::CHECK_INS_DELETE => 'Delete check-in / check-out days',
+                self::SHIFTS_CREATE => 'Add shifts',
+                self::SHIFTS_UPDATE => 'Update shifts',
+                self::SHIFTS_DELETE => 'Delete shifts',
+                self::STAFF_SHIFTS_CREATE => 'Add staff shifts (who works which shift)',
+                self::STAFF_SHIFTS_UPDATE => 'Update staff shifts',
+                self::STAFF_SHIFTS_DELETE => 'Delete staff shifts',
+                self::HOLIDAYS_CREATE => 'Add holidays',
+                self::HOLIDAYS_UPDATE => 'Update holidays',
+                self::HOLIDAYS_DELETE => 'Delete holidays',
+                self::OVERTIME_REQUESTS_CREATE => 'File an overtime claim for a staff member',
+                self::OVERTIME_REQUESTS_DELETE => 'Delete a waiting overtime claim',
+                self::ATTENDANCE_CORRECTIONS_CREATE => 'File an attendance correction for a staff member',
+                self::ATTENDANCE_CORRECTIONS_DELETE => 'Delete a waiting attendance correction',
                 self::OVERTIME_REQUESTS_APPROVE => 'Approve overtime requests',
                 self::OVERTIME_REQUESTS_REJECT => 'Reject overtime requests',
                 self::ATTENDANCE_CORRECTIONS_APPROVE => 'Approve attendance corrections',
@@ -1193,7 +1258,16 @@ final class Permissions
             ],
             'Leave management' => [
                 self::LEAVE_MANAGEMENT_VIEW => 'View leave types, policies, balances and reports',
-                self::LEAVE_MANAGEMENT_MANAGE => 'Manage leave types and policies, and adjust leave balances',
+                self::LEAVE_TYPES_CREATE => 'Add leave types',
+                self::LEAVE_TYPES_UPDATE => 'Update leave types',
+                self::LEAVE_TYPES_DELETE => 'Delete leave types',
+                self::LEAVE_POLICIES_CREATE => 'Add leave policies',
+                self::LEAVE_POLICIES_UPDATE => 'Update leave policies',
+                self::LEAVE_POLICIES_DELETE => 'Delete leave policies',
+                self::LEAVE_BALANCES_CREATE => 'Adjust leave balances (add or take away days)',
+                self::LEAVE_BALANCES_DELETE => 'Delete a leave balance adjustment',
+                self::LEAVE_CARRY_FORWARD_RUN => 'Run year-end leave carry forward',
+                self::LEAVE_REQUESTS_CREATE => 'File a leave request for a staff member',
             ],
             'Payroll' => [
                 self::PAYROLL_VIEW => 'View payroll set-up and rules: salaries, allowances, bonuses, deductions, overtime, tax, social security and loans',
@@ -1615,14 +1689,23 @@ final class Permissions
                 self::MANPOWER_REQUESTS_APPROVE,
                 self::MANPOWER_REQUESTS_REJECT,
                 self::STAFF_ATTENDANCE_VIEW,
-                self::STAFF_ATTENDANCE_MANAGE,
+                self::CHECK_INS_CREATE, self::CHECK_INS_UPDATE, self::CHECK_INS_DELETE,
+                self::SHIFTS_CREATE, self::SHIFTS_UPDATE, self::SHIFTS_DELETE,
+                self::STAFF_SHIFTS_CREATE, self::STAFF_SHIFTS_UPDATE, self::STAFF_SHIFTS_DELETE,
+                self::HOLIDAYS_CREATE, self::HOLIDAYS_UPDATE, self::HOLIDAYS_DELETE,
+                self::OVERTIME_REQUESTS_CREATE, self::OVERTIME_REQUESTS_DELETE,
+                self::ATTENDANCE_CORRECTIONS_CREATE, self::ATTENDANCE_CORRECTIONS_DELETE,
                 self::OVERTIME_REQUESTS_APPROVE,
                 self::OVERTIME_REQUESTS_REJECT,
                 self::ATTENDANCE_CORRECTIONS_APPROVE,
                 self::ATTENDANCE_CORRECTIONS_REJECT,
                 self::STAFF_ATTENDANCE_APPROVE,
                 self::LEAVE_MANAGEMENT_VIEW,
-                self::LEAVE_MANAGEMENT_MANAGE,
+                self::LEAVE_TYPES_CREATE, self::LEAVE_TYPES_UPDATE, self::LEAVE_TYPES_DELETE,
+                self::LEAVE_POLICIES_CREATE, self::LEAVE_POLICIES_UPDATE, self::LEAVE_POLICIES_DELETE,
+                self::LEAVE_BALANCES_CREATE, self::LEAVE_BALANCES_DELETE,
+                self::LEAVE_CARRY_FORWARD_RUN,
+                self::LEAVE_REQUESTS_CREATE,
                 self::PAYROLL_VIEW,
                 self::PAYROLL_SALARY_STRUCTURES_CREATE, self::PAYROLL_SALARY_STRUCTURES_UPDATE, self::PAYROLL_SALARY_STRUCTURES_DELETE,
                 self::PAYROLL_BASIC_SALARY_CREATE, self::PAYROLL_BASIC_SALARY_UPDATE, self::PAYROLL_BASIC_SALARY_DELETE,

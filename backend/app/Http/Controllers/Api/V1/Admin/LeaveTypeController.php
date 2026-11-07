@@ -33,7 +33,7 @@ final class LeaveTypeController extends Controller
 
     public function store(LeaveTypeRequest $request): JsonResponse
     {
-        $this->authorize('create', LeaveType::class);
+        $this->authorize('create', [LeaveType::class, LeaveType::class]);
 
         return ApiResponse::created(new LeaveTypeResource(LeaveType::query()->create($request->validated())));
     }

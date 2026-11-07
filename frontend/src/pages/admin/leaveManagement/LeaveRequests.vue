@@ -30,7 +30,7 @@ import { formatDate } from '@/utils/date'
 const { t } = useI18n()
 const auth = useAuthStore()
 
-const canFile = computed(() => auth.can('leave-management.manage'))
+const canFile = computed(() => auth.can('leave-requests.create'))
 
 const statusVariant: Record<LeaveRequestStatus, 'warning' | 'success' | 'danger' | 'neutral'> = { pending: 'warning', approved: 'success', rejected: 'danger', cancelled: 'neutral' }
 

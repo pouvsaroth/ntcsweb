@@ -41,7 +41,7 @@ class OvertimeAndReportsTest extends TestCase
 
     public function test_the_reports_list_each_occurrence_with_a_total_per_person(): void
     {
-        $this->actingAsAdminWithPermissions([Permissions::STAFF_ATTENDANCE_VIEW, Permissions::STAFF_ATTENDANCE_MANAGE]);
+        $this->actingAsAdminWithPermissions([Permissions::STAFF_ATTENDANCE_VIEW, Permissions::CHECK_INS_CREATE, Permissions::CHECK_INS_UPDATE, Permissions::CHECK_INS_DELETE, Permissions::SHIFTS_CREATE, Permissions::SHIFTS_UPDATE, Permissions::SHIFTS_DELETE, Permissions::STAFF_SHIFTS_CREATE, Permissions::STAFF_SHIFTS_UPDATE, Permissions::STAFF_SHIFTS_DELETE, Permissions::HOLIDAYS_CREATE, Permissions::HOLIDAYS_UPDATE, Permissions::HOLIDAYS_DELETE, Permissions::OVERTIME_REQUESTS_CREATE, Permissions::OVERTIME_REQUESTS_DELETE, Permissions::ATTENDANCE_CORRECTIONS_CREATE, Permissions::ATTENDANCE_CORRECTIONS_DELETE]);
         $this->office();
         $staff = Staff::factory()->create(['hire_date' => '2026-01-01']);
         Carbon::setTestNow(Carbon::parse('2026-10-20 12:00', 'Asia/Phnom_Penh'));

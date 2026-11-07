@@ -9,6 +9,7 @@ use App\Http\Resources\StaffAttendanceResource;
 use App\Http\Responses\ApiResponse;
 use App\Models\Staff;
 use App\Models\StaffAttendance;
+use App\Support\Authorization\Permissions;
 use App\Services\StaffAttendance\StaffAttendanceService;
 use App\Support\Query\ApiQuery;
 use Carbon\CarbonImmutable;
@@ -54,7 +55,7 @@ final class StaffAttendanceController extends Controller
     /** HR sets one day's check-in/out for someone (creating the day if needed). */
     public function store(Request $request): JsonResponse
     {
-        $this->authorize('create', StaffAttendance::class);
+        abort_unless($request->user()->hasAnyPermission(Permissions::CHECK_INS_CREATE, Permissions::CHECK_INS_UPDATE), 403);
 
         $data = $request->validate([
             'staff_id' => ['required', 'integer', Rule::exists('tenant.staff', 'id')->whereNull('deleted_at')],
@@ -63,6 +64,9 @@ final class StaffAttendanceController extends Controller
             'check_out' => ['nullable', 'date_format:H:i'],
             'note' => ['nullable', 'string', 'max:1000'],
         ]);
+        // A day already stored is an Update; a new one an Add.
+        $existing = StaffAttendance::query()->where('staff_id', $data['staff_id'])->whereDate('date', $data['date'])->first();
+        $existing ? $this->authorize('update', $existing) : $this->authorize('create', [StaffAttendance::class, StaffAttendance::class]);
 
         $row = $this->attendance->record(
             Staff::query()->findOrFail($data['staff_id']),
@@ -111,7 +115,7 @@ final class StaffAttendanceController extends Controller
 
     public function import(Request $request): JsonResponse
     {
-        $this->authorize('create', StaffAttendance::class);
+        $this->authorize('create', [StaffAttendance::class, StaffAttendance::class]);
 
         $request->validate(['file' => ['required', 'file', 'mimes:csv,txt', 'max:5120']]);
 

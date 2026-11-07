@@ -31,7 +31,7 @@ class LeaveRequestHolidayTest extends TestCase
 {
     use HasAcademicAdmin, RefreshDatabase;
 
-    private const ADMIN = [Permissions::LEAVE_REQUESTS_APPROVE, Permissions::STAFF_ATTENDANCE_VIEW, Permissions::STAFF_ATTENDANCE_MANAGE];
+    private const ADMIN = [Permissions::LEAVE_REQUESTS_APPROVE, Permissions::STAFF_ATTENDANCE_VIEW, Permissions::CHECK_INS_CREATE, Permissions::CHECK_INS_UPDATE, Permissions::CHECK_INS_DELETE, Permissions::SHIFTS_CREATE, Permissions::SHIFTS_UPDATE, Permissions::SHIFTS_DELETE, Permissions::STAFF_SHIFTS_CREATE, Permissions::STAFF_SHIFTS_UPDATE, Permissions::STAFF_SHIFTS_DELETE, Permissions::HOLIDAYS_CREATE, Permissions::HOLIDAYS_UPDATE, Permissions::HOLIDAYS_DELETE, Permissions::OVERTIME_REQUESTS_CREATE, Permissions::OVERTIME_REQUESTS_DELETE, Permissions::ATTENDANCE_CORRECTIONS_CREATE, Permissions::ATTENDANCE_CORRECTIONS_DELETE];
 
     public function test_a_permission_wholly_on_a_holiday_is_refused(): void
     {

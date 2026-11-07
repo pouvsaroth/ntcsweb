@@ -36,7 +36,7 @@ final class ShiftController extends Controller
 
     public function store(ShiftRequest $request): JsonResponse
     {
-        $this->authorize('create', Shift::class);
+        $this->authorize('create', [Shift::class, Shift::class]);
 
         $shift = DB::connection('tenant')->transaction(fn () => $this->fill(new Shift, $request->validated()));
 

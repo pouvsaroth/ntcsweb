@@ -19,7 +19,7 @@ class HolidayRequest extends FormRequest
 
         return $holiday instanceof Holiday
             ? ($this->user()?->can('update', $holiday) ?? false)
-            : ($this->user()?->can('create', Holiday::class) ?? false);
+            : ($this->user()?->can('create', [Holiday::class, Holiday::class]) ?? false);
     }
 
     protected function prepareForValidation(): void

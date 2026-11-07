@@ -27,12 +27,12 @@ class AttendanceCorrectionPolicy
 
     public function create(User $user): bool
     {
-        return $user->hasPermission(Permissions::STAFF_ATTENDANCE_MANAGE);
+        return $user->hasPermission(Permissions::ATTENDANCE_CORRECTIONS_CREATE);
     }
 
     public function delete(User $user, AttendanceCorrection $correction): bool
     {
-        return $correction->status === AttendanceCorrection::STATUS_PENDING && $user->hasPermission(Permissions::STAFF_ATTENDANCE_MANAGE);
+        return $correction->status === AttendanceCorrection::STATUS_PENDING && $user->hasPermission(Permissions::ATTENDANCE_CORRECTIONS_DELETE);
     }
 
     public function approve(User $user, AttendanceCorrection $correction): bool

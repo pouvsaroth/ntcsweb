@@ -36,7 +36,7 @@ final class WorkScheduleController extends Controller
 
     public function store(WorkScheduleRequest $request): JsonResponse
     {
-        $this->authorize('create', WorkSchedule::class);
+        $this->authorize('create', [WorkSchedule::class, WorkSchedule::class]);
 
         $schedule = DB::connection('tenant')->transaction(function () use ($request) {
             $schedule = WorkSchedule::query()->create($request->safe()->except('staff_ids'));

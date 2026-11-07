@@ -23,7 +23,7 @@ import { ApiRequestError } from '@/types/api'
 const { t, locale } = useI18n()
 const auth = useAuthStore()
 
-const canManage = computed(() => auth.can('staff-attendance.manage'))
+const canManage = computed(() => auth.can('check-ins.create') || auth.can('check-ins.update'))
 
 const month = ref(thisMonth())
 const departmentId = ref('')
