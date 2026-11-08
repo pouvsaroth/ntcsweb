@@ -12,6 +12,7 @@ import { academicProgramsService, type AcademicProgram } from '@/services/academ
 import { classesService, type SchoolClass } from '@/services/classes'
 import { coursePackagesService, type CoursePackage } from '@/services/coursePackages'
 import { enrollmentsService, type FeeType } from '@/services/enrollments'
+import { discountCodesService, type DiscountCodeCheck } from '@/services/discountCodes'
 import { paymentMethods, type PaymentMethodValue } from '@/services/payments'
 import { studentsService, type Student } from '@/services/students'
 import TaskProgressOverlay from '@/components/ui/TaskProgressOverlay.vue'
@@ -58,6 +59,43 @@ const form = reactive({
 const errors = ref<Record<string, string[]>>({})
 const generalError = ref<string | null>(null)
 const submitting = ref(false)
+
+// Invoices > Discount codes: a checked code fills in the discount (and
+// replaces the typed one). Changing the student, course or fee type
+// clears it, since the amount depends on all three.
+const discountCodeInput = ref('')
+const appliedCode = ref<DiscountCodeCheck | null>(null)
+const checkingCode = ref(false)
+const codeError = ref<string | null>(null)
+
+async function applyCode() {
+  const code = discountCodeInput.value.trim()
+  if (!code || !selectedStudent.value || !form.course_package_id || !form.fee_type) return
+  checkingCode.value = true
+  codeError.value = null
+  try {
+    appliedCode.value = await discountCodesService.check({
+      discount_code: code,
+      student_id: selectedStudent.value.id,
+      course_package_id: form.course_package_id,
+      fee_type: form.fee_type,
+    })
+    form.discount_price = appliedCode.value.amount
+    form.discount_reason = ''
+  } catch (error) {
+    appliedCode.value = null
+    codeError.value = error instanceof ApiRequestError ? (error.fieldError('discount_code') ?? error.message) : t('admin.discountCodes.checkFailed')
+  } finally {
+    checkingCode.value = false
+  }
+}
+
+function removeCode() {
+  if (appliedCode.value) form.discount_price = 0
+  appliedCode.value = null
+  discountCodeInput.value = ''
+  codeError.value = null
+}
 const submittingAndPrinting = ref(false)
 
 // "Not paid yet": the enrollment is saved with an unpaid invoice and no
@@ -186,8 +224,13 @@ watch(
     form.fee_type = packageFee(pkg, 'term') !== null ? 'term' : (feeTypePriority.find((type) => packageFee(pkg, type) !== null) ?? null)
     form.discount_reason = ''
     form.discount_price = 0
+    removeCode()
   },
 )
+
+watch([() => form.fee_type, () => selectedStudent.value?.id], () => {
+  if (appliedCode.value) removeCode()
+})
 
 // Received Money defaults to the full amount owed — staff lowers it for a
 // partial payment/debt, or raises it to record change owed back.
@@ -252,8 +295,9 @@ async function createEnrollment() {
       course_package_id: form.course_package_id,
       enrolled_at: form.enrolled_at,
       fee_type: form.fee_type,
-      discount_reason: form.discount_reason || null,
+      discount_reason: appliedCode.value ? null : form.discount_reason || null,
       discount_price: form.discount_price,
+      discount_code: appliedCode.value?.code ?? null,
       received_amount: form.received_amount,
       payment_method: form.received_amount > 0 ? form.payment_method : null,
     })
@@ -540,21 +584,48 @@ onMounted(async () => {
               <span class="font-semibold text-neutral-800">{{ formatMoney(fee, invoiceCurrency) }}</span>
             </div>
 
-            <LookupSelect
-              v-model="form.discount_reason"
-              category="DISCOUNT_REASON"
-              :label="t('admin.enrollments.discountReason')"
-              :error="errors.discount_reason?.[0]"
-            />
+            <div>
+              <div class="flex items-end gap-2">
+                <BaseInput
+                  :model-value="discountCodeInput"
+                  class="flex-1"
+                  :label="t('admin.discountCodes.useCode')"
+                  :placeholder="t('admin.discountCodes.useCodePlaceholder')"
+                  :disabled="!!appliedCode || !selectedStudent || !form.fee_type"
+                  :error="codeError ?? errors.discount_code?.[0]"
+                  @update:model-value="discountCodeInput = $event.toUpperCase()"
+                />
+                <BaseButton v-if="!appliedCode" type="button" variant="outline" :loading="checkingCode" :disabled="!discountCodeInput.trim() || !selectedStudent || !form.fee_type" @click="applyCode">
+                  {{ t('admin.discountCodes.apply') }}
+                </BaseButton>
+                <BaseButton v-else type="button" variant="outline" @click="removeCode">{{ t('admin.discountCodes.remove') }}</BaseButton>
+              </div>
+              <p v-if="appliedCode" class="mt-1.5 text-sm text-green-700">
+                {{ t('admin.discountCodes.applied', { code: appliedCode.code, name: appliedCode.name, amount: formatMoney(appliedCode.amount, appliedCode.currency) }) }}
+              </p>
+            </div>
 
-            <BaseInput
-              :model-value="String(form.discount_price)"
-              type="number"
-              step="0.01"
-              :label="`${t('admin.enrollments.discountPrice')} (${invoiceCurrency})`"
-              :error="errors.discount_price?.[0]"
-              @update:model-value="form.discount_price = Number($event) || 0"
-            />
+            <template v-if="!appliedCode">
+              <LookupSelect
+                v-model="form.discount_reason"
+                category="DISCOUNT_REASON"
+                :label="t('admin.enrollments.discountReason')"
+                :error="errors.discount_reason?.[0]"
+              />
+
+              <BaseInput
+                :model-value="String(form.discount_price)"
+                type="number"
+                step="0.01"
+                :label="`${t('admin.enrollments.discountPrice')} (${invoiceCurrency})`"
+                :error="errors.discount_price?.[0]"
+                @update:model-value="form.discount_price = Number($event) || 0"
+              />
+            </template>
+            <div v-else class="flex items-center justify-between text-sm">
+              <span class="text-neutral-500">{{ t('admin.enrollments.discountPrice') }}</span>
+              <span class="font-semibold text-green-700">− {{ formatMoney(form.discount_price, invoiceCurrency) }}</span>
+            </div>
 
             <div class="flex items-center justify-between border-t border-neutral-200 pt-3 text-sm">
               <span class="font-medium text-neutral-700">{{ t('admin.enrollments.feeToPay') }}</span>

@@ -370,6 +370,7 @@ const MODULES: ModuleEntry[] = [
   { name: 'Invoices', group: 'Billing', parent: 'Invoices', menu: true, actions: { view: 'invoices.view', create: 'invoices.create', update: 'invoices.update', cancel: 'invoices.cancel' } },
   tab('Billing', 'Invoices', 'Invoices', '/admin/invoices', ['invoices.view']),
   tab('Billing', 'Invoices', 'Monthly Invoice', '/admin/invoices/monthly', ['invoices.view']),
+  tab('Billing', 'Invoices', 'Discount codes', '/admin/invoices/discount-codes', ['discount-codes.view'], crud('discount-codes')),
   { name: 'Payments', group: 'Billing', actions: { view: 'payments.view', create: 'payments.create', update: 'payments.update', cancel: 'payments.cancel' } },
   { name: 'Receipts', group: 'Billing', actions: { view: 'receipts.view' } },
   { name: 'Billing notifications', group: 'Billing', actions: { send: 'notifications.send' } },

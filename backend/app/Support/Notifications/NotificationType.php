@@ -151,4 +151,7 @@ final class NotificationType
 
     // A class ended and nobody saved its attendance (class teachers + school admins told).
     public const ATTENDANCE_NOT_TAKEN = 'attendance_not_taken';
+
+    // Invoices > Discount codes: a student was given a personal code.
+    public const DISCOUNT_CODE_GIVEN = 'discount_code_given';
 }

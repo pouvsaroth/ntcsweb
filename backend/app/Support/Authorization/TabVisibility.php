@@ -141,6 +141,7 @@ final class TabVisibility
         'hide-tab.professional-development.reports' => 'Professional Development > Training reports',
         'hide-tab.invoices' => 'Invoices > Invoices',
         'hide-tab.invoices.monthly' => 'Invoices > Monthly Invoice',
+        'hide-tab.invoices.discount-codes' => 'Invoices > Discount codes',
         'hide-tab.borrowings.loans' => 'Borrowings > Loans',
         'hide-tab.borrowings.repayments' => 'Borrowings > Repayments',
         'hide-tab.borrowings.lenders' => 'Borrowings > Lenders',

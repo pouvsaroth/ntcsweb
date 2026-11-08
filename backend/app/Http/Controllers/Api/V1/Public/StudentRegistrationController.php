@@ -7,9 +7,14 @@ namespace App\Http\Controllers\Api\V1\Public;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Public\StoreStudentRegistrationRequest;
 use App\Http\Responses\ApiResponse;
+use App\Models\CoursePackage;
+use App\Services\Academic\EnrollmentService;
+use App\Services\Billing\DiscountCodeService;
 use App\Services\Academic\StudentRegistrationService;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 /**
  * The public registration wizard's final submit — see
@@ -35,6 +40,28 @@ final class StudentRegistrationController extends Controller
             ['student_code' => $student->student_code],
             __('Registration received — please wait for the school to confirm your payment and approve your account. You can safely close this page now.'),
         );
+    }
+
+    /**
+     * The form's live discount-code check: what a code takes off the chosen
+     * course's fee. A new student has no personal codes, so only public ones
+     * work. Nothing is saved.
+     */
+    public function checkDiscountCode(Request $request, DiscountCodeService $discounts, EnrollmentService $enrollments): JsonResponse
+    {
+        $data = $request->validate([
+            'discount_code' => ['required', 'string', 'max:40'],
+            'course_package_id' => ['required', 'integer', Rule::exists('tenant.course_packages', 'id')],
+            'fee_type' => ['required', Rule::in(['monthly', 'term', 'video', 'monthly_online', 'term_online'])],
+        ]);
+
+        return ApiResponse::success($discounts->checkForEnrollment(
+            $data['discount_code'],
+            null,
+            CoursePackage::query()->findOrFail($data['course_package_id']),
+            $data['fee_type'],
+            $enrollments,
+        ));
     }
 
     private function storePhoto(StoreStudentRegistrationRequest $request): string

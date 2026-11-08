@@ -45,4 +45,5 @@ return [
     'attendance_correction_approved' => 'Your attendance correction for :date was approved',
     'attendance_correction_rejected' => 'Your attendance correction for :date was rejected: :reason',
     'attendance_not_taken' => 'Attendance was not added for :class_name on :date (class ended at :end_time)',
+    'discount_code_given' => 'You have a discount code: :code (:discount off), valid until :expires_on',
 ];

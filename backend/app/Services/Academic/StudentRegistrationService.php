@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Academic;
 
 use App\Models\Invoice;
+use App\Services\Billing\DiscountCodeService;
 use App\Models\Role;
 use App\Models\Student;
 use App\Models\User;
@@ -92,6 +93,8 @@ final class StudentRegistrationService
                 'class_id' => $data['class_id'],
                 'course_package_id' => $data['course_package_id'],
                 'fee_type' => $data['fee_type'],
+                // Only a public code can work here: a new student has no personal codes.
+                'discount_code' => $data['discount_code'] ?? null,
             ], $user);
 
             // EnrollmentService (shared with the admin package-enrollment
@@ -155,6 +158,10 @@ final class StudentRegistrationService
 
             $student->auditReason = $reason;
             $student->update(['status' => Student::STATUS_INACTIVE]);
+            // A discount code used on the registration may be used again.
+            foreach ($student->enrollments()->pluck('id') as $enrollmentId) {
+                app(DiscountCodeService::class)->releaseForEnrollment((int) $enrollmentId);
+            }
             $student->user?->update(['status' => User::STATUS_SUSPENDED]);
 
             return $student->fresh();

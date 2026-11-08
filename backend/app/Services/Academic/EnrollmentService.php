@@ -16,6 +16,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use App\Platform\Billing\StudentLimit;
 use App\Services\Billing\CurrencyConversionService;
+use App\Services\Billing\DiscountCodeService;
 use App\Services\Billing\InvoiceService;
 use App\Services\Billing\PaymentService;
 use App\Support\Audit\AuditAction;
@@ -60,10 +61,42 @@ final class EnrollmentService
         private readonly CurrencyConversionService $currencyConversion,
         private readonly TenantContext $context,
         private readonly AuditLogger $audit,
+        private readonly DiscountCodeService $discountCodes,
     ) {}
 
     /**
-     * @param  array{student_id:int, class_id:int, course_package_id:int, fee_type:string, table_id?:int|null, enrolled_at?:string, discount_price?:float|null, discount_reason?:string|null, received_amount?:float|null, payment_method?:string|null}  $data
+     * The fee this enrollment's invoice charges: the package's `fee_type`
+     * tier, converted to the school's own currency at the rate in effect on
+     * $date (see the class docblock).
+     *
+     * @return array{fee: float, currency: string}
+     */
+    public function invoiceFee(CoursePackage $package, string $feeType, string $date, string $field = 'course_package_id'): array
+    {
+        $fee = (float) $package->{'fee_'.$feeType};
+        $invoiceCurrency = $this->context->getOrFail()->default_currency;
+
+        if ($package->currency !== $invoiceCurrency) {
+            $rate = $this->currencyConversion->rateForDate($date);
+
+            if ($rate === null) {
+                throw ValidationException::withMessages([
+                    $field => "This school bills in {$invoiceCurrency}, but no exchange rate has been entered yet to convert this course's {$package->currency} price. Add one under Currency Rates first.",
+                ]);
+            }
+
+            $fee = $this->currencyConversion->convert($fee, $package->currency, $invoiceCurrency, $rate);
+            $fee = $invoiceCurrency === Tenant::CURRENCY_KHR ? round($fee) : round($fee, 2);
+        }
+
+        return ['fee' => $fee, 'currency' => $invoiceCurrency];
+    }
+
+    /**
+     * `discount_code`: a code from Invoices > Discount codes. It replaces any
+     * typed discount_price/discount_reason, and its use is recorded.
+     *
+     * @param  array{student_id:int, class_id:int, course_package_id:int, fee_type:string, table_id?:int|null, enrolled_at?:string, discount_price?:float|null, discount_reason?:string|null, discount_code?:string|null, received_amount?:float|null, payment_method?:string|null}  $data
      */
     public function enrollInPackage(array $data, User $actor): Enrollment
     {
@@ -86,8 +119,6 @@ final class EnrollmentService
             app(StudentLimit::class)->assertRoomFor((int) $data['student_id']);
 
             $feeType = $data['fee_type'];
-            $feeColumn = 'fee_'.$feeType;
-            $fee = (float) $package->{$feeColumn};
             $enrolledAt = $data['enrolled_at'] ?? now()->toDateString();
 
             // Course packages are priced in whatever currency they were set
@@ -96,19 +127,17 @@ final class EnrollmentService
             // Riel school's staff types the discount/received amount in
             // Riel (see EnrollmentPackageForm.vue), so the fee they're
             // comparing against has to already be in Riel too.
-            $invoiceCurrency = $this->context->getOrFail()->default_currency;
+            ['fee' => $fee, 'currency' => $invoiceCurrency] = $this->invoiceFee($package, $feeType, $enrolledAt);
 
-            if ($package->currency !== $invoiceCurrency) {
-                $rate = $this->currencyConversion->rateForDate($enrolledAt);
-
-                if ($rate === null) {
-                    throw ValidationException::withMessages([
-                        'course_package_id' => "This school bills in {$invoiceCurrency}, but no exchange rate has been entered yet to convert this course's {$package->currency} price. Add one under Currency Rates first.",
-                    ]);
-                }
-
-                $fee = $this->currencyConversion->convert($fee, $package->currency, $invoiceCurrency, $rate);
-                $fee = $invoiceCurrency === Tenant::CURRENCY_KHR ? round($fee) : round($fee, 2);
+            $discount = (float) ($data['discount_price'] ?? 0);
+            $discountReason = $data['discount_reason'] ?? null;
+            $code = null;
+            if (filled($data['discount_code'] ?? null)) {
+                // Locked so two enrollments can't both take a code's last use.
+                ['code' => $code, 'amount' => $discount] = $this->discountCodes->quote(
+                    (string) $data['discount_code'], (int) $data['student_id'], (int) $package->getKey(), $fee, $invoiceCurrency, lock: true,
+                );
+                $discountReason = $this->discountCodes->reasonFor($code);
             }
 
             $enrollment = Enrollment::query()->create([
@@ -125,8 +154,8 @@ final class EnrollmentService
             $invoice = $this->invoices->create([
                 'student_id' => $enrollment->student_id,
                 'currency' => $invoiceCurrency,
-                'discount' => (float) ($data['discount_price'] ?? 0),
-                'discount_reason' => $data['discount_reason'] ?? null,
+                'discount' => $discount,
+                'discount_reason' => $discountReason,
                 'payment_type' => $feeType,
                 'items' => [[
                     'product_id' => $package->product_id,
@@ -136,6 +165,10 @@ final class EnrollmentService
                     'reference_id' => $enrollment->getKey(),
                 ]],
             ], $actor);
+
+            if ($code !== null) {
+                $this->discountCodes->redeem($code, (int) $enrollment->student_id, $invoice, (int) $enrollment->getKey(), $discount, $actor);
+            }
 
             $receivedAmount = (float) ($data['received_amount'] ?? 0);
             if ($receivedAmount > 0) {
@@ -392,6 +425,8 @@ final class EnrollmentService
             $this->recordStatus($enrollment, $enrollment->status, Enrollment::STATUS_DROPPED, $reason, now()->toDateString(), $actor);
             $enrollment->auditReason = $reason;
             $enrollment->update(['status' => Enrollment::STATUS_DROPPED]);
+            // A discount code used on it may be used again.
+            $this->discountCodes->releaseForEnrollment((int) $enrollment->getKey());
 
             return $enrollment;
         });

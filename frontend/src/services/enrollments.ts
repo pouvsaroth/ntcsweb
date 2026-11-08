@@ -109,6 +109,8 @@ export interface EnrollmentPackageInput {
   fee_type: FeeType
   discount_reason: string | null
   discount_price: number
+  /** Invoices > Discount codes: replaces discount_price/discount_reason when set. */
+  discount_code?: string | null
   received_amount: number
   payment_method: string | null
 }

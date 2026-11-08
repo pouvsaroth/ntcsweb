@@ -394,6 +394,12 @@ const adminRoutes: RouteRecordRaw[] = [
     meta: { titleKey: 'admin.myExamApplications.title', studentAllowed: true },
   },
   {
+    path: 'my-discount-codes',
+    name: 'admin.my-discount-codes',
+    component: () => import('@/pages/admin/MyDiscountCodes.vue'),
+    meta: { titleKey: 'studentNav.discountCodes', studentAllowed: true },
+  },
+  {
     path: 'my-videos',
     name: 'admin.my-videos',
     component: () => import('@/pages/admin/MyVideos.vue'),
@@ -917,6 +923,12 @@ const adminRoutes: RouteRecordRaw[] = [
     name: 'admin.invoices.monthly',
     component: () => import('@/pages/admin/MonthlyInvoices.vue'),
     meta: { titleKey: 'adminNav.items.invoices' },
+  },
+  {
+    path: 'invoices/discount-codes',
+    name: 'admin.invoices.discount-codes',
+    component: () => import('@/pages/admin/DiscountCodes.vue'),
+    meta: { permission: 'discount-codes.view', titleKey: 'adminNav.items.invoices' },
   },
   {
     path: 'invoices/:id',

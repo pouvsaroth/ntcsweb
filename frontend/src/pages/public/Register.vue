@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import BaseAlert from '@/components/ui/BaseAlert.vue'
@@ -13,7 +13,9 @@ import { publicContentService, type PublicCourse, type ScheduledClass } from '@/
 import { publicGeographyService } from '@/services/publicGeography'
 import type { GeographyOption } from '@/services/geography'
 import { studentSelfRegistrationService } from '@/services/studentSelfRegistration'
+import { discountCodesService, type DiscountCodeCheck } from '@/services/discountCodes'
 import { ApiRequestError } from '@/types/api'
+import { formatMoney } from '@/utils/currency'
 
 const { t } = useI18n()
 
@@ -210,6 +212,38 @@ async function onPackageChange(value: string) {
 
 // --- Step 4: payment -----------------------------------------------------
 
+// A public discount code: checked on the server, which also works out the
+// amount in the school's own currency. Picking another course or fee type clears it.
+const discountCodeInput = ref('')
+const appliedCode = ref<DiscountCodeCheck | null>(null)
+const checkingCode = ref(false)
+const codeError = ref<string | null>(null)
+
+async function applyCode() {
+  const code = discountCodeInput.value.trim()
+  if (!code || form.course_package_id === null || form.fee_type === '') return
+  checkingCode.value = true
+  codeError.value = null
+  try {
+    appliedCode.value = await discountCodesService.checkPublic({ discount_code: code, course_package_id: form.course_package_id, fee_type: form.fee_type })
+  } catch (error) {
+    appliedCode.value = null
+    codeError.value = error instanceof ApiRequestError ? (error.fieldError('discount_code') ?? error.message) : t('admin.discountCodes.checkFailed')
+  } finally {
+    checkingCode.value = false
+  }
+}
+
+function removeCode() {
+  appliedCode.value = null
+  discountCodeInput.value = ''
+  codeError.value = null
+}
+
+watch([() => form.course_package_id, () => form.fee_type], () => {
+  if (appliedCode.value) removeCode()
+})
+
 const feeTypeLabels: Record<FeeType, string> = {
   monthly: 'registerWizard.feeTypeMonthly',
   term: 'registerWizard.feeTypeTerm',
@@ -288,6 +322,7 @@ async function submit() {
       course_package_id: form.course_package_id,
       fee_type: form.fee_type,
       payment_method: form.payment_method,
+      discount_code: appliedCode.value?.code ?? null,
       password: form.password,
       password_confirmation: form.password_confirmation,
     })
@@ -482,9 +517,34 @@ onMounted(async () => {
             @update:model-value="(v: string) => (form.fee_type = v as FeeType)"
           />
 
+          <div>
+            <div class="flex items-end gap-2">
+              <BaseInput
+                :model-value="discountCodeInput"
+                class="flex-1"
+                :label="t('admin.discountCodes.useCode')"
+                :placeholder="t('admin.discountCodes.useCodePlaceholder')"
+                :disabled="!!appliedCode || !form.fee_type"
+                :error="codeError ?? errors.discount_code?.[0]"
+                @update:model-value="discountCodeInput = $event.toUpperCase()"
+              />
+              <BaseButton v-if="!appliedCode" type="button" variant="outline" :loading="checkingCode" :disabled="!discountCodeInput.trim() || !form.fee_type" @click="applyCode">
+                {{ t('admin.discountCodes.apply') }}
+              </BaseButton>
+              <BaseButton v-else type="button" variant="outline" @click="removeCode">{{ t('admin.discountCodes.remove') }}</BaseButton>
+            </div>
+            <p v-if="appliedCode" class="mt-1.5 text-sm text-green-700">
+              {{ t('admin.discountCodes.applied', { code: appliedCode.code, name: appliedCode.name, amount: formatMoney(appliedCode.amount, appliedCode.currency) }) }}
+            </p>
+          </div>
+
           <div class="flex items-center justify-between rounded-lg bg-primary-50 px-4 py-3">
             <span class="text-sm font-medium text-neutral-700">{{ t('registerWizard.feeToPay') }}</span>
-            <span class="text-lg font-bold text-primary-800">{{ currencySymbol }}{{ feeAmount.toFixed(2) }}</span>
+            <span v-if="appliedCode" class="text-right">
+              <span class="block text-xs text-neutral-500 line-through">{{ formatMoney(appliedCode.fee, appliedCode.currency) }}</span>
+              <span class="text-lg font-bold text-primary-800">{{ formatMoney(appliedCode.total, appliedCode.currency) }}</span>
+            </span>
+            <span v-else class="text-lg font-bold text-primary-800">{{ currencySymbol }}{{ feeAmount.toFixed(2) }}</span>
           </div>
 
           <div>

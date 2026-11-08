@@ -23,6 +23,8 @@ export interface StudentSelfRegistrationInput {
   course_package_id: number
   fee_type: string
   payment_method: 'CASH'
+  /** A public code from Invoices > Discount codes (checked on the server). */
+  discount_code?: string | null
   password: string
   password_confirmation: string
 }
@@ -45,6 +47,7 @@ function toFormData(input: StudentSelfRegistrationInput): FormData {
   form.append('course_package_id', String(input.course_package_id))
   form.append('fee_type', input.fee_type)
   form.append('payment_method', input.payment_method)
+  if (input.discount_code) form.append('discount_code', input.discount_code)
   form.append('password', input.password)
   form.append('password_confirmation', input.password_confirmation)
 

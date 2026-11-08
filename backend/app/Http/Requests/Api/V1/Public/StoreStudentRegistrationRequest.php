@@ -51,6 +51,8 @@ class StoreStudentRegistrationRequest extends FormRequest
             'fee_type' => ['required', Rule::in(['monthly', 'term', 'video', 'monthly_online', 'term_online'])],
 
             'payment_method' => ['required', Rule::in([PaymentMethod::CASH])],
+            // A public code from Invoices > Discount codes — checked by DiscountCodeService.
+            'discount_code' => ['nullable', 'string', 'max:40'],
 
             'password' => ['required', 'string', 'min:6', 'confirmed'],
         ];

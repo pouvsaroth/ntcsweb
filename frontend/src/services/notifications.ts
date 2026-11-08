@@ -54,6 +54,7 @@ export type NotificationTypeValue =
   | 'visitor_arrived'
   | 'website_inquiry_received'
   | 'attendance_not_taken'
+  | 'discount_code_given'
 
 export interface AppNotification {
   id: number

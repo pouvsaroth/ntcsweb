@@ -50,7 +50,7 @@ export const TAB_BARS: string[][] = [
   .concat([
     ['/admin/academic-programs', '/admin/academic-years', '/admin/course-packages', '/admin/books', '/admin/book-categories'],
     ['/admin/buildings', '/admin/classrooms'],
-    ['/admin/invoices', '/admin/invoices/monthly'],
+    ['/admin/invoices', '/admin/invoices/monthly', '/admin/invoices/discount-codes'],
     ['/admin/attendance', '/admin/attendance/summary'],
     ['/admin/help/articles', '/admin/help/faq', '/admin/help/tickets', '/admin/help/contact'],
   ])

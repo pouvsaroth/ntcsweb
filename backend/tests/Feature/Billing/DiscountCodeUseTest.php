@@ -1,0 +1,157 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Tests\Feature\Billing;
+
+use App\Models\DiscountCode;
+use App\Models\DiscountCodeRedemption;
+use App\Models\Invoice;
+use App\Models\Student;
+use App\Support\Authorization\Permissions;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\HasAcademicAdmin;
+use Tests\Concerns\HasAcademicCatalog;
+use Tests\TestCase;
+
+/** Using a discount code on the Enroll form and the website registration (step 2). The MS Word term fee is 24. */
+class DiscountCodeUseTest extends TestCase
+{
+    use HasAcademicAdmin, HasAcademicCatalog, RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->actingAsAdminWithPermissions([
+            Permissions::ENROLLMENTS_CREATE, Permissions::INVOICES_VIEW, Permissions::INVOICES_CANCEL,
+            Permissions::ENROLLMENTS_UPDATE, Permissions::STUDENTS_APPROVE_REGISTRATION,
+        ]);
+        $this->setUpAcademicCatalog();
+    }
+
+    private function enroll(Student $student, ?string $code)
+    {
+        return $this->postJson('/api/v1/enrollments/package', [
+            'student_id' => $student->id,
+            'class_id' => $this->computerEveningClass->id,
+            'course_package_id' => $this->msWordPackage->id,
+            'fee_type' => 'term',
+            'discount_price' => 1, // ignored once a code is given
+            'discount_code' => $code,
+        ]);
+    }
+
+    private function check(?Student $student, string $code)
+    {
+        return $this->postJson('/api/v1/discount-codes/check', [
+            'discount_code' => $code,
+            'student_id' => $student?->id,
+            'course_package_id' => $this->msWordPackage->id,
+            'fee_type' => 'term',
+        ]);
+    }
+
+    public function test_a_percent_code_takes_its_share_off_the_invoice_once_per_student(): void
+    {
+        DiscountCode::factory()->create(['code' => 'SAVE10', 'value' => 10, 'currency' => $this->currency()]);
+        $student = Student::factory()->create();
+
+        $this->check($student, 'save10')->assertOk()->assertJsonPath('data.amount', 2.4)->assertJsonPath('data.total', 21.6);
+
+        $this->enroll($student, 'save10')->assertCreated();
+
+        $invoice = Invoice::query()->where('student_id', $student->id)->sole();
+        $this->assertSame('2.40', (string) $invoice->discount);
+        $this->assertSame('Code SAVE10', $invoice->discount_reason);
+        $this->assertSame('21.60', (string) $invoice->total);
+        $this->assertSame(1, DiscountCodeRedemption::query()->where('status', 'applied')->count());
+
+        $this->check($student, 'SAVE10')->assertUnprocessable()->assertJsonPath('errors.discount_code.0', 'This student has already used this discount code.');
+
+        // Cancelling the invoice frees the use.
+        $this->postJson("/api/v1/invoices/{$invoice->id}/cancel", ['reason' => 'Wrong course'])->assertOk();
+        $this->assertSame(0, DiscountCodeRedemption::query()->where('status', 'applied')->count());
+        $this->check($student, 'SAVE10')->assertOk();
+    }
+
+    public function test_an_amount_code_with_a_cap_and_the_rules_that_refuse_a_code(): void
+    {
+        $student = Student::factory()->create();
+        $other = Student::factory()->create();
+        $currency = $this->currency();
+
+        DiscountCode::factory()->create(['code' => 'FIVE', 'discount_type' => 'amount', 'value' => 5, 'currency' => $currency]);
+        $this->check($student, 'FIVE')->assertOk()->assertJsonPath('data.amount', 5);
+
+        DiscountCode::factory()->create(['code' => 'HALF', 'value' => 50, 'max_discount' => 10, 'currency' => $currency]);
+        $this->check($student, 'HALF')->assertOk()->assertJsonPath('data.amount', 10);
+
+        $message = fn (string $code) => $this->check($student, $code)->assertUnprocessable()->json('errors.discount_code.0');
+
+        $this->assertSame('This discount code does not exist.', $message('NOPE'));
+
+        DiscountCode::factory()->create(['code' => 'OLD', 'starts_on' => now()->subMonth(), 'expires_on' => now()->subDays(2), 'currency' => $currency]);
+        $this->assertStringStartsWith('This discount code expired on', $message('OLD'));
+
+        DiscountCode::factory()->create(['code' => 'SOON', 'starts_on' => now()->addDays(3), 'expires_on' => now()->addMonth(), 'currency' => $currency]);
+        $this->assertStringStartsWith('This discount code can be used from', $message('SOON'));
+
+        DiscountCode::factory()->create(['code' => 'OFF', 'status' => 'inactive', 'currency' => $currency]);
+        $this->assertSame('This discount code is not active.', $message('OFF'));
+
+        $otherCourse = DiscountCode::factory()->create(['code' => 'EXCEL', 'currency' => $currency]);
+        $otherCourse->coursePackages()->attach($this->otherPackageId());
+        $this->assertSame('This discount code is not for this course.', $message('EXCEL'));
+
+        $vip = DiscountCode::factory()->create(['code' => 'VIP', 'audience' => 'personal', 'currency' => $currency]);
+        $vip->students()->attach($other->id);
+        $this->assertSame('This discount code is not for this student.', $message('VIP'));
+        $this->check($other, 'VIP')->assertOk();
+
+        $one = DiscountCode::factory()->create(['code' => 'ONE', 'max_uses' => 1, 'currency' => $currency]);
+        DiscountCodeRedemption::query()->create(['discount_code_id' => $one->id, 'student_id' => $other->id, 'amount' => 1, 'currency' => $currency]);
+        $this->assertSame('This discount code has been used up.', $message('ONE'));
+
+        // A refused code stops the enrollment.
+        $this->enroll($student, 'ONE')->assertUnprocessable()->assertJsonValidationErrors('discount_code');
+        $this->assertSame(0, Invoice::query()->where('student_id', $student->id)->count());
+    }
+
+    public function test_the_website_registration_takes_a_public_code_and_rejecting_frees_it(): void
+    {
+        DiscountCode::factory()->create(['code' => 'WEB5', 'discount_type' => 'amount', 'value' => 5, 'currency' => $this->currency()]);
+        $vip = DiscountCode::factory()->create(['code' => 'VIP', 'audience' => 'personal', 'currency' => $this->currency()]);
+        $vip->students()->attach(Student::factory()->create()->id);
+
+        $public = fn (array $data) => $this->withHeader('X-Tenant', $this->tenant->slug)->postJson('/api/v1/public/discount-codes/check', [
+            'course_package_id' => $this->msWordPackage->id, 'fee_type' => 'term', ...$data,
+        ]);
+        $public(['discount_code' => 'web5'])->assertOk()->assertJsonPath('data.total', 19);
+        $public(['discount_code' => 'VIP'])->assertUnprocessable()->assertJsonPath('errors.discount_code.0', 'This discount code is not for this student.');
+
+        $this->withHeader('X-Tenant', $this->tenant->slug)->postJson('/api/v1/public/student-registrations', [
+            'first_name' => 'Sok', 'last_name' => 'Dara', 'phone' => '012345678',
+            'password' => 'password123', 'password_confirmation' => 'password123',
+            'class_id' => $this->computerEveningClass->id, 'course_package_id' => $this->msWordPackage->id,
+            'fee_type' => 'term', 'payment_method' => 'CASH', 'discount_code' => 'WEB5',
+        ])->assertCreated();
+
+        $student = Student::query()->where('first_name', 'Sok')->sole();
+        $invoice = $student->invoices()->sole();
+        $this->assertSame('19.00', (string) $invoice->balance);
+        $this->assertSame('Code WEB5', $invoice->discount_reason);
+
+        $this->postJson("/api/v1/student-registrations/{$student->id}/reject", ['reason' => 'Duplicate'])->assertOk();
+        $this->assertSame(0, DiscountCodeRedemption::query()->where('status', 'applied')->count());
+    }
+
+    private function currency(): string
+    {
+        return $this->tenant->fresh()->default_currency;
+    }
+
+    private function otherPackageId(): int
+    {
+        return \App\Models\CoursePackage::factory()->create()->id;
+    }
+}

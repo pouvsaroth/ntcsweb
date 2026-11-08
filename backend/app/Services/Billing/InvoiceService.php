@@ -267,6 +267,8 @@ final class InvoiceService
                 'cancelled_by' => $actor->getKey(),
                 'cancelled_at' => now(),
             ]);
+            // A discount code used on it may be used again.
+            app(DiscountCodeService::class)->releaseForInvoice((int) $invoice->getKey());
 
             $this->audit->log(
                 $action,

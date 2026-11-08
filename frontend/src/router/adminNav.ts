@@ -113,6 +113,7 @@ export const adminNav: AdminNavGroup[] = [
       { labelKey: 'studentNav.score', icon: 'chartBar', to: '/admin/my-scores', studentOnly: true },
       { labelKey: 'studentNav.attendant', icon: 'checkCircle', to: '/admin/my-attendance', studentOnly: true },
       { labelKey: 'studentNav.video', icon: 'video', to: '/admin/my-videos', studentOnly: true },
+      { labelKey: 'studentNav.discountCodes', icon: 'tag', to: '/admin/my-discount-codes', studentOnly: true },
       { labelKey: 'studentNav.myRequest', icon: 'annotation', to: '/admin/my-feedback', studentOnly: true },
       { labelKey: 'adminNav.items.myRequests', icon: 'inbox', to: '/admin/approvals/my-requests', studentOnly: true },
       { labelKey: 'adminNav.items.notifications', icon: 'bell', to: '/admin/notifications', studentOnly: true },

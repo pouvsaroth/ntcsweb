@@ -781,6 +781,15 @@ final class Permissions
 
     public const COMPANIES_DELETE = 'companies.delete';
 
+    // Invoices > Discount codes.
+    public const DISCOUNT_CODES_VIEW = 'discount-codes.view';
+
+    public const DISCOUNT_CODES_CREATE = 'discount-codes.create';
+
+    public const DISCOUNT_CODES_UPDATE = 'discount-codes.update';
+
+    public const DISCOUNT_CODES_DELETE = 'discount-codes.delete';
+
     public const NOTIFICATIONS_SEND = 'notifications.send';
 
     // Accounting — the Chart of Accounts and general ledger sitting on top
@@ -1617,6 +1626,10 @@ final class Permissions
                 self::COMPANIES_CREATE => 'Add companies',
                 self::COMPANIES_UPDATE => 'Update companies',
                 self::COMPANIES_DELETE => 'Delete companies',
+                self::DISCOUNT_CODES_VIEW => 'View discount codes',
+                self::DISCOUNT_CODES_CREATE => 'Add discount codes',
+                self::DISCOUNT_CODES_UPDATE => 'Update discount codes (also give them to students)',
+                self::DISCOUNT_CODES_DELETE => 'Delete unused discount codes',
                 self::NOTIFICATIONS_SEND => 'Send invoice notifications',
             ],
             'Accounting' => [
@@ -1863,6 +1876,7 @@ final class Permissions
             self::RECEIPTS_VIEW, self::BILLING_REPORTS_VIEW, self::NOTIFICATIONS_SEND,
             self::CURRENCY_RATES_VIEW, self::CURRENCY_RATES_CREATE, self::CURRENCY_RATES_UPDATE, self::CURRENCY_RATES_DELETE,
             self::COMPANIES_VIEW, self::COMPANIES_CREATE, self::COMPANIES_UPDATE, self::COMPANIES_DELETE,
+            self::DISCOUNT_CODES_VIEW, self::DISCOUNT_CODES_CREATE, self::DISCOUNT_CODES_UPDATE, self::DISCOUNT_CODES_DELETE,
         ];
 
         // Same reasoning as $billing above — its own tight group,

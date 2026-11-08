@@ -49,6 +49,7 @@ use App\Http\Controllers\Api\V1\Admin\CompanyInvoiceController;
 use App\Http\Controllers\Api\V1\Admin\BorrowingController;
 use App\Http\Controllers\Api\V1\Admin\ExpenseEntityController;
 use App\Http\Controllers\Api\V1\Admin\LenderController;
+use App\Http\Controllers\Api\V1\Admin\DiscountCodeController;
 use App\Http\Controllers\Api\V1\Admin\EnrollmentController;
 use App\Http\Controllers\Api\V1\Admin\EnrollmentPackageController;
 use App\Http\Controllers\Api\V1\Admin\EvaluationFormController;
@@ -177,6 +178,7 @@ use App\Http\Controllers\Api\V1\MyClassChangeRequestController;
 use App\Http\Controllers\Api\V1\MyExamApplicationController;
 use App\Http\Controllers\Api\V1\MyExamScoreController;
 use App\Http\Controllers\Api\V1\MyInvoiceController;
+use App\Http\Controllers\Api\V1\MyDiscountCodeController;
 use App\Http\Controllers\Api\V1\MyLeaveRequestController;
 use App\Http\Controllers\Api\V1\MyMakeUpClassRequestController;
 use App\Http\Controllers\Api\V1\MyMonthlyPaymentAlertController;
@@ -946,6 +948,9 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
 
         Route::apiResource('currency-rates', CurrencyRateController::class);
         Route::apiResource('companies', CompanyController::class);
+        Route::get('discount-codes/options', [DiscountCodeController::class, 'options'])->name('discount-codes.options');
+        Route::post('discount-codes/check', [DiscountCodeController::class, 'check'])->middleware('throttle:60,1')->name('discount-codes.check');
+        Route::apiResource('discount-codes', DiscountCodeController::class);
 
         /*
         |------------------------------------------------------------------
@@ -1077,6 +1082,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('my-invoices', [MyInvoiceController::class, 'index'])->name('my-invoices.index');
         Route::get('my-invoices/{invoice}', [MyInvoiceController::class, 'show'])->name('my-invoices.show');
         Route::get('my-invoices/{invoice}/pdf', [MyInvoiceController::class, 'downloadPdf'])->name('my-invoices.pdf');
+        Route::get('my-discount-codes', [MyDiscountCodeController::class, 'index'])->name('my-discount-codes.index');
+        Route::post('my-invoices/{invoice}/discount-code', [MyDiscountCodeController::class, 'apply'])->middleware('throttle:20,1')->name('my-invoices.discount-code');
 
         // Student self-service — identity-gated, same pattern as my-invoices.
         // Backs the payment-due popup on the public site.
@@ -1256,6 +1263,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         // logo here, and says whether the website is on (website_enabled).
         Route::get('settings', [SiteSettingsController::class, 'show'])->name('settings');
         Route::post('student-registrations', [PublicStudentRegistrationController::class, 'store'])->name('student-registrations.store');
+        // The registration form's live discount-code check. Throttled: it must not become a way to guess codes.
+        Route::post('discount-codes/check', [PublicStudentRegistrationController::class, 'checkDiscountCode'])->middleware('throttle:10,1')->name('discount-codes.check');
 
         // The school's public website: gone (404) when its plan has no
         // Website module (docs/backoffice/stage-5-billing.md, 5c).
