@@ -71,6 +71,8 @@ final class LeaveRequestService
                     ]),
                 ]);
             }
+
+            $this->guardAbsenceLimit($student, $data['enrollment_id'] ?? null);
         }
 
         $request = DB::transaction(function () use ($student, $staff, $data, $byHr) {
@@ -411,6 +413,37 @@ final class LeaveRequestService
                 }
             })
             ->delete();
+    }
+
+    /** Missed hours (absent + permission + late) above which a student may not ask for more leave. */
+    public const STUDENT_ABSENCE_LIMIT_HOURS = 6;
+
+    /**
+     * Refuse a student's request once the course they picked already has
+     * more than STUDENT_ABSENCE_LIMIT_HOURS missed — absent + permission
+     * sessions plus late minutes, the same total as the home screen's
+     * "absent hours" card (MyAttendanceController::hoursSummary()).
+     */
+    private function guardAbsenceLimit(Student $student, mixed $enrollmentId): void
+    {
+        if ($enrollmentId === null) {
+            return;
+        }
+
+        $row = collect($this->attendance->summarize(null, null, null, $student->id))
+            ->firstWhere('enrollment_id', (int) $enrollmentId);
+
+        if ($row === null) {
+            return;
+        }
+
+        $missed = $row['permission_hours'] + $row['absent_hours'] + $row['late_minutes'] / 60;
+
+        if ($missed > self::STUDENT_ABSENCE_LIMIT_HOURS) {
+            throw ValidationException::withMessages([
+                'absence_limit' => 'អ្នកមិនអាចសច្បាប់បន្តបានទេ បើនៅតែបន្តអវត្តមានសាលានឹងបញ្ឈប់ការសិក្សាតែម្តង',
+            ]);
+        }
     }
 
     /**

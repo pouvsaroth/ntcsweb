@@ -358,4 +358,58 @@ class LeaveRequestTest extends TestCase
         $this->assertSame(1, AttendanceRecord::where('enrollment_id', $enrollments[0]->id)->where('status', AttendanceStatus::EXCUSED)->count());
         $this->assertSame(0, AttendanceRecord::where('enrollment_id', $enrollments[1]->id)->count());
     }
+
+    /**
+     * A 2-hour Monday class: 2 absent + 1 permission = 6 hours missed, then
+     * $lateMinutes more on a late day.
+     */
+    private function studentWhoMissed(int $lateMinutes): array
+    {
+        $this->actingAsAdminWithPermissions([]);
+        [$student, $user] = $this->studentWithUser();
+        $class = SchoolClass::factory()->create();
+        ClassSchedule::factory()->forClass($class)->onDay(ClassSchedule::MONDAY)->at('18:00:00', '20:00:00')->create();
+        $enrollment = Enrollment::factory()->forClass($class)->forStudent($student)->create();
+
+        $monday = Carbon::now()->previous(Carbon::MONDAY);
+        foreach ([AttendanceStatus::ABSENT, AttendanceStatus::ABSENT, AttendanceStatus::EXCUSED] as $weeksAgo => $status) {
+            AttendanceRecord::factory()->forEnrollment($enrollment)
+                ->onDate($monday->copy()->subWeeks($weeksAgo)->toDateString())->status($status)->create();
+        }
+        if ($lateMinutes > 0) {
+            AttendanceRecord::factory()->forEnrollment($enrollment)
+                ->onDate($monday->copy()->subWeeks(3)->toDateString())->status(AttendanceStatus::LATE)
+                ->create(['late_minutes' => $lateMinutes]);
+        }
+        $this->actingAsTenantUser($user);
+
+        return [$student, $enrollment];
+    }
+
+    private function askForLeave(Enrollment $enrollment)
+    {
+        return $this->postJson('/api/v1/my-leave-requests', [
+            'enrollment_id' => $enrollment->id,
+            'from_date' => Carbon::now()->next(Carbon::MONDAY)->toDateString(),
+            'to_date' => Carbon::now()->next(Carbon::MONDAY)->toDateString(),
+            'reason' => 'Sick',
+        ]);
+    }
+
+    public function test_a_student_with_six_hours_missed_can_still_ask_for_leave(): void
+    {
+        [, $enrollment] = $this->studentWhoMissed(0);
+
+        $this->askForLeave($enrollment)->assertCreated();
+    }
+
+    public function test_a_student_with_more_than_six_hours_absent_permission_and_late_cannot_ask_for_leave(): void
+    {
+        [$student, $enrollment] = $this->studentWhoMissed(30);
+
+        $this->askForLeave($enrollment)
+            ->assertUnprocessable()
+            ->assertJsonPath('errors.absence_limit.0', 'អ្នកមិនអាចសច្បាប់បន្តបានទេ បើនៅតែបន្តអវត្តមានសាលានឹងបញ្ឈប់ការសិក្សាតែម្តង');
+        $this->assertSame(0, LeaveRequest::where('student_id', $student->id)->count());
+    }
 }

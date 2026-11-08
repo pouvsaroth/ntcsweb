@@ -194,6 +194,8 @@ async function submit() {
   } catch (error) {
     if (error instanceof ApiRequestError && error.errors) {
       errors.value = error.errors
+      // Too many hours already missed — shown as the alert at the top.
+      generalError.value = error.errors.absence_limit?.[0] ?? null
     } else {
       generalError.value = error instanceof ApiRequestError ? error.message : t('leaveRequest.submitFailed')
     }
