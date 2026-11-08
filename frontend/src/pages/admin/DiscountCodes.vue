@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import DiscountCodeBulkModal from '@/components/admin/DiscountCodeBulkModal.vue'
 import DiscountCodeFormModal from '@/components/admin/DiscountCodeFormModal.vue'
 import InvoicesTabs from '@/components/admin/InvoicesTabs.vue'
 import BaseAlert from '@/components/ui/BaseAlert.vue'
@@ -78,6 +79,7 @@ function audienceText(row: DiscountCode): string {
 }
 
 const modalOpen = ref(false)
+const bulkOpen = ref(false)
 const editing = ref<DiscountCode | null>(null)
 const deleteError = ref<string | null>(null)
 
@@ -114,7 +116,10 @@ onMounted(() => fetch())
         />
         <BaseSelect class="sm:w-44" :model-value="audienceFilter" :options="audienceOptions" @update:model-value="changeAudience" />
       </div>
-      <BaseButton v-if="canCreate" class="shrink-0" @click="open(null)">{{ t('admin.discountCodes.add') }}</BaseButton>
+      <div v-if="canCreate" class="flex shrink-0 flex-wrap gap-2">
+        <BaseButton variant="outline" @click="bulkOpen = true">{{ t('admin.discountCodes.bulk.open') }}</BaseButton>
+        <BaseButton @click="open(null)">{{ t('admin.discountCodes.add') }}</BaseButton>
+      </div>
     </div>
 
     <BaseAlert v-if="error || deleteError" variant="danger" class="mb-4">{{ error || deleteError }}</BaseAlert>
@@ -175,5 +180,6 @@ onMounted(() => fetch())
     <BasePagination v-if="meta" :meta="meta" sticky class="mt-4" @update:page="setPage" />
 
     <DiscountCodeFormModal v-model="modalOpen" :discount-code="editing" @saved="fetch()" />
+    <DiscountCodeBulkModal v-if="canCreate" v-model="bulkOpen" @saved="fetch()" />
   </div>
 </template>

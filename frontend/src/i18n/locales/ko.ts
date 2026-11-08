@@ -4798,6 +4798,18 @@ const ko: MessageSchema = {
       loadFailed: '할인 코드를 불러오지 못했습니다.',
     },
     discountCodes: {
+      bulk: {
+        open: '여러 학생용 코드',
+        title: '여러 학생에게 개인 코드',
+        intro: '학생마다 전용 코드와 할인이 생성됩니다(예: 학생 A 20%, 학생 B 10%). 해당 학생만 사용할 수 있습니다.',
+        prefix: '코드 시작',
+        prefixHint: '각 코드는 이 값 + 학생 ID입니다(예: VIP-S00012).',
+        defaultValue: '새 행의 값',
+        defaultValueHint: '추가하는 학생마다 채워집니다. 학생별로 바꿀 수 있습니다.',
+        remove: '삭제',
+        noStudents: '위에서 검색해 학생을 추가하세요. 학생마다 값을 따로 입력합니다.',
+        save: '코드 {count}개 만들기',
+      },
       useCode: '할인 코드',
       useCodePlaceholder: '예: NEWYEAR10',
       apply: '적용',

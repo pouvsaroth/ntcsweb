@@ -4802,6 +4802,18 @@ const en = {
       loadFailed: 'Could not load your discount codes.',
     },
     discountCodes: {
+      bulk: {
+        open: 'Codes for many students',
+        title: 'Personal codes for many students',
+        intro: 'Each student gets their own code and their own discount, e.g. Student A 20% and Student B 10%. Only that student can use it.',
+        prefix: 'Code starts with',
+        prefixHint: 'Each code is this + the student ID, e.g. VIP-S00012.',
+        defaultValue: 'Value for new rows',
+        defaultValueHint: 'Filled in for each student you add. You can change it per student.',
+        remove: 'Remove',
+        noStudents: 'Search above and add students. Each one gets a row with their own value.',
+        save: 'Create {count} codes',
+      },
       useCode: 'Discount code',
       useCodePlaceholder: 'e.g. NEWYEAR10',
       apply: 'Apply',

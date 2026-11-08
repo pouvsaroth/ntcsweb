@@ -950,6 +950,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::apiResource('companies', CompanyController::class);
         Route::get('discount-codes/options', [DiscountCodeController::class, 'options'])->name('discount-codes.options');
         Route::post('discount-codes/check', [DiscountCodeController::class, 'check'])->middleware('throttle:60,1')->name('discount-codes.check');
+        Route::post('discount-codes/bulk', [DiscountCodeController::class, 'bulk'])->name('discount-codes.bulk');
         Route::apiResource('discount-codes', DiscountCodeController::class);
 
         /*

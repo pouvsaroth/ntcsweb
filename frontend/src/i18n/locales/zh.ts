@@ -4797,6 +4797,18 @@ const zh: MessageSchema = {
       loadFailed: '无法加载您的折扣码。',
     },
     discountCodes: {
+      bulk: {
+        open: '为多名学生创建',
+        title: '为多名学生创建个人折扣码',
+        intro: '每名学生获得自己的折扣码和折扣，例如学生A 20%、学生B 10%。只有该学生可以使用。',
+        prefix: '折扣码开头',
+        prefixHint: '每个折扣码为此前缀 + 学号，例如 VIP-S00012。',
+        defaultValue: '新行的默认值',
+        defaultValueHint: '为每名添加的学生预填，可逐个修改。',
+        remove: '移除',
+        noStudents: '在上方搜索并添加学生，每名学生一行，可设置各自的值。',
+        save: '创建 {count} 个折扣码',
+      },
       useCode: '折扣码',
       useCodePlaceholder: '例如 NEWYEAR10',
       apply: '使用',

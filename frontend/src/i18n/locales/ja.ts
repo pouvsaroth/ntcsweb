@@ -4798,6 +4798,18 @@ const ja: MessageSchema = {
       loadFailed: '割引コードを読み込めませんでした。',
     },
     discountCodes: {
+      bulk: {
+        open: '複数の生徒にコード',
+        title: '複数の生徒に個人コード',
+        intro: '生徒ごとに専用のコードと割引を作成します（例：生徒A 20%、生徒B 10%）。その生徒だけが使えます。',
+        prefix: 'コードの先頭',
+        prefixHint: '各コードはこれ＋生徒ID（例：VIP-S00012）。',
+        defaultValue: '新しい行の値',
+        defaultValueHint: '追加した生徒に入力されます。生徒ごとに変更できます。',
+        remove: '削除',
+        noStudents: '上で検索して生徒を追加してください。生徒ごとに値を入力できます。',
+        save: '{count} 件のコードを作成',
+      },
       useCode: '割引コード',
       useCodePlaceholder: '例: NEWYEAR10',
       apply: '適用',

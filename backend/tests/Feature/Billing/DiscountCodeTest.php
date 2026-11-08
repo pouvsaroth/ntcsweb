@@ -101,4 +101,40 @@ class DiscountCodeTest extends TestCase
         $this->actingAsAdminWithPermissions([]);
         $this->getJson('/api/v1/discount-codes')->assertForbidden();
     }
+
+    public function test_many_students_each_get_their_own_code_and_percent(): void
+    {
+        $this->actingAsAdminWithPermissions(self::ALL);
+        $a = Student::factory()->create(['student_code' => 'S-00001']);
+        $b = Student::factory()->create(['student_code' => 'S-00002']);
+        DiscountCode::factory()->create(['code' => 'VIP-S00002']); // taken: B gets -2
+
+        $base = ['code_prefix' => 'vip', 'name' => 'Scholarship', 'discount_type' => 'percent',
+            'starts_on' => now()->toDateString(), 'expires_on' => now()->addMonth()->toDateString()];
+
+        $this->postJson('/api/v1/discount-codes/bulk', [...$base, 'rows' => [
+            ['student_id' => $a->id, 'value' => 20],
+            ['student_id' => $b->id, 'value' => 10],
+        ]])->assertCreated()->assertJsonCount(2, 'data')
+            ->assertJsonPath('data.0.code', 'VIP-S00001')
+            ->assertJsonPath('data.1.code', 'VIP-S00002-2');
+
+        $forA = DiscountCode::query()->where('code', 'VIP-S00001')->sole();
+        $this->assertSame(DiscountCode::AUDIENCE_PERSONAL, $forA->audience);
+        $this->assertEquals(20, $forA->value);
+        $this->assertSame([$a->id], $forA->students()->pluck('students.id')->all());
+        $forB = DiscountCode::query()->where('code', 'VIP-S00002-2')->sole();
+        $this->assertEquals(10, $forB->value);
+        $this->assertSame([$b->id], $forB->students()->pluck('students.id')->all());
+
+        // Rules: a percent over 100, the same student twice, no students.
+        $this->postJson('/api/v1/discount-codes/bulk', [...$base, 'rows' => [['student_id' => $a->id, 'value' => 120]]])
+            ->assertUnprocessable()->assertJsonValidationErrors('rows.0.value');
+        $this->postJson('/api/v1/discount-codes/bulk', [...$base, 'rows' => [['student_id' => $a->id, 'value' => 5], ['student_id' => $a->id, 'value' => 5]]])
+            ->assertUnprocessable()->assertJsonValidationErrors('rows.0.student_id');
+        $this->postJson('/api/v1/discount-codes/bulk', [...$base, 'rows' => []])->assertUnprocessable()->assertJsonValidationErrors('rows');
+
+        $this->actingAsAdminWithPermissions([Permissions::DISCOUNT_CODES_VIEW]);
+        $this->postJson('/api/v1/discount-codes/bulk', [...$base, 'rows' => [['student_id' => $a->id, 'value' => 5]]])->assertForbidden();
+    }
 }

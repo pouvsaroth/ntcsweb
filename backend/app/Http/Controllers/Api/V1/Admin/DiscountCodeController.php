@@ -73,6 +73,92 @@ final class DiscountCodeController extends Controller
         return ApiResponse::created(new DiscountCodeResource($this->loaded($code)));
     }
 
+    /**
+     * POST /discount-codes/bulk — one personal code per student, each with its
+     * own value (e.g. Student A 20%, Student B 10%). The other settings are
+     * shared. Codes are PREFIX-STUDENTCODE, with -2, -3 ... if one is taken.
+     */
+    public function bulk(Request $request): JsonResponse
+    {
+        $this->authorize('create', DiscountCode::class);
+
+        $request->merge(['code_prefix' => strtoupper(trim((string) $request->input('code_prefix')))]);
+        $isPercent = $request->input('discount_type') === DiscountCode::TYPE_PERCENT;
+
+        $data = $request->validate([
+            'code_prefix' => ['required', 'string', 'max:20', 'regex:/^[A-Z0-9_-]+$/'],
+            'name' => ['required', 'string', 'max:255'],
+            'discount_type' => ['required', Rule::in(DiscountCode::TYPES)],
+            'max_discount' => ['nullable', 'numeric', 'gt:0', 'max:9999999'],
+            'starts_on' => ['required', 'date'],
+            'expires_on' => ['required', 'date', 'after_or_equal:starts_on'],
+            'notes' => ['nullable', 'string', 'max:2000'],
+            'course_package_ids' => ['sometimes', 'array'],
+            'course_package_ids.*' => ['integer', 'distinct', Rule::exists('tenant.course_packages', 'id')],
+            'rows' => ['required', 'array', 'min:1', 'max:200'],
+            'rows.*.student_id' => ['required', 'integer', 'distinct', Rule::exists('tenant.students', 'id')],
+            'rows.*.value' => ['required', 'numeric', 'gt:0', $isPercent ? 'max:100' : 'max:9999999'],
+        ], [
+            'code_prefix.regex' => __('Use only letters, numbers, - and _ (no spaces).'),
+            'rows.required' => __('Add at least one student.'),
+            'rows.*.student_id.distinct' => __('This student is in the list twice.'),
+        ]);
+
+        $students = Student::query()->whereIn('id', collect($data['rows'])->pluck('student_id'))->get()->keyBy('id');
+        $currency = $this->context->getOrFail()->default_currency ?: 'USD';
+
+        $codes = DB::connection('tenant')->transaction(function () use ($data, $students, $currency, $request) {
+            $taken = [];
+            $codes = [];
+            foreach ($data['rows'] as $row) {
+                $student = $students->get((int) $row['student_id']);
+                $code = DiscountCode::query()->create([
+                    'code' => $this->freeCode($data['code_prefix'], $student, $taken),
+                    'name' => $data['name'],
+                    'audience' => DiscountCode::AUDIENCE_PERSONAL,
+                    'discount_type' => $data['discount_type'],
+                    'value' => $row['value'],
+                    'max_discount' => $data['discount_type'] === DiscountCode::TYPE_PERCENT ? ($data['max_discount'] ?? null) : null,
+                    'currency' => $currency,
+                    'starts_on' => $data['starts_on'],
+                    'expires_on' => $data['expires_on'],
+                    'notes' => $data['notes'] ?? null,
+                    'created_by' => $request->user()?->id,
+                ]);
+                $code->coursePackages()->sync($data['course_package_ids'] ?? []);
+                $code->students()->sync([$student->id]);
+                $codes[] = $code;
+            }
+
+            return $codes;
+        });
+
+        foreach ($codes as $code) {
+            $this->notifyGiven($code, [(int) $code->students()->value('students.id')]);
+        }
+
+        return ApiResponse::created(DiscountCodeResource::collection(collect($codes)->map(fn (DiscountCode $c) => $this->loaded($c))));
+    }
+
+    /**
+     * PREFIX-STUDENTCODE (letters and numbers only), made unique.
+     *
+     * @param  array<string, true>  $taken  codes already made in this batch
+     */
+    private function freeCode(string $prefix, Student $student, array &$taken): string
+    {
+        $tail = strtoupper((string) preg_replace('/[^A-Za-z0-9]/', '', (string) $student->student_code));
+        $base = substr($prefix.'-'.($tail !== '' ? $tail : $student->id), 0, 36);
+
+        $code = $base;
+        for ($n = 2; isset($taken[$code]) || DiscountCode::query()->where('code', $code)->exists(); $n++) {
+            $code = $base.'-'.$n;
+        }
+        $taken[$code] = true;
+
+        return $code;
+    }
+
     public function show(DiscountCode $discountCode): JsonResponse
     {
         $this->authorize('view', $discountCode);
