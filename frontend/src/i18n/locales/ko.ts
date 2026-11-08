@@ -551,6 +551,7 @@ const ko: MessageSchema = {
       attendance_correction_submitted: '{staff_name}님이 {date} 근태 정정을 신청했습니다',
       attendance_correction_approved: '{date} 근태 정정이 승인되었습니다',
       attendance_correction_rejected: '{date} 근태 정정이 반려되었습니다: {reason}',
+      attendance_not_taken: '{class_name}의 {date} 출석이 입력되지 않았습니다 (수업 종료 {end_time})',
     },
   },
 
@@ -4657,6 +4658,8 @@ const ko: MessageSchema = {
       save: '출결 저장',
       saveSuccess: '출결이 저장되었습니다.',
       saveFailed: '출결을 저장하지 못했습니다.',
+      missedDayLocked: '{date}의 출석이 아직 입력되지 않았습니다. 그날을 입력하기 전에는 오늘 출석을 입력할 수 없습니다.',
+      goToMissedDay: '지금 {date} 입력',
       loadFailed: '명단을 불러오지 못했습니다.',
       historyTitle: '출결 기록',
       columnDate: '날짜',

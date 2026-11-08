@@ -17,6 +17,7 @@ import {
 } from '@/services/attendance'
 import { classesService, type SchoolClass } from '@/services/classes'
 import { ApiRequestError } from '@/types/api'
+import { formatDate } from '@/utils/date'
 
 /**
  * The "View" action on the Classes list: pick several classes there, land
@@ -40,6 +41,8 @@ interface ClassGroup {
   class_id: number
   class_name: string
   entries: TaggedEntry[]
+  /** The class's previous class day with no attendance — this class can't be saved for today until it is filled in. */
+  missed_date: string | null
 }
 
 function today(): string {
@@ -75,6 +78,8 @@ const saveError = ref<string | null>(null)
 const saved = ref(false)
 
 const totalStudents = computed(() => groups.value.reduce((sum, g) => sum + g.entries.length, 0))
+/** Only classes not locked by a missed day are saved. */
+const savableGroups = computed(() => groups.value.filter((g) => !g.missed_date))
 
 async function loadRoster() {
   if (classIds.value.length === 0) {
@@ -89,8 +94,13 @@ async function loadRoster() {
   try {
     const results = await Promise.all(
       classIds.value.map(async (classId) => {
-        const entries = await attendanceService.roster(classId, date.value)
-        return { class_id: classId, class_name: classNames.value[classId] ?? `#${classId}`, entries: entries.map((e) => ({ ...e, class_id: classId })) }
+        const { entries, missedDate } = await attendanceService.rosterWithLock(classId, date.value)
+        return {
+          class_id: classId,
+          class_name: classNames.value[classId] ?? `#${classId}`,
+          entries: entries.map((e) => ({ ...e, class_id: classId })),
+          missed_date: missedDate,
+        }
       }),
     )
 
@@ -125,7 +135,7 @@ function statusLabel(status: AttendanceStatusValue): string {
 }
 
 async function save() {
-  if (groups.value.length === 0) return
+  if (savableGroups.value.length === 0) return
 
   saving.value = true
   saveError.value = null
@@ -133,7 +143,7 @@ async function save() {
 
   try {
     await Promise.all(
-      groups.value.map((group) => {
+      savableGroups.value.map((group) => {
         const entries: AttendanceEntryInput[] = group.entries.map((entry) => ({
           enrollment_id: entry.enrollment_id,
           status: rosterEntries[entry.enrollment_id].status,
@@ -211,6 +221,9 @@ onMounted(async () => {
 
           <div v-for="group in groups" :key="group.class_id" class="mt-5">
             <h2 class="mb-2 text-sm font-semibold text-neutral-800">{{ group.class_name }} <span class="font-normal text-neutral-400">({{ group.entries.length }})</span></h2>
+            <BaseAlert v-if="group.missed_date" variant="danger" class="mb-2">
+              {{ t('admin.attendance.missedDayLocked', { date: formatDate(group.missed_date) }) }}
+            </BaseAlert>
             <div class="divide-y divide-neutral-100 rounded-lg border border-neutral-200">
               <div v-for="entry in group.entries" :key="entry.enrollment_id" class="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:gap-4">
                 <div class="sm:w-56">
@@ -252,7 +265,7 @@ onMounted(async () => {
           </div>
 
           <div class="mt-5">
-            <BaseButton v-if="auth.can('attendance.create') || auth.can('attendance.update')" :loading="saving" @click="save">{{ t('admin.attendance.save') }}</BaseButton>
+            <BaseButton v-if="(auth.can('attendance.create') || auth.can('attendance.update')) && savableGroups.length > 0" :loading="saving" @click="save">{{ t('admin.attendance.save') }}</BaseButton>
           </div>
         </template>
 

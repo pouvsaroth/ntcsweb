@@ -300,6 +300,8 @@ class AttendanceTest extends TestCase
         $this->actingAsAdminWithPermissions([Permissions::ATTENDANCE_CREATE]);
         [$class, $enrollments] = $this->classWithStudents(1);
         $date = now();
+        // Starts today, so there is no earlier class day to lock today's save.
+        $class->update(['start_date' => $date->toDateString()]);
 
         ClassSchedule::factory()->forClass($class)->onDay($date->dayOfWeekIso)->at('13:00:00', '15:00:00')->create();
         // A different day's slot on the same class — must not be picked instead of the one above.

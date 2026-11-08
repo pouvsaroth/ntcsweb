@@ -53,6 +53,7 @@ export type NotificationTypeValue =
   | 'appointment_booked'
   | 'visitor_arrived'
   | 'website_inquiry_received'
+  | 'attendance_not_taken'
 
 export interface AppNotification {
   id: number

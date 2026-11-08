@@ -64,13 +64,18 @@ final class AttendanceController extends Controller
 
         $data = $request->validate(['date' => ['required', 'date']]);
 
+        // `missed_date`: the previous class day with no attendance yet — while
+        // set, today's attendance can't be saved (see guardPreviousClassDay()).
         return ApiResponse::success(
-            AttendanceRosterEntryResource::collection($this->attendance->roster($class, $data['date']))
+            AttendanceRosterEntryResource::collection($this->attendance->roster($class, $data['date'])),
+            meta: ['missed_date' => $this->attendance->missedClassDayBefore($class, $data['date'])],
         );
     }
 
     public function store(RecordAttendanceRequest $request, SchoolClass $class): JsonResponse
     {
+        $this->attendance->guardPreviousClassDay($class, $request->validated('date'));
+
         $records = $this->attendance->recordForClass(
             $class,
             $request->validated('date'),

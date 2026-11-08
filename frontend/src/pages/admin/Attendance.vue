@@ -18,6 +18,7 @@ import {
 } from '@/services/attendance'
 import { classesService, type SchoolClass } from '@/services/classes'
 import { ApiRequestError } from '@/types/api'
+import { formatDate } from '@/utils/date'
 
 const { t } = useI18n()
 const auth = useAuthStore()
@@ -49,6 +50,8 @@ const rosterError = ref<string | null>(null)
 const saving = ref(false)
 const saveError = ref<string | null>(null)
 const saved = ref(false)
+/** The class's previous class day with no attendance — today can't be saved until it is filled in. */
+const missedDate = ref<string | null>(null)
 
 const classOptions = computed(() => classes.value.map((c) => ({ value: String(c.id), label: c.name })))
 
@@ -57,9 +60,12 @@ async function loadRoster() {
   loadingRoster.value = true
   rosterError.value = null
   saved.value = false
+  missedDate.value = null
 
   try {
-    roster.value = await attendanceService.roster(classId.value, date.value)
+    const result = await attendanceService.rosterWithLock(classId.value, date.value)
+    roster.value = result.entries
+    missedDate.value = result.missedDate
     for (const entry of roster.value) {
       rosterEntries[entry.enrollment_id] = {
         status: entry.status ?? 'PRESENT',
@@ -158,6 +164,12 @@ onMounted(async () => {
       <BaseAlert v-if="rosterError" variant="danger" class="mb-4">{{ rosterError }}</BaseAlert>
       <BaseAlert v-if="saveError" variant="danger" class="mb-4">{{ saveError }}</BaseAlert>
       <BaseAlert v-if="saved" variant="success" class="mb-4">{{ t('admin.attendance.saveSuccess') }}</BaseAlert>
+      <BaseAlert v-if="missedDate" variant="danger" class="mb-4">
+        {{ t('admin.attendance.missedDayLocked', { date: formatDate(missedDate) }) }}
+        <button type="button" class="ml-1 font-semibold underline" @click="date = missedDate ?? date">
+          {{ t('admin.attendance.goToMissedDay', { date: formatDate(missedDate) }) }}
+        </button>
+      </BaseAlert>
 
       <template v-if="classId">
         <div v-if="loadingRoster" class="py-8 text-center text-sm text-neutral-400">{{ t('common.loading') }}</div>
@@ -226,7 +238,7 @@ onMounted(async () => {
           </div>
 
           <div class="mt-4">
-            <BaseButton v-if="auth.can('attendance.create') || auth.can('attendance.update')" :loading="saving" @click="save">{{ t('admin.attendance.save') }}</BaseButton>
+            <BaseButton v-if="(auth.can('attendance.create') || auth.can('attendance.update')) && !missedDate" :loading="saving" @click="save">{{ t('admin.attendance.save') }}</BaseButton>
           </div>
         </template>
 

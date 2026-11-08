@@ -148,4 +148,7 @@ final class NotificationType
 
     // Someone sent the website's Register form (now in Front Office > Inquiry).
     public const WEBSITE_INQUIRY_RECEIVED = 'website_inquiry_received';
+
+    // A class ended and nobody saved its attendance (class teachers + school admins told).
+    public const ATTENDANCE_NOT_TAKEN = 'attendance_not_taken';
 }

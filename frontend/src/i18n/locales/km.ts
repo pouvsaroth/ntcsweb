@@ -551,6 +551,7 @@ const km: MessageSchema = {
       attendance_correction_submitted: '{staff_name} ស្នើកែវត្តមានថ្ងៃ {date}',
       attendance_correction_approved: 'ការកែវត្តមានថ្ងៃ {date} របស់អ្នកត្រូវបានអនុម័ត',
       attendance_correction_rejected: 'ការកែវត្តមានថ្ងៃ {date} របស់អ្នកត្រូវបានបដិសេធ៖ {reason}',
+      attendance_not_taken: 'មិនទាន់បានបញ្ចូលវត្តមានសម្រាប់ថ្នាក់ {class_name} ថ្ងៃ {date} ទេ (ថ្នាក់បានបញ្ចប់នៅម៉ោង {end_time})',
     },
   },
 
@@ -4657,6 +4658,8 @@ const km: MessageSchema = {
       save: 'រក្សាទុកវត្តមាន',
       saveSuccess: 'បានរក្សាទុកវត្តមានដោយជោគជ័យ។',
       saveFailed: 'មិនអាចរក្សាទុកវត្តមានបានទេ។',
+      missedDayLocked: 'មិនទាន់បានបញ្ចូលវត្តមានសម្រាប់ថ្ងៃ {date} នៅឡើយទេ។ អ្នកមិនអាចបញ្ចូលវត្តមានថ្ងៃនេះបានទេ រហូតដល់បញ្ចូលថ្ងៃនោះរួច។',
+      goToMissedDay: 'បញ្ចូលថ្ងៃ {date} ឥឡូវនេះ',
       loadFailed: 'មិនអាចផ្ទុកបញ្ជីសិស្សបានទេ។',
       historyTitle: 'ប្រវត្តិវត្តមាន',
       columnDate: 'កាលបរិច្ឆេទ',

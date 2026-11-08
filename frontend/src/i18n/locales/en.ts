@@ -554,6 +554,7 @@ const en = {
       attendance_correction_submitted: '{staff_name} asked to correct their attendance on {date}',
       attendance_correction_approved: 'Your attendance correction for {date} was approved',
       attendance_correction_rejected: 'Your attendance correction for {date} was rejected: {reason}',
+      attendance_not_taken: 'Attendance was not added for {class_name} on {date} (class ended at {end_time})',
     },
   },
 
@@ -4661,6 +4662,8 @@ const en = {
       save: 'Save attendance',
       saveSuccess: 'Attendance saved successfully.',
       saveFailed: 'Could not save attendance.',
+      missedDayLocked: 'Attendance for {date} has not been added yet. You cannot add attendance for today until that day is added.',
+      goToMissedDay: 'Add {date} now',
       loadFailed: 'Could not load the class roster.',
       historyTitle: 'Attendance history',
       columnDate: 'Date',

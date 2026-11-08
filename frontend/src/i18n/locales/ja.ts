@@ -551,6 +551,7 @@ const ja: MessageSchema = {
       attendance_correction_submitted: '{staff_name} が {date} の勤怠修正を申請しました',
       attendance_correction_approved: '{date} の勤怠修正が承認されました',
       attendance_correction_rejected: '{date} の勤怠修正が却下されました：{reason}',
+      attendance_not_taken: '{class_name} の {date} の出席が入力されていません（授業は {end_time} に終了）',
     },
   },
 
@@ -4657,6 +4658,8 @@ const ja: MessageSchema = {
       save: '出欠を保存',
       saveSuccess: '出欠を保存しました。',
       saveFailed: '出欠を保存できませんでした。',
+      missedDayLocked: '{date} の出席がまだ入力されていません。その日を入力するまで、今日の出席は入力できません。',
+      goToMissedDay: '{date} を今すぐ入力',
       loadFailed: '名簿を読み込めませんでした。',
       historyTitle: '出欠履歴',
       columnDate: '日付',

@@ -7,11 +7,13 @@ namespace App\Services\Academic;
 use App\Models\AttendanceRecord;
 use App\Models\ClassroomTable;
 use App\Models\Enrollment;
+use App\Models\Holiday;
 use App\Models\SchoolClass;
 use App\Models\User;
 use App\Support\Academic\AttendanceStatus;
 use App\Support\Audit\AuditAction;
 use App\Support\Audit\AuditLogger;
+use App\Support\Tenancy\TenantContext;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
@@ -30,7 +32,82 @@ final class AttendanceService
     public function __construct(
         private readonly AuditLogger $audit,
         private readonly MakeUpClassRequestService $makeUpClassRequests,
+        private readonly TenantContext $context,
     ) {}
+
+    /** How far back the lock looks for a class's previous class day. */
+    private const LOCK_LOOKBACK_DAYS = 31;
+
+    /** Today's date (Y-m-d) in the school's own timezone. */
+    public function schoolToday(): string
+    {
+        return Carbon::now($this->context->get()?->timezone ?: 'Asia/Phnom_Penh')->toDateString();
+    }
+
+    /**
+     * The attendance lock: today's attendance can't be saved while the
+     * class's previous class day still has none. Returns that missed date
+     * (Y-m-d), or null when nothing blocks. Only today is locked, so a
+     * teacher can always go back and fill in an earlier day.
+     *
+     * The previous class day is the last day before $date that the class's
+     * schedule meets on, skipping holidays and days before the class
+     * started. A day with no students in the class doesn't need attendance
+     * (there is nobody to mark), so it never blocks.
+     */
+    public function missedClassDayBefore(SchoolClass $class, string $date): ?string
+    {
+        $date = Carbon::parse($date)->toDateString();
+        if ($date !== $this->schoolToday()) {
+            return null;
+        }
+
+        $weekdays = $class->schedules()->pluck('day_of_week')->map(fn ($day) => (int) $day)->unique();
+        if ($weekdays->isEmpty()) {
+            return null;
+        }
+
+        $earliest = Carbon::parse($date)->subDays(self::LOCK_LOOKBACK_DAYS);
+        $holidays = Holiday::query()
+            ->whereDate('end_date', '>=', $earliest->toDateString())
+            ->whereDate('start_date', '<', $date)
+            ->get();
+
+        for ($day = Carbon::parse($date)->subDay(); $day->gte($earliest); $day->subDay()) {
+            if ($class->start_date !== null && $day->lt($class->start_date)) {
+                return null;
+            }
+
+            $ymd = $day->toDateString();
+            $isHoliday = $holidays->contains(fn (Holiday $h) => $h->start_date->toDateString() <= $ymd && $h->end_date->toDateString() >= $ymd);
+            if (! $weekdays->contains($day->dayOfWeekIso) || $isHoliday) {
+                continue;
+            }
+
+            // The previous class day — it blocks only if it had students
+            // and nobody saved attendance for it.
+            $taken = AttendanceRecord::query()->where('class_id', $class->getKey())->whereDate('date', $ymd)->exists();
+            if ($taken || $this->enrollmentsInClassOn($class, $ymd, Enrollment::query()->active())->isEmpty()) {
+                return null;
+            }
+
+            return $ymd;
+        }
+
+        return null;
+    }
+
+    /** Refuse saving today's attendance while the previous class day has none — see missedClassDayBefore(). */
+    public function guardPreviousClassDay(SchoolClass $class, string $date): void
+    {
+        $missed = $this->missedClassDayBefore($class, $date);
+
+        if ($missed !== null) {
+            throw ValidationException::withMessages([
+                'date' => 'Attendance for '.Carbon::parse($missed)->format('d-m-Y').' has not been added yet. Add that day first, then today.',
+            ]);
+        }
+    }
 
     /**
      * The roster for a class on a given date: every active enrollment that
