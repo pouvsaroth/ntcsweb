@@ -71,6 +71,18 @@ export interface DiscountCodeCheck {
   currency: 'USD' | 'KHR'
 }
 
+/** A code the Enroll form offers in its dropdown: usable by this student on this course today. */
+export interface AvailableDiscountCode {
+  code: string
+  name: string
+  audience: DiscountAudience
+  discount_type: DiscountType
+  value: number
+  max_discount: number | null
+  currency: 'USD' | 'KHR'
+  expires_on: string
+}
+
 export interface DiscountCodeCheckInput {
   discount_code: string
   student_id?: number | null
@@ -81,6 +93,9 @@ export interface DiscountCodeCheckInput {
 export const discountCodesService = {
   /** Staff Enroll form (needs Add enrollments). */
   check: (input: DiscountCodeCheckInput) => apiPost<DiscountCodeCheck>('/discount-codes/check', input),
+  /** Enroll form dropdown: the student's personal codes + public codes, valid today for this course. */
+  available: (studentId: number, coursePackageId: number) =>
+    apiGet<AvailableDiscountCode[]>('/discount-codes/available', { params: { student_id: studentId, course_package_id: coursePackageId } }),
   /** Website registration form (public codes only). */
   checkPublic: (input: Omit<DiscountCodeCheckInput, 'student_id'>) => apiPost<DiscountCodeCheck>('/public/discount-codes/check', input),
 

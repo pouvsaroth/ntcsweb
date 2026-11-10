@@ -12,7 +12,7 @@ import { academicProgramsService, type AcademicProgram } from '@/services/academ
 import { classesService, type SchoolClass } from '@/services/classes'
 import { coursePackagesService, type CoursePackage } from '@/services/coursePackages'
 import { enrollmentsService, type FeeType } from '@/services/enrollments'
-import { discountCodesService, type DiscountCodeCheck } from '@/services/discountCodes'
+import { discountCodesService, type AvailableDiscountCode, type DiscountCodeCheck } from '@/services/discountCodes'
 import { paymentMethods, type PaymentMethodValue } from '@/services/payments'
 import { studentsService, type Student } from '@/services/students'
 import TaskProgressOverlay from '@/components/ui/TaskProgressOverlay.vue'
@@ -68,6 +68,42 @@ const appliedCode = ref<DiscountCodeCheck | null>(null)
 const checkingCode = ref(false)
 const codeError = ref<string | null>(null)
 
+// The dropdown: codes this student can use on this course today (their
+// personal codes first, then public ones). "Type another code" shows the box.
+const OTHER_CODE = '__other'
+const availableCodes = ref<AvailableDiscountCode[]>([])
+const codePick = ref('')
+const codeOptions = computed(() => [
+  ...availableCodes.value.map((c) => {
+    const off = c.discount_type === 'percent' ? `${Number(c.value)}%` : formatMoney(c.value, c.currency)
+    const mine = c.audience === 'personal' ? ` · ${t('admin.discountCodes.forThisStudent')}` : ''
+    return { value: c.code, label: `${c.code} · ${c.name} · ${off}${mine}` }
+  }),
+  { value: OTHER_CODE, label: t('admin.discountCodes.typeOther') },
+])
+const showCodeBox = computed(() => availableCodes.value.length === 0 || codePick.value === OTHER_CODE)
+
+async function loadAvailableCodes() {
+  availableCodes.value = []
+  codePick.value = ''
+  if (!selectedStudent.value || !form.course_package_id) return
+  try {
+    availableCodes.value = await discountCodesService.available(selectedStudent.value.id, form.course_package_id)
+  } catch {
+    availableCodes.value = []
+  }
+}
+
+function pickCode(value: string) {
+  codePick.value = value
+  codeError.value = null
+  if (appliedCode.value) removeCode(false)
+  if (value && value !== OTHER_CODE) {
+    discountCodeInput.value = value
+    void applyCode()
+  }
+}
+
 async function applyCode() {
   const code = discountCodeInput.value.trim()
   if (!code || !selectedStudent.value || !form.course_package_id || !form.fee_type) return
@@ -90,11 +126,12 @@ async function applyCode() {
   }
 }
 
-function removeCode() {
+function removeCode(resetPick = true) {
   if (appliedCode.value) form.discount_price = 0
   appliedCode.value = null
   discountCodeInput.value = ''
   codeError.value = null
+  if (resetPick) codePick.value = ''
 }
 const submittingAndPrinting = ref(false)
 
@@ -231,6 +268,7 @@ watch(
 watch([() => form.fee_type, () => selectedStudent.value?.id], () => {
   if (appliedCode.value) removeCode()
 })
+watch([() => selectedStudent.value?.id, () => form.course_package_id], () => void loadAvailableCodes())
 
 // Received Money defaults to the full amount owed — staff lowers it for a
 // partial payment/debt, or raises it to record change owed back.
@@ -585,11 +623,22 @@ onMounted(async () => {
             </div>
 
             <div>
-              <div class="flex items-end gap-2">
+              <BaseSelect
+                v-if="availableCodes.length"
+                :model-value="codePick"
+                :options="codeOptions"
+                :placeholder="t('admin.discountCodes.chooseCode', { count: availableCodes.length })"
+                :label="t('admin.discountCodes.useCode')"
+                :disabled="!selectedStudent || !form.fee_type"
+                :error="!showCodeBox ? (codeError ?? errors.discount_code?.[0]) : undefined"
+                :class="showCodeBox ? 'mb-2' : ''"
+                @update:model-value="pickCode(String($event ?? ''))"
+              />
+              <div v-if="showCodeBox" class="flex items-end gap-2">
                 <BaseInput
                   :model-value="discountCodeInput"
                   class="flex-1"
-                  :label="t('admin.discountCodes.useCode')"
+                  :label="availableCodes.length ? undefined : t('admin.discountCodes.useCode')"
                   :placeholder="t('admin.discountCodes.useCodePlaceholder')"
                   :disabled="!!appliedCode || !selectedStudent || !form.fee_type"
                   :error="codeError ?? errors.discount_code?.[0]"
@@ -598,7 +647,10 @@ onMounted(async () => {
                 <BaseButton v-if="!appliedCode" type="button" variant="outline" :loading="checkingCode" :disabled="!discountCodeInput.trim() || !selectedStudent || !form.fee_type" @click="applyCode">
                   {{ t('admin.discountCodes.apply') }}
                 </BaseButton>
-                <BaseButton v-else type="button" variant="outline" @click="removeCode">{{ t('admin.discountCodes.remove') }}</BaseButton>
+                <BaseButton v-else type="button" variant="outline" @click="removeCode()">{{ t('admin.discountCodes.remove') }}</BaseButton>
+              </div>
+              <div v-else-if="appliedCode" class="mt-1.5 flex justify-end">
+                <button type="button" class="text-sm font-medium text-danger-600" @click="removeCode()">{{ t('admin.discountCodes.remove') }}</button>
               </div>
               <p v-if="appliedCode" class="mt-1.5 text-sm text-green-700">
                 {{ t('admin.discountCodes.applied', { code: appliedCode.code, name: appliedCode.name, amount: formatMoney(appliedCode.amount, appliedCode.currency) }) }}

@@ -276,6 +276,32 @@ final class DiscountCodeController extends Controller
         ));
     }
 
+    /**
+     * GET /discount-codes/available — the Enroll form's dropdown: codes this
+     * student can use on this course today. Anyone who can enroll students.
+     */
+    public function available(Request $request, DiscountCodeService $discounts): JsonResponse
+    {
+        abort_unless($request->user()?->can('create', Enrollment::class), 403);
+
+        $data = $request->validate([
+            'student_id' => ['nullable', 'integer', Rule::exists('tenant.students', 'id')],
+            'course_package_id' => ['required', 'integer', Rule::exists('tenant.course_packages', 'id')],
+        ]);
+
+        return ApiResponse::success($discounts->availableFor(isset($data['student_id']) ? (int) $data['student_id'] : null, (int) $data['course_package_id'])
+            ->map(fn (DiscountCode $c) => [
+                'code' => $c->code,
+                'name' => $c->name,
+                'audience' => $c->audience,
+                'discount_type' => $c->discount_type,
+                'value' => (float) $c->value,
+                'max_discount' => $c->max_discount !== null ? (float) $c->max_discount : null,
+                'currency' => $c->currency,
+                'expires_on' => $c->expires_on->toDateString(),
+            ])->values());
+    }
+
     /** @return array<string, mixed> */
     private function validated(Request $request, ?DiscountCode $existing): array
     {

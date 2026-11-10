@@ -15,6 +15,7 @@ use App\Models\User;
 use App\Services\Academic\EnrollmentService;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -84,6 +85,36 @@ final class DiscountCodeService
         }
 
         return ['code' => $discount, 'amount' => $this->amountFor($discount, $fee, $currency)];
+    }
+
+    /**
+     * The Enroll form's dropdown: codes this student can use on this course
+     * today — public codes plus personal codes given to the student; active,
+     * started, not expired, not used up, and for this course (or every
+     * course). The amount is still worked out by the check when one is picked.
+     *
+     * @return Collection<int, DiscountCode>
+     */
+    public function availableFor(?int $studentId, int $coursePackageId): Collection
+    {
+        $today = $this->today();
+
+        return DiscountCode::query()
+            ->withCount('appliedRedemptions')
+            ->where('status', DiscountCode::STATUS_ACTIVE)
+            ->whereDate('starts_on', '<=', $today)
+            ->whereDate('expires_on', '>=', $today)
+            ->where(fn ($q) => $q
+                ->where('audience', DiscountCode::AUDIENCE_PUBLIC)
+                ->when($studentId !== null, fn ($q) => $q->orWhereHas('students', fn ($s) => $s->where('students.id', $studentId))))
+            ->where(fn ($q) => $q
+                ->whereDoesntHave('coursePackages')
+                ->orWhereHas('coursePackages', fn ($c) => $c->where('course_packages.id', $coursePackageId)))
+            ->orderBy('audience') // personal before public
+            ->orderBy('code')
+            ->get()
+            ->filter(fn (DiscountCode $c) => $c->max_uses === null || $c->applied_redemptions_count < $c->max_uses)
+            ->values();
     }
 
     /**
