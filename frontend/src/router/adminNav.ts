@@ -269,6 +269,8 @@ export const adminNav: AdminNavGroup[] = [
       { labelKey: 'adminNav.items.loanCustomers', icon: 'userGroup', to: '/admin/loan-customers', permission: 'loan-customers.view' },
       { labelKey: 'adminNav.items.savings', icon: 'collection', to: '/admin/savings', permission: 'savings.view' },
       { labelKey: 'adminNav.items.customerLoans', icon: 'trendingUp', to: '/admin/customer-loans', permission: 'customer-loans.view' },
+      // Savings and Owe together; no permission of its own (each part follows its menu).
+      { labelKey: 'adminNav.items.loanReports', icon: 'chartBar', to: '/admin/loan-reports', permission: ['savings.view', 'customer-loans.view'] },
       // Money borrowed from companies and people; Loans, Lenders, ... are tabs on the page (see borrowingsTabs.ts).
       { labelKey: 'adminNav.items.borrowings', icon: 'trendingDown', to: '/admin/borrowings', permission: 'borrowings.view' },
     ],

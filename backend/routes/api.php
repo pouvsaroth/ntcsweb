@@ -52,6 +52,7 @@ use App\Http\Controllers\Api\V1\Admin\LenderController;
 use App\Http\Controllers\Api\V1\Admin\LoanCustomerController;
 use App\Http\Controllers\Api\V1\Admin\SavingsAccountController;
 use App\Http\Controllers\Api\V1\Admin\CustomerLoanController;
+use App\Http\Controllers\Api\V1\Admin\LoanReportController;
 use App\Http\Controllers\Api\V1\Admin\DiscountCodeController;
 use App\Http\Controllers\Api\V1\Admin\EnrollmentController;
 use App\Http\Controllers\Api\V1\Admin\EnrollmentPackageController;
@@ -1004,6 +1005,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::post('customer-loans/{customer_loan}/cancel', [CustomerLoanController::class, 'cancel'])->name('customer-loans.cancel');
         Route::post('customer-loans/{customer_loan}/payments', [CustomerLoanController::class, 'collect'])->name('customer-loans.payments.store');
         Route::delete('customer-loan-payments/{payment}', [CustomerLoanController::class, 'removePayment'])->name('customer-loan-payments.destroy');
+        // Loan > Reports: Savings and Owe for a period (each part needs its own view permission).
+        Route::get('loan-reports', LoanReportController::class)->name('loan-reports.index');
         Route::get('borrowings/schedule-preview', [BorrowingController::class, 'preview'])->name('borrowings.preview');
         Route::get('borrowings/due', [BorrowingController::class, 'due'])->name('borrowings.due');
         Route::get('borrowings/summary', [BorrowingController::class, 'summary'])->name('borrowings.summary');

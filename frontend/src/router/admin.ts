@@ -1006,6 +1006,14 @@ const adminRoutes: RouteRecordRaw[] = [
     meta: { permission: 'customer-loans.view', titleKey: 'adminNav.items.customerLoans' },
   },
   {
+    // Loan > Reports: Savings and Owe for a period; each part needs its own view permission.
+    path: 'loan-reports',
+    name: 'admin.loan-reports',
+    component: () => import('@/pages/admin/loan/LoanReports.vue'),
+    // Either one is enough; the guard below reads a list (RouteMeta types it as one string, for the back office).
+    meta: { permission: ['savings.view', 'customer-loans.view'] as unknown as string, titleKey: 'adminNav.items.loanReports' },
+  },
+  {
     // Loan > Borrowings (was under Accounting): tabs as child routes (see BorrowingsLayout.vue / borrowingsTabs.ts).
     path: 'borrowings',
     component: () => import('@/pages/admin/borrowings/BorrowingsLayout.vue'),
