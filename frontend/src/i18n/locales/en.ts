@@ -4855,6 +4855,15 @@ const en = {
       loadFailed: 'Could not load your discount codes.',
     },
     discountCodes: {
+      assign: {
+        open: 'Assign discount to student',
+        title: 'Assign discount to student',
+        intro: 'Pick a personal code and the students to give it to. You can do this again any time; each student can use the code on every enrollment.',
+        chooseCode: 'Choose a code',
+        noCodes: 'No personal codes yet. Add a discount code with Who can use it: Personal first.',
+        save: 'Assign to {count} students',
+        failed: 'Could not assign the code.',
+      },
       bulk: {
         open: 'Codes for many students',
         title: 'Personal codes for many students',

@@ -12,10 +12,10 @@ use App\Models\DiscountCode;
 use App\Models\Enrollment;
 use App\Models\Student;
 use App\Models\User;
-use App\Services\Notifications\NotificationService;
-use App\Support\Notifications\NotificationType;
 use App\Services\Academic\EnrollmentService;
 use App\Services\Billing\DiscountCodeService;
+use App\Services\Notifications\NotificationService;
+use App\Support\Notifications\NotificationType;
 use App\Support\Query\ApiQuery;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
@@ -159,6 +159,30 @@ final class DiscountCodeController extends Controller
         return $code;
     }
 
+    /**
+     * POST /discount-codes/{discount_code}/students — "Assign discount to
+     * student": give a personal code to more students. Students who already
+     * have it are kept; it can be done again any time.
+     */
+    public function assign(Request $request, DiscountCode $discountCode): JsonResponse
+    {
+        $this->authorize('update', $discountCode);
+
+        $data = $request->validate([
+            'student_ids' => ['required', 'array', 'min:1'],
+            'student_ids.*' => ['integer', 'distinct', Rule::exists('tenant.students', 'id')],
+        ]);
+
+        if ($discountCode->audience !== DiscountCode::AUDIENCE_PERSONAL) {
+            throw ValidationException::withMessages(['discount_code_id' => __('A public code works for every student already. Pick a personal code.')]);
+        }
+
+        $given = array_map('intval', $discountCode->students()->syncWithoutDetaching($data['student_ids'])['attached']);
+        $this->notifyGiven($discountCode, $given);
+
+        return ApiResponse::success(new DiscountCodeResource($this->loaded($discountCode)), meta: ['assigned' => count($given)]);
+    }
+
     public function show(DiscountCode $discountCode): JsonResponse
     {
         $this->authorize('view', $discountCode);
@@ -281,11 +305,6 @@ final class DiscountCodeController extends Controller
         // A cap only means something on a percent code.
         if ($data['discount_type'] === DiscountCode::TYPE_AMOUNT) {
             $data['max_discount'] = null;
-        }
-
-        $students = $data['student_ids'] ?? $existing?->students()->pluck('students.id')->all() ?? [];
-        if ($data['audience'] === DiscountCode::AUDIENCE_PERSONAL && $students === []) {
-            throw ValidationException::withMessages(['student_ids' => __('Pick at least one student for a personal code.')]);
         }
 
         return $data;

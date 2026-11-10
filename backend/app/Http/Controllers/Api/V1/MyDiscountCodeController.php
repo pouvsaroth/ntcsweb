@@ -36,8 +36,9 @@ final class MyDiscountCodeController extends Controller
         $used = DiscountCodeRedemption::query()
             ->where('student_id', $student->id)
             ->where('status', DiscountCodeRedemption::STATUS_APPLIED)
+            ->orderBy('created_at')
             ->get()
-            ->keyBy('discount_code_id');
+            ->keyBy('discount_code_id'); // the last use of each code
 
         $codes = DiscountCode::query()
             ->with('coursePackages')
@@ -71,8 +72,8 @@ final class MyDiscountCodeController extends Controller
                     'starts_on' => $code->starts_on->toDateString(),
                     'expires_on' => $code->expires_on->toDateString(),
                     'course_packages' => $code->coursePackages->map(fn ($c) => ['id' => $c->id, 'name' => $c->name])->values(),
-                    // Used by this student = used, whatever the code's own state.
-                    'state' => $redemption !== null ? 'used' : $status,
+                    // A code can be used again, so its own state; used_* = this student's last use.
+                    'state' => $status,
                     'used_at' => $redemption?->created_at?->toIso8601String(),
                     'used_amount' => $redemption !== null ? (float) $redemption->amount : null,
                 ];

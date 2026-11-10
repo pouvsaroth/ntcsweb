@@ -54,19 +54,6 @@ export interface DiscountCodeInput {
   student_ids: number[]
 }
 
-/** One personal code per student, each with its own value; the rest is shared. */
-export interface DiscountCodeBulkInput {
-  code_prefix: string
-  name: string
-  discount_type: DiscountType
-  max_discount: number | null
-  starts_on: string
-  expires_on: string
-  notes: string | null
-  course_package_ids: number[]
-  rows: { student_id: number; value: number | null }[]
-}
-
 export interface DiscountCodeOptions {
   course_packages: { id: number; name: string }[]
   students: DiscountCodeStudent[]
@@ -110,7 +97,8 @@ export const discountCodesService = {
   options: (search = '') => apiGet<DiscountCodeOptions>('/discount-codes/options', { params: { search } }),
 
   create: (input: DiscountCodeInput) => apiPost<DiscountCode>('/discount-codes', input),
-  bulk: (input: DiscountCodeBulkInput) => apiPost<DiscountCode[]>('/discount-codes/bulk', input),
+  /** Assign discount to student: give a personal code to more students (any time; existing ones kept). */
+  assign: (id: number, studentIds: number[]) => apiPost<DiscountCode>(`/discount-codes/${id}/students`, { student_ids: studentIds }),
   update: (id: number, input: DiscountCodeInput) => apiPut<DiscountCode>(`/discount-codes/${id}`, input),
   remove: (id: number) => apiDelete(`/discount-codes/${id}`),
 }
@@ -128,8 +116,9 @@ export interface MyDiscountCode {
   starts_on: string
   expires_on: string
   course_packages: { id: number; name: string }[]
-  /** `used` = this student used it; otherwise the code's own state. */
+  /** The code's own state (a code can be used again); `used` is no longer sent. */
   state: DiscountEffectiveStatus | 'used'
+  /** This student's last use of the code, if any. */
   used_at: string | null
   used_amount: number | null
 }

@@ -77,9 +77,7 @@ final class DiscountCodeService
             $fail(__('This discount code is not for this student.'));
         }
 
-        if ($studentId !== null && $discount->appliedRedemptions()->where('student_id', $studentId)->exists()) {
-            $fail(__('This student has already used this discount code.'));
-        }
+        // A student may use the same code on every enrollment (no once-per-student rule).
 
         if ($discount->discount_type === DiscountCode::TYPE_AMOUNT && $discount->currency !== $currency) {
             $fail(__('This discount code is in :currency and cannot be used on this invoice.', ['currency' => $discount->currency]));

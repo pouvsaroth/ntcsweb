@@ -100,7 +100,7 @@ class MyDiscountCodeTest extends TestCase
         DiscountCode::factory()->create(['code' => 'MORE', 'currency' => $this->currency()]);
         $this->postJson("/api/v1/my-invoices/{$invoice->id}/discount-code", ['discount_code' => 'MORE'])->assertUnprocessable();
         $this->getJson('/api/v1/my-discount-codes')->assertOk()->assertJsonCount(0, 'data.invoices')
-            ->assertJsonPath('data.codes.1.state', 'used');
+            ->assertJsonPath('data.codes.1.used_amount', 2.4);
     }
 
     public function test_a_student_cannot_touch_another_students_invoice(): void

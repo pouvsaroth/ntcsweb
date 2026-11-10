@@ -4850,6 +4850,15 @@ const zh: MessageSchema = {
       loadFailed: '无法加载您的折扣码。',
     },
     discountCodes: {
+      assign: {
+        open: '分配折扣给学生',
+        title: '分配折扣给学生',
+        intro: '选择一个个人折扣码和要分配的学生。可以随时再次分配；每位学生每次报名都可以使用该折扣码。',
+        chooseCode: '选择折扣码',
+        noCodes: '还没有个人折扣码。请先添加一个个人折扣码。',
+        save: '分配给 {count} 名学生',
+        failed: '无法分配折扣码。',
+      },
       bulk: {
         open: '为多名学生创建',
         title: '为多名学生创建个人折扣码',

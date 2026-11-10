@@ -62,15 +62,40 @@ class DiscountCodeTest extends TestCase
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['code', 'value', 'expires_on']);
 
-        $this->postJson('/api/v1/discount-codes', [...$base, 'code' => 'VIP', 'value' => 10, 'audience' => 'personal'])
-            ->assertUnprocessable()
-            ->assertJsonValidationErrors('student_ids');
+        // A personal code may be saved with nobody yet, and assigned later.
+        $this->postJson('/api/v1/discount-codes', [...$base, 'code' => 'LATER', 'value' => 10, 'audience' => 'personal'])
+            ->assertCreated()
+            ->assertJsonPath('data.students_count', 0);
 
         $student = Student::factory()->create();
         $this->postJson('/api/v1/discount-codes', [...$base, 'code' => 'VIP', 'value' => 10, 'audience' => 'personal', 'student_ids' => [$student->id]])
             ->assertCreated()
             ->assertJsonPath('data.students.0.id', $student->id)
             ->assertJsonPath('data.effective_status', fn ($s) => in_array($s, ['active', 'scheduled', 'expired'], true));
+    }
+
+    public function test_assign_gives_a_personal_code_to_more_students_any_time(): void
+    {
+        $this->actingAsAdminWithPermissions(self::ALL);
+        [$a, $b, $c] = Student::factory()->count(3)->create();
+        $code = DiscountCode::factory()->create(['audience' => 'personal']);
+        $code->students()->attach($a->id);
+
+        $this->postJson("/api/v1/discount-codes/{$code->id}/students", ['student_ids' => [$a->id, $b->id]])
+            ->assertOk()
+            ->assertJsonPath('data.students_count', 2)
+            ->assertJsonPath('meta.assigned', 1);
+        $this->postJson("/api/v1/discount-codes/{$code->id}/students", ['student_ids' => [$c->id]])
+            ->assertOk()
+            ->assertJsonPath('data.students_count', 3);
+
+        $public = DiscountCode::factory()->create(['audience' => 'public']);
+        $this->postJson("/api/v1/discount-codes/{$public->id}/students", ['student_ids' => [$a->id]])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('discount_code_id');
+
+        $this->actingAsAdminWithPermissions([Permissions::DISCOUNT_CODES_VIEW]);
+        $this->postJson("/api/v1/discount-codes/{$code->id}/students", ['student_ids' => [$a->id]])->assertForbidden();
     }
 
     public function test_a_used_code_cannot_be_deleted_and_an_unused_one_can(): void

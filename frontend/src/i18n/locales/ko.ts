@@ -4851,6 +4851,15 @@ const ko: MessageSchema = {
       loadFailed: '할인 코드를 불러오지 못했습니다.',
     },
     discountCodes: {
+      assign: {
+        open: '학생에게 할인 지정',
+        title: '학생에게 할인 지정',
+        intro: '개인 코드와 지정할 학생을 고르세요. 언제든 다시 할 수 있으며, 각 학생은 등록할 때마다 이 코드를 쓸 수 있습니다.',
+        chooseCode: '코드 선택',
+        noCodes: '아직 개인 코드가 없습니다. 먼저 개인용 할인 코드를 추가하세요.',
+        save: '{count}명에게 지정',
+        failed: '코드를 지정할 수 없습니다.',
+      },
       bulk: {
         open: '여러 학생용 코드',
         title: '여러 학생에게 개인 코드',

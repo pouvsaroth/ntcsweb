@@ -2,7 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import DiscountCodeBulkModal from '@/components/admin/DiscountCodeBulkModal.vue'
+import DiscountCodeAssignModal from '@/components/admin/DiscountCodeAssignModal.vue'
 import DiscountCodeFormModal from '@/components/admin/DiscountCodeFormModal.vue'
 import InvoicesTabs from '@/components/admin/InvoicesTabs.vue'
 import BaseAlert from '@/components/ui/BaseAlert.vue'
@@ -79,7 +79,7 @@ function audienceText(row: DiscountCode): string {
 }
 
 const modalOpen = ref(false)
-const bulkOpen = ref(false)
+const assignOpen = ref(false)
 const editing = ref<DiscountCode | null>(null)
 const deleteError = ref<string | null>(null)
 
@@ -116,9 +116,9 @@ onMounted(() => fetch())
         />
         <BaseSelect class="sm:w-44" :model-value="audienceFilter" :options="audienceOptions" @update:model-value="changeAudience" />
       </div>
-      <div v-if="canCreate" class="flex shrink-0 flex-wrap gap-2">
-        <BaseButton variant="outline" @click="bulkOpen = true">{{ t('admin.discountCodes.bulk.open') }}</BaseButton>
-        <BaseButton @click="open(null)">{{ t('admin.discountCodes.add') }}</BaseButton>
+      <div v-if="canCreate || canUpdate" class="flex shrink-0 flex-wrap gap-2">
+        <BaseButton v-if="canCreate" @click="open(null)">{{ t('admin.discountCodes.add') }}</BaseButton>
+        <BaseButton v-if="canUpdate" variant="outline" @click="assignOpen = true">{{ t('admin.discountCodes.assign.open') }}</BaseButton>
       </div>
     </div>
 
@@ -180,6 +180,6 @@ onMounted(() => fetch())
     <BasePagination v-if="meta" :meta="meta" sticky class="mt-4" @update:page="setPage" />
 
     <DiscountCodeFormModal v-model="modalOpen" :discount-code="editing" @saved="fetch()" />
-    <DiscountCodeBulkModal v-if="canCreate" v-model="bulkOpen" @saved="fetch()" />
+    <DiscountCodeAssignModal v-if="canUpdate" v-model="assignOpen" @saved="fetch()" />
   </div>
 </template>

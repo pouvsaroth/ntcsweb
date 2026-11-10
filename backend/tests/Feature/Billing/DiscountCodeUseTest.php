@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Billing;
 
+use App\Models\CoursePackage;
 use App\Models\DiscountCode;
 use App\Models\DiscountCodeRedemption;
 use App\Models\Invoice;
@@ -51,7 +52,7 @@ class DiscountCodeUseTest extends TestCase
         ]);
     }
 
-    public function test_a_percent_code_takes_its_share_off_the_invoice_once_per_student(): void
+    public function test_a_percent_code_takes_its_share_off_the_invoice_and_can_be_used_again(): void
     {
         DiscountCode::factory()->create(['code' => 'SAVE10', 'value' => 10, 'currency' => $this->currency()]);
         $student = Student::factory()->create();
@@ -66,7 +67,8 @@ class DiscountCodeUseTest extends TestCase
         $this->assertSame('21.60', (string) $invoice->total);
         $this->assertSame(1, DiscountCodeRedemption::query()->where('status', 'applied')->count());
 
-        $this->check($student, 'SAVE10')->assertUnprocessable()->assertJsonPath('errors.discount_code.0', 'This student has already used this discount code.');
+        // The same student can use it again on another enrollment.
+        $this->check($student, 'SAVE10')->assertOk();
 
         // Cancelling the invoice frees the use.
         $this->postJson("/api/v1/invoices/{$invoice->id}/cancel", ['reason' => 'Wrong course'])->assertOk();
@@ -152,6 +154,6 @@ class DiscountCodeUseTest extends TestCase
 
     private function otherPackageId(): int
     {
-        return \App\Models\CoursePackage::factory()->create()->id;
+        return CoursePackage::factory()->create()->id;
     }
 }
