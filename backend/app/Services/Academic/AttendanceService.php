@@ -10,6 +10,7 @@ use App\Models\Enrollment;
 use App\Models\SchoolClass;
 use App\Models\User;
 use App\Support\Academic\AttendanceStatus;
+use App\Support\Academic\ClassNotHeld;
 use App\Support\Academic\SchoolDaysOff;
 use App\Support\Audit\AuditAction;
 use App\Support\Audit\AuditLogger;
@@ -51,7 +52,8 @@ final class AttendanceService
      * teacher can always go back and fill in an earlier day.
      *
      * The previous class day is the last day before $date that the class's
-     * schedule meets on, skipping holidays, School Calendar closing days and days before the class
+     * schedule meets on, skipping holidays, School Calendar closing days, days the class was
+     * not held (Teacher > Substitute with no substitute) and days before the class
      * started. A day with no students in the class doesn't need attendance
      * (there is nobody to mark), so it never blocks.
      */
@@ -76,7 +78,7 @@ final class AttendanceService
             }
 
             $ymd = $day->toDateString();
-            if (! $weekdays->contains($day->dayOfWeekIso) || SchoolDaysOff::covers($daysOff, $ymd)) {
+            if (! $weekdays->contains($day->dayOfWeekIso) || SchoolDaysOff::covers($daysOff, $ymd) || ClassNotHeld::on($class, $ymd)) {
                 continue;
             }
 

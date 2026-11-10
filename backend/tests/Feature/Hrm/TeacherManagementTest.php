@@ -146,6 +146,12 @@ class TeacherManagementTest extends TestCase
             ->assertUnprocessable();
         $this->getJson("/api/v1/teachers/substitutions?from={$monday}&to={$monday}")->assertOk()->assertJsonPath('data.0.substitute', fn ($n) => str_starts_with($n, 'Free'));
 
+        // No substitute: the class is not held then.
+        $this->postJson('/api/v1/teachers/substitutions', ['class_id' => $class->id, 'absent_staff_id' => $dara->id, 'date' => $monday, 'start_time' => '10:00', 'end_time' => '11:00', 'reason' => 'Sick'])
+            ->assertCreated()
+            ->assertJsonPath('data.class_not_held', true)
+            ->assertJsonPath('data.substitute', null);
+
         // Now covering 7A: not a candidate for another class at that time.
         $other = $this->mondayClass('9A');
         $again = $this->getJson("/api/v1/teachers/substitutions/candidates?class_id={$other->id}&date={$monday}")->json('data');

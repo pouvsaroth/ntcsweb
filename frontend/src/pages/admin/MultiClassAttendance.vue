@@ -45,6 +45,8 @@ interface ClassGroup {
   missed_date: string | null
   /** The holiday or School Calendar closing day on the chosen date, if any. */
   day_off: string | null
+  /** Teacher away and nobody covered (Teacher > Substitute). */
+  not_held: boolean
 }
 
 function today(): string {
@@ -96,13 +98,14 @@ async function loadRoster() {
   try {
     const results = await Promise.all(
       classIds.value.map(async (classId) => {
-        const { entries, missedDate, dayOff } = await attendanceService.rosterWithLock(classId, date.value)
+        const { entries, missedDate, dayOff, notHeld } = await attendanceService.rosterWithLock(classId, date.value)
         return {
           class_id: classId,
           class_name: classNames.value[classId] ?? `#${classId}`,
           entries: entries.map((e) => ({ ...e, class_id: classId })),
           missed_date: missedDate,
           day_off: dayOff,
+          not_held: notHeld,
         }
       }),
     )
@@ -225,6 +228,7 @@ onMounted(async () => {
           <BaseAlert v-if="groups[0]?.day_off" variant="info" class="mt-4">{{ t('admin.attendance.dayOffNotice', { name: groups[0].day_off }) }}</BaseAlert>
           <div v-for="group in groups" :key="group.class_id" class="mt-5">
             <h2 class="mb-2 text-sm font-semibold text-neutral-800">{{ group.class_name }} <span class="font-normal text-neutral-400">({{ group.entries.length }})</span></h2>
+            <BaseAlert v-if="group.not_held && !group.day_off" variant="info" class="mb-2">{{ t('admin.attendance.notHeldNotice') }}</BaseAlert>
             <BaseAlert v-if="group.missed_date" variant="danger" class="mb-2">
               {{ t('admin.attendance.missedDayLocked', { date: formatDate(group.missed_date) }) }}
             </BaseAlert>

@@ -87,7 +87,13 @@ const awayText = (why: string | null) => (why ? t(`teacherMgmt.subs.why.${why}`)
 const absentOptions = computed(() =>
   (candidates.value?.class_teachers ?? []).map((x) => ({ value: String(x.id), label: x.away ? `${x.name} — ${awayText(x.away)}` : x.name })),
 )
-const substituteOptions = computed(() => (candidates.value?.available ?? []).map((x) => ({ value: String(x.id), label: x.name })))
+/** `NOT_HELD`: nobody covers, the class is not held then — no attendance needed, no reminder. */
+const NOT_HELD = 'none'
+const substituteOptions = computed(() => [
+  { value: NOT_HELD, label: t('teacherMgmt.subs.noSubstitute') },
+  ...(candidates.value?.available ?? []).map((x) => ({ value: String(x.id), label: x.name })),
+])
+const who = (s: Substitution) => (s.class_not_held ? t('teacherMgmt.subs.notHeld') : s.substitute)
 
 function open() {
   form.class_id = ''
@@ -114,7 +120,7 @@ async function check() {
     if (!form.end_time && c.end_time) form.end_time = c.end_time
     const away = c.class_teachers.find((x) => x.away) ?? c.class_teachers[0]
     form.absent_staff_id = away ? String(away.id) : ''
-    if (!c.available.some((x) => String(x.id) === form.substitute_staff_id)) form.substitute_staff_id = ''
+    if (form.substitute_staff_id !== NOT_HELD && !c.available.some((x) => String(x.id) === form.substitute_staff_id)) form.substitute_staff_id = ''
   } catch (e) {
     errors.value = { class_id: [e instanceof ApiRequestError ? e.message : t('teacherMgmt.loadFailed')] }
   } finally {
@@ -136,7 +142,7 @@ async function save() {
     await teachersService.createSubstitution({
       class_id: Number(form.class_id),
       absent_staff_id: Number(form.absent_staff_id),
-      substitute_staff_id: Number(form.substitute_staff_id),
+      substitute_staff_id: form.substitute_staff_id === NOT_HELD ? null : Number(form.substitute_staff_id),
       date: form.date,
       start_time: form.start_time || null,
       end_time: form.end_time || null,
@@ -178,7 +184,7 @@ onMounted(async () => {
       <p v-if="!loading && rows.length === 0" class="rounded-[--radius-card] border border-dashed border-neutral-300 py-10 text-center text-sm text-neutral-500">{{ t('teacherMgmt.subs.empty') }}</p>
       <div v-for="row in rows" :key="row.id" class="rounded-[--radius-card] border border-neutral-200 bg-white p-3 shadow-[--shadow-card]">
         <p class="text-sm font-semibold text-neutral-800">{{ row.class }} · {{ formatDate(row.date) }} {{ time(row) }}</p>
-        <p class="text-xs text-neutral-500">{{ row.absent }} → <span class="font-medium text-neutral-800">{{ row.substitute }}</span></p>
+        <p class="text-xs text-neutral-500">{{ row.absent }} → <span class="font-medium" :class="row.class_not_held ? 'text-warning-600' : 'text-neutral-800'">{{ who(row) }}</span></p>
         <p v-if="row.reason || row.subject" class="text-xs text-neutral-500">{{ [row.subject, row.reason].filter(Boolean).join(' · ') }}</p>
         <div v-if="canManage" class="mt-2 flex justify-end">
           <button v-if="canDelete" type="button" class="text-sm font-medium text-danger-600" @click="remove(row)">{{ t('teacherMgmt.delete') }}</button>
@@ -197,7 +203,9 @@ onMounted(async () => {
           <p v-if="row.subject" class="text-xs text-neutral-500">{{ row.subject }}</p>
         </template>
         <template #cell-absent="{ row }">{{ row.absent }}</template>
-        <template #cell-substitute="{ row }"><span class="font-medium text-neutral-800">{{ row.substitute }}</span></template>
+        <template #cell-substitute="{ row }">
+          <span class="font-medium" :class="row.class_not_held ? 'text-warning-600' : 'text-neutral-800'">{{ who(row as Substitution) }}</span>
+        </template>
         <template #cell-reason="{ row }">{{ row.reason || '—' }}</template>
         <template #cell-actions="{ row }">
           <button v-if="canDelete" type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row as Substitution)">{{ t('teacherMgmt.delete') }}</button>
@@ -230,7 +238,7 @@ onMounted(async () => {
             :placeholder="t('teacherMgmt.chooseTeacher')"
             required
             :label="t('teacherMgmt.subs.substitute')"
-            :hint="t('teacherMgmt.subs.freeN', { count: candidates.available.length })"
+            :hint="form.substitute_staff_id === NOT_HELD ? t('teacherMgmt.subs.notHeldHint') : t('teacherMgmt.subs.freeN', { count: candidates.available.length })"
             :error="errors.substitute_staff_id?.[0]"
           />
           <details v-if="candidates.not_available.length" class="text-xs text-neutral-500">

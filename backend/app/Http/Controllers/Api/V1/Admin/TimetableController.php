@@ -83,6 +83,8 @@ final class TimetableController extends Controller
                 'class' => $s->schoolClass?->name,
                 'role' => $s->substitute_staff_id === $staffId ? 'covering' : 'away',
                 'other' => $s->substitute_staff_id === $staffId ? $s->absentStaff?->fullName() : $s->substituteStaff?->fullName(),
+                // Away with nobody covering: the class is not held then.
+                'not_held' => $s->substitute_staff_id === null,
             ])->values();
         $minutes = $slots->sum(fn ($s) => (strtotime($s['end_time']) - strtotime($s['start_time'])) / 60);
 

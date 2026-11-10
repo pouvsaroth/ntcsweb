@@ -68,7 +68,12 @@ const extras = computed(() => {
   const out: Record<number, { key: string; text: string; tone: 'covering' | 'away' }[]> = {}
   for (const s of week.value?.substitutions ?? []) {
     const time = s.start_time ? `${s.start_time}–${s.end_time}` : t('timetable.allDay')
-    const text = s.role === 'covering' ? t('timetable.covering', { time, class: s.class ?? '', who: s.other ?? '' }) : t('timetable.away', { time, class: s.class ?? '', who: s.other ?? '' })
+    const text =
+      s.role === 'covering'
+        ? t('timetable.covering', { time, class: s.class ?? '', who: s.other ?? '' })
+        : s.not_held
+          ? t('timetable.awayNotHeld', { time, class: s.class ?? '' })
+          : t('timetable.away', { time, class: s.class ?? '', who: s.other ?? '' })
     ;(out[s.day_of_week] ??= []).push({ key: `s${s.id}`, text, tone: s.role })
   }
   return out

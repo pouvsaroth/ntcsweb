@@ -10,9 +10,11 @@ use App\Models\Enrollment;
 use App\Models\Role;
 use App\Models\SchoolClass;
 use App\Models\Staff;
+use App\Models\TeacherSubstitution;
 use App\Models\Tenant;
 use App\Models\UserNotification;
 use App\Services\Notifications\NotificationService;
+use App\Support\Academic\ClassNotHeld;
 use App\Support\Academic\SchoolDaysOff;
 use App\Support\Notifications\NotificationType;
 use Illuminate\Database\Eloquent\Builder;
@@ -65,14 +67,24 @@ final class AttendanceReminderService
 
             $key = "{$class->id}:{$today}";
 
-            if ($this->alreadyHandled($class, $today, $key)) {
+            // Teacher away and nobody covers (Teacher > Substitute): no class, no attendance.
+            if ($this->alreadyHandled($class, $today, $key) || ClassNotHeld::on($class, $today)) {
                 continue;
             }
 
-            $recipients = $class->teachingStaff
+            // Teachers covering this class today (Teacher > Substitute) are told too.
+            $substitutes = TeacherSubstitution::query()->with('substituteStaff.user')
+                ->where('class_id', $class->id)->whereDate('date', $today)->whereNotNull('substitute_staff_id')
+                ->get()->map(fn (TeacherSubstitution $s) => $s->substituteStaff);
+
+            $recipients = $class->teachingStaff->toBase()
+                ->merge($substitutes)
+                ->filter()
                 ->map(fn (Staff $staff) => $staff->user)
                 ->filter(fn ($user) => $user !== null && $user->isActive())
-                ->merge($admins ??= $this->notifications->usersWithRole(Role::SCHOOL_ADMIN));
+                ->merge($admins ??= $this->notifications->usersWithRole(Role::SCHOOL_ADMIN))
+                ->unique(fn ($user) => $user->getKey())
+                ->values();
 
             $this->notifications->notifyMany($recipients, NotificationType::ATTENDANCE_NOT_TAKEN, [
                 'class_id' => $class->id,

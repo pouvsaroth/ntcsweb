@@ -14,6 +14,7 @@ use App\Models\Enrollment;
 use App\Models\SchoolClass;
 use App\Services\Academic\AttendanceService;
 use App\Services\Academic\AttendanceSheet;
+use App\Support\Academic\ClassNotHeld;
 use App\Support\Academic\SchoolDaysOff;
 use App\Support\Query\ApiQuery;
 use Illuminate\Http\JsonResponse;
@@ -79,6 +80,8 @@ final class AttendanceController extends Controller
             meta: [
                 'missed_date' => $this->attendance->missedClassDayBefore($class, $data['date']),
                 'day_off' => SchoolDaysOff::on($data['date']),
+                // Teacher away and nobody covers (Teacher > Substitute).
+                'not_held' => ClassNotHeld::on($class, $data['date']),
             ],
         );
     }

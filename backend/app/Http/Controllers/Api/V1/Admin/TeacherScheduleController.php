@@ -149,7 +149,7 @@ final class TeacherScheduleController extends Controller
                 }
             }
             foreach (TeacherSubstitution::query()->with('schoolClass:id,name')->whereDate('date', $date->toDateString())->get() as $sub) {
-                if ($sub->start_time === null || $this->overlaps($start, $end, $sub->start_time, $sub->end_time)) {
+                if ($sub->substitute_staff_id !== null && ($sub->start_time === null || $this->overlaps($start, $end, $sub->start_time, $sub->end_time))) {
                     $busy[$sub->substitute_staff_id] = $sub->schoolClass?->name;
                 }
             }
@@ -177,7 +177,8 @@ final class TeacherScheduleController extends Controller
         $data = $request->validate([
             'class_id' => ['required', 'integer', Rule::exists('tenant.classes', 'id')->whereNull('deleted_at')],
             'absent_staff_id' => ['required', 'integer', $teacher],
-            'substitute_staff_id' => ['required', 'integer', 'different:absent_staff_id', $teacher],
+            // Empty: nobody covers, the class is not held then (no attendance needed).
+            'substitute_staff_id' => ['nullable', 'integer', 'different:absent_staff_id', $teacher],
             'date' => ['required', 'date'],
             'start_time' => ['nullable', 'date_format:H:i'],
             'end_time' => ['nullable', 'date_format:H:i', 'after:start_time'],
@@ -327,6 +328,7 @@ final class TeacherScheduleController extends Controller
             'absent' => $s->absentStaff?->fullName(),
             'substitute_staff_id' => $s->substitute_staff_id,
             'substitute' => $s->substituteStaff?->fullName(),
+            'class_not_held' => $s->substitute_staff_id === null,
             'subject' => $s->book?->title,
             'reason' => $s->reason,
         ];

@@ -10,6 +10,8 @@ use App\Models\Enrollment;
 use App\Models\Holiday;
 use App\Models\SchoolCalendarEvent;
 use App\Models\SchoolClass;
+use App\Models\Staff;
+use App\Models\TeacherSubstitution;
 use App\Support\Academic\AttendanceStatus;
 use App\Support\Authorization\Permissions;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -116,6 +118,28 @@ class AttendanceLockTest extends TestCase
         $this->getJson("/api/v1/classes/{$class->id}/attendance?date=".self::TODAY)
             ->assertOk()
             ->assertJsonPath('meta.day_off', null);
+    }
+
+    public function test_a_day_the_class_was_not_held_is_skipped(): void
+    {
+        [$class, $enrollment] = $this->monWedClass();
+        $away = Staff::factory()->create();
+
+        // Covered by another teacher: the class was held, so Monday still blocks.
+        $covered = TeacherSubstitution::query()->create(['class_id' => $class->id, 'absent_staff_id' => $away->id, 'substitute_staff_id' => Staff::factory()->create()->id, 'date' => self::MONDAY]);
+        $this->getJson("/api/v1/classes/{$class->id}/attendance?date=".self::TODAY)->assertJsonPath('meta.missed_date', self::MONDAY);
+        $covered->delete();
+
+        // Only part of Monday not held: attendance is still needed.
+        $part = TeacherSubstitution::query()->create(['class_id' => $class->id, 'absent_staff_id' => $away->id, 'date' => self::MONDAY, 'start_time' => '18:00', 'end_time' => '18:30']);
+        $this->assertTrue(TeacherSubstitution::query()->whereKey($part->id)->whereNull('substitute_staff_id')->exists());
+        $this->getJson("/api/v1/classes/{$class->id}/attendance?date=".self::TODAY)->assertJsonPath('meta.missed_date', self::MONDAY);
+        $part->update(['end_time' => '20:00']);
+
+        $this->getJson("/api/v1/classes/{$class->id}/attendance?date=".self::MONDAY)->assertJsonPath('meta.not_held', true);
+        $this->getJson("/api/v1/classes/{$class->id}/attendance?date=".self::TODAY)
+            ->assertJsonPath('meta.missed_date', self::LAST_WEDNESDAY)
+            ->assertJsonPath('meta.not_held', false);
     }
 
     public function test_a_class_that_started_today_or_has_no_schedule_is_not_locked(): void

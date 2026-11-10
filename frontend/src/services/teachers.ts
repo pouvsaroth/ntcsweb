@@ -100,8 +100,10 @@ export interface Substitution {
   class: string | null
   absent_staff_id: number
   absent: string | null
-  substitute_staff_id: number
+  /** Null: nobody covers, the class is not held then. */
+  substitute_staff_id: number | null
   substitute: string | null
+  class_not_held: boolean
   subject: string | null
   reason: string | null
 }
@@ -116,7 +118,8 @@ export interface SubstitutionCandidates {
 export interface SubstitutionInput {
   class_id: number
   absent_staff_id: number
-  substitute_staff_id: number
+  /** Null: nobody covers, the class is not held then (no attendance needed). */
+  substitute_staff_id: number | null
   date: string
   start_time: string | null
   end_time: string | null

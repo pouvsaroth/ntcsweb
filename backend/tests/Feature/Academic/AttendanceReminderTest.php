@@ -12,6 +12,7 @@ use App\Models\Role;
 use App\Models\SchoolCalendarEvent;
 use App\Models\SchoolClass;
 use App\Models\Staff;
+use App\Models\TeacherSubstitution;
 use App\Models\User;
 use App\Models\UserNotification;
 use App\Support\Academic\AttendanceStatus;
@@ -98,6 +99,24 @@ class AttendanceReminderTest extends TestCase
         Holiday::query()->create(['name' => 'Water Festival', 'start_date' => self::TODAY, 'end_date' => self::TODAY]);
         $this->artisan('attendance:remind-not-taken')->assertSuccessful();
         $this->assertSame(0, UserNotification::query()->count());
+    }
+
+    public function test_the_substitute_is_told_and_a_class_not_held_is_skipped(): void
+    {
+        [$covered, $teacher] = $this->wednesdayClass('19:00:00');
+        [$notHeld, $awayTeacher] = $this->wednesdayClass('19:00:00');
+        $subUser = User::factory()->forTenant($this->tenant)->create();
+        $sub = Staff::factory()->withUser($subUser)->create();
+
+        TeacherSubstitution::query()->create(['class_id' => $covered->id, 'absent_staff_id' => $teacher->staff->id, 'substitute_staff_id' => $sub->id, 'date' => self::TODAY]);
+        TeacherSubstitution::query()->create(['class_id' => $notHeld->id, 'absent_staff_id' => $awayTeacher->staff->id, 'date' => self::TODAY]);
+
+        $this->artisan('attendance:remind-not-taken')->assertSuccessful();
+
+        $this->assertSame(1, $this->remindersFor($subUser));
+        $this->assertSame(1, $this->remindersFor($teacher));
+        $this->assertSame(0, $this->remindersFor($awayTeacher));
+        $this->assertSame(1, $this->remindersFor($this->schoolAdmin));
     }
 
     public function test_no_reminder_on_a_school_calendar_closing_day(): void
