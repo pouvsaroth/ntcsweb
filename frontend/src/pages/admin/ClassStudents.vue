@@ -94,6 +94,7 @@ const statusFilterOptions = computed(() => [
 const columns = computed(() => [
   { key: 'index', label: '#' },
   { key: 'table', label: t('admin.classStudents.columnTable'), sortable: true },
+  { key: 'payment_type', label: t('admin.invoices.paymentType'), sortable: true },
   { key: 'student', label: t('admin.classStudents.columnStudent'), sortable: true },
   { key: 'gender', label: t('admin.classStudents.columnGender') },
   ...(isSingleClass.value ? [] : [{ key: 'class', label: t('admin.classStudents.columnClass') }]),
@@ -117,6 +118,17 @@ const sortValueGetters: Record<string, (enrollment: Enrollment) => string> = {
   table: (enrollment) => enrollment.table?.name ?? '',
   student: (enrollment) => enrollment.student.full_name,
   book: (enrollment) => enrollment.course_package?.name ?? '',
+  payment_type: (enrollment) => paymentTypeLabel(enrollment.payment_type),
+}
+
+/** Monthly / Term / ... from the student's invoice, or a dash when not invoiced. */
+function paymentTypeLabel(type: string | null | undefined): string {
+  if (!type) return ''
+  const key = type
+    .split('_')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join('')
+  return t(`admin.invoices.paymentType${key}`)
 }
 
 // Responsible Staff filter: '' = everyone, 'none' = no responsible staff, else a staff id.
@@ -502,6 +514,7 @@ onMounted(() => {
             </div>
             <p class="mt-0.5 truncate pl-6 text-xs text-neutral-500">
               <span class="font-medium text-neutral-700">{{ row.table?.name ?? '—' }}</span>
+              <template v-if="row.payment_type"> · {{ paymentTypeLabel(row.payment_type) }}</template>
               · {{ genderLabel(row.student.gender) }}
               <template v-if="row.course_package"> · {{ row.course_package.name }}</template>
               <template v-if="!isSingleClass"> · {{ row.class?.name ?? '—' }}</template>
@@ -538,6 +551,7 @@ onMounted(() => {
       >
         <template #cell-index="{ row }">{{ sortedRoster.indexOf(row) + 1 }}</template>
         <template #cell-table="{ row }">{{ row.table?.name ?? '—' }}</template>
+        <template #cell-payment_type="{ row }">{{ paymentTypeLabel(row.payment_type) || '—' }}</template>
         <template #cell-student="{ row }">{{ row.student.full_name }}</template>
         <template #cell-gender="{ row }">{{ genderLabel(row.student.gender) }}</template>
         <template #cell-class="{ row }">{{ row.class?.name ?? '—' }}</template>

@@ -78,6 +78,8 @@ export interface Enrollment {
   status_date?: string | null
   /** Whether any money has been received against this enrollment — gates changing the course (not the class) via transfer(). */
   is_paid: boolean
+  /** From the newest invoice that is not cancelled (monthly, term, ...); null = no invoice. Only on lists that load invoices. */
+  payment_type?: FeeType | null
   student: EnrollmentStudent
   class: SchoolClass
   /** Which physical table in the class's classroom this student sits at — null when the room has no tables configured. */
