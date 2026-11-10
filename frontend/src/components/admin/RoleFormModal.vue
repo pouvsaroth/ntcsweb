@@ -76,6 +76,7 @@ const GROUPS = [
   'Billing',
   'Accounting',
   'Loan',
+  'Fund',
   'Assets',
   'Website',
   'Communication',
@@ -405,6 +406,8 @@ const MODULES: ModuleEntry[] = [
   { name: 'Savings', group: 'Loan', actions: crud('savings') },
   // Add = lend and record payments; Update = edit or cancel; Delete = remove loans with no payments, and payments.
   { name: 'Owe', group: 'Loan', actions: crud('customer-loans') },
+  // Add = add funds and record money in / out; Update = edit or close; Delete = entries and empty funds.
+  { name: 'Funds', group: 'Fund', actions: crud('funds') },
   { name: 'Borrowings', group: 'Loan', parent: 'Borrowings', menu: true, actions: { view: 'borrowings.view' } },
   tab('Loan', 'Borrowings', 'Loans', '/admin/borrowings/loans', ['borrowings.view'], tabCud('borrowing-loans')),
   tab('Loan', 'Borrowings', 'Repayments', '/admin/borrowings/repayments', ['borrowings.view'], { create: 'borrowing-repayments.create', delete: 'borrowing-repayments.delete' }),
@@ -692,6 +695,7 @@ const GROUP_I18N_KEYS: Partial<Record<(typeof GROUPS)[number], string>> = {
   Billing: 'billing',
   Accounting: 'accounting',
   Loan: 'loan',
+  Fund: 'fund',
   Assets: 'assets',
   Website: 'website',
   Communication: 'communication',

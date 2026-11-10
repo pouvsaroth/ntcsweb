@@ -109,7 +109,7 @@ final class AccountingReportService
     }
 
     /**
-     * @return array{opening: float, student_payments: float, other_income: float, loans_received: float, savings_deposits: float, loan_collections: float, loan_interest_received: float, expenses: float, loan_repayments: float, savings_withdrawals: float, loans_given: float, closing: float}
+     * @return array{opening: float, student_payments: float, other_income: float, loans_received: float, savings_deposits: float, loan_collections: float, loan_interest_received: float, expenses: float, loan_repayments: float, savings_withdrawals: float, loans_given: float, fund_in: float, fund_out: float, closing: float}
      */
     public function cashFlow(string $dateFrom, string $dateTo): array
     {
@@ -182,6 +182,18 @@ final class AccountingReportService
             2,
         );
 
+        // Fund > Funds: money into and out of funds, each net of its own reversals.
+        $fundIn = round(
+            $this->sum('debit_account_id', $bankIds, $dateFrom, $dateTo, [TransactionType::FUND], reversal: false)
+            - $this->sum('credit_account_id', $bankIds, $dateFrom, $dateTo, [TransactionType::FUND], reversal: true),
+            2,
+        );
+        $fundOut = round(
+            $this->sum('credit_account_id', $bankIds, $dateFrom, $dateTo, [TransactionType::FUND], reversal: false)
+            - $this->sum('debit_account_id', $bankIds, $dateFrom, $dateTo, [TransactionType::FUND], reversal: true),
+            2,
+        );
+
         return [
             'opening' => $opening,
             'student_payments' => $netStudentPayments,
@@ -194,9 +206,11 @@ final class AccountingReportService
             'loan_repayments' => $loanRepayments,
             'savings_withdrawals' => $savingsWithdrawals,
             'loans_given' => $loansGiven,
+            'fund_in' => $fundIn,
+            'fund_out' => $fundOut,
             'closing' => round(
-                $opening + $netStudentPayments + $netOtherIncome + $loansReceived + $savingsDeposits + $loanCollections + $loanInterest
-                - $expenses - $loanRepayments - $savingsWithdrawals - $loansGiven,
+                $opening + $netStudentPayments + $netOtherIncome + $loansReceived + $savingsDeposits + $loanCollections + $loanInterest + $fundIn
+                - $expenses - $loanRepayments - $savingsWithdrawals - $loansGiven - $fundOut,
                 2,
             ),
         ];

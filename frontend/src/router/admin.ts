@@ -980,6 +980,19 @@ const adminRoutes: RouteRecordRaw[] = [
     meta: { permission: 'loan-customers.view', titleKey: 'adminNav.items.loanCustomers' },
   },
   {
+    // Fund > Funds: pots of the school's money, and one fund's statement (print).
+    path: 'funds',
+    name: 'admin.funds',
+    component: () => import('@/pages/admin/fund/Funds.vue'),
+    meta: { permission: 'funds.view', titleKey: 'adminNav.items.funds' },
+  },
+  {
+    path: 'funds/:id',
+    name: 'admin.funds.statement',
+    component: () => import('@/pages/admin/fund/FundStatement.vue'),
+    meta: { permission: 'funds.view', titleKey: 'adminNav.items.funds' },
+  },
+  {
     // Loan > Savings: accounts list, and one account statement (print).
     path: 'savings',
     name: 'admin.savings',

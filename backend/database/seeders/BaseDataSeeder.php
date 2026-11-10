@@ -301,6 +301,20 @@ class BaseDataSeeder extends Seeder
                     'ADDITIONAL_HOLIDAY' => ['en' => ['name' => 'Additional Holiday'], 'km' => ['name' => 'ថ្ងៃឈប់សម្រាកបន្ថែម'], 'zh' => ['name' => '额外假日'], 'ko' => ['name' => '추가 휴일'], 'ja' => ['name' => '追加休日']],
                 ],
             ],
+            'FUND_TYPE' => [
+                'name' => 'Fund Type',
+                'description' => 'The type picked for each fund under Fund > Funds (Fund::TYPE_CATEGORY).',
+                'sort_order' => 14,
+                'values' => [
+                    'BUILDING' => ['en' => ['name' => 'Building'], 'km' => ['name' => 'សាងសង់'], 'zh' => ['name' => '建设'], 'ko' => ['name' => '건축'], 'ja' => ['name' => '建設']],
+                    'SCHOLARSHIP' => ['en' => ['name' => 'Scholarship'], 'km' => ['name' => 'អាហារូបករណ៍'], 'zh' => ['name' => '奖学金'], 'ko' => ['name' => '장학금'], 'ja' => ['name' => '奨学金']],
+                    'STAFF_WELFARE' => ['en' => ['name' => 'Staff welfare'], 'km' => ['name' => 'សុខុមាលភាពបុគ្គលិក'], 'zh' => ['name' => '员工福利'], 'ko' => ['name' => '직원 복지'], 'ja' => ['name' => '職員福利']],
+                    'EVENT' => ['en' => ['name' => 'Event / activity'], 'km' => ['name' => 'កម្មវិធី / សកម្មភាព'], 'zh' => ['name' => '活动'], 'ko' => ['name' => '행사 / 활동'], 'ja' => ['name' => 'イベント・活動']],
+                    'CHARITY' => ['en' => ['name' => 'Charity / donation'], 'km' => ['name' => 'សប្បុរសធម៌ / អំណោយ'], 'zh' => ['name' => '慈善 / 捐赠'], 'ko' => ['name' => '자선 / 기부'], 'ja' => ['name' => '慈善・寄付']],
+                    'RESERVE' => ['en' => ['name' => 'Reserve'], 'km' => ['name' => 'ទុនបម្រុង'], 'zh' => ['name' => '储备'], 'ko' => ['name' => '예비'], 'ja' => ['name' => '準備金']],
+                    'OTHER' => ['en' => ['name' => 'Other'], 'km' => ['name' => 'ផ្សេងៗ'], 'zh' => ['name' => '其他'], 'ko' => ['name' => '기타'], 'ja' => ['name' => 'その他']],
+                ],
+            ],
         ];
     }
 }

@@ -31,9 +31,12 @@ final class TransactionType
     /** Loan > Owe: money lent to a customer (Loans Receivable <- Cash/Bank) or principal paid back (the reverse). */
     public const LENDING = 'LENDING';
 
+    /** Fund > Funds: money into a fund (Cash/Bank <- Funds) or out of it (the reverse). */
+    public const FUND = 'FUND';
+
     /** @return list<string> */
     public static function all(): array
     {
-        return [self::INCOME, self::EXPENSE, self::TRANSFER, self::REFUND, self::ADJUSTMENT, self::LOAN, self::SAVINGS, self::LENDING];
+        return [self::INCOME, self::EXPENSE, self::TRANSFER, self::REFUND, self::ADJUSTMENT, self::LOAN, self::SAVINGS, self::LENDING, self::FUND];
     }
 }

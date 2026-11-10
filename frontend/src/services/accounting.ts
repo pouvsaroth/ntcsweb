@@ -98,6 +98,8 @@ export interface CashFlowReport {
   loans_given: number
   loan_collections: number
   loan_interest_received: number
+  fund_in: number
+  fund_out: number
   expenses: number
   loan_repayments: number
   closing: number

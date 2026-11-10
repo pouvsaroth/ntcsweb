@@ -302,6 +302,12 @@ final class FinancialTransactionService
         return $this->postLoanModule($type, $debitAccount, $creditAccount, $amount, $currency, $date, $description, $referenceType, $referenceId, $actor);
     }
 
+    /** Fund > Funds: money in (debit Cash/Bank, credit Funds) or money out (the reverse). */
+    public function postFund(Account $debitAccount, Account $creditAccount, float $amount, string $currency, string $date, string $description, string $referenceType, int $referenceId, User $actor): FinancialTransaction
+    {
+        return $this->postLoanModule(TransactionType::FUND, $debitAccount, $creditAccount, $amount, $currency, $date, $description, $referenceType, $referenceId, $actor);
+    }
+
     private function postLoanModule(string $type, Account $debitAccount, Account $creditAccount, float $amount, string $currency, string $date, string $description, string $referenceType, int $referenceId, User $actor): FinancialTransaction
     {
         $tenant = $this->context->getOrFail();

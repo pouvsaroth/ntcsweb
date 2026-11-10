@@ -850,6 +850,16 @@ final class Permissions
 
     public const LENDERS_DELETE = 'lenders.delete';
 
+    // Fund > Funds: create = add funds and record money in / out, update = edit
+    // or close a fund, delete = remove an entry or an empty fund.
+    public const FUNDS_VIEW = 'funds.view';
+
+    public const FUNDS_CREATE = 'funds.create';
+
+    public const FUNDS_UPDATE = 'funds.update';
+
+    public const FUNDS_DELETE = 'funds.delete';
+
     // Loan > Customers: people who keep savings with the owner or borrow from them.
     public const LOAN_CUSTOMERS_VIEW = 'loan-customers.view';
 
@@ -1684,6 +1694,12 @@ final class Permissions
                 self::LENDERS_UPDATE => 'Update lenders',
                 self::LENDERS_DELETE => 'Delete lenders',
             ],
+            'Fund' => [
+                self::FUNDS_VIEW => 'View funds and their statements',
+                self::FUNDS_CREATE => 'Add funds and record money in and out',
+                self::FUNDS_UPDATE => 'Update or close funds',
+                self::FUNDS_DELETE => 'Delete fund entries and empty funds',
+            ],
             'Accounting' => [
                 self::ACCOUNTING_VIEW => 'View the Accounting module',
                 self::ACCOUNTING_DASHBOARD_VIEW => 'View the Accounting dashboard',
@@ -1936,6 +1952,7 @@ final class Permissions
             self::LENDERS_CREATE, self::LENDERS_UPDATE, self::LENDERS_DELETE,
             self::LOAN_CUSTOMERS_VIEW, self::LOAN_CUSTOMERS_CREATE, self::LOAN_CUSTOMERS_UPDATE, self::LOAN_CUSTOMERS_DELETE,
             self::SAVINGS_VIEW, self::SAVINGS_CREATE, self::SAVINGS_UPDATE, self::SAVINGS_DELETE,
+            self::FUNDS_VIEW, self::FUNDS_CREATE, self::FUNDS_UPDATE, self::FUNDS_DELETE,
             self::CUSTOMER_LOANS_VIEW, self::CUSTOMER_LOANS_CREATE, self::CUSTOMER_LOANS_UPDATE, self::CUSTOMER_LOANS_DELETE,
             self::EXPENSE_FOR_VIEW, self::EXPENSE_FOR_CREATE, self::EXPENSE_FOR_UPDATE, self::EXPENSE_FOR_DELETE,
             self::SUPPLIERS_VIEW, self::SUPPLIERS_CREATE, self::SUPPLIERS_UPDATE, self::SUPPLIERS_DELETE,

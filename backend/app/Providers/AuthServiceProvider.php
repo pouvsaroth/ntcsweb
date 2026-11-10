@@ -44,6 +44,7 @@ use App\Models\ExpenseEntity;
 use App\Models\FinancialTransaction;
 use App\Models\FormCategory;
 use App\Models\FormTemplate;
+use App\Models\Fund;
 use App\Models\GradeCorrection;
 use App\Models\Holiday;
 use App\Models\Inquiry;
@@ -142,6 +143,7 @@ use App\Policies\ExpensePolicy;
 use App\Policies\FinancialTransactionPolicy;
 use App\Policies\FormCategoryPolicy;
 use App\Policies\FormTemplatePolicy;
+use App\Policies\FundPolicy;
 use App\Policies\GradeCorrectionPolicy;
 use App\Policies\InquiryPolicy;
 use App\Policies\InvoicePolicy;
@@ -282,6 +284,7 @@ class AuthServiceProvider extends ServiceProvider
         Lender::class => BorrowingPolicy::class,
         LoanCustomer::class => LoanCustomerPolicy::class,
         SavingsAccount::class => SavingsAccountPolicy::class,
+        Fund::class => FundPolicy::class,
         CustomerLoan::class => CustomerLoanPolicy::class,
         DiscountCode::class => DiscountCodePolicy::class,
         RepairShop::class => RepairShopPolicy::class,
