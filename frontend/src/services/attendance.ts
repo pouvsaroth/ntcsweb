@@ -135,11 +135,13 @@ export const attendanceService = {
   /**
    * The roster plus `missedDate`: the class's previous class day with no
    * attendance yet. While it is set, today's attendance can't be saved.
+   * `dayOff`: the holiday or School Calendar closing day on that date (no class), if any.
    */
   rosterWithLock: (classId: number, date: string) =>
     apiGetWithMeta<AttendanceRosterEntry[]>(`/classes/${classId}/attendance`, { params: { date } }).then((r) => ({
       entries: r.data,
       missedDate: (r.meta?.missed_date as string | null | undefined) ?? null,
+      dayOff: (r.meta?.day_off as string | null | undefined) ?? null,
     })),
 
   save: (classId: number, date: string, entries: AttendanceEntryInput[]) =>

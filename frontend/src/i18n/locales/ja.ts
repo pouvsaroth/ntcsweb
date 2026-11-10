@@ -4690,6 +4690,7 @@ const ja: MessageSchema = {
       save: '出欠を保存',
       saveSuccess: '出欠を保存しました。',
       saveFailed: '出欠を保存できませんでした。',
+      dayOffNotice: 'この日は休みの日です（{name}）。授業がないため、出席の入力は不要で、リマインダーも送信されません。',
       missedDayLocked: '{date} の出席がまだ入力されていません。その日を入力するまで、今日の出席は入力できません。',
       goToMissedDay: '{date} を今すぐ入力',
       loadFailed: '名簿を読み込めませんでした。',

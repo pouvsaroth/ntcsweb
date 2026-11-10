@@ -4694,6 +4694,7 @@ const en = {
       save: 'Save attendance',
       saveSuccess: 'Attendance saved successfully.',
       saveFailed: 'Could not save attendance.',
+      dayOffNotice: 'This day is a day off ({name}). There is no class, so attendance is not needed and no reminder is sent.',
       missedDayLocked: 'Attendance for {date} has not been added yet. You cannot add attendance for today until that day is added.',
       goToMissedDay: 'Add {date} now',
       loadFailed: 'Could not load the class roster.',

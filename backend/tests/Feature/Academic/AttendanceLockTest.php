@@ -8,6 +8,7 @@ use App\Models\AttendanceRecord;
 use App\Models\ClassSchedule;
 use App\Models\Enrollment;
 use App\Models\Holiday;
+use App\Models\SchoolCalendarEvent;
 use App\Models\SchoolClass;
 use App\Support\Academic\AttendanceStatus;
 use App\Support\Authorization\Permissions;
@@ -96,6 +97,25 @@ class AttendanceLockTest extends TestCase
 
         $this->take($class, $enrollment, self::LAST_WEDNESDAY)->assertSuccessful();
         $this->take($class, $enrollment, self::TODAY)->assertSuccessful();
+    }
+
+    public function test_a_school_calendar_closing_day_is_skipped_too(): void
+    {
+        [$class, $enrollment] = $this->monWedClass();
+        SchoolCalendarEvent::query()->create(['title' => 'School closed', 'type' => 'closing', 'start_date' => self::MONDAY, 'end_date' => self::MONDAY]);
+        // Other calendar events (an exam, a meeting) are still class days.
+        SchoolCalendarEvent::query()->create(['title' => 'Midterm', 'type' => 'exam', 'start_date' => self::LAST_WEDNESDAY, 'end_date' => self::LAST_WEDNESDAY]);
+
+        $this->take($class, $enrollment, self::TODAY)
+            ->assertUnprocessable()
+            ->assertJsonPath('errors.date.0', 'Attendance for 04-11-2026 has not been added yet. Add that day first, then today.');
+
+        $this->getJson("/api/v1/classes/{$class->id}/attendance?date=".self::MONDAY)
+            ->assertOk()
+            ->assertJsonPath('meta.day_off', 'School closed');
+        $this->getJson("/api/v1/classes/{$class->id}/attendance?date=".self::TODAY)
+            ->assertOk()
+            ->assertJsonPath('meta.day_off', null);
     }
 
     public function test_a_class_that_started_today_or_has_no_schedule_is_not_locked(): void

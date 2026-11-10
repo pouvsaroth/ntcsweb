@@ -7,10 +7,10 @@ namespace App\Services\Academic;
 use App\Models\AttendanceRecord;
 use App\Models\ClassroomTable;
 use App\Models\Enrollment;
-use App\Models\Holiday;
 use App\Models\SchoolClass;
 use App\Models\User;
 use App\Support\Academic\AttendanceStatus;
+use App\Support\Academic\SchoolDaysOff;
 use App\Support\Audit\AuditAction;
 use App\Support\Audit\AuditLogger;
 use App\Support\Tenancy\TenantContext;
@@ -51,7 +51,7 @@ final class AttendanceService
      * teacher can always go back and fill in an earlier day.
      *
      * The previous class day is the last day before $date that the class's
-     * schedule meets on, skipping holidays and days before the class
+     * schedule meets on, skipping holidays, School Calendar closing days and days before the class
      * started. A day with no students in the class doesn't need attendance
      * (there is nobody to mark), so it never blocks.
      */
@@ -68,10 +68,7 @@ final class AttendanceService
         }
 
         $earliest = Carbon::parse($date)->subDays(self::LOCK_LOOKBACK_DAYS);
-        $holidays = Holiday::query()
-            ->whereDate('end_date', '>=', $earliest->toDateString())
-            ->whereDate('start_date', '<', $date)
-            ->get();
+        $daysOff = SchoolDaysOff::between($earliest->toDateString(), Carbon::parse($date)->subDay()->toDateString());
 
         for ($day = Carbon::parse($date)->subDay(); $day->gte($earliest); $day->subDay()) {
             if ($class->start_date !== null && $day->lt($class->start_date)) {
@@ -79,8 +76,7 @@ final class AttendanceService
             }
 
             $ymd = $day->toDateString();
-            $isHoliday = $holidays->contains(fn (Holiday $h) => $h->start_date->toDateString() <= $ymd && $h->end_date->toDateString() >= $ymd);
-            if (! $weekdays->contains($day->dayOfWeekIso) || $isHoliday) {
+            if (! $weekdays->contains($day->dayOfWeekIso) || SchoolDaysOff::covers($daysOff, $ymd)) {
                 continue;
             }
 

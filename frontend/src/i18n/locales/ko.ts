@@ -4690,6 +4690,7 @@ const ko: MessageSchema = {
       save: '출결 저장',
       saveSuccess: '출결이 저장되었습니다.',
       saveFailed: '출결을 저장하지 못했습니다.',
+      dayOffNotice: '이 날은 쉬는 날입니다 ({name}). 수업이 없으므로 출석을 입력할 필요가 없으며 알림도 보내지 않습니다.',
       missedDayLocked: '{date}의 출석이 아직 입력되지 않았습니다. 그날을 입력하기 전에는 오늘 출석을 입력할 수 없습니다.',
       goToMissedDay: '지금 {date} 입력',
       loadFailed: '명단을 불러오지 못했습니다.',

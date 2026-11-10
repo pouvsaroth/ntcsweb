@@ -4689,6 +4689,7 @@ const zh: MessageSchema = {
       save: '保存考勤',
       saveSuccess: '考勤已成功保存。',
       saveFailed: '无法保存考勤。',
+      dayOffNotice: '这一天是休息日（{name}）。没有课，因此无需录入考勤，也不会发送提醒。',
       missedDayLocked: '{date} 的考勤尚未录入。录入该日之前，无法录入今天的考勤。',
       goToMissedDay: '立即录入 {date}',
       loadFailed: '无法加载班级名单。',

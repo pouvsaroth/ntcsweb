@@ -9,6 +9,7 @@ use App\Models\ClassSchedule;
 use App\Models\Enrollment;
 use App\Models\Holiday;
 use App\Models\Role;
+use App\Models\SchoolCalendarEvent;
 use App\Models\SchoolClass;
 use App\Models\Staff;
 use App\Models\User;
@@ -95,6 +96,20 @@ class AttendanceReminderTest extends TestCase
 
         UserNotification::query()->delete();
         Holiday::query()->create(['name' => 'Water Festival', 'start_date' => self::TODAY, 'end_date' => self::TODAY]);
+        $this->artisan('attendance:remind-not-taken')->assertSuccessful();
+        $this->assertSame(0, UserNotification::query()->count());
+    }
+
+    public function test_no_reminder_on_a_school_calendar_closing_day(): void
+    {
+        [, $teacher] = $this->wednesdayClass('19:00:00');
+        SchoolCalendarEvent::query()->create(['title' => 'Exam week', 'type' => 'exam', 'start_date' => self::TODAY, 'end_date' => self::TODAY]);
+
+        $this->artisan('attendance:remind-not-taken')->assertSuccessful();
+        $this->assertSame(1, $this->remindersFor($teacher));
+
+        UserNotification::query()->delete();
+        SchoolCalendarEvent::query()->create(['title' => 'School closed', 'type' => 'closing', 'start_date' => self::TODAY, 'end_date' => self::TODAY]);
         $this->artisan('attendance:remind-not-taken')->assertSuccessful();
         $this->assertSame(0, UserNotification::query()->count());
     }

@@ -7,13 +7,13 @@ namespace App\Services\Academic;
 use App\Models\AttendanceRecord;
 use App\Models\ClassSchedule;
 use App\Models\Enrollment;
-use App\Models\Holiday;
 use App\Models\Role;
 use App\Models\SchoolClass;
 use App\Models\Staff;
 use App\Models\Tenant;
 use App\Models\UserNotification;
 use App\Services\Notifications\NotificationService;
+use App\Support\Academic\SchoolDaysOff;
 use App\Support\Notifications\NotificationType;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
@@ -38,7 +38,8 @@ final class AttendanceReminderService
         $now = Carbon::now($tenant->timezone ?: 'Asia/Phnom_Penh');
         $today = $now->toDateString();
 
-        if (Holiday::covering($now) !== null) {
+        // Holidays and School Calendar closing days have no classes.
+        if (SchoolDaysOff::on($now) !== null) {
             return 0;
         }
 

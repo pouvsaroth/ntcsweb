@@ -14,6 +14,7 @@ use App\Models\Enrollment;
 use App\Models\SchoolClass;
 use App\Services\Academic\AttendanceService;
 use App\Services\Academic\AttendanceSheet;
+use App\Support\Academic\SchoolDaysOff;
 use App\Support\Query\ApiQuery;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -72,9 +73,13 @@ final class AttendanceController extends Controller
 
         // `missed_date`: the previous class day with no attendance yet — while
         // set, today's attendance can't be saved (see guardPreviousClassDay()).
+        // `day_off`: the holiday or School Calendar closing day on that date, if any.
         return ApiResponse::success(
             AttendanceRosterEntryResource::collection($this->attendance->roster($class, $data['date'])),
-            meta: ['missed_date' => $this->attendance->missedClassDayBefore($class, $data['date'])],
+            meta: [
+                'missed_date' => $this->attendance->missedClassDayBefore($class, $data['date']),
+                'day_off' => SchoolDaysOff::on($data['date']),
+            ],
         );
     }
 

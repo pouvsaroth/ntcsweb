@@ -24,6 +24,9 @@ class SchoolCalendarEvent extends Model
 
     protected $connection = 'tenant';
 
+    /** School closed: no classes, so no student attendance (see SchoolDaysOff). */
+    public const TYPE_CLOSING = 'closing';
+
     public const TYPES = ['opening', 'closing', 'exam', 'event', 'meeting', 'other'];
 
     protected function casts(): array

@@ -43,6 +43,8 @@ interface ClassGroup {
   entries: TaggedEntry[]
   /** The class's previous class day with no attendance — this class can't be saved for today until it is filled in. */
   missed_date: string | null
+  /** The holiday or School Calendar closing day on the chosen date, if any. */
+  day_off: string | null
 }
 
 function today(): string {
@@ -94,12 +96,13 @@ async function loadRoster() {
   try {
     const results = await Promise.all(
       classIds.value.map(async (classId) => {
-        const { entries, missedDate } = await attendanceService.rosterWithLock(classId, date.value)
+        const { entries, missedDate, dayOff } = await attendanceService.rosterWithLock(classId, date.value)
         return {
           class_id: classId,
           class_name: classNames.value[classId] ?? `#${classId}`,
           entries: entries.map((e) => ({ ...e, class_id: classId })),
           missed_date: missedDate,
+          day_off: dayOff,
         }
       }),
     )
@@ -219,6 +222,7 @@ onMounted(async () => {
             </button>
           </div>
 
+          <BaseAlert v-if="groups[0]?.day_off" variant="info" class="mt-4">{{ t('admin.attendance.dayOffNotice', { name: groups[0].day_off }) }}</BaseAlert>
           <div v-for="group in groups" :key="group.class_id" class="mt-5">
             <h2 class="mb-2 text-sm font-semibold text-neutral-800">{{ group.class_name }} <span class="font-normal text-neutral-400">({{ group.entries.length }})</span></h2>
             <BaseAlert v-if="group.missed_date" variant="danger" class="mb-2">

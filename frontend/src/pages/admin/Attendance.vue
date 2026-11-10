@@ -52,6 +52,8 @@ const saveError = ref<string | null>(null)
 const saved = ref(false)
 /** The class's previous class day with no attendance — today can't be saved until it is filled in. */
 const missedDate = ref<string | null>(null)
+/** The holiday or School Calendar closing day on the chosen date, if any — no class that day. */
+const dayOff = ref<string | null>(null)
 
 const classOptions = computed(() => classes.value.map((c) => ({ value: String(c.id), label: c.name })))
 
@@ -61,11 +63,13 @@ async function loadRoster() {
   rosterError.value = null
   saved.value = false
   missedDate.value = null
+  dayOff.value = null
 
   try {
     const result = await attendanceService.rosterWithLock(classId.value, date.value)
     roster.value = result.entries
     missedDate.value = result.missedDate
+    dayOff.value = result.dayOff
     for (const entry of roster.value) {
       rosterEntries[entry.enrollment_id] = {
         status: entry.status ?? 'PRESENT',
@@ -164,6 +168,7 @@ onMounted(async () => {
       <BaseAlert v-if="rosterError" variant="danger" class="mb-4">{{ rosterError }}</BaseAlert>
       <BaseAlert v-if="saveError" variant="danger" class="mb-4">{{ saveError }}</BaseAlert>
       <BaseAlert v-if="saved" variant="success" class="mb-4">{{ t('admin.attendance.saveSuccess') }}</BaseAlert>
+      <BaseAlert v-if="dayOff" variant="info" class="mb-4">{{ t('admin.attendance.dayOffNotice', { name: dayOff }) }}</BaseAlert>
       <BaseAlert v-if="missedDate" variant="danger" class="mb-4">
         {{ t('admin.attendance.missedDayLocked', { date: formatDate(missedDate) }) }}
         <button type="button" class="ml-1 font-semibold underline" @click="date = missedDate ?? date">
