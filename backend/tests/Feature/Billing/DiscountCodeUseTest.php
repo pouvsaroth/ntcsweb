@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Billing;
 
-use App\Models\CoursePackage;
 use App\Models\DiscountCode;
 use App\Models\DiscountCodeRedemption;
 use App\Models\Invoice;
@@ -15,7 +14,7 @@ use Tests\Concerns\HasAcademicAdmin;
 use Tests\Concerns\HasAcademicCatalog;
 use Tests\TestCase;
 
-/** Using a discount code on the Enroll form and the website registration (step 2). The MS Word term fee is 24. */
+/** Using a discount code on the Enroll form and the website registration. The MS Word term fee is 24. */
 class DiscountCodeUseTest extends TestCase
 {
     use HasAcademicAdmin, HasAcademicCatalog, RefreshDatabase;
@@ -52,29 +51,34 @@ class DiscountCodeUseTest extends TestCase
         ]);
     }
 
-    public function test_the_enroll_form_lists_the_codes_this_student_can_use_on_this_course(): void
+    public function test_the_dropdown_shows_only_the_students_own_codes_or_else_every_main_code(): void
     {
         $student = Student::factory()->create();
         $other = Student::factory()->create();
+        $nobody = Student::factory()->create();
         $course = $this->msWordPackage->id;
 
         DiscountCode::factory()->create(['code' => 'PUBLIC10']);
-        DiscountCode::factory()->create(['code' => 'MINE', 'audience' => 'personal'])->students()->attach($student->id);
-        DiscountCode::factory()->create(['code' => 'NOTMINE', 'audience' => 'personal'])->students()->attach($other->id);
-        DiscountCode::factory()->create(['code' => 'FORWORD'])->coursePackages()->attach($course);
-        DiscountCode::factory()->create(['code' => 'OTHERCOURSE'])->coursePackages()->attach(CoursePackage::factory()->create()->id);
+        DiscountCode::factory()->create(['code' => 'FOREVER', 'expires_on' => null]);
+        $main = DiscountCode::factory()->create(['code' => 'D01']);
+        DiscountCode::factory()->create(['code' => 'S1_D01_101126', 'parent_id' => $main->id, 'audience' => 'personal'])->students()->attach($student->id);
+        DiscountCode::factory()->create(['code' => 'S2_D01_101126', 'parent_id' => $main->id, 'audience' => 'personal'])->students()->attach($other->id);
+        // The student's own code that no longer works is left out.
+        DiscountCode::factory()->create(['code' => 'S1_OLD', 'parent_id' => $main->id, 'audience' => 'personal', 'status' => 'inactive'])->students()->attach($student->id);
         DiscountCode::factory()->create(['code' => 'EXPIRED', 'starts_on' => now()->subDays(30)->toDateString(), 'expires_on' => now()->subDay()->toDateString()]);
         DiscountCode::factory()->create(['code' => 'LATER', 'starts_on' => now()->addDays(3)->toDateString()]);
         DiscountCode::factory()->create(['code' => 'OFF', 'status' => 'inactive']);
-        $usedUp = DiscountCode::factory()->create(['code' => 'USEDUP', 'max_uses' => 1]);
-        DiscountCodeRedemption::query()->create(['discount_code_id' => $usedUp->id, 'student_id' => $other->id, 'amount' => 1, 'currency' => 'USD']);
 
-        $codes = $this->getJson("/api/v1/discount-codes/available?student_id={$student->id}&course_package_id={$course}")
-            ->assertOk()->json('data.*.code');
-        $this->assertSame(['MINE', 'FORWORD', 'PUBLIC10'], $codes);
+        $codes = fn (Student $s) => $this->getJson("/api/v1/discount-codes/available?student_id={$s->id}&course_package_id={$course}")->assertOk()->json('data.*.code');
+        // Has their own code: only that.
+        $this->assertSame(['S1_D01_101126'], $codes($student));
+        // No own code: every main code that works today.
+        $this->assertSame(['D01', 'FOREVER', 'PUBLIC10'], $codes($nobody));
 
         $this->actingAsAdminWithPermissions([Permissions::INVOICES_VIEW]);
-        $this->getJson("/api/v1/discount-codes/available?student_id={$student->id}&course_package_id={$course}")->assertForbidden();
+        $this->getJson("/api/v1/discount-codes/available?student_id={$student->id}")->assertForbidden();
+        $this->actingAsAdminWithPermissions([Permissions::PAYMENTS_CREATE]);
+        $this->getJson("/api/v1/discount-codes/available?student_id={$student->id}")->assertOk();
     }
 
     public function test_a_percent_code_takes_its_share_off_the_invoice_and_can_be_used_again(): void
@@ -126,21 +130,20 @@ class DiscountCodeUseTest extends TestCase
         DiscountCode::factory()->create(['code' => 'OFF', 'status' => 'inactive', 'currency' => $currency]);
         $this->assertSame('This discount code is not active.', $message('OFF'));
 
-        $otherCourse = DiscountCode::factory()->create(['code' => 'EXCEL', 'currency' => $currency]);
-        $otherCourse->coursePackages()->attach($this->otherPackageId());
-        $this->assertSame('This discount code is not for this course.', $message('EXCEL'));
+        // No end date: always works once started.
+        DiscountCode::factory()->create(['code' => 'FOREVER', 'expires_on' => null, 'currency' => $currency]);
+        $this->check($student, 'FOREVER')->assertOk();
 
         $vip = DiscountCode::factory()->create(['code' => 'VIP', 'audience' => 'personal', 'currency' => $currency]);
         $vip->students()->attach($other->id);
         $this->assertSame('This discount code is not for this student.', $message('VIP'));
         $this->check($other, 'VIP')->assertOk();
 
-        $one = DiscountCode::factory()->create(['code' => 'ONE', 'max_uses' => 1, 'currency' => $currency]);
-        DiscountCodeRedemption::query()->create(['discount_code_id' => $one->id, 'student_id' => $other->id, 'amount' => 1, 'currency' => $currency]);
-        $this->assertSame('This discount code has been used up.', $message('ONE'));
+        // A student with their own code uses only that one.
+        $this->assertSame('This student has their own discount code. Use one of those.', $this->check($other, 'FIVE')->assertUnprocessable()->json('errors.discount_code.0'));
 
         // A refused code stops the enrollment.
-        $this->enroll($student, 'ONE')->assertUnprocessable()->assertJsonValidationErrors('discount_code');
+        $this->enroll($student, 'OFF')->assertUnprocessable()->assertJsonValidationErrors('discount_code');
         $this->assertSame(0, Invoice::query()->where('student_id', $student->id)->count());
     }
 
@@ -175,10 +178,5 @@ class DiscountCodeUseTest extends TestCase
     private function currency(): string
     {
         return $this->tenant->fresh()->default_currency;
-    }
-
-    private function otherPackageId(): int
-    {
-        return CoursePackage::factory()->create()->id;
     }
 }

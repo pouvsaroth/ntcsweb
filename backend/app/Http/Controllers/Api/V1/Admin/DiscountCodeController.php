@@ -9,12 +9,14 @@ use App\Http\Resources\DiscountCodeResource;
 use App\Http\Responses\ApiResponse;
 use App\Models\CoursePackage;
 use App\Models\DiscountCode;
+use App\Models\DiscountCodeRedemption;
 use App\Models\Enrollment;
 use App\Models\Student;
 use App\Models\User;
 use App\Services\Academic\EnrollmentService;
 use App\Services\Billing\DiscountCodeService;
 use App\Services\Notifications\NotificationService;
+use App\Support\Authorization\Permissions;
 use App\Support\Notifications\NotificationType;
 use App\Support\Query\ApiQuery;
 use App\Support\Tenancy\TenantContext;
@@ -22,11 +24,11 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\ValidationException;
 
 /**
- * Invoices > Discount codes: add, edit, give to students (personal codes)
- * and delete codes.
+ * Invoices > Discount codes: add, edit and delete discount (main) codes, and
+ * assign one to students: each student gets their own code
+ * (STUDENTCODE_CODE_ddmmyy) that follows the main code when it is edited.
  */
 final class DiscountCodeController extends Controller
 {
@@ -40,11 +42,11 @@ final class DiscountCodeController extends Controller
         $this->authorize('viewAny', DiscountCode::class);
 
         $codes = ApiQuery::for(
-            DiscountCode::query()->with('coursePackages')->withCount(['appliedRedemptions', 'students']),
+            DiscountCode::query()->whereNull('parent_id')->withCount($this->counts()),
             $request,
         )
             ->searchable('code', 'name')
-            ->filterable(['audience', 'status', 'discount_type'])
+            ->filterable(['status', 'discount_type'])
             ->sortable(['code', 'expires_on', 'starts_on', 'created_at'], default: '-created_at')
             ->paginate();
 
@@ -57,114 +59,22 @@ final class DiscountCodeController extends Controller
 
         $data = $this->validated($request, null);
 
-        $code = DB::connection('tenant')->transaction(function () use ($data, $request) {
-            $code = DiscountCode::query()->create([
-                ...collect($data)->except(['course_package_ids', 'student_ids'])->all(),
-                'currency' => $this->context->getOrFail()->default_currency ?: 'USD',
-                'created_by' => $request->user()?->id,
-            ]);
-            $given = $this->syncLinks($code, $data);
-
-            return [$code, $given];
-        });
-        [$code, $given] = $code;
-        $this->notifyGiven($code, $given);
+        $code = DiscountCode::query()->create([
+            ...$data,
+            'audience' => DiscountCode::AUDIENCE_PUBLIC,
+            'currency' => $this->context->getOrFail()->default_currency ?: 'USD',
+            'created_by' => $request->user()?->id,
+        ]);
 
         return ApiResponse::created(new DiscountCodeResource($this->loaded($code)));
     }
 
     /**
-     * POST /discount-codes/bulk — one personal code per student, each with its
-     * own value (e.g. Student A 20%, Student B 10%). The other settings are
-     * shared. Codes are PREFIX-STUDENTCODE, with -2, -3 ... if one is taken.
-     */
-    public function bulk(Request $request): JsonResponse
-    {
-        $this->authorize('create', DiscountCode::class);
-
-        $request->merge(['code_prefix' => strtoupper(trim((string) $request->input('code_prefix')))]);
-        $isPercent = $request->input('discount_type') === DiscountCode::TYPE_PERCENT;
-
-        $data = $request->validate([
-            'code_prefix' => ['required', 'string', 'max:20', 'regex:/^[A-Z0-9_-]+$/'],
-            'name' => ['required', 'string', 'max:255'],
-            'discount_type' => ['required', Rule::in(DiscountCode::TYPES)],
-            'max_discount' => ['nullable', 'numeric', 'gt:0', 'max:9999999'],
-            'starts_on' => ['required', 'date'],
-            'expires_on' => ['required', 'date', 'after_or_equal:starts_on'],
-            'notes' => ['nullable', 'string', 'max:2000'],
-            'course_package_ids' => ['sometimes', 'array'],
-            'course_package_ids.*' => ['integer', 'distinct', Rule::exists('tenant.course_packages', 'id')],
-            'rows' => ['required', 'array', 'min:1', 'max:200'],
-            'rows.*.student_id' => ['required', 'integer', 'distinct', Rule::exists('tenant.students', 'id')],
-            'rows.*.value' => ['required', 'numeric', 'gt:0', $isPercent ? 'max:100' : 'max:9999999'],
-        ], [
-            'code_prefix.regex' => __('Use only letters, numbers, - and _ (no spaces).'),
-            'rows.required' => __('Add at least one student.'),
-            'rows.*.student_id.distinct' => __('This student is in the list twice.'),
-        ]);
-
-        $students = Student::query()->whereIn('id', collect($data['rows'])->pluck('student_id'))->get()->keyBy('id');
-        $currency = $this->context->getOrFail()->default_currency ?: 'USD';
-
-        $codes = DB::connection('tenant')->transaction(function () use ($data, $students, $currency, $request) {
-            $taken = [];
-            $codes = [];
-            foreach ($data['rows'] as $row) {
-                $student = $students->get((int) $row['student_id']);
-                $code = DiscountCode::query()->create([
-                    'code' => $this->freeCode($data['code_prefix'], $student, $taken),
-                    'name' => $data['name'],
-                    'audience' => DiscountCode::AUDIENCE_PERSONAL,
-                    'discount_type' => $data['discount_type'],
-                    'value' => $row['value'],
-                    'max_discount' => $data['discount_type'] === DiscountCode::TYPE_PERCENT ? ($data['max_discount'] ?? null) : null,
-                    'currency' => $currency,
-                    'starts_on' => $data['starts_on'],
-                    'expires_on' => $data['expires_on'],
-                    'notes' => $data['notes'] ?? null,
-                    'created_by' => $request->user()?->id,
-                ]);
-                $code->coursePackages()->sync($data['course_package_ids'] ?? []);
-                $code->students()->sync([$student->id]);
-                $codes[] = $code;
-            }
-
-            return $codes;
-        });
-
-        foreach ($codes as $code) {
-            $this->notifyGiven($code, [(int) $code->students()->value('students.id')]);
-        }
-
-        return ApiResponse::created(DiscountCodeResource::collection(collect($codes)->map(fn (DiscountCode $c) => $this->loaded($c))));
-    }
-
-    /**
-     * PREFIX-STUDENTCODE (letters and numbers only), made unique.
-     *
-     * @param  array<string, true>  $taken  codes already made in this batch
-     */
-    private function freeCode(string $prefix, Student $student, array &$taken): string
-    {
-        $tail = strtoupper((string) preg_replace('/[^A-Za-z0-9]/', '', (string) $student->student_code));
-        $base = substr($prefix.'-'.($tail !== '' ? $tail : $student->id), 0, 36);
-
-        $code = $base;
-        for ($n = 2; isset($taken[$code]) || DiscountCode::query()->where('code', $code)->exists(); $n++) {
-            $code = $base.'-'.$n;
-        }
-        $taken[$code] = true;
-
-        return $code;
-    }
-
-    /**
      * POST /discount-codes/{discount_code}/students — "Assign discount to
-     * student": give a personal code to more students. Students who already
-     * have it are kept; it can be done again any time.
+     * student": each student gets their own code, STUDENTCODE_CODE_ddmmyy.
+     * Students who already have one from this code keep it.
      */
-    public function assign(Request $request, DiscountCode $discountCode): JsonResponse
+    public function assign(Request $request, DiscountCode $discountCode, DiscountCodeService $discounts): JsonResponse
     {
         $this->authorize('update', $discountCode);
 
@@ -173,14 +83,40 @@ final class DiscountCodeController extends Controller
             'student_ids.*' => ['integer', 'distinct', Rule::exists('tenant.students', 'id')],
         ]);
 
-        if ($discountCode->audience !== DiscountCode::AUDIENCE_PERSONAL) {
-            throw ValidationException::withMessages(['discount_code_id' => __('A public code works for every student already. Pick a personal code.')]);
+        $made = $discounts->assign($discountCode, array_map('intval', $data['student_ids']), $request->user());
+        foreach ($made as $code) {
+            $this->notifyGiven($code, [(int) $code->students()->value('students.id')]);
         }
 
-        $given = array_map('intval', $discountCode->students()->syncWithoutDetaching($data['student_ids'])['attached']);
-        $this->notifyGiven($discountCode, $given);
+        return ApiResponse::success(
+            new DiscountCodeResource($this->loaded($discountCode)),
+            meta: ['assigned' => count($made), 'codes' => array_map(fn (DiscountCode $c) => $c->code, $made)],
+        );
+    }
 
-        return ApiResponse::success(new DiscountCodeResource($this->loaded($discountCode)), meta: ['assigned' => count($given)]);
+    /**
+     * DELETE /discount-codes/{discount_code}/students/{student} — take the
+     * discount back from a student: their own code is deleted, or, when it
+     * was used already, kept for the history but no longer theirs.
+     */
+    public function unassign(DiscountCode $discountCode, Student $student): JsonResponse
+    {
+        $this->authorize('update', $discountCode);
+
+        DB::connection('tenant')->transaction(function () use ($discountCode, $student) {
+            $codes = $discountCode->children()->whereHas('students', fn ($q) => $q->where('students.id', $student->id))->get();
+            foreach ($codes as $code) {
+                if ($code->redemptions()->exists()) {
+                    $code->students()->detach($student->id);
+                    $code->update(['status' => DiscountCode::STATUS_INACTIVE]);
+                } else {
+                    $code->students()->detach();
+                    $code->delete();
+                }
+            }
+        });
+
+        return ApiResponse::success(new DiscountCodeResource($this->loaded($discountCode)));
     }
 
     public function show(DiscountCode $discountCode): JsonResponse
@@ -190,18 +126,16 @@ final class DiscountCodeController extends Controller
         return ApiResponse::success(new DiscountCodeResource($this->loaded($discountCode)));
     }
 
-    public function update(Request $request, DiscountCode $discountCode): JsonResponse
+    public function update(Request $request, DiscountCode $discountCode, DiscountCodeService $discounts): JsonResponse
     {
         $this->authorize('update', $discountCode);
 
         $data = $this->validated($request, $discountCode);
 
-        $given = DB::connection('tenant')->transaction(function () use ($discountCode, $data) {
-            $discountCode->update(collect($data)->except(['course_package_ids', 'student_ids'])->all());
-
-            return $this->syncLinks($discountCode, $data);
+        DB::connection('tenant')->transaction(function () use ($discountCode, $data, $discounts) {
+            $discountCode->update($data);
+            $discounts->followMain($discountCode);
         });
-        $this->notifyGiven($discountCode, $given);
 
         return ApiResponse::success(new DiscountCodeResource($this->loaded($discountCode->refresh())));
     }
@@ -210,19 +144,21 @@ final class DiscountCodeController extends Controller
     {
         $this->authorize('delete', $discountCode);
 
-        if ($discountCode->redemptions()->exists()) {
+        if ($discountCode->redemptions()->exists() || $discountCode->childRedemptions()->exists()) {
             return ApiResponse::error(__('This code has been used and cannot be deleted. Set it to Inactive instead.'), 422);
         }
 
-        $discountCode->delete();
+        DB::connection('tenant')->transaction(function () use ($discountCode) {
+            $discountCode->children()->get()->each(fn (DiscountCode $code) => $code->delete());
+            $discountCode->delete();
+        });
 
         return ApiResponse::noContent();
     }
 
     /**
-     * The form's pickers: every course, and students matching `search` (for
-     * personal codes). Here so a Discount codes user needs no Students or
-     * Courses permission of their own.
+     * The Assign window's picker: students matching `search`. Here so a
+     * Discount codes user needs no Students permission of their own.
      */
     public function options(Request $request): JsonResponse
     {
@@ -244,11 +180,7 @@ final class DiscountCodeController extends Controller
             ->map(fn (Student $s) => ['id' => $s->id, 'student_code' => $s->student_code, 'name' => $s->fullName()])
             ->values();
 
-        return ApiResponse::success([
-            'course_packages' => CoursePackage::query()->orderBy('sort_order')->orderBy('name')->get(['id', 'name'])
-                ->map(fn ($c) => ['id' => $c->id, 'name' => $c->name])->values(),
-            'students' => $students,
-        ]);
+        return ApiResponse::success(['students' => $students]);
     }
 
     /**
@@ -261,7 +193,7 @@ final class DiscountCodeController extends Controller
         abort_unless($request->user()?->can('create', Enrollment::class), 403);
 
         $data = $request->validate([
-            'discount_code' => ['required', 'string', 'max:40'],
+            'discount_code' => ['required', 'string', 'max:80'],
             'student_id' => ['nullable', 'integer', Rule::exists('tenant.students', 'id')],
             'course_package_id' => ['required', 'integer', Rule::exists('tenant.course_packages', 'id')],
             'fee_type' => ['required', Rule::in(['monthly', 'term', 'video', 'monthly_online', 'term_online'])],
@@ -277,19 +209,20 @@ final class DiscountCodeController extends Controller
     }
 
     /**
-     * GET /discount-codes/available — the Enroll form's dropdown: codes this
-     * student can use on this course today. Anyone who can enroll students.
+     * GET /discount-codes/available — the forms' dropdown: the student's own
+     * codes that work today, or every main code when they have none. Anyone
+     * who can enroll students or take payments.
      */
     public function available(Request $request, DiscountCodeService $discounts): JsonResponse
     {
-        abort_unless($request->user()?->can('create', Enrollment::class), 403);
+        $user = $request->user();
+        abort_unless($user !== null && ($user->can('create', Enrollment::class) || $user->hasPermission(Permissions::PAYMENTS_CREATE)), 403);
 
         $data = $request->validate([
             'student_id' => ['nullable', 'integer', Rule::exists('tenant.students', 'id')],
-            'course_package_id' => ['required', 'integer', Rule::exists('tenant.course_packages', 'id')],
         ]);
 
-        return ApiResponse::success($discounts->availableFor(isset($data['student_id']) ? (int) $data['student_id'] : null, (int) $data['course_package_id'])
+        return ApiResponse::success($discounts->availableFor(isset($data['student_id']) ? (int) $data['student_id'] : null)
             ->map(fn (DiscountCode $c) => [
                 'code' => $c->code,
                 'name' => $c->name,
@@ -298,7 +231,7 @@ final class DiscountCodeController extends Controller
                 'value' => (float) $c->value,
                 'max_discount' => $c->max_discount !== null ? (float) $c->max_discount : null,
                 'currency' => $c->currency,
-                'expires_on' => $c->expires_on->toDateString(),
+                'expires_on' => $c->expires_on?->toDateString(),
             ])->values());
     }
 
@@ -309,21 +242,15 @@ final class DiscountCodeController extends Controller
         $isPercent = $request->input('discount_type', $existing?->discount_type) === DiscountCode::TYPE_PERCENT;
 
         $data = $request->validate([
-            'code' => ['required', 'string', 'max:40', 'regex:/^[A-Z0-9_-]+$/', Rule::unique('tenant.discount_codes', 'code')->ignore($existing?->id)],
+            'code' => ['required', 'string', 'max:30', 'regex:/^[A-Z0-9_-]+$/', Rule::unique('tenant.discount_codes', 'code')->ignore($existing?->id)],
             'name' => ['required', 'string', 'max:255'],
-            'audience' => ['required', Rule::in(DiscountCode::AUDIENCES)],
             'discount_type' => ['required', Rule::in(DiscountCode::TYPES)],
             'value' => ['required', 'numeric', 'gt:0', $isPercent ? 'max:100' : 'max:9999999'],
             'max_discount' => ['nullable', 'numeric', 'gt:0', 'max:9999999'],
             'starts_on' => ['required', 'date'],
-            'expires_on' => ['required', 'date', 'after_or_equal:starts_on'],
-            'max_uses' => ['nullable', 'integer', 'min:1', 'max:1000000'],
+            'expires_on' => ['nullable', 'date', 'after_or_equal:starts_on'],
             'status' => ['sometimes', Rule::in(DiscountCode::STATUSES)],
             'notes' => ['nullable', 'string', 'max:2000'],
-            'course_package_ids' => ['sometimes', 'array'],
-            'course_package_ids.*' => ['integer', 'distinct', Rule::exists('tenant.course_packages', 'id')],
-            'student_ids' => ['sometimes', 'array'],
-            'student_ids.*' => ['integer', 'distinct', Rule::exists('tenant.students', 'id')],
         ], [
             'code.regex' => __('Use only letters, numbers, - and _ (no spaces).'),
         ]);
@@ -337,29 +264,6 @@ final class DiscountCodeController extends Controller
     }
 
     /**
-     * @param  array<string, mixed>  $data
-     * @return list<int> the students just given the code
-     */
-    private function syncLinks(DiscountCode $code, array $data): array
-    {
-        if (array_key_exists('course_package_ids', $data)) {
-            $code->coursePackages()->sync($data['course_package_ids']);
-        }
-
-        if ($code->audience === DiscountCode::AUDIENCE_PUBLIC) {
-            $code->students()->detach();
-
-            return [];
-        }
-
-        if (array_key_exists('student_ids', $data)) {
-            return array_map('intval', $code->students()->sync($data['student_ids'])['attached']);
-        }
-
-        return [];
-    }
-
-    /**
      * Tell each student just given a personal code (outside the transaction:
      * a notification that fails never undoes the save). Not for a code that
      * is inactive or already expired.
@@ -369,7 +273,7 @@ final class DiscountCodeController extends Controller
     private function notifyGiven(DiscountCode $code, array $studentIds): void
     {
         $code->refresh();
-        if ($studentIds === [] || $code->status !== DiscountCode::STATUS_ACTIVE || $code->expires_on->endOfDay()->isPast()) {
+        if ($studentIds === [] || $code->status !== DiscountCode::STATUS_ACTIVE || $code->expires_on?->endOfDay()->isPast()) {
             return;
         }
 
@@ -385,12 +289,22 @@ final class DiscountCodeController extends Controller
             'code' => $code->code,
             'name' => $code->name,
             'discount' => $discount,
-            'expires_on' => $code->expires_on->format('d-m-Y'),
+            'expires_on' => $code->expires_on?->format('d-m-Y') ?? '—',
         ], link: '/admin/my-discount-codes');
     }
 
     private function loaded(DiscountCode $code): DiscountCode
     {
-        return $code->load(['coursePackages', 'students'])->loadCount(['appliedRedemptions', 'students']);
+        return $code->load(['children' => fn ($q) => $q->with('students')->withCount('appliedRedemptions')->orderBy('code')])->loadCount($this->counts());
+    }
+
+    /** @return array<int|string, mixed> uses of the code and of its students' own codes, and how many students have it */
+    private function counts(): array
+    {
+        return [
+            'appliedRedemptions',
+            'childRedemptions as child_uses_count' => fn ($q) => $q->where('discount_code_redemptions.status', DiscountCodeRedemption::STATUS_APPLIED),
+            'children as assigned_count' => fn ($q) => $q->has('students'),
+        ];
     }
 }

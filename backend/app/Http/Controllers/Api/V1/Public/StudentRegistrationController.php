@@ -50,7 +50,7 @@ final class StudentRegistrationController extends Controller
     public function checkDiscountCode(Request $request, DiscountCodeService $discounts, EnrollmentService $enrollments): JsonResponse
     {
         $data = $request->validate([
-            'discount_code' => ['required', 'string', 'max:40'],
+            'discount_code' => ['required', 'string', 'max:80'],
             'course_package_id' => ['required', 'integer', Rule::exists('tenant.course_packages', 'id')],
             'fee_type' => ['required', Rule::in(['monthly', 'term', 'video', 'monthly_online', 'term_online'])],
         ]);

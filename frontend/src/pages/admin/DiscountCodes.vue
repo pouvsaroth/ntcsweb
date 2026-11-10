@@ -32,21 +32,21 @@ const canManage = computed(() => canUpdate.value || canDelete.value)
 
 const { items, meta, loading, error, setPage, setSearch, setFilter, fetch } = usePaginatedResource<DiscountCode>((query) => discountCodesService.list(query))
 
-const audienceFilter = ref('')
-const audienceOptions = computed(() => [
-  { value: '', label: t('admin.discountCodes.allAudiences') },
-  { value: 'public', label: t('admin.discountCodes.audience.public') },
-  { value: 'personal', label: t('admin.discountCodes.audience.personal') },
+const statusFilter = ref('')
+const statusOptions = computed(() => [
+  { value: '', label: t('admin.discountCodes.allStatuses') },
+  { value: 'active', label: t('admin.discountCodes.effective.active') },
+  { value: 'inactive', label: t('admin.discountCodes.effective.inactive') },
 ])
-function changeAudience(value: string) {
-  audienceFilter.value = value
-  setFilter('audience', value || undefined)
+function changeStatus(value: string) {
+  statusFilter.value = value
+  setFilter('status', value || undefined)
 }
 
 const columns = computed(() => [
   { key: 'code', label: t('admin.discountCodes.code') },
   { key: 'discount', label: t('admin.discountCodes.discount') },
-  { key: 'audience', label: t('admin.discountCodes.audienceLabel') },
+  { key: 'students', label: t('admin.discountCodes.students') },
   { key: 'dates', label: t('admin.discountCodes.validDates') },
   { key: 'uses', label: t('admin.discountCodes.uses'), align: 'text-right' },
   { key: 'status', label: t('admin.discountCodes.status') },
@@ -57,7 +57,6 @@ const statusVariant: Record<DiscountEffectiveStatus, 'success' | 'neutral' | 'wa
   active: 'success',
   scheduled: 'primary',
   expired: 'danger',
-  used_up: 'warning',
   inactive: 'neutral',
 }
 
@@ -68,15 +67,12 @@ function discountText(row: DiscountCode): string {
   return row.max_discount ? t('admin.discountCodes.percentUpTo', { percent, max: formatMoney(row.max_discount, row.currency) }) : percent
 }
 
-function usesText(row: DiscountCode): string {
-  return row.max_uses ? `${row.uses_count} / ${row.max_uses}` : String(row.uses_count)
+/** "01-11-2026 → 30-11-2026", or "01-11-2026 → No end date". */
+function datesText(row: DiscountCode): string {
+  return `${formatDate(row.starts_on)} → ${row.expires_on ? formatDate(row.expires_on) : t('admin.discountCodes.noEnd')}`
 }
 
-function audienceText(row: DiscountCode): string {
-  return row.audience === 'personal'
-    ? t('admin.discountCodes.personalCount', { count: row.students_count ?? 0 })
-    : t('admin.discountCodes.audience.public')
-}
+const studentsText = (row: DiscountCode) => t('admin.discountCodes.studentCount', { count: row.students_count ?? 0 })
 
 const modalOpen = ref(false)
 const assignOpen = ref(false)
@@ -114,7 +110,7 @@ onMounted(() => fetch())
           class="block w-full max-w-sm rounded-lg border border-neutral-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
           @input="setSearch(($event.target as HTMLInputElement).value)"
         />
-        <BaseSelect class="sm:w-44" :model-value="audienceFilter" :options="audienceOptions" @update:model-value="changeAudience" />
+        <BaseSelect class="sm:w-44" :model-value="statusFilter" :options="statusOptions" @update:model-value="changeStatus" />
       </div>
       <div v-if="canCreate || canUpdate" class="flex shrink-0 flex-wrap gap-2">
         <BaseButton v-if="canCreate" @click="open(null)">{{ t('admin.discountCodes.add') }}</BaseButton>
@@ -140,9 +136,9 @@ onMounted(() => fetch())
             <BaseBadge :variant="statusVariant[row.effective_status]">{{ t(`admin.discountCodes.effective.${row.effective_status}`) }}</BaseBadge>
           </div>
           <p class="mt-2 text-sm font-medium text-neutral-800">{{ discountText(row) }}</p>
-          <p class="mt-0.5 text-xs text-neutral-500">{{ formatDate(row.starts_on) }} → {{ formatDate(row.expires_on) }} · {{ audienceText(row) }}</p>
+          <p class="mt-0.5 text-xs text-neutral-500">{{ datesText(row) }} · {{ studentsText(row) }}</p>
           <div class="mt-2 flex items-center justify-between gap-2">
-            <p class="text-xs text-neutral-500">{{ t('admin.discountCodes.uses') }}: {{ usesText(row) }}</p>
+            <p class="text-xs text-neutral-500">{{ t('admin.discountCodes.uses') }}: {{ row.uses_count }}</p>
             <div v-if="canManage" class="flex items-center gap-3">
               <EditIconButton v-if="canUpdate" @click="open(row)" />
               <button v-if="canDelete" type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row)">{{ t('admin.discountCodes.delete') }}</button>
@@ -157,15 +153,10 @@ onMounted(() => fetch())
         <p class="font-mono font-semibold text-neutral-900">{{ row.code }}</p>
         <p class="text-xs text-neutral-500">{{ row.name }}</p>
       </template>
-      <template #cell-discount="{ row }">
-        <p>{{ discountText(row) }}</p>
-        <p class="text-xs text-neutral-500">
-          {{ row.course_packages?.length ? row.course_packages.map((c: { name: string }) => c.name).join(', ') : t('admin.discountCodes.allCourses') }}
-        </p>
-      </template>
-      <template #cell-audience="{ row }">{{ audienceText(row) }}</template>
-      <template #cell-dates="{ row }">{{ formatDate(row.starts_on) }} → {{ formatDate(row.expires_on) }}</template>
-      <template #cell-uses="{ row }">{{ usesText(row) }}</template>
+      <template #cell-discount="{ row }">{{ discountText(row) }}</template>
+      <template #cell-students="{ row }">{{ studentsText(row) }}</template>
+      <template #cell-dates="{ row }">{{ datesText(row) }}</template>
+      <template #cell-uses="{ row }">{{ row.uses_count }}</template>
       <template #cell-status="{ row }">
         <BaseBadge :variant="statusVariant[row.effective_status as DiscountEffectiveStatus]">{{ t(`admin.discountCodes.effective.${row.effective_status}`) }}</BaseBadge>
       </template>
@@ -179,7 +170,7 @@ onMounted(() => fetch())
 
     <BasePagination v-if="meta" :meta="meta" sticky class="mt-4" @update:page="setPage" />
 
-    <DiscountCodeFormModal v-model="modalOpen" :discount-code="editing" @saved="fetch()" />
+    <DiscountCodeFormModal v-model="modalOpen" :discount-code="editing" :can-update="canUpdate" @saved="fetch()" />
     <DiscountCodeAssignModal v-if="canUpdate" v-model="assignOpen" @saved="fetch()" />
   </div>
 </template>

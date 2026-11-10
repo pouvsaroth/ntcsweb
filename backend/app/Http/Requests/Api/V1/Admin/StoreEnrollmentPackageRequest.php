@@ -70,7 +70,7 @@ class StoreEnrollmentPackageRequest extends FormRequest
             'discount_price' => ['nullable', 'numeric', 'min:0'],
             // Invoices > Discount codes: replaces discount_price/discount_reason
             // (checked and worked out by DiscountCodeService).
-            'discount_code' => ['nullable', 'string', 'max:40'],
+            'discount_code' => ['nullable', 'string', 'max:80'],
 
             'received_amount' => ['nullable', 'numeric', 'min:0'],
             'payment_method' => ['nullable', Rule::in(PaymentMethod::all())],

@@ -88,7 +88,7 @@ async function loadAvailableCodes() {
   codePick.value = ''
   if (!selectedStudent.value || !form.course_package_id) return
   try {
-    availableCodes.value = await discountCodesService.available(selectedStudent.value.id, form.course_package_id)
+    availableCodes.value = await discountCodesService.available(selectedStudent.value.id)
   } catch {
     availableCodes.value = []
   }

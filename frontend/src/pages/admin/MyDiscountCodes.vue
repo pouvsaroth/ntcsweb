@@ -30,7 +30,6 @@ const stateVariant: Record<MyDiscountCode['state'], 'success' | 'neutral' | 'war
   used: 'primary',
   scheduled: 'primary',
   expired: 'danger',
-  used_up: 'warning',
   inactive: 'neutral',
 }
 
@@ -122,8 +121,7 @@ onMounted(load)
             <p class="mt-2 text-base font-semibold text-primary-700">{{ t('admin.myDiscountCodes.off', { discount: discountText(row) }) }}</p>
             <dl class="mt-2 space-y-0.5 text-xs text-neutral-500">
               <div>{{ t('admin.discountCodes.startsOn') }}: {{ formatDate(row.starts_on) }}</div>
-              <div>{{ t('admin.discountCodes.expiresOn') }}: {{ formatDate(row.expires_on) }}</div>
-              <div>{{ t('admin.discountCodes.courses') }}: {{ row.course_packages.length ? row.course_packages.map((c) => c.name).join(', ') : t('admin.discountCodes.allCourses') }}</div>
+              <div>{{ t('admin.discountCodes.expiresOn') }}: {{ row.expires_on ? formatDate(row.expires_on) : t('admin.discountCodes.noEnd') }}</div>
               <div v-if="row.used_at">
                 {{ t('admin.myDiscountCodes.usedOn', { date: formatDate(row.used_at), amount: row.used_amount != null ? formatMoney(row.used_amount, row.currency) : '' }) }}
               </div>

@@ -52,7 +52,7 @@ class StoreStudentRegistrationRequest extends FormRequest
 
             'payment_method' => ['required', Rule::in([PaymentMethod::CASH])],
             // A public code from Invoices > Discount codes — checked by DiscountCodeService.
-            'discount_code' => ['nullable', 'string', 'max:40'],
+            'discount_code' => ['nullable', 'string', 'max:80'],
 
             'password' => ['required', 'string', 'min:6', 'confirmed'],
         ];

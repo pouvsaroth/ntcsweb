@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services\Academic;
 
-use App\Models\CoursePackage;
 use App\Models\ClassroomTable;
+use App\Models\CoursePackage;
 use App\Models\Enrollment;
 use App\Models\EnrollmentStatusHistory;
 use App\Models\EnrollmentTransferHistory;
@@ -133,9 +133,9 @@ final class EnrollmentService
             $discountReason = $data['discount_reason'] ?? null;
             $code = null;
             if (filled($data['discount_code'] ?? null)) {
-                // Locked so two enrollments can't both take a code's last use.
+                // Locked while the enrollment is saved.
                 ['code' => $code, 'amount' => $discount] = $this->discountCodes->quote(
-                    (string) $data['discount_code'], (int) $data['student_id'], (int) $package->getKey(), $fee, $invoiceCurrency, lock: true,
+                    (string) $data['discount_code'], (int) $data['student_id'], $fee, $invoiceCurrency, lock: true,
                 );
                 $discountReason = $this->discountCodes->reasonFor($code);
             }

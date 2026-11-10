@@ -11,17 +11,21 @@ use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Carbon;
 
 /**
+ * A main discount code: `uses_count` counts its own uses and its students'
+ * own codes; `students` = each student given it, with their own code.
+ *
  * @mixin DiscountCode
  */
 class DiscountCodeResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
-        $uses = (int) ($this->applied_redemptions_count ?? $this->appliedRedemptions()->count());
+        $uses = (int) ($this->applied_redemptions_count ?? $this->appliedRedemptions()->count()) + (int) ($this->child_uses_count ?? 0);
         $today = Carbon::now(app(TenantContext::class)->get()?->timezone ?: 'Asia/Phnom_Penh')->toDateString();
 
         return [
             'id' => $this->id,
+            'parent_id' => $this->parent_id,
             'code' => $this->code,
             'name' => $this->name,
             'audience' => $this->audience,
@@ -31,18 +35,21 @@ class DiscountCodeResource extends JsonResource
             'currency' => $this->currency,
             'starts_on' => $this->starts_on?->toDateString(),
             'expires_on' => $this->expires_on?->toDateString(),
-            'max_uses' => $this->max_uses,
             'uses_count' => $uses,
             'status' => $this->status,
-            'effective_status' => $this->effectiveStatus($uses, $today),
+            'effective_status' => $this->effectiveStatus($today),
             'notes' => $this->notes,
-            'course_packages' => $this->whenLoaded('coursePackages', fn () => $this->coursePackages->map(fn ($c) => ['id' => $c->id, 'name' => $c->name])->values()),
-            'students' => $this->whenLoaded('students', fn () => $this->students->map(fn ($s) => [
-                'id' => $s->id,
-                'student_code' => $s->student_code,
-                'name' => $s->fullName(),
-            ])->values()),
-            'students_count' => $this->whenCounted('students'),
+            'students' => $this->whenLoaded('children', fn () => $this->children
+                ->flatMap(fn (DiscountCode $own) => $own->students->map(fn ($s) => [
+                    'id' => $s->id,
+                    'student_code' => $s->student_code,
+                    'name' => $s->fullName(),
+                    'code' => $own->code,
+                    'uses_count' => (int) ($own->applied_redemptions_count ?? 0),
+                    'assigned_on' => $own->created_at?->toDateString(),
+                ]))
+                ->values()),
+            'students_count' => $this->assigned_count ?? null,
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }

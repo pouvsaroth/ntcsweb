@@ -19,8 +19,9 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Student portal > My discount codes: the codes a student can see (their
- * personal codes, public codes that work today, and any code they used),
+ * Student portal > My discount codes: the codes a student can see (their own
+ * codes; main codes that work today only when they have no own code that
+ * works; and any code they used),
  * plus their unpaid course invoices a code can still go on. Identity-gated
  * like MyInvoiceController — a student only ever reaches their own rows.
  */
@@ -40,25 +41,22 @@ final class MyDiscountCodeController extends Controller
             ->get()
             ->keyBy('discount_code_id'); // the last use of each code
 
+        $hasOwn = $this->discounts->ownCodes($student->id)->exists();
+        $mainIds = $hasOwn ? [] : $this->discounts->usable(DiscountCode::query()->where('audience', DiscountCode::AUDIENCE_PUBLIC))->pluck('id')->all();
+
         $codes = DiscountCode::query()
-            ->with('coursePackages')
-            ->withCount('appliedRedemptions')
             ->where(fn (Builder $q) => $q
                 // Given to this student (any state, so they see expired ones too).
                 ->whereHas('students', fn (Builder $s) => $s->where('students.id', $student->id))
-                // Public codes that work today.
-                ->orWhere(fn (Builder $p) => $p
-                    ->where('audience', DiscountCode::AUDIENCE_PUBLIC)
-                    ->where('status', DiscountCode::STATUS_ACTIVE)
-                    ->whereDate('starts_on', '<=', $today)
-                    ->whereDate('expires_on', '>=', $today))
+                // Main codes that work today, when they have no own code that works.
+                ->orWhereIn('id', $mainIds)
                 // Or one they already used.
                 ->orWhereIn('id', $used->keys()))
-            ->orderByDesc('expires_on')
+            ->orderBy('code')
             ->get()
             ->map(function (DiscountCode $code) use ($used, $today) {
                 $redemption = $used->get($code->id);
-                $status = $code->effectiveStatus((int) $code->applied_redemptions_count, $today);
+                $status = $code->effectiveStatus($today);
 
                 return [
                     'id' => $code->id,
@@ -70,8 +68,7 @@ final class MyDiscountCodeController extends Controller
                     'max_discount' => $code->max_discount !== null ? (float) $code->max_discount : null,
                     'currency' => $code->currency,
                     'starts_on' => $code->starts_on->toDateString(),
-                    'expires_on' => $code->expires_on->toDateString(),
-                    'course_packages' => $code->coursePackages->map(fn ($c) => ['id' => $c->id, 'name' => $c->name])->values(),
+                    'expires_on' => $code->expires_on?->toDateString(),
                     // A code can be used again, so its own state; used_* = this student's last use.
                     'state' => $status,
                     'used_at' => $redemption?->created_at?->toIso8601String(),
@@ -105,7 +102,7 @@ final class MyDiscountCodeController extends Controller
         $student = $this->studentOrFail($request);
         abort_unless($invoice->student_id === $student->id, 404);
 
-        $data = $request->validate(['discount_code' => ['required', 'string', 'max:40']]);
+        $data = $request->validate(['discount_code' => ['required', 'string', 'max:80']]);
 
         $invoice = $this->discounts->applyToInvoice($invoice, $data['discount_code'], $request->user());
 

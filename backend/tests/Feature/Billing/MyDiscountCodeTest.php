@@ -56,27 +56,30 @@ class MyDiscountCodeTest extends TestCase
         return Invoice::query()->where('student_id', $this->student->id)->sole();
     }
 
-    public function test_giving_a_personal_code_notifies_the_student_and_they_see_it(): void
+    public function test_assigning_a_code_notifies_the_student_and_they_see_only_their_own(): void
     {
-        $this->postJson('/api/v1/discount-codes', [
-            'code' => 'VIP20', 'name' => 'VIP', 'audience' => 'personal', 'discount_type' => 'percent', 'value' => 20,
-            'starts_on' => now()->toDateString(), 'expires_on' => now()->addMonth()->toDateString(),
-            'student_ids' => [$this->student->id],
-        ])->assertCreated();
-
-        $note = UserNotification::query()->where('recipient_id', $this->studentUser->id)->where('type', NotificationType::DISCOUNT_CODE_GIVEN)->sole();
-        $this->assertSame('VIP20', $note->data['code']);
-        $this->assertSame('20%', $note->data['discount']);
-
         DiscountCode::factory()->create(['code' => 'PUBLIC5', 'currency' => $this->currency()]);
         DiscountCode::factory()->create(['code' => 'EXPIRED', 'starts_on' => now()->subMonth(), 'expires_on' => now()->subDay(), 'currency' => $this->currency()]);
+
+        // No own code yet: every main code that works today.
+        $this->actingAsTenantUser($this->studentUser);
+        $this->assertSame(['PUBLIC5'], collect($this->getJson('/api/v1/my-discount-codes')->assertOk()->json('data.codes'))->pluck('code')->all());
+
+        $this->actingAsAdminWithPermissions([Permissions::DISCOUNT_CODES_VIEW, Permissions::DISCOUNT_CODES_CREATE, Permissions::DISCOUNT_CODES_UPDATE]);
+        $main = DiscountCode::factory()->create(['code' => 'VIP20', 'value' => 20, 'currency' => $this->currency()]);
+        $own = $this->postJson("/api/v1/discount-codes/{$main->id}/students", ['student_ids' => [$this->student->id]])->assertOk()->json('meta.codes.0');
+
+        $note = UserNotification::query()->where('recipient_id', $this->studentUser->id)->where('type', NotificationType::DISCOUNT_CODE_GIVEN)->sole();
+        $this->assertSame($own, $note->data['code']);
+        $this->assertSame('20%', $note->data['discount']);
+
         $someoneElse = DiscountCode::factory()->create(['code' => 'OTHERVIP', 'audience' => 'personal', 'currency' => $this->currency()]);
         $someoneElse->students()->attach(Student::factory()->create()->id);
 
+        // Now only their own code.
         $this->actingAsTenantUser($this->studentUser);
         $codes = collect($this->getJson('/api/v1/my-discount-codes')->assertOk()->json('data.codes'))->pluck('state', 'code');
-
-        $this->assertEqualsCanonicalizing(['VIP20' => 'active', 'PUBLIC5' => 'active'], $codes->all());
+        $this->assertSame([$own => 'active'], $codes->all());
     }
 
     public function test_a_student_puts_a_code_on_their_unpaid_invoice_once(): void

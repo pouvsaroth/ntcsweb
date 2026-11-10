@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Billing;
 
-use App\Models\CoursePackage;
 use App\Models\DiscountCode;
 use App\Models\DiscountCodeRedemption;
 use App\Models\Student;
@@ -13,7 +12,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\HasAcademicAdmin;
 use Tests\TestCase;
 
-/** Invoices > Discount codes: the list and form (step 1). */
+/** Invoices > Discount codes: the list, the form, and Assign discount to student. */
 class DiscountCodeTest extends TestCase
 {
     use HasAcademicAdmin, RefreshDatabase;
@@ -23,79 +22,122 @@ class DiscountCodeTest extends TestCase
         Permissions::DISCOUNT_CODES_UPDATE, Permissions::DISCOUNT_CODES_DELETE,
     ];
 
-    public function test_a_public_percent_code_for_chosen_courses_is_added_in_capitals(): void
+    public function test_a_code_is_added_in_capitals_and_may_have_no_end_date(): void
     {
         $this->actingAsAdminWithPermissions(self::ALL);
-        $course = CoursePackage::factory()->create();
 
-        $response = $this->postJson('/api/v1/discount-codes', [
+        $this->postJson('/api/v1/discount-codes', [
             'code' => ' newyear10 ',
             'name' => 'New Year',
-            'audience' => DiscountCode::AUDIENCE_PUBLIC,
             'discount_type' => DiscountCode::TYPE_PERCENT,
             'value' => 10,
             'max_discount' => 20,
             'starts_on' => now()->toDateString(),
-            'expires_on' => now()->addMonth()->toDateString(),
-            'max_uses' => 50,
-            'course_package_ids' => [$course->id],
-        ])->assertCreated();
-
-        $response->assertJsonPath('data.code', 'NEWYEAR10')
+        ])->assertCreated()
+            ->assertJsonPath('data.code', 'NEWYEAR10')
+            ->assertJsonPath('data.audience', DiscountCode::AUDIENCE_PUBLIC)
+            ->assertJsonPath('data.expires_on', null)
             ->assertJsonPath('data.effective_status', 'active')
-            ->assertJsonPath('data.uses_count', 0)
-            ->assertJsonPath('data.course_packages.0.id', $course->id);
+            ->assertJsonPath('data.uses_count', 0);
 
         // Codes are unique.
         $this->postJson('/api/v1/discount-codes', [
-            'code' => 'NEWYEAR10', 'name' => 'Again', 'audience' => 'public', 'discount_type' => 'amount', 'value' => 5,
-            'starts_on' => now()->toDateString(), 'expires_on' => now()->toDateString(),
+            'code' => 'NEWYEAR10', 'name' => 'Again', 'discount_type' => 'amount', 'value' => 5, 'starts_on' => now()->toDateString(),
         ])->assertUnprocessable()->assertJsonValidationErrors('code');
     }
 
-    public function test_rules_on_value_dates_spaces_and_personal_students(): void
+    public function test_rules_on_value_dates_and_spaces(): void
     {
         $this->actingAsAdminWithPermissions(self::ALL);
-        $base = ['name' => 'X', 'audience' => 'public', 'discount_type' => 'percent', 'starts_on' => '2026-11-10', 'expires_on' => '2026-11-30'];
+        $base = ['name' => 'X', 'discount_type' => 'percent', 'starts_on' => '2026-11-10'];
 
         $this->postJson('/api/v1/discount-codes', [...$base, 'code' => 'BAD CODE', 'value' => 101, 'expires_on' => '2026-11-01'])
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['code', 'value', 'expires_on']);
-
-        // A personal code may be saved with nobody yet, and assigned later.
-        $this->postJson('/api/v1/discount-codes', [...$base, 'code' => 'LATER', 'value' => 10, 'audience' => 'personal'])
-            ->assertCreated()
-            ->assertJsonPath('data.students_count', 0);
-
-        $student = Student::factory()->create();
-        $this->postJson('/api/v1/discount-codes', [...$base, 'code' => 'VIP', 'value' => 10, 'audience' => 'personal', 'student_ids' => [$student->id]])
-            ->assertCreated()
-            ->assertJsonPath('data.students.0.id', $student->id)
-            ->assertJsonPath('data.effective_status', fn ($s) => in_array($s, ['active', 'scheduled', 'expired'], true));
+        $this->postJson('/api/v1/discount-codes', [...$base, 'code' => str_repeat('A', 31), 'value' => 10])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('code');
     }
 
-    public function test_assign_gives_a_personal_code_to_more_students_any_time(): void
+    public function test_assign_makes_each_student_their_own_code(): void
     {
         $this->actingAsAdminWithPermissions(self::ALL);
-        [$a, $b, $c] = Student::factory()->count(3)->create();
-        $code = DiscountCode::factory()->create(['audience' => 'personal']);
-        $code->students()->attach($a->id);
+        $a = Student::factory()->create(['student_code' => 'NTS000543']);
+        $b = Student::factory()->create(['student_code' => 'NTS000544']);
+        $main = DiscountCode::factory()->create(['code' => 'D01', 'value' => 15, 'expires_on' => null]);
+        $day = now('Asia/Phnom_Penh')->format('dmy');
 
-        $this->postJson("/api/v1/discount-codes/{$code->id}/students", ['student_ids' => [$a->id, $b->id]])
+        $this->postJson("/api/v1/discount-codes/{$main->id}/students", ['student_ids' => [$a->id]])
             ->assertOk()
-            ->assertJsonPath('data.students_count', 2)
-            ->assertJsonPath('meta.assigned', 1);
-        $this->postJson("/api/v1/discount-codes/{$code->id}/students", ['student_ids' => [$c->id]])
-            ->assertOk()
-            ->assertJsonPath('data.students_count', 3);
+            ->assertJsonPath('meta.assigned', 1)
+            ->assertJsonPath('meta.codes.0', "NTS000543_D01_{$day}")
+            ->assertJsonPath('data.students_count', 1)
+            ->assertJsonPath('data.students.0.code', "NTS000543_D01_{$day}");
 
-        $public = DiscountCode::factory()->create(['audience' => 'public']);
-        $this->postJson("/api/v1/discount-codes/{$public->id}/students", ['student_ids' => [$a->id]])
-            ->assertUnprocessable()
-            ->assertJsonValidationErrors('discount_code_id');
+        $own = DiscountCode::query()->where('code', "NTS000543_D01_{$day}")->sole();
+        $this->assertSame($main->id, $own->parent_id);
+        $this->assertSame(DiscountCode::AUDIENCE_PERSONAL, $own->audience);
+        $this->assertEquals(15, $own->value);
+        $this->assertNull($own->expires_on);
+        $this->assertSame([$a->id], $own->students()->pluck('students.id')->all());
+
+        // Again: A keeps their code (nothing new), B gets one.
+        $this->postJson("/api/v1/discount-codes/{$main->id}/students", ['student_ids' => [$a->id, $b->id]])
+            ->assertOk()
+            ->assertJsonPath('meta.assigned', 1)
+            ->assertJsonPath('data.students_count', 2);
+
+        // The list shows only main codes.
+        $this->getJson('/api/v1/discount-codes')->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.code', 'D01');
+
+        // A student code cannot be assigned on.
+        $this->postJson("/api/v1/discount-codes/{$own->id}/students", ['student_ids' => [$b->id]])
+            ->assertUnprocessable()->assertJsonValidationErrors('discount_code_id');
 
         $this->actingAsAdminWithPermissions([Permissions::DISCOUNT_CODES_VIEW]);
-        $this->postJson("/api/v1/discount-codes/{$code->id}/students", ['student_ids' => [$a->id]])->assertForbidden();
+        $this->postJson("/api/v1/discount-codes/{$main->id}/students", ['student_ids' => [$a->id]])->assertForbidden();
+    }
+
+    public function test_editing_the_main_code_changes_the_students_codes_too(): void
+    {
+        $this->actingAsAdminWithPermissions(self::ALL);
+        $student = Student::factory()->create(['student_code' => 'NTS1']);
+        $main = DiscountCode::factory()->create(['code' => 'D02']);
+        $this->postJson("/api/v1/discount-codes/{$main->id}/students", ['student_ids' => [$student->id]])->assertOk();
+
+        $this->putJson("/api/v1/discount-codes/{$main->id}", [
+            'code' => 'D02', 'name' => 'Bigger', 'discount_type' => 'amount', 'value' => 7,
+            'starts_on' => now()->subDay()->toDateString(), 'expires_on' => null, 'status' => 'inactive',
+        ])->assertOk();
+
+        $own = $main->children()->sole();
+        $this->assertSame('Bigger', $own->name);
+        $this->assertSame('amount', $own->discount_type);
+        $this->assertEquals(7, $own->value);
+        $this->assertNull($own->expires_on);
+        $this->assertSame('inactive', $own->status);
+    }
+
+    public function test_taking_the_discount_back_from_a_student(): void
+    {
+        $this->actingAsAdminWithPermissions(self::ALL);
+        [$a, $b] = Student::factory()->count(2)->create();
+        $main = DiscountCode::factory()->create(['code' => 'D03']);
+        $this->postJson("/api/v1/discount-codes/{$main->id}/students", ['student_ids' => [$a->id, $b->id]])->assertOk();
+
+        // Not used: the code goes.
+        $this->deleteJson("/api/v1/discount-codes/{$main->id}/students/{$a->id}")->assertOk()->assertJsonPath('data.students_count', 1);
+        $this->assertSame(1, $main->children()->count());
+
+        // Used: kept for the history, but no longer theirs.
+        $usedCode = $main->children()->sole();
+        DiscountCodeRedemption::query()->create(['discount_code_id' => $usedCode->id, 'student_id' => $b->id, 'amount' => 5, 'currency' => 'USD']);
+        $this->deleteJson("/api/v1/discount-codes/{$main->id}/students/{$b->id}")->assertOk()->assertJsonPath('data.students_count', 0);
+        $this->assertSame('inactive', $usedCode->refresh()->status);
+        $this->assertSame(0, $usedCode->students()->count());
+
+        // A used student code also keeps the main code from being deleted.
+        $this->deleteJson("/api/v1/discount-codes/{$main->id}")->assertUnprocessable();
     }
 
     public function test_a_used_code_cannot_be_deleted_and_an_unused_one_can(): void
@@ -106,60 +148,29 @@ class DiscountCodeTest extends TestCase
             'discount_code_id' => $used->id, 'student_id' => Student::factory()->create()->id, 'amount' => 5, 'currency' => 'USD',
         ]);
         $unused = DiscountCode::factory()->create();
+        $this->postJson("/api/v1/discount-codes/{$unused->id}/students", ['student_ids' => [Student::factory()->create()->id]])->assertOk();
 
         $this->getJson('/api/v1/discount-codes')->assertOk()->assertJsonCount(2, 'data');
         $this->deleteJson("/api/v1/discount-codes/{$used->id}")->assertUnprocessable();
+        // Unused: goes with its students' codes.
         $this->deleteJson("/api/v1/discount-codes/{$unused->id}")->assertNoContent();
+        $this->assertSame(0, DiscountCode::query()->where('parent_id', $unused->id)->count());
     }
 
     public function test_each_action_needs_its_own_permission(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::DISCOUNT_CODES_VIEW]);
         $code = DiscountCode::factory()->create();
+        $student = Student::factory()->create();
 
         $this->getJson('/api/v1/discount-codes')->assertOk();
         $this->getJson('/api/v1/discount-codes/options?search=a')->assertOk();
         $this->postJson('/api/v1/discount-codes', [])->assertForbidden();
         $this->putJson("/api/v1/discount-codes/{$code->id}", [])->assertForbidden();
         $this->deleteJson("/api/v1/discount-codes/{$code->id}")->assertForbidden();
+        $this->deleteJson("/api/v1/discount-codes/{$code->id}/students/{$student->id}")->assertForbidden();
 
         $this->actingAsAdminWithPermissions([]);
         $this->getJson('/api/v1/discount-codes')->assertForbidden();
-    }
-
-    public function test_many_students_each_get_their_own_code_and_percent(): void
-    {
-        $this->actingAsAdminWithPermissions(self::ALL);
-        $a = Student::factory()->create(['student_code' => 'S-00001']);
-        $b = Student::factory()->create(['student_code' => 'S-00002']);
-        DiscountCode::factory()->create(['code' => 'VIP-S00002']); // taken: B gets -2
-
-        $base = ['code_prefix' => 'vip', 'name' => 'Scholarship', 'discount_type' => 'percent',
-            'starts_on' => now()->toDateString(), 'expires_on' => now()->addMonth()->toDateString()];
-
-        $this->postJson('/api/v1/discount-codes/bulk', [...$base, 'rows' => [
-            ['student_id' => $a->id, 'value' => 20],
-            ['student_id' => $b->id, 'value' => 10],
-        ]])->assertCreated()->assertJsonCount(2, 'data')
-            ->assertJsonPath('data.0.code', 'VIP-S00001')
-            ->assertJsonPath('data.1.code', 'VIP-S00002-2');
-
-        $forA = DiscountCode::query()->where('code', 'VIP-S00001')->sole();
-        $this->assertSame(DiscountCode::AUDIENCE_PERSONAL, $forA->audience);
-        $this->assertEquals(20, $forA->value);
-        $this->assertSame([$a->id], $forA->students()->pluck('students.id')->all());
-        $forB = DiscountCode::query()->where('code', 'VIP-S00002-2')->sole();
-        $this->assertEquals(10, $forB->value);
-        $this->assertSame([$b->id], $forB->students()->pluck('students.id')->all());
-
-        // Rules: a percent over 100, the same student twice, no students.
-        $this->postJson('/api/v1/discount-codes/bulk', [...$base, 'rows' => [['student_id' => $a->id, 'value' => 120]]])
-            ->assertUnprocessable()->assertJsonValidationErrors('rows.0.value');
-        $this->postJson('/api/v1/discount-codes/bulk', [...$base, 'rows' => [['student_id' => $a->id, 'value' => 5], ['student_id' => $a->id, 'value' => 5]]])
-            ->assertUnprocessable()->assertJsonValidationErrors('rows.0.student_id');
-        $this->postJson('/api/v1/discount-codes/bulk', [...$base, 'rows' => []])->assertUnprocessable()->assertJsonValidationErrors('rows');
-
-        $this->actingAsAdminWithPermissions([Permissions::DISCOUNT_CODES_VIEW]);
-        $this->postJson('/api/v1/discount-codes/bulk', [...$base, 'rows' => [['student_id' => $a->id, 'value' => 5]]])->assertForbidden();
     }
 }
