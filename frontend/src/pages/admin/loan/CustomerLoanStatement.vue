@@ -135,6 +135,13 @@ function failed(e: unknown, fallback: string) {
 }
 
 const payOpen = ref(false)
+// Opened from a row of the payment list: pays every unpaid month up to that one.
+const payUpTo = ref<number | null>(null)
+const canPayRows = computed(() => canCreate.value && isActive.value)
+function openPay(upTo: number | null = null) {
+  payUpTo.value = upTo
+  payOpen.value = true
+}
 const editOpen = ref(false)
 
 async function removePayment(payment: CustomerLoanPayment) {
@@ -176,7 +183,7 @@ onMounted(load)
     <div class="mb-4 flex flex-wrap items-center gap-2 print:hidden">
       <BaseButton variant="outline" @click="router.push('/admin/customer-loans')">{{ t('admin.customerLoans.backToList') }}</BaseButton>
       <template v-if="loan">
-        <BaseButton v-if="canCreate && isActive" @click="payOpen = true">{{ t('admin.customerLoans.recordPayment') }}</BaseButton>
+        <BaseButton v-if="canCreate && isActive" @click="openPay()">{{ t('admin.customerLoans.recordPayment') }}</BaseButton>
         <BaseButton variant="outline" @click="printPage">{{ t('admin.customerLoans.print') }}</BaseButton>
         <div class="ml-auto flex flex-wrap gap-2">
           <BaseButton v-if="canUpdate && isActive" variant="outline" @click="editOpen = true">{{ t('admin.borrowings.edit') }}</BaseButton>
@@ -244,6 +251,7 @@ onMounted(load)
               {{ t('admin.customerLoans.startAmount') }} {{ money(row.start ?? row.balance + row.principal) }} → {{ money(row.balance) }}
               · {{ t('admin.customerLoans.principalPayment') }} {{ money(row.principal) }} · {{ t('admin.borrowings.interest') }} {{ money(row.interest) }}
             </p>
+            <BaseButton v-if="canPayRows && !row.paid" size="sm" class="mt-2" @click="openPay(row.no)">{{ t('admin.customerLoans.pay') }}</BaseButton>
           </li>
         </ul>
         <div class="hidden overflow-x-auto rounded-lg border border-neutral-200 sm:block print:block">
@@ -257,6 +265,7 @@ onMounted(load)
                 <th class="px-3 py-2 text-right font-medium">{{ t('admin.customerLoans.principalPayment') }}</th>
                 <th class="px-3 py-2 text-right font-medium">{{ t('admin.borrowings.interest') }}</th>
                 <th class="px-3 py-2 text-right font-medium">{{ t('admin.borrowings.payment') }}</th>
+                <th v-if="canPayRows" class="px-3 py-2 print:hidden"></th>
               </tr>
             </thead>
             <tbody class="divide-y divide-neutral-100">
@@ -272,6 +281,9 @@ onMounted(load)
                 <td class="px-3 py-2 text-right tabular-nums">{{ money(row.principal) }}</td>
                 <td class="px-3 py-2 text-right tabular-nums">{{ money(row.interest) }}</td>
                 <td class="px-3 py-2 text-right font-semibold tabular-nums">{{ money(row.total) }}</td>
+                <td v-if="canPayRows" class="px-3 py-1.5 text-right print:hidden">
+                  <BaseButton v-if="!row.paid" size="sm" @click="openPay(row.no)">{{ t('admin.customerLoans.pay') }}</BaseButton>
+                </td>
               </tr>
             </tbody>
             <tfoot v-if="loan.totals" class="border-t border-neutral-200 bg-neutral-50 font-semibold">
@@ -280,6 +292,7 @@ onMounted(load)
                 <td class="px-3 py-2 text-right tabular-nums">{{ money(loan.totals.principal) }}</td>
                 <td class="px-3 py-2 text-right tabular-nums">{{ money(loan.totals.interest) }}</td>
                 <td class="px-3 py-2 text-right tabular-nums">{{ money(loan.totals.total) }}</td>
+                <td v-if="canPayRows" class="print:hidden"></td>
               </tr>
             </tfoot>
           </table>
@@ -308,7 +321,7 @@ onMounted(load)
       </ul>
     </div>
 
-    <CustomerLoanPaymentModal v-model="payOpen" :loan="loan" @saved="load" />
+    <CustomerLoanPaymentModal v-model="payOpen" :loan="loan" :up-to="payUpTo" @saved="load" />
     <CustomerLoanFormModal v-model="editOpen" :loan="loan" @saved="(saved) => (loan = saved)" />
   </div>
 </template>

@@ -6843,6 +6843,7 @@ const zh: MessageSchema = {
       termsLine: '{amount} 于 {date} 借出 · {interest} · {months} 个月，自 {first} 起',
       termsLineFlexible: '{amount} 于 {date} 借出 · {interest} · 灵活，无固定计划',
       notPostedHint: '未选择现金 / 银行账户，此借款未记入总账。',
+      pay: '付款', payingMonth: '支付第 {no} 期', payingMonths: '支付第 {from} 至 {to} 期',
       paymentList: '还款列表', image: '图片', exportFailed: '无法导出还款列表。',
       no: '序号', payDate: '还款日期', startAmount: '期初金额', endAmount: '期末金额', principalPayment: '本金还款', total: '合计',
       principalBack: '已还本金',

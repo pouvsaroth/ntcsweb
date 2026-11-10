@@ -14,9 +14,11 @@ import { formatMoney } from '@/utils/currency'
 
 /**
  * Loan > Owe: record a payment from a customer. Filled in from the loan's
- * next unpaid month; principal lowers what they owe, interest is income.
+ * next unpaid month — or, opened from a row of the payment list (`upTo`),
+ * every unpaid month up to that one. Principal lowers what they owe,
+ * interest is income.
  */
-const props = defineProps<{ modelValue: boolean; loan: CustomerLoan | null }>()
+const props = defineProps<{ modelValue: boolean; loan: CustomerLoan | null; upTo?: number | null }>()
 const emit = defineEmits<{ 'update:modelValue': [value: boolean]; saved: [payment: CustomerLoanPayment] }>()
 
 const { t } = useI18n()
@@ -37,17 +39,39 @@ const saving = ref(false)
 const money = (value: number) => formatMoney(value, props.loan?.currency ?? 'USD')
 const total = computed(() => Number(form.principal || 0) + Number(form.interest || 0))
 
+// The unpaid months being paid when opened from the payment list.
+const months = computed(() => {
+  const loan = props.loan
+  if (!loan || !props.upTo || !loan.schedule) return []
+  return loan.schedule.filter((row) => !row.paid && row.no <= props.upTo!)
+})
+const monthsLabel = computed(() => {
+  const list = months.value
+  if (list.length === 0) return ''
+  const first = list[0]!.no
+  const last = list[list.length - 1]!.no
+  return first === last ? t('admin.customerLoans.payingMonth', { no: first }) : t('admin.customerLoans.payingMonths', { from: first, to: last })
+})
+
 watch(
-  () => [props.modelValue, props.loan] as const,
+  () => [props.modelValue, props.loan, props.upTo] as const,
   async ([open, loan]) => {
     if (!open || !loan) return
     const next = loan.next_payment
     form.paid_on = today()
-    // A flexible loan has no plan: suggest one month of interest, no principal.
-    form.principal = next ? String(next.due_principal ?? next.principal) : ''
-    form.interest = next ? String(next.interest) : loan.month_interest > 0 ? String(loan.month_interest) : ''
+    const decimals = loan.currency === 'KHR' ? 0 : 2
+    const round = (value: number) => String(Number(value.toFixed(decimals)))
+    if (months.value.length > 0) {
+      // From the payment list: every unpaid month up to the one picked.
+      form.principal = round(months.value.reduce((sum, row) => sum + (row.due_principal ?? row.principal), 0))
+      form.interest = round(months.value.reduce((sum, row) => sum + row.interest, 0))
+    } else {
+      // A flexible loan has no plan: suggest one month of interest, no principal.
+      form.principal = next ? String(next.due_principal ?? next.principal) : ''
+      form.interest = next ? String(next.interest) : loan.month_interest > 0 ? String(loan.month_interest) : ''
+    }
     form.cash_account_id = loan.cash_account ? String(loan.cash_account.id) : form.cash_account_id
-    form.note = ''
+    form.note = monthsLabel.value
     errors.value = {}
     saveError.value = null
     if (accounts.value.length === 0) {
@@ -103,7 +127,8 @@ async function save() {
       <p class="text-sm text-neutral-600">
         {{ loan.loan_no }} · {{ t('admin.customerLoans.owed') }}: <span class="font-semibold text-neutral-900">{{ money(loan.outstanding) }}</span>
       </p>
-      <p v-if="loan.next_payment" class="text-xs text-neutral-500">{{ t('admin.borrowings.suggestedHint', { no: loan.next_payment.no }) }}</p>
+      <p v-if="monthsLabel" class="rounded-lg bg-primary-50 px-3 py-2 text-sm font-medium text-primary-900">{{ monthsLabel }}</p>
+      <p v-else-if="loan.next_payment" class="text-xs text-neutral-500">{{ t('admin.borrowings.suggestedHint', { no: loan.next_payment.no }) }}</p>
       <p class="text-xs text-neutral-500">{{ t('admin.borrowings.payAnyHint') }}</p>
       <div class="flex flex-wrap gap-2">
         <button type="button" class="rounded-lg bg-primary-50 px-2.5 py-1 text-xs font-medium text-primary-700 hover:bg-primary-100" @click="interestOnly">{{ t('admin.borrowings.interestOnly') }}</button>
