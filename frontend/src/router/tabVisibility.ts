@@ -51,7 +51,7 @@ export const TAB_BARS: string[][] = [
     ['/admin/academic-programs', '/admin/academic-years', '/admin/course-packages', '/admin/books', '/admin/book-categories'],
     ['/admin/buildings', '/admin/classrooms'],
     ['/admin/invoices', '/admin/invoices/monthly', '/admin/invoices/discount-codes'],
-    ['/admin/attendance', '/admin/attendance/summary'],
+    ['/admin/attendance', '/admin/attendance/summary', '/admin/attendance/sheet'],
     ['/admin/help/articles', '/admin/help/faq', '/admin/help/tickets', '/admin/help/contact'],
   ])
 

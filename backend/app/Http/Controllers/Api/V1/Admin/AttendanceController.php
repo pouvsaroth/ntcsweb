@@ -13,14 +13,20 @@ use App\Models\AttendanceRecord;
 use App\Models\Enrollment;
 use App\Models\SchoolClass;
 use App\Services\Academic\AttendanceService;
+use App\Services\Academic\AttendanceSheet;
 use App\Support\Query\ApiQuery;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\ValidationException;
 
 final class AttendanceController extends Controller
 {
-    public function __construct(private readonly AttendanceService $attendance) {}
+    public function __construct(
+        private readonly AttendanceService $attendance,
+        private readonly AttendanceSheet $sheets,
+    ) {}
 
     /** Full history/review list — filterable by class, student, status, and date range. */
     public function index(Request $request): JsonResponse
@@ -112,6 +118,78 @@ final class AttendanceController extends Controller
     }
 
     /**
+     * GET /classes/{class}/attendance-sheet?date_from&date_to[&status] — the
+     * Attendance Sheet tab: one row per student, one mark per class day.
+     * Read-only, so the same ability as the summary.
+     */
+    public function sheet(Request $request, SchoolClass $class): JsonResponse
+    {
+        return ApiResponse::success($this->buildSheet($request, $class));
+    }
+
+    public function sheetExcel(Request $request, SchoolClass $class): Response
+    {
+        $sheet = $this->buildSheet($request, $class);
+
+        return $this->download($this->sheets->excel($sheet), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', AttendanceSheet::fileName($sheet, 'xlsx'));
+    }
+
+    public function sheetPdf(Request $request, SchoolClass $class): Response
+    {
+        $sheet = $this->buildSheet($request, $class);
+
+        return $this->download($this->sheets->pdf($sheet), 'application/pdf', AttendanceSheet::fileName($sheet, 'pdf'));
+    }
+
+    /** @return array<string, mixed> */
+    private function buildSheet(Request $request, SchoolClass $class): array
+    {
+        $this->authorize('viewAny', AttendanceRecord::class);
+
+        $data = $request->validate([
+            'date_from' => ['required', 'date'],
+            'date_to' => ['required', 'date', 'after_or_equal:date_from'],
+            'status' => ['nullable', 'string', 'max:200'],
+        ]);
+
+        if (Carbon::parse($data['date_from'])->diffInDays(Carbon::parse($data['date_to'])) > 366) {
+            throw ValidationException::withMessages(['date_to' => 'Pick a range of one year or less.']);
+        }
+
+        return $this->sheets->build($class, $data['date_from'], $data['date_to'], $this->statusesFrom($data['status'] ?? null));
+    }
+
+    private function download(string $bytes, string $type, string $name): Response
+    {
+        return response($bytes, 200, [
+            'Content-Type' => $type,
+            'Content-Disposition' => 'attachment; filename="'.$name.'"',
+        ]);
+    }
+
+    /**
+     * `status`: omitted = Studying only, `all` = every status, or a
+     * comma-separated list of enrollment statuses.
+     *
+     * @return list<string>|null
+     */
+    private function statusesFrom(?string $status): ?array
+    {
+        if ($status === null || $status === '') {
+            return null;
+        }
+        if ($status === 'all') {
+            return [];
+        }
+        $statuses = array_values(array_filter(array_map('trim', explode(',', $status))));
+        if (array_diff($statuses, [...Enrollment::STATUSES_MANAGEABLE, Enrollment::STATUS_DROPPED]) !== []) {
+            throw ValidationException::withMessages(['status' => 'Unknown enrollment status.']);
+        }
+
+        return $statuses;
+    }
+
+    /**
      * `status`: omitted = Studying only (the long-standing default), `all` =
      * every status, or a comma-separated list of enrollment statuses.
      */
@@ -127,17 +205,7 @@ final class AttendanceController extends Controller
             'status' => ['nullable', 'string', 'max:200'],
         ]);
 
-        $statuses = null;
-        if (($data['status'] ?? '') === 'all') {
-            $statuses = [];
-        } elseif (! empty($data['status'])) {
-            $statuses = array_values(array_filter(array_map('trim', explode(',', $data['status']))));
-            $valid = [...Enrollment::STATUSES_MANAGEABLE, Enrollment::STATUS_DROPPED];
-
-            if (array_diff($statuses, $valid) !== []) {
-                throw ValidationException::withMessages(['status' => 'Unknown enrollment status.']);
-            }
-        }
+        $statuses = $this->statusesFrom($data['status'] ?? null);
 
         return ApiResponse::success($this->attendance->summarize(
             $classId,

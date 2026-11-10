@@ -49,6 +49,7 @@ final class TabVisibility
         'hide-tab.lessons.delays' => 'Lesson Plans > Delays',
         'hide-tab.attendance' => 'Attendance > Enrollments',
         'hide-tab.attendance.summary' => 'Attendance > Attendance Summary',
+        'hide-tab.attendance.sheet' => 'Attendance > Attendance Sheet',
         'hide-tab.examination.setup' => 'Examination > Assessment Setup',
         'hide-tab.examination.schedule' => 'Examination > Exam Schedule',
         'hide-tab.examination.entry' => 'Examination > Grade Entry',

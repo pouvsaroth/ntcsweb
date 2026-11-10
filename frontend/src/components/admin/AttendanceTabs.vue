@@ -5,8 +5,9 @@ import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
 /**
- * Shared tab bar between "Student Attendance" (take/review attendance) and
- * "Attendance Summary" (per-student totals) — mirrors InvoicesTabs.vue.
+ * Shared tab bar of "Student Attendance" (take/review attendance),
+ * "Attendance Summary" (per-student totals) and "Attendance Sheet" (day-by-day
+ * marks, exported) — mirrors InvoicesTabs.vue.
  */
 const { t } = useI18n()
 const route = useRoute()
@@ -15,6 +16,7 @@ const auth = useAuthStore()
 const tabs = [
   { to: '/admin/attendance', labelKey: 'admin.attendance.title' },
   { to: '/admin/attendance/summary', labelKey: 'admin.attendance.summaryTab' },
+  { to: '/admin/attendance/sheet', labelKey: 'admin.attendance.sheetTab', permission: 'attendance.view' },
 ]
 </script>
 
@@ -22,7 +24,7 @@ const tabs = [
   <div class="mb-6 border-b border-neutral-200">
     <nav class="-mb-px flex gap-x-6 overflow-x-auto [scrollbar-width:none] sm:flex-wrap sm:gap-y-1 sm:overflow-visible [&::-webkit-scrollbar]:hidden">
       <RouterLink
-        v-for="tab in tabs.filter((tab) => !auth.tabHidden(tab.to))"
+        v-for="tab in tabs.filter((tab) => !auth.tabHidden(tab.to) && (!tab.permission || auth.can(tab.permission)))"
         :key="tab.to"
         :to="tab.to"
         class="whitespace-nowrap border-b-2 px-1 py-3 text-sm font-medium"

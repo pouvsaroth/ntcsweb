@@ -28,13 +28,18 @@ final class BrowsershotRenderer
 {
     /**
      * @param  float|null  $marginMm  Same value on all four sides, in millimeters. Null leaves Chromium's own default margin untouched.
+     * @param  bool  $landscape  Turn the paper sideways (wide tables such as the attendance sheet).
      */
-    public function render(string $html, string $format = 'A4', ?float $marginMm = null): string
+    public function render(string $html, string $format = 'A4', ?float $marginMm = null, bool $landscape = false): string
     {
         $home = $this->freshChromiumHome();
 
         try {
             $browsershot = $this->browser($html, $format, $home);
+
+            if ($landscape) {
+                $browsershot->landscape();
+            }
 
             if ($marginMm !== null) {
                 $browsershot->margins($marginMm, $marginMm, $marginMm, $marginMm);

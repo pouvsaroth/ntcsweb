@@ -205,6 +205,7 @@ const MODULES: ModuleEntry[] = [
   { name: 'Attendance', group: 'Academic', parent: 'Attendance', menu: true, actions: { view: 'attendance.view', create: 'attendance.create', update: 'attendance.update' } },
   tab('Academic', 'Attendance', 'Enrollments', '/admin/attendance', ['attendance.view']),
   tab('Academic', 'Attendance', 'Attendance Summary', '/admin/attendance/summary', ['attendance.view']),
+  tab('Academic', 'Attendance', 'Attendance Sheet', '/admin/attendance/sheet', ['attendance.view']),
   { name: 'Examination', group: 'Academic', parent: 'Examination', menu: true, actions: { view: 'examination.view' } },
   tab('Academic', 'Examination', 'Assessment Setup', '/admin/examination/setup', ['assessment.view'], crud('assessment')),
   tab('Academic', 'Examination', 'Exam Schedule', '/admin/examination/schedule', ['exam-schedules.view'], crud('exam-schedules')),

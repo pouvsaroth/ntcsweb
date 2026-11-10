@@ -1,4 +1,4 @@
-import { apiGetWithMeta, apiPost } from '@/services/http'
+import { apiDownload, apiGetWithMeta, apiPost } from '@/services/http'
 import type { PaginatedQuery } from '@/composables/usePaginatedResource'
 import type { EnrollmentStatus } from '@/services/enrollments'
 import type { LengthAwarePaginationMeta, PaginatedResult } from '@/types/api'
@@ -65,6 +65,43 @@ export interface AttendanceSummaryRow {
   make_up_hours: number
 }
 
+/** Totals at the end of an Attendance Sheet row. */
+export interface AttendanceSheetTotals {
+  present: number
+  late: number
+  absent: number
+  permission: number
+  late_minutes: number
+}
+
+/**
+ * The Attendance Sheet tab — one class over a date range: `dates` are the
+ * days attendance was taken; each student's `marks` maps a date to
+ * '✓' present, 'A' absent, 'P' permission, or the late minutes ('L' if late
+ * with none entered). A date missing from `marks` = not taken.
+ */
+export interface AttendanceSheet {
+  class: { id: number; name: string }
+  date_from: string
+  date_to: string
+  dates: string[]
+  students: {
+    enrollment_id: number
+    status: EnrollmentStatus
+    student: AttendanceStudent
+    table: string | null
+    marks: Record<string, string>
+    totals: AttendanceSheetTotals
+  }[]
+}
+
+export interface AttendanceSheetQuery {
+  date_from: string
+  date_to: string
+  /** Omitted = Studying only; 'all' = every status; or one enrollment status. */
+  status?: string
+}
+
 /** One course the student is studying — see MyAttendanceController::hoursSummary(). */
 export interface MyAttendanceHoursRow {
   enrollment_id: number
@@ -123,6 +160,13 @@ export const attendanceService = {
    */
   summary: (params: { class_id?: number; date_from?: string; date_to?: string; student_id?: number | null; status?: string }) =>
     apiGetWithMeta<AttendanceSummaryRow[]>('/attendance-summary', { params }).then((r) => r.data),
+
+  sheet: (classId: number, params: AttendanceSheetQuery) =>
+    apiGetWithMeta<AttendanceSheet>(`/classes/${classId}/attendance-sheet`, { params }).then((r) => r.data),
+
+  /** The sheet as an .xlsx or PDF file, saved under `filename`. */
+  downloadSheet: (classId: number, format: 'excel' | 'pdf', params: AttendanceSheetQuery, filename: string) =>
+    apiDownload(`/classes/${classId}/attendance-sheet/${format}?${new URLSearchParams({ ...params }).toString()}`, filename),
 
   /** Student self-service — own records only, scoped server-side. */
   async myList(query: PaginatedQuery): Promise<PaginatedResult<AttendanceRecord>> {

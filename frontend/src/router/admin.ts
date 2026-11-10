@@ -265,6 +265,12 @@ const adminRoutes: RouteRecordRaw[] = [
     component: () => import('@/pages/admin/AttendanceSummary.vue'),
     meta: { titleKey: 'adminNav.items.attendance' },
   },
+  {
+    path: 'attendance/sheet',
+    name: 'admin.attendance.sheet',
+    component: () => import('@/pages/admin/AttendanceSheet.vue'),
+    meta: { permission: 'attendance.view', titleKey: 'adminNav.items.attendance' },
+  },
   // Academic > Examination (docs/academics/gradebook.md): one page of tabs in the
   // header (examinationTabs.ts) — the gradebook's, then the Computer School's.
   {

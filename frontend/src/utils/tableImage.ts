@@ -13,14 +13,14 @@ import { useImagePreviewStore } from '@/stores/imagePreview'
 
 export interface TableImageColumn {
   label: string
-  align?: 'left' | 'right'
+  align?: 'left' | 'right' | 'center'
   /** Minimum width — the column widens to fit its text. */
   width: number
   /** Beyond this, text wraps onto more lines rather than widening further. */
   maxWidth?: number
 }
 
-export type TableImageTone = 'success' | 'danger' | 'warning' | 'neutral'
+export type TableImageTone = 'success' | 'danger' | 'warning' | 'neutral' | 'info'
 
 export interface TableImageCell {
   text: string
@@ -60,6 +60,7 @@ const BADGE_COLORS: Record<TableImageTone, { bg: string; fg: string }> = {
   danger: { bg: '#fee2e2', fg: '#991b1b' },
   warning: { bg: '#fef3c7', fg: '#92400e' },
   neutral: { bg: '#f5f5f5', fg: '#404040' },
+  info: { bg: '#dbeafe', fg: '#1e40af' },
 }
 
 /** Word pieces (keeping their trailing spaces) — Intl.Segmenter also splits Khmer, which has no spaces. */
@@ -184,8 +185,8 @@ export async function exportTableAsImage(options: TableImageOptions): Promise<vo
   let x = PADDING
   options.columns.forEach((column, columnIndex) => {
     const w = widths[columnIndex] ?? 0
-    draw.textAlign = column.align === 'right' ? 'right' : 'left'
-    draw.fillText(column.label, column.align === 'right' ? x + w - CELL_X : x + CELL_X, y + HEADER_HEIGHT / 2)
+    draw.textAlign = column.align ?? 'left'
+    draw.fillText(column.label, column.align === 'right' ? x + w - CELL_X : column.align === 'center' ? x + w / 2 : x + CELL_X, y + HEADER_HEIGHT / 2)
     x += w
   })
   y += HEADER_HEIGHT
@@ -209,9 +210,14 @@ export async function exportTableAsImage(options: TableImageOptions): Promise<vo
       const w = widths[columnIndex] ?? 0
       if (!column) return
       const right = column.align === 'right'
-      draw.textAlign = right ? 'right' : 'left'
+      const center = column.align === 'center'
+      draw.textAlign = column.align ?? 'left'
       draw.font = cellFont(cell, font)
-      const textX = right ? cellX + w - CELL_X - (cell.badge ? BOX_X : 0) : cellX + CELL_X + (cell.badge ? BOX_X : 0)
+      const textX = center
+        ? cellX + w / 2
+        : right
+          ? cellX + w - CELL_X - (cell.badge ? BOX_X : 0)
+          : cellX + CELL_X + (cell.badge ? BOX_X : 0)
       // Vertically centre the cell's block of lines within the row.
       let lineY = y + (row.height - contentHeight) / 2 + LINE_HEIGHT / 2
 
@@ -219,7 +225,7 @@ export async function exportTableAsImage(options: TableImageOptions): Promise<vo
         const box = cell.alert ? { bg: '#dc2626', fg: '#ffffff' } : cell.badge ? BADGE_COLORS[cell.badge] : null
         if (box) {
           const boxWidth = draw.measureText(line).width + BOX_X * 2
-          const boxX = right ? textX - boxWidth + BOX_X : textX - BOX_X
+          const boxX = center ? textX - boxWidth / 2 : right ? textX - boxWidth + BOX_X : textX - BOX_X
           draw.fillStyle = box.bg
           draw.beginPath()
           draw.roundRect(boxX, lineY - 11, boxWidth, 22, cell.badge ? 11 : 4)
