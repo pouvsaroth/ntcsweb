@@ -3,6 +3,7 @@ import { useAuthStore } from '@/stores/auth'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import StudyingStudentsExportModal from '@/components/admin/StudyingStudentsExportModal.vue'
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
@@ -76,6 +77,9 @@ const statusBadgeVariant: Record<StudentStatus, 'success' | 'neutral' | 'danger'
 const years = ref<AcademicYear[]>([])
 const classes = ref<SchoolClass[]>([])
 const filters = ref({ status: '', academic_year_id: '', class_id: '' })
+/** The search box's text — kept so Export uses the same search. */
+const searchText = ref('')
+const exportOpen = ref(false)
 const statusOptions = computed(() => [
   { value: '', label: t('studentRecord.allStatuses') },
   ...(['active', 'transferred', 'withdrawn', 'graduated', 'inactive'] as StudentStatus[]).map((s) => ({ value: s, label: statusLabel(s) })),
@@ -115,12 +119,18 @@ onMounted(() => {
         type="search"
         :placeholder="t('common.searchPlaceholder')"
         class="block w-full max-w-sm rounded-lg border border-neutral-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
-        @input="setSearch(($event.target as HTMLInputElement).value)"
+        @input="
+          searchText = ($event.target as HTMLInputElement).value;
+          setSearch(searchText)
+        "
       />
       <BaseSelect class="w-40" :model-value="filters.status" :options="statusOptions" @update:model-value="onFilter('status', $event)" />
       <BaseSelect v-if="years.length" class="w-40" :model-value="filters.academic_year_id" :options="yearOptions" @update:model-value="onFilter('academic_year_id', $event)" />
       <BaseSelect v-if="classes.length" class="w-48" :model-value="filters.class_id" :options="classOptions" @update:model-value="onFilter('class_id', $event)" />
-      <BaseButton v-if="auth.can('students.create')" class="ml-auto" to="/admin/students/new">{{ t('admin.students.registerTitle') }}</BaseButton>
+      <BaseButton v-if="auth.can('students.view')" class="ml-auto" variant="outline" @click="exportOpen = true">
+        {{ t('admin.students.studyingExport.button') }}
+      </BaseButton>
+      <BaseButton v-if="auth.can('students.create')" :class="auth.can('students.view') ? '' : 'ml-auto'" to="/admin/students/new">{{ t('admin.students.registerTitle') }}</BaseButton>
     </div>
 
     <BaseAlert v-if="error" variant="danger" class="mb-4">{{ error }}</BaseAlert>
@@ -222,5 +232,11 @@ onMounted(() => {
     <BaseModal :model-value="previewStudent !== null" :title="previewStudent?.full_name" @update:model-value="previewStudent = null">
       <img v-if="previewStudent?.photo_url" :src="previewStudent.photo_url" alt="" class="mx-auto max-h-[70vh] w-auto rounded-lg object-contain" />
     </BaseModal>
+
+    <StudyingStudentsExportModal
+      v-if="auth.can('students.view')"
+      v-model="exportOpen"
+      :filters="{ search: searchText, class_id: filters.class_id, academic_year_id: filters.academic_year_id }"
+    />
   </div>
 </template>

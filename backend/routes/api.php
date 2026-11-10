@@ -142,6 +142,7 @@ use App\Http\Controllers\Api\V1\Admin\StaffPayComponentController;
 use App\Http\Controllers\Api\V1\Admin\StaffSalaryController;
 use App\Http\Controllers\Api\V1\Admin\StaffStatusHistoryController;
 use App\Http\Controllers\Api\V1\Admin\StudentController;
+use App\Http\Controllers\Api\V1\Admin\StudyingStudentsController;
 use App\Http\Controllers\Api\V1\Admin\StudentFeedbackController;
 use App\Http\Controllers\Api\V1\Admin\StudentImportController;
 use App\Http\Controllers\Api\V1\Admin\StudentPromotionController;
@@ -337,6 +338,10 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::post('students/{student}/status', [StudentRecordController::class, 'changeStatus'])->name('students.status');
         Route::post('classes/{class}/assign-students', [StudentRecordController::class, 'assignToClass'])->name('classes.assign-students');
         Route::apiResource('students', StudentController::class);
+        // Students > Export: students studying now, picked columns, total + female.
+        Route::get('studying-students', [StudyingStudentsController::class, 'index'])->name('studying-students.index');
+        Route::get('studying-students/excel', [StudyingStudentsController::class, 'excel'])->name('studying-students.excel');
+        Route::get('studying-students/pdf', [StudyingStudentsController::class, 'pdf'])->name('studying-students.pdf');
 
         // Bulk CSV import from the legacy `t_student` system — a separate
         // resource from `students` itself since an import is a background

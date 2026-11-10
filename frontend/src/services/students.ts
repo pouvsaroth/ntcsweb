@@ -1,4 +1,4 @@
-import { apiGet, apiGetWithMeta, apiPost } from '@/services/http'
+import { apiDownload, apiGet, apiGetWithMeta, apiPost } from '@/services/http'
 import type { PaginatedQuery } from '@/composables/usePaginatedResource'
 import type { LengthAwarePaginationMeta, PaginatedResult } from '@/types/api'
 
@@ -167,7 +167,37 @@ export const studentRecordService = {
   assignToClass: (classId: number, studentIds: number[]) => apiPost<{ added: number; skipped: number }>(`/classes/${classId}/assign-students`, { student_ids: studentIds }),
 }
 
+/** Columns the Students > Export can include, in display order (No. is always first). */
+export const studyingExportColumns = [
+  'code', 'name', 'english_name', 'gender', 'date_of_birth', 'phone', 'class', 'course', 'enrolled_at', 'address', 'guardian',
+] as const
+export type StudyingExportColumn = (typeof studyingExportColumns)[number]
+
+/** Students studying in a class now — see StudyingStudentsController. */
+export interface StudyingStudentsList {
+  columns: StudyingExportColumn[]
+  total: number
+  female: number
+  rows: Partial<Record<StudyingExportColumn, string>>[]
+}
+
+export interface StudyingStudentsQuery {
+  columns: string
+  search?: string
+  class_id?: string
+  academic_year_id?: string
+}
+
+/** Drops blank filters so they aren't sent as empty strings. */
+function studyingParams(query: StudyingStudentsQuery): Record<string, string> {
+  return Object.fromEntries(Object.entries(query).filter(([, v]) => v !== undefined && v !== '')) as Record<string, string>
+}
+
 export const studentsService = {
+  studying: (query: StudyingStudentsQuery) =>
+    apiGetWithMeta<StudyingStudentsList>('/studying-students', { params: studyingParams(query) }).then((r) => r.data),
+  downloadStudying: (format: 'excel' | 'pdf', query: StudyingStudentsQuery, filename: string) =>
+    apiDownload(`/studying-students/${format}?${new URLSearchParams(studyingParams(query)).toString()}`, filename),
   /**
    * `page`/`per_page` are optional here (unlike usePaginatedResource's own
    * PaginatedQuery) so a simple one-off search — e.g. EnrollmentPackageForm's
