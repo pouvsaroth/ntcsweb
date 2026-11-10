@@ -89,7 +89,9 @@ async function setStatus(status: 'open' | 'closed') {
 
 async function removeAccount() {
   if (!account.value) return
-  if (!(await confirmDialog.confirm({ message: t('admin.savings.deleteConfirm'), danger: true }))) return
+  // With entries, the deposits and withdrawals go too (their ledger entries are reversed).
+  const message = account.value.entries_count > 0 ? t('admin.savings.deleteWithEntriesConfirm', { count: account.value.entries_count }) : t('admin.savings.deleteConfirm')
+  if (!(await confirmDialog.confirm({ message, danger: true }))) return
   actionError.value = null
   try {
     await savingsService.remove(account.value.id)
@@ -115,7 +117,7 @@ onMounted(load)
         <div class="ml-auto flex flex-wrap gap-2">
           <BaseButton v-if="canUpdate && isOpen" variant="outline" @click="setStatus('closed')">{{ t('admin.savings.close') }}</BaseButton>
           <BaseButton v-if="canUpdate && !isOpen" variant="outline" @click="setStatus('open')">{{ t('admin.savings.reopen') }}</BaseButton>
-          <BaseButton v-if="canDelete && account.entries_count === 0" variant="danger" @click="removeAccount">{{ t('admin.savings.delete') }}</BaseButton>
+          <BaseButton v-if="canDelete" variant="danger" @click="removeAccount">{{ t('admin.savings.delete') }}</BaseButton>
         </div>
       </template>
     </div>

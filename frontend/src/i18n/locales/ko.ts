@@ -7003,6 +7003,7 @@ const ko: MessageSchema = {
       reopen: '계좌 다시 열기',
       closeConfirm: '이 계좌를 해지할까요? 나중에 다시 열 수 있습니다.',
       delete: '계좌 삭제',
+      deleteWithEntriesConfirm: '이 계좌와 입출금 {count}건을 삭제할까요? 장부에서 되돌려집니다. 이후 예전 날짜로 다시 개설할 수 있습니다.',
       deleteConfirm: '이 빈 계좌를 삭제할까요?',
       deleteFailed: '삭제할 수 없습니다.',
       searchPlaceholder: '고객, 전화, 계좌 번호 검색',

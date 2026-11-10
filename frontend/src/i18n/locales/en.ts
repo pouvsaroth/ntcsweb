@@ -7007,6 +7007,7 @@ const en = {
       reopen: 'Reopen account',
       closeConfirm: 'Close this account? It can be reopened later.',
       delete: 'Delete account',
+      deleteWithEntriesConfirm: 'Delete this account and its {count} deposits and withdrawals? The money entries are taken back out of the books. You can then open it again with its old date.',
       deleteConfirm: 'Delete this empty account?',
       deleteFailed: 'Could not delete.',
       searchPlaceholder: 'Search customer, phone, account no.',

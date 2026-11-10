@@ -7002,6 +7002,7 @@ const zh: MessageSchema = {
       reopen: '重新开启账户',
       closeConfirm: '关闭此账户？以后可以重新开启。',
       delete: '删除账户',
+      deleteWithEntriesConfirm: '删除此账户及其 {count} 笔存取款？这些款项将从账簿中冲回。之后可用原来的日期重新开户。',
       deleteConfirm: '删除此空账户？',
       deleteFailed: '无法删除。',
       searchPlaceholder: '搜索客户、电话、账号',

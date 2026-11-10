@@ -124,6 +124,28 @@ final class SavingsService
         });
     }
 
+    /**
+     * Delete an account with everything on it (to enter it again, e.g. with
+     * its old opening date): each deposit and withdrawal's ledger entry is
+     * reversed, then the entries and the account go.
+     */
+    public function deleteAccount(SavingsAccount $account, User $actor): void
+    {
+        DB::transaction(function () use ($account, $actor) {
+            $account = SavingsAccount::query()->whereKey($account->id)->lockForUpdate()->firstOrFail();
+            foreach ($account->entries()->orderByDesc('id')->get() as $entry) {
+                if ($entry->transaction_id) {
+                    $transaction = FinancialTransaction::query()->find($entry->transaction_id);
+                    if ($transaction && $transaction->status === TransactionStatus::POSTED) {
+                        $this->transactions->reverse($transaction, TransactionType::SAVINGS, $actor);
+                    }
+                }
+                $entry->delete();
+            }
+            $account->delete();
+        });
+    }
+
     public function balance(SavingsAccount $account): float
     {
         return round($account->entries()->get()->sum(fn (SavingsTransaction $e) => $e->signedAmount()), 2);

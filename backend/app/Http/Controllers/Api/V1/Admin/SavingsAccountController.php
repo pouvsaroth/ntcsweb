@@ -129,14 +129,12 @@ final class SavingsAccountController extends Controller
         return ApiResponse::success($this->full($savingsAccount));
     }
 
-    public function destroy(SavingsAccount $savingsAccount): JsonResponse
+    /** Deletes the account with its deposits and withdrawals; their ledger entries are reversed. */
+    public function destroy(Request $request, SavingsAccount $savingsAccount): JsonResponse
     {
         $this->authorize('delete', $savingsAccount);
 
-        if ($savingsAccount->entries()->exists()) {
-            throw ValidationException::withMessages(['status' => __('This account has deposits or withdrawals. Remove them first, or close the account.')]);
-        }
-        $savingsAccount->delete();
+        $this->savings->deleteAccount($savingsAccount, $request->user());
 
         return ApiResponse::noContent();
     }

@@ -7003,6 +7003,7 @@ const ja: MessageSchema = {
       reopen: '口座を再開',
       closeConfirm: 'この口座を解約しますか？後で再開できます。',
       delete: '口座を削除',
+      deleteWithEntriesConfirm: 'この口座と入出金 {count} 件を削除しますか？帳簿から取り消されます。その後、元の日付で再度開設できます。',
       deleteConfirm: 'この空の口座を削除しますか？',
       deleteFailed: '削除できませんでした。',
       searchPlaceholder: 'お客様、電話、口座番号で検索',

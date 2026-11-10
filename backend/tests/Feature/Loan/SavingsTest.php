@@ -7,6 +7,7 @@ namespace Tests\Feature\Loan;
 use App\Models\FinancialTransaction;
 use App\Models\LoanCustomer;
 use App\Models\SavingsAccount;
+use App\Models\SavingsTransaction;
 use App\Support\Accounting\TransactionType;
 use App\Support\Authorization\Permissions;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -133,15 +134,25 @@ class SavingsTest extends TestCase
             ->assertJsonPath('data.1.currency', 'KHR')->assertJsonPath('data.1.accounts', 1);
     }
 
-    public function test_an_account_with_entries_and_a_customer_with_savings_cannot_be_deleted(): void
+    public function test_deleting_an_account_removes_its_entries_reverses_the_ledger_and_it_can_be_opened_again_with_an_old_date(): void
     {
         $account = $this->open();
+        $this->entry($account['id'], 'deposit', 200)->assertCreated();
+        $this->entry($account['id'], 'withdrawal', 100)->assertCreated();
+        $this->assertEquals(600, $this->cash());
 
-        $this->deleteJson("/api/v1/savings-accounts/{$account['id']}")->assertJsonValidationErrors('status');
+        // A customer with savings cannot be deleted.
         $this->deleteJson("/api/v1/loan-customers/{$this->customer->id}")->assertJsonValidationErrors('name');
 
-        $empty = $this->open(['currency' => 'KHR', 'first_deposit' => null, 'cash_account_id' => null]);
-        $this->deleteJson("/api/v1/savings-accounts/{$empty['id']}")->assertNoContent();
+        $this->deleteJson("/api/v1/savings-accounts/{$account['id']}")->assertNoContent();
+        $this->assertSame(0, SavingsAccount::query()->count());
+        $this->assertSame(0, SavingsTransaction::query()->count());
+        $this->assertEquals(0, $this->cash());
+
+        // Opened again with its old date.
+        $again = $this->open(['opened_on' => '2025-01-15', 'first_deposit' => 300]);
+        $this->assertSame('2025-01-15', $again['opened_on']);
+        $this->assertEquals(300, $this->getJson("/api/v1/savings-accounts/{$again['id']}")->assertOk()->json('data.balance'));
     }
 
     public function test_cash_flow_shows_savings_in_and_out_and_still_adds_up(): void
