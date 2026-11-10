@@ -6844,6 +6844,7 @@ const ja: MessageSchema = {
       termsLine: '{amount} を {date} に貸付 · {interest} · {first} から {months}か月',
       termsLineFlexible: '{amount} を {date} に貸付 · {interest} · 自由返済、固定計画なし',
       notPostedHint: '現金 / 銀行口座が選ばれていないため、この貸付は元帳にありません。',
+      paymentList: '支払一覧', image: '画像', exportFailed: '支払一覧を書き出せませんでした。',
       no: '番号', payDate: '支払日', startAmount: '期首金額', endAmount: '期末金額', principalPayment: '元金返済', total: '合計',
       principalBack: '返済済み元金',
       interestReceived: '受取利息',

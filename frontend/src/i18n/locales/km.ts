@@ -6844,6 +6844,7 @@ const km: MessageSchema = {
       termsLine: '{amount} ឱ្យខ្ចី {date} · {interest} · {months} ខែ ចាប់ពី {first}',
       termsLineFlexible: '{amount} ឱ្យខ្ចី {date} · {interest} · បត់បែន គ្មានផែនការថេរ',
       notPostedHint: 'មិនបានជ្រើសគណនីសាច់ប្រាក់ / ធនាគារ ដូច្នេះកម្ចីនេះមិនមានក្នុងបញ្ជីគណនេយ្យទេ។',
+      paymentList: 'តារាងបង់ប្រាក់', image: 'រូបភាព', exportFailed: 'មិនអាចនាំចេញតារាងបង់ប្រាក់បានទេ។',
       no: 'ល.រ', payDate: 'ថ្ងៃបង់', startAmount: 'ប្រាក់ដើមគ្រា', endAmount: 'ប្រាក់ចុងគ្រា', principalPayment: 'ប្រាក់ដើមត្រូវបង់', total: 'សរុប',
       principalBack: 'ប្រាក់ដើមបានសង',
       interestReceived: 'ការប្រាក់បានទទួល',

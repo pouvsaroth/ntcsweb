@@ -15,6 +15,7 @@ import { useConfirmDialogStore } from '@/stores/confirmDialog'
 import { ApiRequestError } from '@/types/api'
 import { formatMoney } from '@/utils/currency'
 import { formatDate } from '@/utils/date'
+import { exportTableAsImage } from '@/utils/tableImage'
 
 /**
  * Loan > Owe: one loan to a customer — terms, the monthly plan (paid /
@@ -39,6 +40,72 @@ const money = (value: number | string) => formatMoney(Number(value), loan.value?
 const todayText = formatDate(new Date())
 const printPage = () => window.print()
 const isActive = computed(() => loan.value?.status === 'active')
+
+// The payment list: Excel and PDF from the server, the image drawn here.
+const exporting = ref<'excel' | 'pdf' | 'image' | null>(null)
+const exportError = ref<string | null>(null)
+const planFile = (extension: string) => `payment-list-${loan.value?.loan_no ?? 'loan'}.${extension}`
+
+async function downloadPlan(format: 'excel' | 'pdf') {
+  if (!loan.value) return
+  exporting.value = format
+  exportError.value = null
+  try {
+    await customerLoansService.downloadPlan(loan.value.id, format, planFile(format === 'excel' ? 'xlsx' : 'pdf'))
+  } catch (error) {
+    exportError.value = error instanceof ApiRequestError ? error.message : t('admin.customerLoans.exportFailed')
+  } finally {
+    exporting.value = null
+  }
+}
+
+async function exportPlanImage() {
+  const l = loan.value
+  if (!l?.schedule?.length) return
+  exporting.value = 'image'
+  exportError.value = null
+  try {
+    await exportTableAsImage({
+      title: `${t('admin.customerLoans.paymentList')} — ${l.customer?.name ?? ''} · ${l.loan_no}`,
+      subtitle: [`${money(l.amount)} · ${interestText.value}`, `${t('admin.attendance.exportedOn')} ${formatDate(new Date())}`].join('  ·  '),
+      columns: [
+        { label: t('admin.customerLoans.no'), width: 40, align: 'center' },
+        { label: t('admin.customerLoans.payDate'), width: 100, align: 'center' },
+        { label: t('admin.customerLoans.startAmount'), width: 110, align: 'right' },
+        { label: t('admin.customerLoans.endAmount'), width: 110, align: 'right' },
+        { label: t('admin.customerLoans.principalPayment'), width: 110, align: 'right' },
+        { label: t('admin.borrowings.interest'), width: 90, align: 'right' },
+        { label: t('admin.borrowings.payment'), width: 100, align: 'right' },
+      ],
+      rows: [
+        ...l.schedule.map((row) => [
+          { text: String(row.no) },
+          { text: formatDate(row.due_on) },
+          { text: money(row.start ?? row.balance + row.principal) },
+          { text: money(row.balance) },
+          { text: money(row.principal) },
+          { text: money(row.interest) },
+          { text: money(row.total), bold: true },
+        ]),
+        [
+          { text: '' },
+          { text: t('admin.customerLoans.total'), bold: true },
+          { text: '' },
+          { text: '' },
+          { text: money(l.totals.principal), bold: true },
+          { text: money(l.totals.interest), bold: true },
+          { text: money(l.totals.total), bold: true },
+        ],
+      ],
+      emptyText: '',
+      fileName: planFile('png'),
+    })
+  } catch {
+    exportError.value = t('admin.customerLoans.exportFailed')
+  } finally {
+    exporting.value = null
+  }
+}
 const hasPayments = computed(() => (loan.value?.payments?.length ?? 0) > 0)
 const statusVariant = { active: 'primary', paid_off: 'success', cancelled: 'neutral' } as const
 
@@ -153,7 +220,15 @@ onMounted(load)
       </dl>
 
       <template v-if="!loan.flexible && loan.schedule?.length">
-        <h2 class="mb-2 mt-5 text-sm font-semibold text-neutral-800">{{ t('admin.borrowings.schedule') }}</h2>
+        <div class="mb-2 mt-5 flex flex-wrap items-center justify-between gap-2">
+          <h2 class="text-sm font-semibold text-neutral-800">{{ t('admin.customerLoans.paymentList') }}</h2>
+          <div class="flex flex-wrap gap-2 print:hidden">
+            <BaseButton size="sm" variant="outline" :loading="exporting === 'excel'" :disabled="exporting !== null" @click="downloadPlan('excel')">Excel</BaseButton>
+            <BaseButton size="sm" variant="outline" :loading="exporting === 'pdf'" :disabled="exporting !== null" @click="downloadPlan('pdf')">PDF</BaseButton>
+            <BaseButton size="sm" variant="outline" :loading="exporting === 'image'" :disabled="exporting !== null" @click="exportPlanImage">{{ t('admin.customerLoans.image') }}</BaseButton>
+          </div>
+        </div>
+        <BaseAlert v-if="exportError" variant="danger" class="mb-2 print:hidden">{{ exportError }}</BaseAlert>
         <!-- Phone: one card per month -->
         <ul class="divide-y divide-neutral-100 rounded-lg border border-neutral-200 sm:hidden print:hidden">
           <li v-for="row in loan.schedule" :key="row.no" class="px-3 py-2 text-sm" :class="row.paid ? 'text-neutral-400' : ''">

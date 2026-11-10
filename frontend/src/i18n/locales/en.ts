@@ -6848,6 +6848,7 @@ const en = {
       termsLine: '{amount} lent {date} · {interest} · {months} months from {first}',
       termsLineFlexible: '{amount} lent {date} · {interest} · flexible, no fixed plan',
       notPostedHint: 'No Cash / Bank account was chosen, so this loan is not in the ledger.',
+      paymentList: 'Payment list', image: 'Image', exportFailed: 'Could not export the payment list.',
       no: 'No', payDate: 'Pay date', startAmount: 'Start amount', endAmount: 'End amount', principalPayment: 'Principal payment', total: 'Total',
       principalBack: 'Principal paid back',
       interestReceived: 'Interest received',

@@ -105,6 +105,35 @@ class CustomerLoanTest extends TestCase
         $this->assertEquals(3000, $loan['outstanding']);
     }
 
+    public function test_the_payment_list_downloads_as_excel_and_the_pdf_page_has_its_rows(): void
+    {
+        $loan = $this->lend(['amount' => 3000, 'interest_type' => 'interest_only', 'interest_rate' => 2, 'first_payment_on' => '2026-11-29']);
+
+        $excel = $this->get("/api/v1/customer-loans/{$loan['id']}/plan/excel")->assertOk();
+        $this->assertStringContainsString('spreadsheetml', (string) $excel->headers->get('Content-Type'));
+        $this->assertStringContainsString('payment-list-'.$loan['loan_no'].'.xlsx', (string) $excel->headers->get('Content-Disposition'));
+        $this->assertStringStartsWith('PK', $excel->getContent());
+
+        // The PDF page itself (rendering to PDF needs Chrome, so only the HTML is checked).
+        $html = view('pdf.customer-loan-plan', [
+            'tenant' => $this->tenant, 'logoDataUri' => null, 'khmerFontRegular' => '', 'khmerFontBold' => '', 'generatedAt' => '10-11-2026 09:00',
+            'plan' => app(\App\Services\Borrowings\CustomerLoanPlanExport::class)->build(\App\Models\CustomerLoan::query()->findOrFail($loan['id'])),
+            'headers' => ['No.', 'Pay date', 'Start amount', 'End amount', 'Principal payment', 'Interest', 'Payment'],
+            'money' => fn (float $v) => '$'.number_format($v, 2),
+        ])->render();
+        $this->assertStringContainsString('29-11-2026', $html);
+        $this->assertStringContainsString('29-10-2027', $html);
+        $this->assertStringContainsString('$3,060.00', $html);
+        $this->assertStringContainsString('$3,720.00', $html);
+        $this->assertStringContainsString('Sok Dara', $html);
+
+        // A flexible loan has no list to download; viewing needs the permission.
+        $flexible = $this->lend(['term_months' => null]);
+        $this->get("/api/v1/customer-loans/{$flexible['id']}/plan/excel")->assertStatus(422);
+        $this->actingAsAdminWithPermissions([Permissions::LOAN_CUSTOMERS_VIEW]);
+        $this->get("/api/v1/customer-loans/{$loan['id']}/plan/excel")->assertForbidden();
+    }
+
     public function test_a_payment_splits_principal_and_interest_income(): void
     {
         $loan = $this->lend();

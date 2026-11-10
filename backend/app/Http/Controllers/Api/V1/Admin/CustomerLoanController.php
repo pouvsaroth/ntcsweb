@@ -11,10 +11,12 @@ use App\Http\Responses\ApiResponse;
 use App\Models\CustomerLoan;
 use App\Models\CustomerLoanPayment;
 use App\Services\Borrowings\BorrowingSchedule;
+use App\Services\Borrowings\CustomerLoanPlanExport;
 use App\Services\Loan\CustomerLoanService;
 use App\Support\Query\ApiQuery;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Exists;
@@ -156,6 +158,37 @@ final class CustomerLoanController extends Controller
         $this->authorize('view', $customerLoan);
 
         return ApiResponse::success($this->full($customerLoan));
+    }
+
+    /** GET /customer-loans/{id}/plan/excel — the payment list as Excel. */
+    public function planExcel(CustomerLoan $customerLoan, CustomerLoanPlanExport $export): Response
+    {
+        $this->authorize('view', $customerLoan);
+        $this->assertHasPlan($customerLoan);
+
+        return $this->download($export->excel($customerLoan), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', CustomerLoanPlanExport::fileName($customerLoan, 'xlsx'));
+    }
+
+    /** GET /customer-loans/{id}/plan/pdf — the payment list as PDF. */
+    public function planPdf(CustomerLoan $customerLoan, CustomerLoanPlanExport $export): Response
+    {
+        $this->authorize('view', $customerLoan);
+        $this->assertHasPlan($customerLoan);
+
+        return $this->download($export->pdf($customerLoan), 'application/pdf', CustomerLoanPlanExport::fileName($customerLoan, 'pdf'));
+    }
+
+    private function assertHasPlan(CustomerLoan $loan): void
+    {
+        abort_if(! $loan->term_months, 422, 'This loan has no payment plan (no months to pay).');
+    }
+
+    private function download(string $bytes, string $type, string $name): Response
+    {
+        return response($bytes, 200, [
+            'Content-Type' => $type,
+            'Content-Disposition' => 'attachment; filename="'.$name.'"',
+        ]);
     }
 
     public function update(Request $request, CustomerLoan $customerLoan): JsonResponse

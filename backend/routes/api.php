@@ -1017,6 +1017,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('customer-loans/summary', [CustomerLoanController::class, 'summary'])->name('customer-loans.summary');
         Route::apiResource('customer-loans', CustomerLoanController::class);
         Route::post('customer-loans/{customer_loan}/cancel', [CustomerLoanController::class, 'cancel'])->name('customer-loans.cancel');
+        Route::get('customer-loans/{customer_loan}/plan/excel', [CustomerLoanController::class, 'planExcel'])->name('customer-loans.plan.excel');
+        Route::get('customer-loans/{customer_loan}/plan/pdf', [CustomerLoanController::class, 'planPdf'])->name('customer-loans.plan.pdf');
         Route::post('customer-loans/{customer_loan}/payments', [CustomerLoanController::class, 'collect'])->name('customer-loans.payments.store');
         Route::delete('customer-loan-payments/{payment}', [CustomerLoanController::class, 'removePayment'])->name('customer-loan-payments.destroy');
         // Loan > Reports: Savings and Owe for a period (each part needs its own view permission).

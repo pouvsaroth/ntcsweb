@@ -1,4 +1,4 @@
-import { apiDelete, apiGet, apiGetWithMeta, apiPost, apiPut } from '@/services/http'
+import { apiDelete, apiDownload, apiGet, apiGetWithMeta, apiPost, apiPut } from '@/services/http'
 import type { PaginatedQuery } from '@/composables/usePaginatedResource'
 import type { InterestPeriod, InterestType, ScheduleRow, ScheduleTotals, SchedulePreviewInput } from '@/services/borrowings'
 import type { LengthAwarePaginationMeta, PaginatedResult } from '@/types/api'
@@ -93,6 +93,8 @@ export const customerLoansService = {
   summary: () => apiGet<CustomerLoanSummary>('/customer-loans/summary'),
   preview: (input: SchedulePreviewInput) => apiGet<{ schedule: ScheduleRow[]; totals: ScheduleTotals }>('/customer-loans/schedule-preview', { params: input }),
   get: (id: number) => apiGet<CustomerLoan>(`/customer-loans/${id}`),
+  /** The payment list as Excel or PDF. */
+  downloadPlan: (id: number, format: 'excel' | 'pdf', filename: string) => apiDownload(`/customer-loans/${id}/plan/${format}`, filename),
   create: (input: CustomerLoanInput) => apiPost<CustomerLoan>('/customer-loans', input),
   update: (id: number, input: Partial<CustomerLoanInput>) => apiPut<CustomerLoan>(`/customer-loans/${id}`, input),
   cancel: (id: number) => apiPost<CustomerLoan>(`/customer-loans/${id}/cancel`),

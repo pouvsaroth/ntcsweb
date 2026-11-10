@@ -6844,6 +6844,7 @@ const ko: MessageSchema = {
       termsLine: '{amount} {date} 대출 · {interest} · {first}부터 {months}개월',
       termsLineFlexible: '{amount} {date} 대출 · {interest} · 자유 상환, 고정 계획 없음',
       notPostedHint: '현금 / 은행 계좌를 선택하지 않아 이 대출은 원장에 없습니다.',
+      paymentList: '납부 목록', image: '이미지', exportFailed: '납부 목록을 내보낼 수 없습니다.',
       no: '번호', payDate: '납부일', startAmount: '기초 금액', endAmount: '기말 금액', principalPayment: '원금 상환', total: '합계',
       principalBack: '상환된 원금',
       interestReceived: '받은 이자',
