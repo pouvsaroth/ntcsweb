@@ -233,7 +233,7 @@ final class EnrollmentController extends Controller
     }
 
     /**
-     * Class > Students > Export Excel: No., Table, Full name, Gender, Book,
+     * Class > Students > Export Excel: No., Table, Payment type, Full name, Gender, Book,
      * Responsible staff, Note for the checked students, in the order the roster shows them.
      * Headers and gender words come from the screen (`labels`), so the file
      * is in the language the user is reading.
@@ -251,7 +251,9 @@ final class EnrollmentController extends Controller
         $ids = array_values(array_unique(array_map('intval', explode(',', $data['ids']))));
         $label = fn (string $key, string $default): string => (string) ($data['labels'][$key] ?? $default);
 
-        $enrollments = Enrollment::query()->whereKey($ids)->with(['student', 'table', 'coursePackage', 'schoolClass', 'currentResponsibleStaff.staff'])->get()->keyBy('id');
+        $enrollments = Enrollment::query()->whereKey($ids)->with(['student', 'table', 'coursePackage', 'schoolClass', 'currentResponsibleStaff.staff', 'invoiceItems.invoice'])->get()->keyBy('id');
+        // Payment type words come from the screen too (labels[pt_monthly] ...).
+        $paymentType = fn (?string $type): string => $type ? $label('pt_'.$type, ucfirst(str_replace('_', ' ', $type))) : '';
         $gender = function (?string $value) use ($label): string {
             $code = strtolower(trim((string) $value));
 
@@ -266,11 +268,12 @@ final class EnrollmentController extends Controller
         $options = new Options;
         $options->setColumnWidth(6, 1);
         $options->setColumnWidth(10, 2);
-        $options->setColumnWidth(30, 3);
-        $options->setColumnWidth(10, 4);
-        $options->setColumnWidth(30, 5);
-        $options->setColumnWidth(25, 6);
-        $options->setColumnWidth(60, 7);
+        $options->setColumnWidth(16, 3);
+        $options->setColumnWidth(30, 4);
+        $options->setColumnWidth(10, 5);
+        $options->setColumnWidth(30, 6);
+        $options->setColumnWidth(25, 7);
+        $options->setColumnWidth(60, 8);
         $path = tempnam(sys_get_temp_dir(), 'class');
         $writer = new Writer($options);
         $writer->openToFile($path);
@@ -279,7 +282,7 @@ final class EnrollmentController extends Controller
         $writer->addRow(Row::fromValues([$data['title'] ?? $classes], (new Style)->setFontBold()->setFontSize(14)));
         $writer->addRow(Row::fromValues([]));
         $writer->addRow(Row::fromValues(
-            [$label('no', 'No.'), $label('table', 'Table'), $label('name', 'Full name'), $label('gender', 'Gender'), $label('book', 'Book'), $label('responsible_staff', 'Responsible staff'), $label('note', 'Note')],
+            [$label('no', 'No.'), $label('table', 'Table'), $label('payment_type', 'Payment type'), $label('name', 'Full name'), $label('gender', 'Gender'), $label('book', 'Book'), $label('responsible_staff', 'Responsible staff'), $label('note', 'Note')],
             (new Style)->setFontBold()->setBackgroundColor('F3F4F6'),
         ));
         $wrap = (new Style)->setShouldWrapText();
@@ -292,6 +295,7 @@ final class EnrollmentController extends Controller
             $writer->addRow(Row::fromValues([
                 ++$n,
                 $e->table?->name ?? '',
+                $paymentType($e->paymentType()),
                 $e->student?->fullName() ?? '',
                 $gender($e->student?->gender),
                 $e->coursePackage?->name ?? '',

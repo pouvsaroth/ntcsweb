@@ -339,6 +339,12 @@ async function exportExcel() {
       {
         no: t('admin.classStudents.columnNo'),
         table: t('admin.classStudents.columnTable'),
+        payment_type: t('admin.invoices.paymentType'),
+        pt_monthly: paymentTypeLabel('monthly'),
+        pt_term: paymentTypeLabel('term'),
+        pt_video: paymentTypeLabel('video'),
+        pt_monthly_online: paymentTypeLabel('monthly_online'),
+        pt_term_online: paymentTypeLabel('term_online'),
         name: t('admin.classStudents.columnFullName'),
         gender: t('admin.classStudents.columnGender'),
         book: t('admin.classStudents.columnBook'),

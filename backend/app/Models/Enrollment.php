@@ -7,6 +7,7 @@ namespace App\Models;
 use App\Models\Concerns\Auditable;
 use App\Services\Academic\StudentAccessService;
 use App\Support\Audit\AuditAction;
+use App\Support\Billing\InvoiceStatus;
 use Database\Factories\EnrollmentFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -244,6 +245,22 @@ class Enrollment extends Model
     public function invoiceItems(): MorphMany
     {
         return $this->morphMany(InvoiceItem::class, 'reference');
+    }
+
+    /**
+     * Monthly / term / ... from the newest invoice of this enrollment that is
+     * not cancelled or void; null when never invoiced. Uses the loaded
+     * `invoiceItems.invoice` when there (the lists eager load it).
+     */
+    public function paymentType(): ?string
+    {
+        $items = $this->relationLoaded('invoiceItems') ? $this->invoiceItems : $this->invoiceItems()->with('invoice')->get();
+
+        return $items
+            ->map(fn (InvoiceItem $item) => $item->invoice)
+            ->filter(fn ($invoice) => $invoice !== null && ! in_array($invoice->status, [InvoiceStatus::CANCELLED, InvoiceStatus::VOID], true) && $invoice->payment_type)
+            ->sortByDesc('id')
+            ->first()?->payment_type;
     }
 
     /**

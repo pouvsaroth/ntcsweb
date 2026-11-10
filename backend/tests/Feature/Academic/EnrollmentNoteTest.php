@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Tests\Feature\Academic;
 
 use App\Models\Enrollment;
+use App\Models\Invoice;
+use App\Models\InvoiceItem;
 use App\Models\Student;
 use App\Support\Authorization\Permissions;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -56,11 +58,15 @@ class EnrollmentNoteTest extends TestCase
         ]);
         Enrollment::query()->whereKey($a)->update(['note' => 'Needs help']);
         Student::query()->whereKey(Enrollment::query()->find($b)->student_id)->update(['gender' => 'female']);
+        // $b was invoiced by term; a cancelled monthly invoice after it does not count.
+        $enrollmentB = Enrollment::query()->find($b);
+        InvoiceItem::factory()->create(['invoice_id' => Invoice::factory()->create(['payment_type' => 'term'])->id, 'reference_type' => $enrollmentB->getMorphClass(), 'reference_id' => $b]);
+        InvoiceItem::factory()->create(['invoice_id' => Invoice::factory()->create(['payment_type' => 'monthly', 'status' => 'CANCELLED'])->id, 'reference_type' => $enrollmentB->getMorphClass(), 'reference_id' => $b]);
         $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_VIEW]);
 
         $response = $this->get('/api/v1/enrollment-export?'.http_build_query([
             'ids' => "{$b},{$a}",
-            'labels' => ['name' => 'ឈ្មោះ', 'female' => 'ស្រី'],
+            'labels' => ['name' => 'ឈ្មោះ', 'female' => 'ស្រី', 'payment_type' => 'ការបង់', 'pt_term' => 'ឆមាស'],
         ]))->assertOk();
         $this->assertStringContainsString('spreadsheetml', (string) $response->headers->get('Content-Type'));
 
@@ -80,11 +86,13 @@ class EnrollmentNoteTest extends TestCase
 
         // The reader skips the blank row under the title: title, header, 2 students.
         $this->assertCount(4, $rows);
-        $this->assertSame('ឈ្មោះ', $rows[1][2]);
-        $this->assertSame([1, 'ស្រី'], [$rows[2][0], $rows[2][3]]);
-        $this->assertSame([2, 'Needs help'], [$rows[3][0], $rows[3][6]]);
-        $this->assertSame($this->msWordPackage->name, $rows[3][4]);
-        $this->assertNotContains($third->student->fullName(), array_column($rows, 2));
+        // Payment type sits after Table, from the enrollment's invoice.
+        $this->assertSame(['ឈ្មោះ', 'ការបង់'], [$rows[1][3], $rows[1][2]]);
+        $this->assertSame([1, 'ស្រី'], [$rows[2][0], $rows[2][4]]);
+        $this->assertSame('ឆមាស', $rows[2][2]);
+        $this->assertSame([2, 'Needs help'], [$rows[3][0], $rows[3][7]]);
+        $this->assertSame($this->msWordPackage->name, $rows[3][5]);
+        $this->assertNotContains($third->student->fullName(), array_column($rows, 3));
     }
 
     public function test_excel_export_needs_view_permission(): void

@@ -112,8 +112,8 @@ class EnrollmentResponsibleStaffTest extends TestCase
         $reader->close();
         @unlink($path);
 
-        $this->assertSame('Staff in charge', $rows[1][5]);
-        $this->assertSame('Dara Sok', $rows[2][5]);
+        $this->assertSame('Staff in charge', $rows[1][6]);
+        $this->assertSame('Dara Sok', $rows[2][6]);
     }
 
     public function test_needs_the_permission_valid_dates_and_real_enrollments(): void

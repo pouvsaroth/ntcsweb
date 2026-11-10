@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Resources;
 
 use App\Models\Enrollment;
-use App\Models\InvoiceItem;
-use App\Support\Billing\InvoiceStatus;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -40,11 +38,7 @@ class EnrollmentResource extends JsonResource
             'is_paid' => $this->isPaid(),
             // Monthly / term / ... : from the newest invoice of this
             // enrollment that is not cancelled (null = never invoiced).
-            'payment_type' => $this->whenLoaded('invoiceItems', fn () => $this->invoiceItems
-                ->map(fn (InvoiceItem $item) => $item->invoice)
-                ->filter(fn ($invoice) => $invoice !== null && ! in_array($invoice->status, [InvoiceStatus::CANCELLED, InvoiceStatus::VOID], true) && $invoice->payment_type)
-                ->sortByDesc('id')
-                ->first()?->payment_type),
+            'payment_type' => $this->whenLoaded('invoiceItems', fn () => $this->resource->paymentType()),
             'student' => new StudentResource($this->whenLoaded('student')),
             'class' => new SchoolClassResource($this->whenLoaded('schoolClass')),
             'table_id' => $this->table_id,
