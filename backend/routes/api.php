@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Api\V1\Admin\FundController;
+use App\Http\Controllers\Api\V1\Admin\FundReportController;
 use App\Support\Staff\StaffRecordKinds;
 use App\Http\Controllers\Api\V1\Admin\AcademicProgramController;
 use App\Http\Controllers\Api\V1\Admin\AcademicReportController;
@@ -1004,6 +1005,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
 
         // Fund > Funds: pots of the school's money; money in / out posts to the ledger.
         Route::get('funds/summary', [FundController::class, 'summary'])->name('funds.summary');
+        // Fund > Reports: in / out and balances for a period, by type and by fund.
+        Route::get('fund-reports', FundReportController::class)->name('fund-reports.index');
         Route::apiResource('funds', FundController::class);
         Route::post('funds/{fund}/entries', [FundController::class, 'record'])->name('funds.entries.store');
         Route::delete('fund-entries/{entry}', [FundController::class, 'removeEntry'])->name('fund-entries.destroy');

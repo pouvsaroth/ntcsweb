@@ -279,7 +279,10 @@ export const adminNav: AdminNavGroup[] = [
     // Fund: pots of the school's money (Building, Scholarship ...), money in / out on the ledger.
     labelKey: 'adminNav.groups.fund',
     icon: 'library',
-    items: [{ labelKey: 'adminNav.items.funds', icon: 'collection', to: '/admin/funds', permission: 'funds.view' }],
+    items: [
+      { labelKey: 'adminNav.items.funds', icon: 'collection', to: '/admin/funds', permission: 'funds.view' },
+      { labelKey: 'adminNav.items.fundReports', icon: 'chartBar', to: '/admin/fund-reports', permission: 'funds.view' },
+    ],
   },
   {
     labelKey: 'adminNav.groups.assets',
