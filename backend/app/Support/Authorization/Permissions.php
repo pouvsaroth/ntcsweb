@@ -851,6 +851,15 @@ final class Permissions
 
     public const LENDERS_DELETE = 'lenders.delete';
 
+    // Loan > Customers: people who keep savings with the owner or borrow from them.
+    public const LOAN_CUSTOMERS_VIEW = 'loan-customers.view';
+
+    public const LOAN_CUSTOMERS_CREATE = 'loan-customers.create';
+
+    public const LOAN_CUSTOMERS_UPDATE = 'loan-customers.update';
+
+    public const LOAN_CUSTOMERS_DELETE = 'loan-customers.delete';
+
     // Accounting > Expense for (Newtech, Flexi, Family...).
     public const EXPENSE_FOR_VIEW = 'expense-for.view';
 
@@ -1632,6 +1641,21 @@ final class Permissions
                 self::DISCOUNT_CODES_DELETE => 'Delete unused discount codes',
                 self::NOTIFICATIONS_SEND => 'Send invoice notifications',
             ],
+            'Loan' => [
+                self::LOAN_CUSTOMERS_VIEW => 'View loan customers',
+                self::LOAN_CUSTOMERS_CREATE => 'Add loan customers',
+                self::LOAN_CUSTOMERS_UPDATE => 'Update loan customers',
+                self::LOAN_CUSTOMERS_DELETE => 'Delete loan customers',
+                self::BORROWINGS_VIEW => 'View borrowings and lenders',
+                self::BORROWING_LOANS_CREATE => 'Add loans',
+                self::BORROWING_LOANS_UPDATE => 'Update loans (also cancel, upload the contract)',
+                self::BORROWING_LOANS_DELETE => 'Delete loans with no repayments',
+                self::BORROWING_REPAYMENTS_CREATE => 'Record loan repayments',
+                self::BORROWING_REPAYMENTS_DELETE => 'Delete loan repayments',
+                self::LENDERS_CREATE => 'Add lenders',
+                self::LENDERS_UPDATE => 'Update lenders',
+                self::LENDERS_DELETE => 'Delete lenders',
+            ],
             'Accounting' => [
                 self::ACCOUNTING_VIEW => 'View the Accounting module',
                 self::ACCOUNTING_DASHBOARD_VIEW => 'View the Accounting dashboard',
@@ -1650,15 +1674,6 @@ final class Permissions
                 self::EXPENSE_REJECT => 'Reject expenses',
                 self::EXPENSE_CANCEL => 'Cancel expenses',
                 self::EXPENSE_PAY => 'Pay expenses',
-                self::BORROWINGS_VIEW => 'View borrowings and lenders',
-                self::BORROWING_LOANS_CREATE => 'Add loans',
-                self::BORROWING_LOANS_UPDATE => 'Update loans (also cancel, upload the contract)',
-                self::BORROWING_LOANS_DELETE => 'Delete loans with no repayments',
-                self::BORROWING_REPAYMENTS_CREATE => 'Record loan repayments',
-                self::BORROWING_REPAYMENTS_DELETE => 'Delete loan repayments',
-                self::LENDERS_CREATE => 'Add lenders',
-                self::LENDERS_UPDATE => 'Update lenders',
-                self::LENDERS_DELETE => 'Delete lenders',
                 self::EXPENSE_FOR_VIEW => 'View the Expense for list',
                 self::EXPENSE_FOR_CREATE => 'Add to the Expense for list',
                 self::EXPENSE_FOR_UPDATE => 'Update the Expense for list',
@@ -1891,6 +1906,7 @@ final class Permissions
             self::BORROWING_LOANS_CREATE, self::BORROWING_LOANS_UPDATE, self::BORROWING_LOANS_DELETE,
             self::BORROWING_REPAYMENTS_CREATE, self::BORROWING_REPAYMENTS_DELETE,
             self::LENDERS_CREATE, self::LENDERS_UPDATE, self::LENDERS_DELETE,
+            self::LOAN_CUSTOMERS_VIEW, self::LOAN_CUSTOMERS_CREATE, self::LOAN_CUSTOMERS_UPDATE, self::LOAN_CUSTOMERS_DELETE,
             self::EXPENSE_FOR_VIEW, self::EXPENSE_FOR_CREATE, self::EXPENSE_FOR_UPDATE, self::EXPENSE_FOR_DELETE,
             self::SUPPLIERS_VIEW, self::SUPPLIERS_CREATE, self::SUPPLIERS_UPDATE, self::SUPPLIERS_DELETE,
             self::TRANSACTIONS_VIEW, self::TRANSACTIONS_CREATE,

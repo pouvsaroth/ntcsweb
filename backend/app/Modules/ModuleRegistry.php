@@ -26,6 +26,7 @@ final class ModuleRegistry
             new Website\WebsiteModule,
             new Projects\ProjectsModule,
             new FrontOffice\FrontOfficeModule,
+            new Loan\LoanModule,
         ])->keyBy(fn (Module $m) => $m->code())->all();
     }
 

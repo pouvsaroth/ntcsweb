@@ -49,6 +49,7 @@ use App\Http\Controllers\Api\V1\Admin\CompanyInvoiceController;
 use App\Http\Controllers\Api\V1\Admin\BorrowingController;
 use App\Http\Controllers\Api\V1\Admin\ExpenseEntityController;
 use App\Http\Controllers\Api\V1\Admin\LenderController;
+use App\Http\Controllers\Api\V1\Admin\LoanCustomerController;
 use App\Http\Controllers\Api\V1\Admin\DiscountCodeController;
 use App\Http\Controllers\Api\V1\Admin\EnrollmentController;
 use App\Http\Controllers\Api\V1\Admin\EnrollmentPackageController;
@@ -987,6 +988,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::apiResource('expense-entities', ExpenseEntityController::class);
         // Accounting > Borrowings: money borrowed from companies and people.
         Route::apiResource('lenders', LenderController::class);
+        // Loan > Customers (shared by Savings and Owe).
+        Route::apiResource('loan-customers', LoanCustomerController::class);
         Route::get('borrowings/schedule-preview', [BorrowingController::class, 'preview'])->name('borrowings.preview');
         Route::get('borrowings/due', [BorrowingController::class, 'due'])->name('borrowings.due');
         Route::get('borrowings/summary', [BorrowingController::class, 'summary'])->name('borrowings.summary');
