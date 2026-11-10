@@ -98,13 +98,13 @@ final class CustomerLoanController extends Controller
         $owed = $late = $dueSoon = [];
         $lateLoans = 0;
 
-        $active = CustomerLoan::query()->where('status', 'active')->withSum('payments', 'principal')->get();
+        $active = CustomerLoan::query()->where('status', 'active')->withSum('payments', 'principal')->withSum('payments', 'interest')->get();
         foreach ($active as $loan) {
             $c = $loan->currency;
             $paid = (float) $loan->payments_sum_principal;
             $owed[$c] = ($owed[$c] ?? 0) + (float) $loan->amount - $paid;
             $hasLate = false;
-            foreach (BorrowingSchedule::withPayments(BorrowingSchedule::for($loan), $paid, $today) as $row) {
+            foreach (BorrowingSchedule::withPayments(BorrowingSchedule::for($loan), $paid, $today, (float) $loan->payments_sum_interest) as $row) {
                 if ($row['paid']) {
                     continue;
                 }

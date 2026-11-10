@@ -107,7 +107,7 @@ final class LoanReportController extends Controller
     private function loans(string $from, string $to): array
     {
         $today = now()->toDateString();
-        $loans = CustomerLoan::query()->where('status', '!=', 'cancelled')->with('customer:id,name,code')->withSum('payments', 'principal')->get();
+        $loans = CustomerLoan::query()->where('status', '!=', 'cancelled')->with('customer:id,name,code')->withSum('payments', 'principal')->withSum('payments', 'interest')->get();
 
         $paidInPeriod = CustomerLoanPayment::query()
             ->whereBetween('paid_on', [$from, $to])
@@ -123,7 +123,7 @@ final class LoanReportController extends Controller
             $owed = $loan->status === 'active' ? (float) $loan->amount - $paid : 0.0;
             $late = 0.0;
             if ($loan->status === 'active') {
-                foreach (BorrowingSchedule::withPayments(BorrowingSchedule::for($loan), $paid, $today) as $row) {
+                foreach (BorrowingSchedule::withPayments(BorrowingSchedule::for($loan), $paid, $today, (float) $loan->payments_sum_interest) as $row) {
                     $late += ! $row['paid'] && $row['late'] ? $row['due_principal'] + $row['interest'] : 0.0;
                 }
             }

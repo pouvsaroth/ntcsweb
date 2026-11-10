@@ -154,16 +154,34 @@ onMounted(load)
 
       <template v-if="!loan.flexible && loan.schedule?.length">
         <h2 class="mb-2 mt-5 text-sm font-semibold text-neutral-800">{{ t('admin.borrowings.schedule') }}</h2>
-        <div class="overflow-x-auto rounded-lg border border-neutral-200">
+        <!-- Phone: one card per month -->
+        <ul class="divide-y divide-neutral-100 rounded-lg border border-neutral-200 sm:hidden print:hidden">
+          <li v-for="row in loan.schedule" :key="row.no" class="px-3 py-2 text-sm" :class="row.paid ? 'text-neutral-400' : ''">
+            <div class="flex items-center justify-between gap-2">
+              <p class="font-medium">
+                {{ row.no }}. {{ formatDate(row.due_on) }}
+                <BaseBadge v-if="row.paid" variant="success" class="ml-1">{{ t('admin.borrowings.paid') }}</BaseBadge>
+                <BaseBadge v-else-if="row.late && isActive" variant="danger" class="ml-1">{{ t('admin.borrowings.late') }}</BaseBadge>
+              </p>
+              <p class="font-semibold tabular-nums">{{ money(row.total) }}</p>
+            </div>
+            <p class="mt-0.5 text-xs text-neutral-500">
+              {{ t('admin.customerLoans.startAmount') }} {{ money(row.start ?? row.balance + row.principal) }} → {{ money(row.balance) }}
+              · {{ t('admin.customerLoans.principalPayment') }} {{ money(row.principal) }} · {{ t('admin.borrowings.interest') }} {{ money(row.interest) }}
+            </p>
+          </li>
+        </ul>
+        <div class="hidden overflow-x-auto rounded-lg border border-neutral-200 sm:block print:block">
           <table class="w-full text-left text-sm">
             <thead class="bg-neutral-50 text-neutral-500">
               <tr>
-                <th class="px-3 py-2 font-medium">#</th>
-                <th class="px-3 py-2 font-medium">{{ t('admin.borrowings.dueOn') }}</th>
-                <th class="px-3 py-2 text-right font-medium">{{ t('admin.borrowings.principal') }}</th>
+                <th class="px-3 py-2 font-medium">{{ t('admin.customerLoans.no') }}</th>
+                <th class="px-3 py-2 font-medium">{{ t('admin.customerLoans.payDate') }}</th>
+                <th class="px-3 py-2 text-right font-medium">{{ t('admin.customerLoans.startAmount') }}</th>
+                <th class="px-3 py-2 text-right font-medium">{{ t('admin.customerLoans.endAmount') }}</th>
+                <th class="px-3 py-2 text-right font-medium">{{ t('admin.customerLoans.principalPayment') }}</th>
                 <th class="px-3 py-2 text-right font-medium">{{ t('admin.borrowings.interest') }}</th>
                 <th class="px-3 py-2 text-right font-medium">{{ t('admin.borrowings.payment') }}</th>
-                <th class="hidden px-3 py-2 text-right font-medium sm:table-cell print:table-cell">{{ t('admin.borrowings.balance') }}</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-neutral-100">
@@ -174,12 +192,21 @@ onMounted(load)
                   <BaseBadge v-if="row.paid" variant="success" class="ml-1">{{ t('admin.borrowings.paid') }}</BaseBadge>
                   <BaseBadge v-else-if="row.late && isActive" variant="danger" class="ml-1">{{ t('admin.borrowings.late') }}</BaseBadge>
                 </td>
+                <td class="px-3 py-2 text-right tabular-nums">{{ money(row.start ?? row.balance + row.principal) }}</td>
+                <td class="px-3 py-2 text-right tabular-nums">{{ money(row.balance) }}</td>
                 <td class="px-3 py-2 text-right tabular-nums">{{ money(row.principal) }}</td>
                 <td class="px-3 py-2 text-right tabular-nums">{{ money(row.interest) }}</td>
                 <td class="px-3 py-2 text-right font-semibold tabular-nums">{{ money(row.total) }}</td>
-                <td class="hidden px-3 py-2 text-right tabular-nums sm:table-cell print:table-cell">{{ money(row.balance) }}</td>
               </tr>
             </tbody>
+            <tfoot v-if="loan.totals" class="border-t border-neutral-200 bg-neutral-50 font-semibold">
+              <tr>
+                <td class="px-3 py-2" colspan="4">{{ t('admin.customerLoans.total') }}</td>
+                <td class="px-3 py-2 text-right tabular-nums">{{ money(loan.totals.principal) }}</td>
+                <td class="px-3 py-2 text-right tabular-nums">{{ money(loan.totals.interest) }}</td>
+                <td class="px-3 py-2 text-right tabular-nums">{{ money(loan.totals.total) }}</td>
+              </tr>
+            </tfoot>
           </table>
         </div>
       </template>

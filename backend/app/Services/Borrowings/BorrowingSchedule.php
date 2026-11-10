@@ -13,7 +13,9 @@ use Illuminate\Support\Carbon;
  * customer), worked out from its terms:
  *  - none: the amount split evenly, no interest;
  *  - flat: interest on the full amount every month, the amount split evenly;
- *  - reducing: interest on what is still owed, equal monthly payments.
+ *  - reducing: interest on what is still owed, equal monthly payments;
+ *  - interest_only (Owe): interest on the full amount every month, the
+ *    whole amount paid back with the last month.
  * KHR rounds to whole riel, USD to cents; the last month takes the rest.
  * A loan without months to pay has no plan (flexible); without a first
  * payment date, the plan starts a month after the money was received.
@@ -21,7 +23,7 @@ use Illuminate\Support\Carbon;
 final class BorrowingSchedule
 {
     /**
-     * @return list<array{no: int, due_on: string, principal: float, interest: float, total: float, balance: float}>
+     * @return list<array{no: int, due_on: string, start: float, principal: float, interest: float, total: float, balance: float}>
      */
     public static function for(Borrowing|CustomerLoan $loan): array
     {
@@ -44,7 +46,7 @@ final class BorrowingSchedule
     }
 
     /**
-     * @return list<array{no: int, due_on: string, principal: float, interest: float, total: float, balance: float}>
+     * @return list<array{no: int, due_on: string, start: float, principal: float, interest: float, total: float, balance: float}>
      */
     public static function make(float $amount, string $currency, string $type, float $rate, string $period, int $months, Carbon $first): array
     {
@@ -61,18 +63,22 @@ final class BorrowingSchedule
         $balance = round($amount, $decimals);
         for ($i = 1; $i <= $months; $i++) {
             $interest = match (true) {
-                $type === 'flat' => round($amount * $monthly, $decimals),
+                $type === 'flat', $type === 'interest_only' => round($amount * $monthly, $decimals),
                 $type === 'reducing' => round($balance * $monthly, $decimals),
                 default => 0.0,
             };
-            $principal = $i === $months
-                ? $balance
-                : min($balance, round($payment !== null ? $payment - $interest : $amount / $months, $decimals));
+            $principal = match (true) {
+                $i === $months => $balance,
+                $type === 'interest_only' => 0.0,
+                default => min($balance, round($payment !== null ? $payment - $interest : $amount / $months, $decimals)),
+            };
+            $start = $balance;
             $balance = round($balance - $principal, $decimals);
 
             $rows[] = [
                 'no' => $i,
                 'due_on' => $first->copy()->addMonthsNoOverflow($i - 1)->toDateString(),
+                'start' => (float) $start,
                 'principal' => (float) $principal,
                 'interest' => (float) $interest,
                 'total' => (float) round($principal + $interest, $decimals),
@@ -86,19 +92,24 @@ final class BorrowingSchedule
     /**
      * Marks each month paid once the principal paid so far covers it, late
      * when unpaid and past due. `due` is what is still owed for that month
-     * (less when part of it is already paid).
+     * (less when part of it is already paid). A month with no principal
+     * (interest only) is paid once the interest paid so far covers it, when
+     * `$paidInterest` is given.
      *
      * @param  list<array{no: int, due_on: string, principal: float, interest: float, total: float, balance: float}>  $rows
      * @return list<array{no: int, due_on: string, principal: float, interest: float, total: float, balance: float, paid: bool, late: bool, due_principal: float}>
      */
-    public static function withPayments(array $rows, float $paidPrincipal, string $today): array
+    public static function withPayments(array $rows, float $paidPrincipal, string $today, ?float $paidInterest = null): array
     {
         $cumulative = 0.0;
+        $cumulativeInterest = 0.0;
 
-        return array_map(function (array $row) use (&$cumulative, $paidPrincipal, $today) {
+        return array_map(function (array $row) use (&$cumulative, &$cumulativeInterest, $paidPrincipal, $paidInterest, $today) {
             $before = $cumulative;
             $cumulative = round($cumulative + $row['principal'], 2);
-            $paid = $paidPrincipal >= $cumulative - 0.001;
+            $cumulativeInterest = round($cumulativeInterest + $row['interest'], 2);
+            $paid = $paidPrincipal >= $cumulative - 0.001
+                && ($paidInterest === null || $row['principal'] > 0 || $paidInterest >= $cumulativeInterest - 0.001);
 
             return [
                 ...$row,
@@ -119,6 +130,7 @@ final class BorrowingSchedule
             return 0.0;
         }
         $monthly = ($loan->interest_period === 'year' ? (float) $loan->interest_rate / 12 : (float) $loan->interest_rate) / 100;
+        // Flat: on the full amount; reducing and interest only: on what is still owed.
         $base = $loan->interest_type === 'flat' ? (float) $loan->amount : $outstanding;
 
         return (float) round($base * $monthly, strtoupper((string) $loan->currency) === 'KHR' ? 0 : 2);

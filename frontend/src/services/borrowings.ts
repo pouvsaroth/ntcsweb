@@ -4,7 +4,8 @@ import type { LengthAwarePaginationMeta, PaginatedResult } from '@/types/api'
 
 /** Accounting > Borrowings: money borrowed from companies and people. */
 export type LenderType = 'company' | 'person'
-export type InterestType = 'none' | 'flat' | 'reducing'
+/** interest_only is for Owe loans: interest monthly, the whole amount with the last month. */
+export type InterestType = 'none' | 'flat' | 'reducing' | 'interest_only'
 export type InterestPeriod = 'month' | 'year'
 export type BorrowingStatus = 'active' | 'paid_off' | 'cancelled'
 export type BorrowingCurrency = 'USD' | 'KHR'
@@ -37,6 +38,8 @@ export interface LenderInput {
 export interface ScheduleRow {
   no: number
   due_on: string
+  /** Owed at the start of the month (before this month's principal). */
+  start?: number
   principal: number
   interest: number
   total: number

@@ -84,6 +84,27 @@ class CustomerLoanTest extends TestCase
         $this->assertEquals(-1200, $this->cash());
     }
 
+    public function test_interest_only_pays_interest_monthly_and_the_whole_amount_in_the_last_month(): void
+    {
+        // $3,000 at 2% a month over 12 months: $60 interest a month, the $3,000 with month 12.
+        $loan = $this->lend(['amount' => 3000, 'interest_type' => 'interest_only', 'interest_rate' => 2, 'first_payment_on' => '2026-11-29']);
+
+        $rows = $loan['schedule'];
+        $this->assertCount(12, $rows);
+        $this->assertEquals(['2026-11-29', 3000.0, 0.0, 60.0, 60.0, 3000.0], [$rows[0]['due_on'], $rows[0]['start'], $rows[0]['principal'], $rows[0]['interest'], $rows[0]['total'], $rows[0]['balance']]);
+        $this->assertEquals(['2027-10-29', 3000.0, 3000.0, 60.0, 3060.0, 0.0], [$rows[11]['due_on'], $rows[11]['start'], $rows[11]['principal'], $rows[11]['interest'], $rows[11]['total'], $rows[11]['balance']]);
+        $this->assertEquals(720, $loan['totals']['interest']);
+        $this->assertEquals(60, $loan['next_payment']['total']);
+
+        // Paying one month of interest marks that month paid; the next is month 2.
+        $this->pay($loan['id'], 0, 60)->assertCreated();
+        $loan = $this->getJson("/api/v1/customer-loans/{$loan['id']}")->assertOk()->json('data');
+        $this->assertTrue($loan['schedule'][0]['paid']);
+        $this->assertFalse($loan['schedule'][1]['paid']);
+        $this->assertSame(2, $loan['next_payment']['no']);
+        $this->assertEquals(3000, $loan['outstanding']);
+    }
+
     public function test_a_payment_splits_principal_and_interest_income(): void
     {
         $loan = $this->lend();

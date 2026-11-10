@@ -49,7 +49,7 @@ const currencyOptions = [
   { value: 'USD', label: 'USD ($)' },
   { value: 'KHR', label: 'KHR (៛)' },
 ]
-const interestOptions = computed(() => (['none', 'flat', 'reducing'] as const).map((v) => ({ value: v, label: t(`admin.borrowings.interestTypes.${v}`) })))
+const interestOptions = computed(() => (['none', 'flat', 'reducing', 'interest_only'] as const).map((v) => ({ value: v, label: t(`admin.borrowings.interestTypes.${v}`) })))
 const periodOptions = computed(() => (['month', 'year'] as const).map((v) => ({ value: v, label: t(`admin.borrowings.perPeriod.${v}`) })))
 
 const form = reactive({

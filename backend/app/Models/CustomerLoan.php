@@ -27,7 +27,8 @@ class CustomerLoan extends Model
     /** @use HasFactory<CustomerLoanFactory> */
     use Auditable, HasFactory;
 
-    public const INTEREST_TYPES = ['none', 'flat', 'reducing'];
+    /** interest_only: interest every month, the whole amount back in the last month. */
+    public const INTEREST_TYPES = ['none', 'flat', 'reducing', 'interest_only'];
 
     public const INTEREST_PERIODS = ['month', 'year'];
 
