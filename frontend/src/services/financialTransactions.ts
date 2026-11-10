@@ -2,9 +2,9 @@ import { apiGetWithMeta, apiPost } from '@/services/http'
 import type { PaginatedQuery } from '@/composables/usePaginatedResource'
 import type { LengthAwarePaginationMeta, PaginatedResult } from '@/types/api'
 
-export type TransactionType = 'INCOME' | 'EXPENSE' | 'TRANSFER' | 'REFUND' | 'ADJUSTMENT' | 'LOAN'
+export type TransactionType = 'INCOME' | 'EXPENSE' | 'TRANSFER' | 'REFUND' | 'ADJUSTMENT' | 'LOAN' | 'SAVINGS'
 
-export const transactionTypes: TransactionType[] = ['INCOME', 'EXPENSE', 'TRANSFER', 'REFUND', 'ADJUSTMENT', 'LOAN']
+export const transactionTypes: TransactionType[] = ['INCOME', 'EXPENSE', 'TRANSFER', 'REFUND', 'ADJUSTMENT', 'LOAN', 'SAVINGS']
 
 export interface FinancialTransaction {
   id: number

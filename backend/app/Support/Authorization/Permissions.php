@@ -860,6 +860,16 @@ final class Permissions
 
     public const LOAN_CUSTOMERS_DELETE = 'loan-customers.delete';
 
+    // Loan > Savings: create = open accounts and record deposits / withdrawals,
+    // update = edit or close an account, delete = remove an entry or an empty account.
+    public const SAVINGS_VIEW = 'savings.view';
+
+    public const SAVINGS_CREATE = 'savings.create';
+
+    public const SAVINGS_UPDATE = 'savings.update';
+
+    public const SAVINGS_DELETE = 'savings.delete';
+
     // Accounting > Expense for (Newtech, Flexi, Family...).
     public const EXPENSE_FOR_VIEW = 'expense-for.view';
 
@@ -1646,6 +1656,10 @@ final class Permissions
                 self::LOAN_CUSTOMERS_CREATE => 'Add loan customers',
                 self::LOAN_CUSTOMERS_UPDATE => 'Update loan customers',
                 self::LOAN_CUSTOMERS_DELETE => 'Delete loan customers',
+                self::SAVINGS_VIEW => 'View savings accounts and statements',
+                self::SAVINGS_CREATE => 'Open savings accounts and record deposits and withdrawals',
+                self::SAVINGS_UPDATE => 'Update or close savings accounts',
+                self::SAVINGS_DELETE => 'Delete savings entries and empty savings accounts',
                 self::BORROWINGS_VIEW => 'View borrowings and lenders',
                 self::BORROWING_LOANS_CREATE => 'Add loans',
                 self::BORROWING_LOANS_UPDATE => 'Update loans (also cancel, upload the contract)',
@@ -1907,6 +1921,7 @@ final class Permissions
             self::BORROWING_REPAYMENTS_CREATE, self::BORROWING_REPAYMENTS_DELETE,
             self::LENDERS_CREATE, self::LENDERS_UPDATE, self::LENDERS_DELETE,
             self::LOAN_CUSTOMERS_VIEW, self::LOAN_CUSTOMERS_CREATE, self::LOAN_CUSTOMERS_UPDATE, self::LOAN_CUSTOMERS_DELETE,
+            self::SAVINGS_VIEW, self::SAVINGS_CREATE, self::SAVINGS_UPDATE, self::SAVINGS_DELETE,
             self::EXPENSE_FOR_VIEW, self::EXPENSE_FOR_CREATE, self::EXPENSE_FOR_UPDATE, self::EXPENSE_FOR_DELETE,
             self::SUPPLIERS_VIEW, self::SUPPLIERS_CREATE, self::SUPPLIERS_UPDATE, self::SUPPLIERS_DELETE,
             self::TRANSACTIONS_VIEW, self::TRANSACTIONS_CREATE,

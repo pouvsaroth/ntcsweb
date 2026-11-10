@@ -286,6 +286,27 @@ final class FinancialTransactionService
         );
     }
 
+    /** Loan > Savings: a deposit (debit Cash/Bank, credit Customer Savings) or a withdrawal (the reverse). */
+    public function postSavings(Account $debitAccount, Account $creditAccount, float $amount, string $currency, string $date, string $description, string $referenceType, int $referenceId, User $actor): FinancialTransaction
+    {
+        $tenant = $this->context->getOrFail();
+        $this->periodGuard->assertOpen($tenant, Carbon::parse($date));
+
+        return $this->post(
+            number: $this->numbers->nextTransactionNumber($tenant),
+            date: $date,
+            type: TransactionType::SAVINGS,
+            debitAccount: $debitAccount,
+            creditAccount: $creditAccount,
+            amount: $amount,
+            currency: $currency,
+            description: $description,
+            actor: $actor,
+            referenceType: $referenceType,
+            referenceId: $referenceId,
+        );
+    }
+
     /** Manual "other income" entry (section 6) — a sale that never went through Invoice/Payment at all. */
     /**
      * @param  string|null  $currency  USD / KHR; empty = the school's default

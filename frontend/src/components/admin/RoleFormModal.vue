@@ -401,6 +401,8 @@ const MODULES: ModuleEntry[] = [
   // One list: Accounting > Vendors and Assets > Suppliers.
   { name: 'Vendors / Suppliers', group: 'Accounting', actions: crud('suppliers') },
   { name: 'Customers', group: 'Loan', actions: crud('loan-customers') },
+  // Add = open accounts and record deposits / withdrawals; Update = edit or close; Delete = remove entries.
+  { name: 'Savings', group: 'Loan', actions: crud('savings') },
   { name: 'Borrowings', group: 'Loan', parent: 'Borrowings', menu: true, actions: { view: 'borrowings.view' } },
   tab('Loan', 'Borrowings', 'Loans', '/admin/borrowings/loans', ['borrowings.view'], tabCud('borrowing-loans')),
   tab('Loan', 'Borrowings', 'Repayments', '/admin/borrowings/repayments', ['borrowings.view'], { create: 'borrowing-repayments.create', delete: 'borrowing-repayments.delete' }),

@@ -25,9 +25,12 @@ final class TransactionType
     /** Borrowed money coming in (Cash/Bank ← Loans Payable) or principal paid back (the reverse). */
     public const LOAN = 'LOAN';
 
+    /** Loan > Savings: a customer's deposit (Cash/Bank <- Customer Savings) or withdrawal (the reverse). */
+    public const SAVINGS = 'SAVINGS';
+
     /** @return list<string> */
     public static function all(): array
     {
-        return [self::INCOME, self::EXPENSE, self::TRANSFER, self::REFUND, self::ADJUSTMENT, self::LOAN];
+        return [self::INCOME, self::EXPENSE, self::TRANSFER, self::REFUND, self::ADJUSTMENT, self::LOAN, self::SAVINGS];
     }
 }

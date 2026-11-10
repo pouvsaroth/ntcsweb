@@ -93,6 +93,8 @@ export interface CashFlowReport {
   other_income: number
   /** Accounting > Borrowings: money borrowed in / principal paid back. */
   loans_received: number
+  savings_deposits: number
+  savings_withdrawals: number
   expenses: number
   loan_repayments: number
   closing: number

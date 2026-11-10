@@ -267,6 +267,7 @@ export const adminNav: AdminNavGroup[] = [
     icon: 'cash',
     items: [
       { labelKey: 'adminNav.items.loanCustomers', icon: 'userGroup', to: '/admin/loan-customers', permission: 'loan-customers.view' },
+      { labelKey: 'adminNav.items.savings', icon: 'collection', to: '/admin/savings', permission: 'savings.view' },
       // Money borrowed from companies and people; Loans, Lenders, ... are tabs on the page (see borrowingsTabs.ts).
       { labelKey: 'adminNav.items.borrowings', icon: 'trendingDown', to: '/admin/borrowings', permission: 'borrowings.view' },
     ],

@@ -108,7 +108,7 @@ final class AccountingReportService
     }
 
     /**
-     * @return array{opening: float, student_payments: float, other_income: float, loans_received: float, expenses: float, loan_repayments: float, closing: float}
+     * @return array{opening: float, student_payments: float, other_income: float, loans_received: float, savings_deposits: float, expenses: float, loan_repayments: float, savings_withdrawals: float, closing: float}
      */
     public function cashFlow(string $dateFrom, string $dateTo): array
     {
@@ -150,14 +150,28 @@ final class AccountingReportService
             2,
         );
 
+        // Loan > Savings: customers' deposits in and withdrawals out, each net of its own reversals.
+        $savingsDeposits = round(
+            $this->sum('debit_account_id', $bankIds, $dateFrom, $dateTo, [TransactionType::SAVINGS], reversal: false)
+            - $this->sum('credit_account_id', $bankIds, $dateFrom, $dateTo, [TransactionType::SAVINGS], reversal: true),
+            2,
+        );
+        $savingsWithdrawals = round(
+            $this->sum('credit_account_id', $bankIds, $dateFrom, $dateTo, [TransactionType::SAVINGS], reversal: false)
+            - $this->sum('debit_account_id', $bankIds, $dateFrom, $dateTo, [TransactionType::SAVINGS], reversal: true),
+            2,
+        );
+
         return [
             'opening' => $opening,
             'student_payments' => $netStudentPayments,
             'other_income' => $netOtherIncome,
             'loans_received' => $loansReceived,
+            'savings_deposits' => $savingsDeposits,
             'expenses' => $expenses,
             'loan_repayments' => $loanRepayments,
-            'closing' => round($opening + $netStudentPayments + $netOtherIncome + $loansReceived - $expenses - $loanRepayments, 2),
+            'savings_withdrawals' => $savingsWithdrawals,
+            'closing' => round($opening + $netStudentPayments + $netOtherIncome + $loansReceived + $savingsDeposits - $expenses - $loanRepayments - $savingsWithdrawals, 2),
         ];
     }
 

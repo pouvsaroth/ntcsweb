@@ -99,6 +99,7 @@ use App\Models\Borrowing;
 use App\Models\ExpenseEntity;
 use App\Models\Lender;
 use App\Models\LoanCustomer;
+use App\Models\SavingsAccount;
 use App\Models\DiscountCode;
 use App\Models\Team;
 use App\Models\Tenant;
@@ -175,6 +176,7 @@ use App\Policies\DiscountCodePolicy;
 use App\Policies\CompanyPolicy;
 use App\Policies\BorrowingPolicy;
 use App\Policies\LoanCustomerPolicy;
+use App\Policies\SavingsAccountPolicy;
 use App\Policies\ExpenseEntityPolicy;
 use App\Policies\TenantPolicy;
 use App\Policies\UserPolicy;
@@ -278,6 +280,7 @@ class AuthServiceProvider extends ServiceProvider
         Borrowing::class => BorrowingPolicy::class,
         Lender::class => BorrowingPolicy::class,
         LoanCustomer::class => LoanCustomerPolicy::class,
+        SavingsAccount::class => SavingsAccountPolicy::class,
         DiscountCode::class => DiscountCodePolicy::class,
         RepairShop::class => RepairShopPolicy::class,
         AssetIssue::class => AssetIssuePolicy::class,
