@@ -95,6 +95,9 @@ export interface CashFlowReport {
   loans_received: number
   savings_deposits: number
   savings_withdrawals: number
+  loans_given: number
+  loan_collections: number
+  loan_interest_received: number
   expenses: number
   loan_repayments: number
   closing: number

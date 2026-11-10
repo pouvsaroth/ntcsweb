@@ -403,6 +403,8 @@ const MODULES: ModuleEntry[] = [
   { name: 'Customers', group: 'Loan', actions: crud('loan-customers') },
   // Add = open accounts and record deposits / withdrawals; Update = edit or close; Delete = remove entries.
   { name: 'Savings', group: 'Loan', actions: crud('savings') },
+  // Add = lend and record payments; Update = edit or cancel; Delete = remove loans with no payments, and payments.
+  { name: 'Owe', group: 'Loan', actions: crud('customer-loans') },
   { name: 'Borrowings', group: 'Loan', parent: 'Borrowings', menu: true, actions: { view: 'borrowings.view' } },
   tab('Loan', 'Borrowings', 'Loans', '/admin/borrowings/loans', ['borrowings.view'], tabCud('borrowing-loans')),
   tab('Loan', 'Borrowings', 'Repayments', '/admin/borrowings/repayments', ['borrowings.view'], { create: 'borrowing-repayments.create', delete: 'borrowing-repayments.delete' }),

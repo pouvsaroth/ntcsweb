@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Accounting;
 
 use App\Models\Account;
+use App\Models\CustomerLoanPayment;
 use App\Models\FinancialTransaction;
 use App\Models\Payment;
 use App\Services\Billing\CurrencyConversionService;
@@ -108,7 +109,7 @@ final class AccountingReportService
     }
 
     /**
-     * @return array{opening: float, student_payments: float, other_income: float, loans_received: float, savings_deposits: float, expenses: float, loan_repayments: float, savings_withdrawals: float, closing: float}
+     * @return array{opening: float, student_payments: float, other_income: float, loans_received: float, savings_deposits: float, loan_collections: float, loan_interest_received: float, expenses: float, loan_repayments: float, savings_withdrawals: float, loans_given: float, closing: float}
      */
     public function cashFlow(string $dateFrom, string $dateTo): array
     {
@@ -162,16 +163,42 @@ final class AccountingReportService
             2,
         );
 
+        // Loan > Owe: money lent out and principal collected back (LENDING),
+        // and interest received (INCOME tied to a customer loan payment),
+        // each net of its own reversals.
+        $loansGiven = round(
+            $this->sum('credit_account_id', $bankIds, $dateFrom, $dateTo, [TransactionType::LENDING], reversal: false)
+            - $this->sum('debit_account_id', $bankIds, $dateFrom, $dateTo, [TransactionType::LENDING], reversal: true),
+            2,
+        );
+        $loanCollections = round(
+            $this->sum('debit_account_id', $bankIds, $dateFrom, $dateTo, [TransactionType::LENDING], reversal: false)
+            - $this->sum('credit_account_id', $bankIds, $dateFrom, $dateTo, [TransactionType::LENDING], reversal: true),
+            2,
+        );
+        $loanInterest = round(
+            $this->sum('debit_account_id', $bankIds, $dateFrom, $dateTo, [TransactionType::INCOME], referenceType: CustomerLoanPayment::class, reversal: false)
+            - $this->sum('credit_account_id', $bankIds, $dateFrom, $dateTo, [TransactionType::INCOME], referenceType: CustomerLoanPayment::class, reversal: true),
+            2,
+        );
+
         return [
             'opening' => $opening,
             'student_payments' => $netStudentPayments,
             'other_income' => $netOtherIncome,
             'loans_received' => $loansReceived,
             'savings_deposits' => $savingsDeposits,
+            'loan_collections' => $loanCollections,
+            'loan_interest_received' => $loanInterest,
             'expenses' => $expenses,
             'loan_repayments' => $loanRepayments,
             'savings_withdrawals' => $savingsWithdrawals,
-            'closing' => round($opening + $netStudentPayments + $netOtherIncome + $loansReceived + $savingsDeposits - $expenses - $loanRepayments - $savingsWithdrawals, 2),
+            'loans_given' => $loansGiven,
+            'closing' => round(
+                $opening + $netStudentPayments + $netOtherIncome + $loansReceived + $savingsDeposits + $loanCollections + $loanInterest
+                - $expenses - $loanRepayments - $savingsWithdrawals - $loansGiven,
+                2,
+            ),
         ];
     }
 

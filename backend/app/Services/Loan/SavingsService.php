@@ -10,7 +10,6 @@ use App\Models\SavingsAccount;
 use App\Models\SavingsTransaction;
 use App\Models\User;
 use App\Services\Accounting\FinancialTransactionService;
-use App\Support\Accounting\AccountType;
 use App\Support\Accounting\TransactionStatus;
 use App\Support\Accounting\TransactionType;
 use Illuminate\Support\Carbon;
@@ -27,10 +26,9 @@ use Illuminate\Validation\ValidationException;
  */
 final class SavingsService
 {
-    private const CUSTOMER_SAVINGS = ['code' => '2200', 'name' => 'Customer Savings', 'type' => AccountType::LIABILITY, 'parent' => '2000'];
-
     public function __construct(
         private readonly FinancialTransactionService $transactions,
+        private readonly LoanLedgerAccounts $accounts,
     ) {}
 
     /**
@@ -150,26 +148,7 @@ final class SavingsService
 
     public function customerSavings(): Account
     {
-        $spec = self::CUSTOMER_SAVINGS;
-        $found = Account::query()->where('code', $spec['code'])->where('type', $spec['type'])->first()
-            ?? Account::query()->where('name', $spec['name'])->where('type', $spec['type'])->orderBy('id')->first();
-        if ($found) {
-            return $found;
-        }
-
-        // Schools set up before Savings don't have it yet.
-        $code = (int) $spec['code'];
-        while (Account::query()->where('code', (string) $code)->exists()) {
-            $code += 10;
-        }
-
-        return Account::query()->create([
-            'code' => (string) $code,
-            'name' => $spec['name'],
-            'type' => $spec['type'],
-            'parent_id' => Account::query()->where('code', $spec['parent'])->where('type', $spec['type'])->value('id'),
-            'is_bank_or_cash' => false,
-        ]);
+        return $this->accounts->customerSavings();
     }
 
     /**

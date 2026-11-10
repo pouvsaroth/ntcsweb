@@ -993,6 +993,19 @@ const adminRoutes: RouteRecordRaw[] = [
     meta: { permission: 'savings.view', titleKey: 'adminNav.items.savings' },
   },
   {
+    // Loan > Owe: money lent to customers, and one loan (plan, payments, print).
+    path: 'customer-loans',
+    name: 'admin.customer-loans',
+    component: () => import('@/pages/admin/loan/CustomerLoans.vue'),
+    meta: { permission: 'customer-loans.view', titleKey: 'adminNav.items.customerLoans' },
+  },
+  {
+    path: 'customer-loans/:id',
+    name: 'admin.customer-loans.statement',
+    component: () => import('@/pages/admin/loan/CustomerLoanStatement.vue'),
+    meta: { permission: 'customer-loans.view', titleKey: 'adminNav.items.customerLoans' },
+  },
+  {
     // Loan > Borrowings (was under Accounting): tabs as child routes (see BorrowingsLayout.vue / borrowingsTabs.ts).
     path: 'borrowings',
     component: () => import('@/pages/admin/borrowings/BorrowingsLayout.vue'),

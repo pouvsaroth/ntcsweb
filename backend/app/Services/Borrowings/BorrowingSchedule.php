@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Services\Borrowings;
 
 use App\Models\Borrowing;
+use App\Models\CustomerLoan;
 use Illuminate\Support\Carbon;
 
 /**
- * The monthly repayment plan of a loan, worked out from its terms:
+ * The monthly repayment plan of a loan (Borrowings, or Owe: lent to a
+ * customer), worked out from its terms:
  *  - none: the amount split evenly, no interest;
  *  - flat: interest on the full amount every month, the amount split evenly;
  *  - reducing: interest on what is still owed, equal monthly payments.
@@ -21,7 +23,7 @@ final class BorrowingSchedule
     /**
      * @return list<array{no: int, due_on: string, principal: float, interest: float, total: float, balance: float}>
      */
-    public static function for(Borrowing $loan): array
+    public static function for(Borrowing|CustomerLoan $loan): array
     {
         // No months to pay: a flexible loan, paid any time, so no plan.
         if (! $loan->term_months) {
@@ -37,7 +39,7 @@ final class BorrowingSchedule
             (int) $loan->term_months,
             $loan->first_payment_on
                 ? Carbon::parse($loan->first_payment_on)
-                : Carbon::parse($loan->received_on)->addMonthNoOverflow(),
+                : Carbon::parse($loan instanceof CustomerLoan ? $loan->lent_on : $loan->received_on)->addMonthNoOverflow(),
         );
     }
 
@@ -111,7 +113,7 @@ final class BorrowingSchedule
      * One month's interest on a loan as it stands: flat on the full amount,
      * reducing on what is still owed. Suggested when paying a flexible loan.
      */
-    public static function monthInterest(Borrowing $loan, float $outstanding): float
+    public static function monthInterest(Borrowing|CustomerLoan $loan, float $outstanding): float
     {
         if ($loan->interest_type === 'none' || $outstanding <= 0) {
             return 0.0;

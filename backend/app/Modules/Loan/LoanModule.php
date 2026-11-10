@@ -28,12 +28,13 @@ final class LoanModule extends Module
         return 'ប្រាក់កម្ចី';
     }
 
-    /** Owe joins here in their own steps (each with a migration adding the menu to plans). */
+    /** A new menu needs its permissions and a migration adding it to plans that list menus. */
     public function menus(): array
     {
         return [
             'loan-customers' => ['Customers', 'អតិថិជន'],
             'savings' => ['Savings', 'សន្សំ'],
+            'customer-loans' => ['Owe', 'ជំពាក់'],
             'borrowings' => ['Borrowings', 'ប្រាក់ខ្ចី'],
         ];
     }

@@ -43,6 +43,7 @@ const typeVariant: Record<TransactionType, 'success' | 'danger' | 'primary' | 'w
   ADJUSTMENT: 'neutral',
   LOAN: 'warning',
   SAVINGS: 'primary',
+  LENDING: 'warning',
 }
 
 const columns = [

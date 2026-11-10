@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Api\V1\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\LoanCustomerResource;
 use App\Http\Responses\ApiResponse;
+use App\Models\CustomerLoan;
 use App\Models\LoanCustomer;
 use App\Models\SavingsAccount;
 use App\Support\Query\ApiQuery;
@@ -56,13 +57,16 @@ final class LoanCustomerController extends Controller
         return ApiResponse::success(new LoanCustomerResource($loanCustomer));
     }
 
-    /** A customer with savings accounts (or, later, loans) cannot be deleted; deactivate instead. */
+    /** A customer with savings accounts or loans cannot be deleted; deactivate instead. */
     public function destroy(LoanCustomer $loanCustomer): JsonResponse
     {
         $this->authorize('delete', $loanCustomer);
 
         if (SavingsAccount::query()->where('loan_customer_id', $loanCustomer->id)->exists()) {
             throw ValidationException::withMessages(['name' => __('This customer has a savings account, so they cannot be deleted. Mark them inactive instead.')]);
+        }
+        if (CustomerLoan::query()->where('loan_customer_id', $loanCustomer->id)->exists()) {
+            throw ValidationException::withMessages(['name' => __('This customer has loans, so they cannot be deleted. Mark them inactive instead.')]);
         }
 
         $loanCustomer->delete();

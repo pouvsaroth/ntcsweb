@@ -588,7 +588,6 @@ final class Permissions
     // deduction, tax, social security, loans); manage changes them.
     public const PAYROLL_VIEW = 'payroll.view';
 
-
     // HRM > Payroll, per tab (replaced payroll.manage). Slug: payroll-<tab>.<action>.
     public const PAYROLL_SALARY_STRUCTURES_CREATE = 'payroll-salary-structures.create';
 
@@ -869,6 +868,17 @@ final class Permissions
     public const SAVINGS_UPDATE = 'savings.update';
 
     public const SAVINGS_DELETE = 'savings.delete';
+
+    // Loan > Owe (money customers owe the owner): create = lend and collect
+    // payments, update = edit or cancel a loan, delete = remove a loan with
+    // no payments, or a payment.
+    public const CUSTOMER_LOANS_VIEW = 'customer-loans.view';
+
+    public const CUSTOMER_LOANS_CREATE = 'customer-loans.create';
+
+    public const CUSTOMER_LOANS_UPDATE = 'customer-loans.update';
+
+    public const CUSTOMER_LOANS_DELETE = 'customer-loans.delete';
 
     // Accounting > Expense for (Newtech, Flexi, Family...).
     public const EXPENSE_FOR_VIEW = 'expense-for.view';
@@ -1660,6 +1670,10 @@ final class Permissions
                 self::SAVINGS_CREATE => 'Open savings accounts and record deposits and withdrawals',
                 self::SAVINGS_UPDATE => 'Update or close savings accounts',
                 self::SAVINGS_DELETE => 'Delete savings entries and empty savings accounts',
+                self::CUSTOMER_LOANS_VIEW => 'View money customers owe (loans to customers)',
+                self::CUSTOMER_LOANS_CREATE => 'Lend to customers and record their payments',
+                self::CUSTOMER_LOANS_UPDATE => 'Update or cancel loans to customers',
+                self::CUSTOMER_LOANS_DELETE => 'Delete loans to customers with no payments, and payments',
                 self::BORROWINGS_VIEW => 'View borrowings and lenders',
                 self::BORROWING_LOANS_CREATE => 'Add loans',
                 self::BORROWING_LOANS_UPDATE => 'Update loans (also cancel, upload the contract)',
@@ -1922,6 +1936,7 @@ final class Permissions
             self::LENDERS_CREATE, self::LENDERS_UPDATE, self::LENDERS_DELETE,
             self::LOAN_CUSTOMERS_VIEW, self::LOAN_CUSTOMERS_CREATE, self::LOAN_CUSTOMERS_UPDATE, self::LOAN_CUSTOMERS_DELETE,
             self::SAVINGS_VIEW, self::SAVINGS_CREATE, self::SAVINGS_UPDATE, self::SAVINGS_DELETE,
+            self::CUSTOMER_LOANS_VIEW, self::CUSTOMER_LOANS_CREATE, self::CUSTOMER_LOANS_UPDATE, self::CUSTOMER_LOANS_DELETE,
             self::EXPENSE_FOR_VIEW, self::EXPENSE_FOR_CREATE, self::EXPENSE_FOR_UPDATE, self::EXPENSE_FOR_DELETE,
             self::SUPPLIERS_VIEW, self::SUPPLIERS_CREATE, self::SUPPLIERS_UPDATE, self::SUPPLIERS_DELETE,
             self::TRANSACTIONS_VIEW, self::TRANSACTIONS_CREATE,

@@ -51,6 +51,7 @@ use App\Http\Controllers\Api\V1\Admin\ExpenseEntityController;
 use App\Http\Controllers\Api\V1\Admin\LenderController;
 use App\Http\Controllers\Api\V1\Admin\LoanCustomerController;
 use App\Http\Controllers\Api\V1\Admin\SavingsAccountController;
+use App\Http\Controllers\Api\V1\Admin\CustomerLoanController;
 use App\Http\Controllers\Api\V1\Admin\DiscountCodeController;
 use App\Http\Controllers\Api\V1\Admin\EnrollmentController;
 use App\Http\Controllers\Api\V1\Admin\EnrollmentPackageController;
@@ -996,6 +997,13 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::apiResource('savings-accounts', SavingsAccountController::class);
         Route::post('savings-accounts/{savings_account}/entries', [SavingsAccountController::class, 'record'])->name('savings-accounts.entries.store');
         Route::delete('savings-entries/{entry}', [SavingsAccountController::class, 'removeEntry'])->name('savings-entries.destroy');
+        // Loan > Owe: money lent to customers, paid back as principal + interest.
+        Route::get('customer-loans/schedule-preview', [CustomerLoanController::class, 'preview'])->name('customer-loans.preview');
+        Route::get('customer-loans/summary', [CustomerLoanController::class, 'summary'])->name('customer-loans.summary');
+        Route::apiResource('customer-loans', CustomerLoanController::class);
+        Route::post('customer-loans/{customer_loan}/cancel', [CustomerLoanController::class, 'cancel'])->name('customer-loans.cancel');
+        Route::post('customer-loans/{customer_loan}/payments', [CustomerLoanController::class, 'collect'])->name('customer-loans.payments.store');
+        Route::delete('customer-loan-payments/{payment}', [CustomerLoanController::class, 'removePayment'])->name('customer-loan-payments.destroy');
         Route::get('borrowings/schedule-preview', [BorrowingController::class, 'preview'])->name('borrowings.preview');
         Route::get('borrowings/due', [BorrowingController::class, 'due'])->name('borrowings.due');
         Route::get('borrowings/summary', [BorrowingController::class, 'summary'])->name('borrowings.summary');

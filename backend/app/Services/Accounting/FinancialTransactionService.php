@@ -289,13 +289,28 @@ final class FinancialTransactionService
     /** Loan > Savings: a deposit (debit Cash/Bank, credit Customer Savings) or a withdrawal (the reverse). */
     public function postSavings(Account $debitAccount, Account $creditAccount, float $amount, string $currency, string $date, string $description, string $referenceType, int $referenceId, User $actor): FinancialTransaction
     {
+        return $this->postLoanModule(TransactionType::SAVINGS, $debitAccount, $creditAccount, $amount, $currency, $date, $description, $referenceType, $referenceId, $actor);
+    }
+
+    /**
+     * Loan > Owe: money lent (debit Loans Receivable, credit Cash/Bank) and
+     * principal paid back (the reverse) are LENDING; interest received
+     * (debit Cash/Bank, credit Loan Interest Income) is INCOME.
+     */
+    public function postLending(string $type, Account $debitAccount, Account $creditAccount, float $amount, string $currency, string $date, string $description, string $referenceType, int $referenceId, User $actor): FinancialTransaction
+    {
+        return $this->postLoanModule($type, $debitAccount, $creditAccount, $amount, $currency, $date, $description, $referenceType, $referenceId, $actor);
+    }
+
+    private function postLoanModule(string $type, Account $debitAccount, Account $creditAccount, float $amount, string $currency, string $date, string $description, string $referenceType, int $referenceId, User $actor): FinancialTransaction
+    {
         $tenant = $this->context->getOrFail();
         $this->periodGuard->assertOpen($tenant, Carbon::parse($date));
 
         return $this->post(
             number: $this->numbers->nextTransactionNumber($tenant),
             date: $date,
-            type: TransactionType::SAVINGS,
+            type: $type,
             debitAccount: $debitAccount,
             creditAccount: $creditAccount,
             amount: $amount,

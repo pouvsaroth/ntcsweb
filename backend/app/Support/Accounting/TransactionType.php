@@ -28,9 +28,12 @@ final class TransactionType
     /** Loan > Savings: a customer's deposit (Cash/Bank <- Customer Savings) or withdrawal (the reverse). */
     public const SAVINGS = 'SAVINGS';
 
+    /** Loan > Owe: money lent to a customer (Loans Receivable <- Cash/Bank) or principal paid back (the reverse). */
+    public const LENDING = 'LENDING';
+
     /** @return list<string> */
     public static function all(): array
     {
-        return [self::INCOME, self::EXPENSE, self::TRANSFER, self::REFUND, self::ADJUSTMENT, self::LOAN, self::SAVINGS];
+        return [self::INCOME, self::EXPENSE, self::TRANSFER, self::REFUND, self::ADJUSTMENT, self::LOAN, self::SAVINGS, self::LENDING];
     }
 }
