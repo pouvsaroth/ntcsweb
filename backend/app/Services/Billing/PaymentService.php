@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Billing;
 
+use App\Models\DiscountCode;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\User;
@@ -36,13 +37,17 @@ final class PaymentService
         private readonly InvoiceService $invoices,
         private readonly FinancialTransactionService $accounting,
         private readonly AuditLogger $audit,
+        private readonly DiscountCodeService $discountCodes,
     ) {}
 
     /**
      * Returns null when amount is 0 and the discount settles the whole
      * balance — no Payment (and no ledger income) is recorded for that.
      *
-     * @param  array{amount:float, payment_method:string, payment_date?:string, reference_number?:string|null, notes?:string|null, discount?:float|null, discount_reason?:string|null}  $data
+     * A `discount_code` sets the discount itself: the code's share of what
+     * is still owed, reason "Code X", and the use is recorded.
+     *
+     * @param  array{amount:float, payment_method:string, payment_date?:string, reference_number?:string|null, notes?:string|null, discount?:float|null, discount_reason?:string|null, discount_code?:string|null}  $data
      */
     public function record(Invoice $invoice, array $data, User $actor): ?Payment
     {
@@ -60,6 +65,18 @@ final class PaymentService
             $amount = round((float) $data['amount'], 2);
             $discount = round((float) ($data['discount'] ?? 0), 2);
 
+            $code = null;
+            if (filled($data['discount_code'] ?? null)) {
+                ['code' => $code, 'amount' => $discount] = $this->discountCodes->quote(
+                    (string) $data['discount_code'],
+                    $invoice->student_id !== null ? (int) $invoice->student_id : null,
+                    (float) $invoice->balance,
+                    $invoice->currency,
+                    lock: true,
+                );
+                $data['discount_reason'] = $this->discountCodes->reasonFor($code);
+            }
+
             if ($discount > 0 && round($discount - (float) $invoice->balance, 2) > 0) {
                 throw ValidationException::withMessages(['discount' => 'The discount cannot exceed the remaining balance of '.number_format((float) $invoice->balance, 2).'.']);
             }
@@ -74,6 +91,7 @@ final class PaymentService
 
             if ($amount == 0) {
                 $this->settleByDiscount($invoice, $discount, $data['discount_reason'] ?? null);
+                $this->redeemCode($code, $invoice, $discount, $actor);
 
                 return null;
             }
@@ -115,6 +133,7 @@ final class PaymentService
             ]);
 
             $this->invoices->recalculate($invoice);
+            $this->redeemCode($code, $invoice, $discount, $actor);
 
             $this->audit->log(
                 AuditAction::PAYMENT_CREATED,
@@ -136,6 +155,17 @@ final class PaymentService
 
             return $payment->fresh();
         });
+    }
+
+    /** A code used at the till: recorded so cancelling the invoice frees it (a student invoice only). */
+    private function redeemCode(?DiscountCode $code, Invoice $invoice, float $discount, User $actor): void
+    {
+        if ($code === null || $discount <= 0 || $invoice->student_id === null) {
+            return;
+        }
+
+        $line = $this->discountCodes->enrollmentLine($invoice);
+        $this->discountCodes->redeem($code, (int) $invoice->student_id, $invoice, $line?->reference_id !== null ? (int) $line->reference_id : null, $discount, $actor);
     }
 
     /** The amount-0 branch of record(): the discount alone brings the balance to 0, so the invoice becomes PAID. */

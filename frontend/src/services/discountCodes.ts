@@ -99,8 +99,11 @@ export interface DiscountCodeCheckInput {
 export const discountCodesService = {
   /** Staff Enroll form (needs Add enrollments). */
   check: (input: DiscountCodeCheckInput) => apiPost<DiscountCodeCheck>('/discount-codes/check', input),
-  /** The forms' dropdown: the student's own codes that work today, or every main code when they have none. */
-  available: (studentId: number) => apiGet<AvailableDiscountCode[]>('/discount-codes/available', { params: { student_id: studentId } }),
+  /** The forms' dropdown: the student's own codes that work today, or every main code when they have none (or no student). */
+  available: (studentId?: number | null) =>
+    apiGet<AvailableDiscountCode[]>('/discount-codes/available', { params: studentId ? { student_id: studentId } : {} }),
+  /** Record payment: what the code takes off what is still owed on this invoice (needs Add payments). */
+  checkInvoice: (code: string, invoiceId: number) => apiPost<DiscountCodeCheck>('/discount-codes/check-invoice', { discount_code: code, invoice_id: invoiceId }),
   /** Website registration form (public codes only). */
   checkPublic: (input: Omit<DiscountCodeCheckInput, 'student_id'>) => apiPost<DiscountCodeCheck>('/public/discount-codes/check', input),
 

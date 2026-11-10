@@ -159,8 +159,9 @@ export interface RecordPaymentInput {
   payment_date: string
   reference_number: string
   notes: string
-  discount_reason: string
   discount: string
+  /** The chosen discount code; it sets the discount (the server works the amount out again). */
+  discount_code: string
 }
 
 function toInvoicePayload(input: InvoiceInput) {
@@ -219,8 +220,8 @@ export const invoicesService = {
       payment_date: input.payment_date || undefined,
       reference_number: input.reference_number || undefined,
       notes: input.notes || undefined,
-      discount_reason: input.discount_reason || undefined,
-      discount: Number(input.discount) || undefined,
+      discount: input.discount_code ? undefined : Number(input.discount) || undefined,
+      discount_code: input.discount_code || undefined,
     }),
 
   downloadPdf: (id: number, invoiceNumber: string) =>

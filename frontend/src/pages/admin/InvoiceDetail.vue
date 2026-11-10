@@ -427,6 +427,7 @@ onMounted(load)
         :invoice-number="invoice.invoice_number"
         :balance="invoice.balance"
         :currency="invoice.currency"
+        :student-id="invoice.student_id"
         @recorded="refreshAfterPayment"
         @print-failed="actionError = $event"
       />

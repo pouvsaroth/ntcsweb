@@ -11,6 +11,7 @@ use App\Models\CoursePackage;
 use App\Models\DiscountCode;
 use App\Models\DiscountCodeRedemption;
 use App\Models\Enrollment;
+use App\Models\Invoice;
 use App\Models\Student;
 use App\Models\User;
 use App\Services\Academic\EnrollmentService;
@@ -206,6 +207,37 @@ final class DiscountCodeController extends Controller
             $data['fee_type'],
             $enrollments,
         ));
+    }
+
+    /**
+     * POST /discount-codes/check-invoice — Record payment's live check: what
+     * the code takes off what is still owed on this invoice. Nothing is saved.
+     */
+    public function checkInvoice(Request $request, DiscountCodeService $discounts): JsonResponse
+    {
+        abort_unless($request->user()?->hasPermission(Permissions::PAYMENTS_CREATE), 403);
+
+        $data = $request->validate([
+            'discount_code' => ['required', 'string', 'max:80'],
+            'invoice_id' => ['required', 'integer', Rule::exists('tenant.invoices', 'id')],
+        ]);
+
+        $invoice = Invoice::query()->findOrFail($data['invoice_id']);
+        $balance = (float) $invoice->balance;
+        ['code' => $code, 'amount' => $amount] = $discounts->quote(
+            $data['discount_code'], $invoice->student_id !== null ? (int) $invoice->student_id : null, $balance, $invoice->currency,
+        );
+
+        return ApiResponse::success([
+            'code' => $code->code,
+            'name' => $code->name,
+            'discount_type' => $code->discount_type,
+            'value' => (float) $code->value,
+            'amount' => $amount,
+            'fee' => $balance,
+            'total' => max($balance - $amount, 0),
+            'currency' => $invoice->currency,
+        ]);
     }
 
     /**

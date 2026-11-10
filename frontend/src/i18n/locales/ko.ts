@@ -4874,6 +4874,7 @@ const ko: MessageSchema = {
         noStudents: '위에서 검색해 학생을 추가하세요. 학생마다 값을 따로 입력합니다.',
         save: '코드 {count}개 만들기',
       },
+      noDiscount: '할인 없음',
       useCode: '할인 코드',
       chooseCode: '코드 선택 (이 학생용 {count}개)',
       typeOther: '다른 코드 입력',

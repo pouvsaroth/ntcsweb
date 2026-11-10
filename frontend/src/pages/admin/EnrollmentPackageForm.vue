@@ -7,7 +7,6 @@ import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
-import LookupSelect from '@/components/ui/LookupSelect.vue'
 import { academicProgramsService, type AcademicProgram } from '@/services/academicPrograms'
 import { classesService, type SchoolClass } from '@/services/classes'
 import { coursePackagesService, type CoursePackage } from '@/services/coursePackages'
@@ -50,7 +49,7 @@ const form = reactive({
   table_id: null as number | null,
   enrolled_at: today(),
   fee_type: null as FeeType | null,
-  discount_reason: '',
+  // Only from a discount code (no typed discount).
   discount_price: 0,
   received_amount: 0,
   payment_method: 'CASH' as PaymentMethodValue,
@@ -60,33 +59,28 @@ const errors = ref<Record<string, string[]>>({})
 const generalError = ref<string | null>(null)
 const submitting = ref(false)
 
-// Invoices > Discount codes: a checked code fills in the discount (and
-// replaces the typed one). Changing the student, course or fee type
-// clears it, since the amount depends on all three.
-const discountCodeInput = ref('')
+// Invoices > Discount codes: the discount comes only from a code picked in
+// the dropdown — the student's own codes, or every active code when they
+// have none. The checked code fills in the amount (it cannot be typed).
+// Changing the student, course or fee type clears it, since the amount
+// depends on all three.
 const appliedCode = ref<DiscountCodeCheck | null>(null)
 const checkingCode = ref(false)
 const codeError = ref<string | null>(null)
-
-// The dropdown: codes this student can use on this course today (their
-// personal codes first, then public ones). "Type another code" shows the box.
-const OTHER_CODE = '__other'
 const availableCodes = ref<AvailableDiscountCode[]>([])
 const codePick = ref('')
 const codeOptions = computed(() => [
+  { value: '', label: t('admin.discountCodes.noDiscount') },
   ...availableCodes.value.map((c) => {
     const off = c.discount_type === 'percent' ? `${Number(c.value)}%` : formatMoney(c.value, c.currency)
-    const mine = c.audience === 'personal' ? ` · ${t('admin.discountCodes.forThisStudent')}` : ''
-    return { value: c.code, label: `${c.code} · ${c.name} · ${off}${mine}` }
+    return { value: c.code, label: `${c.code} · ${c.name} · ${off}` }
   }),
-  { value: OTHER_CODE, label: t('admin.discountCodes.typeOther') },
 ])
-const showCodeBox = computed(() => availableCodes.value.length === 0 || codePick.value === OTHER_CODE)
 
 async function loadAvailableCodes() {
   availableCodes.value = []
   codePick.value = ''
-  if (!selectedStudent.value || !form.course_package_id) return
+  if (!selectedStudent.value) return
   try {
     availableCodes.value = await discountCodesService.available(selectedStudent.value.id)
   } catch {
@@ -95,18 +89,13 @@ async function loadAvailableCodes() {
 }
 
 function pickCode(value: string) {
+  removeCode(false)
   codePick.value = value
-  codeError.value = null
-  if (appliedCode.value) removeCode(false)
-  if (value && value !== OTHER_CODE) {
-    discountCodeInput.value = value
-    void applyCode()
-  }
+  if (value) void applyCode(value)
 }
 
-async function applyCode() {
-  const code = discountCodeInput.value.trim()
-  if (!code || !selectedStudent.value || !form.course_package_id || !form.fee_type) return
+async function applyCode(code: string) {
+  if (!selectedStudent.value || !form.course_package_id || !form.fee_type) return
   checkingCode.value = true
   codeError.value = null
   try {
@@ -117,9 +106,9 @@ async function applyCode() {
       fee_type: form.fee_type,
     })
     form.discount_price = appliedCode.value.amount
-    form.discount_reason = ''
   } catch (error) {
     appliedCode.value = null
+    codePick.value = ''
     codeError.value = error instanceof ApiRequestError ? (error.fieldError('discount_code') ?? error.message) : t('admin.discountCodes.checkFailed')
   } finally {
     checkingCode.value = false
@@ -127,9 +116,8 @@ async function applyCode() {
 }
 
 function removeCode(resetPick = true) {
-  if (appliedCode.value) form.discount_price = 0
+  form.discount_price = 0
   appliedCode.value = null
-  discountCodeInput.value = ''
   codeError.value = null
   if (resetPick) codePick.value = ''
 }
@@ -259,16 +247,12 @@ watch(
       return
     }
     form.fee_type = packageFee(pkg, 'term') !== null ? 'term' : (feeTypePriority.find((type) => packageFee(pkg, type) !== null) ?? null)
-    form.discount_reason = ''
-    form.discount_price = 0
     removeCode()
   },
 )
 
-watch([() => form.fee_type, () => selectedStudent.value?.id], () => {
-  if (appliedCode.value) removeCode()
-})
-watch([() => selectedStudent.value?.id, () => form.course_package_id], () => void loadAvailableCodes())
+watch([() => form.fee_type, () => selectedStudent.value?.id], () => removeCode())
+watch(() => selectedStudent.value?.id, () => void loadAvailableCodes())
 
 // Received Money defaults to the full amount owed — staff lowers it for a
 // partial payment/debt, or raises it to record change owed back.
@@ -333,8 +317,8 @@ async function createEnrollment() {
       course_package_id: form.course_package_id,
       enrolled_at: form.enrolled_at,
       fee_type: form.fee_type,
-      discount_reason: appliedCode.value ? null : form.discount_reason || null,
-      discount_price: form.discount_price,
+      discount_reason: null,
+      discount_price: appliedCode.value ? appliedCode.value.amount : 0,
       discount_code: appliedCode.value?.code ?? null,
       received_amount: form.received_amount,
       payment_method: form.received_amount > 0 ? form.payment_method : null,
@@ -622,60 +606,16 @@ onMounted(async () => {
               <span class="font-semibold text-neutral-800">{{ formatMoney(fee, invoiceCurrency) }}</span>
             </div>
 
-            <div>
-              <BaseSelect
-                v-if="availableCodes.length"
-                :model-value="codePick"
-                :options="codeOptions"
-                :placeholder="t('admin.discountCodes.chooseCode', { count: availableCodes.length })"
-                :label="t('admin.discountCodes.useCode')"
-                :disabled="!selectedStudent || !form.fee_type"
-                :error="!showCodeBox ? (codeError ?? errors.discount_code?.[0]) : undefined"
-                :class="showCodeBox ? 'mb-2' : ''"
-                @update:model-value="pickCode(String($event ?? ''))"
-              />
-              <div v-if="showCodeBox" class="flex items-end gap-2">
-                <BaseInput
-                  :model-value="discountCodeInput"
-                  class="flex-1"
-                  :label="availableCodes.length ? undefined : t('admin.discountCodes.useCode')"
-                  :placeholder="t('admin.discountCodes.useCodePlaceholder')"
-                  :disabled="!!appliedCode || !selectedStudent || !form.fee_type"
-                  :error="codeError ?? errors.discount_code?.[0]"
-                  @update:model-value="discountCodeInput = $event.toUpperCase()"
-                />
-                <BaseButton v-if="!appliedCode" type="button" variant="outline" :loading="checkingCode" :disabled="!discountCodeInput.trim() || !selectedStudent || !form.fee_type" @click="applyCode">
-                  {{ t('admin.discountCodes.apply') }}
-                </BaseButton>
-                <BaseButton v-else type="button" variant="outline" @click="removeCode()">{{ t('admin.discountCodes.remove') }}</BaseButton>
-              </div>
-              <div v-else-if="appliedCode" class="mt-1.5 flex justify-end">
-                <button type="button" class="text-sm font-medium text-danger-600" @click="removeCode()">{{ t('admin.discountCodes.remove') }}</button>
-              </div>
-              <p v-if="appliedCode" class="mt-1.5 text-sm text-green-700">
-                {{ t('admin.discountCodes.applied', { code: appliedCode.code, name: appliedCode.name, amount: formatMoney(appliedCode.amount, appliedCode.currency) }) }}
-              </p>
-            </div>
-
-            <template v-if="!appliedCode">
-              <LookupSelect
-                v-model="form.discount_reason"
-                category="DISCOUNT_REASON"
-                :label="t('admin.enrollments.discountReason')"
-                :error="errors.discount_reason?.[0]"
-              />
-
-              <BaseInput
-                :model-value="String(form.discount_price)"
-                type="number"
-                step="0.01"
-                :label="`${t('admin.enrollments.discountPrice')} (${invoiceCurrency})`"
-                :error="errors.discount_price?.[0]"
-                @update:model-value="form.discount_price = Number($event) || 0"
-              />
-            </template>
-            <div v-else class="flex items-center justify-between text-sm">
-              <span class="text-neutral-500">{{ t('admin.enrollments.discountPrice') }}</span>
+            <BaseSelect
+              :model-value="codePick"
+              :options="codeOptions"
+              :label="t('admin.discountCodes.useCode')"
+              :disabled="!selectedStudent || !form.fee_type || checkingCode"
+              :error="codeError ?? errors.discount_code?.[0] ?? errors.discount_price?.[0]"
+              @update:model-value="pickCode(String($event ?? ''))"
+            />
+            <div v-if="appliedCode" class="flex items-center justify-between text-sm">
+              <span class="text-neutral-500">{{ t('admin.enrollments.discountPrice') }} · {{ appliedCode.name }}</span>
               <span class="font-semibold text-green-700">− {{ formatMoney(form.discount_price, invoiceCurrency) }}</span>
             </div>
 

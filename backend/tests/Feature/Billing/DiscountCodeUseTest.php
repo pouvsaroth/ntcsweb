@@ -175,6 +175,43 @@ class DiscountCodeUseTest extends TestCase
         $this->assertSame(0, DiscountCodeRedemption::query()->where('status', 'applied')->count());
     }
 
+    public function test_record_payment_takes_a_code_off_what_is_still_owed(): void
+    {
+        $this->actingAsAdminWithPermissions([
+            Permissions::ENROLLMENTS_CREATE, Permissions::INVOICES_VIEW, Permissions::INVOICES_CANCEL, Permissions::PAYMENTS_CREATE,
+        ]);
+        DiscountCode::factory()->create(['code' => 'SAVE10', 'value' => 10, 'currency' => $this->currency()]);
+        $student = Student::factory()->create();
+        $this->enroll($student, null)->assertCreated(); // 24 - 1 discount = 23 owed
+        $invoice = Invoice::query()->where('student_id', $student->id)->sole();
+        $this->assertSame('23.00', (string) $invoice->balance);
+
+        // The check: 10% of what is still owed.
+        $this->postJson('/api/v1/discount-codes/check-invoice', ['discount_code' => 'save10', 'invoice_id' => $invoice->id])
+            ->assertOk()->assertJsonPath('data.amount', 2.3)->assertJsonPath('data.total', 20.7);
+
+        // The code sets the discount; a typed discount is ignored.
+        $this->postJson("/api/v1/invoices/{$invoice->id}/payments", [
+            'amount' => 20.7, 'payment_method' => 'CASH', 'discount_code' => 'SAVE10', 'discount' => 9, 'discount_reason' => 'typed',
+        ])->assertCreated();
+
+        $invoice->refresh();
+        $this->assertSame('3.30', (string) $invoice->discount);
+        $this->assertSame('Code SAVE10', $invoice->discount_reason);
+        $this->assertSame('0.00', (string) $invoice->balance);
+        $this->assertSame(1, DiscountCodeRedemption::query()->where('invoice_id', $invoice->id)->where('status', 'applied')->count());
+
+        // A refused code stops the payment.
+        $this->enroll($other = Student::factory()->create(), null)->assertCreated();
+        $otherInvoice = Invoice::query()->where('student_id', $other->id)->sole();
+        $this->postJson("/api/v1/invoices/{$otherInvoice->id}/payments", ['amount' => 5, 'payment_method' => 'CASH', 'discount_code' => 'NOPE'])
+            ->assertUnprocessable()->assertJsonValidationErrors('discount_code');
+
+        // The check needs Add payments.
+        $this->actingAsAdminWithPermissions([Permissions::INVOICES_VIEW]);
+        $this->postJson('/api/v1/discount-codes/check-invoice', ['discount_code' => 'SAVE10', 'invoice_id' => $invoice->id])->assertForbidden();
+    }
+
     private function currency(): string
     {
         return $this->tenant->fresh()->default_currency;

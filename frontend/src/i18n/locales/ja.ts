@@ -4874,6 +4874,7 @@ const ja: MessageSchema = {
         noStudents: '上で検索して生徒を追加してください。生徒ごとに値を入力できます。',
         save: '{count} 件のコードを作成',
       },
+      noDiscount: '割引なし',
       useCode: '割引コード',
       chooseCode: 'コードを選択（この生徒用 {count} 件）',
       typeOther: '別のコードを入力',

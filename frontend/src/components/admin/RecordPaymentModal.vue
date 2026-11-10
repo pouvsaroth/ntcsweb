@@ -7,9 +7,9 @@ import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
-import LookupSelect from '@/components/ui/LookupSelect.vue'
 import TaskProgressOverlay from '@/components/ui/TaskProgressOverlay.vue'
 import { useInvoicePrint } from '@/composables/useInvoicePrint'
+import { discountCodesService, type AvailableDiscountCode, type DiscountCodeCheck } from '@/services/discountCodes'
 import { invoicesService, type Invoice } from '@/services/invoices'
 import { paymentMethods, type PaymentMethodValue } from '@/services/payments'
 import { ApiRequestError } from '@/types/api'
@@ -29,6 +29,8 @@ const props = defineProps<{
   /** Pre-fills the amount field — the common case is a full payment. */
   balance: number
   currency: Invoice['currency']
+  /** The invoice's student (null = a company invoice): picks which discount codes are offered. */
+  studentId: number | null
 }>()
 
 const emit = defineEmits<{ 'update:modelValue': [value: boolean]; recorded: []; printFailed: [message: string] }>()
@@ -41,9 +43,42 @@ const form = reactive({
   payment_date: today(),
   reference_number: '',
   notes: '',
-  discount_reason: '',
   discount: '',
+  discount_code: '',
 })
+
+// Discount: only through a code. The dropdown has the student's own codes
+// (or every active code when they have none); the amount comes from the
+// code and cannot be typed.
+const codes = ref<AvailableDiscountCode[]>([])
+const appliedCode = ref<DiscountCodeCheck | null>(null)
+const checkingCode = ref(false)
+const codeError = ref<string | null>(null)
+const codeOptions = computed(() => [
+  { value: '', label: t('admin.discountCodes.noDiscount') },
+  ...codes.value.map((c) => ({
+    value: c.code,
+    label: `${c.code} · ${c.name} · ${c.discount_type === 'percent' ? `${Number(c.value)}%` : formatMoney(c.value, c.currency)}`,
+  })),
+])
+
+async function pickCode(value: string) {
+  form.discount_code = value
+  form.discount = ''
+  appliedCode.value = null
+  codeError.value = null
+  if (!value) return
+  checkingCode.value = true
+  try {
+    appliedCode.value = await discountCodesService.checkInvoice(value, props.invoiceId)
+    form.discount = appliedCode.value.amount.toFixed(2)
+  } catch (error) {
+    form.discount_code = ''
+    codeError.value = error instanceof ApiRequestError ? (error.fieldError('discount_code') ?? error.message) : t('admin.discountCodes.checkFailed')
+  } finally {
+    checkingCode.value = false
+  }
+}
 
 /** Same "Fee To Pay" line EnrollmentPackageForm shows under its discount fields. */
 const balanceAfterDiscount = computed(() => Math.max(0, props.balance - (Number(form.discount) || 0)))
@@ -89,10 +124,17 @@ watch(
     form.payment_date = today()
     form.reference_number = ''
     form.notes = ''
-    form.discount_reason = ''
     form.discount = ''
+    form.discount_code = ''
+    appliedCode.value = null
+    codeError.value = null
     errors.value = {}
     generalError.value = null
+    codes.value = []
+    discountCodesService
+      .available(props.studentId)
+      .then((list) => (codes.value = list))
+      .catch(() => (codes.value = []))
   },
 )
 
@@ -150,19 +192,18 @@ async function submit(print = false) {
     <form class="space-y-4" @submit.prevent="submit()">
       <BaseAlert v-if="generalError" variant="danger">{{ generalError }}</BaseAlert>
 
-      <LookupSelect
-        v-model="form.discount_reason"
-        category="DISCOUNT_REASON"
-        :label="t('admin.enrollments.discountReason')"
-        :error="errors.discount_reason?.[0]"
+      <BaseSelect
+        :model-value="form.discount_code"
+        :options="codeOptions"
+        :disabled="checkingCode"
+        :label="t('admin.discountCodes.useCode')"
+        :error="codeError ?? errors.discount_code?.[0] ?? errors.discount?.[0]"
+        @update:model-value="pickCode(String($event ?? ''))"
       />
-      <BaseInput
-        v-model="form.discount"
-        type="number"
-        step="0.01"
-        :label="`${t('admin.enrollments.discountPrice')} (${currency})`"
-        :error="errors.discount?.[0]"
-      />
+      <div v-if="appliedCode" class="flex items-center justify-between text-sm">
+        <span class="text-neutral-500">{{ t('admin.enrollments.discountPrice') }}</span>
+        <span class="font-semibold text-green-700">− {{ formatMoney(Number(form.discount), currency) }}</span>
+      </div>
       <div class="flex items-center justify-between border-t border-neutral-200 pt-3 text-sm">
         <span class="font-medium text-neutral-700">{{ t('admin.enrollments.feeToPay') }}</span>
         <span class="font-semibold text-neutral-900">{{ formatMoney(balanceAfterDiscount, currency) }}</span>
@@ -199,8 +240,8 @@ async function submit(print = false) {
 
     <template #footer>
       <BaseButton variant="outline" @click="emit('update:modelValue', false)">{{ t('common.cancel') }}</BaseButton>
-      <BaseButton variant="outline" :loading="submittingAndPrinting" :disabled="submitting" @click="submit(true)">{{ t('admin.invoices.saveAndPrint') }}</BaseButton>
-      <BaseButton :loading="submitting" :disabled="submittingAndPrinting" @click="submit()">{{ t('admin.invoices.recordPaymentAction') }}</BaseButton>
+      <BaseButton variant="outline" :loading="submittingAndPrinting" :disabled="submitting || checkingCode" @click="submit(true)">{{ t('admin.invoices.saveAndPrint') }}</BaseButton>
+      <BaseButton :loading="submitting" :disabled="submittingAndPrinting || checkingCode" @click="submit()">{{ t('admin.invoices.recordPaymentAction') }}</BaseButton>
     </template>
   </BaseModal>
 

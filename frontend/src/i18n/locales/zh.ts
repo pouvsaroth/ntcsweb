@@ -4873,6 +4873,7 @@ const zh: MessageSchema = {
         noStudents: '在上方搜索并添加学生，每名学生一行，可设置各自的值。',
         save: '创建 {count} 个折扣码',
       },
+      noDiscount: '无折扣',
       useCode: '折扣码',
       chooseCode: '选择折扣码（此学生可用 {count} 个）',
       typeOther: '输入其他折扣码',

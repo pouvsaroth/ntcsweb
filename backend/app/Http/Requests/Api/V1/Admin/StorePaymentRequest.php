@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Api\V1\Admin;
 
 use App\Models\Invoice;
+use App\Models\Payment;
 use App\Support\Billing\PaymentMethod;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -16,7 +17,7 @@ class StorePaymentRequest extends FormRequest
         /** @var Invoice $invoice */
         $invoice = $this->route('invoice');
 
-        return $this->user()?->can('create', [\App\Models\Payment::class, $invoice]) ?? false;
+        return $this->user()?->can('create', [Payment::class, $invoice]) ?? false;
     }
 
     public function rules(): array
@@ -37,6 +38,9 @@ class StorePaymentRequest extends FormRequest
             // PaymentService for the same row-lock reason as `amount`.
             'discount_reason' => ['nullable', 'string', 'max:50'],
             'discount' => ['nullable', 'numeric', 'min:0', 'max:999999.99'],
+            // A discount code: when given, it sets the discount (on what is
+            // still owed) and its reason; `discount`/`discount_reason` are ignored.
+            'discount_code' => ['nullable', 'string', 'max:80'],
         ];
     }
 }

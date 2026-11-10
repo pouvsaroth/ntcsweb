@@ -4878,6 +4878,7 @@ const en = {
         noStudents: 'Search above and add students. Each one gets a row with their own value.',
         save: 'Create {count} codes',
       },
+      noDiscount: 'No discount',
       useCode: 'Discount code',
       chooseCode: 'Choose a code ({count} for this student)',
       typeOther: 'Type another code',
