@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
@@ -11,6 +11,7 @@ import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import TaskProgressOverlay from '@/components/ui/TaskProgressOverlay.vue'
 import { useInvoicePrint } from '@/composables/useInvoicePrint'
 import { classesService, type SchoolClass } from '@/services/classes'
+import { discountCodesService, type AvailableDiscountCode, type DiscountCodeCheck } from '@/services/discountCodes'
 import { enrollmentsService, type Enrollment } from '@/services/enrollments'
 import { invoicesService, type Invoice } from '@/services/invoices'
 import { paymentMethods, type PaymentMethodValue } from '@/services/payments'
@@ -49,8 +50,7 @@ const form = reactive({
   period_to: '',
   currency: (auth.tenantDefaultCurrency ?? 'USD') as Currency,
   amount: 0,
-  discount: 0,
-  discount_reason: '',
+  discount_code: '',
   notes: '',
   payment_method: 'CASH' as PaymentMethodValue,
 })
@@ -83,7 +83,52 @@ const students = ref<Enrollment[]>([])
 const openInvoice = ref<Invoice | null>(null)
 const loadingClass = ref(false)
 
-const total = computed(() => Math.max(0, (form.amount || 0) - (form.discount || 0)))
+// Discount: only through a code, picked by name. The amount comes from the
+// code on the total and cannot be typed; it is checked again when the total
+// or the currency changes.
+const codes = ref<AvailableDiscountCode[]>([])
+const appliedCode = ref<DiscountCodeCheck | null>(null)
+const checkingCode = ref(false)
+const codeError = ref<string | null>(null)
+const codeOptions = computed(() => [
+  { value: '', label: t('admin.discountCodes.noDiscount') },
+  ...codes.value.map((c) => ({ value: c.code, label: `${c.name} (${c.code})` })),
+])
+const discount = computed(() => (appliedCode.value && form.discount_code ? appliedCode.value.amount : 0))
+
+let checkRun = 0
+async function checkCode() {
+  const run = ++checkRun
+  appliedCode.value = null
+  codeError.value = null
+  if (!form.discount_code || form.amount <= 0) return
+  checkingCode.value = true
+  try {
+    const result = await discountCodesService.checkAmount(form.discount_code, form.amount, form.currency)
+    if (run === checkRun) appliedCode.value = result
+  } catch (error) {
+    if (run !== checkRun) return
+    form.discount_code = ''
+    codeError.value = error instanceof ApiRequestError ? (error.fieldError('discount_code') ?? error.message) : t('admin.discountCodes.checkFailed')
+  } finally {
+    if (run === checkRun) checkingCode.value = false
+  }
+}
+
+function pickCode(value: string) {
+  form.discount_code = value
+  void checkCode()
+}
+
+let recheckTimer: ReturnType<typeof setTimeout> | undefined
+watch([() => form.amount, () => form.currency], () => {
+  if (!form.discount_code) return
+  appliedCode.value = null
+  clearTimeout(recheckTimer)
+  recheckTimer = setTimeout(() => void checkCode(), 400)
+})
+
+const total = computed(() => Math.max(0, (form.amount || 0) - discount.value))
 
 // Payment, used only by "Pay and invoice". null = follow the total; the typed text once staff enter their own amount.
 const payAmountText = ref<string | null>(null)
@@ -120,7 +165,7 @@ async function onClassChange(value: string) {
 }
 
 const canSubmit = computed(
-  () => form.class_id !== null && !openInvoice.value && students.value.length > 0 && form.amount > 0 && form.period_from !== '' && form.period_to !== '',
+  () => form.class_id !== null && !checkingCode.value && !openInvoice.value && students.value.length > 0 && form.amount > 0 && form.period_from !== '' && form.period_to !== '',
 )
 
 /**
@@ -145,8 +190,7 @@ async function submit(mode: 'issue' | 'pay' = 'issue') {
       period_to: form.period_to,
       currency: form.currency,
       amount: form.amount,
-      discount: form.discount || 0,
-      discount_reason: form.discount_reason || null,
+      discount_code: form.discount_code || null,
       notes: form.notes || null,
       received_amount: mode === 'pay' ? payAmount.value : 0,
       payment_method: mode === 'pay' ? form.payment_method : null,
@@ -168,6 +212,10 @@ async function submit(mode: 'issue' | 'pay' = 'issue') {
 }
 
 onMounted(async () => {
+  discountCodesService
+    .available()
+    .then((list) => (codes.value = list))
+    .catch(() => (codes.value = []))
   try {
     classes.value = (await classesService.listCompanyClasses()).filter((c) => c.company_id !== null)
     const preset = Number(route.query.class_id)
@@ -248,9 +296,15 @@ onMounted(async () => {
             :hint="t('admin.invoices.companyInvoiceAmountHint')"
             :error="errors.amount?.[0]"
           />
-          <BaseInput :model-value="String(form.discount)"
-            @update:model-value="form.discount = Number($event) || 0" type="number" min="0" step="any" :label="`${t('admin.enrollments.discountPrice')} (${form.currency})`" :error="errors.discount?.[0]" />
-          <BaseInput v-model="form.discount_reason" :label="t('admin.enrollments.discountReason')" :error="errors.discount_reason?.[0]" />
+          <BaseSelect
+            class="sm:col-span-2"
+            :model-value="form.discount_code"
+            :options="codeOptions"
+            :disabled="checkingCode"
+            :label="t('admin.discountCodes.useCode')"
+            :error="codeError ?? errors.discount_code?.[0] ?? errors.discount?.[0]"
+            @update:model-value="pickCode(String($event ?? ''))"
+          />
         </div>
 
         <div>
@@ -263,6 +317,7 @@ onMounted(async () => {
         </div>
 
         <dl class="space-y-1 rounded-[--radius-card] border border-neutral-200 bg-white p-4 text-sm">
+          <div v-if="discount > 0" class="flex justify-between"><dt class="text-neutral-500">{{ t('admin.enrollments.discountPrice') }}</dt><dd class="font-semibold text-green-700">− {{ formatMoney(discount, form.currency) }}</dd></div>
           <div class="flex justify-between"><dt class="text-neutral-500">{{ t('admin.invoices.columnTotal') }}</dt><dd class="font-semibold text-neutral-900">{{ formatMoney(total, form.currency) }}</dd></div>
         </dl>
 

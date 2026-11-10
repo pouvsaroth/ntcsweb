@@ -13,6 +13,7 @@ use App\Models\Student;
 use App\Models\User;
 use App\Services\Billing\InvoicePdfService;
 use App\Support\Authorization\Permissions;
+use App\Models\DiscountCode;
 use App\Support\Billing\InvoiceStatus;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use ReflectionMethod;
@@ -90,6 +91,37 @@ class CompanyInvoiceTest extends TestCase
         $this->getJson('/api/v1/invoices?search=ABC')->assertOk()->assertJsonPath('data.0.id', $invoice->id);
         $this->getJson('/api/v1/invoices?search='.urlencode($this->students[1]->student_code))->assertOk()->assertJsonPath('data.0.id', $invoice->id);
         $this->getJson("/api/v1/invoices?filter[class_id]={$this->class->id}")->assertOk()->assertJsonCount(1, 'data');
+    }
+
+    public function test_a_discount_code_sets_the_discount_on_the_class_total(): void
+    {
+        $this->actingAsAdminWithPermissions(self::PERMS);
+        $this->companyClassWithStudents(2);
+        DiscountCode::factory()->create(['code' => 'D01', 'name' => 'New Year 10%', 'value' => 10, 'currency' => 'USD']);
+        DiscountCode::factory()->create(['code' => 'OFF', 'status' => 'inactive']);
+
+        // The dropdown with no student: every main code that works today.
+        $this->getJson('/api/v1/discount-codes/available')->assertOk()->assertJsonPath('data.*.code', ['D01']);
+
+        // The live check on the total.
+        $this->postJson('/api/v1/discount-codes/check-amount', ['discount_code' => 'd01', 'amount' => 1200, 'currency' => 'USD'])
+            ->assertOk()->assertJsonPath('data.amount', 120)->assertJsonPath('data.total', 1080);
+
+        // The code sets the discount; a typed one is ignored.
+        $this->postJson('/api/v1/invoices/company-class', $this->invoiceInput(['amount' => 1200, 'discount_code' => 'D01', 'discount' => 5, 'discount_reason' => 'typed']))
+            ->assertCreated()->assertJsonPath('data.total', 1080);
+        $invoice = Invoice::query()->sole();
+        $this->assertSame('120.00', (string) $invoice->discount);
+        $this->assertSame('Code D01', $invoice->discount_reason);
+
+        // A refused code stops the invoice.
+        $invoice->update(['status' => InvoiceStatus::CANCELLED]);
+        $this->postJson('/api/v1/invoices/company-class', $this->invoiceInput(['discount_code' => 'OFF']))
+            ->assertUnprocessable()->assertJsonValidationErrors('discount_code');
+
+        // The check needs Add invoices.
+        $this->actingAsAdminWithPermissions([Permissions::INVOICES_VIEW]);
+        $this->postJson('/api/v1/discount-codes/check-amount', ['discount_code' => 'D01', 'amount' => 100, 'currency' => 'USD'])->assertForbidden();
     }
 
     public function test_money_received_now_is_recorded_as_a_payment_with_no_student(): void

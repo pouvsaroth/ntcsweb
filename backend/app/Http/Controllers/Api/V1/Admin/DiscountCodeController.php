@@ -241,6 +241,36 @@ final class DiscountCodeController extends Controller
     }
 
     /**
+     * POST /discount-codes/check-amount — Invoice by class's live check: what
+     * the code takes off this total (no student: main codes only). Anyone
+     * who can create invoices. Nothing is saved.
+     */
+    public function checkAmount(Request $request, DiscountCodeService $discounts): JsonResponse
+    {
+        abort_unless($request->user()?->can('create', Invoice::class), 403);
+
+        $data = $request->validate([
+            'discount_code' => ['required', 'string', 'max:80'],
+            'amount' => ['required', 'numeric', 'min:0', 'max:99999999'],
+            'currency' => ['required', Rule::in(['USD', 'KHR'])],
+        ]);
+
+        $fee = (float) $data['amount'];
+        ['code' => $code, 'amount' => $amount] = $discounts->quote($data['discount_code'], null, $fee, $data['currency']);
+
+        return ApiResponse::success([
+            'code' => $code->code,
+            'name' => $code->name,
+            'discount_type' => $code->discount_type,
+            'value' => (float) $code->value,
+            'amount' => $amount,
+            'fee' => $fee,
+            'total' => max($fee - $amount, 0),
+            'currency' => $data['currency'],
+        ]);
+    }
+
+    /**
      * GET /discount-codes/available — the forms' dropdown: the student's own
      * codes that work today, or every main code when they have none. Anyone
      * who can enroll students or take payments.
@@ -248,7 +278,7 @@ final class DiscountCodeController extends Controller
     public function available(Request $request, DiscountCodeService $discounts): JsonResponse
     {
         $user = $request->user();
-        abort_unless($user !== null && ($user->can('create', Enrollment::class) || $user->hasPermission(Permissions::PAYMENTS_CREATE)), 403);
+        abort_unless($user !== null && ($user->can('create', Enrollment::class) || $user->can('create', Invoice::class) || $user->hasPermission(Permissions::PAYMENTS_CREATE)), 403);
 
         $data = $request->validate([
             'student_id' => ['nullable', 'integer', Rule::exists('tenant.students', 'id')],

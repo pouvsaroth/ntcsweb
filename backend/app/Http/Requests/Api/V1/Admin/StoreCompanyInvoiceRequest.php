@@ -42,6 +42,9 @@ class StoreCompanyInvoiceRequest extends FormRequest
             'amount' => ['required', 'numeric', 'gt:0', 'max:99999999'],
             'discount' => ['nullable', 'numeric', 'min:0'],
             'discount_reason' => ['nullable', 'string', 'max:50'],
+            // A discount code (an active main code): when given, it sets the
+            // discount on the total and its reason; `discount` is ignored.
+            'discount_code' => ['nullable', 'string', 'max:80'],
             'notes' => ['nullable', 'string', 'max:2000'],
             'received_amount' => ['nullable', 'numeric', 'min:0'],
             'payment_method' => ['nullable', Rule::in(PaymentMethod::all())],

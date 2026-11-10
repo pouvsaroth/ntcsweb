@@ -35,10 +35,11 @@ final class CompanyInvoiceService
     public function __construct(
         private readonly InvoiceService $invoices,
         private readonly PaymentService $payments,
+        private readonly DiscountCodeService $discountCodes,
     ) {}
 
     /**
-     * @param  array{class_id:int, invoice_date?:string|null, due_date?:string|null, period_from:string, period_to:string, currency:string, amount:float|string, discount?:float|string|null, discount_reason?:string|null, notes?:string|null, received_amount?:float|string|null, payment_method?:string|null}  $data
+     * @param  array{class_id:int, invoice_date?:string|null, due_date?:string|null, period_from:string, period_to:string, currency:string, amount:float|string, discount?:float|string|null, discount_reason?:string|null, discount_code?:string|null, notes?:string|null, received_amount?:float|string|null, payment_method?:string|null}  $data
      */
     public function create(array $data, User $actor): Invoice
     {
@@ -77,6 +78,14 @@ final class CompanyInvoiceService
                 throw ValidationException::withMessages(['class_id' => __("The course these students are on has no product linked, so the invoice can't be booked to an income account. Link a product to the course first.")]);
             }
 
+            // A discount code sets the discount: its share of the class total.
+            $discount = (float) ($data['discount'] ?? 0);
+            $discountReason = $data['discount_reason'] ?? null;
+            if (filled($data['discount_code'] ?? null)) {
+                ['code' => $code, 'amount' => $discount] = $this->discountCodes->quote((string) $data['discount_code'], null, (float) $data['amount'], $data['currency']);
+                $discountReason = $this->discountCodes->reasonFor($code);
+            }
+
             $count = $enrollments->count();
             $from = Carbon::parse($data['period_from'])->format('d-m-Y');
             $to = Carbon::parse($data['period_to'])->format('d-m-Y');
@@ -89,8 +98,8 @@ final class CompanyInvoiceService
                 'period_from' => $data['period_from'],
                 'period_to' => $data['period_to'],
                 'currency' => $data['currency'],
-                'discount' => (float) ($data['discount'] ?? 0),
-                'discount_reason' => $data['discount_reason'] ?? null,
+                'discount' => $discount,
+                'discount_reason' => $discountReason,
                 'notes' => $data['notes'] ?? null,
                 'items' => [[
                     'product_id' => $package->product_id,

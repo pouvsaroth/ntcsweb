@@ -50,8 +50,8 @@ export interface CompanyInvoiceInput {
   period_to: string
   currency: Currency
   amount: number
-  discount: number
-  discount_reason: string | null
+  /** The chosen discount code; it sets the discount (the server works the amount out again). */
+  discount_code: string | null
   notes: string | null
   received_amount: number
   payment_method: string | null

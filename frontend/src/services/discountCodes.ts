@@ -104,6 +104,9 @@ export const discountCodesService = {
     apiGet<AvailableDiscountCode[]>('/discount-codes/available', { params: studentId ? { student_id: studentId } : {} }),
   /** Record payment: what the code takes off what is still owed on this invoice (needs Add payments). */
   checkInvoice: (code: string, invoiceId: number) => apiPost<DiscountCodeCheck>('/discount-codes/check-invoice', { discount_code: code, invoice_id: invoiceId }),
+  /** Invoice by class: what the code takes off this total (needs Add invoices). */
+  checkAmount: (code: string, amount: number, currency: 'USD' | 'KHR') =>
+    apiPost<DiscountCodeCheck>('/discount-codes/check-amount', { discount_code: code, amount, currency }),
   /** Website registration form (public codes only). */
   checkPublic: (input: Omit<DiscountCodeCheckInput, 'student_id'>) => apiPost<DiscountCodeCheck>('/public/discount-codes/check', input),
 
