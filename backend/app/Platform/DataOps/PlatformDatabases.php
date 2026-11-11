@@ -98,6 +98,24 @@ final class PlatformDatabases
     }
 
     /**
+     * Run $callback with a connection to one of our databases: a school on a
+     * separate server with its own login, everything else with this server's.
+     *
+     * @template T
+     *
+     * @param  callable(\Illuminate\Database\Connection): T  $callback
+     * @return T
+     */
+    public function using(string $database, callable $callback): mixed
+    {
+        $tenant = $this->tenantFor($database);
+
+        return $tenant !== null && SchoolPlacement::of($tenant)->isSeparate()
+            ? $this->database->usingSchool($tenant, $callback)
+            : $this->database->usingDatabase($database, $callback);
+    }
+
+    /**
      * The Databases screen: each database probed, a failure costing only its
      * own row.
      *

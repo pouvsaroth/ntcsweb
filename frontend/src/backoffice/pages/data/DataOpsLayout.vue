@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-/** Data ops: four tabs, each its own route so a link lands on the right one. */
+/** Data ops: five tabs, each its own route so a link lands on the right one. */
 const { t } = useI18n()
 
 const tabs = [
   { to: '/data/databases', key: 'databases' },
+  { to: '/data/tables', key: 'tables' },
   { to: '/data/backups', key: 'backups' },
   { to: '/data/migrations', key: 'migrations' },
   { to: '/data/health', key: 'health' },

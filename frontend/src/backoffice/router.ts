@@ -65,6 +65,7 @@ const routes: RouteRecordRaw[] = [
         children: [
           { path: '', redirect: '/data/databases' },
           { path: 'databases', component: () => import('./pages/data/DatabasesTab.vue') },
+          { path: 'tables', component: () => import('./pages/data/TablesTab.vue') },
           { path: 'backups', component: () => import('./pages/data/BackupsTab.vue') },
           { path: 'migrations', component: () => import('./pages/data/MigrationsTab.vue') },
           { path: 'health', component: () => import('./pages/data/HealthTab.vue') },

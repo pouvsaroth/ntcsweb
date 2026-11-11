@@ -99,6 +99,31 @@ final class BackupRunner
         return $backup;
     }
 
+    /**
+     * A custom backup made right now, not queued — taken just before a table
+     * is cleared, so the clear waits for it and stops if it fails.
+     *
+     * @param  list<array{name: string, mode: string}>  $tables
+     */
+    public function runTablesNow(string $database, array $tables, ?PlatformStaff $staff = null): Backup
+    {
+        $tenant = $this->databases->tenantFor($database);
+
+        $backup = Backup::query()->create([
+            'database' => $database,
+            'tenant_id' => $tenant?->getKey(),
+            'trigger' => 'manual',
+            'format' => Backup::FORMAT_TABLES,
+            'tables' => array_values($tables),
+            'staff_id' => $staff?->getKey(),
+            'status' => Backup::STATUS_RUNNING,
+        ]);
+
+        $this->run($backup);
+
+        return $backup->refresh();
+    }
+
     /** A `running` row and its queued job. */
     public function queue(string $database, string $trigger, ?PlatformStaff $staff = null): Backup
     {

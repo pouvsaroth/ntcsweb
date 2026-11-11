@@ -8,6 +8,7 @@ use App\Platform\Http\Controllers\ChatController;
 use App\Platform\Http\Controllers\HelpCenterController;
 use App\Platform\Http\Controllers\TicketController;
 use App\Platform\Http\Controllers\DataOpsController;
+use App\Platform\Http\Controllers\TableDataController;
 use App\Platform\Http\Controllers\PaymentController;
 use App\Platform\Http\Controllers\PlanController;
 use App\Platform\Http\Controllers\OrganizationTypeController;
@@ -103,7 +104,13 @@ Route::middleware('platform.staff')->group(function () {
     Route::prefix('data')->name('data.')->group(function () {
         Route::get('databases', [DataOpsController::class, 'databases'])->middleware('platform.can:platform.data.read')->name('databases');
         Route::get('health', [DataOpsController::class, 'health'])->middleware('platform.can:platform.data.read')->name('health');
-        Route::get('tables', [DataOpsController::class, 'tables'])->middleware('platform.can:platform.data.backup')->name('tables');
+        Route::get('tables', [DataOpsController::class, 'tables'])->middleware('platform.can:platform.data.read')->name('tables');
+        // Data ops > Tables: browse and filter rows; change one row; clear a table.
+        Route::get('rows', [TableDataController::class, 'rows'])->middleware('platform.can:platform.data.read')->name('rows.index');
+        Route::patch('rows', [TableDataController::class, 'update'])->middleware('platform.can:platform.data.edit')->name('rows.update');
+        Route::get('relationships', [TableDataController::class, 'relationships'])->middleware('platform.can:platform.data.read')->name('relationships');
+        Route::post('clear', [TableDataController::class, 'clear'])->middleware('platform.can:platform.data.edit')->name('clear');
+        Route::get('clear/{token}', [TableDataController::class, 'clearStatus'])->middleware('platform.can:platform.data.edit')->name('clear.status');
         Route::get('backups', [DataOpsController::class, 'backups'])->middleware('platform.can:platform.data.read')->name('backups.index');
         Route::post('backups', [DataOpsController::class, 'backupNow'])->middleware('platform.can:platform.data.backup')->name('backups.store');
         Route::get('backups/{backup}/download', [DataOpsController::class, 'download'])->middleware('platform.can:platform.data.backup')->name('backups.download');

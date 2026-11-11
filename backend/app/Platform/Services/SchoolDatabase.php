@@ -7,6 +7,7 @@ namespace App\Platform\Services;
 use App\Models\Tenant;
 use App\Platform\Models\SchoolPlacement;
 use App\Services\Tenancy\TenantProvisioningService;
+use Illuminate\Database\Connection;
 use Illuminate\Support\Facades\DB;
 use Stancl\Tenancy\Database\DatabaseManager;
 
@@ -117,14 +118,42 @@ class SchoolDatabase
      */
     public function tablesIn(string $database): array
     {
+        return $this->usingDatabase($database, fn (Connection $c) => $this->listTables($c));
+    }
+
+    /**
+     * Run $callback with a connection to $database on this server (this
+     * server's login), closed afterwards.
+     *
+     * @template T
+     *
+     * @param  callable(Connection): T  $callback
+     * @return T
+     */
+    public function usingDatabase(string $database, callable $callback): mixed
+    {
         $name = 'platform_probe';
         config(['database.connections.'.$name => array_merge(config('database.connections.'.config('tenancy.database.central_connection')), ['database' => $database])]);
 
         try {
-            return $this->listTables(DB::connection($name));
+            return $callback(DB::connection($name));
         } finally {
             DB::purge($name);
         }
+    }
+
+    /**
+     * Run $callback with a connection to a school's own database (dedicated
+     * or on a separate server, with its own login).
+     *
+     * @template T
+     *
+     * @param  callable(Connection): T  $callback
+     * @return T
+     */
+    public function usingSchool(Tenant $tenant, callable $callback): mixed
+    {
+        return $this->within($tenant, fn () => $callback(DB::connection('tenant')));
     }
 
     /**
@@ -134,11 +163,11 @@ class SchoolDatabase
      */
     public function tablesOf(Tenant $tenant): array
     {
-        return $this->within($tenant, fn () => $this->listTables(DB::connection('tenant')));
+        return $this->usingSchool($tenant, fn (Connection $c) => $this->listTables($c));
     }
 
     /** @return list<array{name: string, rows: int, size_bytes: int}> */
-    private function listTables(\Illuminate\Database\Connection $connection): array
+    private function listTables(Connection $connection): array
     {
         $rows = $connection->select(
             "select c.relname as name, greatest(c.reltuples, 0)::bigint as rows, pg_total_relation_size(c.oid) as size_bytes

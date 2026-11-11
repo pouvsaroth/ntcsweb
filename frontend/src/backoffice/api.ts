@@ -837,6 +837,82 @@ export const dataApi = {
   createDatabase: (tenantId: number) => send<{ batch: string; count: number }>('post', `/data/schools/${tenantId}/create-database`),
 }
 
+// ── Data ops > Tables ───────────────────────────────────────────────────────
+
+export interface TableColumn {
+  name: string
+  /** Postgres type, e.g. "character varying(255)", "bigint", "timestamp(0) without time zone". */
+  type: string
+  nullable: boolean
+  default: string | null
+  primary: boolean
+  /** Passwords, tokens, 2-step keys: shown as •••• and never filtered or changed. */
+  secret: boolean
+  /** Raw bytes: shown as their size. */
+  binary: boolean
+  editable: boolean
+}
+
+export type ConditionOperator = 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte' | 'contains' | 'not_contains' | 'starts' | 'ends' | 'null' | 'not_null'
+
+export interface TableCondition {
+  column: string
+  operator: ConditionOperator
+  value?: string | null
+}
+
+/** Every value comes back as text; null stays null. */
+export type TableRow = Record<string, string | null>
+
+export interface TableRowsPage {
+  columns: TableColumn[]
+  rows: TableRow[]
+  total: number
+  page: number
+  per_page: number
+}
+
+export interface ForeignKeyLink {
+  name: string
+  from_table: string
+  from_columns: string[]
+  to_table: string
+  to_columns: string[]
+  on_delete: string
+  rows: number
+}
+
+export interface TableRelationships {
+  table: string
+  rows: number
+  references: ForeignKeyLink[]
+  referenced_by: ForeignKeyLink[]
+  /** Every other table a cascade clear would empty, with its rows. */
+  cascade: { table: string; rows: number }[]
+  /** Set on the shared database: how many schools keep their rows in it. */
+  shared_schools: number | null
+}
+
+export interface ClearState {
+  token: string
+  status: 'running' | 'done' | 'failed' | 'unknown'
+  cleared?: string[]
+  backup_id?: number | null
+  error?: string
+}
+
+export const tableDataApi = {
+  rows: (params: { database: string; table: string; conditions?: TableCondition[]; sort?: string; direction?: 'asc' | 'desc'; page?: number; per_page?: number }) =>
+    get<TableRowsPage>('/data/rows', params),
+  update: (database: string, table: string, key: Record<string, string | null>, changes: Record<string, string | null>) =>
+    send<{ row: TableRow; changed: string[] }>('patch', '/data/rows', { database, table, key, changes }),
+  relationships: (database: string, table: string) => get<TableRelationships>('/data/relationships', { database, table }),
+  /** Starts the clear in the background; poll clearStatus with the token until done or failed. */
+  clear: (body: { database: string; table: string; cascade: boolean; restart_ids: boolean; backup_first: boolean; confirm: string }) =>
+    send<ClearState>('post', '/data/clear', body),
+  clearStatus: (token: string) => get<ClearState>(`/data/clear/${token}`),
+}
+
 /** 1536 → "1.5 KB". */
 export function formatBytes(bytes: number | null | undefined): string {
   if (bytes === null || bytes === undefined) return '—'

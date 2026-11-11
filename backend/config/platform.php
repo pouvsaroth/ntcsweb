@@ -53,6 +53,7 @@ return [
             'children' => [
                 ['key' => 'platform.data.read', 'label' => 'See databases, backups and health', 'label_km' => 'មើលមូលដ្ឋានទិន្នន័យ ការបម្រុងទុក និងសុខភាពប្រព័ន្ធ'],
                 ['key' => 'platform.data.backup', 'label' => 'Run, download and schedule backups', 'label_km' => 'ដំណើរការ ទាញយក និងកំណត់ពេលបម្រុងទុក'],
+                ['key' => 'platform.data.edit', 'label' => 'Change table rows and clear tables', 'label_km' => 'កែទិន្នន័យក្នុងតារាង និងសម្អាតតារាង'],
                 ['key' => 'platform.data.migrate', 'label' => 'Migrate schools and create missing databases', 'label_km' => 'ធ្វើបច្ចុប្បន្នភាពសាលា និងបង្កើតមូលដ្ឋានទិន្នន័យដែលបាត់'],
             ],
         ],
