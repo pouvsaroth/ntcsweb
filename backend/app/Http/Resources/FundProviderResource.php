@@ -19,6 +19,7 @@ class FundProviderResource extends JsonResource
             'id' => $this->id,
             'code' => $this->code,
             'name' => $this->name,
+            'gender' => $this->gender,
             'phone' => $this->phone,
             'address' => $this->address,
             'notes' => $this->notes,

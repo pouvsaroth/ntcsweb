@@ -96,6 +96,16 @@ class FundProviderTest extends TestCase
         $this->postJson('/api/v1/fund-types', ['name' => 'Other two'])->assertForbidden();
     }
 
+    public function test_a_provider_saves_a_gender_which_can_be_cleared(): void
+    {
+        $p = $this->postJson('/api/v1/fund-providers', ['name' => 'Chan Sophea', 'gender' => 'female'])
+            ->assertCreated()->assertJsonPath('data.gender', 'female')->json('data');
+        $this->getJson('/api/v1/fund-providers')->assertOk()->assertJsonPath('data.0.gender', 'female');
+        $this->putJson("/api/v1/fund-providers/{$p['id']}", ['gender' => 'male'])->assertOk()->assertJsonPath('data.gender', 'male');
+        $this->putJson("/api/v1/fund-providers/{$p['id']}", ['gender' => null])->assertOk()->assertJsonPath('data.gender', null);
+        $this->postJson('/api/v1/fund-providers', ['name' => 'X', 'gender' => str_repeat('a', 11)])->assertJsonValidationErrors('gender');
+    }
+
     public function test_fund_reports_show_money_in_by_provider(): void
     {
         $sok = FundProvider::factory()->create(['name' => 'Sok Dara']);

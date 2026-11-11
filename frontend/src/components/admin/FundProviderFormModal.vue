@@ -6,6 +6,7 @@ import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
+import LookupSelect from '@/components/ui/LookupSelect.vue'
 import { fundProvidersService, type FundProvider, type FundProviderInput } from '@/services/fundProviders'
 import { ApiRequestError } from '@/types/api'
 
@@ -15,7 +16,7 @@ const emit = defineEmits<{ 'update:modelValue': [value: boolean]; saved: [provid
 
 const { t } = useI18n()
 
-const form = reactive<FundProviderInput>({ name: '', phone: '', address: '', notes: '', is_active: true })
+const form = reactive<FundProviderInput>({ name: '', gender: '', phone: '', address: '', notes: '', is_active: true })
 const errors = ref<Record<string, string[]>>({})
 const saveError = ref<string | null>(null)
 const saving = ref(false)
@@ -26,6 +27,7 @@ watch(
     if (!open) return
     const p = props.provider
     form.name = p?.name ?? ''
+    form.gender = p?.gender ?? ''
     form.phone = p?.phone ?? ''
     form.address = p?.address ?? ''
     form.notes = p?.notes ?? ''
@@ -61,8 +63,15 @@ async function save() {
   >
     <form class="space-y-4" @submit.prevent="save">
       <BaseAlert v-if="saveError" variant="danger">{{ saveError }}</BaseAlert>
-      <div class="grid gap-4 sm:grid-cols-[minmax(0,1fr)_12rem]">
-        <BaseInput v-model="form.name" required :label="t('admin.fundProviders.name')" :error="errors.name?.[0]" />
+      <BaseInput v-model="form.name" required :label="t('admin.fundProviders.name')" :error="errors.name?.[0]" />
+      <div class="grid gap-4 sm:grid-cols-2">
+        <LookupSelect
+          v-model="form.gender"
+          category="GENDER"
+          :label="t('admin.fundProviders.gender')"
+          :placeholder="t('admin.fundProviders.selectGender')"
+          :error="errors.gender?.[0]"
+        />
         <BaseInput v-model="form.phone" :label="t('admin.fundProviders.phone')" :error="errors.phone?.[0]" />
       </div>
       <BaseInput v-model="form.address" :label="t('admin.fundProviders.address')" :error="errors.address?.[0]" />

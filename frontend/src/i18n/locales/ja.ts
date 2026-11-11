@@ -6894,6 +6894,8 @@ const ja: MessageSchema = {
       loadFailed: 'レポートを読み込めませんでした。',
     },
     fundProviders: {
+      gender: '性別',
+      selectGender: '性別を選択',
       title: '資金提供者', subtitle: '基金にお金を出した人や会社と、それぞれの提供額です。', add: '提供者を追加', edit: '提供者を編集', code: 'コード', name: '名前', phone: '電話', address: '住所', notes: 'メモ', given: '提供額', status: '状態', active: '有効', inactive: '無効', filterAll: 'すべて', empty: 'まだ提供者がいません。', delete: '削除', deleteConfirm: 'この提供者を削除しますか？', deleteFailed: '提供者を削除できませんでした。', saveFailed: '提供者を保存できませんでした。',
     },
     funds: {

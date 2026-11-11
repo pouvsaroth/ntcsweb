@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * Tenant-owned. Fund > Providers: someone who gives money to a fund.
  * `code` (P00001) is given from the id on create.
  */
-#[Fillable(['name', 'phone', 'address', 'notes', 'is_active'])]
+#[Fillable(['name', 'gender', 'phone', 'address', 'notes', 'is_active'])]
 class FundProvider extends Model
 {
     /** @use HasFactory<FundProviderFactory> */

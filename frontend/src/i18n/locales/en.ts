@@ -6898,6 +6898,8 @@ const en = {
       loadFailed: 'Could not load the report.',
     },
     fundProviders: {
+      gender: 'Gender',
+      selectGender: 'Select gender',
       title: 'Fund providers', subtitle: 'People and companies who give money to the funds, with what each has given.', add: 'Add provider', edit: 'Edit provider', code: 'Code', name: 'Name', phone: 'Phone', address: 'Address', notes: 'Notes', given: 'Given', status: 'Status', active: 'Active', inactive: 'Inactive', filterAll: 'All', empty: 'No providers yet.', delete: 'Delete', deleteConfirm: 'Delete this provider?', deleteFailed: 'Could not delete the provider.', saveFailed: 'Could not save the provider.',
     },
     funds: {

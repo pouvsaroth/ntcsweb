@@ -84,6 +84,7 @@ final class FundProviderController extends Controller
 
         return [
             'name' => [...$sometimes, 'required', 'string', 'max:255'],
+            'gender' => ['nullable', 'string', 'max:10'],
             'phone' => ['nullable', 'string', 'max:32'],
             'address' => ['nullable', 'string', 'max:2000'],
             'notes' => ['nullable', 'string', 'max:2000'],

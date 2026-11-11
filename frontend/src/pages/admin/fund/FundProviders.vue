@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import FundProviderFormModal from '@/components/admin/FundProviderFormModal.vue'
@@ -12,14 +12,31 @@ import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import DataTable from '@/components/ui/DataTable.vue'
 import EditIconButton from '@/components/ui/EditIconButton.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
+import { lookupsService } from '@/services/lookups'
 import { fundProvidersService, type FundProvider } from '@/services/fundProviders'
 import { useAuthStore } from '@/stores/auth'
 import { useConfirmDialogStore } from '@/stores/confirmDialog'
 import { ApiRequestError } from '@/types/api'
 import { formatMoney } from '@/utils/currency'
+import { genderLabel as builtInGenderLabel } from '@/utils/gender'
 
 // Fund > Providers: the people who give money to the funds, with what each has given.
-const { t } = useI18n()
+const { t, locale } = useI18n()
+
+/** code -> translated label, from the same GENDER list the form uses. */
+const genderLabels = ref<Record<string, string>>({})
+
+async function loadGenderLabels() {
+  const options = await lookupsService.values('GENDER', locale.value)
+  genderLabels.value = Object.fromEntries(options.map((option) => [option.code, option.name]))
+}
+
+function genderLabel(gender: string | null): string {
+  if (!gender) return '—'
+  return genderLabels.value[gender] ?? builtInGenderLabel(gender)
+}
+
+watch(locale, loadGenderLabels)
 const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
 const canCreate = computed(() => auth.can('funds.create'))
@@ -43,6 +60,7 @@ function onStatus(value: string) {
 const columns = computed(() => [
   { key: 'code', label: t('admin.fundProviders.code') },
   { key: 'name', label: t('admin.fundProviders.name') },
+  { key: 'gender', label: t('admin.fundProviders.gender') },
   { key: 'phone', label: t('admin.fundProviders.phone') },
   { key: 'given', label: t('admin.fundProviders.given'), align: 'text-right' },
   { key: 'is_active', label: t('admin.fundProviders.status') },
@@ -79,6 +97,7 @@ async function remove(provider: FundProvider) {
 
 onMounted(() => {
   setFilter('is_active', 'true')
+  void loadGenderLabels()
 })
 </script>
 
@@ -113,7 +132,7 @@ onMounted(() => {
           <div class="flex items-start justify-between gap-2">
             <div class="min-w-0">
               <p class="truncate font-medium text-neutral-900">{{ row.name }}</p>
-              <p class="mt-0.5 text-xs text-neutral-500">{{ row.code }}<template v-if="row.phone"> · {{ row.phone }}</template></p>
+              <p class="mt-0.5 text-xs text-neutral-500">{{ row.code }}<template v-if="row.gender"> · {{ genderLabel(row.gender) }}</template><template v-if="row.phone"> · {{ row.phone }}</template></p>
               <p class="mt-1 text-sm font-semibold tabular-nums text-green-700">{{ givenText(row) }}</p>
             </div>
             <BaseBadge :variant="row.is_active ? 'success' : 'neutral'">
@@ -136,6 +155,7 @@ onMounted(() => {
         <p class="font-medium text-neutral-900">{{ row.name }}</p>
         <p v-if="row.address" class="max-w-xs truncate text-xs text-neutral-500">{{ row.address }}</p>
       </template>
+      <template #cell-gender="{ row }">{{ genderLabel(row.gender) }}</template>
       <template #cell-phone="{ row }">{{ row.phone ?? '—' }}</template>
       <template #cell-given="{ row }"><span class="font-semibold tabular-nums text-green-700">{{ givenText(row) }}</span></template>
       <template #cell-is_active="{ row }">

@@ -8,6 +8,8 @@ export interface FundProvider {
   /** P00001 — given from the id when added. */
   code: string | null
   name: string
+  /** A GENDER base data code, e.g. male / female. */
+  gender: string | null
   phone: string | null
   address: string | null
   notes: string | null
@@ -19,6 +21,7 @@ export interface FundProvider {
 
 export interface FundProviderInput {
   name: string
+  gender: string
   phone: string
   address: string
   notes: string
@@ -28,6 +31,7 @@ export interface FundProviderInput {
 /** Blank boxes go up as null, not empty strings. */
 const payload = (input: FundProviderInput) => ({
   ...input,
+  gender: input.gender || null,
   phone: input.phone || null,
   address: input.address || null,
   notes: input.notes || null,

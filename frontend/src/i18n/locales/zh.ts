@@ -6893,6 +6893,8 @@ const zh: MessageSchema = {
       loadFailed: '无法加载报表。',
     },
     fundProviders: {
+      gender: '性别',
+      selectGender: '选择性别',
       title: '资金提供者', subtitle: '向基金捐款的个人和公司，以及各自已提供的金额。', add: '添加提供者', edit: '编辑提供者', code: '编号', name: '姓名', phone: '电话', address: '地址', notes: '备注', given: '已提供', status: '状态', active: '启用', inactive: '停用', filterAll: '全部', empty: '暂无提供者。', delete: '删除', deleteConfirm: '删除此提供者？', deleteFailed: '无法删除提供者。', saveFailed: '无法保存提供者。',
     },
     funds: {
