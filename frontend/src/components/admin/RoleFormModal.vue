@@ -6,8 +6,9 @@ import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
+import BaseSelect from '@/components/ui/BaseSelect.vue'
 import { hideTabSlug } from '@/router/hideTabSlug'
-import { rolesService, type Role } from '@/services/roles'
+import { rolesService, type DataScope, type Role } from '@/services/roles'
 import { ApiRequestError } from '@/types/api'
 
 const props = defineProps<{
@@ -511,8 +512,16 @@ const form = reactive({
   name: '',
   description: '',
   level: 10,
+  data_scope: 'all' as DataScope,
   permissions: [] as string[],
 })
+
+/** School Admin always sees every class. */
+const dataScopeLocked = computed(() => props.role?.slug === 'school-admin' || props.role?.slug === 'super-admin')
+const dataScopeOptions = computed(() => [
+  { value: 'all', label: t('admin.roles.dataScopeAll') },
+  { value: 'assigned', label: t('admin.roles.dataScopeAssigned') },
+])
 
 const errors = ref<Record<string, string[]>>({})
 const generalError = ref<string | null>(null)
@@ -737,6 +746,7 @@ function resetForm() {
   form.name = props.role?.name ?? ''
   form.description = props.role?.description ?? ''
   form.level = props.role?.level ?? 10
+  form.data_scope = props.role?.data_scope ?? 'all'
   form.permissions = props.role?.permissions ?? []
   errors.value = {}
   generalError.value = null
@@ -806,7 +816,7 @@ async function submit() {
     <form class="space-y-4" @submit.prevent="submit">
       <BaseAlert v-if="generalError" variant="danger">{{ generalError }}</BaseAlert>
 
-      <div class="grid gap-4 sm:grid-cols-3">
+      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <BaseInput
           v-model="form.name"
           required
@@ -825,6 +835,14 @@ async function submit() {
           @update:model-value="form.level = Number($event) || 0"
         />
         <BaseInput v-model="form.description" :label="t('admin.roles.description')" :error="errors.description?.[0]" />
+        <BaseSelect
+          v-model="form.data_scope"
+          :options="dataScopeOptions"
+          :disabled="dataScopeLocked"
+          :label="t('admin.roles.dataScope')"
+          :hint="t('admin.roles.dataScopeHint')"
+          :error="errors.data_scope?.[0]"
+        />
       </div>
 
       <div>

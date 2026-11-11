@@ -252,11 +252,13 @@ final class AttendanceService
      *     late_minutes:int, make_up_hours:float,
      * }>
      */
-    public function summarize(?int $classId, ?string $dateFrom, ?string $dateTo, ?int $studentId = null, ?array $statuses = null): array
+    /** @param  list<int>|null  $classIds  Roles > Data view: only these classes (null = every class) */
+    public function summarize(?int $classId, ?string $dateFrom, ?string $dateTo, ?int $studentId = null, ?array $statuses = null, ?array $classIds = null): array
     {
         $enrollments = Enrollment::query()
             ->with(['student', 'coursePackage', 'schoolClass'])
             ->when($classId !== null, fn ($query) => $query->where('class_id', $classId))
+            ->when($classIds !== null, fn ($query) => $query->whereIn('class_id', $classIds))
             ->when($statuses === null, fn ($query) => $query->active())
             ->when($statuses !== null && $statuses !== [], fn ($query) => $query->whereIn('status', $statuses))
             ->when($studentId, fn ($query) => $query->where('student_id', $studentId))

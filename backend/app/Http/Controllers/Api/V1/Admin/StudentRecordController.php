@@ -42,6 +42,7 @@ final class StudentRecordController extends Controller
     public function show(Request $request, Student $student): JsonResponse
     {
         abort_unless($request->user()->hasPermission(Permissions::STUDENTS_VIEW), 403);
+        abort_unless(app(\App\Support\Authorization\ClassAccess::class)->canSeeStudent($request->user(), $student), 403);
         $db = DB::connection('tenant');
 
         $enrollments = Enrollment::query()->with(['schoolClass.academicYear:id,name', 'schoolClass.gradeLevel:id,name', 'coursePackage:id,name'])
@@ -139,6 +140,7 @@ final class StudentRecordController extends Controller
     public function changeStatus(Request $request, Student $student): JsonResponse
     {
         abort_unless($request->user()->hasPermission(Permissions::STUDENTS_UPDATE), 403);
+        abort_unless(app(\App\Support\Authorization\ClassAccess::class)->canSeeStudent($request->user(), $student), 403);
         $data = $request->validate([
             'status' => ['required', Rule::in(self::STATUSES)],
             'effective_date' => ['required', 'date'],
@@ -186,6 +188,7 @@ final class StudentRecordController extends Controller
     public function assignToClass(Request $request, SchoolClass $class): JsonResponse
     {
         abort_unless($request->user()->hasPermission(Permissions::ENROLLMENTS_CREATE), 403);
+        abort_unless(app(\App\Support\Authorization\ClassAccess::class)->canSee($request->user(), $class), 403);
         $data = $request->validate([
             'student_ids' => ['required', 'array', 'min:1', 'max:200'],
             'student_ids.*' => ['integer', Rule::exists('tenant.students', 'id')->whereNull('deleted_at')],

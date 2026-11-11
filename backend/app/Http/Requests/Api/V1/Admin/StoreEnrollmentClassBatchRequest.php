@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Api\V1\Admin;
 
 use App\Models\Enrollment;
+use App\Rules\VisibleClass;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -24,7 +25,7 @@ class StoreEnrollmentClassBatchRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'class_id' => ['required', Rule::exists('tenant.classes', 'id')],
+            'class_id' => ['required', Rule::exists('tenant.classes', 'id'), new VisibleClass],
             'course_package_id' => ['required', Rule::exists('tenant.course_packages', 'id')],
             'enrolled_at' => ['nullable', 'date'],
             // The day they start studying (empty = the enrollment date). Later than today = Not started until then.

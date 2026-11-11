@@ -32,6 +32,8 @@ class UpdateRoleRequest extends FormRequest
         if ($role->is_system) {
             return [
                 'description' => ['nullable', 'string', 'max:1000'],
+                // School Admin always sees everything; the other built-in roles may be limited.
+                ...($role->slug === Role::SCHOOL_ADMIN ? [] : ['data_scope' => ['sometimes', Rule::in([Role::SCOPE_ALL, Role::SCOPE_ASSIGNED])]]),
                 'permissions' => ['sometimes', 'array'],
                 'permissions.*' => [Rule::exists('permissions', 'slug')],
             ];
@@ -55,6 +57,7 @@ class UpdateRoleRequest extends FormRequest
                 },
             ],
             'description' => ['nullable', 'string', 'max:1000'],
+            'data_scope' => ['sometimes', Rule::in([Role::SCOPE_ALL, Role::SCOPE_ASSIGNED])],
             'level' => [
                 'sometimes', 'required', 'integer', 'min:0',
                 function (string $attribute, mixed $value, \Closure $fail) {

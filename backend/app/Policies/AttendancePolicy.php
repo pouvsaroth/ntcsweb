@@ -6,6 +6,7 @@ namespace App\Policies;
 
 use App\Models\AttendanceRecord;
 use App\Models\User;
+use App\Support\Authorization\ClassAccess;
 use App\Support\Authorization\Permissions;
 
 class AttendancePolicy
@@ -23,7 +24,11 @@ class AttendancePolicy
      */
     public function view(User $user, AttendanceRecord $record): bool
     {
-        if ($user->hasPermission(Permissions::ATTENDANCE_VIEW) || $user->student?->id === $record->student_id) {
+        if ($user->student?->id === $record->student_id) {
+            return true;
+        }
+        // Roles > Data view: only records of the user's classes.
+        if ($user->hasPermission(Permissions::ATTENDANCE_VIEW) && app(ClassAccess::class)->canSee($user, (int) $record->class_id)) {
             return true;
         }
 

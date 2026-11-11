@@ -14,6 +14,7 @@ use App\Models\Role;
 use App\Models\Student;
 use App\Services\Academic\StudentIdGenerator;
 use App\Services\Auth\UserProvisioningService;
+use App\Support\Authorization\ClassAccess;
 use App\Support\Query\ApiQuery;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
@@ -50,6 +51,8 @@ final class StudentController extends Controller
         $query = Student::query()->withCount(['guardians', 'educations'])->with('village.commune.district.province')
             ->when($request->filled('filter.class_id'), fn ($q) => $q->whereHas('enrollments', fn ($e) => $inClasses($e)->where('class_id', $request->integer('filter.class_id'))))
             ->when($request->filled('filter.academic_year_id'), fn ($q) => $q->whereHas('enrollments', fn ($e) => $inClasses($e)->whereHas('schoolClass', fn ($c) => $c->where('academic_year_id', $request->integer('filter.academic_year_id')))));
+        // Roles > Data view: only students of the user's classes when their role says so.
+        app(ClassAccess::class)->limitStudents($query, $request->user());
         $students = ApiQuery::for($query, $request)
             ->searchable('first_name', 'last_name', 'english_name', 'student_code', 'email')
             ->filterable(['status'])

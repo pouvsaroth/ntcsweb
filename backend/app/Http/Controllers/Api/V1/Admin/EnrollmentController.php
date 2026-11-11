@@ -22,6 +22,7 @@ use App\Models\Staff;
 use App\Platform\Billing\StudentLimit;
 use App\Services\Academic\EnrollmentService;
 use App\Support\Authorization\Permissions;
+use App\Support\Authorization\ClassAccess;
 use App\Support\Query\ApiQuery;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -48,7 +49,9 @@ final class EnrollmentController extends Controller
         $enrollments = ApiQuery::for(
             Enrollment::query()->with([...self::WITH, 'latestStatusChange', 'currentResponsibleStaff.staff'])
                 // Enrollment by academic year: the year of the class (School setup).
-                ->when($request->filled('filter.academic_year_id'), fn ($q) => $q->whereHas('schoolClass', fn ($c) => $c->where('academic_year_id', $request->integer('filter.academic_year_id')))),
+                ->when($request->filled('filter.academic_year_id'), fn ($q) => $q->whereHas('schoolClass', fn ($c) => $c->where('academic_year_id', $request->integer('filter.academic_year_id'))))
+                // Roles > Data view: only the user's classes when their role says so.
+                ->tap(fn ($q) => app(ClassAccess::class)->limit($q, $request->user(), 'class_id')),
             $request,
         )
             ->filterable(['status', 'student_id', 'class_id', 'course_package_id', 'academic_program_id'])
@@ -255,7 +258,9 @@ final class EnrollmentController extends Controller
         $ids = array_values(array_unique(array_map('intval', explode(',', $data['ids']))));
         $label = fn (string $key, string $default): string => (string) ($data['labels'][$key] ?? $default);
 
-        $enrollments = Enrollment::query()->whereKey($ids)->with(['student', 'table', 'coursePackage', 'schoolClass', 'currentResponsibleStaff.staff', 'invoiceItems.invoice'])->get()->keyBy('id');
+        $enrollments = Enrollment::query()->whereKey($ids)->with(['student', 'table', 'coursePackage', 'schoolClass', 'currentResponsibleStaff.staff', 'invoiceItems.invoice'])
+            ->tap(fn ($q) => app(ClassAccess::class)->limit($q, $request->user(), 'class_id'))
+            ->get()->keyBy('id');
         // Payment type words come from the screen too (labels[pt_monthly] ...).
         $paymentType = fn (?string $type): string => $type ? $label('pt_'.$type, ucfirst(str_replace('_', ' ', $type))) : '';
         $gender = function (?string $value) use ($label): string {

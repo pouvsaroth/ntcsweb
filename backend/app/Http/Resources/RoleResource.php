@@ -21,6 +21,7 @@ class RoleResource extends JsonResource
             'name' => $this->name,
             'description' => $this->description,
             'level' => $this->level,
+            'data_scope' => $this->data_scope ?? 'all',
             'is_system' => $this->is_system,
             'is_platform' => $this->isPlatformRole(),
             'permissions' => $this->whenLoaded(

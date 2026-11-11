@@ -16,6 +16,7 @@ use App\Models\User;
 use App\Services\Auth\UserProvisioningService;
 use App\Support\Audit\AuditAction;
 use App\Support\Audit\AuditLogger;
+use App\Support\Authorization\ClassAccess;
 use App\Support\Query\ApiQuery;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
@@ -160,6 +161,70 @@ final class UserController extends Controller
      * there is no reliable way to reach into it from here). Revoking every
      * Sanctum token, however, is a real and immediate revocation.
      */
+    /**
+     * Users > Edit > Extra classes: what a user limited to assigned classes
+     * may see besides the classes they teach. Also returns those teaching
+     * classes, read only, so the screen can show both.
+     */
+    public function classes(User $user, ClassAccess $access): JsonResponse
+    {
+        $this->authorize('manageClasses', $user);
+
+        return ApiResponse::success($this->classAccessState($user, $access));
+    }
+
+    public function updateClasses(Request $request, User $user, ClassAccess $access): JsonResponse
+    {
+        $this->authorize('manageClasses', $user);
+        $data = $request->validate([
+            'class_ids' => ['present', 'array'],
+            'class_ids.*' => ['integer', 'distinct', 'exists:tenant.classes,id'],
+        ]);
+
+        $db = DB::connection('tenant');
+        $before = $db->table('user_class_access')->where('user_id', $user->getKey())->pluck('class_id')->map(fn ($v) => (int) $v)->sort()->values()->all();
+        $after = collect($data['class_ids'])->map(fn ($v) => (int) $v)->unique()->sort()->values()->all();
+
+        if ($before !== $after) {
+            $db->transaction(function () use ($db, $user, $after) {
+                $db->table('user_class_access')->where('user_id', $user->getKey())->whereNotIn('class_id', $after)->delete();
+                $now = now();
+                foreach ($after as $classId) {
+                    $db->table('user_class_access')->insertOrIgnore(['user_id' => $user->getKey(), 'class_id' => $classId, 'created_at' => $now, 'updated_at' => $now]);
+                }
+            });
+            $names = fn (array $ids) => $db->table('classes')->whereIn('id', $ids)->orderBy('name')->pluck('name')->implode(', ') ?: '—';
+            $this->audit->log(
+                AuditAction::UPDATE,
+                'Users',
+                $user,
+                old: ['extra_classes' => $names($before)],
+                new: ['extra_classes' => $names($after)],
+                description: "Changed extra classes for {$user->name}",
+            );
+            $access->forget($user);
+        }
+
+        return ApiResponse::success($this->classAccessState($user, $access));
+    }
+
+    /** @return array<string, mixed> */
+    private function classAccessState(User $user, ClassAccess $access): array
+    {
+        $db = DB::connection('tenant');
+        $extra = $db->table('user_class_access')->where('user_id', $user->getKey())->pluck('class_id')->map(fn ($v) => (int) $v)->all();
+        $teaching = array_values(array_diff($access->assignedClassIds($user), $extra));
+        $classes = fn (array $ids) => $db->table('classes')->whereIn('id', $ids)->orderBy('name')->get(['id', 'name', 'code'])
+            ->map(fn ($c) => ['id' => (int) $c->id, 'name' => $c->name, 'code' => $c->code])->all();
+
+        return [
+            'sees_all' => $access->seesAll($user),
+            'class_ids' => $extra,
+            'extra_classes' => $classes($extra),
+            'teaching_classes' => $classes($teaching),
+        ];
+    }
+
     public function forceLogout(User $user): JsonResponse
     {
         $this->authorize('forceLogout', $user);

@@ -56,6 +56,7 @@ class StoreRoleRequest extends FormRequest
                 },
             ],
 
+            'data_scope' => ['sometimes', Rule::in([Role::SCOPE_ALL, Role::SCOPE_ASSIGNED])],
             'permissions' => ['sometimes', 'array'],
             'permissions.*' => [Rule::exists('permissions', 'slug')],
         ];

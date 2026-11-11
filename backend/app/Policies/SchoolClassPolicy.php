@@ -6,6 +6,7 @@ namespace App\Policies;
 
 use App\Models\SchoolClass;
 use App\Models\User;
+use App\Support\Authorization\ClassAccess;
 use App\Support\Authorization\Permissions;
 
 class SchoolClassPolicy
@@ -17,7 +18,7 @@ class SchoolClassPolicy
 
     public function view(User $user, SchoolClass $class): bool
     {
-        return $user->hasPermission(Permissions::CLASSES_VIEW);
+        return $user->hasPermission(Permissions::CLASSES_VIEW) && $this->sees($user, $class);
     }
 
     public function create(User $user): bool
@@ -27,12 +28,18 @@ class SchoolClassPolicy
 
     public function update(User $user, SchoolClass $class): bool
     {
-        return $user->hasPermission(Permissions::CLASSES_UPDATE);
+        return $user->hasPermission(Permissions::CLASSES_UPDATE) && $this->sees($user, $class);
     }
 
     public function delete(User $user, SchoolClass $class): bool
     {
-        return $user->hasPermission(Permissions::CLASSES_DELETE);
+        return $user->hasPermission(Permissions::CLASSES_DELETE) && $this->sees($user, $class);
+    }
+
+    /** Roles > Data view: a class outside the user's assigned classes is not theirs to open. */
+    private function sees(User $user, SchoolClass $class): bool
+    {
+        return app(ClassAccess::class)->canSee($user, $class);
     }
 
     /**

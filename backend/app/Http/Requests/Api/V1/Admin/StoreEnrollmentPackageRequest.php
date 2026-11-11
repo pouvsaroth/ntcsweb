@@ -10,6 +10,7 @@ use App\Models\Enrollment;
 use App\Services\Billing\CurrencyConversionService;
 use App\Support\Billing\PaymentMethod;
 use App\Support\Tenancy\TenantContext;
+use App\Rules\VisibleClass;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -40,7 +41,7 @@ class StoreEnrollmentPackageRequest extends FormRequest
     {
         return [
             'student_id' => ['required', Rule::exists('tenant.students', 'id')],
-            'class_id' => ['required', Rule::exists('tenant.classes', 'id')],
+            'class_id' => ['required', Rule::exists('tenant.classes', 'id'), new VisibleClass],
 
             // Scoped to unfinished rows so a student may re-enroll in the same
             // class+package after completing, abandoning or dropping it (the

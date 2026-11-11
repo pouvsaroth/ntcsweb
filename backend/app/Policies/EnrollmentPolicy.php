@@ -6,10 +6,21 @@ namespace App\Policies;
 
 use App\Models\Enrollment;
 use App\Models\User;
+use App\Support\Authorization\ClassAccess;
 use App\Support\Authorization\Permissions;
 
 class EnrollmentPolicy
 {
+    /** Roles > Data view: an enrollment in a class outside the user's classes is refused for every action. */
+    public function before(User $user, string $ability, mixed $enrollment = null): ?bool
+    {
+        if ($enrollment instanceof Enrollment && ! app(ClassAccess::class)->canSee($user, (int) $enrollment->class_id)) {
+            return false;
+        }
+
+        return null;
+    }
+
     /**
      * Viewing is also open to anyone who can take attendance — a class's
      * roster (ClassStudents.vue) is how a teacher/assistant actually reaches

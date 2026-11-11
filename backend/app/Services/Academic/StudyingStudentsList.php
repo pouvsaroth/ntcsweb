@@ -51,8 +51,10 @@ final class StudyingStudentsList
         $classId = $filters['class_id'] ?? null;
         $yearId = $filters['academic_year_id'] ?? null;
         // The enrollments that count: Studying, in the picked class / year.
+        $visible = $filters['class_ids'] ?? null; // Roles > Data view: null = every class
         $studying = fn ($query) => $query->active()
             ->when($classId, fn ($q) => $q->where('class_id', $classId))
+            ->when($visible !== null, fn ($q) => $q->whereIn('class_id', $visible))
             ->when($yearId, fn ($q) => $q->whereHas('schoolClass', fn ($c) => $c->where('academic_year_id', $yearId)));
 
         $search = trim((string) ($filters['search'] ?? ''));

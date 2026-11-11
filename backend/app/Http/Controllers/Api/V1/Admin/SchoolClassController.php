@@ -12,6 +12,7 @@ use App\Http\Responses\ApiResponse;
 use App\Models\ClassroomTable;
 use App\Models\Enrollment;
 use App\Models\SchoolClass;
+use App\Support\Authorization\ClassAccess;
 use App\Support\Query\ApiQuery;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -26,6 +27,8 @@ final class SchoolClassController extends Controller
         $this->authorize('viewAny', SchoolClass::class);
 
         $query = SchoolClass::query()->with(self::WITH)->withCount(['enrollments as active_students_count' => fn ($q) => $q->active()]);
+        // Roles > Data view: only the user's assigned classes when their role says so.
+        app(ClassAccess::class)->limit($query, $request->user());
 
         // Not a plain column, so it can't go through ApiQuery's generic
         // filterable() — read straight out of the same filter[] bucket the

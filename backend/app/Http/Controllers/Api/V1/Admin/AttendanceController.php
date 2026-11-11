@@ -16,6 +16,7 @@ use App\Services\Academic\AttendanceService;
 use App\Services\Academic\AttendanceSheet;
 use App\Support\Academic\ClassNotHeld;
 use App\Support\Academic\SchoolDaysOff;
+use App\Support\Authorization\ClassAccess;
 use App\Support\Query\ApiQuery;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -41,6 +42,8 @@ final class AttendanceController extends Controller
         ]);
 
         $query = AttendanceRecord::query()->with(['student', 'schoolClass.schedules']);
+        // Roles > Data view: only the user's classes when their role says so.
+        app(ClassAccess::class)->limit($query, $request->user(), 'class_id');
 
         if ($request->filled('date_from')) {
             $query->whereDate('date', '>=', $request->string('date_from')->toString());
@@ -71,6 +74,7 @@ final class AttendanceController extends Controller
         $this->authorize('recordAttendance', $class);
 
         $data = $request->validate(['date' => ['required', 'date']]);
+        abort_unless(app(ClassAccess::class)->canTakeAttendance($request->user(), $class, $data['date']), 403);
 
         // `missed_date`: the previous class day with no attendance yet — while
         // set, today's attendance can't be saved (see guardPreviousClassDay()).
@@ -88,6 +92,7 @@ final class AttendanceController extends Controller
 
     public function store(RecordAttendanceRequest $request, SchoolClass $class): JsonResponse
     {
+        abort_unless(app(ClassAccess::class)->canTakeAttendance($request->user(), $class, $request->validated('date')), 403);
         $this->attendance->guardPreviousClassDay($class, $request->validated('date'));
 
         $records = $this->attendance->recordForClass(
@@ -109,6 +114,8 @@ final class AttendanceController extends Controller
      */
     public function summary(Request $request, SchoolClass $class): JsonResponse
     {
+        abort_unless(app(ClassAccess::class)->canSee($request->user(), $class), 403);
+
         return $this->respondWithSummary($request, $class->getKey());
     }
 
@@ -121,6 +128,7 @@ final class AttendanceController extends Controller
     public function summaryAcrossClasses(Request $request): JsonResponse
     {
         $request->validate(['class_id' => ['nullable', 'integer']]);
+        abort_if($request->filled('class_id') && ! app(ClassAccess::class)->canSee($request->user(), $request->integer('class_id')), 403);
 
         return $this->respondWithSummary($request, $request->filled('class_id') ? $request->integer('class_id') : null);
     }
@@ -153,6 +161,7 @@ final class AttendanceController extends Controller
     private function buildSheet(Request $request, SchoolClass $class): array
     {
         $this->authorize('viewAny', AttendanceRecord::class);
+        abort_unless(app(ClassAccess::class)->canSee($request->user(), $class), 403);
 
         $data = $request->validate([
             'date_from' => ['required', 'date'],
@@ -221,6 +230,7 @@ final class AttendanceController extends Controller
             $data['date_to'] ?? null,
             isset($data['student_id']) ? (int) $data['student_id'] : null,
             $statuses,
+            app(ClassAccess::class)->visibleClassIds($request->user()),
         ));
     }
 }

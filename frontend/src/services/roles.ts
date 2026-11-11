@@ -8,16 +8,21 @@ export interface Role {
   name: string
   description: string | null
   level: number
+  /** Data view: every class, or only the user's assigned classes. */
+  data_scope: DataScope
   is_system: boolean
   is_platform: boolean
   permissions?: string[]
   users_count?: number
 }
 
+export type DataScope = 'all' | 'assigned'
+
 export interface RoleInput {
   name: string
   description: string
   level: number
+  data_scope: DataScope
   permissions: string[]
 }
 

@@ -22,6 +22,8 @@ class AppServiceProvider extends ServiceProvider
     {
         // Which modules each school's plan includes — looked up once per request or job.
         $this->app->scoped(\App\Platform\Billing\SchoolModules::class);
+        // Which classes the signed-in user may see (Roles > Data view) — once per request.
+        $this->app->scoped(\App\Support\Authorization\ClassAccess::class);
     }
 
     public function boot(): void

@@ -45,7 +45,7 @@ final class RoleController extends Controller
      */
     public function store(StoreRoleRequest $request): JsonResponse
     {
-        $role = new Role($request->safe()->only(['name', 'description', 'level']));
+        $role = new Role($request->safe()->only(['name', 'description', 'level', 'data_scope']));
 
         $role->forceFill([
             'tenant_id' => $this->context->idOrFail(),
@@ -64,7 +64,7 @@ final class RoleController extends Controller
 
     public function update(UpdateRoleRequest $request, Role $role): JsonResponse
     {
-        $role->fill($request->safe()->only(['name', 'description', 'level']));
+        $role->fill($request->safe()->only(['name', 'description', 'level', 'data_scope']));
 
         if ($request->safe()->has('name')) {
             $role->forceFill(['slug' => Str::slug($request->validated('name'))]);

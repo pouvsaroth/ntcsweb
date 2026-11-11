@@ -1,4 +1,4 @@
-import { apiGetWithMeta, apiPost, apiPostWithMeta, apiPut } from '@/services/http'
+import { apiGet, apiGetWithMeta, apiPost, apiPostWithMeta, apiPut } from '@/services/http'
 import type { PaginatedQuery } from '@/composables/usePaginatedResource'
 import type { LengthAwarePaginationMeta, PaginatedResult } from '@/types/api'
 import type { User } from '@/types/models'
@@ -27,7 +27,23 @@ export interface UpdateUserInput {
   role_id?: number
 }
 
+export interface ClassRef {
+  id: number
+  name: string
+  code: string | null
+}
+
+/** Users > Edit > Extra classes, with the classes the user teaches (read only). */
+export interface UserClassAccess {
+  sees_all: boolean
+  class_ids: number[]
+  extra_classes: ClassRef[]
+  teaching_classes: ClassRef[]
+}
+
 export const adminUsersService = {
+  classes: (userId: number) => apiGet<UserClassAccess>(`/users/${userId}/classes`),
+  setClasses: (userId: number, classIds: number[]) => apiPut<UserClassAccess>(`/users/${userId}/classes`, { class_ids: classIds }),
   async list(query: PaginatedQuery): Promise<PaginatedResult<User>> {
     const result = await apiGetWithMeta<User[]>('/users', {
       params: {

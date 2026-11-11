@@ -34,7 +34,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $level
  * @property bool $is_system
  */
-#[Fillable(['name', 'slug', 'description', 'level'])]
+#[Fillable(['name', 'slug', 'description', 'level', 'data_scope'])]
 class Role extends Model
 {
     /** @use HasFactory<RoleFactory> */
@@ -49,6 +49,12 @@ class Role extends Model
     public const STAFF = 'staff';
 
     public const STUDENT = 'student';
+
+    /** Data view: every class and its students. */
+    public const SCOPE_ALL = 'all';
+
+    /** Data view: only the classes the user teaches, plus extra classes picked on the user. */
+    public const SCOPE_ASSIGNED = 'assigned';
 
     /**
      * Pins Role to the central connection explicitly — see

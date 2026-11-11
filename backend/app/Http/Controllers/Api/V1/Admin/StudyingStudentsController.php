@@ -53,6 +53,7 @@ final class StudyingStudentsController extends Controller
                 'search' => $data['search'] ?? null,
                 'class_id' => isset($data['class_id']) ? (int) $data['class_id'] : null,
                 'academic_year_id' => isset($data['academic_year_id']) ? (int) $data['academic_year_id'] : null,
+                'class_ids' => app(\App\Support\Authorization\ClassAccess::class)->visibleClassIds($request->user()),
             ],
             StudyingStudentsList::pickColumns($data['columns'] ?? null),
         );

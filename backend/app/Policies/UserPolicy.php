@@ -55,6 +55,18 @@ class UserPolicy
     }
 
     /**
+     * Users > Edit > Extra classes. Never self: a user limited to assigned
+     * classes must not widen what they can see.
+     */
+    public function manageClasses(User $actor, User $target): bool
+    {
+        return ! $actor->is($target)
+            && $this->sameTenant($actor, $target)
+            && $actor->hasPermission(Permissions::USERS_UPDATE)
+            && $this->outranks($actor, $target);
+    }
+
+    /**
      * Deliberately never self — changing *your own* password goes through
      * PasswordController::change(), which re-verifies the current password
      * first. Letting this admin-facing action also target yourself would be

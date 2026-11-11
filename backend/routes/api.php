@@ -903,6 +903,9 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::apiResource('users', UserController::class)->only(['index', 'store', 'update']);
         Route::post('users/{user}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset-password');
         Route::post('users/{user}/force-logout', [UserController::class, 'forceLogout'])->name('users.force-logout');
+        // Users > Edit > Extra classes (Roles > Data view: assigned classes only).
+        Route::get('users/{user}/classes', [UserController::class, 'classes'])->name('users.classes');
+        Route::put('users/{user}/classes', [UserController::class, 'updateClasses'])->name('users.classes.update');
 
         // No store/update/destroy of a single entry — see AuditLogPolicy/
         // AuditLogController's docblocks. `clear` bulk-deletes a date range.
