@@ -53,7 +53,7 @@ final class StudentController extends Controller
         $students = ApiQuery::for($query, $request)
             ->searchable('first_name', 'last_name', 'english_name', 'student_code', 'email')
             ->filterable(['status'])
-            ->sortable(['first_name', 'last_name', 'student_code', 'created_at'], default: '-created_at')
+            ->sortable(['first_name', 'last_name', 'student_code', 'enrollment_date', 'created_at'], default: '-created_at')
             ->paginate();
 
         return ApiResponse::success(StudentResource::collection($students));

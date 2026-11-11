@@ -55,6 +55,18 @@ class StudentTest extends TestCase
      * never read at all (see StoreStudentRequest, which defines no rule for
      * it), so the server-generated sequential code wins regardless.
      */
+    public function test_the_registration_date_is_today_when_not_given_and_the_list_sorts_by_it(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::STUDENTS_CREATE, Permissions::STUDENTS_VIEW]);
+
+        $this->postJson('/api/v1/students', ['first_name' => 'A', 'last_name' => 'Today', 'phone' => '011111111'])
+            ->assertCreated()->assertJsonPath('data.enrollment_date', now('Asia/Phnom_Penh')->toDateString());
+        $this->postJson('/api/v1/students', ['first_name' => 'B', 'last_name' => 'Old', 'phone' => '012222222', 'enrollment_date' => '2025-01-15'])
+            ->assertCreated()->assertJsonPath('data.enrollment_date', '2025-01-15');
+
+        $this->getJson('/api/v1/students?sort=enrollment_date')->assertOk()->assertJsonPath('data.0.enrollment_date', '2025-01-15');
+    }
+
     public function test_a_client_supplied_student_code_is_ignored(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::STUDENTS_CREATE]);

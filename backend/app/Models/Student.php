@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Models\Concerns\Auditable;
 use App\Support\Audit\AuditAction;
+use App\Support\Tenancy\TenantContext;
 use Database\Factories\StudentFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -14,6 +15,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
@@ -83,6 +85,13 @@ class Student extends Model
 
     protected static function booted(): void
     {
+        // Registration date: today (school time) when none is given — the form, imports, sign-ups.
+        static::creating(function (self $student) {
+            if ($student->enrollment_date === null) {
+                $student->enrollment_date = Carbon::now(app(TenantContext::class)->get()?->timezone ?: 'Asia/Phnom_Penh')->toDateString();
+            }
+        });
+
         // Mirrors HomeSlide: a soft-deleted student still holds the photo
         // (recoverable); only a real, permanent removal takes the file too.
         static::forceDeleted(function (self $student) {

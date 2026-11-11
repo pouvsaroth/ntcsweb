@@ -19,6 +19,7 @@ import { classesService, type SchoolClass } from '@/services/classes'
 import { lookupsService } from '@/services/lookups'
 import { studentsService, type Student, type StudentStatus } from '@/services/students'
 import { useAdminUiStore } from '@/stores/adminUi'
+import { formatDate } from '@/utils/date'
 import { genderLabel as builtInGenderLabel } from '@/utils/gender'
 
 const { t, locale } = useI18n()
@@ -59,6 +60,7 @@ const columns = [
   { key: 'student_code', label: t('admin.students.columnCode'), sortable: true },
   { key: 'phone', label: t('admin.students.columnPhone') },
   { key: 'gender', label: t('admin.students.columnGender') },
+  { key: 'enrollment_date', label: t('admin.students.enrollmentDate'), sortable: true },
   { key: 'address', label: t('admin.students.columnAddress') },
   { key: 'guardians', label: t('admin.students.columnGuardians') },
   { key: 'status', label: t('admin.students.columnStatus') },
@@ -155,6 +157,7 @@ onMounted(() => {
           <div class="min-w-0 flex-1">
             <RouterLink :to="`/admin/students/${row.id}`" class="block truncate text-sm font-medium text-primary-700 hover:underline">{{ row.full_name }}</RouterLink>
             <p class="truncate text-xs text-neutral-500">{{ row.phone || '—' }}</p>
+            <p v-if="row.enrollment_date" class="truncate text-xs text-neutral-500">{{ t('admin.students.enrollmentDate') }}: {{ formatDate(row.enrollment_date) }}</p>
           </div>
           <EditIconButton :to="`/admin/students/${row.id}/edit`" />
         </div>
@@ -184,6 +187,9 @@ onMounted(() => {
         <template #cell-full_name="{ row }">
           <RouterLink :to="`/admin/students/${row.id}`" class="font-medium text-primary-700 hover:underline">{{ row.full_name }}</RouterLink>
           <p v-if="row.english_name" class="text-xs text-neutral-500">{{ row.english_name }}</p>
+        </template>
+        <template #cell-enrollment_date="{ row }">
+          <span class="whitespace-nowrap">{{ row.enrollment_date ? formatDate(row.enrollment_date) : '—' }}</span>
         </template>
         <template #cell-gender="{ row }">
           {{ genderLabel(row.gender) }}
