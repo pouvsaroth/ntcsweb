@@ -24,6 +24,7 @@ import {
   type TableRowsPage,
 } from '../../api'
 import ClearTableModal from '../../components/ClearTableModal.vue'
+import DropTableModal from '../../components/DropTableModal.vue'
 import TableRowEditModal from '../../components/TableRowEditModal.vue'
 import { useSession } from '../../session'
 import { isDateType, toDb, toDisplay } from '../../tableValues'
@@ -189,6 +190,13 @@ function onCleared(cleared: string[], backupId: number | null): void {
   void fetchRows()
 }
 
+// ── delete the table itself ────────────────────────────────────────────────
+const dropOpen = ref(false)
+async function onDropped(name: string): Promise<void> {
+  await loadTables()
+  notice.value = t('bo.data.tbl.dropped', { table: name })
+}
+
 watch(database, () => {
   notice.value = null
   void loadTables()
@@ -226,7 +234,10 @@ onMounted(async () => {
             <h2 class="text-sm font-semibold text-neutral-800">{{ t('bo.data.tbl.conditions') }}</h2>
             <p class="text-xs text-neutral-500">{{ t('bo.data.tbl.allMustMatch') }}</p>
           </div>
-          <BaseButton v-if="canEdit" size="sm" variant="danger" @click="clearOpen = true">{{ t('bo.data.tbl.clear') }}</BaseButton>
+          <div v-if="canEdit" class="flex flex-wrap gap-2">
+            <BaseButton size="sm" variant="danger" @click="clearOpen = true">{{ t('bo.data.tbl.clear') }}</BaseButton>
+            <BaseButton size="sm" variant="danger" @click="dropOpen = true">{{ t('bo.data.tbl.drop') }}</BaseButton>
+          </div>
         </div>
 
         <div v-for="(d, i) in drafts" :key="i" class="mb-2 grid gap-2 rounded-lg bg-neutral-50 p-2 sm:grid-cols-[1fr_12rem_1fr_auto] sm:items-start sm:bg-transparent sm:p-0">
@@ -324,5 +335,6 @@ onMounted(async () => {
       @saved="onSaved"
     />
     <ClearTableModal v-if="table" v-model="clearOpen" :database="database" :table="table" @cleared="onCleared" />
+    <DropTableModal v-if="table" v-model="dropOpen" :database="database" :table="table" @dropped="onDropped" />
   </div>
 </template>

@@ -198,6 +198,32 @@ final class TableBrowser
     }
 
     /**
+     * Delete $table itself (DROP TABLE). Refused when other tables point to it
+     * unless $cascade, which removes only those links (their foreign keys) —
+     * the other tables and their rows stay.
+     *
+     * @return list<string> the links removed, as "table.constraint"
+     */
+    public function drop(string $database, string $table, bool $cascade): array
+    {
+        return $this->databases->using($database, function (Connection $c) use ($table, $cascade) {
+            $this->assertTable($c, $table);
+            $links = array_values(array_filter($this->foreignKeys($c), fn ($fk) => $fk['to_table'] === $table && $fk['from_table'] !== $table));
+            if ($links !== [] && ! $cascade) {
+                throw ValidationException::withMessages(['cascade' => __('Other tables point to :table. Tick "also remove their links to it" to go on.', ['table' => $table])]);
+            }
+
+            try {
+                $c->statement('drop table '.$this->table($table).($cascade ? ' cascade' : ''));
+            } catch (QueryException $e) {
+                throw ValidationException::withMessages(['table' => $this->dbMessage($e)]);
+            }
+
+            return array_map(fn ($fk) => $fk['from_table'].'.'.$fk['name'], $links);
+        });
+    }
+
+    /**
      * $table plus every table that (directly or through others) points to it
      * — what TRUNCATE ... CASCADE empties.
      *

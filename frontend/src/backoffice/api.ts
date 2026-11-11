@@ -1005,6 +1005,9 @@ export const tableDataApi = {
   clear: (body: { database: string; table: string; cascade: boolean; restart_ids: boolean; backup_first: boolean; confirm: string }) =>
     send<ClearState>('post', '/data/clear', body),
   clearStatus: (token: string) => get<ClearState>(`/data/clear/${token}`),
+  /** Deletes the table itself (DROP TABLE); cascade removes the links of tables pointing to it. */
+  drop: (body: { database: string; table: string; cascade: boolean; confirm: string }) =>
+    send<{ table: string; links_removed: string[] }>('delete', '/data/table', body),
 }
 
 /** 1536 → "1.5 KB". */

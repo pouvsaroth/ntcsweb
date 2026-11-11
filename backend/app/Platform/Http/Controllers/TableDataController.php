@@ -137,6 +137,36 @@ final class TableDataController extends Controller
         return ApiResponse::success(['token' => $token, ...$this->clearState($token)]);
     }
 
+    /**
+     * Delete the table itself (DROP TABLE), right away. The typed name must
+     * match; when other tables point to it, cascade removes those links.
+     */
+    public function drop(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            ...$this->target(),
+            'cascade' => ['boolean'],
+            // Typed by hand: the table's name, so a click alone never deletes.
+            'confirm' => ['required', 'string'],
+        ]);
+        $database = $this->known($data['database']);
+        $table = $data['table'];
+
+        if ($data['confirm'] !== $table) {
+            throw ValidationException::withMessages(['confirm' => __('Type the table name exactly to confirm.')]);
+        }
+
+        $links = $this->browser->drop($database, $table, (bool) ($data['cascade'] ?? false));
+
+        $this->audit->record('data.table.dropped', new: [
+            'database' => $database,
+            'table' => $table,
+            'links_removed' => $links,
+        ], tenantId: $this->tenantId($database));
+
+        return ApiResponse::success(['table' => $table, 'links_removed' => $links]);
+    }
+
     public function clearStatus(string $token): JsonResponse
     {
         return ApiResponse::success(['token' => $token, ...$this->clearState($token)]);

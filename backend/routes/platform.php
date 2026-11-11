@@ -112,6 +112,7 @@ Route::middleware('platform.staff')->group(function () {
         Route::patch('rows', [TableDataController::class, 'update'])->middleware('platform.can:platform.data.edit')->name('rows.update');
         Route::get('relationships', [TableDataController::class, 'relationships'])->middleware('platform.can:platform.data.read')->name('relationships');
         Route::post('clear', [TableDataController::class, 'clear'])->middleware('platform.can:platform.data.edit')->name('clear');
+        Route::delete('table', [TableDataController::class, 'drop'])->middleware('platform.can:platform.data.edit')->name('drop');
         Route::get('clear/{token}', [TableDataController::class, 'clearStatus'])->middleware('platform.can:platform.data.edit')->name('clear.status');
         Route::get('backups', [DataOpsController::class, 'backups'])->middleware('platform.can:platform.data.read')->name('backups.index');
         Route::post('backups', [DataOpsController::class, 'backupNow'])->middleware('platform.can:platform.data.backup')->name('backups.store');

@@ -184,6 +184,29 @@ class PlatformTableDataTest extends TestCase
         $this->assertSame(2, DB::table('bt_pupils')->count());
     }
 
+    public function test_deleting_a_table_needs_the_typed_name_and_removes_only_the_links_of_tables_pointing_to_it(): void
+    {
+        $this->actingAsStaff($this->platformStaff(['platform.data.read', 'platform.data.edit']));
+        $body = ['database' => $this->central, 'table' => 'bt_classes'];
+        $exists = fn (string $t) => DB::selectOne('select to_regclass(?) as r', ["public.{$t}"])->r !== null;
+
+        $this->deleteJson('/api/v1/platform/data/table', [...$body, 'confirm' => 'bt_class'])->assertUnprocessable()->assertJsonValidationErrors('confirm');
+        $this->deleteJson('/api/v1/platform/data/table', [...$body, 'confirm' => 'bt_classes'])->assertUnprocessable()->assertJsonValidationErrors('cascade');
+        $this->assertTrue($exists('bt_classes'));
+
+        $this->deleteJson('/api/v1/platform/data/table', [...$body, 'confirm' => 'bt_classes', 'cascade' => true])
+            ->assertOk()->assertJsonPath('data.links_removed.0', fn ($v) => str_starts_with($v, 'bt_pupils.'));
+        $this->assertFalse($exists('bt_classes'));
+        // The table that pointed to it stays, with its rows.
+        $this->assertSame(2, DB::table('bt_pupils')->count());
+        $this->assertDatabaseHas('bo_audit_logs', ['action' => 'data.table.dropped']);
+
+        // Nothing points to bt_pupils: no tick needed.
+        $this->deleteJson('/api/v1/platform/data/table', ['database' => $this->central, 'table' => 'bt_pupils', 'confirm' => 'bt_pupils'])->assertOk();
+        $this->assertFalse($exists('bt_pupils'));
+        $this->deleteJson('/api/v1/platform/data/table', ['database' => $this->central, 'table' => 'bt_pupils', 'confirm' => 'bt_pupils'])->assertJsonValidationErrors('table');
+    }
+
     public function test_reading_alone_cannot_change_or_clear(): void
     {
         $this->actingAsStaff($this->platformStaff(['platform.data.read']));
@@ -191,5 +214,6 @@ class PlatformTableDataTest extends TestCase
 
         $this->patchJson('/api/v1/platform/data/rows', ['database' => $this->central, 'table' => 'bt_classes', 'key' => ['id' => $id], 'changes' => ['name' => 'x']])->assertNotFound();
         $this->postJson('/api/v1/platform/data/clear', ['database' => $this->central, 'table' => 'bt_pupils', 'confirm' => 'bt_pupils'])->assertNotFound();
+        $this->deleteJson('/api/v1/platform/data/table', ['database' => $this->central, 'table' => 'bt_pupils', 'confirm' => 'bt_pupils'])->assertNotFound();
     }
 }
