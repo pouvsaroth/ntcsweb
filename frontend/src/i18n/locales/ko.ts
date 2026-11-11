@@ -4260,6 +4260,7 @@ const ko: MessageSchema = {
       teacher: '교사',
       assistantTeacher: '보조 교사',
       noTeachersAvailable: '교사 역할을 가진 직원이 아직 없습니다 — 먼저 "직원"에서 추가하세요.',
+      noAssistantsAvailable: '교사 보조 직위를 가진 직원이 아직 없습니다 — 먼저 "직원"에서 추가하세요.',
       scheduleSection: '주간 시간표',
       scheduleHint: '이 학급이 모이는 요일과 시간입니다.',
       addSchedule: '시간대 추가',

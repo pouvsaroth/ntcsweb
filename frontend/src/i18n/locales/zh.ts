@@ -4259,6 +4259,7 @@ const zh: MessageSchema = {
       teacher: '教师',
       assistantTeacher: '助教',
       noTeachersAvailable: '尚无员工担任教师职位——请先在"员工"中添加。',
+      noAssistantsAvailable: '尚无员工担任助教职位——请先在"员工"中添加。',
       scheduleSection: '每周课表',
       scheduleHint: '该班级上课的星期与时间。',
       addSchedule: '添加时间段',

@@ -86,6 +86,29 @@ class Position extends Model
         return static::query()->where('role_id', $teacherRoleId)->pluck('id')->all();
     }
 
+    /** Slug of the school's own "Teacher Assistant" role (made under Roles, not seeded). */
+    public const TEACHER_ASSISTANT_ROLE = 'teacher-assistant';
+
+    /**
+     * Positions carrying the "Teacher Assistant" role — the only staff a
+     * class's Assistant Teacher list offers.
+     *
+     * @return list<int>
+     */
+    public static function teacherAssistantPositionIds(): array
+    {
+        $roleId = Role::query()
+            ->where('tenant_id', app(TenantContext::class)->idOrFail())
+            ->where('slug', self::TEACHER_ASSISTANT_ROLE)
+            ->value('id');
+
+        if ($roleId === null) {
+            return [];
+        }
+
+        return static::query()->where('role_id', $roleId)->pluck('id')->all();
+    }
+
     public function auditModule(): string
     {
         return 'Positions';

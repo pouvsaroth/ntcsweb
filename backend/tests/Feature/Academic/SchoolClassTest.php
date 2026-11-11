@@ -37,6 +37,28 @@ class SchoolClassTest extends TestCase
         return Position::factory()->create(['name' => 'Teacher', 'role_id' => $teacherRole->id]);
     }
 
+    /** A position carrying the school's own Teacher Assistant role — the only staff allowed as assistants. */
+    private function createTeacherAssistantPosition(): Position
+    {
+        $role = Role::factory()->forTenant($this->tenant)->create([
+            'slug' => Position::TEACHER_ASSISTANT_ROLE,
+            'name' => 'Teacher Assistant',
+        ]);
+
+        return Position::factory()->create(['name' => 'Teacher Assistant', 'role_id' => $role->id]);
+    }
+
+    public function test_a_teacher_role_staff_member_cannot_be_an_assistant(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::CLASSES_CREATE]);
+        $teacher = Staff::factory()->create(['position_id' => $this->createTeacherPosition()->id]);
+
+        $this->postJson('/api/v1/classes', [
+            'name' => 'Assistant Check',
+            'assistant_teacher_ids' => [$teacher->id],
+        ])->assertUnprocessable()->assertJsonValidationErrors('assistant_teacher_ids.0');
+    }
+
     public function test_it_creates_a_class_with_its_weekly_schedule(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::CLASSES_CREATE]);
@@ -69,7 +91,7 @@ class SchoolClassTest extends TestCase
         $teacherPosition = $this->createTeacherPosition();
         $mainTeacher = Staff::factory()->create(['position_id' => $teacherPosition->id]);
         $coTeacher = Staff::factory()->create(['position_id' => $teacherPosition->id]);
-        $assistant = Staff::factory()->create(['position_id' => $teacherPosition->id]);
+        $assistant = Staff::factory()->create(['position_id' => $this->createTeacherAssistantPosition()->id]);
 
         $response = $this->postJson('/api/v1/classes', [
             'name' => 'Co-Taught Class',

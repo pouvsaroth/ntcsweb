@@ -4264,6 +4264,7 @@ const en = {
       teacher: 'Teacher',
       assistantTeacher: 'Assistant Teacher',
       noTeachersAvailable: 'No staff hold a Teacher-role position yet — add one under Staff first.',
+      noAssistantsAvailable: 'No staff hold a Teacher Assistant position yet — add one under Staff first.',
       scheduleSection: 'Weekly schedule',
       scheduleHint: 'The study day(s) and study time(s) this class meets.',
       addSchedule: 'Add time slot',

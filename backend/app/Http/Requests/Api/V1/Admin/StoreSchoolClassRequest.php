@@ -25,11 +25,10 @@ class StoreSchoolClassRequest extends FormRequest
 
     public function rules(): array
     {
-        // Must be a Staff member holding a position that carries the
-        // Teacher role — see Position::teacherPositionIds(). Shared between
-        // teacher_ids and assistant_teacher_ids: eligibility is the same,
-        // only the assigned role differs.
+        // Teachers: a position carrying the Teacher role. Assistants: a
+        // position carrying the Teacher Assistant role.
         $isTeacherStaff = fn ($query) => $query->whereIn('position_id', Position::teacherPositionIds());
+        $isAssistantStaff = fn ($query) => $query->whereIn('position_id', Position::teacherAssistantPositionIds());
 
         return [
             'name' => ['required', 'string', 'max:255'],
@@ -37,7 +36,7 @@ class StoreSchoolClassRequest extends FormRequest
             'teacher_ids' => ['sometimes', 'array'],
             'teacher_ids.*' => [Rule::exists('tenant.staff', 'id')->where($isTeacherStaff)],
             'assistant_teacher_ids' => ['sometimes', 'array'],
-            'assistant_teacher_ids.*' => [Rule::exists('tenant.staff', 'id')->where($isTeacherStaff)],
+            'assistant_teacher_ids.*' => [Rule::exists('tenant.staff', 'id')->where($isAssistantStaff)],
             'classroom_id' => ['nullable', Rule::exists('tenant.classrooms', 'id')],
             'academic_program_id' => ['nullable', Rule::exists('tenant.academic_programs', 'id')],
             'grade_level_id' => ['nullable', Rule::exists('tenant.grade_levels', 'id')],

@@ -48,6 +48,8 @@ const form = reactive<ClassInput>({
 })
 
 const teachers = ref<Staff[]>([])
+/** Staff whose position carries the Teacher Assistant role (plus anyone already an assistant on this class). */
+const assistants = ref<{ id: number; full_name: string }[]>([])
 const classrooms = ref<Classroom[]>([])
 const programs = ref<AcademicProgram[]>([])
 // School setup: the grade level and academic year a class belongs to (both optional).
@@ -165,6 +167,10 @@ async function load() {
     const teacherPositionIds = positions.filter((p) => p.role?.slug === 'teacher').map((p) => p.id)
     teachers.value = teacherPositionIds.length > 0 ? await staffService.listAll({ position_id: teacherPositionIds.join(',') }) : []
 
+    // Assistant Teacher list: only positions carrying the Teacher Assistant role.
+    const assistantPositionIds = positions.filter((p) => p.role?.slug === 'teacher-assistant').map((p) => p.id)
+    assistants.value = assistantPositionIds.length > 0 ? await staffService.listAll({ position_id: assistantPositionIds.join(',') }) : []
+
     if (!classId.value) return
 
     const schoolClass = await classesService.get(classId.value)
@@ -172,6 +178,10 @@ async function load() {
     form.code = schoolClass.code ?? ''
     form.teacher_ids = schoolClass.teachers.map((t) => t.id)
     form.assistant_teacher_ids = schoolClass.assistant_teachers.map((t) => t.id)
+    // Keep assistants assigned before this rule visible, so they can be unticked.
+    for (const a of schoolClass.assistant_teachers) {
+      if (!assistants.value.some((s) => s.id === a.id)) assistants.value.push({ id: a.id, full_name: a.name })
+    }
     form.classroom_id = schoolClass.classroom?.id ?? null
     form.academic_program_id = schoolClass.academic_program?.id ?? null
     form.grade_level_id = schoolClass.grade_level_id ?? null
@@ -287,7 +297,7 @@ onMounted(load)
       <section>
         <h2 class="mb-1 text-sm font-semibold text-neutral-800">{{ t('admin.classes.teachersSection') }}</h2>
         <p class="mb-3 text-sm text-neutral-500">{{ t('admin.classes.teachersHint') }}</p>
-        <p v-if="teachers.length === 0" class="text-sm text-neutral-500">{{ t('admin.classes.noTeachersAvailable') }}</p>
+        <p v-if="teachers.length === 0 && assistants.length === 0" class="text-sm text-neutral-500">{{ t('admin.classes.noTeachersAvailable') }}</p>
         <div v-else class="grid gap-4 sm:grid-cols-2">
           <div>
             <h3 class="mb-2 text-xs font-medium uppercase tracking-wide text-neutral-500">{{ t('admin.classes.teacher') }}</h3>
@@ -306,8 +316,9 @@ onMounted(load)
           </div>
           <div>
             <h3 class="mb-2 text-xs font-medium uppercase tracking-wide text-neutral-500">{{ t('admin.classes.assistantTeacher') }}</h3>
-            <div class="grid gap-2">
-              <label v-for="staff in teachers" :key="staff.id" class="flex items-center gap-2 rounded-lg border border-neutral-200 p-2.5 text-sm">
+            <p v-if="assistants.length === 0" class="text-sm text-neutral-500">{{ t('admin.classes.noAssistantsAvailable') }}</p>
+            <div v-else class="grid gap-2">
+              <label v-for="staff in assistants" :key="staff.id" class="flex items-center gap-2 rounded-lg border border-neutral-200 p-2.5 text-sm">
                 <input
                   type="checkbox"
                   :checked="form.assistant_teacher_ids.includes(staff.id)"

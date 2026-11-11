@@ -4260,6 +4260,7 @@ const ja: MessageSchema = {
       teacher: '教師',
       assistantTeacher: 'アシスタント教師',
       noTeachersAvailable: 'まだ教師ロールを持つスタッフがいません — 先に「スタッフ」で追加してください。',
+      noAssistantsAvailable: 'まだ教師アシスタントの役職を持つスタッフがいません — 先に「スタッフ」で追加してください。',
       scheduleSection: '週間スケジュール',
       scheduleHint: 'このクラスが開講される曜日と時間です。',
       addSchedule: '時間帯を追加',

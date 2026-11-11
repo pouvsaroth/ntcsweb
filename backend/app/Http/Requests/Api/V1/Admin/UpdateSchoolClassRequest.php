@@ -26,11 +26,14 @@ class UpdateSchoolClassRequest extends FormRequest
     {
         $class = $this->route('class');
 
-        // Must be a Staff member holding a position that carries the
-        // Teacher role — see Position::teacherPositionIds(). Shared between
-        // teacher_ids and assistant_teacher_ids: eligibility is the same,
-        // only the assigned role differs.
+        // Teachers: a position carrying the Teacher role. Assistants: a
+        // position carrying the Teacher Assistant role — or already an
+        // assistant on this class (assigned before this rule), so saving an
+        // older class doesn't fail.
         $isTeacherStaff = fn ($query) => $query->whereIn('position_id', Position::teacherPositionIds());
+        $assistantPositionIds = Position::teacherAssistantPositionIds();
+        $currentAssistantIds = $class instanceof SchoolClass ? $class->assistantTeachers()->pluck('staff.id')->all() : [];
+        $isAssistantStaff = fn ($query) => $query->where(fn ($q) => $q->whereIn('position_id', $assistantPositionIds)->orWhereIn('id', $currentAssistantIds));
 
         return [
             'name' => ['sometimes', 'required', 'string', 'max:255'],
@@ -38,7 +41,7 @@ class UpdateSchoolClassRequest extends FormRequest
             'teacher_ids' => ['sometimes', 'array'],
             'teacher_ids.*' => [Rule::exists('tenant.staff', 'id')->where($isTeacherStaff)],
             'assistant_teacher_ids' => ['sometimes', 'array'],
-            'assistant_teacher_ids.*' => [Rule::exists('tenant.staff', 'id')->where($isTeacherStaff)],
+            'assistant_teacher_ids.*' => [Rule::exists('tenant.staff', 'id')->where($isAssistantStaff)],
             'classroom_id' => ['nullable', Rule::exists('tenant.classrooms', 'id')],
             'academic_program_id' => ['nullable', Rule::exists('tenant.academic_programs', 'id')],
             'grade_level_id' => ['nullable', Rule::exists('tenant.grade_levels', 'id')],
