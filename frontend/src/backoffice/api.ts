@@ -701,6 +701,100 @@ export const paymentsApi = {
   removeLogo: () => send<BillingSettingsRow>('delete', '/billing/settings/logo'),
 }
 
+// ── Billing > Quotation items ───────────────────────────────────────────────
+
+export type QuotationItemLevel = 'menu' | 'submenu' | 'tab'
+
+/** A console menu, submenu or tab a quotation can pick, with default prices. */
+export interface QuotationItem {
+  id: number
+  parent_id: number | null
+  level: QuotationItemLevel
+  code: string | null
+  name: string
+  name_km: string | null
+  path: string | null
+  price_usd: number
+  price_khr: number
+  active: boolean
+  sort_order: number
+  children: QuotationItem[]
+}
+
+export type QuotationItemInput = Partial<Pick<QuotationItem, 'parent_id' | 'code' | 'name' | 'name_km' | 'path' | 'price_usd' | 'price_khr' | 'active' | 'sort_order'>>
+
+export const quotationItemsApi = {
+  tree: () => get<QuotationItem[]>('/billing/quotation-items'),
+  create: (body: QuotationItemInput) => send<QuotationItem>('post', '/billing/quotation-items', body),
+  update: (id: number, body: QuotationItemInput) => send<QuotationItem>('patch', `/billing/quotation-items/${id}`, body),
+  remove: (id: number) => send<void>('delete', `/billing/quotation-items/${id}`),
+}
+
+// ── Billing > Quotations ────────────────────────────────────────────────────
+
+export type QuotationStatus = 'draft' | 'sent' | 'accepted' | 'rejected'
+export type QuotationCurrency = 'USD' | 'KHR'
+
+export interface QuotationLine {
+  id?: number
+  item_id: number | null
+  level?: QuotationItemLevel | null
+  code?: string | null
+  name: string
+  name_km?: string | null
+  /** Where it sits, e.g. "Academic › Programs". */
+  parent_label?: string | null
+  parent_label_km?: string | null
+  description?: string | null
+  quantity: number
+  unit_price: number
+  amount?: number
+}
+
+export interface Quotation {
+  id: number
+  number: string
+  tenant_id: number | null
+  customer: { id: number; name: string; slug: string } | null
+  customer_name: string
+  contact_name: string | null
+  phone: string | null
+  email: string | null
+  address: string | null
+  currency: QuotationCurrency
+  issue_date: string
+  valid_until: string | null
+  discount_type: 'amount' | 'percent'
+  discount_value: number
+  tax_percent: number
+  subtotal: number
+  discount_amount: number
+  tax_amount: number
+  total: number
+  notes: string | null
+  status: QuotationStatus
+  staff: string | null
+  created_at: string | null
+  updated_at: string | null
+  lines?: QuotationLine[]
+  [key: string]: unknown
+}
+
+export type QuotationInput = Pick<
+  Quotation,
+  'tenant_id' | 'customer_name' | 'contact_name' | 'phone' | 'email' | 'address' | 'currency' | 'issue_date' | 'valid_until' | 'discount_type' | 'discount_value' | 'tax_percent' | 'notes' | 'status'
+> & { lines: Pick<QuotationLine, 'item_id' | 'name' | 'name_km' | 'description' | 'quantity' | 'unit_price'>[] }
+
+export const quotationsApi = {
+  list: (query: ListQuery) => page<Quotation>('/billing/quotations', query),
+  show: (id: number) => get<Quotation>(`/billing/quotations/${id}`),
+  create: (body: QuotationInput) => send<Quotation>('post', '/billing/quotations', body),
+  update: (id: number, body: QuotationInput) => send<Quotation>('put', `/billing/quotations/${id}`, body),
+  remove: (id: number) => send<void>('delete', `/billing/quotations/${id}`),
+  exportUrl: (id: number, format: 'xlsx' | 'pdf' | 'png', lang: 'en' | 'km') =>
+    `/api/v1/platform/billing/quotations/${id}/export?format=${format}&lang=${lang}`,
+}
+
 export const billingApi = {
   plans: () => get<{ plans: Plan[]; modules: PlanModule[]; products: ProductChoice[] }>('/billing/plans'),
   products: () => get<{ products: Product[]; modules: PlanModule[] }>('/billing/products'),

@@ -1,0 +1,1689 @@
+[
+ {
+  "code": "B1",
+  "name": "Overview",
+  "name_km": "ទិដ្ឋភាពទូទៅ",
+  "children": [
+   {
+    "code": "B1.1",
+    "name": "Dashboard",
+    "name_km": "ផ្ទាំងគ្រប់គ្រង",
+    "path": "/",
+    "children": []
+   }
+  ]
+ },
+ {
+  "code": "B2",
+  "name": "My Profile",
+  "name_km": "ប្រវត្តិរូបខ្ញុំ",
+  "children": [
+   {
+    "code": "B2.1",
+    "name": "Dashboard",
+    "name_km": "ផ្ទាំងគ្រប់គ្រង",
+    "path": "/",
+    "children": []
+   },
+   {
+    "code": "B2.2",
+    "name": "Score",
+    "name_km": "ពិន្ទុ",
+    "path": "/my-scores",
+    "children": []
+   },
+   {
+    "code": "B2.3",
+    "name": "Attendant",
+    "name_km": "វត្តមាន",
+    "path": "/my-attendance",
+    "children": []
+   },
+   {
+    "code": "B2.4",
+    "name": "Video",
+    "name_km": "វីដេអូ",
+    "path": "/my-videos",
+    "children": []
+   },
+   {
+    "code": "B2.5",
+    "name": "Comment & Request",
+    "name_km": "មតិយោបល់ និង សំណើ",
+    "path": "/my-feedback",
+    "children": [
+     {
+      "code": "B2.5.1",
+      "name": "Open",
+      "name_km": "កំពុងបើក"
+     },
+     {
+      "code": "B2.5.2",
+      "name": "Replied",
+      "name_km": "បានឆ្លើយតប"
+     }
+    ]
+   },
+   {
+    "code": "B2.6",
+    "name": "My Request",
+    "name_km": "សំណើរបស់ខ្ញុំ",
+    "path": "/approvals/my-requests",
+    "children": [
+     {
+      "code": "B2.6.1",
+      "name": "Pending",
+      "name_km": "កំពុងរង់ចាំ"
+     },
+     {
+      "code": "B2.6.2",
+      "name": "Approved to study",
+      "name_km": "អនុញ្ញាតឱ្យមករៀន"
+     },
+     {
+      "code": "B2.6.3",
+      "name": "Approved",
+      "name_km": "បានអនុម័ត"
+     },
+     {
+      "code": "B2.6.4",
+      "name": "Rejected",
+      "name_km": "បានបដិសេធ"
+     },
+     {
+      "code": "B2.6.5",
+      "name": "Cancelled",
+      "name_km": "បានលុបចោល"
+     }
+    ]
+   },
+   {
+    "code": "B2.7",
+    "name": "Notifications",
+    "name_km": "ការជូនដំណឹង",
+    "path": "/notifications",
+    "children": []
+   },
+   {
+    "code": "B2.8",
+    "name": "School Regulation",
+    "name_km": "បទបញ្ជាសាលា",
+    "path": null,
+    "children": []
+   },
+   {
+    "code": "B2.9",
+    "name": "Student Attendance Policy",
+    "name_km": "គោលការណ៍អវត្តមានសិស្ស",
+    "path": null,
+    "children": []
+   }
+  ]
+ },
+ {
+  "code": "B3",
+  "name": "Project Management",
+  "name_km": "ការគ្រប់គ្រងគម្រោង",
+  "children": [
+   {
+    "code": "B3.1",
+    "name": "Project Management",
+    "name_km": "ការគ្រប់គ្រងគម្រោង",
+    "path": "/projects",
+    "children": [
+     {
+      "code": "B3.1.1",
+      "name": "Board",
+      "name_km": "ផ្ទាំងការងារ"
+     },
+     {
+      "code": "B3.1.2",
+      "name": "Milestones",
+      "name_km": "ដំណាក់កាល"
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "code": "B4",
+  "name": "Academic",
+  "name_km": "ការសិក្សា",
+  "children": [
+   {
+    "code": "B4.1",
+    "name": "Programs",
+    "name_km": "កម្មវិធីសិក្សា",
+    "path": "/academic-programs",
+    "children": [
+     {
+      "code": "B4.1.1",
+      "name": "Academic Programs",
+      "name_km": "កម្មវិធីសិក្សា"
+     },
+     {
+      "code": "B4.1.2",
+      "name": "Academic Years",
+      "name_km": "ឆ្នាំសិក្សា"
+     },
+     {
+      "code": "B4.1.3",
+      "name": "Course",
+      "name_km": "វគ្គសិក្សា"
+     },
+     {
+      "code": "B4.1.4",
+      "name": "Books",
+      "name_km": "សៀវភៅ"
+     },
+     {
+      "code": "B4.1.5",
+      "name": "Book Categories",
+      "name_km": "ប្រភេទសៀវភៅ"
+     }
+    ]
+   },
+   {
+    "code": "B4.2",
+    "name": "School Setup",
+    "name_km": "ការរៀបចំសាលា",
+    "path": "/school-setup",
+    "children": [
+     {
+      "code": "B4.2.1",
+      "name": "Terms / Semesters",
+      "name_km": "ឆមាស"
+     },
+     {
+      "code": "B4.2.2",
+      "name": "Grade levels",
+      "name_km": "កម្រិតថ្នាក់"
+     },
+     {
+      "code": "B4.2.3",
+      "name": "Curriculum",
+      "name_km": "កម្មវិធីសិក្សា"
+     },
+     {
+      "code": "B4.2.4",
+      "name": "School calendar",
+      "name_km": "ប្រតិទិនសាលា"
+     },
+     {
+      "code": "B4.2.5",
+      "name": "Promotion rules",
+      "name_km": "លក្ខខណ្ឌឡើងថ្នាក់"
+     },
+     {
+      "code": "B4.2.6",
+      "name": "Promote students",
+      "name_km": "ដំឡើងថ្នាក់សិស្ស"
+     }
+    ]
+   },
+   {
+    "code": "B4.3",
+    "name": "Video Lesson",
+    "name_km": "មេរៀនវីដេអូ",
+    "path": "/videos",
+    "children": []
+   },
+   {
+    "code": "B4.4",
+    "name": "Study Building",
+    "name_km": "អគារសិក្សា",
+    "path": "/buildings",
+    "children": [
+     {
+      "code": "B4.4.1",
+      "name": "Buildings",
+      "name_km": "អគារ"
+     },
+     {
+      "code": "B4.4.2",
+      "name": "Classrooms",
+      "name_km": "បន្ទប់រៀន"
+     }
+    ]
+   },
+   {
+    "code": "B4.5",
+    "name": "Classes",
+    "name_km": "ថ្នាក់រៀន",
+    "path": "/classes",
+    "children": []
+   },
+   {
+    "code": "B4.6",
+    "name": "Timetable",
+    "name_km": "កាលវិភាគ",
+    "path": "/timetable",
+    "children": [
+     {
+      "code": "B4.6.1",
+      "name": "Class",
+      "name_km": "ថ្នាក់"
+     },
+     {
+      "code": "B4.6.2",
+      "name": "Teacher",
+      "name_km": "គ្រូ"
+     },
+     {
+      "code": "B4.6.3",
+      "name": "Room",
+      "name_km": "បន្ទប់"
+     },
+     {
+      "code": "B4.6.4",
+      "name": "Subject hours",
+      "name_km": "ម៉ោងតាមមុខវិជ្ជា"
+     },
+     {
+      "code": "B4.6.5",
+      "name": "Conflicts",
+      "name_km": "ម៉ោងជាន់គ្នា"
+     },
+     {
+      "code": "B4.6.6",
+      "name": "Schedule changes",
+      "name_km": "សំណើប្តូរកាលវិភាគ"
+     }
+    ]
+   },
+   {
+    "code": "B4.7",
+    "name": "Lesson Plans",
+    "name_km": "ផែនការបង្រៀន",
+    "path": "/lessons",
+    "children": [
+     {
+      "code": "B4.7.1",
+      "name": "Lesson plans",
+      "name_km": "ផែនការមេរៀន"
+     },
+     {
+      "code": "B4.7.2",
+      "name": "Weekly plan",
+      "name_km": "ផែនការប្រចាំសប្តាហ៍"
+     },
+     {
+      "code": "B4.7.3",
+      "name": "Teaching log",
+      "name_km": "កំណត់ត្រាបង្រៀន"
+     },
+     {
+      "code": "B4.7.4",
+      "name": "Review",
+      "name_km": "ពិនិត្យ"
+     },
+     {
+      "code": "B4.7.5",
+      "name": "Curriculum progress",
+      "name_km": "វឌ្ឍនភាពកម្មវិធីសិក្សា"
+     },
+     {
+      "code": "B4.7.6",
+      "name": "Delays",
+      "name_km": "យឺតពេល"
+     }
+    ]
+   },
+   {
+    "code": "B4.8",
+    "name": "Student Attendance",
+    "name_km": "វត្តមានសិស្ស",
+    "path": "/attendance",
+    "children": [
+     {
+      "code": "B4.8.1",
+      "name": "Student Attendance",
+      "name_km": "វត្តមានសិស្ស"
+     },
+     {
+      "code": "B4.8.2",
+      "name": "Attendance Summary",
+      "name_km": "សរុបវត្តមាន"
+     },
+     {
+      "code": "B4.8.3",
+      "name": "Attendance Sheet",
+      "name_km": "តារាងវត្តមាន"
+     }
+    ]
+   },
+   {
+    "code": "B4.9",
+    "name": "Examination",
+    "name_km": "ការប្រឡងនិងលទ្ធផល",
+    "path": "/examination",
+    "children": [
+     {
+      "code": "B4.9.1",
+      "name": "Assessment Setup",
+      "name_km": "ការកំណត់ការវាយតម្លៃ"
+     },
+     {
+      "code": "B4.9.2",
+      "name": "Exam Schedule",
+      "name_km": "កាលវិភាគប្រឡង"
+     },
+     {
+      "code": "B4.9.3",
+      "name": "Grade Entry",
+      "name_km": "បញ្ចូលពិន្ទុ"
+     },
+     {
+      "code": "B4.9.4",
+      "name": "Grade Validation",
+      "name_km": "ពិនិត្យពិន្ទុ"
+     },
+     {
+      "code": "B4.9.5",
+      "name": "Score Calculation",
+      "name_km": "គណនាពិន្ទុ"
+     },
+     {
+      "code": "B4.9.6",
+      "name": "Result Approval",
+      "name_km": "អនុម័តលទ្ធផល"
+     },
+     {
+      "code": "B4.9.7",
+      "name": "Grade Correction",
+      "name_km": "កែពិន្ទុ"
+     },
+     {
+      "code": "B4.9.8",
+      "name": "Academic Transcript",
+      "name_km": "ប្រវត្តិពិន្ទុ"
+     },
+     {
+      "code": "B4.9.9",
+      "name": "Student Progress",
+      "name_km": "វឌ្ឍនភាពសិស្ស"
+     },
+     {
+      "code": "B4.9.10",
+      "name": "Remedial Teaching",
+      "name_km": "ការបង្រៀនបំប៉ន"
+     },
+     {
+      "code": "B4.9.11",
+      "name": "Result Export",
+      "name_km": "នាំចេញលទ្ធផល"
+     },
+     {
+      "code": "B4.9.12",
+      "name": "Exams",
+      "name_km": "ការប្រឡង"
+     },
+     {
+      "code": "B4.9.13",
+      "name": "Grades",
+      "name_km": "និទ្ទេស"
+     },
+     {
+      "code": "B4.9.14",
+      "name": "Make-up Exam",
+      "name_km": "ប្រឡងសង"
+     },
+     {
+      "code": "B4.9.15",
+      "name": "Certificate",
+      "name_km": "វិញ្ញាបនបត្រ"
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "code": "B5",
+  "name": "Students",
+  "name_km": "សិស្សានុសិស្ស",
+  "children": [
+   {
+    "code": "B5.1",
+    "name": "Students",
+    "name_km": "សិស្សានុសិស្ស",
+    "path": "/students",
+    "children": []
+   },
+   {
+    "code": "B5.2",
+    "name": "Import Students",
+    "name_km": "នាំចូលទិន្នន័យសិស្ស",
+    "path": "/student-imports",
+    "children": []
+   },
+   {
+    "code": "B5.3",
+    "name": "Enrollments",
+    "name_km": "ការចុះឈ្មោះចូលរៀន",
+    "path": "/enrollments",
+    "children": []
+   }
+  ]
+ },
+ {
+  "code": "B6",
+  "name": "HRM",
+  "name_km": "ធនធានមនុស្ស",
+  "children": [
+   {
+    "code": "B6.1",
+    "name": "Staff",
+    "name_km": "បុគ្គលិក",
+    "path": "/staff",
+    "children": [
+     {
+      "code": "B6.1.1",
+      "name": "Current Info",
+      "name_km": "ព័ត៌មានបច្ចុប្បន្ន"
+     },
+     {
+      "code": "B6.1.2",
+      "name": "Emergency Contacts",
+      "name_km": "ទំនាក់ទំនងបន្ទាន់"
+     },
+     {
+      "code": "B6.1.3",
+      "name": "Education",
+      "name_km": "ការសិក្សា"
+     },
+     {
+      "code": "B6.1.4",
+      "name": "Family Members",
+      "name_km": "សមាជិកគ្រួសារ"
+     },
+     {
+      "code": "B6.1.5",
+      "name": "Languages",
+      "name_km": "ភាសា"
+     },
+     {
+      "code": "B6.1.6",
+      "name": "Job experience",
+      "name_km": "បទពិសោធន៍ការងារ"
+     },
+     {
+      "code": "B6.1.7",
+      "name": "Other Skills",
+      "name_km": "ជំនាញផ្សេងៗ"
+     },
+     {
+      "code": "B6.1.8",
+      "name": "Documents",
+      "name_km": "ឯកសារ"
+     }
+    ]
+   },
+   {
+    "code": "B6.2",
+    "name": "Teachers",
+    "name_km": "គ្រូ",
+    "path": "/teachers",
+    "children": [
+     {
+      "code": "B6.2.1",
+      "name": "Qualification",
+      "name_km": "គុណវុឌ្ឍិ"
+     },
+     {
+      "code": "B6.2.2",
+      "name": "Assignment",
+      "name_km": "ការចាត់តាំង"
+     },
+     {
+      "code": "B6.2.3",
+      "name": "Homeroom",
+      "name_km": "គ្រូប្រចាំថ្នាក់"
+     },
+     {
+      "code": "B6.2.4",
+      "name": "Teaching load",
+      "name_km": "ម៉ោងបង្រៀន"
+     },
+     {
+      "code": "B6.2.5",
+      "name": "Availability",
+      "name_km": "ពេលទំនេរ"
+     },
+     {
+      "code": "B6.2.6",
+      "name": "Substitute",
+      "name_km": "គ្រូជំនួស"
+     },
+     {
+      "code": "B6.2.7",
+      "name": "Documents",
+      "name_km": "ឯកសារ"
+     }
+    ]
+   },
+   {
+    "code": "B6.3",
+    "name": "Staff Status History",
+    "name_km": "ប្រវត្តិស្ថានភាពបុគ្គលិក",
+    "path": "/staff-status-history",
+    "children": []
+   },
+   {
+    "code": "B6.4",
+    "name": "Organization Management",
+    "name_km": "ការគ្រប់គ្រងអង្គភាព",
+    "path": "/organization",
+    "children": [
+     {
+      "code": "B6.4.1",
+      "name": "School",
+      "name_km": "សាលា"
+     },
+     {
+      "code": "B6.4.2",
+      "name": "Branch",
+      "name_km": "សាខា"
+     },
+     {
+      "code": "B6.4.3",
+      "name": "Department",
+      "name_km": "នាយកដ្ឋាន"
+     },
+     {
+      "code": "B6.4.4",
+      "name": "Team",
+      "name_km": "ក្រុម"
+     },
+     {
+      "code": "B6.4.5",
+      "name": "Position",
+      "name_km": "តួនាទី"
+     },
+     {
+      "code": "B6.4.6",
+      "name": "Job grade",
+      "name_km": "ថ្នាក់ការងារ"
+     },
+     {
+      "code": "B6.4.7",
+      "name": "Job level",
+      "name_km": "កម្រិតការងារ"
+     },
+     {
+      "code": "B6.4.8",
+      "name": "Reporting manager",
+      "name_km": "អ្នកគ្រប់គ្រងផ្ទាល់"
+     },
+     {
+      "code": "B6.4.9",
+      "name": "Organization hierarchy",
+      "name_km": "រចនាសម្ព័ន្ធអង្គភាព"
+     }
+    ]
+   },
+   {
+    "code": "B6.5",
+    "name": "Recruitment",
+    "name_km": "ការជ្រើសរើសបុគ្គលិក",
+    "path": "/recruitment",
+    "children": [
+     {
+      "code": "B6.5.1",
+      "name": "Manpower request",
+      "name_km": "សំណើបុគ្គលិក"
+     },
+     {
+      "code": "B6.5.2",
+      "name": "Job positions",
+      "name_km": "មុខតំណែងការងារ"
+     },
+     {
+      "code": "B6.5.3",
+      "name": "Job postings",
+      "name_km": "ការផ្សព្វផ្សាយការងារ"
+     },
+     {
+      "code": "B6.5.4",
+      "name": "Applicant management",
+      "name_km": "គ្រប់គ្រងបេក្ខជន"
+     },
+     {
+      "code": "B6.5.5",
+      "name": "CV/resume",
+      "name_km": "ប្រវត្តិរូប (CV)"
+     },
+     {
+      "code": "B6.5.6",
+      "name": "Interview",
+      "name_km": "សម្ភាសន៍"
+     },
+     {
+      "code": "B6.5.7",
+      "name": "Interview evaluation",
+      "name_km": "ការវាយតម្លៃសម្ភាសន៍"
+     },
+     {
+      "code": "B6.5.8",
+      "name": "Candidate selection",
+      "name_km": "ការជ្រើសរើសបេក្ខជន"
+     },
+     {
+      "code": "B6.5.9",
+      "name": "Offer letter",
+      "name_km": "លិខិតផ្តល់ការងារ"
+     },
+     {
+      "code": "B6.5.10",
+      "name": "Recruitment pipeline",
+      "name_km": "ដំណើរការជ្រើសរើស"
+     }
+    ]
+   },
+   {
+    "code": "B6.6",
+    "name": "Attendance & Time",
+    "name_km": "វត្តមាន និងម៉ោងធ្វើការ",
+    "path": "/time-attendance",
+    "children": [
+     {
+      "code": "B6.6.1",
+      "name": "Employee attendance",
+      "name_km": "វត្តមានបុគ្គលិក"
+     },
+     {
+      "code": "B6.6.2",
+      "name": "Check-in / check-out",
+      "name_km": "ចុះវត្តមាន ចូល / ចេញ"
+     },
+     {
+      "code": "B6.6.3",
+      "name": "Attendance records",
+      "name_km": "កំណត់ត្រាវត្តមាន"
+     },
+     {
+      "code": "B6.6.4",
+      "name": "Late",
+      "name_km": "មកយឺត"
+     },
+     {
+      "code": "B6.6.5",
+      "name": "Early leave",
+      "name_km": "ចេញមុន"
+     },
+     {
+      "code": "B6.6.6",
+      "name": "Absence",
+      "name_km": "អវត្តមាន"
+     },
+     {
+      "code": "B6.6.7",
+      "name": "Overtime",
+      "name_km": "ម៉ោងបន្ថែម"
+     },
+     {
+      "code": "B6.6.8",
+      "name": "Attendance correction",
+      "name_km": "ការកែវត្តមាន"
+     },
+     {
+      "code": "B6.6.9",
+      "name": "Shift",
+      "name_km": "វេនការងារ"
+     },
+     {
+      "code": "B6.6.10",
+      "name": "Staff shift",
+      "name_km": "វេនបុគ្គលិក"
+     },
+     {
+      "code": "B6.6.11",
+      "name": "Holidays",
+      "name_km": "ថ្ងៃឈប់សម្រាក"
+     },
+     {
+      "code": "B6.6.12",
+      "name": "Attendance approval",
+      "name_km": "ការអនុម័តវត្តមាន"
+     }
+    ]
+   },
+   {
+    "code": "B6.7",
+    "name": "Leave Management",
+    "name_km": "គ្រប់គ្រងការឈប់សម្រាក",
+    "path": "/leave-management",
+    "children": [
+     {
+      "code": "B6.7.1",
+      "name": "Leave types",
+      "name_km": "ប្រភេទច្បាប់ឈប់សម្រាក"
+     },
+     {
+      "code": "B6.7.2",
+      "name": "Leave policies",
+      "name_km": "គោលការណ៍ច្បាប់ឈប់សម្រាក"
+     },
+     {
+      "code": "B6.7.3",
+      "name": "Leave balance",
+      "name_km": "សមតុល្យច្បាប់"
+     },
+     {
+      "code": "B6.7.4",
+      "name": "Leave request",
+      "name_km": "សំណើច្បាប់ឈប់សម្រាក"
+     },
+     {
+      "code": "B6.7.5",
+      "name": "Approval workflow",
+      "name_km": "លំហូរការអនុម័ត"
+     },
+     {
+      "code": "B6.7.6",
+      "name": "Leave calendar",
+      "name_km": "ប្រតិទិនច្បាប់"
+     },
+     {
+      "code": "B6.7.7",
+      "name": "Carry forward",
+      "name_km": "យោងទៅឆ្នាំបន្ទាប់"
+     },
+     {
+      "code": "B6.7.8",
+      "name": "Leave reports",
+      "name_km": "របាយការណ៍ច្បាប់"
+     }
+    ]
+   },
+   {
+    "code": "B6.8",
+    "name": "Payroll",
+    "name_km": "បញ្ជីប្រាក់ខែ",
+    "path": "/payroll",
+    "children": [
+     {
+      "code": "B6.8.1",
+      "name": "Salary structure",
+      "name_km": "រចនាសម្ព័ន្ធប្រាក់ខែ"
+     },
+     {
+      "code": "B6.8.2",
+      "name": "Basic salary",
+      "name_km": "ប្រាក់ខែគោល"
+     },
+     {
+      "code": "B6.8.3",
+      "name": "Allowances",
+      "name_km": "ប្រាក់ឧបត្ថម្ភ"
+     },
+     {
+      "code": "B6.8.4",
+      "name": "Bonuses",
+      "name_km": "ប្រាក់រង្វាន់"
+     },
+     {
+      "code": "B6.8.5",
+      "name": "Deductions",
+      "name_km": "ការកាត់ប្រាក់"
+     },
+     {
+      "code": "B6.8.6",
+      "name": "Overtime",
+      "name_km": "ម៉ោងបន្ថែម"
+     },
+     {
+      "code": "B6.8.7",
+      "name": "Attendance deduction",
+      "name_km": "ការកាត់ប្រាក់តាមវត្តមាន"
+     },
+     {
+      "code": "B6.8.8",
+      "name": "Tax",
+      "name_km": "ពន្ធ"
+     },
+     {
+      "code": "B6.8.9",
+      "name": "Social security",
+      "name_km": "សន្តិសុខសង្គម"
+     },
+     {
+      "code": "B6.8.10",
+      "name": "Loan/advance",
+      "name_km": "ប្រាក់កម្ចី/ប្រាក់បុរេប្រទាន"
+     },
+     {
+      "code": "B6.8.11",
+      "name": "Payroll calculation",
+      "name_km": "ការគណនាប្រាក់ខែ"
+     },
+     {
+      "code": "B6.8.12",
+      "name": "Payslip",
+      "name_km": "បង្កាន់ដៃប្រាក់ខែ"
+     },
+     {
+      "code": "B6.8.13",
+      "name": "Payroll approval",
+      "name_km": "ការអនុម័តប្រាក់ខែ"
+     },
+     {
+      "code": "B6.8.14",
+      "name": "Payroll history",
+      "name_km": "ប្រវត្តិប្រាក់ខែ"
+     }
+    ]
+   },
+   {
+    "code": "B6.9",
+    "name": "Performance Management",
+    "name_km": "ការគ្រប់គ្រងការងារ",
+    "path": "/performance",
+    "children": [
+     {
+      "code": "B6.9.1",
+      "name": "KPI",
+      "name_km": null
+     },
+     {
+      "code": "B6.9.2",
+      "name": "Goals",
+      "name_km": "គោលដៅ"
+     },
+     {
+      "code": "B6.9.3",
+      "name": "Performance review",
+      "name_km": "ការវាយតម្លៃការងារ"
+     },
+     {
+      "code": "B6.9.4",
+      "name": "Evaluation forms",
+      "name_km": "ទម្រង់វាយតម្លៃ"
+     },
+     {
+      "code": "B6.9.5",
+      "name": "Employee self-assessment",
+      "name_km": "ការវាយតម្លៃខ្លួនឯង"
+     },
+     {
+      "code": "B6.9.6",
+      "name": "Manager assessment",
+      "name_km": "ការវាយតម្លៃដោយអ្នកគ្រប់គ្រង"
+     },
+     {
+      "code": "B6.9.7",
+      "name": "Performance score",
+      "name_km": "ពិន្ទុការងារ"
+     },
+     {
+      "code": "B6.9.8",
+      "name": "Promotion recommendation",
+      "name_km": "ការណែនាំដំឡើងតំណែង"
+     }
+    ]
+   },
+   {
+    "code": "B6.10",
+    "name": "Check in / Check out",
+    "name_km": "ចុះវត្តមាន ចូល / ចេញ",
+    "path": "/my-check-in",
+    "children": []
+   },
+   {
+    "code": "B6.11",
+    "name": "Request Leave",
+    "name_km": "ស្នើសុំច្បាប់",
+    "path": "/approvals/my-requests",
+    "children": [
+     {
+      "code": "B6.11.1",
+      "name": "Pending",
+      "name_km": "កំពុងរង់ចាំ"
+     },
+     {
+      "code": "B6.11.2",
+      "name": "Approved to study",
+      "name_km": "អនុញ្ញាតឱ្យមករៀន"
+     },
+     {
+      "code": "B6.11.3",
+      "name": "Approved",
+      "name_km": "បានអនុម័ត"
+     },
+     {
+      "code": "B6.11.4",
+      "name": "Rejected",
+      "name_km": "បានបដិសេធ"
+     },
+     {
+      "code": "B6.11.5",
+      "name": "Cancelled",
+      "name_km": "បានលុបចោល"
+     }
+    ]
+   },
+   {
+    "code": "B6.12",
+    "name": "Form",
+    "name_km": "ទម្រង់",
+    "path": "/approvals/my-requests?tab=resignation",
+    "children": []
+   },
+   {
+    "code": "B6.13",
+    "name": "Professional Development",
+    "name_km": "ការអភិវឌ្ឍវិជ្ជាជីវៈ",
+    "path": "/professional-development",
+    "children": [
+     {
+      "code": "B6.13.1",
+      "name": "Training records",
+      "name_km": "ប្រវត្តិវគ្គបណ្តុះបណ្តាល"
+     },
+     {
+      "code": "B6.13.2",
+      "name": "Training calendar",
+      "name_km": "ប្រតិទិនវគ្គបណ្តុះបណ្តាល"
+     },
+     {
+      "code": "B6.13.3",
+      "name": "Certificates",
+      "name_km": "វិញ្ញាបនបត្រ"
+     },
+     {
+      "code": "B6.13.4",
+      "name": "Classroom observation",
+      "name_km": "ការសង្កេតការបង្រៀនក្នុងថ្នាក់"
+     },
+     {
+      "code": "B6.13.5",
+      "name": "Coaching & mentoring",
+      "name_km": "ការណែនាំ និងការជួយគាំទ្រ"
+     },
+     {
+      "code": "B6.13.6",
+      "name": "Development plan",
+      "name_km": "ផែនការអភិវឌ្ឍន៍"
+     },
+     {
+      "code": "B6.13.7",
+      "name": "Training reports",
+      "name_km": "របាយការណ៍វគ្គបណ្តុះបណ្តាល"
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "code": "B7",
+  "name": "Billing",
+  "name_km": "វិក្កយបត្រ",
+  "children": [
+   {
+    "code": "B7.1",
+    "name": "Billing Dashboard",
+    "name_km": "ផ្ទាំងគ្រប់គ្រងវិក្កយបត្រ",
+    "path": "/billing",
+    "children": []
+   },
+   {
+    "code": "B7.2",
+    "name": "Products",
+    "name_km": "ផលិតផល",
+    "path": "/products",
+    "children": []
+   },
+   {
+    "code": "B7.3",
+    "name": "Invoices",
+    "name_km": "វិក្កយបត្រ",
+    "path": "/invoices",
+    "children": [
+     {
+      "code": "B7.3.1",
+      "name": "Invoices",
+      "name_km": "វិក្កយបត្រ"
+     },
+     {
+      "code": "B7.3.2",
+      "name": "Monthly Invoice",
+      "name_km": "វិក្កយបត្រប្រចាំខែ"
+     },
+     {
+      "code": "B7.3.3",
+      "name": "Invoice by class",
+      "name_km": "វិក្កយបត្រតាមថ្នាក់"
+     },
+     {
+      "code": "B7.3.4",
+      "name": "Discount codes",
+      "name_km": "កូដបញ្ចុះតម្លៃ"
+     }
+    ]
+   },
+   {
+    "code": "B7.4",
+    "name": "Payments",
+    "name_km": "ការទូទាត់",
+    "path": "/payments",
+    "children": []
+   },
+   {
+    "code": "B7.5",
+    "name": "Companies",
+    "name_km": "ក្រុមហ៊ុន",
+    "path": "/companies",
+    "children": []
+   },
+   {
+    "code": "B7.6",
+    "name": "Currency Rates",
+    "name_km": "អត្រាប្តូរប្រាក់",
+    "path": "/currency-rates",
+    "children": []
+   }
+  ]
+ },
+ {
+  "code": "B8",
+  "name": "Accounting",
+  "name_km": "គណនេយ្យ",
+  "children": [
+   {
+    "code": "B8.1",
+    "name": "Accounting Dashboard",
+    "name_km": "ផ្ទាំងគ្រប់គ្រងគណនេយ្យ",
+    "path": "/accounting",
+    "children": []
+   },
+   {
+    "code": "B8.2",
+    "name": "Chart of Accounts",
+    "name_km": "តារាងគណនី",
+    "path": "/accounts",
+    "children": []
+   },
+   {
+    "code": "B8.3",
+    "name": "Income",
+    "name_km": "ចំណូល",
+    "path": "/income",
+    "children": []
+   },
+   {
+    "code": "B8.4",
+    "name": "Expenses",
+    "name_km": "ចំណាយ",
+    "path": "/expenses",
+    "children": []
+   },
+   {
+    "code": "B8.5",
+    "name": "Expense for",
+    "name_km": "ចំណាយសម្រាប់",
+    "path": "/expense-for",
+    "children": []
+   },
+   {
+    "code": "B8.6",
+    "name": "Vendors",
+    "name_km": "អ្នកផ្គត់ផ្គង់",
+    "path": "/suppliers",
+    "children": []
+   },
+   {
+    "code": "B8.7",
+    "name": "Transactions",
+    "name_km": "ប្រតិបត្តិការ",
+    "path": "/transactions",
+    "children": []
+   },
+   {
+    "code": "B8.8",
+    "name": "Financial Reports",
+    "name_km": "របាយការណ៍ហិរញ្ញវត្ថុ",
+    "path": "/accounting-reports",
+    "children": [
+     {
+      "code": "B8.8.1",
+      "name": "Revenue",
+      "name_km": "ចំណូល"
+     },
+     {
+      "code": "B8.8.2",
+      "name": "Expenses",
+      "name_km": "ចំណាយ"
+     },
+     {
+      "code": "B8.8.3",
+      "name": "Profit & Loss",
+      "name_km": "ប្រាក់ចំណេញ និងខាត"
+     },
+     {
+      "code": "B8.8.4",
+      "name": "Cash Flow",
+      "name_km": "លំហូរសាច់ប្រាក់"
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "code": "B9",
+  "name": "Assets",
+  "name_km": "ទ្រព្យសម្បត្តិ",
+  "children": [
+   {
+    "code": "B9.1",
+    "name": "Asset Dashboard",
+    "name_km": "ផ្ទាំងគ្រប់គ្រងទ្រព្យសម្បត្តិ",
+    "path": "/assets/dashboard",
+    "children": []
+   },
+   {
+    "code": "B9.2",
+    "name": "All Assets",
+    "name_km": "ទ្រព្យសម្បត្តិទាំងអស់",
+    "path": "/assets",
+    "children": [
+     {
+      "code": "B9.2.1",
+      "name": "Overview",
+      "name_km": "ទិដ្ឋភាពទូទៅ"
+     },
+     {
+      "code": "B9.2.2",
+      "name": "Assignment",
+      "name_km": "ការចាត់ចែង"
+     },
+     {
+      "code": "B9.2.3",
+      "name": "Transfers",
+      "name_km": "ការផ្ទេរ"
+     },
+     {
+      "code": "B9.2.4",
+      "name": "Issues",
+      "name_km": "បញ្ហា"
+     },
+     {
+      "code": "B9.2.5",
+      "name": "Repairs",
+      "name_km": "ការជួសជុល"
+     },
+     {
+      "code": "B9.2.6",
+      "name": "Maintenance",
+      "name_km": "ការថែទាំ"
+     }
+    ]
+   },
+   {
+    "code": "B9.3",
+    "name": "My Assets",
+    "name_km": "ទ្រព្យសម្បត្តិរបស់ខ្ញុំ",
+    "path": "/my-assets",
+    "children": []
+   },
+   {
+    "code": "B9.4",
+    "name": "Issues",
+    "name_km": "បញ្ហា",
+    "path": "/asset-issues",
+    "children": []
+   },
+   {
+    "code": "B9.5",
+    "name": "Repairs",
+    "name_km": "ការជួសជុល",
+    "path": "/asset-repairs",
+    "children": []
+   },
+   {
+    "code": "B9.6",
+    "name": "Repair Shops",
+    "name_km": "ហាងជួសជុល",
+    "path": "/repair-shops",
+    "children": []
+   },
+   {
+    "code": "B9.7",
+    "name": "Maintenance",
+    "name_km": "ការថែទាំ",
+    "path": "/asset-maintenance",
+    "children": []
+   },
+   {
+    "code": "B9.8",
+    "name": "Asset Categories",
+    "name_km": "ប្រភេទទ្រព្យសម្បត្តិ",
+    "path": "/asset-categories",
+    "children": []
+   },
+   {
+    "code": "B9.9",
+    "name": "Asset Locations",
+    "name_km": "ទីតាំងទ្រព្យសម្បត្តិ",
+    "path": "/asset-locations",
+    "children": []
+   },
+   {
+    "code": "B9.10",
+    "name": "Departments",
+    "name_km": "នាយកដ្ឋាន",
+    "path": "/departments",
+    "children": []
+   },
+   {
+    "code": "B9.11",
+    "name": "Suppliers",
+    "name_km": "អ្នកផ្គត់ផ្គង់",
+    "path": "/suppliers",
+    "children": []
+   },
+   {
+    "code": "B9.12",
+    "name": "Asset Reports",
+    "name_km": "របាយការណ៍ទ្រព្យសម្បត្តិ",
+    "path": "/asset-reports",
+    "children": [
+     {
+      "code": "B9.12.1",
+      "name": "Inventory",
+      "name_km": "ស្តុក"
+     },
+     {
+      "code": "B9.12.2",
+      "name": "Status",
+      "name_km": "ស្ថានភាព"
+     },
+     {
+      "code": "B9.12.3",
+      "name": "Repairs",
+      "name_km": "ការជួសជុល"
+     },
+     {
+      "code": "B9.12.4",
+      "name": "Repair Cost",
+      "name_km": "ថ្លៃជួសជុល"
+     },
+     {
+      "code": "B9.12.5",
+      "name": "Maintenance",
+      "name_km": "ការថែទាំ"
+     },
+     {
+      "code": "B9.12.6",
+      "name": "Assignments",
+      "name_km": "ការចាត់ចែង"
+     },
+     {
+      "code": "B9.12.7",
+      "name": "History",
+      "name_km": "ប្រវត្តិ"
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "code": "B10",
+  "name": "Communication",
+  "name_km": "ការទំនាក់ទំនង",
+  "children": [
+   {
+    "code": "B10.1",
+    "name": "Contact Messages",
+    "name_km": "សារទំនាក់ទំនង",
+    "path": "/contact-messages",
+    "children": []
+   },
+   {
+    "code": "B10.2",
+    "name": "Notifications",
+    "name_km": "ការជូនដំណឹង",
+    "path": "/notifications",
+    "children": []
+   },
+   {
+    "code": "B10.3",
+    "name": "Student Feedback",
+    "name_km": "មតិកែលម្អសិស្ស",
+    "path": "/student-feedback",
+    "children": [
+     {
+      "code": "B10.3.1",
+      "name": "Open",
+      "name_km": "កំពុងបើក"
+     },
+     {
+      "code": "B10.3.2",
+      "name": "Replied",
+      "name_km": "បានឆ្លើយតប"
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "code": "B11",
+  "name": "Settings",
+  "name_km": "ការកំណត់",
+  "children": [
+   {
+    "code": "B11.1",
+    "name": "Documents",
+    "name_km": "ឯកសារ",
+    "path": "/school-documents",
+    "children": []
+   },
+   {
+    "code": "B11.2",
+    "name": "General",
+    "name_km": "ទូទៅ",
+    "path": "/settings",
+    "children": []
+   },
+   {
+    "code": "B11.3",
+    "name": "Telegram notifications",
+    "name_km": "ការជូនដំណឹង Telegram",
+    "path": "/telegram-notifications",
+    "children": []
+   },
+   {
+    "code": "B11.4",
+    "name": "Users",
+    "name_km": "អ្នកប្រើប្រាស់",
+    "path": "/users",
+    "children": []
+   },
+   {
+    "code": "B11.5",
+    "name": "Roles",
+    "name_km": "តួនាទី",
+    "path": "/roles",
+    "children": []
+   },
+   {
+    "code": "B11.6",
+    "name": "Audit Logs",
+    "name_km": "កំណត់ហេតុសវនកម្ម",
+    "path": "/audit-logs",
+    "children": []
+   },
+   {
+    "code": "B11.7",
+    "name": "Languages",
+    "name_km": "ភាសា",
+    "path": "/languages",
+    "children": [
+     {
+      "code": "B11.7.1",
+      "name": "Language",
+      "name_km": "ភាសា"
+     },
+     {
+      "code": "B11.7.2",
+      "name": "Translation",
+      "name_km": "ការបកប្រែ"
+     }
+    ]
+   },
+   {
+    "code": "B11.8",
+    "name": "Base Data",
+    "name_km": "ទិន្នន័យមូលដ្ឋាន",
+    "path": "/lookup-categories",
+    "children": []
+   },
+   {
+    "code": "B11.9",
+    "name": "Backup",
+    "name_km": "បម្រុងទុក",
+    "path": "/database-backups",
+    "children": []
+   }
+  ]
+ },
+ {
+  "code": "B12",
+  "name": "eApprovals",
+  "name_km": null,
+  "children": [
+   {
+    "code": "B12.1",
+    "name": "Forms",
+    "name_km": "ទម្រង់បែបបទ",
+    "path": "/approvals/forms",
+    "children": []
+   },
+   {
+    "code": "B12.2",
+    "name": "My Request",
+    "name_km": "សំណើរបស់ខ្ញុំ",
+    "path": "/approvals/my-requests",
+    "children": [
+     {
+      "code": "B12.2.1",
+      "name": "Pending",
+      "name_km": "កំពុងរង់ចាំ"
+     },
+     {
+      "code": "B12.2.2",
+      "name": "Approved to study",
+      "name_km": "អនុញ្ញាតឱ្យមករៀន"
+     },
+     {
+      "code": "B12.2.3",
+      "name": "Approved",
+      "name_km": "បានអនុម័ត"
+     },
+     {
+      "code": "B12.2.4",
+      "name": "Rejected",
+      "name_km": "បានបដិសេធ"
+     },
+     {
+      "code": "B12.2.5",
+      "name": "Cancelled",
+      "name_km": "បានលុបចោល"
+     }
+    ]
+   },
+   {
+    "code": "B12.3",
+    "name": "Approvals",
+    "name_km": "ការអនុម័ត",
+    "path": "/approvals/queue",
+    "children": [
+     {
+      "code": "B12.3.1",
+      "name": "New",
+      "name_km": "ថ្មី"
+     },
+     {
+      "code": "B12.3.2",
+      "name": "Approved to study",
+      "name_km": "អនុញ្ញាតឱ្យមករៀន"
+     },
+     {
+      "code": "B12.3.3",
+      "name": "Approved",
+      "name_km": "បានអនុម័ត"
+     },
+     {
+      "code": "B12.3.4",
+      "name": "Rejected",
+      "name_km": "បានបដិសេធ"
+     },
+     {
+      "code": "B12.3.5",
+      "name": "Cancelled",
+      "name_km": "បានលុបចោល"
+     }
+    ]
+   },
+   {
+    "code": "B12.4",
+    "name": "Form Categories",
+    "name_km": "ប្រភេទទម្រង់បែបបទ",
+    "path": "/form-categories",
+    "children": []
+   },
+   {
+    "code": "B12.5",
+    "name": "Form Templates",
+    "name_km": "ទម្រង់បែបបទ",
+    "path": "/form-templates",
+    "children": []
+   }
+  ]
+ },
+ {
+  "code": "B13",
+  "name": "Approval Flow",
+  "name_km": "លំហូរអនុម័ត",
+  "children": [
+   {
+    "code": "B13.1",
+    "name": "Groups",
+    "name_km": "ក្រុម",
+    "path": "/approval-flow/groups",
+    "children": []
+   },
+   {
+    "code": "B13.2",
+    "name": "Flow Setting",
+    "name_km": "កំណត់លំហូរ",
+    "path": "/approval-flow/settings",
+    "children": []
+   }
+  ]
+ },
+ {
+  "code": "B14",
+  "name": "Front Office",
+  "name_km": "ការិយាល័យទទួលភ្ញៀវ",
+  "children": [
+   {
+    "code": "B14.1",
+    "name": "Front Office",
+    "name_km": "ការិយាល័យទទួលភ្ញៀវ",
+    "path": "/front-office",
+    "children": [
+     {
+      "code": "B14.1.1",
+      "name": "Inquiry",
+      "name_km": "ការសាកសួរ"
+     },
+     {
+      "code": "B14.1.2",
+      "name": "Meeting arrangement",
+      "name_km": "រៀបចំកិច្ចប្រជុំ"
+     },
+     {
+      "code": "B14.1.3",
+      "name": "Appointment",
+      "name_km": "ការណាត់ជួប"
+     },
+     {
+      "code": "B14.1.4",
+      "name": "Visitor",
+      "name_km": "ភ្ញៀវ"
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "code": "B15",
+  "name": "Loan",
+  "name_km": "ប្រាក់កម្ចី",
+  "children": [
+   {
+    "code": "B15.1",
+    "name": "Customers",
+    "name_km": "អតិថិជន",
+    "path": "/loan-customers",
+    "children": []
+   },
+   {
+    "code": "B15.2",
+    "name": "Savings",
+    "name_km": "សន្សំ",
+    "path": "/savings",
+    "children": []
+   },
+   {
+    "code": "B15.3",
+    "name": "Owe",
+    "name_km": "ជំពាក់",
+    "path": "/customer-loans",
+    "children": []
+   },
+   {
+    "code": "B15.4",
+    "name": "Reports",
+    "name_km": "របាយការណ៍",
+    "path": "/loan-reports",
+    "children": []
+   },
+   {
+    "code": "B15.5",
+    "name": "Borrowings",
+    "name_km": "ប្រាក់ខ្ចី",
+    "path": "/borrowings",
+    "children": [
+     {
+      "code": "B15.5.1",
+      "name": "Loans",
+      "name_km": "កម្ចី"
+     },
+     {
+      "code": "B15.5.2",
+      "name": "Repayments",
+      "name_km": "ការសងប្រាក់"
+     },
+     {
+      "code": "B15.5.3",
+      "name": "Lenders",
+      "name_km": "អ្នកឱ្យខ្ចី"
+     },
+     {
+      "code": "B15.5.4",
+      "name": "Reports",
+      "name_km": "របាយការណ៍"
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "code": "B16",
+  "name": "Fund",
+  "name_km": "មូលនិធិ",
+  "children": [
+   {
+    "code": "B16.1",
+    "name": "Funds",
+    "name_km": "មូលនិធិ",
+    "path": "/funds",
+    "children": []
+   },
+   {
+    "code": "B16.2",
+    "name": "Providers",
+    "name_km": "អ្នកផ្តល់មូលនិធិ",
+    "path": "/fund-providers",
+    "children": []
+   },
+   {
+    "code": "B16.3",
+    "name": "Reports",
+    "name_km": "របាយការណ៍",
+    "path": "/fund-reports",
+    "children": []
+   }
+  ]
+ }
+]

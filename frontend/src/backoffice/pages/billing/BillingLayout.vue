@@ -7,6 +7,8 @@ const { t } = useI18n()
 const tabs = [
   { to: '/billing/systems', key: 'systems' },
   { to: '/billing/plans', key: 'plans' },
+  { to: '/billing/quotations', key: 'quotations' },
+  { to: '/billing/quotation-items', key: 'quotationItems' },
   { to: '/billing/payments', key: 'payments' },
   { to: '/billing/signups', key: 'signups' },
   { to: '/billing/demos', key: 'demos' },

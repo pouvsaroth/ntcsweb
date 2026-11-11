@@ -11,6 +11,8 @@ use App\Platform\Http\Controllers\DataOpsController;
 use App\Platform\Http\Controllers\TableDataController;
 use App\Platform\Http\Controllers\PaymentController;
 use App\Platform\Http\Controllers\PlanController;
+use App\Platform\Http\Controllers\QuotationController;
+use App\Platform\Http\Controllers\QuotationItemController;
 use App\Platform\Http\Controllers\OrganizationTypeController;
 use App\Platform\Http\Controllers\ProductController;
 use App\Platform\Http\Controllers\SignupController;
@@ -136,6 +138,17 @@ Route::middleware('platform.staff')->group(function () {
         Route::patch('products/{product}', [ProductController::class, 'update'])->middleware('platform.can:platform.billing.manage')->name('products.update');
         Route::delete('products/{product}', [ProductController::class, 'destroy'])->middleware('platform.can:platform.billing.manage')->name('products.destroy');
         Route::post('products/{product}/logo', [ProductController::class, 'uploadLogo'])->middleware('platform.can:platform.billing.manage')->name('products.logo');
+        Route::get('quotations', [QuotationController::class, 'index'])->middleware('platform.can:platform.billing.read')->name('quotations.index');
+        Route::post('quotations', [QuotationController::class, 'store'])->middleware('platform.can:platform.billing.manage')->name('quotations.store');
+        Route::get('quotations/{quotation}', [QuotationController::class, 'show'])->middleware('platform.can:platform.billing.read')->name('quotations.show');
+        Route::get('quotations/{quotation}/export', [QuotationController::class, 'export'])->middleware('platform.can:platform.billing.read')->name('quotations.export');
+        Route::put('quotations/{quotation}',[QuotationController::class, 'update'])->middleware('platform.can:platform.billing.manage')->name('quotations.update');
+        Route::delete('quotations/{quotation}', [QuotationController::class, 'destroy'])->middleware('platform.can:platform.billing.manage')->name('quotations.destroy');
+        // Quotations: the menus / submenus / tabs a quotation picks from.
+        Route::get('quotation-items', [QuotationItemController::class, 'index'])->middleware('platform.can:platform.billing.read')->name('quotation-items.index');
+        Route::post('quotation-items', [QuotationItemController::class, 'store'])->middleware('platform.can:platform.billing.manage')->name('quotation-items.store');
+        Route::patch('quotation-items/{item}', [QuotationItemController::class, 'update'])->middleware('platform.can:platform.billing.manage')->name('quotation-items.update');
+        Route::delete('quotation-items/{item}', [QuotationItemController::class, 'destroy'])->middleware('platform.can:platform.billing.manage')->name('quotation-items.destroy');
         Route::get('plans', [PlanController::class, 'index'])->middleware('platform.can:platform.billing.read')->name('plans.index');
         Route::post('plans', [PlanController::class, 'store'])->middleware('platform.can:platform.billing.manage')->name('plans.store');
         Route::patch('plans/{plan}', [PlanController::class, 'update'])->middleware('platform.can:platform.billing.manage')->name('plans.update');
