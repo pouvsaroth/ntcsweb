@@ -6879,7 +6879,11 @@ const zh: MessageSchema = {
       goal: '目标',
       loadFailed: '无法加载报表。',
     },
+    fundProviders: {
+      title: '资金提供者', subtitle: '向基金捐款的个人和公司，以及各自已提供的金额。', add: '添加提供者', edit: '编辑提供者', code: '编号', name: '姓名', phone: '电话', address: '地址', notes: '备注', given: '已提供', status: '状态', active: '启用', inactive: '停用', filterAll: '全部', empty: '暂无提供者。', delete: '删除', deleteConfirm: '删除此提供者？', deleteFailed: '无法删除提供者。', saveFailed: '无法保存提供者。',
+    },
     funds: {
+      providedBy: '提供者', selectProvider: '选择提供者', newProvider: '+ 新提供者',
       title: '基金',
       subtitle: '单独存放的学校资金，例如建设基金或奖学金基金。资金进出记入账目。',
       heldIn: '{currency} 余额',
@@ -7664,6 +7668,7 @@ const zh: MessageSchema = {
       loanCustomers: '客户',
       savings: '储蓄',
       funds: '基金',
+      fundProviders: '资金提供者',
       fundReports: '报表',
       customerLoans: '应收借款',
       loanReports: '报表',

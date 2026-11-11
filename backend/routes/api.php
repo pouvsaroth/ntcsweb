@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Api\V1\Admin\FundController;
+use App\Http\Controllers\Api\V1\Admin\FundProviderController;
 use App\Http\Controllers\Api\V1\Admin\FundReportController;
 use App\Support\Staff\StaffRecordKinds;
 use App\Http\Controllers\Api\V1\Admin\AcademicProgramController;
@@ -1010,6 +1011,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         // Fund > Reports: in / out and balances for a period, by type and by fund.
         Route::get('fund-reports', FundReportController::class)->name('fund-reports.index');
         Route::apiResource('funds', FundController::class);
+        // Fund > Providers: the people who give money to the funds.
+        Route::apiResource('fund-providers', FundProviderController::class);
         Route::post('funds/{fund}/entries', [FundController::class, 'record'])->name('funds.entries.store');
         Route::delete('fund-entries/{entry}', [FundController::class, 'removeEntry'])->name('fund-entries.destroy');
         // Loan > Owe: money lent to customers, paid back as principal + interest.

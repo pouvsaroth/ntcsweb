@@ -34,7 +34,7 @@ final class FundService
 
     /**
      * @param  array<string, mixed>  $data
-     * @param  array{amount: float|int|string, cash_account_id: int, party?: string|null, remark?: string|null}|null  $opening
+     * @param  array{amount: float|int|string, cash_account_id: int, party?: string|null, fund_provider_id?: int|null, remark?: string|null}|null  $opening
      */
     public function create(array $data, ?array $opening, User $actor): Fund
     {
@@ -48,6 +48,7 @@ final class FundService
                     'transacted_on' => $fund->opened_on->toDateString(),
                     'cash_account_id' => $opening['cash_account_id'],
                     'party' => $opening['party'] ?? null,
+                    'fund_provider_id' => $opening['fund_provider_id'] ?? null,
                     'remark' => $opening['remark'] ?? null,
                 ], $actor);
             }
@@ -57,7 +58,7 @@ final class FundService
     }
 
     /**
-     * @param  array{type: string, amount: float|int|string, transacted_on: string, cash_account_id: int, party?: string|null, remark?: string|null}  $data
+     * @param  array{type: string, amount: float|int|string, transacted_on: string, cash_account_id: int, party?: string|null, fund_provider_id?: int|null, remark?: string|null}  $data
      */
     public function record(Fund $fund, array $data, User $actor): FundTransaction
     {
@@ -83,6 +84,7 @@ final class FundService
                 'amount' => $amount,
                 'transacted_on' => $data['transacted_on'],
                 'party' => $data['party'] ?? null,
+                'fund_provider_id' => $data['type'] === FundTransaction::IN ? ($data['fund_provider_id'] ?? null) : null,
                 'remark' => $data['remark'] ?? null,
                 'cash_account_id' => $data['cash_account_id'],
                 'created_by' => $actor->getKey(),

@@ -9,6 +9,7 @@ use App\Http\Resources\FundEntryResource;
 use App\Http\Resources\FundResource;
 use App\Http\Responses\ApiResponse;
 use App\Models\Fund;
+use App\Models\FundProvider;
 use App\Models\FundTransaction;
 use App\Models\LookupValue;
 use App\Services\Fund\FundService;
@@ -80,11 +81,13 @@ final class FundController extends Controller
             'opening_amount' => ['nullable', 'numeric', 'gt:0', 'max:9999999999'],
             'cash_account_id' => ['required_with:opening_amount', 'nullable', 'integer', $this->cashAccountRule()],
             'party' => ['nullable', 'string', 'max:255'],
+            'fund_provider_id' => ['nullable', 'integer', $this->providerRule()],
             'remark' => ['nullable', 'string', 'max:500'],
         ]);
+        $data = $this->withProvider($data);
 
         $opening = isset($data['opening_amount'])
-            ? ['amount' => $data['opening_amount'], 'cash_account_id' => (int) $data['cash_account_id'], 'party' => $data['party'] ?? null, 'remark' => $data['remark'] ?? null]
+            ? ['amount' => $data['opening_amount'], 'cash_account_id' => (int) $data['cash_account_id'], 'party' => $data['party'] ?? null, 'fund_provider_id' => $data['fund_provider_id'] ?? null, 'remark' => $data['remark'] ?? null]
             : null;
         $fund = $this->funds->create(collect($data)->only(['name', 'fund_type', 'currency', 'opened_on', 'target_amount', 'description'])->all(), $opening, $request->user());
 
@@ -143,12 +146,35 @@ final class FundController extends Controller
             'transacted_on' => ['required', 'date'],
             'cash_account_id' => ['required', 'integer', $this->cashAccountRule()],
             'party' => ['nullable', 'string', 'max:255'],
+            // Money in only: a provider from Fund > Providers.
+            'fund_provider_id' => ['nullable', 'integer', 'prohibited_if:type,out', $this->providerRule()],
             'remark' => ['nullable', 'string', 'max:500'],
         ]);
 
-        $entry = $this->funds->record($fund, $data, $request->user());
+        $entry = $this->funds->record($fund, $this->withProvider($data), $request->user());
 
         return ApiResponse::created(new FundEntryResource($entry->load(['cashAccount', 'creator'])));
+    }
+
+    /** An active provider. */
+    private function providerRule(): Exists
+    {
+        return Rule::exists('tenant.fund_providers', 'id')->where('is_active', true);
+    }
+
+    /**
+     * A picked provider's name goes into `party` (the "from" on statements).
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function withProvider(array $data): array
+    {
+        if (! empty($data['fund_provider_id'])) {
+            $data['party'] = FundProvider::query()->whereKey($data['fund_provider_id'])->value('name');
+        }
+
+        return $data;
     }
 
     public function removeEntry(Request $request, FundTransaction $entry): JsonResponse

@@ -2,6 +2,7 @@
 import { computed, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import FundProviderPicker from '@/components/admin/FundProviderPicker.vue'
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
@@ -45,6 +46,7 @@ const form = reactive({
   opening_amount: '',
   cash_account_id: '',
   party: '',
+  fund_provider_id: '',
   remark: '',
 })
 const errors = ref<Record<string, string[]>>({})
@@ -66,6 +68,7 @@ watch(
       opening_amount: '',
       cash_account_id: '',
       party: '',
+      fund_provider_id: '',
       remark: '',
     })
     errors.value = {}
@@ -106,7 +109,8 @@ async function save() {
         currency: form.currency,
         opening_amount: hasOpening ? opening : null,
         cash_account_id: hasOpening && form.cash_account_id ? Number(form.cash_account_id) : null,
-        party: hasOpening ? form.party.trim() || null : null,
+        party: null,
+        fund_provider_id: hasOpening && form.fund_provider_id ? Number(form.fund_provider_id) : null,
         remark: hasOpening ? form.remark.trim() || null : null,
       })
     }
@@ -152,7 +156,7 @@ async function save() {
             :placeholder="t('admin.funds.selectAccount')"
             :error="errors.cash_account_id?.[0]"
           />
-          <BaseInput v-model="form.party" :label="t('admin.funds.from')" :error="errors.party?.[0]" />
+          <FundProviderPicker v-model="form.fund_provider_id" :error="errors.fund_provider_id?.[0]" />
           <BaseInput v-model="form.remark" :label="t('admin.funds.remark')" :error="errors.remark?.[0]" />
         </div>
       </div>

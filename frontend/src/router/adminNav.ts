@@ -281,6 +281,7 @@ export const adminNav: AdminNavGroup[] = [
     icon: 'library',
     items: [
       { labelKey: 'adminNav.items.funds', icon: 'collection', to: '/admin/funds', permission: 'funds.view' },
+      { labelKey: 'adminNav.items.fundProviders', icon: 'userGroup', to: '/admin/fund-providers', permission: 'funds.view' },
       { labelKey: 'adminNav.items.fundReports', icon: 'chartBar', to: '/admin/fund-reports', permission: 'funds.view' },
     ],
   },

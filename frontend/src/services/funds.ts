@@ -15,6 +15,8 @@ export interface FundEntry {
   /** yyyy-mm-dd */
   transacted_on: string
   party: string | null
+  /** Money in: the provider picked (Fund > Providers); their name is in `party`. */
+  fund_provider_id?: number | null
   remark: string | null
   cash_account: { id: number; code: string; name: string } | null
   created_by?: string | null
@@ -64,6 +66,7 @@ export interface CreateFundInput extends FundInput {
   opening_amount: number | null
   cash_account_id: number | null
   party: string | null
+  fund_provider_id: number | null
   remark: string | null
 }
 
@@ -73,6 +76,8 @@ export interface FundEntryInput {
   transacted_on: string
   cash_account_id: number
   party: string | null
+  /** Money in only. */
+  fund_provider_id?: number | null
   remark: string | null
 }
 

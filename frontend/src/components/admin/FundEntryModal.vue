@@ -2,6 +2,7 @@
 import { computed, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import FundProviderPicker from '@/components/admin/FundProviderPicker.vue'
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
@@ -26,7 +27,7 @@ function today(): string {
 const accounts = ref<Account[]>([])
 const accountOptions = computed(() => accounts.value.map((a) => ({ value: String(a.id), label: `${a.code} — ${a.name}` })))
 
-const form = reactive({ amount: '', transacted_on: '', cash_account_id: '', party: '', remark: '' })
+const form = reactive({ amount: '', transacted_on: '', cash_account_id: '', party: '', fund_provider_id: '', remark: '' })
 const errors = ref<Record<string, string[]>>({})
 const saveError = ref<string | null>(null)
 const saving = ref(false)
@@ -40,7 +41,7 @@ watch(
   () => [props.modelValue, props.fund] as const,
   async ([open]) => {
     if (!open) return
-    Object.assign(form, { amount: '', transacted_on: today(), cash_account_id: form.cash_account_id, party: '', remark: '' })
+    Object.assign(form, { amount: '', transacted_on: today(), cash_account_id: form.cash_account_id, party: '', fund_provider_id: '', remark: '' })
     errors.value = {}
     saveError.value = null
     if (accounts.value.length === 0) {
@@ -65,7 +66,9 @@ async function save() {
       amount: Number(form.amount || 0),
       transacted_on: form.transacted_on,
       cash_account_id: Number(form.cash_account_id),
-      party: form.party.trim() || null,
+      // Money in: the provider picked; money out: who it was paid to.
+      party: isOut.value ? form.party.trim() || null : null,
+      fund_provider_id: !isOut.value && form.fund_provider_id ? Number(form.fund_provider_id) : null,
       remark: form.remark.trim() || null,
     })
     emit('saved', entry)
@@ -98,7 +101,8 @@ async function save() {
         :placeholder="t('admin.funds.selectAccount')"
         :error="errors.cash_account_id?.[0]"
       />
-      <BaseInput v-model="form.party" :label="isOut ? t('admin.funds.paidTo') : t('admin.funds.from')" :error="errors.party?.[0]" />
+      <BaseInput v-if="isOut" v-model="form.party" :label="t('admin.funds.paidTo')" :error="errors.party?.[0]" />
+      <FundProviderPicker v-else v-model="form.fund_provider_id" :error="errors.fund_provider_id?.[0]" />
       <BaseInput v-model="form.remark" :label="t('admin.funds.remark')" :error="errors.remark?.[0]" />
       <p class="rounded-lg bg-neutral-50 px-3 py-2 text-sm text-neutral-700">
         {{ t('admin.funds.balanceAfter') }}:

@@ -6880,7 +6880,11 @@ const ko: MessageSchema = {
       goal: '목표',
       loadFailed: '보고서를 불러올 수 없습니다.',
     },
+    fundProviders: {
+      title: '기금 제공자', subtitle: '기금에 돈을 낸 사람과 회사, 그리고 각자 낸 금액입니다.', add: '제공자 추가', edit: '제공자 수정', code: '코드', name: '이름', phone: '전화', address: '주소', notes: '메모', given: '제공 금액', status: '상태', active: '활성', inactive: '비활성', filterAll: '전체', empty: '아직 제공자가 없습니다.', delete: '삭제', deleteConfirm: '이 제공자를 삭제할까요?', deleteFailed: '제공자를 삭제할 수 없습니다.', saveFailed: '제공자를 저장할 수 없습니다.',
+    },
     funds: {
+      providedBy: '제공자', selectProvider: '제공자 선택', newProvider: '+ 새 제공자',
       title: '기금',
       subtitle: '건축 기금, 장학 기금처럼 따로 관리하는 학교 자금입니다. 입금과 출금은 회계에 기록됩니다.',
       heldIn: '{currency} 보유',
@@ -7665,6 +7669,7 @@ const ko: MessageSchema = {
       loanCustomers: '고객',
       savings: '저축',
       funds: '기금',
+      fundProviders: '기금 제공자',
       fundReports: '보고서',
       customerLoans: '받을 돈',
       loanReports: '보고서',

@@ -993,6 +993,13 @@ const adminRoutes: RouteRecordRaw[] = [
     meta: { permission: 'funds.view', titleKey: 'adminNav.items.funds' },
   },
   {
+    // Fund > Providers: the people who give money to the funds.
+    path: 'fund-providers',
+    name: 'admin.fund-providers',
+    component: () => import('@/pages/admin/fund/FundProviders.vue'),
+    meta: { permission: 'funds.view', titleKey: 'admin.fundProviders.title' },
+  },
+  {
     // Fund > Reports: in / out and balances for a period, by type and by fund.
     path: 'fund-reports',
     name: 'admin.fund-reports',

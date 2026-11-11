@@ -6880,7 +6880,11 @@ const km: MessageSchema = {
       goal: 'គោលដៅ',
       loadFailed: 'មិនអាចផ្ទុករបាយការណ៍បានទេ។',
     },
+    fundProviders: {
+      title: 'អ្នកផ្តល់មូលនិធិ', subtitle: 'បុគ្គល និងក្រុមហ៊ុនដែលផ្តល់ប្រាក់ចូលមូលនិធិ និងចំនួនដែលបានផ្តល់។', add: 'បន្ថែមអ្នកផ្តល់', edit: 'កែអ្នកផ្តល់', code: 'លេខកូដ', name: 'ឈ្មោះ', phone: 'ទូរស័ព្ទ', address: 'អាសយដ្ឋាន', notes: 'កំណត់សម្គាល់', given: 'បានផ្តល់', status: 'ស្ថានភាព', active: 'សកម្ម', inactive: 'អសកម្ម', filterAll: 'ទាំងអស់', empty: 'មិនទាន់មានអ្នកផ្តល់ទេ។', delete: 'លុប', deleteConfirm: 'លុបអ្នកផ្តល់នេះ?', deleteFailed: 'មិនអាចលុបអ្នកផ្តល់បានទេ។', saveFailed: 'មិនអាចរក្សាទុកអ្នកផ្តល់បានទេ។',
+    },
     funds: {
+      providedBy: 'ផ្តល់ដោយ', selectProvider: 'ជ្រើសរើសអ្នកផ្តល់', newProvider: '+ អ្នកផ្តល់ថ្មី',
       title: 'មូលនិធិ',
       subtitle: 'ប្រាក់របស់សាលាដែលទុកដាច់ដោយឡែក ដូចជាមូលនិធិសាងសង់ ឬអាហារូបករណ៍។ ប្រាក់ចូល និងប្រាក់ចេញ ចុះក្នុងគណនេយ្យ។',
       heldIn: 'មាននៅក្នុង {currency}',
@@ -7665,6 +7669,7 @@ const km: MessageSchema = {
       loanCustomers: 'អតិថិជន',
       savings: 'សន្សំ',
       funds: 'មូលនិធិ',
+      fundProviders: 'អ្នកផ្តល់មូលនិធិ',
       fundReports: 'របាយការណ៍',
       customerLoans: 'ជំពាក់',
       loanReports: 'របាយការណ៍',
