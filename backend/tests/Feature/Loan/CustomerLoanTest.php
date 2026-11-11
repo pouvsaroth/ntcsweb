@@ -105,6 +105,28 @@ class CustomerLoanTest extends TestCase
         $this->assertEquals(3000, $loan['outstanding']);
     }
 
+    public function test_interest_only_paying_part_of_the_principal_lowers_the_interest_from_the_next_month(): void
+    {
+        // $3,000 at 3% a month: $90 a month. Months 1-3 interest, then month 4: $1,500 principal + $90.
+        $loan = $this->lend(['amount' => 3000, 'interest_type' => 'interest_only', 'interest_rate' => 3, 'first_payment_on' => '2026-11-29']);
+        foreach ([1, 2, 3] as $m) {
+            $this->pay($loan['id'], 0, 90)->assertCreated();
+        }
+        $this->pay($loan['id'], 1500, 90)->assertCreated();
+
+        $loan = $this->getJson("/api/v1/customer-loans/{$loan['id']}")->assertOk()->json('data');
+        $rows = $loan['schedule'];
+        $row = fn (int $no) => [$rows[$no - 1]['start'], $rows[$no - 1]['balance'], $rows[$no - 1]['principal'], $rows[$no - 1]['interest'], $rows[$no - 1]['paid']];
+        $this->assertEquals([3000.0, 1500.0, 1500.0, 90.0, true], $row(4));
+        $this->assertEquals([1500.0, 1500.0, 0.0, 45.0, false], $row(5));
+        $this->assertEquals([1500.0, 0.0, 1500.0, 45.0, false], $row(12));
+        $this->assertSame(5, $loan['next_payment']['no']);
+        $this->assertEquals(45, $loan['next_payment']['total']);
+        $this->assertEquals(1500, $loan['outstanding']);
+        // 4 x 90 + 8 x 45.
+        $this->assertEquals(720, $loan['totals']['interest']);
+    }
+
     public function test_the_payment_list_downloads_as_excel_and_the_pdf_page_has_its_rows(): void
     {
         $loan = $this->lend(['amount' => 3000, 'interest_type' => 'interest_only', 'interest_rate' => 2, 'first_payment_on' => '2026-11-29']);

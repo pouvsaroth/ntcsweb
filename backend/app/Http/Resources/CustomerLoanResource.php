@@ -33,7 +33,7 @@ class CustomerLoanResource extends JsonResource
         $paidPrincipal = (float) ($this->payments_sum_principal ?? ($this->relationLoaded('payments') ? $this->payments->sum('principal') : $this->payments()->sum('principal')));
         $paidInterest = (float) ($this->payments_sum_interest ?? ($this->relationLoaded('payments') ? $this->payments->sum('interest') : $this->payments()->sum('interest')));
 
-        $plan = BorrowingSchedule::for($this->resource);
+        $plan = BorrowingSchedule::forOwe($this->resource);
         $schedule = BorrowingSchedule::withPayments($plan, $paidPrincipal, now()->toDateString(), $paidInterest);
         $unpaid = collect($schedule)->where('paid', false);
         $next = $this->status === 'active' ? $unpaid->first() : null;

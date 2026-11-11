@@ -34,7 +34,7 @@ final class CustomerLoanPlanExport
     public function build(CustomerLoan $loan): array
     {
         $loan->loadMissing('customer');
-        $rows = BorrowingSchedule::for($loan);
+        $rows = BorrowingSchedule::forOwe($loan);
 
         $type = __('customer_loan_plan.types.'.$loan->interest_type);
         $interest = $loan->interest_type === 'none'

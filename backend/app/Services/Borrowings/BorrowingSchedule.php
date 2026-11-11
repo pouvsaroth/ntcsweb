@@ -46,6 +46,75 @@ final class BorrowingSchedule
     }
 
     /**
+     * Owe: the plan as it stands after the customer's payments. For interest
+     * only, principal paid early lowers what is owed from the next month on,
+     * so later months' interest is worked out on the smaller amount (lent
+     * 3,000 at 3%, paid 1,500 + 90 interest in month 4: month 5 on is 1,500
+     * owed and 45 interest). Other types keep the plan from the terms.
+     *
+     * @return list<array{no: int, due_on: string, start: float, principal: float, interest: float, total: float, balance: float}>
+     */
+    public static function forOwe(CustomerLoan $loan): array
+    {
+        $plan = self::for($loan);
+        if ($plan === [] || $loan->interest_type !== 'interest_only') {
+            return $plan;
+        }
+        // Lists load the sums: nothing paid back yet means nothing to redo.
+        $sums = $loan->getAttributes();
+        if (array_key_exists('payments_sum_principal', $sums) && (float) $sums['payments_sum_principal'] <= 0) {
+            return $plan;
+        }
+        $payments = $loan->relationLoaded('payments') ? $loan->payments : $loan->payments()->get();
+        if ((float) $payments->sum('principal') <= 0) {
+            return $plan;
+        }
+
+        $decimals = strtoupper((string) $loan->currency) === 'KHR' ? 0 : 2;
+        $monthly = ($loan->interest_period === 'year' ? (float) $loan->interest_rate / 12 : (float) $loan->interest_rate) / 100;
+        $months = count($plan);
+
+        // Walk the payments in order: interest pays months one by one; the
+        // principal paid with them comes off after the last month covered.
+        $extra = array_fill(1, $months, 0.0);
+        $balance = round((float) $loan->amount, $decimals);
+        $covered = 0;
+        $credit = 0.0;
+        foreach ($payments->sortBy(fn ($p) => [$p->paid_on?->toDateString() ?? '', $p->id])->values() as $payment) {
+            $credit += (float) $payment->interest;
+            while ($covered < $months && $credit >= round($balance * $monthly, $decimals) - 0.001) {
+                $credit -= round($balance * $monthly, $decimals);
+                $covered++;
+            }
+            $principal = min($balance, (float) $payment->principal);
+            if ($principal > 0) {
+                $extra[max(1, min($covered, $months))] += $principal;
+                $balance = round($balance - $principal, $decimals);
+            }
+        }
+
+        $rows = [];
+        $balance = round((float) $loan->amount, $decimals);
+        foreach ($plan as $i => $row) {
+            $no = $i + 1;
+            $start = $balance;
+            $interest = round($start * $monthly, $decimals);
+            $principal = $no === $months ? $balance : min($balance, round($extra[$no], $decimals));
+            $balance = round($balance - $principal, $decimals);
+            $rows[] = [
+                ...$row,
+                'start' => (float) $start,
+                'principal' => (float) $principal,
+                'interest' => (float) $interest,
+                'total' => (float) round($principal + $interest, $decimals),
+                'balance' => (float) $balance,
+            ];
+        }
+
+        return $rows;
+    }
+
+    /**
      * @return list<array{no: int, due_on: string, start: float, principal: float, interest: float, total: float, balance: float}>
      */
     public static function make(float $amount, string $currency, string $type, float $rate, string $period, int $months, Carbon $first): array

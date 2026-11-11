@@ -123,7 +123,7 @@ final class LoanReportController extends Controller
             $owed = $loan->status === 'active' ? (float) $loan->amount - $paid : 0.0;
             $late = 0.0;
             if ($loan->status === 'active') {
-                foreach (BorrowingSchedule::withPayments(BorrowingSchedule::for($loan), $paid, $today, (float) $loan->payments_sum_interest) as $row) {
+                foreach (BorrowingSchedule::withPayments(BorrowingSchedule::forOwe($loan), $paid, $today, (float) $loan->payments_sum_interest) as $row) {
                     $late += ! $row['paid'] && $row['late'] ? $row['due_principal'] + $row['interest'] : 0.0;
                 }
             }

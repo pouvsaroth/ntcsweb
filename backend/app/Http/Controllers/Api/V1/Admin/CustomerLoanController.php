@@ -106,7 +106,7 @@ final class CustomerLoanController extends Controller
             $paid = (float) $loan->payments_sum_principal;
             $owed[$c] = ($owed[$c] ?? 0) + (float) $loan->amount - $paid;
             $hasLate = false;
-            foreach (BorrowingSchedule::withPayments(BorrowingSchedule::for($loan), $paid, $today, (float) $loan->payments_sum_interest) as $row) {
+            foreach (BorrowingSchedule::withPayments(BorrowingSchedule::forOwe($loan), $paid, $today, (float) $loan->payments_sum_interest) as $row) {
                 if ($row['paid']) {
                     continue;
                 }
