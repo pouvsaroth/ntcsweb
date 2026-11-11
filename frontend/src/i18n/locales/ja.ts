@@ -2523,6 +2523,8 @@ const ja: MessageSchema = {
 
   admin: {
     dashboard: {
+      myDiscountCodes: '私の割引コード ({n})',
+      useDiscountCode: '請求書に使う',
       welcomeBack: 'おかえりなさい、{name}さん',
       platformAdministration: 'プラットフォーム管理',
       title: 'ダッシュボード',

@@ -10,6 +10,7 @@ import BaseModal from '@/components/ui/BaseModal.vue'
 import { accountingReportsService, type IncomeDetail } from '@/services/accounting'
 import { approvalRequestsService } from '@/services/approvalRequests'
 import { type AttendanceRecord, attendanceService, type AttendanceStatusValue, type MyAttendanceHoursRow } from '@/services/attendance'
+import { type MyDiscountCode, myDiscountCodesService } from '@/services/discountCodes'
 import { enrollmentsService } from '@/services/enrollments'
 import { examApplicationsService } from '@/services/examApplications'
 import { type Invoice, invoicesService, type InvoiceStatusValue } from '@/services/invoices'
@@ -193,6 +194,24 @@ async function loadMyHours() {
   } catch {
     // Left empty — the cards simply don't render.
   }
+}
+
+/** The student's discount codes still to use (active now, or starting later). */
+const myCodes = ref<MyDiscountCode[]>([])
+
+async function loadMyCodes() {
+  try {
+    const { codes } = await myDiscountCodesService.list()
+    myCodes.value = codes.filter((c) => c.state === 'active' || c.state === 'scheduled')
+  } catch {
+    // Left empty — the card simply doesn't render.
+  }
+}
+
+function codeDiscount(code: MyDiscountCode): string {
+  if (code.discount_type === 'amount') return formatMoney(code.value, code.currency)
+  const percent = `${Number(code.value)}%`
+  return code.max_discount ? t('admin.discountCodes.percentUpTo', { percent, max: formatMoney(code.max_discount, code.currency) }) : percent
 }
 
 function formatHours(hours: number): string {
@@ -492,7 +511,10 @@ function loadAll(): void {
   loadedAt = Date.now()
   if (!auth.isSuperAdmin && !auth.hasRole('student')) void loadMyToday()
   if (!auth.isSuperAdmin && !auth.hasRole('student')) void loadStats()
-  if (auth.hasRole('student')) void loadMyHours()
+  if (auth.hasRole('student')) {
+    void loadMyHours()
+    void loadMyCodes()
+  }
 }
 
 function reloadIfStale(): void {
@@ -565,6 +587,28 @@ onBeforeUnmount(() => {
           </div>
         </div>
       </div>
+
+      <!-- My discount codes: the ones still to use, each with its discount and end date. -->
+      <section v-if="myCodes.length" class="mb-6 rounded-[--radius-card] border border-neutral-200 bg-white p-4 shadow-[--shadow-card]">
+        <div class="mb-3 flex items-center justify-between gap-3">
+          <h2 class="text-sm font-semibold text-neutral-800">{{ t('admin.dashboard.myDiscountCodes', { n: myCodes.length }) }}</h2>
+          <RouterLink to="/admin/my-discount-codes" class="text-sm font-medium text-primary-700 hover:underline">{{ t('admin.dashboard.useDiscountCode') }}</RouterLink>
+        </div>
+        <ul class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <li v-for="code in myCodes" :key="code.id" class="rounded-lg border border-dashed border-primary-300 bg-primary-50 p-3">
+            <div class="flex items-start justify-between gap-2">
+              <p class="font-mono text-sm font-semibold break-all text-primary-800">{{ code.code }}</p>
+              <BaseBadge :variant="code.state === 'active' ? 'success' : 'primary'">{{ t(`admin.discountCodes.effective.${code.state}`) }}</BaseBadge>
+            </div>
+            <p class="mt-1 text-lg font-semibold text-neutral-900">{{ t('admin.myDiscountCodes.off', { discount: codeDiscount(code) }) }}</p>
+            <p v-if="code.name" class="text-xs text-neutral-600">{{ code.name }}</p>
+            <p class="mt-1 text-xs text-neutral-500">
+              <template v-if="code.state === 'scheduled'">{{ t('admin.discountCodes.startsOn') }}: {{ formatDate(code.starts_on) }} · </template>
+              {{ t('admin.discountCodes.expiresOn') }}: {{ code.expires_on ? formatDate(code.expires_on) : t('admin.discountCodes.noEnd') }}
+            </p>
+          </li>
+        </ul>
+      </section>
 
       <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
         <RouterLink

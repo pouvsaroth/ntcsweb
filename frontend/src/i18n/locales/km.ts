@@ -2523,6 +2523,8 @@ const km: MessageSchema = {
 
   admin: {
     dashboard: {
+      myDiscountCodes: 'លេខកូដបញ្ចុះតម្លៃរបស់ខ្ញុំ ({n})',
+      useDiscountCode: 'ប្រើលើវិក្កយបត្រ',
       welcomeBack: 'សូមស្វាគមន៍ការត្រឡប់មកវិញ {name}',
       platformAdministration: 'ការគ្រប់គ្រងវេទិកា',
       title: 'ផ្ទាំងគ្រប់គ្រង',

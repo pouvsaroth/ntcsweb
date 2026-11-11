@@ -2522,6 +2522,8 @@ const zh: MessageSchema = {
 
   admin: {
     dashboard: {
+      myDiscountCodes: '我的折扣码 ({n})',
+      useDiscountCode: '用于发票',
       welcomeBack: '欢迎回来，{name}',
       platformAdministration: '平台管理',
       title: '仪表盘',

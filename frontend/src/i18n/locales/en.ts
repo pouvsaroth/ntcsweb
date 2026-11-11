@@ -2526,6 +2526,8 @@ const en = {
 
   admin: {
     dashboard: {
+      myDiscountCodes: 'My discount codes ({n})',
+      useDiscountCode: 'Use on an invoice',
       welcomeBack: 'Welcome back, {name}',
       platformAdministration: 'Platform administration',
       title: 'Dashboard',

@@ -2523,6 +2523,8 @@ const ko: MessageSchema = {
 
   admin: {
     dashboard: {
+      myDiscountCodes: '내 할인 코드 ({n})',
+      useDiscountCode: '청구서에 사용',
       welcomeBack: '{name}님, 환영합니다',
       platformAdministration: '플랫폼 관리',
       title: '대시보드',
