@@ -1,4 +1,4 @@
-import { apiDelete, apiGet, apiGetWithMeta, apiPost, apiPostWithMeta, apiPut } from '@/services/http'
+import { apiDelete, apiGet, apiGetWithMeta, apiPatch, apiPost, apiPostWithMeta, apiPut } from '@/services/http'
 import type { PaginatedQuery } from '@/composables/usePaginatedResource'
 import type { LengthAwarePaginationMeta, PaginatedResult } from '@/types/api'
 import type { Invoice } from '@/services/invoices'
@@ -25,6 +25,9 @@ export interface DiscountCodeAssignee extends DiscountCodeStudent {
   code: string
   uses_count: number
   assigned_on: string | null
+  /** This student's own expiry (null = no end). */
+  expires_on: string | null
+  expired: boolean
 }
 
 export interface DiscountCode {
@@ -124,11 +127,14 @@ export const discountCodesService = {
 
   create: (input: DiscountCodeInput) => apiPost<DiscountCode>('/discount-codes', input),
   /** Assign discount to student: each student gets their own code (students who have one keep it). */
-  async assign(id: number, studentIds: number[]): Promise<{ code: DiscountCode; made: string[] }> {
-    const result = await apiPostWithMeta<DiscountCode>(`/discount-codes/${id}/students`, { student_ids: studentIds })
+  /** `expiries`: each student's own expiry by student id (null = no end). */
+  async assign(id: number, studentIds: number[], expiries: Record<number, string | null> = {}): Promise<{ code: DiscountCode; made: string[] }> {
+    const result = await apiPostWithMeta<DiscountCode>(`/discount-codes/${id}/students`, { student_ids: studentIds, expires_on: expiries })
     return { code: result.data, made: (result.meta?.codes as string[] | undefined) ?? [] }
   },
   /** Take the discount back from a student (their own code is deleted, or kept inactive when already used). */
+  setStudentExpiry: (id: number, studentId: number, expiresOn: string | null) =>
+    apiPatch<DiscountCode>(`/discount-codes/${id}/students/${studentId}`, { expires_on: expiresOn }),
   unassign: (id: number, studentId: number) => apiDelete<DiscountCode>(`/discount-codes/${id}/students/${studentId}`),
   update: (id: number, input: DiscountCodeInput) => apiPut<DiscountCode>(`/discount-codes/${id}`, input),
   remove: (id: number) => apiDelete(`/discount-codes/${id}`),

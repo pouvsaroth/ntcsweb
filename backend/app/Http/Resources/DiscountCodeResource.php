@@ -47,6 +47,8 @@ class DiscountCodeResource extends JsonResource
                     'code' => $own->code,
                     'uses_count' => (int) ($own->applied_redemptions_count ?? 0),
                     'assigned_on' => $own->created_at?->toDateString(),
+                    'expires_on' => $own->expires_on?->toDateString(),
+                    'expired' => $own->expires_on !== null && $own->expires_on->toDateString() < $today,
                 ]))
                 ->values()),
             'students_count' => $this->assigned_count ?? null,

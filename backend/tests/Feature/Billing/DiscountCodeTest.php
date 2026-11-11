@@ -7,6 +7,7 @@ namespace Tests\Feature\Billing;
 use App\Models\DiscountCode;
 use App\Models\DiscountCodeRedemption;
 use App\Models\Student;
+use App\Services\Billing\DiscountCodeService;
 use App\Support\Authorization\Permissions;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\HasAcademicAdmin;
@@ -102,8 +103,10 @@ class DiscountCodeTest extends TestCase
     {
         $this->actingAsAdminWithPermissions(self::ALL);
         $student = Student::factory()->create(['student_code' => 'NTS1']);
-        $main = DiscountCode::factory()->create(['code' => 'D02']);
+        $main = DiscountCode::factory()->create(['code' => 'D02', 'expires_on' => now()->addMonth()->toDateString()]);
         $this->postJson("/api/v1/discount-codes/{$main->id}/students", ['student_ids' => [$student->id]])->assertOk();
+        $ownExpiry = $main->children()->sole()->expires_on?->toDateString();
+        $this->assertSame(now()->addMonth()->toDateString(), $ownExpiry);
 
         $this->putJson("/api/v1/discount-codes/{$main->id}", [
             'code' => 'D02', 'name' => 'Bigger', 'discount_type' => 'amount', 'value' => 7,
@@ -114,8 +117,57 @@ class DiscountCodeTest extends TestCase
         $this->assertSame('Bigger', $own->name);
         $this->assertSame('amount', $own->discount_type);
         $this->assertEquals(7, $own->value);
-        $this->assertNull($own->expires_on);
+        // Each student keeps their own expiry; the main's is only the default for new assigns.
+        $this->assertSame($ownExpiry, $own->expires_on?->toDateString());
         $this->assertSame('inactive', $own->status);
+    }
+
+    public function test_each_student_has_their_own_expiry_set_on_assign_and_changed_later(): void
+    {
+        $this->actingAsAdminWithPermissions(self::ALL);
+        $a = Student::factory()->create(['student_code' => 'NTS10']);
+        $b = Student::factory()->create(['student_code' => 'NTS11']);
+        $c = Student::factory()->create(['student_code' => 'NTS12']);
+        $main = DiscountCode::factory()->create([
+            'code' => 'D05', 'starts_on' => now()->subDays(10)->toDateString(), 'expires_on' => now()->addDays(10)->toDateString(),
+        ]);
+        $later = now()->addMonths(3)->toDateString();
+
+        // A: a date past the main's end; B: no end; C: not given = main's expiry.
+        $this->postJson("/api/v1/discount-codes/{$main->id}/students", [
+            'student_ids' => [$a->id, $b->id, $c->id],
+            'expires_on' => [$a->id => $later, $b->id => null],
+        ])->assertOk()->assertJsonPath('meta.assigned', 3);
+
+        $expiry = fn (Student $s) => $main->children()->whereHas('students', fn ($q) => $q->where('students.id', $s->id))->sole()->expires_on?->toDateString();
+        $this->assertSame($later, $expiry($a));
+        $this->assertNull($expiry($b));
+        $this->assertSame(now()->addDays(10)->toDateString(), $expiry($c));
+
+        // Before the code starts: refused.
+        $this->postJson("/api/v1/discount-codes/{$main->id}/students", [
+            'student_ids' => [$a->id], 'expires_on' => [$a->id => now()->subMonth()->toDateString()],
+        ])->assertUnprocessable()->assertJsonValidationErrors("expires_on.{$a->id}");
+
+        // Change one student's date later; the list shows it.
+        $past = now()->subDay()->toDateString();
+        $res = $this->patchJson("/api/v1/discount-codes/{$main->id}/students/{$c->id}", ['expires_on' => $past])->assertOk();
+        $row = collect($res->json('data.students'))->firstWhere('id', $c->id);
+        $this->assertSame($past, $row['expires_on']);
+        $this->assertTrue($row['expired']);
+        $this->patchJson("/api/v1/discount-codes/{$main->id}/students/{$b->id}", ['expires_on' => null])->assertOk();
+
+        // An expired student code is not offered any more; the others are.
+        $codesC = app(DiscountCodeService::class)->availableFor($c->id)->pluck('code');
+        $this->assertFalse($codesC->contains(fn ($code) => str_starts_with($code, 'NTS12_')));
+        $codes = app(DiscountCodeService::class)->availableFor($a->id)->pluck('code');
+        $this->assertTrue($codes->contains(fn ($code) => str_starts_with($code, 'NTS10_D05_')));
+
+        // Someone without the code: 404; view-only staff: refused.
+        $other = Student::factory()->create();
+        $this->patchJson("/api/v1/discount-codes/{$main->id}/students/{$other->id}", ['expires_on' => null])->assertNotFound();
+        $this->actingAsAdminWithPermissions([Permissions::DISCOUNT_CODES_VIEW]);
+        $this->patchJson("/api/v1/discount-codes/{$main->id}/students/{$a->id}", ['expires_on' => null])->assertForbidden();
     }
 
     public function test_taking_the_discount_back_from_a_student(): void

@@ -970,6 +970,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('discount-codes/available', [DiscountCodeController::class, 'available'])->name('discount-codes.available');
         Route::post('discount-codes/check-invoice', [DiscountCodeController::class, 'checkInvoice'])->middleware('throttle:60,1')->name('discount-codes.check-invoice');
         Route::post('discount-codes/check-amount', [DiscountCodeController::class, 'checkAmount'])->middleware('throttle:60,1')->name('discount-codes.check-amount');
+        Route::patch('discount-codes/{discount_code}/students/{student}', [DiscountCodeController::class, 'updateStudent'])->name('discount-codes.update-student');
         Route::delete('discount-codes/{discount_code}/students/{student}', [DiscountCodeController::class, 'unassign'])->name('discount-codes.unassign');
         Route::post('discount-codes/{discount_code}/students', [DiscountCodeController::class, 'assign'])->name('discount-codes.assign');
         Route::apiResource('discount-codes', DiscountCodeController::class);

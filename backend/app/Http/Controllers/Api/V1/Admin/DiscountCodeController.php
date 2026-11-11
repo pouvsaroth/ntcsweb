@@ -23,6 +23,7 @@ use App\Support\Query\ApiQuery;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
@@ -82,9 +83,19 @@ final class DiscountCodeController extends Controller
         $data = $request->validate([
             'student_ids' => ['required', 'array', 'min:1'],
             'student_ids.*' => ['integer', 'distinct', Rule::exists('tenant.students', 'id')],
+            // Each student's own expiry, keyed by student id (null = no end).
+            'expires_on' => ['nullable', 'array'],
+            'expires_on.*' => ['nullable', 'date', 'after_or_equal:'.$discountCode->starts_on?->toDateString()],
+        ], [
+            'expires_on.*.after_or_equal' => __('The expiry date cannot be before the code starts (:date).', ['date' => $discountCode->starts_on?->format('d-m-Y')]),
         ]);
 
-        $made = $discounts->assign($discountCode, array_map('intval', $data['student_ids']), $request->user());
+        $expiries = [];
+        foreach ($data['expires_on'] ?? [] as $studentId => $date) {
+            $expiries[(int) $studentId] = $date ? Carbon::parse($date)->toDateString() : null;
+        }
+
+        $made = $discounts->assign($discountCode, array_map('intval', $data['student_ids']), $request->user(), $expiries);
         foreach ($made as $code) {
             $this->notifyGiven($code, [(int) $code->students()->value('students.id')]);
         }
@@ -93,6 +104,27 @@ final class DiscountCodeController extends Controller
             new DiscountCodeResource($this->loaded($discountCode)),
             meta: ['assigned' => count($made), 'codes' => array_map(fn (DiscountCode $c) => $c->code, $made)],
         );
+    }
+
+    /**
+     * PATCH /discount-codes/{discount_code}/students/{student} — change one
+     * student's expiry on their own code (null = no end).
+     */
+    public function updateStudent(Request $request, DiscountCode $discountCode, Student $student): JsonResponse
+    {
+        $this->authorize('update', $discountCode);
+
+        $data = $request->validate([
+            'expires_on' => ['nullable', 'date', 'after_or_equal:'.$discountCode->starts_on?->toDateString()],
+        ], [
+            'expires_on.after_or_equal' => __('The expiry date cannot be before the code starts (:date).', ['date' => $discountCode->starts_on?->format('d-m-Y')]),
+        ]);
+
+        $codes = $discountCode->children()->whereHas('students', fn ($q) => $q->where('students.id', $student->id))->get();
+        abort_if($codes->isEmpty(), 404);
+        $codes->each(fn (DiscountCode $code) => $code->update(['expires_on' => $data['expires_on'] ? Carbon::parse($data['expires_on'])->toDateString() : null]));
+
+        return ApiResponse::success(new DiscountCodeResource($this->loaded($discountCode)));
     }
 
     /**

@@ -7,6 +7,7 @@ import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
+import DateInput from '@/components/ui/DateInput.vue'
 import { discountCodesService, type DiscountCode, type DiscountCodeAssignee, type DiscountCodeStatus, type DiscountType } from '@/services/discountCodes'
 import { useConfirmDialogStore } from '@/stores/confirmDialog'
 import { ApiRequestError } from '@/types/api'
@@ -116,6 +117,19 @@ async function save() {
   }
 }
 
+/** Change one student's own expiry (empty = no end date); saved straight away. */
+async function setExpiry(student: DiscountCodeAssignee, value: string) {
+  if (!props.discountCode || (value || null) === student.expires_on) return
+  saveError.value = null
+  try {
+    const updated = await discountCodesService.setStudentExpiry(props.discountCode.id, student.id, value || null)
+    students.value = updated.students ?? []
+    emit('saved', updated)
+  } catch (e) {
+    saveError.value = e instanceof ApiRequestError ? e.message : t('admin.discountCodes.expiryFailed')
+  }
+}
+
 async function takeBack(student: DiscountCodeAssignee) {
   if (!props.discountCode) return
   if (!(await confirmDialog.confirm({ message: t('admin.discountCodes.removeStudentConfirm', { name: student.name }), danger: true }))) return
@@ -196,13 +210,27 @@ async function takeBack(student: DiscountCodeAssignee) {
         <p class="mb-2 text-sm font-medium text-neutral-700">{{ t('admin.discountCodes.studentsWithCode') }}</p>
         <p v-if="!loading && students.length === 0" class="text-sm text-neutral-500">{{ t('admin.discountCodes.studentsNone') }}</p>
         <ul v-else class="max-h-64 divide-y divide-neutral-100 overflow-auto rounded-lg border border-neutral-200">
-          <li v-for="s in students" :key="s.id" class="flex items-center justify-between gap-3 px-3 py-2 text-sm">
-            <div class="min-w-0">
+          <li v-for="s in students" :key="s.id" class="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-3 py-2 text-sm">
+            <div class="min-w-0 flex-1">
               <p class="truncate text-neutral-900">{{ s.name }} <span v-if="s.student_code" class="text-xs text-neutral-500">· {{ s.student_code }}</span></p>
               <p class="truncate font-mono text-xs text-neutral-600">
                 {{ s.code }}<template v-if="s.assigned_on"> · {{ formatDate(s.assigned_on) }}</template>
                 <template v-if="s.uses_count"> · {{ t('admin.discountCodes.uses') }}: {{ s.uses_count }}</template>
               </p>
+            </div>
+            <div class="flex items-center gap-2">
+              <span v-if="s.expired" class="rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700">{{ t('admin.discountCodes.expired') }}</span>
+              <div v-if="canUpdate" class="w-40">
+                <DateInput
+                  :model-value="s.expires_on ?? ''"
+                  :min="discountCode?.starts_on"
+                  :title="t('admin.discountCodes.studentExpiry')"
+                  @update:model-value="setExpiry(s, $event)"
+                />
+              </div>
+              <span v-else class="text-xs text-neutral-600">
+                {{ t('admin.discountCodes.studentExpiry') }}: {{ s.expires_on ? formatDate(s.expires_on) : t('admin.discountCodes.noEnd') }}
+              </span>
             </div>
             <button v-if="canUpdate" type="button" class="shrink-0 text-sm font-medium text-danger-600 hover:text-red-700" @click="takeBack(s)">
               {{ t('admin.discountCodes.removeStudent') }}

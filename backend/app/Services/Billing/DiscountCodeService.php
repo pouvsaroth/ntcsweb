@@ -88,7 +88,7 @@ final class DiscountCodeService
     }
 
     /** What the students' own codes copy from their main code (and follow when it is edited). */
-    public const SHARED = ['name', 'discount_type', 'value', 'max_discount', 'currency', 'starts_on', 'expires_on', 'status', 'notes'];
+    public const SHARED = ['name', 'discount_type', 'value', 'max_discount', 'currency', 'starts_on', 'status', 'notes'];
 
     /**
      * The forms' dropdown: the student's own codes that work today; when they
@@ -142,16 +142,21 @@ final class DiscountCodeService
      * from the main code, STUDENTCODE_CODE_ddmmyy. A student who already has
      * one from this main code keeps it (nothing new is made).
      *
+     * Each student's code gets its own expiry ($expiries[student id]; a
+     * student not in the map gets the main code's expiry; null = no end).
+     * It never follows later changes to the main code's expiry.
+     *
      * @param  list<int>  $studentIds
+     * @param  array<int, string|null>  $expiries
      * @return list<DiscountCode> the codes just made
      */
-    public function assign(DiscountCode $main, array $studentIds, ?User $actor): array
+    public function assign(DiscountCode $main, array $studentIds, ?User $actor, array $expiries = []): array
     {
         if ($main->parent_id !== null) {
             throw ValidationException::withMessages(['discount_code_id' => __('Pick a main discount code, not a student code.')]);
         }
 
-        return DB::connection('tenant')->transaction(function () use ($main, $studentIds, $actor) {
+        return DB::connection('tenant')->transaction(function () use ($main, $studentIds, $actor, $expiries) {
             $has = DB::connection('tenant')->table('discount_code_student')
                 ->join('discount_codes', 'discount_codes.id', '=', 'discount_code_student.discount_code_id')
                 ->where('discount_codes.parent_id', $main->id)
@@ -164,6 +169,7 @@ final class DiscountCodeService
             foreach (Student::query()->whereIn('id', array_diff($studentIds, $has))->orderBy('id')->get() as $student) {
                 $code = DiscountCode::query()->create([
                     ...$main->only(self::SHARED),
+                    'expires_on' => array_key_exists($student->id, $expiries) ? $expiries[$student->id] : $main->expires_on?->toDateString(),
                     'parent_id' => $main->id,
                     'code' => $this->ownCodeFor($main, $student, $date),
                     'audience' => DiscountCode::AUDIENCE_PERSONAL,
