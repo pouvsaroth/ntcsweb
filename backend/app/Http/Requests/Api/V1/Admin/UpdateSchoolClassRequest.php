@@ -7,6 +7,7 @@ namespace App\Http\Requests\Api\V1\Admin;
 use App\Models\Enrollment;
 use App\Models\Position;
 use App\Models\SchoolClass;
+use App\Models\Staff;
 use App\Services\Billing\CompanyInvoiceService;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
@@ -27,13 +28,20 @@ class UpdateSchoolClassRequest extends FormRequest
         $class = $this->route('class');
 
         // Teachers: a position carrying the Teacher role. Assistants: a
-        // position carrying the Teacher Assistant role — or already an
-        // assistant on this class (assigned before this rule), so saving an
-        // older class doesn't fail.
-        $isTeacherStaff = fn ($query) => $query->whereIn('position_id', Position::teacherPositionIds());
+        // position carrying the Teacher Assistant role. Resigned staff can't
+        // be newly added. Anyone already on this class in that slot still
+        // passes, so saving an older class doesn't fail.
+        $resignedIds = Staff::resignedIds();
+        $teacherPositionIds = Position::teacherPositionIds();
         $assistantPositionIds = Position::teacherAssistantPositionIds();
+        $currentTeacherIds = $class instanceof SchoolClass ? $class->teachers()->pluck('staff.id')->all() : [];
         $currentAssistantIds = $class instanceof SchoolClass ? $class->assistantTeachers()->pluck('staff.id')->all() : [];
-        $isAssistantStaff = fn ($query) => $query->where(fn ($q) => $q->whereIn('position_id', $assistantPositionIds)->orWhereIn('id', $currentAssistantIds));
+        $isTeacherStaff = fn ($query) => $query->where(fn ($q) => $q
+            ->where(fn ($n) => $n->whereIn('position_id', $teacherPositionIds)->whereNotIn('id', $resignedIds))
+            ->orWhereIn('id', $currentTeacherIds));
+        $isAssistantStaff = fn ($query) => $query->where(fn ($q) => $q
+            ->where(fn ($n) => $n->whereIn('position_id', $assistantPositionIds)->whereNotIn('id', $resignedIds))
+            ->orWhereIn('id', $currentAssistantIds));
 
         return [
             'name' => ['sometimes', 'required', 'string', 'max:255'],

@@ -48,7 +48,7 @@ const form = reactive<ClassInput>({
 })
 
 const teachers = ref<Staff[]>([])
-/** Staff whose position carries the Teacher Assistant role (plus anyone already an assistant on this class). */
+/** Staff whose position carries the Teacher Assistant role (resigned staff left out). */
 const assistants = ref<{ id: number; full_name: string }[]>([])
 const classrooms = ref<Classroom[]>([])
 const programs = ref<AcademicProgram[]>([])
@@ -165,11 +165,11 @@ async function load() {
     // one — e.g. "Computer Teacher" and "Teaching Assistant" might both
     // carry it). See Position::teacherPositionIds() on the backend.
     const teacherPositionIds = positions.filter((p) => p.role?.slug === 'teacher').map((p) => p.id)
-    teachers.value = teacherPositionIds.length > 0 ? await staffService.listAll({ position_id: teacherPositionIds.join(',') }) : []
+    teachers.value = teacherPositionIds.length > 0 ? await staffService.listAll({ position_id: teacherPositionIds.join(',') }, { excludeResigned: true }) : []
 
     // Assistant Teacher list: only positions carrying the Teacher Assistant role.
     const assistantPositionIds = positions.filter((p) => p.role?.slug === 'teacher-assistant').map((p) => p.id)
-    assistants.value = assistantPositionIds.length > 0 ? await staffService.listAll({ position_id: assistantPositionIds.join(',') }) : []
+    assistants.value = assistantPositionIds.length > 0 ? await staffService.listAll({ position_id: assistantPositionIds.join(',') }, { excludeResigned: true }) : []
 
     if (!classId.value) return
 
@@ -178,10 +178,6 @@ async function load() {
     form.code = schoolClass.code ?? ''
     form.teacher_ids = schoolClass.teachers.map((t) => t.id)
     form.assistant_teacher_ids = schoolClass.assistant_teachers.map((t) => t.id)
-    // Keep assistants assigned before this rule visible, so they can be unticked.
-    for (const a of schoolClass.assistant_teachers) {
-      if (!assistants.value.some((s) => s.id === a.id)) assistants.value.push({ id: a.id, full_name: a.name })
-    }
     form.classroom_id = schoolClass.classroom?.id ?? null
     form.academic_program_id = schoolClass.academic_program?.id ?? null
     form.grade_level_id = schoolClass.grade_level_id ?? null

@@ -142,8 +142,10 @@ export const staffService = {
   get: (id: number) => apiGetWithMeta<Staff>(`/staff/${id}`).then((r) => r.data),
 
   /** Every active staff member matching a filter (e.g. a specific position) — for a select dropdown, mirrors every other module's listAll(). */
-  async listAll(filter: Record<string, string | number> = {}): Promise<Staff[]> {
-    const result = await apiGetWithMeta<Staff[]>('/staff', { params: { per_page: 200, filter: { status: 'active', ...filter } } })
+  async listAll(filter: Record<string, string | number> = {}, options: { excludeResigned?: boolean } = {}): Promise<Staff[]> {
+    const params: Record<string, unknown> = { per_page: 200, filter: { status: 'active', ...filter } }
+    if (options.excludeResigned) params.exclude_resigned = 1
+    const result = await apiGetWithMeta<Staff[]>('/staff', { params })
     return result.data
   },
 

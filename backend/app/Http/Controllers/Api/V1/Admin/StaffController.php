@@ -57,6 +57,10 @@ final class StaffController extends Controller
         if (StaffPolicy::ownProfileOnly($request->user())) {
             $query->where('user_id', $request->user()->id);
         }
+        // Class form pickers: leave out anyone who has resigned.
+        if ($request->boolean('exclude_resigned')) {
+            $query->whereNotIn('id', Staff::resignedIds());
+        }
 
         $staff = ApiQuery::for($query, $request)
             ->searchable('first_name', 'last_name', 'employee_code', 'email')

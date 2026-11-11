@@ -298,6 +298,21 @@ class Staff extends Model
         $query->where('status', self::STATUS_ACTIVE);
     }
 
+    /**
+     * Staff who have resigned: status Resigned, or an approved resignation
+     * request (approving one doesn't change the status). Kept out of a
+     * class's Teacher / Assistant Teacher lists.
+     *
+     * @return list<int>
+     */
+    public static function resignedIds(): array
+    {
+        $byStatus = static::query()->where('status', self::STATUS_RESIGNED)->pluck('id');
+        $byRequest = ResignationRequest::query()->where('status', ResignationRequest::STATUS_APPROVED)->pluck('staff_id');
+
+        return $byStatus->merge($byRequest)->unique()->values()->all();
+    }
+
     public function auditModule(): string
     {
         return 'Staff';

@@ -6,6 +6,7 @@ namespace App\Http\Requests\Api\V1\Admin;
 
 use App\Models\Position;
 use App\Models\SchoolClass;
+use App\Models\Staff;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -26,9 +27,10 @@ class StoreSchoolClassRequest extends FormRequest
     public function rules(): array
     {
         // Teachers: a position carrying the Teacher role. Assistants: a
-        // position carrying the Teacher Assistant role.
-        $isTeacherStaff = fn ($query) => $query->whereIn('position_id', Position::teacherPositionIds());
-        $isAssistantStaff = fn ($query) => $query->whereIn('position_id', Position::teacherAssistantPositionIds());
+        // position carrying the Teacher Assistant role. Never resigned staff.
+        $resignedIds = Staff::resignedIds();
+        $isTeacherStaff = fn ($query) => $query->whereIn('position_id', Position::teacherPositionIds())->whereNotIn('id', $resignedIds);
+        $isAssistantStaff = fn ($query) => $query->whereIn('position_id', Position::teacherAssistantPositionIds())->whereNotIn('id', $resignedIds);
 
         return [
             'name' => ['required', 'string', 'max:255'],

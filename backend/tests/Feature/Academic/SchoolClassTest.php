@@ -8,6 +8,7 @@ use App\Models\Classroom;
 use App\Models\ClassroomTable;
 use App\Models\Enrollment;
 use App\Models\Position;
+use App\Models\ResignationRequest;
 use App\Models\Role;
 use App\Models\SchoolClass;
 use App\Models\Staff;
@@ -46,6 +47,34 @@ class SchoolClassTest extends TestCase
         ]);
 
         return Position::factory()->create(['name' => 'Teacher Assistant', 'role_id' => $role->id]);
+    }
+
+    public function test_resigned_staff_cannot_be_assigned_to_a_class(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::CLASSES_CREATE]);
+        $teacherPosition = $this->createTeacherPosition();
+        $resignedByStatus = Staff::factory()->create(['position_id' => $teacherPosition->id, 'status' => Staff::STATUS_RESIGNED]);
+        $resignedByRequest = Staff::factory()->create(['position_id' => $teacherPosition->id]);
+        ResignationRequest::factory()->create(['staff_id' => $resignedByRequest->id, 'status' => ResignationRequest::STATUS_APPROVED]);
+
+        $this->postJson('/api/v1/classes', [
+            'name' => 'Resigned Check',
+            'teacher_ids' => [$resignedByStatus->id, $resignedByRequest->id],
+        ])->assertUnprocessable()->assertJsonValidationErrors(['teacher_ids.0', 'teacher_ids.1']);
+    }
+
+    public function test_the_staff_picker_can_leave_out_resigned_staff(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::CLASSES_CREATE, Permissions::STAFF_VIEW]);
+        $teacherPosition = $this->createTeacherPosition();
+        $working = Staff::factory()->create(['position_id' => $teacherPosition->id]);
+        $resigned = Staff::factory()->create(['position_id' => $teacherPosition->id]);
+        ResignationRequest::factory()->create(['staff_id' => $resigned->id, 'status' => ResignationRequest::STATUS_APPROVED]);
+
+        $ids = collect($this->getJson('/api/v1/staff?exclude_resigned=1&per_page=200')->assertOk()->json('data'))->pluck('id');
+
+        $this->assertTrue($ids->contains($working->id));
+        $this->assertFalse($ids->contains($resigned->id));
     }
 
     public function test_a_teacher_role_staff_member_cannot_be_an_assistant(): void
