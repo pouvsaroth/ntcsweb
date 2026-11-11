@@ -20,6 +20,7 @@ import { useTaskProgress } from '@/composables/useTaskProgress'
 import { useAuthStore } from '@/stores/auth'
 import { ApiRequestError } from '@/types/api'
 import { convertCurrency, formatMoney } from '@/utils/currency'
+import { formatDate } from '@/utils/date'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -48,6 +49,7 @@ const form = reactive({
   course_package_id: null as number | null,
   table_id: null as number | null,
   enrolled_at: today(),
+  start_study_on: today(),
   fee_type: null as FeeType | null,
   // Only from a discount code (no typed discount).
   discount_price: 0,
@@ -56,6 +58,19 @@ const form = reactive({
 })
 
 const errors = ref<Record<string, string[]>>({})
+
+// Start study date follows the enrollment date until it is changed (and never goes before it).
+watch(
+  () => form.enrolled_at,
+  (date, before) => {
+    if (!form.start_study_on || form.start_study_on === before || form.start_study_on < date) form.start_study_on = date
+  },
+)
+const startStudyHint = computed(() =>
+  form.start_study_on && form.start_study_on > today()
+    ? t('admin.enrollments.startStudyLater', { date: formatDate(form.start_study_on) })
+    : undefined,
+)
 const generalError = ref<string | null>(null)
 const submitting = ref(false)
 
@@ -316,6 +331,7 @@ async function createEnrollment() {
       table_id: form.table_id,
       course_package_id: form.course_package_id,
       enrolled_at: form.enrolled_at,
+      start_study_on: form.start_study_on || form.enrolled_at,
       fee_type: form.fee_type,
       discount_reason: null,
       discount_price: appliedCode.value ? appliedCode.value.amount : 0,
@@ -565,7 +581,17 @@ onMounted(async () => {
           </p>
         </div>
 
-        <BaseInput v-model="form.enrolled_at" type="date" required :label="t('admin.enrollments.enrolledAt')" :error="errors.enrolled_at?.[0]" />
+        <div class="grid gap-4 sm:grid-cols-2">
+          <BaseInput v-model="form.enrolled_at" type="date" required :label="t('admin.enrollments.enrolledAt')" :error="errors.enrolled_at?.[0]" />
+          <BaseInput
+            v-model="form.start_study_on"
+            type="date"
+            required
+            :label="t('admin.enrollments.startStudyOn')"
+            :hint="startStudyHint"
+            :error="errors.start_study_on?.[0]"
+          />
+        </div>
 
         <label class="inline-flex items-center gap-2 text-sm font-medium text-neutral-700">
           <input

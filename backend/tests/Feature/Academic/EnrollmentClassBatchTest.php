@@ -50,6 +50,30 @@ class EnrollmentClassBatchTest extends TestCase
         $this->assertSame(0, Invoice::count());
     }
 
+    public function test_one_start_study_date_for_everyone_added(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE]);
+        $this->setUpAcademicCatalog();
+        $class = $this->companyClass();
+        $students = Student::factory()->count(2)->create();
+        $today = now('Asia/Phnom_Penh')->toDateString();
+        $later = now('Asia/Phnom_Penh')->addMonth()->toDateString();
+
+        $this->postJson('/api/v1/enrollments/class-batch', [
+            'class_id' => $class->id, 'course_package_id' => $this->msWordPackage->id, 'enrolled_at' => $today,
+            'start_study_on' => $later,
+            'students' => $students->map(fn ($s) => ['student_id' => $s->id])->all(),
+        ])->assertCreated()->assertJsonPath('data.0.status', Enrollment::STATUS_NOT_STARTED)->assertJsonPath('data.0.start_study_on', $later);
+
+        $this->assertSame(2, Enrollment::where('class_id', $class->id)->where('status', Enrollment::STATUS_NOT_STARTED)->whereDate('start_study_on', $later)->count());
+
+        $this->postJson('/api/v1/enrollments/class-batch', [
+            'class_id' => $class->id, 'course_package_id' => $this->msWordPackage->id, 'enrolled_at' => $today,
+            'start_study_on' => now('Asia/Phnom_Penh')->subDay()->toDateString(),
+            'students' => [['student_id' => Student::factory()->create()->id]],
+        ])->assertUnprocessable()->assertJsonValidationErrors('start_study_on');
+    }
+
     public function test_a_class_not_paid_by_a_company_is_rejected(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::ENROLLMENTS_CREATE]);

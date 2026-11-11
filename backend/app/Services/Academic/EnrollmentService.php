@@ -23,6 +23,7 @@ use App\Support\Audit\AuditAction;
 use App\Support\Audit\AuditLogger;
 use App\Support\Billing\PaymentMethod;
 use App\Support\Tenancy\TenantContext;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -120,6 +121,7 @@ final class EnrollmentService
 
             $feeType = $data['fee_type'];
             $enrolledAt = $data['enrolled_at'] ?? now()->toDateString();
+            $startOn = $data['start_study_on'] ?? $enrolledAt;
 
             // Course packages are priced in whatever currency they were set
             // up in (almost always USD), but the invoice this enrollment
@@ -147,8 +149,9 @@ final class EnrollmentService
                 'course_package_id' => $package->getKey(),
                 'academic_program_id' => $class->academic_program_id,
                 'enrolled_at' => $enrolledAt,
+                'start_study_on' => $startOn,
                 'enrollments_code' => $this->generateEnrollmentCode($data['student_id']),
-                'status' => Enrollment::STATUS_ACTIVE,
+                'status' => $this->statusForStart($startOn),
             ]);
 
             $invoice = $this->invoices->create([
@@ -232,6 +235,7 @@ final class EnrollmentService
             }
 
             $enrolledAt = $data['enrolled_at'] ?? now()->toDateString();
+            $startOn = $data['start_study_on'] ?? $enrolledAt;
 
             // Tables in this class's room, and the ones already held.
             $roomTables = $class->classroom_id === null
@@ -284,8 +288,9 @@ final class EnrollmentService
                     'course_package_id' => $package->getKey(),
                     'academic_program_id' => $class->academic_program_id,
                     'enrolled_at' => $enrolledAt,
+                    'start_study_on' => $startOn,
                     'enrollments_code' => $this->generateEnrollmentCode($studentId),
-                    'status' => Enrollment::STATUS_ACTIVE,
+                    'status' => $this->statusForStart($startOn),
                 ]);
 
                 if ($tableId !== null) {
@@ -375,6 +380,95 @@ final class EnrollmentService
 
             return $enrollment;
         });
+    }
+
+    /** Today in the school's own timezone (Y-m-d). */
+    public function schoolToday(): string
+    {
+        return Carbon::now(app(TenantContext::class)->get()?->timezone ?: 'Asia/Phnom_Penh')->toDateString();
+    }
+
+    /** Studying from the start study date on; Not started before it. */
+    public function statusForStart(string|\DateTimeInterface|null $startOn): string
+    {
+        $start = $startOn instanceof \DateTimeInterface ? $startOn->format('Y-m-d') : (string) $startOn;
+
+        return $start !== '' && $start > $this->schoolToday() ? Enrollment::STATUS_NOT_STARTED : Enrollment::STATUS_ACTIVE;
+    }
+
+    /**
+     * Edit enrollment changed the start study date: while the enrollment is
+     * still Not started or Studying, its status follows the new date.
+     */
+    public function followStartDate(Enrollment $enrollment, ?User $actor): void
+    {
+        $from = (string) $enrollment->status;
+        if (! in_array($from, [Enrollment::STATUS_NOT_STARTED, Enrollment::STATUS_ACTIVE], true)) {
+            return;
+        }
+
+        $to = $this->statusForStart($enrollment->start_study_on);
+        if ($to === Enrollment::STATUS_ACTIVE && $from !== $to) {
+            $this->startStudying($enrollment, $actor, 'Start study date reached');
+        } elseif ($from !== $to) {
+            $this->setStatus($enrollment, $to, 'Start study date moved later', $actor);
+        }
+    }
+
+    /**
+     * Every Not started enrollment whose start study date has come turns
+     * Studying (run daily by enrollments:start-due, in each school).
+     */
+    public function startDue(): int
+    {
+        $started = 0;
+        Enrollment::query()
+            ->where('status', Enrollment::STATUS_NOT_STARTED)
+            ->whereNotNull('start_study_on')
+            ->whereDate('start_study_on', '<=', $this->schoolToday())
+            ->orderBy('id')
+            ->each(function (Enrollment $enrollment) use (&$started) {
+                DB::connection('tenant')->transaction(fn () => $this->startStudying($enrollment, null, 'Start study date reached'));
+                $started++;
+            });
+
+        return $started;
+    }
+
+    /**
+     * Not started → Studying. Their table was not held while they had not
+     * started (Enrollment::TABLE_HOLDING_STATUS): if someone took it in the
+     * meantime it is cleared, and staff pick a new one.
+     */
+    private function startStudying(Enrollment $enrollment, ?User $actor, string $reason): void
+    {
+        $changes = ['status' => Enrollment::STATUS_ACTIVE];
+
+        if ($enrollment->table_id !== null && ! ClassroomTable::allowsMany($enrollment->table_id)) {
+            $taken = Enrollment::query()
+                ->where('class_id', $enrollment->class_id)
+                ->where('table_id', $enrollment->table_id)
+                ->where('status', Enrollment::TABLE_HOLDING_STATUS)
+                ->whereKeyNot($enrollment->getKey())
+                ->exists();
+
+            if ($taken) {
+                $changes['table_id'] = null;
+                EnrollmentTransferHistory::query()->create([
+                    'enrollment_id' => $enrollment->getKey(),
+                    'from_class_id' => $enrollment->class_id,
+                    'to_class_id' => $enrollment->class_id,
+                    'from_table_id' => $enrollment->table_id,
+                    'to_table_id' => null,
+                    'from_course_package_id' => $enrollment->course_package_id,
+                    'to_course_package_id' => $enrollment->course_package_id,
+                    'changed_by' => $actor?->getKey(),
+                ]);
+            }
+        }
+
+        $this->recordStatus($enrollment, (string) $enrollment->status, Enrollment::STATUS_ACTIVE, $reason, (string) $enrollment->start_study_on?->toDateString(), $actor);
+        $enrollment->update($changes);
     }
 
     /**

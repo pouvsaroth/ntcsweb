@@ -60,6 +60,8 @@ class StoreEnrollmentPackageRequest extends FormRequest
             'table_id' => ['nullable', Rule::exists('tenant.classroom_tables', 'id')],
 
             'enrolled_at' => ['nullable', 'date'],
+            // The day they start studying (empty = the enrollment date). Later than today = Not started until then.
+            'start_study_on' => array_values(array_filter(['nullable', 'date', $this->filled('enrolled_at') ? 'after_or_equal:enrolled_at' : 'after_or_equal:today'])),
 
             // Which of the package's 5 fee tiers this enrollment is billed
             // under — checked against the package in withValidator() below

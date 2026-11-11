@@ -7,6 +7,7 @@ import ExamApplicationFormModal from '@/components/admin/ExamApplicationFormModa
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
+import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import DataTable from '@/components/ui/DataTable.vue'
@@ -469,22 +470,51 @@ function openReject(row: MergedRow) {
   rejectOpen.value = true
 }
 
+// Approving a website registration: pick when the student starts studying.
+const regApprove = ref<MergedRow | null>(null)
+const regStartOn = ref('')
+const regError = ref<string | null>(null)
+function todayIso(): string {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+const regStartHint = computed(() =>
+  regStartOn.value && regStartOn.value > todayIso() ? t('admin.enrollments.startStudyLater', { date: formatDate(regStartOn.value) }) : undefined,
+)
+async function confirmRegistration() {
+  if (!regApprove.value || !regStartOn.value) return
+  approving.value = true
+  regError.value = null
+  try {
+    await studentRegistrationsService.approve(regApprove.value.id, regStartOn.value)
+    regApprove.value = null
+    detail.value = null
+    await load()
+  } catch (e) {
+    regError.value = e instanceof ApiRequestError ? e.message : t('admin.approvals.actionFailed')
+  } finally {
+    approving.value = false
+  }
+}
+
 async function approve(row: MergedRow) {
-  // Approving a registration also records the payment of its invoice
-  // balance (see StudentRegistrationService::approve()), so it keeps its own
-  // confirm text naming the student.
-  const message =
-    row.kind === 'registration'
-      ? t('admin.studentRegistrations.approveConfirm', { name: row.requestor })
-      : t(
-          approvesToStudy(row)
-            ? 'admin.approvals.approveToStudyConfirm'
-            : row.kind === 'makeUp'
-              ? 'admin.approvals.approveMakeUpCameConfirm'
-              : row.kind === 'classChange'
-                ? 'classChangeRequest.approveConfirm'
-                : 'admin.approvals.approveConfirm',
-        )
+  if (row.kind === 'registration') {
+    regApprove.value = row
+    regStartOn.value = todayIso()
+    regError.value = null
+    return
+  }
+
+  // (A registration has its own box above, with the start study date.)
+  const message = t(
+    approvesToStudy(row)
+      ? 'admin.approvals.approveToStudyConfirm'
+      : row.kind === 'makeUp'
+        ? 'admin.approvals.approveMakeUpCameConfirm'
+        : row.kind === 'classChange'
+          ? 'classChangeRequest.approveConfirm'
+          : 'admin.approvals.approveConfirm',
+  )
   if (!(await confirmDialog.confirm(message))) return
 
   approving.value = true
@@ -499,8 +529,6 @@ async function approve(row: MergedRow) {
       await resignationRequestsService.approve(row.id)
     } else if (row.kind === 'makeUp') {
       await (approvesToStudy(row) ? makeUpClassRequestsService.approveToStudy(row.id) : makeUpClassRequestsService.approve(row.id))
-    } else if (row.kind === 'registration') {
-      await studentRegistrationsService.approve(row.id)
     } else if (row.kind === 'manpower') {
       await manpowerRequestsService.approve(row.id)
     } else if (row.kind === 'overtime') {
@@ -827,6 +855,18 @@ function leaveSubject(r: LeaveRequest): string {
           <BaseButton v-if="canReject(detail)" variant="danger" @click="openReject(detail)">{{ t('admin.approvals.reject') }}</BaseButton>
           <BaseButton v-if="canApprove(detail)" :loading="approving" @click="approve(detail)">{{ approveLabel(detail) }}</BaseButton>
         </template>
+      </template>
+    </BaseModal>
+
+    <BaseModal :model-value="regApprove !== null" :title="t('admin.approvals.approve')" @update:model-value="regApprove = null">
+      <div class="space-y-4">
+        <p class="text-sm text-neutral-700">{{ regApprove ? t('admin.studentRegistrations.approveConfirm', { name: regApprove.requestor }) : '' }}</p>
+        <BaseAlert v-if="regError" variant="danger">{{ regError }}</BaseAlert>
+        <BaseInput v-model="regStartOn" type="date" required :label="t('admin.enrollments.startStudyOn')" :hint="regStartHint" />
+      </div>
+      <template #footer>
+        <BaseButton variant="outline" @click="regApprove = null">{{ t('common.cancel') }}</BaseButton>
+        <BaseButton :loading="approving" :disabled="!regStartOn" @click="confirmRegistration">{{ t('admin.approvals.approve') }}</BaseButton>
       </template>
     </BaseModal>
 

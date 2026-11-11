@@ -52,7 +52,7 @@ final class EnrollmentController extends Controller
             $request,
         )
             ->filterable(['status', 'student_id', 'class_id', 'course_package_id', 'academic_program_id'])
-            ->sortable(['enrolled_at', 'created_at', 'class_id', 'status', 'table_id'], default: '-created_at')
+            ->sortable(['enrolled_at', 'start_study_on', 'created_at', 'class_id', 'status', 'table_id'], default: '-created_at')
             ->paginate();
 
         return ApiResponse::success(EnrollmentResource::collection($enrollments));
@@ -78,6 +78,10 @@ final class EnrollmentController extends Controller
             $enrollment->update($request->validated());
             // A status changed here is kept in the status history too.
             $this->enrollments->recordStatus($enrollment, $from, (string) $enrollment->status, null, null, $request->user());
+            // A new start study date: Not started / Studying follows it.
+            if ($enrollment->wasChanged('start_study_on')) {
+                $this->enrollments->followStartDate($enrollment, $request->user());
+            }
         });
 
         return ApiResponse::success(new EnrollmentResource($enrollment->load(self::WITH)));

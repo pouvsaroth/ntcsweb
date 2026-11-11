@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Academic;
 
+use App\Models\Enrollment;
 use App\Models\Invoice;
 use App\Services\Billing\DiscountCodeService;
 use App\Models\Role;
@@ -15,6 +16,7 @@ use App\Support\Authorization\Permissions;
 use App\Support\Billing\PaymentMethod;
 use App\Support\Notifications\NotificationType;
 use App\Support\Tenancy\TenantContext;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
@@ -120,14 +122,26 @@ final class StudentRegistrationService
         return $student;
     }
 
-    public function approve(Student $student, User $admin): Student
+    /**
+     * `$startStudyOn`: when the student starts studying (null = keep the
+     * enrollment's own date). Later than today = Not started until then.
+     */
+    public function approve(Student $student, User $admin, ?string $startStudyOn = null): Student
     {
-        return DB::transaction(function () use ($student, $admin) {
+        return DB::transaction(function () use ($student, $admin, $startStudyOn) {
             /** @var Student $student */
             $student = Student::query()->whereKey($student->getKey())->lockForUpdate()->firstOrFail();
 
             if ($student->status !== Student::STATUS_PENDING) {
                 throw ValidationException::withMessages(['status' => 'This registration is not pending approval.']);
+            }
+
+            // Checked before anything is saved.
+            if ($startStudyOn !== null) {
+                $enrolledOn = $student->enrollments()->min('enrolled_at');
+                if ($enrolledOn !== null && $startStudyOn < substr((string) $enrolledOn, 0, 10)) {
+                    throw ValidationException::withMessages(['start_study_on' => __('The start study date cannot be before the enrollment date (:date).', ['date' => Carbon::parse($enrolledOn)->format('d-m-Y')])]);
+                }
             }
 
             $invoice = $this->pendingInvoice($student);
@@ -141,6 +155,13 @@ final class StudentRegistrationService
 
             $student->update(['status' => Student::STATUS_ACTIVE]);
             $student->user?->update(['status' => User::STATUS_ACTIVE]);
+
+            if ($startStudyOn !== null) {
+                foreach ($student->enrollments()->whereIn('status', [Enrollment::STATUS_NOT_STARTED, Enrollment::STATUS_ACTIVE])->get() as $enrollment) {
+                    $enrollment->update(['start_study_on' => $startStudyOn]);
+                    $this->enrollments->followStartDate($enrollment, $admin);
+                }
+            }
 
             return $student->fresh();
         });

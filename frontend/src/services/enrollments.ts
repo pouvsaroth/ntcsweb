@@ -69,6 +69,8 @@ export interface Enrollment {
   /** Human-readable per-student sequence code, e.g. `NTS-000008-01`. */
   enrollments_code: string | null
   enrolled_at: string
+  /** The day they start studying; later than today = Not started until then. */
+  start_study_on: string | null
   status: EnrollmentStatus
   /** Class > Students > Note: the teacher's note on this student in the class. */
   note?: string | null
@@ -108,6 +110,7 @@ export interface EnrollmentPackageInput {
   table_id: number | null
   course_package_id: number
   enrolled_at: string
+  start_study_on?: string | null
   fee_type: FeeType
   discount_reason: string | null
   discount_price: number
@@ -133,7 +136,7 @@ export const enrollmentsService = {
   },
 
   /** Status isn't editable here — see changeStatus() below, the one path that also logs history. */
-  update: (id: number, input: { enrolled_at: string }) => apiPut<Enrollment>(`/enrollments/${id}`, input),
+  update: (id: number, input: { enrolled_at: string; start_study_on?: string }) => apiPut<Enrollment>(`/enrollments/${id}`, input),
   /** Class > Students > Note: save many students' notes at once (an empty note clears it). */
   /** Class > Students > Export Excel: the given enrollments in this order; `labels` are the headers/gender words in the shown language. */
   exportExcel: (ids: number[], labels: Record<string, string>, title: string | null, filename: string) => {
@@ -152,7 +155,7 @@ export const enrollmentsService = {
 
   enrollInPackage: (input: EnrollmentPackageInput) => apiPost<Enrollment>('/enrollments/package', input),
   /** Enrollments > Add students to class: many students into a company class, no invoices. All or nothing; errors come back per row as students.{i}.student_id / students.{i}.table_id. */
-  enrollClassBatch: (input: { class_id: number; course_package_id: number; enrolled_at: string; students: { student_id: number; table_id: number | null }[] }) =>
+  enrollClassBatch: (input: { class_id: number; course_package_id: number; enrolled_at: string; start_study_on?: string; students: { student_id: number; table_id: number | null }[] }) =>
     apiPost<Enrollment[]>('/enrollments/class-batch', input),
   cancel: (id: number, reason: string) => apiPost<Enrollment>(`/enrollments/${id}/cancel`, { reason }),
 

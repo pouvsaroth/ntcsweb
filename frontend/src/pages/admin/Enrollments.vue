@@ -99,6 +99,7 @@ const columns = [
   { key: 'book', label: t('admin.enrollments.columnBook') },
   { key: 'table', label: t('admin.enrollments.columnTable'), sortable: true, sortKey: 'table_id' },
   { key: 'enrolled_at', label: t('admin.enrollments.columnEnrolledAt'), sortable: true },
+  { key: 'start_study_on', label: t('admin.enrollments.columnStartStudy'), sortable: true },
   { key: 'status', label: t('admin.enrollments.columnStatus'), sortable: true },
   { key: 'status_date', label: t('admin.enrollments.columnStatusDate') },
   { key: 'actions', label: t('admin.enrollments.columnActions'), align: 'text-right' },
@@ -258,6 +259,7 @@ onMounted(() => {
           <p class="text-xs text-neutral-500">{{ [row.class.name, row.course_package?.name].filter(Boolean).join(' · ') }}</p>
           <dl class="mt-1 flex flex-wrap gap-x-4 text-xs">
             <div class="flex gap-1"><dt class="text-neutral-500">{{ t('admin.enrollments.columnEnrolledAt') }}:</dt><dd class="font-medium text-neutral-800">{{ formatDate(row.enrolled_at) }}</dd></div>
+            <div v-if="row.start_study_on" class="flex gap-1"><dt class="text-neutral-500">{{ t('admin.enrollments.columnStartStudy') }}:</dt><dd class="font-medium text-neutral-800">{{ formatDate(row.start_study_on) }}</dd></div>
             <div v-if="row.status_date" class="flex gap-1"><dt class="text-neutral-500">{{ t('admin.enrollments.columnStatusDate') }}:</dt><dd class="font-medium text-neutral-800">{{ formatDate(row.status_date) }}</dd></div>
           </dl>
           <div class="mt-2 flex justify-end gap-3">
@@ -287,6 +289,7 @@ onMounted(() => {
       <template #cell-book="{ row }">{{ row.course_package?.name ?? '—' }}</template>
       <template #cell-table="{ row }">{{ row.table?.name ?? '—' }}</template>
       <template #cell-enrolled_at="{ row }">{{ formatDate(row.enrolled_at) }}</template>
+      <template #cell-start_study_on="{ row }">{{ row.start_study_on ? formatDate(row.start_study_on) : '—' }}</template>
       <template #cell-status_date="{ row }">{{ row.status_date ? formatDate(row.status_date) : '—' }}</template>
       <template #cell-status="{ row }">
         <BaseBadge :variant="statusBadgeVariant[row.status]">

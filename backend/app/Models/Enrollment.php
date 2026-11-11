@@ -38,12 +38,13 @@ use Illuminate\Support\Facades\DB;
  * @property int|null $course_package_id
  * @property int|null $academic_program_id
  * @property string $status
+ * @property \Illuminate\Support\Carbon|null $start_study_on The day they start studying: before it the enrollment is Not started, from it Studying (EnrollmentService::startDue()).
  * @property string|null $enrollments_code
  * @property string|null $note
  */
 #[Fillable([
     'student_id', 'class_id', 'table_id', 'course_package_id', 'academic_program_id',
-    'enrolled_at', 'status', 'enrollments_code', 'note',
+    'enrolled_at', 'start_study_on', 'status', 'enrollments_code', 'note',
 ])]
 class Enrollment extends Model
 {
@@ -125,6 +126,7 @@ class Enrollment extends Model
     {
         return [
             'enrolled_at' => 'date',
+            'start_study_on' => 'date',
         ];
     }
 
@@ -137,6 +139,13 @@ class Enrollment extends Model
      */
     protected static function booted(): void
     {
+        // No start study date given (promotions, imports, old callers): they start on the enrollment date.
+        static::creating(function (self $enrollment): void {
+            if ($enrollment->start_study_on === null) {
+                $enrollment->start_study_on = $enrollment->enrolled_at;
+            }
+        });
+
         $sync = function (self $enrollment): void {
             DB::connection('tenant')->afterCommit(function () use ($enrollment) {
                 $student = $enrollment->student()->first();

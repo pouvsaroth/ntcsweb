@@ -148,6 +148,28 @@ class StudentRegistrationTest extends TestCase
         Notification::assertSentTo($student->user, StudentRegistrationApprovedNotification::class);
     }
 
+    public function test_approving_sets_the_start_study_date_and_a_later_one_is_not_started(): void
+    {
+        Notification::fake();
+        $this->actingAsAdminWithPermissions([Permissions::STUDENTS_APPROVE_REGISTRATION]);
+        $this->setUpAcademicCatalog();
+        $this->withHeader('X-Tenant', $this->tenant->slug)
+            ->postJson('/api/v1/public/student-registrations', $this->registrationPayload())->assertCreated();
+        $student = Student::where('first_name', 'Sok')->firstOrFail();
+
+        // Before the enrollment date: refused, nothing approved.
+        $this->postJson("/api/v1/student-registrations/{$student->id}/approve", ['start_study_on' => now('Asia/Phnom_Penh')->subYear()->toDateString()])
+            ->assertUnprocessable()->assertJsonValidationErrors('start_study_on');
+        $this->assertSame(Student::STATUS_PENDING, $student->fresh()->status);
+
+        $later = now('Asia/Phnom_Penh')->addMonth()->toDateString();
+        $this->postJson("/api/v1/student-registrations/{$student->id}/approve", ['start_study_on' => $later])->assertOk();
+
+        $enrollment = $student->enrollments()->sole();
+        $this->assertSame($later, $enrollment->start_study_on->toDateString());
+        $this->assertSame(\App\Models\Enrollment::STATUS_NOT_STARTED, $enrollment->status);
+    }
+
     public function test_a_pending_registrant_can_log_in_once_approved(): void
     {
         Notification::fake();

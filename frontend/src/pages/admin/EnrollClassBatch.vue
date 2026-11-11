@@ -13,6 +13,7 @@ import { classesService, type SchoolClass } from '@/services/classes'
 import { coursePackagesService, type CoursePackage } from '@/services/coursePackages'
 import { enrollmentsService, type Enrollment } from '@/services/enrollments'
 import { studentsService, type Student } from '@/services/students'
+import { formatDate } from '@/utils/date'
 import { ApiRequestError } from '@/types/api'
 
 /**
@@ -39,7 +40,19 @@ const form = reactive({
   course_package_id: null as number | null,
   class_id: null as number | null,
   enrolled_at: today(),
+  start_study_on: today(),
 })
+
+// Start study date follows the enrollment date until it is changed (and never goes before it).
+watch(
+  () => form.enrolled_at,
+  (date, before) => {
+    if (!form.start_study_on || form.start_study_on === before || form.start_study_on < date) form.start_study_on = date
+  },
+)
+const startStudyHint = computed(() =>
+  form.start_study_on && form.start_study_on > today() ? t('admin.enrollments.startStudyLater', { date: formatDate(form.start_study_on) }) : undefined,
+)
 
 interface Row {
   student: Student
@@ -177,6 +190,7 @@ async function submit() {
       class_id: form.class_id!,
       course_package_id: form.course_package_id!,
       enrolled_at: form.enrolled_at,
+      start_study_on: form.start_study_on || form.enrolled_at,
       students: rows.value.map((r) => ({ student_id: r.student.id, table_id: r.table_id })),
     })
     await router.push(`/admin/classes/${form.class_id}/students`)
@@ -256,7 +270,17 @@ onMounted(async () => {
           />
           <p v-if="noCompanyClasses" class="mt-1.5 text-sm text-warning-700">{{ t('admin.enrollments.batchNoCompanyClasses') }}<template v-if="companyClassPrograms"> {{ t('admin.enrollments.batchCompanyClassesIn', { programs: companyClassPrograms }) }}</template></p>
         </div>
-        <BaseInput v-model="form.enrolled_at" type="date" required :label="t('admin.enrollments.enrolledAt')" :error="errors.enrolled_at?.[0]" />
+        <div class="grid gap-4 sm:grid-cols-2">
+          <BaseInput v-model="form.enrolled_at" type="date" required :label="t('admin.enrollments.enrolledAt')" :error="errors.enrolled_at?.[0]" />
+          <BaseInput
+            v-model="form.start_study_on"
+            type="date"
+            required
+            :label="t('admin.enrollments.startStudyOn')"
+            :hint="startStudyHint"
+            :error="errors.start_study_on?.[0]"
+          />
+        </div>
 
         <div v-if="selectedClass" class="rounded-[--radius-card] border border-neutral-200 bg-neutral-50 p-3 text-sm">
           <p class="font-medium text-neutral-800">{{ t('admin.enrollments.batchPaidBy', { company: selectedClass.company?.name ?? '' }) }}</p>

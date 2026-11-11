@@ -14,6 +14,7 @@ use App\Services\Academic\StudentRegistrationService;
 use App\Support\Query\ApiQuery;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 
 /**
  * The "Student Registration Pending" queue — self-registered students
@@ -53,8 +54,12 @@ final class StudentRegistrationController extends Controller
     public function approve(Request $request, Student $student): JsonResponse
     {
         $this->authorize('approveRegistration', $student);
+        $data = $request->validate(['start_study_on' => ['nullable', 'date']]);
 
-        $student = $this->registrations->approve($student, $request->user());
+        $student = $this->registrations->approve(
+            $student, $request->user(),
+            isset($data['start_study_on']) ? Carbon::parse($data['start_study_on'])->toDateString() : null,
+        );
 
         $student->user?->notify(new StudentRegistrationApprovedNotification($student));
 

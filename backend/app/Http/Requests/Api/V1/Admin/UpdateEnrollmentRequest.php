@@ -27,6 +27,8 @@ class UpdateEnrollmentRequest extends FormRequest
     {
         return [
             'enrolled_at' => ['sometimes', 'required', 'date'],
+            // Not before the enrollment date (the one sent, or the saved one).
+            'start_study_on' => ['sometimes', 'required', 'date', 'after_or_equal:'.($this->input('enrolled_at') ?: $this->route('enrollment')?->enrolled_at?->toDateString() ?: '1900-01-01')],
             'status' => ['sometimes', Rule::in([
                 Enrollment::STATUS_ACTIVE, Enrollment::STATUS_COMPLETED, Enrollment::STATUS_DROPPED,
             ])],

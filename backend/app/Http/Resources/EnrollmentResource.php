@@ -19,6 +19,7 @@ class EnrollmentResource extends JsonResource
             'id' => $this->id,
             'enrollments_code' => $this->enrollments_code,
             'enrolled_at' => $this->enrolled_at?->toDateString(),
+            'start_study_on' => $this->start_study_on?->toDateString(),
             'status' => $this->status,
             'note' => $this->note,
             // Who looks after this student today (Class > Students > Responsible Staff).

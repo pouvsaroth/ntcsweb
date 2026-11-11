@@ -52,6 +52,8 @@ export const studentRegistrationsService = {
   },
 
   get: (id: number) => apiGetWithMeta<StudentRegistration>(`/student-registrations/${id}`).then((r) => r.data),
-  approve: (id: number) => apiPost<StudentRegistration>(`/student-registrations/${id}/approve`),
+  /** `startStudyOn`: when they start studying; later than today = Not started until then. */
+  approve: (id: number, startStudyOn?: string) =>
+    apiPost<StudentRegistration>(`/student-registrations/${id}/approve`, startStudyOn ? { start_study_on: startStudyOn } : {}),
   reject: (id: number, reason: string) => apiPost<StudentRegistration>(`/student-registrations/${id}/reject`, { reason }),
 }

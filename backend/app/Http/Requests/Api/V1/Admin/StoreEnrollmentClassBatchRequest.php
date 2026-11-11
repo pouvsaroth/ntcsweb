@@ -27,6 +27,8 @@ class StoreEnrollmentClassBatchRequest extends FormRequest
             'class_id' => ['required', Rule::exists('tenant.classes', 'id')],
             'course_package_id' => ['required', Rule::exists('tenant.course_packages', 'id')],
             'enrolled_at' => ['nullable', 'date'],
+            // The day they start studying (empty = the enrollment date). Later than today = Not started until then.
+            'start_study_on' => array_values(array_filter(['nullable', 'date', $this->filled('enrolled_at') ? 'after_or_equal:enrolled_at' : 'after_or_equal:today'])),
             'students' => ['required', 'array', 'min:1', 'max:200'],
             'students.*.student_id' => ['required', 'integer', 'distinct', Rule::exists('tenant.students', 'id')],
             'students.*.table_id' => ['nullable', 'integer'],
