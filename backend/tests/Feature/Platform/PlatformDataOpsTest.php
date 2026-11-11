@@ -43,6 +43,14 @@ class PlatformDataOpsTest extends TestCase
                 return $this->exists($name) ? 1024 : null;
             }
 
+            public function tablesIn(string $database): array
+            {
+                return [
+                    ['name' => 'invoices', 'rows' => 120, 'size_bytes' => 65536],
+                    ['name' => 'students', 'rows' => 40, 'size_bytes' => 32768],
+                ];
+            }
+
             public function appliedMigrations(\App\Models\Tenant $tenant): array
             {
                 // Everything but the newest tenant migration: one pending.
@@ -126,6 +134,49 @@ class PlatformDataOpsTest extends TestCase
         $this->assertNull($failed->path);
         $this->assertSame([], Storage::disk('backups')->files('tn_beta'));
         $this->assertSame(0, Backup::query()->where('database', 'tn_nodb')->count());
+    }
+
+    public function test_a_database_lists_its_tables_for_a_custom_backup(): void
+    {
+        $this->school('alpha');
+
+        $this->actingAsStaff($this->platformStaff())->getJson('/api/v1/platform/data/tables?database=tn_alpha')
+            ->assertOk()
+            ->assertJsonPath('data.0.name', 'invoices')
+            ->assertJsonPath('data.1.rows', 40);
+    }
+
+    public function test_a_custom_backup_dumps_only_the_picked_tables_with_their_options(): void
+    {
+        $this->school('alpha');
+        $tables = [['name' => 'students', 'mode' => 'full'], ['name' => 'invoices', 'mode' => 'structure']];
+
+        $this->actingAsStaff($this->platformStaff())
+            ->postJson('/api/v1/platform/data/backups', ['database' => 'tn_alpha', 'tables' => $tables])
+            ->assertCreated()
+            ->assertJsonPath('data.0.format', 'tables')
+            ->assertJsonPath('data.0.tables.1.mode', 'structure');
+
+        $backup = Backup::query()->sole();
+        $this->assertSame('ok', $backup->status);
+        $this->assertSame(Backup::FORMAT_TABLES, $backup->format);
+        $this->assertStringStartsWith('tn_alpha/tn_alpha_tables_', $backup->path);
+        $this->assertSame($tables, $this->pgDump->tables['tn_alpha']);
+        Storage::disk('backups')->assertExists($backup->path);
+    }
+
+    public function test_a_custom_backup_refuses_unknown_tables_bad_options_and_all(): void
+    {
+        $this->school('alpha');
+        $this->actingAsStaff($this->platformStaff());
+
+        $this->postJson('/api/v1/platform/data/backups', ['database' => 'tn_alpha', 'tables' => [['name' => 'nope', 'mode' => 'full']]])
+            ->assertUnprocessable()->assertJsonValidationErrors('tables');
+        $this->postJson('/api/v1/platform/data/backups', ['database' => 'tn_alpha', 'tables' => [['name' => 'students', 'mode' => 'data']]])
+            ->assertUnprocessable()->assertJsonValidationErrors('tables.0.mode');
+        $this->postJson('/api/v1/platform/data/backups', ['database' => 'all', 'tables' => [['name' => 'students', 'mode' => 'full']]])
+            ->assertUnprocessable()->assertJsonValidationErrors('database');
+        $this->assertSame(0, Backup::query()->count());
     }
 
     public function test_unknown_or_missing_databases_are_refused(): void

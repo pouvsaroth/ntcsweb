@@ -24,6 +24,15 @@ class Backup extends Model
     /** One school's own rows (SchoolExporter) — a shared school's backup. */
     public const FORMAT_SCHOOL = 'school';
 
+    /** Only the tables picked (pg_dump), each with or without its rows — see `tables`. */
+    public const FORMAT_TABLES = 'tables';
+
+    /** A picked table: its structure and its rows. */
+    public const TABLE_FULL = 'full';
+
+    /** A picked table: its structure only, no rows. */
+    public const TABLE_STRUCTURE = 'structure';
+
     protected $table = 'bo_backups';
 
     protected $guarded = [];
@@ -32,6 +41,7 @@ class Backup extends Model
     {
         return [
             'size_bytes' => 'integer',
+            'tables' => 'array',
             'duration_ms' => 'integer',
             'copied_at' => 'datetime',
             'started_at' => 'datetime',

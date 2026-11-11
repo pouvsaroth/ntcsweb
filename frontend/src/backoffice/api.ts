@@ -758,7 +758,9 @@ export interface BackupRow {
   database: string
   tenant_id: number | null
   trigger: 'manual' | 'scheduled' | 'move'
-  format: 'dump' | 'school'
+  format: 'dump' | 'school' | 'tables'
+  /** A custom backup: the tables picked, each with its rows (`full`) or structure only. */
+  tables: BackupTable[] | null
   school: { id: number; name: string; slug: string } | null
   staff: string | null
   status: 'running' | 'ok' | 'failed'
@@ -771,6 +773,20 @@ export interface BackupRow {
   created_at: string | null
   finished_at: string | null
   [key: string]: unknown
+}
+
+export type BackupTableMode = 'full' | 'structure'
+
+export interface BackupTable {
+  name: string
+  mode: BackupTableMode
+}
+
+/** One table of a database, for picking a custom backup (rows: Postgres's estimate). */
+export interface DatabaseTable {
+  name: string
+  rows: number
+  size_bytes: number
 }
 
 export interface BackupScheduleRow {
@@ -809,6 +825,8 @@ export const dataApi = {
   health: () => get<PlatformHealth>('/data/health'),
   backups: (query: ListQuery) => page<BackupRow>('/data/backups', query),
   backupNow: (database: string) => send<BackupRow[]>('post', '/data/backups', { database }),
+  tables: (database: string) => get<DatabaseTable[]>('/data/tables', { database }),
+  backupTables: (database: string, tables: BackupTable[]) => send<BackupRow[]>('post', '/data/backups', { database, tables }),
   backupSchool: (schoolId: number) => send<BackupRow[]>('post', '/data/backups', { school_id: schoolId }),
   downloadUrl: (id: number) => `/api/v1/platform/data/backups/${id}/download`,
   removeBackup: (id: number) => send<void>('delete', `/data/backups/${id}`),

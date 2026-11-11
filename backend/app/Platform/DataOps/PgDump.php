@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Platform\DataOps;
 
+use App\Platform\Models\Backup;
 use Illuminate\Support\Facades\Process;
 
 /**
@@ -23,9 +24,13 @@ class PgDump
      * (row security off) is refused there. So: keep it on, and say which
      * school the session is for, which on that server is all of its rows.
      *
+     * $tables: only these tables (a custom backup), each `full` (structure
+     * and rows) or `structure` (no rows). Null: the whole database.
+     *
      * @param  array{host: string, port: int, username: string, password: string, sslmode?: ?string, tenant_id?: int}|null  $server
+     * @param  list<array{name: string, mode: string}>|null  $tables
      */
-    public function dump(string $database, string $path, ?array $server = null): void
+    public function dump(string $database, string $path, ?array $server = null, ?array $tables = null): void
     {
         $args = $server === null ? $this->connectionArgs() : [
             '--host='.$server['host'], '--port='.$server['port'], '--username='.$server['username'], '--no-password',
@@ -40,7 +45,7 @@ class PgDump
         }
 
         $result = Process::timeout(3600)->env($env)->run([
-            'pg_dump', ...$args, '--format=custom', '--no-owner', '--file='.$path, $database,
+            'pg_dump', ...$args, ...$this->tableArgs($tables), '--format=custom', '--no-owner', '--file='.$path, $database,
         ]);
 
         if (! $result->successful()) {
@@ -64,6 +69,27 @@ class PgDump
         if (! $restore->successful()) {
             throw new \RuntimeException(trim($restore->errorOutput()) ?: 'pg_restore failed.');
         }
+    }
+
+    /**
+     * --table for each picked table; --exclude-table-data too for a
+     * structure-only one. Quoted, so a name is matched exactly.
+     *
+     * @param  list<array{name: string, mode: string}>|null  $tables
+     * @return list<string>
+     */
+    private function tableArgs(?array $tables): array
+    {
+        $args = [];
+        foreach ($tables ?? [] as $table) {
+            $pattern = 'public."'.str_replace('"', '""', $table['name']).'"';
+            $args[] = '--table='.$pattern;
+            if ($table['mode'] === Backup::TABLE_STRUCTURE) {
+                $args[] = '--exclude-table-data='.$pattern;
+            }
+        }
+
+        return $args;
     }
 
     /** @return list<string> */

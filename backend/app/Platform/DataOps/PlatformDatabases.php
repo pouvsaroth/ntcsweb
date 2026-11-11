@@ -83,6 +83,21 @@ final class PlatformDatabases
     }
 
     /**
+     * A database's tables, for picking a custom backup. A school on a
+     * separate server is read with its own login.
+     *
+     * @return list<array{name: string, rows: int, size_bytes: int}>
+     */
+    public function tables(string $database): array
+    {
+        $tenant = $this->tenantFor($database);
+
+        return $tenant !== null && SchoolPlacement::of($tenant)->isSeparate()
+            ? $this->database->tablesOf($tenant)
+            : $this->database->tablesIn($database);
+    }
+
+    /**
      * The Databases screen: each database probed, a failure costing only its
      * own row.
      *

@@ -57,23 +57,39 @@ final class DataOpsController extends Controller
     }
 
     /** Back up now: one database, or every existing one. */
+    /** A database's tables, for picking a custom backup. */
+    public function tables(Request $request): JsonResponse
+    {
+        $database = $this->knownExisting((string) $request->validate(['database' => ['required', 'string', 'max:100']])['database']);
+
+        return ApiResponse::success($this->databases->tables($database));
+    }
+
     public function backupNow(Request $request): JsonResponse
     {
         $data = $request->validate([
             'database' => ['required_without:school_id', 'nullable', 'string', 'max:100'],
             // One school's own rows — how a shared school is backed up alone.
             'school_id' => ['nullable', 'integer', Rule::exists(Tenant::class, 'id')],
+            // A custom backup: only these tables of `database`.
+            'tables' => ['sometimes', 'array', 'min:1', 'max:1000'],
+            'tables.*.name' => ['required', 'string', 'max:63', 'distinct'],
+            'tables.*.mode' => ['required', Rule::in([Backup::TABLE_FULL, Backup::TABLE_STRUCTURE])],
         ]);
         $staff = $request->user('staff');
 
-        $queued = match (true) {
+        if (isset($data['tables'])) {
+            $queued = [$this->backups->queueTables($this->knownTables($data['database'] ?? '', $data['tables']), $this->onlyNameAndMode($data['tables']), $staff)];
+        }
+
+        $queued ??= match (true) {
             isset($data['school_id']) => [$this->backups->queueSchool(Tenant::query()->findOrFail($data['school_id']), 'manual', $staff)],
             $data['database'] === 'all' => $this->backups->queueAll('manual', $staff),
             default => [$this->backups->queue($this->knownExisting($data['database']), 'manual', $staff)],
         };
 
         foreach ($queued as $backup) {
-            $this->audit->record('backup.started', $backup, new: ['database' => $backup->database], tenantId: $backup->tenant_id);
+            $this->audit->record('backup.started', $backup, new: array_filter(['database' => $backup->database, 'tables' => $backup->tables]), tenantId: $backup->tenant_id);
         }
 
         return ApiResponse::created(array_map(fn (Backup $b) => $this->backupRow($b->fresh()), $queued));
@@ -221,6 +237,35 @@ final class DataOpsController extends Controller
 
     // ── Shapes ──────────────────────────────────────────────────────────────
 
+    /**
+     * The database, once every picked table is checked to be one of its own.
+     *
+     * @param  list<array{name: string}>  $tables
+     */
+    private function knownTables(string $database, array $tables): string
+    {
+        if ($database === '' || $database === 'all') {
+            throw ValidationException::withMessages(['database' => __('Pick one database for a custom backup.')]);
+        }
+        $database = $this->knownExisting($database);
+        $real = array_column($this->databases->tables($database), 'name');
+        $unknown = array_values(array_diff(array_column($tables, 'name'), $real));
+        if ($unknown !== []) {
+            throw ValidationException::withMessages(['tables' => __('Not a table of :db: :tables', ['db' => $database, 'tables' => implode(', ', $unknown)])]);
+        }
+
+        return $database;
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $tables
+     * @return list<array{name: string, mode: string}>
+     */
+    private function onlyNameAndMode(array $tables): array
+    {
+        return array_map(fn (array $t) => ['name' => (string) $t['name'], 'mode' => (string) $t['mode']], array_values($tables));
+    }
+
     private function knownExisting(string $database): string
     {
         try {
@@ -244,6 +289,7 @@ final class DataOpsController extends Controller
             'tenant_id' => $b->tenant_id,
             'trigger' => $b->trigger,
             'format' => $b->format,
+            'tables' => $b->tables,
             'school' => $b->tenant ? ['id' => $b->tenant->id, 'name' => $b->tenant->name, 'slug' => $b->tenant->slug] : null,
             'staff' => $b->staff?->name,
             'status' => $b->status,

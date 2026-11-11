@@ -103,6 +103,7 @@ Route::middleware('platform.staff')->group(function () {
     Route::prefix('data')->name('data.')->group(function () {
         Route::get('databases', [DataOpsController::class, 'databases'])->middleware('platform.can:platform.data.read')->name('databases');
         Route::get('health', [DataOpsController::class, 'health'])->middleware('platform.can:platform.data.read')->name('health');
+        Route::get('tables', [DataOpsController::class, 'tables'])->middleware('platform.can:platform.data.backup')->name('tables');
         Route::get('backups', [DataOpsController::class, 'backups'])->middleware('platform.can:platform.data.read')->name('backups.index');
         Route::post('backups', [DataOpsController::class, 'backupNow'])->middleware('platform.can:platform.data.backup')->name('backups.store');
         Route::get('backups/{backup}/download', [DataOpsController::class, 'download'])->middleware('platform.can:platform.data.backup')->name('backups.download');

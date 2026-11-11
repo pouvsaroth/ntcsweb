@@ -73,6 +73,32 @@ final class BackupRunner
         return $backup;
     }
 
+    /**
+     * A custom backup: only $tables of $database, each `full` (structure
+     * and rows) or `structure` (no rows). Same .dump file as a whole-database
+     * backup, restorable the same way.
+     *
+     * @param  list<array{name: string, mode: string}>  $tables
+     */
+    public function queueTables(string $database, array $tables, ?PlatformStaff $staff = null): Backup
+    {
+        $tenant = $this->databases->tenantFor($database);
+
+        $backup = Backup::query()->create([
+            'database' => $database,
+            'tenant_id' => $tenant?->getKey(),
+            'trigger' => 'manual',
+            'format' => Backup::FORMAT_TABLES,
+            'tables' => array_values($tables),
+            'staff_id' => $staff?->getKey(),
+            'status' => Backup::STATUS_RUNNING,
+        ]);
+
+        RunBackup::dispatch($backup->id);
+
+        return $backup;
+    }
+
     /** A `running` row and its queued job. */
     public function queue(string $database, string $trigger, ?PlatformStaff $staff = null): Backup
     {
@@ -95,9 +121,12 @@ final class BackupRunner
     {
         $disk = Storage::disk(config('platform.backup_disk'));
         $school = $backup->format === Backup::FORMAT_SCHOOL ? $backup->tenant : null;
-        $path = $school
-            ? sprintf('%s/schools/%s_%s.zip', $backup->database, $school->slug, now()->format('Ymd-His'))
-            : sprintf('%s/%s_%s.dump', $backup->database, $backup->database, now()->format('Ymd-His'));
+        $tables = $backup->format === Backup::FORMAT_TABLES ? $backup->tables : null;
+        $path = match (true) {
+            $school !== null => sprintf('%s/schools/%s_%s.zip', $backup->database, $school->slug, now()->format('Ymd-His')),
+            $tables !== null => sprintf('%s/%s_tables_%s.dump', $backup->database, $backup->database, now()->format('Ymd-His')),
+            default => sprintf('%s/%s_%s.dump', $backup->database, $backup->database, now()->format('Ymd-His')),
+        };
         $started = hrtime(true);
         $backup->forceFill(['started_at' => now()])->save();
 
@@ -106,7 +135,7 @@ final class BackupRunner
             if ($school !== null) {
                 $this->exporter->export($school, $disk->path($path));
             } else {
-                $this->pgDump->dump($backup->database, $disk->path($path), $this->serverOf($backup->database));
+                $this->pgDump->dump($backup->database, $disk->path($path), $this->serverOf($backup->database), $tables);
             }
         } catch (\Throwable $e) {
             if ($disk->exists($path)) {

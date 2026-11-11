@@ -110,6 +110,47 @@ class SchoolDatabase
     }
 
     /**
+     * The tables of a database on this server, for a custom backup: name,
+     * estimated row count and size on disk (catalog numbers, no table scan).
+     *
+     * @return list<array{name: string, rows: int, size_bytes: int}>
+     */
+    public function tablesIn(string $database): array
+    {
+        $name = 'platform_probe';
+        config(['database.connections.'.$name => array_merge(config('database.connections.'.config('tenancy.database.central_connection')), ['database' => $database])]);
+
+        try {
+            return $this->listTables(DB::connection($name));
+        } finally {
+            DB::purge($name);
+        }
+    }
+
+    /**
+     * The tables of a school's own database (dedicated or on a separate server).
+     *
+     * @return list<array{name: string, rows: int, size_bytes: int}>
+     */
+    public function tablesOf(Tenant $tenant): array
+    {
+        return $this->within($tenant, fn () => $this->listTables(DB::connection('tenant')));
+    }
+
+    /** @return list<array{name: string, rows: int, size_bytes: int}> */
+    private function listTables(\Illuminate\Database\Connection $connection): array
+    {
+        $rows = $connection->select(
+            "select c.relname as name, greatest(c.reltuples, 0)::bigint as rows, pg_total_relation_size(c.oid) as size_bytes
+             from pg_class c join pg_namespace n on n.oid = c.relnamespace
+             where n.nspname = 'public' and c.relkind in ('r', 'p')
+             order by c.relname"
+        );
+
+        return array_map(fn ($r) => ['name' => (string) $r->name, 'rows' => (int) $r->rows, 'size_bytes' => (int) $r->size_bytes], $rows);
+    }
+
+    /**
      * Delete this school's data where it lives (customer delete): its own
      * database is dropped; in the shared or a separate database, its rows are
      * deleted (the database itself stays — other schools, or not ours).

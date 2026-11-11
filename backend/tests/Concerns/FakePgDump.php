@@ -18,9 +18,13 @@ class FakePgDump extends PgDump
     /** @var array<string, string> database => error to throw */
     public array $failFor = [];
 
-    public function dump(string $database, string $path, ?array $server = null): void
+    /** @var array<string, list<array{name: string, mode: string}>|null> database => the tables picked (null = whole database) */
+    public array $tables = [];
+
+    public function dump(string $database, string $path, ?array $server = null, ?array $tables = null): void
     {
         $this->servers[$database] = $server;
+        $this->tables[$database] = $tables;
 
         if (isset($this->failFor[$database])) {
             file_put_contents($path, 'partial');

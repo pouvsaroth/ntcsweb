@@ -16,6 +16,7 @@ import { formatDateTime } from '@/utils/date'
 
 import { dataApi, formatBytes, type BackupRow } from '../../api'
 import BackupScheduleCard from '../../components/BackupScheduleCard.vue'
+import CustomBackupModal from '../../components/CustomBackupModal.vue'
 import { useSession } from '../../session'
 
 /** Every backup run, newest first; download / delete; the schedule beside it. Refreshes while one is running. */
@@ -48,6 +49,14 @@ const columns = computed(() => [
 
 const actionError = ref<string | null>(null)
 
+/** Custom backup: only the tables picked. Starts on the database the list is filtered to. */
+const customOpen = ref(false)
+
+/** Hover text on a custom backup: each table and its option. */
+function tablesTitle(row: BackupRow): string {
+  return (row.tables ?? []).map((tb) => `${tb.name} — ${t(`bo.data.tableModes.${tb.mode}`)}`).join('\n')
+}
+
 async function remove(row: BackupRow): Promise<void> {
   if (!(await confirmDialog.confirm({ message: t('bo.data.removeConfirm', { db: row.database }), danger: true }))) return
   try {
@@ -79,7 +88,10 @@ onMounted(async () => {
         <div class="w-full sm:w-64">
           <BaseSelect :model-value="database" :options="databaseOptions" @update:model-value="onDatabase" />
         </div>
-        <BaseButton variant="ghost" size="sm" @click="fetch">{{ t('bo.data.refresh') }}</BaseButton>
+        <div class="flex gap-2">
+          <BaseButton v-if="canBackup" size="sm" variant="outline" @click="customOpen = true">{{ t('bo.data.customBackup') }}</BaseButton>
+          <BaseButton variant="ghost" size="sm" @click="fetch">{{ t('bo.data.refresh') }}</BaseButton>
+        </div>
       </div>
 
       <BaseAlert v-if="error" variant="danger" class="mb-4">{{ error }}</BaseAlert>
@@ -97,6 +109,7 @@ onMounted(async () => {
               <div class="min-w-0">
                 <p class="font-mono text-sm break-all text-neutral-900">{{ row.database }}</p>
                 <p v-if="row.format === 'school'" class="text-xs text-neutral-500">{{ t('bo.data.schoolExport') }}{{ row.school ? ` · ${row.school.name}` : '' }}</p>
+                <p v-if="row.format === 'tables'" class="text-xs text-neutral-500" :title="tablesTitle(row)">{{ t('bo.data.customBackupFormat', { n: row.tables?.length ?? 0 }) }}</p>
               </div>
               <BaseBadge :variant="statusVariant[row.status]">{{ t(`bo.data.statuses.${row.status}`) }}</BaseBadge>
             </div>
@@ -122,6 +135,7 @@ onMounted(async () => {
           <template #cell-database="{ row }">
             <span class="font-mono text-xs">{{ row.database }}</span>
             <p v-if="row.format === 'school'" class="text-xs text-neutral-500">{{ t('bo.data.schoolExport') }}{{ row.school ? ` · ${row.school.name}` : '' }}</p>
+            <p v-if="row.format === 'tables'" class="text-xs text-neutral-500" :title="tablesTitle(row as BackupRow)">{{ t('bo.data.customBackupFormat', { n: (row as BackupRow).tables?.length ?? 0 }) }}</p>
             <p v-if="row.error" class="mt-1 max-w-xs font-mono text-xs break-all text-red-700">{{ row.error }}</p>
           </template>
           <template #cell-trigger="{ row }">
@@ -156,5 +170,7 @@ onMounted(async () => {
     <div>
       <BackupScheduleCard :can-edit="canBackup" />
     </div>
+
+    <CustomBackupModal v-model="customOpen" :databases="databases" :database="database" @started="fetch" />
   </div>
 </template>
