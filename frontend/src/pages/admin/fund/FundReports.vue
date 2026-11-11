@@ -203,6 +203,45 @@ onMounted(() => {
             </table>
           </div>
         </section>
+
+        <!-- By provider: money in during the period by who gave it -->
+        <section>
+          <h2 class="mb-3 text-base font-semibold text-neutral-900">{{ t('admin.fundReports.byProvider') }}</h2>
+          <p v-if="report.providers.length === 0" class="rounded-lg bg-neutral-50 px-3 py-3 text-center text-sm text-neutral-500">{{ t('admin.fundReports.noProviderMoney') }}</p>
+          <template v-else>
+            <div class="space-y-2 sm:hidden print:hidden">
+              <div v-for="row in report.providers" :key="`${row.provider_id}-${row.currency}`" class="rounded-lg border border-neutral-200 bg-white p-3 text-sm">
+                <div class="flex justify-between gap-2">
+                  <p class="font-medium text-neutral-900">{{ row.name ?? t('admin.fundReports.noProvider') }} <span class="text-xs text-neutral-500">· {{ row.currency }}</span></p>
+                  <p class="font-semibold tabular-nums text-green-700">{{ formatMoney(row.money_in, row.currency) }}</p>
+                </div>
+                <p class="mt-1 text-xs text-neutral-500"><template v-if="row.code">{{ row.code }} · </template>{{ t('admin.fundReports.timesGiven', { n: row.entries }) }}</p>
+              </div>
+            </div>
+            <div class="hidden overflow-x-auto rounded-[--radius-card] border border-neutral-200 bg-white sm:block print:block">
+              <table class="w-full text-left text-sm">
+                <thead class="border-b border-neutral-200 bg-neutral-50 text-neutral-500">
+                  <tr>
+                    <th class="px-4 py-2 font-medium">{{ t('admin.fundProviders.code') }}</th>
+                    <th class="px-4 py-2 font-medium">{{ t('admin.funds.providedBy') }}</th>
+                    <th class="px-4 py-2 font-medium">{{ t('admin.funds.currency') }}</th>
+                    <th class="px-4 py-2 text-right font-medium">{{ t('admin.fundReports.times') }}</th>
+                    <th class="px-4 py-2 text-right font-medium">{{ t('admin.fundReports.moneyIn') }}</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-neutral-100">
+                  <tr v-for="row in report.providers" :key="`${row.provider_id}-${row.currency}`">
+                    <td class="px-4 py-2 tabular-nums text-neutral-600">{{ row.code ?? '—' }}</td>
+                    <td class="px-4 py-2" :class="row.name ? '' : 'italic text-neutral-500'">{{ row.name ?? t('admin.fundReports.noProvider') }}</td>
+                    <td class="px-4 py-2 text-neutral-600">{{ row.currency }}</td>
+                    <td class="px-4 py-2 text-right tabular-nums">{{ row.entries }}</td>
+                    <td class="whitespace-nowrap px-4 py-2 text-right font-semibold tabular-nums text-green-700">{{ formatMoney(row.money_in, row.currency) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </template>
+        </section>
       </template>
     </div>
   </div>

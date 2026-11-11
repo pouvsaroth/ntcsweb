@@ -6859,6 +6859,7 @@ const ko: MessageSchema = {
       deleteFailed: '삭제할 수 없습니다.',
     },
     fundReports: {
+      byProvider: '제공자별 입금', noProvider: '제공자 미지정', noProviderMoney: '이 기간에 입금이 없습니다.', times: '횟수', timesGiven: '{n}회 제공',
       title: '기금 보고서',
       subtitle: '기간 동안 각 기금의 입금과 출금을 통화별로 보여줍니다.',
       from: '시작',
@@ -6884,6 +6885,7 @@ const ko: MessageSchema = {
       title: '기금 제공자', subtitle: '기금에 돈을 낸 사람과 회사, 그리고 각자 낸 금액입니다.', add: '제공자 추가', edit: '제공자 수정', code: '코드', name: '이름', phone: '전화', address: '주소', notes: '메모', given: '제공 금액', status: '상태', active: '활성', inactive: '비활성', filterAll: '전체', empty: '아직 제공자가 없습니다.', delete: '삭제', deleteConfirm: '이 제공자를 삭제할까요?', deleteFailed: '제공자를 삭제할 수 없습니다.', saveFailed: '제공자를 저장할 수 없습니다.',
     },
     funds: {
+      newType: '+ 새 기금 유형', newTypeTitle: '새 기금 유형', typeNameEn: '이름 (영어)', typeNameKm: '이름 (크메르어)', typeNameKmHint: '비워 두면 영어 이름을 사용합니다.', typeSaveFailed: '기금 유형을 추가할 수 없습니다.',
       providedBy: '제공자', selectProvider: '제공자 선택', newProvider: '+ 새 제공자',
       title: '기금',
       subtitle: '건축 기금, 장학 기금처럼 따로 관리하는 학교 자금입니다. 입금과 출금은 회계에 기록됩니다.',
@@ -6896,7 +6898,7 @@ const ko: MessageSchema = {
       name: '기금 이름',
       namePlaceholder: '예: 2027 건축 기금',
       type: '기금 유형',
-      typeHint: '기금 유형은 설정 > 기본 데이터 (Fund Type)에서 관리합니다.',
+      typeHint: '없는 유형은 + 새 기금 유형으로 추가하세요. 이름 변경이나 사용 중지는 설정 > 기본 데이터 (Fund Type)에서 합니다.',
       balance: '잔액',
       lastEntry: '마지막 기록',
       status: '상태',

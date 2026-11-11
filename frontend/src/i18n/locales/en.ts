@@ -6863,6 +6863,7 @@ const en = {
       deleteFailed: 'Could not delete.',
     },
     fundReports: {
+      byProvider: 'Money in by provider', noProvider: 'No provider named', noProviderMoney: 'No money in during this period.', times: 'Times', timesGiven: 'Given {n} times',
       title: 'Fund reports',
       subtitle: 'Money in and out of every fund for a period, per currency.',
       from: 'From',
@@ -6888,6 +6889,7 @@ const en = {
       title: 'Fund providers', subtitle: 'People and companies who give money to the funds, with what each has given.', add: 'Add provider', edit: 'Edit provider', code: 'Code', name: 'Name', phone: 'Phone', address: 'Address', notes: 'Notes', given: 'Given', status: 'Status', active: 'Active', inactive: 'Inactive', filterAll: 'All', empty: 'No providers yet.', delete: 'Delete', deleteConfirm: 'Delete this provider?', deleteFailed: 'Could not delete the provider.', saveFailed: 'Could not save the provider.',
     },
     funds: {
+      newType: '+ New fund type', newTypeTitle: 'New fund type', typeNameEn: 'Name (English)', typeNameKm: 'Name (Khmer)', typeNameKmHint: 'Left empty, the English name is used.', typeSaveFailed: 'Could not add the fund type.',
       providedBy: 'Provided by', selectProvider: 'Select a provider', newProvider: '+ New provider',
       title: 'Funds',
       subtitle: 'Separate pots of school money, such as a Building or Scholarship fund. Money in and out goes to the accounts.',
@@ -6900,7 +6902,7 @@ const en = {
       name: 'Fund name',
       namePlaceholder: 'e.g. Building fund 2027',
       type: 'Fund type',
-      typeHint: 'Fund types are kept in Settings > Base Data (Fund Type).',
+      typeHint: 'Add a missing type with + New fund type. Types can be renamed or turned off in Settings > Base Data (Fund Type).',
       balance: 'Balance',
       lastEntry: 'Last entry',
       status: 'Status',

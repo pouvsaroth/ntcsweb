@@ -16,7 +16,8 @@ use Illuminate\Support\Facades\DB;
 /**
  * Fund > Reports: for a period, per currency (USD and KHR never added
  * together): balance at the start, money in, money out and balance at the
- * end, then the same by fund type and by fund. Optional fund type filter.
+ * end, then the same by fund type and by fund, and money in by provider
+ * (Fund > Providers). Optional fund type filter.
  */
 final class FundReportController extends Controller
 {
@@ -89,12 +90,37 @@ final class FundReportController extends Controller
         $types = array_map($round, array_values($types));
         usort($types, fn ($a, $b) => [$a['currency'], -$a['closing']] <=> [$b['currency'], -$b['closing']]);
 
+        // Money in during the period by who provided it (unnamed money in as one row).
+        $providers = FundTransaction::query()
+            ->join('funds', 'funds.id', '=', 'fund_transactions.fund_id')
+            ->leftJoin('fund_providers', 'fund_providers.id', '=', 'fund_transactions.fund_provider_id')
+            ->where('fund_transactions.type', FundTransaction::IN)
+            ->whereBetween('fund_transactions.transacted_on', [$from, $to])
+            ->when($data['fund_type'] ?? null, fn ($q, $type) => $q->where('funds.fund_type', $type))
+            ->groupBy('fund_providers.id', 'fund_providers.code', 'fund_providers.name', 'funds.currency')
+            ->get([
+                'fund_providers.id', 'fund_providers.code', 'fund_providers.name', 'funds.currency',
+                DB::raw('COUNT(*) as entries'), DB::raw('SUM(fund_transactions.amount) as money_in'),
+            ])
+            ->map(fn ($r) => [
+                'provider_id' => $r->id !== null ? (int) $r->id : null,
+                'code' => $r->code,
+                'name' => $r->name,
+                'currency' => $r->currency,
+                'entries' => (int) $r->entries,
+                'money_in' => round((float) $r->money_in, 2),
+            ])
+            ->sortBy(fn ($r) => [$r['currency'], $r['provider_id'] === null ? 1 : 0, -$r['money_in']])
+            ->values()
+            ->all();
+
         return ApiResponse::success([
             'from' => $from,
             'to' => $to,
             'totals' => array_map(fn ($c) => $round($totals[$c] ?? ['currency' => $c, 'funds' => 0, ...array_fill_keys(self::MONEY, 0.0)]), ['USD', 'KHR']),
             'types' => $types,
             'funds' => $funds,
+            'providers' => $providers,
         ]);
     }
 }

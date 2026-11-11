@@ -70,6 +70,13 @@ export interface CreateFundInput extends FundInput {
   remark: string | null
 }
 
+/** A type just added with the "+" beside Fund type. */
+export interface NewFundType {
+  id: number
+  code: string
+  name: string
+}
+
 export interface FundEntryInput {
   type: FundEntryType
   amount: number
@@ -82,6 +89,8 @@ export interface FundEntryInput {
 }
 
 export const fundsService = {
+  /** The "+" beside Fund type: add a FUND_TYPE Base Data value (needs Add funds). */
+  addType: (input: { name: string; name_km: string | null }) => apiPost<NewFundType>('/fund-types', input),
   async list(query: PaginatedQuery): Promise<PaginatedResult<Fund>> {
     const result = await apiGetWithMeta<Fund[]>('/funds', {
       params: { page: query.page, per_page: query.per_page, search: query.search, sort: query.sort, filter: query.filter },

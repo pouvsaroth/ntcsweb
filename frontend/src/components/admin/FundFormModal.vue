@@ -3,6 +3,7 @@ import { computed, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import FundProviderPicker from '@/components/admin/FundProviderPicker.vue'
+import FundTypeFormModal from '@/components/admin/FundTypeFormModal.vue'
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
@@ -11,7 +12,8 @@ import BaseSelect from '@/components/ui/BaseSelect.vue'
 import LookupSelect from '@/components/ui/LookupSelect.vue'
 import SearchableSelect from '@/components/ui/SearchableSelect.vue'
 import { accountsService, type Account } from '@/services/accounting'
-import { fundsService, type Fund, type FundCurrency } from '@/services/funds'
+import { fundsService, type Fund, type FundCurrency, type NewFundType } from '@/services/funds'
+import { useAuthStore } from '@/stores/auth'
 import { ApiRequestError } from '@/types/api'
 
 /**
@@ -29,6 +31,16 @@ function today(): string {
 }
 
 const editing = computed(() => props.fund !== null)
+
+// "+ New fund type": adds the type, reloads the list (a new key) and picks it.
+const auth = useAuthStore()
+const canAddType = computed(() => auth.can('funds.create'))
+const typeModalOpen = ref(false)
+const typeListKey = ref(0)
+function onTypeAdded(type: NewFundType) {
+  typeListKey.value++
+  form.fund_type = type.code
+}
 const accounts = ref<Account[]>([])
 const accountOptions = computed(() => accounts.value.map((a) => ({ value: String(a.id), label: `${a.code} — ${a.name}` })))
 const currencyOptions = [
@@ -131,7 +143,12 @@ async function save() {
       <BaseAlert v-if="saveError" variant="danger">{{ saveError }}</BaseAlert>
       <BaseInput v-model="form.name" required :label="t('admin.funds.name')" :placeholder="t('admin.funds.namePlaceholder')" :error="errors.name?.[0]" />
       <div class="grid gap-4 sm:grid-cols-2">
-        <LookupSelect v-model="form.fund_type" category="FUND_TYPE" required :label="t('admin.funds.type')" :error="errors.fund_type?.[0]" />
+        <div>
+          <LookupSelect :key="typeListKey" v-model="form.fund_type" category="FUND_TYPE" required :label="t('admin.funds.type')" :error="errors.fund_type?.[0]" />
+          <button v-if="canAddType" type="button" class="mt-1 text-xs font-medium text-primary-600 hover:text-primary-700" @click="typeModalOpen = true">
+            {{ t('admin.funds.newType') }}
+          </button>
+        </div>
         <BaseSelect
           :model-value="form.currency"
           :options="currencyOptions"
@@ -167,5 +184,6 @@ async function save() {
       <BaseButton variant="outline" @click="emit('update:modelValue', false)">{{ t('common.close') }}</BaseButton>
       <BaseButton :loading="saving" :disabled="!form.name.trim() || !form.fund_type" @click="save">{{ t('common.save') }}</BaseButton>
     </template>
+    <FundTypeFormModal v-model="typeModalOpen" @saved="onTypeAdded" />
   </BaseModal>
 </template>

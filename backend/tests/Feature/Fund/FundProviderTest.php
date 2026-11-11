@@ -6,6 +6,7 @@ namespace Tests\Feature\Fund;
 
 use App\Models\FundProvider;
 use App\Models\FundTransaction;
+use App\Models\Language;
 use App\Models\LookupCategory;
 use App\Models\LookupValue;
 use App\Support\Authorization\Permissions;
@@ -69,6 +70,45 @@ class FundProviderTest extends TestCase
         $this->postJson("/api/v1/funds/{$usd['id']}/entries", [
             'type' => 'in', 'amount' => 5, 'transacted_on' => now()->toDateString(), 'cash_account_id' => $this->cashAccount->id, 'fund_provider_id' => $sok['id'],
         ])->assertJsonValidationErrors('fund_provider_id');
+    }
+
+    public function test_a_fund_type_is_added_from_the_fund_form_and_used_right_away(): void
+    {
+        Language::factory()->create(['code' => 'en', 'is_default' => true]);
+        Language::factory()->create(['code' => 'km']);
+
+        $this->postJson('/api/v1/fund-types', ['name' => 'Staff party', 'name_km' => 'ពិធីជប់លៀងបុគ្គលិក'])
+            ->assertCreated()->assertJsonPath('data.code', 'STAFF_PARTY')->assertJsonPath('data.name', 'Staff party');
+
+        // It is in the list (Base Data FUND_TYPE) in both languages.
+        $this->assertContains('Staff party', $this->getJson('/api/v1/lookups/FUND_TYPE?lang=en')->assertOk()->json('data.*.name'));
+        $this->assertContains('ពិធីជប់លៀងបុគ្គលិក', $this->getJson('/api/v1/lookups/FUND_TYPE?lang=km')->assertOk()->json('data.*.name'));
+
+        // Same name again is refused; a fund can use the new type.
+        $this->postJson('/api/v1/fund-types', ['name' => 'staff PARTY'])->assertJsonValidationErrors('name');
+        $this->postJson('/api/v1/funds', ['name' => 'Year end', 'fund_type' => 'STAFF_PARTY', 'currency' => 'USD', 'opened_on' => now()->toDateString()])
+            ->assertCreated()->assertJsonPath('data.fund_type', 'STAFF_PARTY');
+
+        // A Khmer-only name still gets a code.
+        $this->postJson('/api/v1/fund-types', ['name' => 'អាហារូបករណ៍ពិសេស'])->assertCreated()->assertJsonPath('data.code', 'TYPE');
+
+        $this->actingAsAdminWithPermissions([Permissions::FUNDS_VIEW]);
+        $this->postJson('/api/v1/fund-types', ['name' => 'Other two'])->assertForbidden();
+    }
+
+    public function test_fund_reports_show_money_in_by_provider(): void
+    {
+        $sok = FundProvider::factory()->create(['name' => 'Sok Dara']);
+        $usd = $this->fund('USD');
+        $in = fn (int $fundId, float $amount, ?int $provider) => $this->postJson("/api/v1/funds/{$fundId}/entries", [
+            'type' => 'in', 'amount' => $amount, 'transacted_on' => now()->toDateString(), 'cash_account_id' => $this->cashAccount->id, 'fund_provider_id' => $provider,
+        ])->assertCreated();
+        $in($usd['id'], 300, $sok->id);
+        $in($usd['id'], 200, $sok->id);
+        $in($usd['id'], 50, null);
+
+        $rows = $this->getJson('/api/v1/fund-reports')->assertOk()->json('data.providers');
+        $this->assertSame([['Sok Dara', 'USD', 2, 500], [null, 'USD', 1, 50]], array_map(fn ($r) => [$r['name'], $r['currency'], $r['entries'], (int) $r['money_in']], $rows));
     }
 
     public function test_a_provider_who_gave_money_cannot_be_deleted_and_each_action_needs_its_permission(): void

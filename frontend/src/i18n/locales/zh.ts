@@ -6858,6 +6858,7 @@ const zh: MessageSchema = {
       deleteFailed: '无法删除。',
     },
     fundReports: {
+      byProvider: '按提供者的收入', noProvider: '未注明提供者', noProviderMoney: '此期间没有收入。', times: '次数', timesGiven: '已提供 {n} 次',
       title: '基金报表',
       subtitle: '某期间内每个基金的收入和支出，按币种显示。',
       from: '从',
@@ -6883,6 +6884,7 @@ const zh: MessageSchema = {
       title: '资金提供者', subtitle: '向基金捐款的个人和公司，以及各自已提供的金额。', add: '添加提供者', edit: '编辑提供者', code: '编号', name: '姓名', phone: '电话', address: '地址', notes: '备注', given: '已提供', status: '状态', active: '启用', inactive: '停用', filterAll: '全部', empty: '暂无提供者。', delete: '删除', deleteConfirm: '删除此提供者？', deleteFailed: '无法删除提供者。', saveFailed: '无法保存提供者。',
     },
     funds: {
+      newType: '+ 新基金类型', newTypeTitle: '新基金类型', typeNameEn: '名称（英文）', typeNameKm: '名称（高棉文）', typeNameKmHint: '留空则使用英文名称。', typeSaveFailed: '无法添加基金类型。',
       providedBy: '提供者', selectProvider: '选择提供者', newProvider: '+ 新提供者',
       title: '基金',
       subtitle: '单独存放的学校资金，例如建设基金或奖学金基金。资金进出记入账目。',
@@ -6895,7 +6897,7 @@ const zh: MessageSchema = {
       name: '基金名称',
       namePlaceholder: '例如 2027 建设基金',
       type: '基金类型',
-      typeHint: '基金类型在 设置 > 基础数据 (Fund Type) 中管理。',
+      typeHint: '缺少的类型可通过 + 新基金类型 添加。改名或停用请在 设置 > 基础数据 (Fund Type) 中操作。',
       balance: '余额',
       lastEntry: '最后记录',
       status: '状态',

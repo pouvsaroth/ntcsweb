@@ -6859,6 +6859,7 @@ const ja: MessageSchema = {
       deleteFailed: '削除できませんでした。',
     },
     fundReports: {
+      byProvider: '提供者別の入金', noProvider: '提供者の記載なし', noProviderMoney: 'この期間の入金はありません。', times: '回数', timesGiven: '{n} 回提供',
       title: '基金レポート',
       subtitle: '期間中の各基金の入金と出金を通貨ごとに表示します。',
       from: '開始',
@@ -6884,6 +6885,7 @@ const ja: MessageSchema = {
       title: '資金提供者', subtitle: '基金にお金を出した人や会社と、それぞれの提供額です。', add: '提供者を追加', edit: '提供者を編集', code: 'コード', name: '名前', phone: '電話', address: '住所', notes: 'メモ', given: '提供額', status: '状態', active: '有効', inactive: '無効', filterAll: 'すべて', empty: 'まだ提供者がいません。', delete: '削除', deleteConfirm: 'この提供者を削除しますか？', deleteFailed: '提供者を削除できませんでした。', saveFailed: '提供者を保存できませんでした。',
     },
     funds: {
+      newType: '+ 新しい基金種類', newTypeTitle: '新しい基金種類', typeNameEn: '名前（英語）', typeNameKm: '名前（クメール語）', typeNameKmHint: '空欄の場合は英語名を使います。', typeSaveFailed: '基金種類を追加できませんでした。',
       providedBy: '提供者', selectProvider: '提供者を選択', newProvider: '+ 新しい提供者',
       title: '基金',
       subtitle: '建設基金や奨学基金など、別に管理する学校のお金です。入金と出金は会計に記録されます。',
@@ -6896,7 +6898,7 @@ const ja: MessageSchema = {
       name: '基金名',
       namePlaceholder: '例：2027 建設基金',
       type: '基金の種類',
-      typeHint: '基金の種類は 設定 > 基本データ (Fund Type) で管理します。',
+      typeHint: '足りない種類は + 新しい基金種類 で追加できます。名前の変更や無効化は 設定 > 基本データ (Fund Type) で行います。',
       balance: '残高',
       lastEntry: '最終記録',
       status: '状態',

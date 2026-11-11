@@ -30,12 +30,23 @@ export interface FundReportFund extends FundReportMoney {
   target_amount: number | null
 }
 
+/** Money in during the period by who gave it; provider_id null = money in with no provider named. */
+export interface FundReportProvider {
+  provider_id: number | null
+  code: string | null
+  name: string | null
+  currency: Currency
+  entries: number
+  money_in: number
+}
+
 export interface FundReport {
   from: string
   to: string
   totals: FundReportTotal[]
   types: FundReportType[]
   funds: FundReportFund[]
+  providers: FundReportProvider[]
 }
 
 export const fundReportsService = {
