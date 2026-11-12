@@ -12,6 +12,7 @@ import { documentLinks } from '@/router/publicNav'
 import { examinationPermissions } from '@/router/examinationTabs'
 import { frontOfficeTabs } from '@/router/frontOfficeTabs'
 import { marketingTabs } from '@/router/marketingTabs'
+import { expenseTabs } from '@/router/expenseTabs'
 import { recruitmentTabs } from '@/router/recruitmentTabs'
 
 export interface AdminNavItem {
@@ -260,9 +261,8 @@ export const adminNav: AdminNavGroup[] = [
       { labelKey: 'adminNav.items.accountingDashboard', icon: 'chartBar', to: '/admin/accounting', permission: 'accounting.dashboard.view' },
       { labelKey: 'adminNav.items.accounts', icon: 'library', to: '/admin/accounts', permission: 'accounts.view' },
       { labelKey: 'adminNav.items.income', icon: 'trendingUp', to: '/admin/income', permission: 'income.view' },
-      { labelKey: 'adminNav.items.expenses', icon: 'trendingDown', to: '/admin/expenses', permission: 'expense.view' },
-      // Who an expense is for (Newtech, Flexi, Family...).
-      { labelKey: 'adminNav.items.expenseFor', icon: 'tag', to: '/admin/expense-for', permission: 'expense-for.view' },
+      // Expenses and Expense for (who an expense is for) as tabs.
+      { labelKey: 'adminNav.items.expenses', icon: 'trendingDown', to: '/admin/expenses', permission: expenseTabs.map((tab) => tab.permission) },
       // Same list as Assets > Suppliers: who an expense is paid to.
       { labelKey: 'adminNav.items.vendors', icon: 'truck', to: '/admin/suppliers', permission: 'suppliers.view' },
       { labelKey: 'adminNav.items.transactions', icon: 'switchVertical', to: '/admin/transactions', permission: 'transactions.view' },

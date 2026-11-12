@@ -412,6 +412,7 @@ const MODULES: ModuleEntry[] = [
       cancel: 'expense.cancel',
     },
   },
+  // A tab of Expenses (/admin/expenses/expense-for).
   { name: 'Expense for', group: 'Accounting', actions: crud('expense-for') },
   // One list: Accounting > Vendors and Assets > Suppliers.
   { name: 'Vendors / Suppliers', group: 'Accounting', actions: crud('suppliers') },

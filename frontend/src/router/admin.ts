@@ -989,10 +989,29 @@ const adminRoutes: RouteRecordRaw[] = [
     meta: { titleKey: 'adminNav.items.income' },
   },
   {
+    // Accounting > Expenses: the list and Expense for as tabs (see ExpensesLayout.vue / expenseTabs.ts).
     path: 'expenses',
-    name: 'admin.expenses',
-    component: () => import('@/pages/admin/Expenses.vue'),
+    component: () => import('@/pages/admin/ExpensesLayout.vue'),
     meta: { titleKey: 'adminNav.items.expenses' },
+    children: [
+      {
+        path: '',
+        name: 'admin.expenses',
+        component: () => import('@/pages/admin/Expenses.vue'),
+        // Someone who may open only Expense for lands on that tab.
+        beforeEnter: () => {
+          const auth = useAuthStore()
+          if (!auth.can('expense.view') && auth.can('expense-for.view')) return '/admin/expenses/expense-for'
+          return true
+        },
+      },
+      {
+        path: 'expense-for',
+        name: 'admin.expense-for',
+        component: () => import('@/pages/admin/ExpenseEntities.vue'),
+        meta: { permission: 'expense-for.view' },
+      },
+    ],
   },
   {
     // Loan > Customers: shared by Savings and Owe.
@@ -1084,12 +1103,8 @@ const adminRoutes: RouteRecordRaw[] = [
       { path: 'loans/:id/statement', name: 'admin.borrowings.statement', component: () => import('@/pages/admin/borrowings/LoanStatement.vue') },
     ],
   },
-  {
-    path: 'expense-for',
-    name: 'admin.expense-for',
-    component: () => import('@/pages/admin/ExpenseEntities.vue'),
-    meta: { titleKey: 'adminNav.items.expenseFor', permission: 'expense-for.view' },
-  },
+  // Its old address, from before it was a tab of Expenses.
+  { path: 'expense-for', redirect: '/admin/expenses/expense-for' },
   {
     path: 'expenses/new',
     name: 'admin.expenses.new',
