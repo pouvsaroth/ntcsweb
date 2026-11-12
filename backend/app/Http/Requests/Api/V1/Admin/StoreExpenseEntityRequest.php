@@ -26,6 +26,7 @@ class StoreExpenseEntityRequest extends FormRequest
             'name' => $required ? ['required', 'string', 'max:255'] : ['sometimes', 'required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
             'is_active' => ['sometimes', 'boolean'],
+            'is_school' => ['sometimes', 'boolean'],
         ];
     }
 }

@@ -7214,6 +7214,9 @@ const en = {
       downloadFailed: 'Could not download the file.',
     },
     expenseEntities: {
+      isSchool: 'This is the school',
+      isSchoolHint: 'The Dashboard’s income and expense count only the school’s money: expenses for a ticked one (or with no Expense for) and payroll.',
+      school: 'School',
       title: 'Expense for',
       pageSubtitle: 'Who an expense is for, e.g. Newtech, Flexi, Family. Every new expense picks one.',
       add: 'Add',

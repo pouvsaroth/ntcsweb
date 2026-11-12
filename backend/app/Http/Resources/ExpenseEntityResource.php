@@ -20,6 +20,7 @@ class ExpenseEntityResource extends JsonResource
             'name' => $this->name,
             'description' => $this->description,
             'is_active' => $this->is_active,
+            'is_school' => (bool) $this->is_school,
             'expenses_count' => $this->whenCounted('expenses'),
             'created_at' => $this->created_at?->toIso8601String(),
         ];

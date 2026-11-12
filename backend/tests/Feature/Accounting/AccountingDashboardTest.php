@@ -162,6 +162,48 @@ class AccountingDashboardTest extends TestCase
         $this->assertEqualsWithDelta(25.0, $todayOnly->json('data.total'), 0.001);
     }
 
+    public function test_school_only_leaves_out_loan_interest_and_expenses_for_others(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::INVOICES_CREATE, Permissions::PAYMENTS_CREATE, Permissions::ACCOUNTING_DASHBOARD_VIEW]);
+        $this->setUpChartOfAccounts();
+        $this->expenseEntity->update(['is_school' => true]);
+        $family = \App\Models\ExpenseEntity::factory()->create(['name' => 'Family']);
+        $ledger = app(\App\Services\Accounting\FinancialTransactionService::class);
+
+        // Income: a student payment (school) and Owe interest (not school).
+        $course = Product::factory()->create(['type' => ProductType::COURSE_FEE, 'price' => 100]);
+        $invoiceId = $this->postJson('/api/v1/invoices', ['student_id' => Student::factory()->create()->id, 'items' => [['product_id' => $course->id, 'quantity' => 1]]])
+            ->assertCreated()->json('data.id');
+        $this->postJson("/api/v1/invoices/{$invoiceId}/payments", ['amount' => 100, 'payment_method' => PaymentMethod::CASH])->assertCreated();
+        // The school's day the payment was booked on (see the UTC test above).
+        $today = FinancialTransaction::query()->firstOrFail()->transaction_date->toDateString();
+        $ledger->postLending('INCOME', $this->cashAccount, $this->otherIncomeAccount, 30, 'USD', $today, 'Loan interest', (new \App\Models\CustomerLoanPayment)->getMorphClass(), 999, $this->admin);
+
+        // Expenses: for the school 40, for the family 25, none picked 10.
+        foreach ([[$this->expenseEntity->id, 40], [$family->id, 25], [null, 10]] as [$entity, $amount]) {
+            $expense = \App\Models\Expense::factory()->create(['account_id' => $this->electricityAccount->id, 'expense_entity_id' => $entity, 'amount' => $amount, 'currency' => 'USD']);
+            $ledger->postExpensePayment($this->electricityAccount, $this->cashAccount, $amount, $today, $expense, $this->admin);
+        }
+
+        $all = $this->getJson("/api/v1/accounting/dashboard?today={$today}")->assertOk();
+        $this->assertEqualsWithDelta(130.0, $all->json('data.total_revenue'), 0.001);
+        $this->assertEqualsWithDelta(75.0, $all->json('data.total_expenses'), 0.001);
+
+        $school = $this->getJson("/api/v1/accounting/dashboard?today={$today}&school_only=1")->assertOk();
+        $this->assertEqualsWithDelta(100.0, $school->json('data.total_revenue'), 0.001);
+        $this->assertEqualsWithDelta(100.0, $school->json('data.todays_income'), 0.001);
+        $this->assertEqualsWithDelta(50.0, $school->json('data.total_expenses'), 0.001);
+        $this->assertEqualsWithDelta(50.0, $school->json('data.todays_expenses'), 0.001);
+
+        // The detail lists match the tiles.
+        $income = $this->getJson("/api/v1/accounting/dashboard/income?date_from={$today}&date_to={$today}&school_only=1")->assertOk();
+        $this->assertEquals([100], array_column($income->json('data.items'), 'amount'));
+        $this->assertEqualsWithDelta(100.0, $income->json('data.total'), 0.001);
+        $expenses = $this->getJson("/api/v1/accounting/dashboard/expenses?date_from={$today}&date_to={$today}&school_only=1")->assertOk();
+        $this->assertEqualsCanonicalizing([40, 10], array_column($expenses->json('data.items'), 'amount'));
+        $this->assertEqualsWithDelta(50.0, $expenses->json('data.total'), 0.001);
+    }
+
     public function test_the_dashboard_requires_the_accounting_dashboard_view_permission(): void
     {
         $this->actingAsAdminWithPermissions([]);

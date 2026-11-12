@@ -372,7 +372,7 @@ async function openIncomeDetail(kind: DetailKind, range: DetailRange): Promise<v
   incomeDetailLoading.value = true
   incomeDetailError.value = null
 
-  const params = { date_from: range === 'month' ? firstOfMonth() : today(), date_to: today() }
+  const params = { date_from: range === 'month' ? firstOfMonth() : today(), date_to: today(), school_only: true }
   try {
     incomeDetail.value = kind === 'income' ? await accountingReportsService.income(params) : await accountingReportsService.expenseDetail(params)
   } catch {
@@ -414,7 +414,8 @@ async function loadStats(): Promise<void> {
     }
 
     try {
-      const summary = await accountingReportsService.dashboard({ date_from: firstOfMonth(), date_to: today(), today: today() })
+      // The school's own income and expense only (no Loan/Fund, no non-school Expense for).
+      const summary = await accountingReportsService.dashboard({ date_from: firstOfMonth(), date_to: today(), today: today(), school_only: true })
       currency = summary.currency
       monthlyIncome.value = money(summary.total_revenue)
       dailyIncome.value = money(summary.todays_income)

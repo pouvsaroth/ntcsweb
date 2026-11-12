@@ -47,8 +47,10 @@ final class AccountingDashboardController extends Controller
         $dateFrom = $request->string('date_from')->toString() ?: null;
         $dateTo = $request->string('date_to')->toString() ?: null;
 
-        $revenue = $this->reports->totalRevenue($dateFrom, $dateTo);
-        $expenses = $this->reports->totalExpenses($dateFrom, $dateTo);
+        // The main Dashboard asks for the school's own money only (see AccountingReportService::schoolScope()).
+        $school = $request->boolean('school_only');
+        $revenue = $this->reports->totalRevenue($dateFrom, $dateTo, $school);
+        $expenses = $this->reports->totalExpenses($dateFrom, $dateTo, $school);
 
         return ApiResponse::success([
             // Every figure below is already converted to this currency — see
@@ -57,8 +59,8 @@ final class AccountingDashboardController extends Controller
             'total_revenue' => $revenue,
             'total_expenses' => $expenses,
             'net_profit' => round($revenue - $expenses, 2),
-            'todays_income' => $this->reports->totalRevenue($today, $today),
-            'todays_expenses' => $this->reports->totalExpenses($today, $today),
+            'todays_income' => $this->reports->totalRevenue($today, $today, $school),
+            'todays_expenses' => $this->reports->totalExpenses($today, $today, $school),
             'outstanding_receivables' => (float) Invoice::query()->outstanding()->sum('balance'),
             'overdue_receivables' => (float) Invoice::query()->overdue()->sum('balance'),
             ...$this->cashByAccount(),
@@ -90,6 +92,7 @@ final class AccountingDashboardController extends Controller
             ->whereDate('transaction_date', '>=', $validated['date_from'])
             ->whereDate('transaction_date', '<=', $validated['date_to'])
             ->where(fn ($query) => $query->whereIn('credit_account_id', $revenueIds)->orWhereIn('debit_account_id', $revenueIds))
+            ->when($request->boolean('school_only'), fn ($query) => AccountingReportService::schoolScope($query))
             ->orderBy('transaction_date')
             ->orderBy('id')
             ->get(['id', 'transaction_date', 'description', 'amount', 'currency', 'debit_account_id', 'credit_account_id', 'reference_type', 'reference_id']);
@@ -125,7 +128,7 @@ final class AccountingDashboardController extends Controller
 
         return ApiResponse::success([
             'currency' => $this->tenantContext->getOrFail()->default_currency,
-            'total' => $this->reports->totalRevenue($validated['date_from'], $validated['date_to']),
+            'total' => $this->reports->totalRevenue($validated['date_from'], $validated['date_to'], $request->boolean('school_only')),
             'items' => $rows,
         ]);
     }
@@ -151,6 +154,7 @@ final class AccountingDashboardController extends Controller
             ->whereDate('transaction_date', '>=', $validated['date_from'])
             ->whereDate('transaction_date', '<=', $validated['date_to'])
             ->where(fn ($query) => $query->whereIn('debit_account_id', $expenseIds)->orWhereIn('credit_account_id', $expenseIds))
+            ->when($request->boolean('school_only'), fn ($query) => AccountingReportService::schoolScope($query))
             ->orderBy('transaction_date')
             ->orderBy('id')
             ->get(['id', 'transaction_date', 'description', 'amount', 'currency', 'debit_account_id', 'credit_account_id', 'reference_type', 'reference_id']);
@@ -181,7 +185,7 @@ final class AccountingDashboardController extends Controller
 
         return ApiResponse::success([
             'currency' => $this->tenantContext->getOrFail()->default_currency,
-            'total' => $this->reports->totalExpenses($validated['date_from'], $validated['date_to']),
+            'total' => $this->reports->totalExpenses($validated['date_from'], $validated['date_to'], $request->boolean('school_only')),
             'items' => $rows,
         ]);
     }

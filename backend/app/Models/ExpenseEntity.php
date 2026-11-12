@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /** Tenant-owned. Accounting > Expense for: who an expense is for (Newtech, Flexi, Family...). */
-#[Fillable(['name', 'description', 'is_active'])]
+#[Fillable(['name', 'description', 'is_school', 'is_active'])]
 class ExpenseEntity extends Model
 {
     /** @use HasFactory<ExpenseEntityFactory> */
@@ -28,6 +28,7 @@ class ExpenseEntity extends Model
     {
         return [
             'is_active' => 'boolean',
+            'is_school' => 'boolean',
         ];
     }
 

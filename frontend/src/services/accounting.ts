@@ -129,13 +129,14 @@ export interface IncomeDetail {
 
 export const accountingReportsService = {
   /** `today` — the viewer's own calendar day for the daily tiles; the server's clock runs on UTC. */
-  dashboard: (params: DateRangeFilter & { today?: string } = {}) => apiGetWithMeta<AccountingSummary>('/accounting/dashboard', { params }).then((r) => r.data),
+  /** `school_only`: the main Dashboard's tiles — the school's own money (no Loan/Fund, no non-school Expense for). */
+  dashboard: (params: DateRangeFilter & { today?: string; school_only?: boolean } = {}) => apiGetWithMeta<AccountingSummary>('/accounting/dashboard', { params }).then((r) => r.data),
 
-  income: (params: Required<DateRangeFilter>) =>
+  income: (params: Required<DateRangeFilter> & { school_only?: boolean }) =>
     apiGetWithMeta<IncomeDetail>('/accounting/dashboard/income', { params }).then((r) => r.data),
 
   /** The paid expenses behind the dashboard's expense tiles — same shape as income(). */
-  expenseDetail: (params: Required<DateRangeFilter>) =>
+  expenseDetail: (params: Required<DateRangeFilter> & { school_only?: boolean }) =>
     apiGetWithMeta<IncomeDetail>('/accounting/dashboard/expenses', { params }).then((r) => r.data),
 
   revenue: (params: DateRangeFilter = {}) =>

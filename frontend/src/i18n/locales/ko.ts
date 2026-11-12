@@ -7210,6 +7210,9 @@ const ko: MessageSchema = {
       downloadFailed: '파일을 다운로드할 수 없습니다.',
     },
     expenseEntities: {
+      isSchool: '학교입니다',
+      isSchoolHint: '대시보드의 수입과 지출은 학교 돈만 셉니다: 체크한 대상(또는 미지정)의 지출과 급여.',
+      school: '학교',
       title: '지출 대상',
       pageSubtitle: '지출이 누구를 위한 것인지 (예: Newtech, Flexi, Family). 새 지출마다 하나를 선택합니다.',
       add: '추가',

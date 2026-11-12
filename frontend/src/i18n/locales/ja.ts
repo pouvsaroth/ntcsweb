@@ -7210,6 +7210,9 @@ const ja: MessageSchema = {
       downloadFailed: 'ファイルをダウンロードできませんでした。',
     },
     expenseEntities: {
+      isSchool: 'これは学校です',
+      isSchoolHint: 'ダッシュボードの収入と支出は学校のお金のみ：チェックした対象（または未指定）の支出と給与。',
+      school: '学校',
       title: '経費の対象',
       pageSubtitle: '経費が誰のためか（例: Newtech、Flexi、Family）。新しい経費ごとに1つ選びます。',
       add: '追加',

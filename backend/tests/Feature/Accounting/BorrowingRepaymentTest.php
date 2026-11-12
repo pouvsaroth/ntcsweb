@@ -28,6 +28,9 @@ class BorrowingRepaymentTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        // Midday: the test's dates (UTC) and the school's day (Phnom Penh) agree.
+        // Between 00:00 and 07:00 Phnom Penh they are a day apart.
+        $this->travelTo(now()->setTime(12, 0));
         $this->actingAsAdminWithPermissions([Permissions::BORROWINGS_VIEW, Permissions::BORROWING_LOANS_CREATE, Permissions::BORROWING_LOANS_UPDATE, Permissions::BORROWING_LOANS_DELETE, Permissions::BORROWING_REPAYMENTS_CREATE, Permissions::BORROWING_REPAYMENTS_DELETE, Permissions::LENDERS_CREATE, Permissions::LENDERS_UPDATE, Permissions::LENDERS_DELETE, Permissions::REPORTS_FINANCIAL_VIEW]);
         $this->setUpChartOfAccounts();
         $this->family = ExpenseEntity::factory()->create(['name' => 'Family']);

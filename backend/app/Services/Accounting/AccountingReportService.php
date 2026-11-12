@@ -5,13 +5,19 @@ declare(strict_types=1);
 namespace App\Services\Accounting;
 
 use App\Models\Account;
+use App\Models\Borrowing;
+use App\Models\BorrowingRepayment;
+use App\Models\Expense;
 use App\Models\CustomerLoanPayment;
 use App\Models\FinancialTransaction;
+use App\Models\FundTransaction;
 use App\Models\Payment;
+use App\Models\SavingsTransaction;
 use App\Services\Billing\CurrencyConversionService;
 use App\Support\Accounting\AccountType;
 use App\Support\Accounting\TransactionType;
 use App\Support\Tenancy\TenantContext;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -39,14 +45,14 @@ final class AccountingReportService
     ) {}
 
     /** Net movement into (debit) minus out of (credit) a set of accounts — the "natural" reading is applied by the caller via Account::normalBalanceSign(). */
-    public function netDebit(array $accountIds, ?string $dateFrom = null, ?string $dateTo = null, array $types = []): float
+    public function netDebit(array $accountIds, ?string $dateFrom = null, ?string $dateTo = null, array $types = [], ?\Closure $scope = null): float
     {
         if ($accountIds === []) {
             return 0.0;
         }
 
-        $debit = $this->sum('debit_account_id', $accountIds, $dateFrom, $dateTo, $types);
-        $credit = $this->sum('credit_account_id', $accountIds, $dateFrom, $dateTo, $types);
+        $debit = $this->sum('debit_account_id', $accountIds, $dateFrom, $dateTo, $types, scope: $scope);
+        $credit = $this->sum('credit_account_id', $accountIds, $dateFrom, $dateTo, $types, scope: $scope);
 
         // Avoids a cosmetic "-0.00" in reports when a fully-reversed set of
         // transactions nets to exactly zero via floating-point subtraction.
@@ -86,14 +92,42 @@ final class AccountingReportService
             ->all();
     }
 
-    public function totalRevenue(?string $dateFrom = null, ?string $dateTo = null): float
+    public function totalRevenue(?string $dateFrom = null, ?string $dateTo = null, bool $schoolOnly = false): float
     {
-        return $this->totalForType(AccountType::REVENUE, $dateFrom, $dateTo);
+        return $this->totalForType(AccountType::REVENUE, $dateFrom, $dateTo, $schoolOnly ? self::schoolScope(...) : null);
     }
 
-    public function totalExpenses(?string $dateFrom = null, ?string $dateTo = null): float
+    public function totalExpenses(?string $dateFrom = null, ?string $dateTo = null, bool $schoolOnly = false): float
     {
-        return $this->totalForType(AccountType::EXPENSE, $dateFrom, $dateTo);
+        return $this->totalForType(AccountType::EXPENSE, $dateFrom, $dateTo, $schoolOnly ? self::schoolScope(...) : null);
+    }
+
+    /**
+     * Dashboard "school only": leaves out Loan (Owe, savings, borrowings
+     * tagged for someone else) and Fund postings, and expenses whose
+     * Expense for is not ticked as the school. An expense with no Expense
+     * for, payroll, and student payments all count as the school's.
+     *
+     * @param  Builder<FinancialTransaction>|\Illuminate\Database\Query\Builder  $query
+     */
+    public static function schoolScope($query): void
+    {
+        $notSchool = fn ($q) => $q->select('id')->from('expense_entities')->where('is_school', false);
+        $query
+            ->where(fn ($q) => $q->whereNull('reference_type')->orWhereNotIn('reference_type', [
+                (new \App\Models\CustomerLoanPayment)->getMorphClass(),
+                (new SavingsTransaction)->getMorphClass(),
+                (new FundTransaction)->getMorphClass(),
+                (new Borrowing)->getMorphClass(),
+            ]))
+            // An expense for someone other than the school.
+            ->whereNot(fn ($q) => $q->where('reference_type', (new Expense)->getMorphClass())
+                ->whereIn('reference_id', fn ($e) => $e->select('id')->from('expenses')->whereIn('expense_entity_id', $notSchool)))
+            // A borrowing repayment for a loan borrowed for someone other than the school.
+            ->whereNot(fn ($q) => $q->where('reference_type', (new BorrowingRepayment)->getMorphClass())
+                ->whereIn('reference_id', fn ($r) => $r->select('borrowing_repayments.id')->from('borrowing_repayments')
+                    ->join('borrowings', 'borrowings.id', '=', 'borrowing_repayments.borrowing_id')
+                    ->whereIn('borrowings.expense_entity_id', $notSchool)));
     }
 
     /**
@@ -216,7 +250,7 @@ final class AccountingReportService
         ];
     }
 
-    private function totalForType(string $accountType, ?string $dateFrom, ?string $dateTo): float
+    private function totalForType(string $accountType, ?string $dateFrom, ?string $dateTo, ?\Closure $scope = null): float
     {
         $ids = Account::query()->where('type', $accountType)->pluck('id')->all();
 
@@ -228,7 +262,7 @@ final class AccountingReportService
 
         // + 0.0 turns -1 * 0.0 (negative zero) into plain 0.0 — otherwise a
         // day with no revenue is sent as -0.0 and shows as "-0" on screen.
-        return $sign * $this->netDebit($ids, $dateFrom, $dateTo) + 0.0;
+        return $sign * $this->netDebit($ids, $dateFrom, $dateTo, scope: $scope) + 0.0;
     }
 
     /**
@@ -243,11 +277,16 @@ final class AccountingReportService
         ?string $referenceType = null,
         bool $referenceTypeNull = false,
         ?bool $reversal = null,
+        ?\Closure $scope = null,
     ): float {
         $query = FinancialTransaction::query()
             ->select('currency', DB::raw('DATE(transaction_date) as tx_date'), DB::raw('SUM(amount) as total'))
             ->whereIn($column, $accountIds)
             ->groupBy('currency', DB::raw('DATE(transaction_date)'));
+
+        if ($scope !== null) {
+            $scope($query);
+        }
 
         if ($dateFrom !== null) {
             $query->whereDate('transaction_date', '>=', $dateFrom);

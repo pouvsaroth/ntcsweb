@@ -7209,6 +7209,9 @@ const zh: MessageSchema = {
       downloadFailed: '无法下载文件。',
     },
     expenseEntities: {
+      isSchool: '这是学校',
+      isSchoolHint: '仪表板的收入和支出只计算学校的钱：勾选对象（或未指定）的支出和工资。',
+      school: '学校',
       title: '支出对象',
       pageSubtitle: '支出是为谁（例如 Newtech、Flexi、Family）。每笔新支出都要选择一个。',
       add: '新增',

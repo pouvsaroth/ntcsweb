@@ -91,7 +91,7 @@ onMounted(() => fetch())
         <div v-for="row in items" :key="row.id" class="rounded-[--radius-card] border border-neutral-200 bg-white p-3 shadow-[--shadow-card]">
           <div class="flex items-start justify-between gap-2">
             <div class="min-w-0">
-              <p class="truncate font-medium text-neutral-900">{{ row.name }}</p>
+              <p class="truncate font-medium text-neutral-900">{{ row.name }}<BaseBadge v-if="row.is_school" variant="primary" class="ml-1.5">{{ t('admin.expenseEntities.school') }}</BaseBadge></p>
               <p v-if="row.description" class="mt-0.5 text-xs text-neutral-500">{{ row.description }}</p>
             </div>
             <BaseBadge :variant="row.is_active ? 'success' : 'neutral'">
@@ -112,6 +112,9 @@ onMounted(() => fetch())
     </div>
 
     <DataTable class="hidden sm:block" :columns="columns" :rows="items" row-key="id" :loading="loading" :empty-message="t('admin.expenseEntities.emptyMessage')">
+      <template #cell-name="{ row }">
+        {{ row.name }}<BaseBadge v-if="row.is_school" variant="primary" class="ml-1.5">{{ t('admin.expenseEntities.school') }}</BaseBadge>
+      </template>
       <template #cell-description="{ row }">{{ row.description ?? '—' }}</template>
       <template #cell-expenses_count="{ row }">{{ row.expenses_count ?? 0 }}</template>
       <template #cell-is_active="{ row }">

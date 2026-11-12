@@ -23,6 +23,7 @@ const isEditing = computed(() => props.entity != null)
 const form = reactive({
   name: '',
   description: '',
+  is_school: false,
   is_active: true,
 })
 
@@ -37,6 +38,7 @@ watch(
 
     form.name = props.entity?.name ?? ''
     form.description = props.entity?.description ?? ''
+    form.is_school = props.entity?.is_school ?? false
     form.is_active = props.entity?.is_active ?? true
     errors.value = {}
     generalError.value = null
@@ -86,6 +88,13 @@ async function submit() {
         />
       </div>
 
+      <label class="flex items-start gap-2 text-sm text-neutral-700">
+        <input v-model="form.is_school" type="checkbox" class="mt-0.5 rounded border-neutral-300 text-primary-600 focus:ring-primary-500" />
+        <span>
+          {{ t('admin.expenseEntities.isSchool') }}
+          <span class="block text-xs text-neutral-500">{{ t('admin.expenseEntities.isSchoolHint') }}</span>
+        </span>
+      </label>
       <label class="flex items-center gap-2 text-sm text-neutral-700">
         <input v-model="form.is_active" type="checkbox" class="rounded border-neutral-300 text-primary-600 focus:ring-primary-500" />
         {{ t('admin.expenseEntities.statusActive') }}

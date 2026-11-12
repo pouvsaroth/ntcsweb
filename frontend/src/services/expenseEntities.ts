@@ -7,6 +7,8 @@ export interface ExpenseEntity {
   id: number
   name: string
   description: string | null
+  /** Ticked: this Expense for is the school (the Dashboard's expense tiles count it). */
+  is_school: boolean
   is_active: boolean
   expenses_count?: number
   created_at: string
@@ -15,6 +17,7 @@ export interface ExpenseEntity {
 export interface ExpenseEntityInput {
   name: string
   description: string
+  is_school: boolean
   is_active: boolean
 }
 
