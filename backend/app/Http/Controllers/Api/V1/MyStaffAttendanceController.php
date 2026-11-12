@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\GeofenceResource;
 use App\Http\Resources\StaffAttendanceResource;
 use App\Http\Responses\ApiResponse;
 use App\Models\Shift;
 use App\Models\Staff;
 use App\Models\StaffAttendance;
 use App\Models\WorkSchedule;
+use App\Services\StaffAttendance\GeofenceService;
 use App\Services\StaffAttendance\StaffAttendanceService;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
@@ -23,7 +25,7 @@ use Illuminate\Http\Request;
  */
 final class MyStaffAttendanceController extends Controller
 {
-    public function __construct(private readonly StaffAttendanceService $attendance) {}
+    public function __construct(private readonly StaffAttendanceService $attendance, private readonly GeofenceService $geofences) {}
 
     /** Today: the shift, and whether they've checked in/out. */
     public function today(Request $request): JsonResponse
@@ -38,6 +40,7 @@ final class MyStaffAttendanceController extends Controller
         $shift = $shiftId !== null ? Shift::query()->find($shiftId) : null;
         // Today's own hours — see Shift::timesOn().
         [$shiftStart, $shiftEnd] = $shift?->timesOn($now) ?? [null, null];
+        $zones = $this->geofences->zonesFor($staff);
 
         return ApiResponse::success([
             'now' => $now->toIso8601String(),
@@ -45,6 +48,12 @@ final class MyStaffAttendanceController extends Controller
             'record' => ($open ?? $today) !== null ? new StaffAttendanceResource($open ?? $today) : null,
             'can_check_in' => $open === null && $today?->check_in_at === null,
             'can_check_out' => $open !== null,
+            // The places they must be at - the page shows "you are at / X m from" before they press.
+            'geofence' => [
+                'required' => $zones !== null,
+                'max_tolerance_m' => GeofenceService::MAX_TOLERANCE_M,
+                'zones' => $zones !== null ? GeofenceResource::collection($zones)->resolve($request) : [],
+            ],
         ]);
     }
 
@@ -63,27 +72,29 @@ final class MyStaffAttendanceController extends Controller
 
     public function checkIn(Request $request): JsonResponse
     {
-        [$lat, $lng] = $this->location($request);
+        [$lat, $lng, $accuracy] = $this->location($request);
 
-        return ApiResponse::success(new StaffAttendanceResource($this->attendance->checkIn($this->staffOrFail($request), $lat, $lng)->load('shift')));
+        return ApiResponse::success(new StaffAttendanceResource($this->attendance->checkIn($this->staffOrFail($request), $lat, $lng, $accuracy)->load('shift')));
     }
 
     public function checkOut(Request $request): JsonResponse
     {
-        [$lat, $lng] = $this->location($request);
+        [$lat, $lng, $accuracy] = $this->location($request);
 
-        return ApiResponse::success(new StaffAttendanceResource($this->attendance->checkOut($this->staffOrFail($request), $lat, $lng)->load('shift')));
+        return ApiResponse::success(new StaffAttendanceResource($this->attendance->checkOut($this->staffOrFail($request), $lat, $lng, $accuracy)->load('shift')));
     }
 
-    /** @return array{0: float|null, 1: float|null} */
+    /** @return array{0: float|null, 1: float|null, 2: float|null} latitude, longitude, the phone's accuracy in metres */
     private function location(Request $request): array
     {
         $data = $request->validate([
             'latitude' => ['nullable', 'numeric', 'between:-90,90'],
             'longitude' => ['nullable', 'numeric', 'between:-180,180'],
+            'accuracy' => ['nullable', 'numeric', 'min:0'],
         ]);
+        $float = fn (string $key) => isset($data[$key]) ? (float) $data[$key] : null;
 
-        return [isset($data['latitude']) ? (float) $data['latitude'] : null, isset($data['longitude']) ? (float) $data['longitude'] : null];
+        return [$float('latitude'), $float('longitude'), $float('accuracy')];
     }
 
     private function staffOrFail(Request $request): Staff

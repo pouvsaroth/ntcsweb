@@ -219,6 +219,9 @@ onMounted(async () => {
         </template>
         <template #cell-source="{ row }">
           <p>{{ row.check_in_source ? t(`admin.timeAttendance.sources.${row.check_in_source}`) : '—' }}</p>
+          <p v-if="row.check_in_geofence || row.check_out_geofence" class="text-xs text-success-700">
+            {{ [row.check_in_geofence, row.check_out_geofence].filter(Boolean).filter((v, i, all) => all.indexOf(v) === i).join(' → ') }}
+          </p>
           <a v-if="mapLink(row.check_in_location)" :href="mapLink(row.check_in_location)!" target="_blank" rel="noopener" class="text-xs text-primary-700 hover:underline">
             {{ t('admin.timeAttendance.onMap') }}
           </a>

@@ -19,7 +19,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 #[Fillable([
     'staff_id', 'date', 'shift_id', 'scheduled_start', 'scheduled_end', 'check_in_at', 'check_out_at',
-    'check_in_source', 'check_out_source', 'check_in_latitude', 'check_in_longitude', 'check_out_latitude', 'check_out_longitude',
+    'check_in_source', 'check_out_source', 'check_in_latitude', 'check_in_longitude', 'check_out_latitude', 'check_out_longitude', 'check_in_geofence', 'check_out_geofence',
     'status', 'late_minutes', 'early_leave_minutes', 'worked_minutes', 'overtime_minutes', 'note', 'updated_by',
 ])]
 class StaffAttendance extends Model

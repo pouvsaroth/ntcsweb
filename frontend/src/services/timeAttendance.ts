@@ -1,4 +1,4 @@
-import { apiDelete, apiGetWithMeta, apiPost, apiPut } from '@/services/http'
+import { apiDelete, apiGet, apiGetWithMeta, apiPost, apiPut } from '@/services/http'
 import type { PaginatedQuery } from '@/composables/usePaginatedResource'
 import type { LengthAwarePaginationMeta, PaginatedResult } from '@/types/api'
 
@@ -110,6 +110,72 @@ export const holidaysService = {
   create: (input: HolidayInput) => apiPost<Holiday>('/holidays', input),
   update: (id: number, input: HolidayInput) => apiPut<Holiday>(`/holidays/${id}`, input),
   remove: (id: number) => apiDelete(`/holidays/${id}`),
+}
+
+// --- Geofences (check-in places) -------------------------------------------------
+
+/** [latitude, longitude]. */
+export type LatLng = [number, number]
+
+export interface Geofence {
+  id: number
+  name: string
+  shape: 'circle' | 'polygon'
+  /** The circle's centre; a polygon's middle. */
+  latitude: number
+  longitude: number
+  radius_m: number | null
+  points: LatLng[] | null
+  is_active: boolean
+  note: string | null
+}
+
+export interface GeofenceInput {
+  name: string
+  shape: 'circle' | 'polygon'
+  latitude?: number | null
+  longitude?: number | null
+  radius_m?: number | null
+  points?: LatLng[] | null
+  is_active: boolean
+  note: string | null
+}
+
+/** One staff member's own rule: anywhere, or only some zones. */
+export interface GeofenceRule {
+  id: number
+  staff_id: number
+  staff_name: string | null
+  employee_code: string | null
+  mode: 'anywhere' | 'zones'
+  geofence_ids: number[]
+}
+
+export const geofencesService = {
+  list: () => apiGet<Geofence[]>('/geofences'),
+  create: (input: GeofenceInput) => apiPost<Geofence>('/geofences', input),
+  update: (id: number, input: GeofenceInput) => apiPut<Geofence>(`/geofences/${id}`, input),
+  remove: (id: number) => apiDelete(`/geofences/${id}`),
+  rules: () => apiGet<GeofenceRule[]>('/geofence-rules'),
+  saveRule: (input: { staff_id: number; mode: 'anywhere' | 'zones'; geofence_ids: number[] | null }) => apiPut<GeofenceRule>('/geofence-rules', input),
+  removeRule: (id: number) => apiDelete(`/geofence-rules/${id}`),
+}
+
+/**
+ * Reads a place from what someone pasted: "11.5564, 104.9282", or a Google
+ * Maps link (…/@11.5564,104.9282,17z or …?q=11.5564,104.9282).
+ */
+export function parseLatLng(text: string): LatLng | null {
+  const value = decodeURIComponent(text.trim())
+  const patterns = [/@(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/, /[?&](?:q|query|ll)=(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/, /!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)/, /^(-?\d+(?:\.\d+)?)\s*[,\s]\s*(-?\d+(?:\.\d+)?)$/]
+  for (const pattern of patterns) {
+    const match = value.match(pattern)
+    if (!match) continue
+    const lat = Number(match[1])
+    const lng = Number(match[2])
+    if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) return [lat, lng]
+  }
+  return null
 }
 
 /** 480 → "8h", 510 → "8h 30m". */

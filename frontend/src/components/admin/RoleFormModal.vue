@@ -314,6 +314,8 @@ const MODULES: ModuleEntry[] = [
   tab('Staff', 'Time & Attendance', 'Shift', '/admin/time-attendance/shifts', ['staff-attendance.view'], tabCud('shifts')),
   tab('Staff', 'Time & Attendance', 'Staff shift', '/admin/time-attendance/work-schedules', ['staff-attendance.view'], tabCud('staff-shifts')),
   tab('Staff', 'Time & Attendance', 'Holidays', '/admin/time-attendance/holidays', ['staff-attendance.view'], tabCud('holidays')),
+  // Also staff check-in place rules (anywhere / only some places).
+  tab('Staff', 'Time & Attendance', 'Geofences', '/admin/time-attendance/geofences', ['staff-attendance.view'], tabCud('geofences')),
   // Approve = sign off (lock) a month.
   tab('Staff', 'Time & Attendance', 'Attendance approval', '/admin/time-attendance/approval', ['staff-attendance.view'], { approve: 'staff-attendance.approve' }),
   tab('Staff', 'Time & Attendance', 'Late', '/admin/time-attendance/records/late', ['staff-attendance.view']),

@@ -537,6 +537,12 @@ final class Permissions
 
     public const HOLIDAYS_DELETE = 'holidays.delete';
 
+    public const GEOFENCES_CREATE = 'geofences.create';
+
+    public const GEOFENCES_UPDATE = 'geofences.update';
+
+    public const GEOFENCES_DELETE = 'geofences.delete';
+
     public const OVERTIME_REQUESTS_CREATE = 'overtime-requests.create';
 
     public const OVERTIME_REQUESTS_DELETE = 'overtime-requests.delete';
@@ -1572,6 +1578,9 @@ final class Permissions
                 self::HOLIDAYS_CREATE => 'Add holidays',
                 self::HOLIDAYS_UPDATE => 'Update holidays',
                 self::HOLIDAYS_DELETE => 'Delete holidays',
+                self::GEOFENCES_CREATE => 'Add geofences (check-in places) and staff check-in place rules',
+                self::GEOFENCES_UPDATE => 'Update geofences and staff check-in place rules',
+                self::GEOFENCES_DELETE => 'Delete geofences and staff check-in place rules',
                 self::OVERTIME_REQUESTS_CREATE => 'File an overtime claim for a staff member',
                 self::OVERTIME_REQUESTS_DELETE => 'Delete a waiting overtime claim',
                 self::ATTENDANCE_CORRECTIONS_CREATE => 'File an attendance correction for a staff member',
@@ -2143,6 +2152,7 @@ final class Permissions
                 self::SHIFTS_CREATE, self::SHIFTS_UPDATE, self::SHIFTS_DELETE,
                 self::STAFF_SHIFTS_CREATE, self::STAFF_SHIFTS_UPDATE, self::STAFF_SHIFTS_DELETE,
                 self::HOLIDAYS_CREATE, self::HOLIDAYS_UPDATE, self::HOLIDAYS_DELETE,
+                self::GEOFENCES_CREATE, self::GEOFENCES_UPDATE, self::GEOFENCES_DELETE,
                 self::OVERTIME_REQUESTS_CREATE, self::OVERTIME_REQUESTS_DELETE,
                 self::ATTENDANCE_CORRECTIONS_CREATE, self::ATTENDANCE_CORRECTIONS_DELETE,
                 self::OVERTIME_REQUESTS_APPROVE,

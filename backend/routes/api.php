@@ -74,6 +74,7 @@ use App\Http\Controllers\Api\V1\Admin\ExamScheduleController;
 use App\Http\Controllers\Api\V1\Admin\GradebookController;
 use App\Http\Controllers\Api\V1\Admin\ResultApprovalController;
 use App\Http\Controllers\Api\V1\Admin\StudentResultsController;
+use App\Http\Controllers\Api\V1\Admin\GeofenceController;
 use App\Http\Controllers\Api\V1\Admin\HolidayController;
 use App\Http\Controllers\Api\V1\Admin\IncomeController;
 use App\Http\Controllers\Api\V1\Admin\InterviewController;
@@ -756,6 +757,10 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::get('reports', [TrainingReportController::class, 'index'])->name('reports.index');
         });
         Route::apiResource('holidays', HolidayController::class);
+        Route::get('geofence-rules', [GeofenceController::class, 'rules'])->name('geofence-rules.index');
+        Route::put('geofence-rules', [GeofenceController::class, 'saveRule'])->name('geofence-rules.save');
+        Route::delete('geofence-rules/{rule}', [GeofenceController::class, 'destroyRule'])->whereNumber('rule')->name('geofence-rules.destroy');
+        Route::apiResource('geofences', GeofenceController::class)->except(['show']);
         Route::get('staff-attendance/sheet', [StaffAttendanceController::class, 'sheet'])->name('staff-attendance.sheet');
         Route::get('staff-attendance/report', [StaffAttendanceController::class, 'report'])->name('staff-attendance.report');
         Route::apiResource('overtime-requests', OvertimeRequestController::class)->only(['index', 'store', 'show', 'destroy']);

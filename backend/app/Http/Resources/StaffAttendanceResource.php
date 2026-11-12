@@ -39,6 +39,8 @@ class StaffAttendanceResource extends JsonResource
             'check_out_source' => $this->check_out_source,
             'check_in_location' => $this->check_in_latitude !== null ? ['lat' => (float) $this->check_in_latitude, 'lng' => (float) $this->check_in_longitude] : null,
             'check_out_location' => $this->check_out_latitude !== null ? ['lat' => (float) $this->check_out_latitude, 'lng' => (float) $this->check_out_longitude] : null,
+            'check_in_geofence' => $this->check_in_geofence,
+            'check_out_geofence' => $this->check_out_geofence,
             'status' => $this->status,
             'late_minutes' => $this->late_minutes,
             'early_leave_minutes' => $this->early_leave_minutes,

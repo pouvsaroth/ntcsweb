@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
+use App\Models\Geofence;
 use App\Models\Holiday;
 use App\Models\Shift;
 use App\Models\StaffAttendance;
+use App\Models\StaffGeofenceRule;
 use App\Models\User;
 use App\Models\WorkSchedule;
 use App\Support\Authorization\Permissions;
@@ -59,6 +61,7 @@ class StaffAttendancePolicy
             Shift::class => 'shifts',
             WorkSchedule::class => 'staff-shifts',
             Holiday::class => 'holidays',
+            Geofence::class, StaffGeofenceRule::class => 'geofences',
             default => null,
         };
     }

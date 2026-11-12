@@ -759,6 +759,7 @@ const adminRoutes: RouteRecordRaw[] = [
       { path: 'shifts', name: 'admin.time-attendance.shifts', component: () => import('@/pages/admin/timeAttendance/Shifts.vue') },
       { path: 'work-schedules', name: 'admin.time-attendance.work-schedules', component: () => import('@/pages/admin/timeAttendance/WorkSchedules.vue') },
       { path: 'holidays', name: 'admin.time-attendance.holidays', component: () => import('@/pages/admin/timeAttendance/Holidays.vue') },
+      { path: 'geofences', name: 'admin.time-attendance.geofences', component: () => import('@/pages/admin/timeAttendance/Geofences.vue') },
       { path: 'approval', name: 'admin.time-attendance.approval', component: () => import('@/pages/admin/timeAttendance/AttendanceApproval.vue') },
     ],
   },

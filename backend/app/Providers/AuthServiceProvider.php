@@ -47,6 +47,7 @@ use App\Models\FormTemplate;
 use App\Models\Fund;
 use App\Models\FundProvider;
 use App\Models\GradeCorrection;
+use App\Models\Geofence;
 use App\Models\Holiday;
 use App\Models\Inquiry;
 use App\Models\MarketingCampaign;
@@ -97,6 +98,7 @@ use App\Models\Shift;
 use App\Models\SocialSecurityScheme;
 use App\Models\Staff;
 use App\Models\StaffAttendance;
+use App\Models\StaffGeofenceRule;
 use App\Models\StaffLoan;
 use App\Models\StaffPayComponent;
 use App\Models\StaffSalary;
@@ -258,6 +260,8 @@ class AuthServiceProvider extends ServiceProvider
         Shift::class => StaffAttendancePolicy::class,
         WorkSchedule::class => StaffAttendancePolicy::class,
         Holiday::class => StaffAttendancePolicy::class,
+        Geofence::class => StaffAttendancePolicy::class,
+        StaffGeofenceRule::class => StaffAttendancePolicy::class,
         StaffAttendance::class => StaffAttendancePolicy::class,
         OvertimeRequest::class => OvertimeRequestPolicy::class,
         AttendanceCorrection::class => AttendanceCorrectionPolicy::class,

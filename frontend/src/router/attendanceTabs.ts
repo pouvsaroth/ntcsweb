@@ -17,6 +17,7 @@ export const attendanceTabs: AttendanceTab[] = [
   { to: '/admin/time-attendance/shifts', labelKey: 'admin.timeAttendance.tabs.shifts', permission: 'staff-attendance.view' },
   { to: '/admin/time-attendance/work-schedules', labelKey: 'admin.timeAttendance.tabs.workSchedules', permission: 'staff-attendance.view' },
   { to: '/admin/time-attendance/holidays', labelKey: 'admin.timeAttendance.tabs.holidays', permission: 'staff-attendance.view' },
+  { to: '/admin/time-attendance/geofences', labelKey: 'admin.timeAttendance.tabs.geofences', permission: 'staff-attendance.view' },
   { to: '/admin/time-attendance/approval', labelKey: 'admin.timeAttendance.tabs.approval', permission: 'staff-attendance.view' },
 ]
 

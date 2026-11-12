@@ -55,6 +55,9 @@ export interface StaffAttendanceRecord {
   check_out_source: 'app' | 'manual' | 'import' | 'correction' | null
   check_in_location: { lat: number; lng: number } | null
   check_out_location: { lat: number; lng: number } | null
+  /** The check-in place (geofence) it was made at. */
+  check_in_geofence?: string | null
+  check_out_geofence?: string | null
   status: DayStatus
   late_minutes: number
   early_leave_minutes: number
@@ -94,6 +97,15 @@ export interface MyToday {
   record: StaffAttendanceRecord | null
   can_check_in: boolean
   can_check_out: boolean
+  /** required: they must be inside one of `zones` (each check-in place). */
+  geofence: { required: boolean; max_tolerance_m: number; zones: import('@/services/timeAttendance').Geofence[] }
+}
+
+/** Where the phone is: latitude, longitude, and how sure it is (metres). */
+export interface DeviceLocation {
+  latitude: number
+  longitude: number
+  accuracy: number | null
 }
 
 export interface ImportResult {
@@ -130,8 +142,8 @@ export const staffAttendanceService = {
 export const myStaffAttendanceService = {
   today: () => apiGet<MyToday>('/my-staff-attendance/today'),
   month: (month: string) => apiGet<{ month: string; days: SheetDay[]; totals: SheetTotals }>('/my-staff-attendance', { params: { month } }),
-  checkIn: (location: { latitude: number; longitude: number } | null) => apiPost<StaffAttendanceRecord>('/my-staff-attendance/check-in', location ?? {}),
-  checkOut: (location: { latitude: number; longitude: number } | null) => apiPost<StaffAttendanceRecord>('/my-staff-attendance/check-out', location ?? {}),
+  checkIn: (location: DeviceLocation | null) => apiPost<StaffAttendanceRecord>('/my-staff-attendance/check-in', location ?? {}),
+  checkOut: (location: DeviceLocation | null) => apiPost<StaffAttendanceRecord>('/my-staff-attendance/check-out', location ?? {}),
 }
 
 /** "08:05" in the browser's time, or "—". */
@@ -141,12 +153,12 @@ export function clock(iso: string | null | undefined): string {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
-/** The phone's position if it gives one within a few seconds; never blocks checking in. */
-export function currentLocation(): Promise<{ latitude: number; longitude: number } | null> {
+/** The phone's position if it gives one within a few seconds (null if not — the server decides whether that's allowed). */
+export function currentLocation(): Promise<DeviceLocation | null> {
   if (!('geolocation' in navigator)) return Promise.resolve(null)
   return new Promise((resolve) => {
     navigator.geolocation.getCurrentPosition(
-      (position) => resolve({ latitude: position.coords.latitude, longitude: position.coords.longitude }),
+      (position) => resolve({ latitude: position.coords.latitude, longitude: position.coords.longitude, accuracy: Number.isFinite(position.coords.accuracy) ? Math.round(position.coords.accuracy) : null }),
       () => resolve(null),
       { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 },
     )

@@ -37,6 +37,8 @@ final class StaffAttendanceService
     /** How long after checking in a check-out still belongs to that day (covers overnight shifts). */
     private const OPEN_DAY_HOURS = 20;
 
+    public function __construct(private readonly GeofenceService $geofences) {}
+
     /** The school's timezone — see ResolveTenant. */
     public function timezone(): string
     {
@@ -64,13 +66,14 @@ final class StaffAttendanceService
 
     // --- Self service -------------------------------------------------------------
 
-    public function checkIn(Staff $staff, ?float $latitude, ?float $longitude): StaffAttendance
+    public function checkIn(Staff $staff, ?float $latitude, ?float $longitude, ?float $accuracy = null): StaffAttendance
     {
         $now = $this->localNow();
 
         $this->assertOpen($staff->id, $now->toDateString());
+        $zone = $this->geofences->assertInside($staff, $latitude, $longitude, $accuracy, 'check_in');
 
-        return DB::connection('tenant')->transaction(function () use ($staff, $now, $latitude, $longitude) {
+        return DB::connection('tenant')->transaction(function () use ($staff, $now, $latitude, $longitude, $zone) {
             $row = StaffAttendance::query()->where('staff_id', $staff->id)->whereDate('date', $now->toDateString())->lockForUpdate()->first();
 
             if ($row?->check_in_at !== null) {
@@ -83,17 +86,19 @@ final class StaffAttendanceService
                 'check_in_source' => StaffAttendance::SOURCE_APP,
                 'check_in_latitude' => $latitude,
                 'check_in_longitude' => $longitude,
+                'check_in_geofence' => $zone?->name,
             ]);
 
             return $this->recalculate($row);
         });
     }
 
-    public function checkOut(Staff $staff, ?float $latitude, ?float $longitude): StaffAttendance
+    public function checkOut(Staff $staff, ?float $latitude, ?float $longitude, ?float $accuracy = null): StaffAttendance
     {
         $now = $this->localNow();
+        $zone = $this->geofences->assertInside($staff, $latitude, $longitude, $accuracy, 'check_out');
 
-        return DB::connection('tenant')->transaction(function () use ($staff, $now, $latitude, $longitude) {
+        return DB::connection('tenant')->transaction(function () use ($staff, $now, $latitude, $longitude, $zone) {
             // The open day — today's, or last night's on an overnight shift.
             $row = StaffAttendance::query()
                 ->where('staff_id', $staff->id)
@@ -114,6 +119,7 @@ final class StaffAttendanceService
                 'check_out_source' => StaffAttendance::SOURCE_APP,
                 'check_out_latitude' => $latitude,
                 'check_out_longitude' => $longitude,
+                'check_out_geofence' => $zone?->name,
             ]);
 
             return $this->recalculate($row);
