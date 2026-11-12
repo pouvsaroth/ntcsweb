@@ -5,19 +5,23 @@ declare(strict_types=1);
 namespace Tests\Feature\Platform;
 
 use App\Models\Tenant;
+use App\Platform\DataOps\DatabaseMaker;
 use App\Platform\DataOps\PgDatabases;
 use App\Platform\DataOps\PgDump;
 use App\Platform\Jobs\CreateExtraDatabase;
+use App\Platform\Models\Backup;
 use App\Platform\Models\ExtraDatabase;
 use App\Platform\Services\SchoolDatabase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Storage;
 use Tests\Concerns\FakePgDump;
 use Tests\Concerns\FakeSchoolDatabase;
 use Tests\Concerns\HasPlatformStaff;
 use Tests\TestCase;
 
-/** Data ops > Databases: "Other" databases staff make (empty / template / copy) and delete. */
+/** Data ops > Databases: "Other" databases staff make (empty / template / copy / restored) and delete. */
 class PlatformExtraDatabasesTest extends TestCase
 {
     use HasPlatformStaff, RefreshDatabase;
@@ -177,6 +181,94 @@ class PlatformExtraDatabasesTest extends TestCase
         $this->assertNull(ExtraDatabase::query()->find($ready->id));
     }
 
+    public function test_a_good_backup_is_restored_into_a_new_database(): void
+    {
+        Queue::fake();
+        Storage::fake('backups');
+        Storage::disk('backups')->put('alpha/one.dump', 'PGDMP backup of tn_alpha');
+        $backup = Backup::query()->forceCreate(['database' => 'tn_alpha', 'format' => Backup::FORMAT_DUMP, 'trigger' => 'manual', 'status' => Backup::STATUS_OK, 'path' => 'alpha/one.dump']);
+        $this->asOwner();
+
+        $this->postJson('/api/v1/platform/data/extra-databases/restore', ['name' => 'alpha_restored', 'source' => 'backup', 'backup_id' => $backup->id])->assertCreated();
+        $row = ExtraDatabase::query()->sole();
+        $this->assertSame($backup->id, $row->backup_id);
+        $this->assertSame('tn_alpha', $row->source_database);
+        (new CreateExtraDatabase($row->id))->handle(app(DatabaseMaker::class));
+
+        $this->assertSame('PGDMP backup of tn_alpha', $this->pgDump->restored['alpha_restored']);
+        $this->assertSame('ready', $row->fresh()->status);
+        Storage::disk('backups')->assertExists('alpha/one.dump'); // the backup itself is kept
+    }
+
+    public function test_only_finished_database_backups_can_be_restored(): void
+    {
+        Queue::fake();
+        Storage::fake('backups');
+        Storage::disk('backups')->put('x.zip', 'zip');
+        $this->asOwner();
+
+        $school = Backup::query()->forceCreate(['database' => 'tn_alpha', 'format' => Backup::FORMAT_SCHOOL, 'trigger' => 'manual', 'status' => 'ok', 'path' => 'x.zip']);
+        $failed = Backup::query()->forceCreate(['database' => 'tn_alpha', 'format' => Backup::FORMAT_DUMP, 'trigger' => 'manual', 'status' => 'failed', 'path' => null]);
+        $gone = Backup::query()->forceCreate(['database' => 'tn_alpha', 'format' => Backup::FORMAT_DUMP, 'trigger' => 'manual', 'status' => 'ok', 'path' => 'missing.dump']);
+
+        foreach ([$school, $failed, $gone] as $backup) {
+            $this->postJson('/api/v1/platform/data/extra-databases/restore', ['name' => 'try_restore', 'source' => 'backup', 'backup_id' => $backup->id])
+                ->assertUnprocessable()->assertJsonValidationErrors('backup_id');
+        }
+        $this->postJson('/api/v1/platform/data/extra-databases/restore', ['name' => 'tn_alpha', 'source' => 'backup', 'backup_id' => $gone->id])
+            ->assertUnprocessable()->assertJsonValidationErrors('name');
+        Queue::assertNothingPushed();
+    }
+
+    public function test_an_uploaded_dump_is_restored_and_the_file_removed(): void
+    {
+        Queue::fake();
+        $this->asOwner();
+        $file = UploadedFile::fake()->createWithContent('from-laptop.dump', 'PGDMP uploaded data');
+
+        $this->post('/api/v1/platform/data/extra-databases/restore', ['name' => 'from_laptop', 'source' => 'upload', 'file' => $file], ['Accept' => 'application/json'])->assertCreated();
+        $row = ExtraDatabase::query()->sole();
+        $this->assertSame('from-laptop.dump', $row->upload_name);
+        $kept = app(DatabaseMaker::class)->uploadsDir().'/'.$row->upload_path;
+        $this->assertFileExists($kept);
+
+        (new CreateExtraDatabase($row->id))->handle(app(DatabaseMaker::class));
+
+        $this->assertSame('PGDMP uploaded data', $this->pgDump->restored['from_laptop']);
+        $this->assertSame('ready', $row->fresh()->status);
+        $this->assertNull($row->fresh()->upload_path);
+        $this->assertFileDoesNotExist($kept);
+    }
+
+    public function test_a_failed_upload_restore_still_removes_the_file(): void
+    {
+        Queue::fake();
+        $this->asOwner();
+        $this->pgDump->failRestoreFor['bad_upload'] = 'pg_restore: error: input file is too short';
+
+        $this->post('/api/v1/platform/data/extra-databases/restore', ['name' => 'bad_upload', 'source' => 'upload', 'file' => UploadedFile::fake()->createWithContent('x.dump', 'PGDMP x')], ['Accept' => 'application/json'])->assertCreated();
+        $row = ExtraDatabase::query()->sole();
+        $kept = app(DatabaseMaker::class)->uploadsDir().'/'.$row->upload_path;
+        (new CreateExtraDatabase($row->id))->handle(app(DatabaseMaker::class));
+
+        $this->assertSame('failed', $row->fresh()->status);
+        $this->assertStringContainsString('too short', (string) $row->fresh()->error);
+        $this->assertFileDoesNotExist($kept);
+    }
+
+    public function test_an_upload_that_is_not_a_dump_is_refused(): void
+    {
+        Queue::fake();
+        $this->asOwner();
+
+        $this->post('/api/v1/platform/data/extra-databases/restore', ['name' => 'plain_sql', 'source' => 'upload', 'file' => UploadedFile::fake()->createWithContent('db.sql', 'CREATE TABLE x ();')], ['Accept' => 'application/json'])
+            ->assertUnprocessable()->assertJsonValidationErrors('file');
+        $this->post('/api/v1/platform/data/extra-databases/restore', ['name' => 'plain_sql', 'source' => 'upload'], ['Accept' => 'application/json'])
+            ->assertUnprocessable()->assertJsonValidationErrors('file');
+        $this->assertSame(0, ExtraDatabase::query()->count());
+        Queue::assertNothingPushed();
+    }
+
     public function test_it_needs_the_databases_permission(): void
     {
         Queue::fake();
@@ -184,6 +276,7 @@ class PlatformExtraDatabasesTest extends TestCase
 
         // The back office answers 404 to an action the staff member may not take.
         $this->postJson('/api/v1/platform/data/extra-databases', ['name' => 'scratch_db', 'source' => 'empty'])->assertNotFound();
+        $this->postJson('/api/v1/platform/data/extra-databases/restore', ['name' => 'scratch_db', 'source' => 'backup', 'backup_id' => 1])->assertNotFound();
         Queue::assertNothingPushed();
     }
 }

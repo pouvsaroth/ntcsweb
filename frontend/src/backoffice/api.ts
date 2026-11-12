@@ -948,6 +948,19 @@ export const dataApi = {
   newDatabase: (body: { name: string; source: 'empty' | 'template' | 'copy'; source_database?: string | null; note?: string | null }) =>
     send<{ id: number; name: string; status: string }>('post', '/data/extra-databases', body),
   dropDatabase: (id: number, confirmName: string) => send<void>('delete', `/data/extra-databases/${id}`, { confirm_name: confirmName }),
+  /** Restore a finished backup into a NEW database. */
+  restoreBackup: (name: string, backupId: number, note: string | null) =>
+    send<{ id: number; name: string; status: string }>('post', '/data/extra-databases/restore', { name, source: 'backup', backup_id: backupId, note }),
+  /** Restore an uploaded .dump file into a NEW database. */
+  async restoreUpload(name: string, file: File, note: string | null, onProgress?: (fraction: number) => void) {
+    const body = await call<{ id: number; name: string; status: string }>({
+      method: 'post',
+      url: '/data/extra-databases/restore',
+      data: formData({ name, source: 'upload', file, note }),
+      onUploadProgress: onProgress ? (e) => e.total && onProgress(Math.min(1, e.loaded / e.total)) : undefined,
+    })
+    return body.data
+  },
 }
 
 // ── Data ops > Tables ───────────────────────────────────────────────────────

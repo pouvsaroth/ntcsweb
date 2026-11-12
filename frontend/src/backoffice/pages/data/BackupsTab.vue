@@ -17,6 +17,7 @@ import { formatDateTime } from '@/utils/date'
 import { dataApi, formatBytes, type BackupRow } from '../../api'
 import BackupScheduleCard from '../../components/BackupScheduleCard.vue'
 import CustomBackupModal from '../../components/CustomBackupModal.vue'
+import RestoreDatabaseModal from '../../components/RestoreDatabaseModal.vue'
 import { useSession } from '../../session'
 
 /** Every backup run, newest first; download / delete; the schedule beside it. Refreshes while one is running. */
@@ -24,6 +25,7 @@ const { t } = useI18n()
 const session = useSession()
 const confirmDialog = useConfirmDialogStore()
 const canBackup = computed(() => session.can('platform.data.backup'))
+const canRestore = computed(() => session.can('platform.data.databases'))
 
 const { items, meta, loading, error, setPage, setFilter, fetch } = usePaginatedResource<BackupRow>((query) => dataApi.backups(query))
 
@@ -57,6 +59,17 @@ function tablesTitle(row: BackupRow): string {
   return (row.tables ?? []).map((tb) => `${tb.name} — ${t(`bo.data.tableModes.${tb.mode}`)}`).join('\n')
 }
 
+/** Restore: a finished database backup (not a school .zip) into a new database. */
+const restoreOpen = ref(false)
+const restoring = ref<BackupRow | null>(null)
+const restoreMessage = ref<string | null>(null)
+const canRestoreRow = (row: BackupRow) => canRestore.value && row.status === 'ok' && row.format !== 'school' && !!row.file
+
+function openRestore(row: BackupRow): void {
+  restoring.value = row
+  restoreOpen.value = true
+}
+
 async function remove(row: BackupRow): Promise<void> {
   if (!(await confirmDialog.confirm({ message: t('bo.data.removeConfirm', { db: row.database }), danger: true }))) return
   try {
@@ -84,6 +97,7 @@ onMounted(async () => {
 <template>
   <div class="grid gap-6 2xl:grid-cols-3">
     <div class="min-w-0 2xl:col-span-2">
+      <BaseAlert v-if="restoreMessage" variant="success" class="mb-4">{{ restoreMessage }}</BaseAlert>
       <div class="mb-4 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
         <div class="w-full sm:w-64">
           <BaseSelect :model-value="database" :options="databaseOptions" @update:model-value="onDatabase" />
@@ -122,6 +136,7 @@ onMounted(async () => {
             <p v-if="row.error || row.copy_error" class="mt-1 font-mono text-xs break-all text-red-700">{{ row.error ?? row.copy_error }}</p>
             <div v-if="canBackup && row.status !== 'running'" class="mt-3 flex gap-2 border-t border-neutral-100 pt-3">
               <BaseButton v-if="row.status === 'ok'" size="sm" variant="outline" :href="dataApi.downloadUrl(row.id)">{{ t('bo.data.download') }}</BaseButton>
+              <BaseButton v-if="canRestoreRow(row)" size="sm" variant="ghost" @click="openRestore(row)">{{ t('bo.data.restoreDb.button') }}</BaseButton>
               <BaseButton size="sm" variant="ghost" @click="remove(row)">{{ t('bo.data.remove') }}</BaseButton>
             </div>
           </div>
@@ -157,6 +172,7 @@ onMounted(async () => {
           <template #cell-actions="{ row }">
             <div v-if="canBackup && row.status !== 'running'" class="flex flex-col items-end gap-1">
               <BaseButton v-if="row.status === 'ok'" size="sm" variant="ghost" :href="dataApi.downloadUrl(row.id)">{{ t('bo.data.download') }}</BaseButton>
+              <BaseButton v-if="canRestoreRow(row as BackupRow)" size="sm" variant="ghost" @click="openRestore(row as BackupRow)">{{ t('bo.data.restoreDb.button') }}</BaseButton>
               <BaseButton size="sm" variant="ghost" @click="remove(row)">{{ t('bo.data.remove') }}</BaseButton>
             </div>
           </template>
@@ -172,5 +188,6 @@ onMounted(async () => {
     </div>
 
     <CustomBackupModal v-model="customOpen" :databases="databases" :database="database" @started="fetch" />
+    <RestoreDatabaseModal v-model="restoreOpen" :backup="restoring" @restored="restoreMessage = t('bo.data.restoreDb.queued', { name: $event })" />
   </div>
 </template>

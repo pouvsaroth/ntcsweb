@@ -13,6 +13,7 @@ import { formatDateTime } from '@/utils/date'
 
 import DropDatabaseModal from '../../components/DropDatabaseModal.vue'
 import NewDatabaseModal from '../../components/NewDatabaseModal.vue'
+import RestoreDatabaseModal from '../../components/RestoreDatabaseModal.vue'
 import { dataApi, formatBytes, type DatabaseFlag, type PlatformDatabase } from '../../api'
 import { useSession } from '../../session'
 
@@ -37,6 +38,7 @@ const canDatabases = computed(() => session.can('platform.data.databases'))
 
 // New database / copy one / delete an "Other" one.
 const newOpen = ref(false)
+const restoreOpen = ref(false)
 const copyFrom = ref<string | null>(null)
 const dropOpen = ref(false)
 const dropping = ref<PlatformDatabase | null>(null)
@@ -157,6 +159,7 @@ onMounted(() => void load())
     <div class="mb-4 flex flex-wrap justify-end gap-2">
       <BaseButton variant="ghost" size="sm" :loading="loading" @click="load()">{{ t('bo.data.refresh') }}</BaseButton>
       <BaseButton v-if="canDatabases" variant="outline" size="sm" @click="openNew()">{{ t('bo.data.newDb.button') }}</BaseButton>
+      <BaseButton v-if="canDatabases" variant="outline" size="sm" @click="restoreOpen = true">{{ t('bo.data.restoreDb.button') }}</BaseButton>
       <BaseButton v-if="canMigrate" variant="outline" size="sm" :loading="busy === 'all'" @click="migrateAll">{{ t('bo.data.migrateAll') }}</BaseButton>
       <BaseButton v-if="canBackup" size="sm" :loading="busy === 'all-backup'" @click="act('all-backup', () => dataApi.backupNow('all'), t('bo.data.backupQueued'))">
         {{ t('bo.data.backupAll') }}
@@ -266,6 +269,7 @@ onMounted(() => void load())
     </div>
 
     <NewDatabaseModal v-model="newOpen" :databases="rows" :copy-from="copyFrom" @created="onCreated" />
+    <RestoreDatabaseModal v-model="restoreOpen" @restored="onCreated" />
     <DropDatabaseModal v-model="dropOpen" :database="dropping" @dropped="onDropped" />
   </div>
 </template>

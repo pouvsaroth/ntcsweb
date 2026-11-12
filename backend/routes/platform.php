@@ -126,6 +126,7 @@ Route::middleware('platform.staff')->group(function () {
         Route::post('schools/{school}/create-database', [DataOpsController::class, 'createDatabase'])->middleware('platform.can:platform.data.migrate')->name('create-database');
         // "Other" databases: make (empty / template / copy), delete.
         Route::post('extra-databases', [ExtraDatabaseController::class, 'store'])->middleware('platform.can:platform.data.databases')->name('extra-databases.store');
+        Route::post('extra-databases/restore', [ExtraDatabaseController::class, 'restore'])->middleware('platform.can:platform.data.databases')->name('extra-databases.restore');
         Route::delete('extra-databases/{database}', [ExtraDatabaseController::class, 'destroy'])->middleware('platform.can:platform.data.databases')->name('extra-databases.destroy');
     });
 
