@@ -1031,6 +1031,9 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         // Accounting > Expense for (Newtech, Flexi, Family...).
         Route::apiResource('expense-entities', ExpenseEntityController::class);
         // Accounting > Expenses > Support: money or food people gave towards an Expense for.
+        Route::get('expense-supports/summary', [ExpenseSupportController::class, 'summary'])->name('expense-supports.summary');
+        Route::get('expense-supports/excel', [ExpenseSupportController::class, 'excel'])->name('expense-supports.excel');
+        Route::get('expense-supports/pdf', [ExpenseSupportController::class, 'pdf'])->name('expense-supports.pdf');
         Route::apiResource('expense-supports', ExpenseSupportController::class);
         // Accounting > Borrowings: money borrowed from companies and people.
         Route::apiResource('lenders', LenderController::class);

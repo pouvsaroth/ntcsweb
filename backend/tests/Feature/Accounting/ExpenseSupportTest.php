@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Accounting;
 
+use App\Models\Expense;
 use App\Models\ExpenseSupport;
+use App\Support\Accounting\ExpenseStatus;
 use App\Support\Authorization\Permissions;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\HasAcademicAdmin;
@@ -87,6 +89,49 @@ class ExpenseSupportTest extends TestCase
         $this->deleteJson("/api/v1/expense-entities/{$this->expenseEntity->id}")->assertUnprocessable();
     }
 
+    public function test_the_summary_nets_support_money_against_counted_expenses(): void
+    {
+        $this->asManager();
+        $id = $this->expenseEntity->id;
+        $expense = fn (float $amount, string $currency, string $status, string $date = '2026-11-12') => Expense::factory()->create([
+            'account_id' => $this->electricityAccount->id, 'expense_entity_id' => $id, 'amount' => $amount, 'currency' => $currency, 'status' => $status, 'expense_date' => $date,
+        ]);
+        $expense(500, 'USD', ExpenseStatus::PAID);
+        $expense(100, 'USD', ExpenseStatus::PENDING_APPROVAL);
+        $expense(999, 'USD', ExpenseStatus::REJECTED);   // not counted
+        $expense(999, 'USD', ExpenseStatus::CANCELLED);  // not counted
+        $expense(200000, 'KHR', ExpenseStatus::APPROVED);
+        $expense(50, 'USD', ExpenseStatus::PAID, '2026-10-01'); // outside the dates below
+
+        $support = fn (array $a) => ExpenseSupport::query()->create([...['name' => 'P', 'support_date' => '2026-11-12', 'expense_entity_id' => $id], ...$a]);
+        $support(['kind' => 'money', 'amount' => 150, 'currency' => 'USD']);
+        $support(['kind' => 'money', 'amount' => 50000, 'currency' => 'KHR']);
+        $support(['kind' => 'food', 'items' => 'Fruit']);
+
+        $data = $this->getJson("/api/v1/expense-supports/summary?expense_entity_id={$id}&from=2026-11-01&to=2026-11-30")->assertOk()->json('data');
+
+        $block = $data['summary'][0];
+        $this->assertSame($id, $block['expense_entity']['id']);
+        $this->assertSame([2, 1], [$block['money_count'], $block['food_count']]);
+        $lines = collect($block['currencies'])->keyBy('currency');
+        $this->assertEquals(['currency' => 'USD', 'expenses' => 600, 'support' => 150, 'net' => 450], $lines['USD']);
+        $this->assertEquals(['currency' => 'KHR', 'expenses' => 200000, 'support' => 50000, 'net' => 150000], $lines['KHR']);
+        $this->assertCount(3, $data['rows']);
+        $this->assertSame('12-11-2026', $data['rows'][0]['support_date']);
+    }
+
+    public function test_the_support_list_downloads_as_excel_and_pdf(): void
+    {
+        $this->asManager();
+        ExpenseSupport::query()->create(['name' => 'Aunt', 'support_date' => '2026-11-12', 'kind' => 'money', 'amount' => 100, 'currency' => 'USD', 'expense_entity_id' => $this->expenseEntity->id]);
+
+        $excel = $this->get('/api/v1/expense-supports/excel')->assertOk();
+        $this->assertStringStartsWith('PK', (string) $excel->getContent());
+        $pdf = $this->get('/api/v1/expense-supports/pdf')->assertOk();
+        $pdf->assertHeader('Content-Type', 'application/pdf');
+        $this->assertStringStartsWith('%PDF', (string) $pdf->getContent());
+    }
+
     public function test_each_action_needs_its_permission(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::EXPENSE_SUPPORTS_VIEW]);
@@ -103,5 +148,7 @@ class ExpenseSupportTest extends TestCase
 
         $this->actingAsAdminWithPermissions([Permissions::EXPENSE_VIEW]);
         $this->getJson('/api/v1/expense-supports')->assertForbidden();
+        $this->getJson('/api/v1/expense-supports/summary')->assertForbidden();
+        $this->get('/api/v1/expense-supports/excel')->assertForbidden();
     }
 }

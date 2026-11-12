@@ -1,4 +1,4 @@
-import { apiDelete, apiGetWithMeta, apiPost, apiPut } from '@/services/http'
+import { apiDelete, apiDownload, apiGetWithMeta, apiPost, apiPut } from '@/services/http'
 import type { PaginatedQuery } from '@/composables/usePaginatedResource'
 import type { LengthAwarePaginationMeta, PaginatedResult } from '@/types/api'
 
@@ -56,7 +56,35 @@ function toPayload(input: ExpenseSupportInput) {
   }
 }
 
+/** One Expense for: per currency, expenses (pending/approved/paid), support money, and expenses − support. */
+export interface SupportSummaryBlock {
+  expense_entity: { id: number; name: string }
+  currencies: { currency: 'USD' | 'KHR'; expenses: number; support: number; net: number }[]
+  money_count: number
+  food_count: number
+}
+
+export interface SupportReportFilters {
+  expense_entity_id?: string
+  from?: string
+  to?: string
+  kind?: string
+  search?: string
+}
+
+function reportParams(filters: SupportReportFilters): Record<string, string> {
+  return Object.fromEntries(Object.entries(filters).filter(([, v]) => v)) as Record<string, string>
+}
+
 export const expenseSupportsService = {
+  summary: (filters: SupportReportFilters) =>
+    apiGetWithMeta<{ summary: SupportSummaryBlock[] }>('/expense-supports/summary', { params: reportParams(filters) }).then((r) => r.data.summary),
+  download: (format: 'excel' | 'pdf', filters: SupportReportFilters) =>
+    apiDownload(
+      `/expense-supports/${format}?${new URLSearchParams(reportParams(filters)).toString()}`,
+      `support-${new Date().toISOString().slice(0, 10)}.${format === 'excel' ? 'xlsx' : 'pdf'}`,
+    ),
+
   /** `range`: support dates from / to (yyyy-mm-dd), either may be empty. */
   async list(query: PaginatedQuery, range: { from?: string; to?: string } = {}): Promise<PaginatedResult<ExpenseSupport>> {
     const result = await apiGetWithMeta<ExpenseSupport[]>('/expense-supports', {

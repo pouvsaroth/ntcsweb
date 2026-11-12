@@ -14,7 +14,7 @@ import DataTable from '@/components/ui/DataTable.vue'
 import EditIconButton from '@/components/ui/EditIconButton.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { expenseEntitiesService, type ExpenseEntity } from '@/services/expenseEntities'
-import { expenseSupportsService, type ExpenseSupport } from '@/services/expenseSupports'
+import { expenseSupportsService, type ExpenseSupport, type SupportSummaryBlock } from '@/services/expenseSupports'
 import { useAuthStore } from '@/stores/auth'
 import { useConfirmDialogStore } from '@/stores/confirmDialog'
 import { ApiRequestError } from '@/types/api'
@@ -50,6 +50,7 @@ const kindOptions = computed(() => [
 function onEntity(value: string) {
   entityId.value = value
   setFilter('expense_entity_id', value || undefined)
+  void loadSummary()
 }
 function onKind(value: string) {
   kind.value = value
@@ -59,6 +60,39 @@ function onRange(which: 'from' | 'to', value: string) {
   if (which === 'from') from.value = value
   else to.value = value
   setPage(1)
+  void loadSummary()
+}
+
+// For each Expense for: expenses − support money, per currency (same Expense for and dates as the list).
+const summary = ref<SupportSummaryBlock[]>([])
+const search = ref('')
+const reportFilters = () => ({ expense_entity_id: entityId.value, from: from.value, to: to.value })
+async function loadSummary(): Promise<void> {
+  try {
+    summary.value = await expenseSupportsService.summary(reportFilters())
+  } catch {
+    summary.value = []
+  }
+}
+function onSearch(value: string) {
+  search.value = value
+  setSearch(value)
+}
+async function refresh(): Promise<void> {
+  await Promise.all([fetch(), loadSummary()])
+}
+
+const downloading = ref<'excel' | 'pdf' | null>(null)
+async function download(format: 'excel' | 'pdf'): Promise<void> {
+  downloading.value = format
+  deleteError.value = null
+  try {
+    await expenseSupportsService.download(format, { ...reportFilters(), kind: kind.value, search: search.value })
+  } catch (e) {
+    deleteError.value = e instanceof ApiRequestError ? e.message : t('admin.expenseSupports.downloadFailed')
+  } finally {
+    downloading.value = null
+  }
 }
 
 const columns = computed(() => [
@@ -91,7 +125,7 @@ async function remove(row: ExpenseSupport) {
   deleteError.value = null
   try {
     await expenseSupportsService.remove(row.id)
-    await fetch()
+    await refresh()
   } catch (e) {
     deleteError.value = e instanceof ApiRequestError ? e.message : t('admin.expenseSupports.deleteFailed')
   }
@@ -99,6 +133,7 @@ async function remove(row: ExpenseSupport) {
 
 onMounted(async () => {
   void fetch()
+  void loadSummary()
   entities.value = await expenseEntitiesService.listAll().catch(() => [])
 })
 </script>
@@ -112,7 +147,7 @@ onMounted(async () => {
         type="search"
         :placeholder="t('admin.expenseSupports.searchPlaceholder')"
         class="block w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
-        @input="setSearch(($event.target as HTMLInputElement).value)"
+        @input="onSearch(($event.target as HTMLInputElement).value)"
       />
       <BaseSelect :model-value="entityId" :options="entityFilterOptions" @update:model-value="onEntity" />
       <BaseSelect :model-value="kind" :options="kindOptions" @update:model-value="onKind" />
@@ -122,6 +157,38 @@ onMounted(async () => {
     </div>
 
     <BaseAlert v-if="error || deleteError" variant="danger" class="mb-4">{{ error || deleteError }}</BaseAlert>
+
+    <!-- Expenses − support money, per Expense for and currency -->
+    <div v-if="summary.length" class="mb-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+      <div v-for="block in summary" :key="block.expense_entity.id" class="rounded-[--radius-card] border border-neutral-200 bg-white p-4 shadow-[--shadow-card]">
+        <div class="mb-2 flex items-start justify-between gap-2">
+          <p class="font-semibold text-neutral-900">{{ block.expense_entity.name }}</p>
+          <p class="text-right text-xs text-neutral-500">{{ t('admin.expenseSupports.peopleLine', { money: block.money_count, food: block.food_count }) }}</p>
+        </div>
+        <p v-if="!block.currencies.length" class="text-sm text-neutral-500">{{ t('admin.expenseSupports.noMoneyYet') }}</p>
+        <div v-for="line in block.currencies" :key="line.currency" class="border-t border-neutral-100 py-2 first:border-t-0 first:pt-0">
+          <dl class="space-y-0.5 text-sm">
+            <div class="flex justify-between gap-2">
+              <dt class="text-neutral-600">{{ t('admin.expenseSupports.expensesTotal') }}</dt>
+              <dd class="tabular-nums">{{ formatMoney(line.expenses, line.currency) }}</dd>
+            </div>
+            <div class="flex justify-between gap-2">
+              <dt class="text-neutral-600">− {{ t('admin.expenseSupports.supportMoney') }}</dt>
+              <dd class="text-green-700 tabular-nums">{{ formatMoney(line.support, line.currency) }}</dd>
+            </div>
+            <div class="flex justify-between gap-2 border-t border-dashed border-neutral-200 pt-1 font-semibold">
+              <dt class="text-neutral-800">{{ line.net < 0 ? t('admin.expenseSupports.leftOver') : t('admin.expenseSupports.youPaid') }}</dt>
+              <dd class="tabular-nums" :class="line.net < 0 ? 'text-green-700' : 'text-neutral-900'">{{ formatMoney(Math.abs(line.net), line.currency) }}</dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    <div class="mb-3 flex justify-end gap-2">
+      <BaseButton size="sm" variant="outline" :loading="downloading === 'excel'" @click="download('excel')">{{ t('admin.expenseSupports.excel') }}</BaseButton>
+      <BaseButton size="sm" variant="outline" :loading="downloading === 'pdf'" @click="download('pdf')">{{ t('admin.expenseSupports.pdf') }}</BaseButton>
+    </div>
 
     <!-- Cards on small screens (below sm) instead of the table. -->
     <div class="sm:hidden">
@@ -185,6 +252,6 @@ onMounted(async () => {
 
     <BasePagination v-if="meta" :meta="meta" sticky class="mt-4" @update:page="setPage" />
 
-    <ExpenseSupportFormModal v-model="modalOpen" :support="editing" :entities="entities" :default-entity-id="entityId ? Number(entityId) : null" @saved="fetch()" />
+    <ExpenseSupportFormModal v-model="modalOpen" :support="editing" :entities="entities" :default-entity-id="entityId ? Number(entityId) : null" @saved="refresh()" />
   </div>
 </template>
