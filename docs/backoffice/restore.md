@@ -50,6 +50,24 @@ psql -U <user> -d template1 -c 'drop database "<new_database_name>"'
 
 ## 3b. Replacing a school's live database
 
+**In the back office:** Databases tab → **Use for a school** on a ready
+Other database (needs `platform.data.databases`). Pick the school (only
+schools with their own database on this server), read the steps, and type
+the school's database name. In the background it checks the database holds
+that school's rows, suspends the school, backs up the live database
+(trigger *Before restore*), renames live → `<name>_before_restore` and the
+restored one → `<name>`, migrates, and reopens the school. Each step and its
+time shows under "Restores put in place".
+
+- A failure before the school reopens renames both back and reopens the
+  school on its own database.
+- `<name>_before_restore` stays as an Other database. **Use for a school**
+  on it trades the two back (an undo); delete it when sure. A new restore
+  for the same school needs it deleted first.
+- Not for schools in the shared database or on a separate server.
+
+**By hand on the server** (the same thing):
+
 Only in a maintenance window, and only after taking a fresh backup of the
 live database first (Data ops → Back up now), so the swap itself can be
 undone.

@@ -13,7 +13,9 @@ import { formatDateTime } from '@/utils/date'
 
 import DropDatabaseModal from '../../components/DropDatabaseModal.vue'
 import NewDatabaseModal from '../../components/NewDatabaseModal.vue'
+import DatabaseSwapsCard from '../../components/DatabaseSwapsCard.vue'
 import RestoreDatabaseModal from '../../components/RestoreDatabaseModal.vue'
+import UseForSchoolModal from '../../components/UseForSchoolModal.vue'
 import { dataApi, formatBytes, type DatabaseFlag, type PlatformDatabase } from '../../api'
 import { useSession } from '../../session'
 
@@ -39,6 +41,20 @@ const canDatabases = computed(() => session.can('platform.data.databases'))
 // New database / copy one / delete an "Other" one.
 const newOpen = ref(false)
 const restoreOpen = ref(false)
+// Use for a school: put a ready Other database in place of a school's own.
+const swapOpen = ref(false)
+const swapping = ref<PlatformDatabase | null>(null)
+const swapsCard = ref<InstanceType<typeof DatabaseSwapsCard> | null>(null)
+
+function openSwap(row: PlatformDatabase): void {
+  swapping.value = row
+  swapOpen.value = true
+}
+
+async function onSwapStarted(school: string): Promise<void> {
+  message.value = t('bo.data.swap.started', { name: school })
+  await swapsCard.value?.load()
+}
 const copyFrom = ref<string | null>(null)
 const dropOpen = ref(false)
 const dropping = ref<PlatformDatabase | null>(null)
@@ -66,6 +82,7 @@ async function onDropped(name: string): Promise<void> {
 const isExtra = (row: PlatformDatabase) => row.kind === 'extra' && !!row.extra
 const canCopyRow = (row: PlatformDatabase) => canDatabases.value && row.exists && !row.server && (!isExtra(row) || row.extra!.status === 'ready')
 const canDropRow = (row: PlatformDatabase) => canDatabases.value && isExtra(row) && row.extra!.status !== 'creating'
+const canSwapRow = (row: PlatformDatabase) => canDatabases.value && isExtra(row) && row.extra!.status === 'ready' && row.exists
 const extraStatusVariant = { creating: 'warning', ready: 'success', failed: 'danger' } as const
 
 // While one is being made, look again every few seconds.
@@ -126,7 +143,7 @@ const kindVariant = { central: 'neutral', template: 'neutral', shared: 'primary'
 // The template is only copied from — never backed up; an "Other" one only once it is ready.
 const canBackupRow = (row: PlatformDatabase) => canBackup.value && row.exists && row.kind !== 'template' && (!isExtra(row) || row.extra!.status === 'ready')
 const hasActions = (row: PlatformDatabase) =>
-  canBackupRow(row) || canCopyRow(row) || canDropRow(row) || (canMigrate.value && !!row.school && (row.exists || row.flags.includes('missing')))
+  canBackupRow(row) || canCopyRow(row) || canDropRow(row) || canSwapRow(row) || (canMigrate.value && !!row.school && (row.exists || row.flags.includes('missing')))
 
 async function migrate(row: PlatformDatabase): Promise<void> {
   if (!row.school) return
@@ -213,6 +230,7 @@ onMounted(() => void load())
             <BaseButton v-if="canMigrate && row.school && row.exists" size="sm" variant="ghost" @click="migrate(row)">{{ t('bo.data.migrate') }}</BaseButton>
             <BaseButton v-if="canMigrate && row.flags.includes('missing')" size="sm" @click="createDatabase(row)">{{ t('bo.data.createDatabase') }}</BaseButton>
             <BaseButton v-if="canCopyRow(row)" size="sm" variant="ghost" @click="openNew(row.database)">{{ t('bo.data.newDb.copy') }}</BaseButton>
+            <BaseButton v-if="canSwapRow(row)" size="sm" variant="ghost" @click="openSwap(row)">{{ t('bo.data.swap.button') }}</BaseButton>
             <BaseButton v-if="canDropRow(row)" size="sm" variant="ghost" class="text-danger-600" @click="openDrop(row)">{{ t('bo.data.dropDb.button') }}</BaseButton>
           </div>
         </div>
@@ -262,14 +280,18 @@ onMounted(() => void load())
             <BaseButton v-if="canMigrate && row.school && row.exists" size="sm" variant="ghost" @click="migrate(row)">{{ t('bo.data.migrate') }}</BaseButton>
             <BaseButton v-if="canMigrate && row.flags.includes('missing')" size="sm" @click="createDatabase(row)">{{ t('bo.data.createDatabase') }}</BaseButton>
             <BaseButton v-if="canCopyRow(row as PlatformDatabase)" size="sm" variant="ghost" @click="openNew(row.database)">{{ t('bo.data.newDb.copy') }}</BaseButton>
+            <BaseButton v-if="canSwapRow(row as PlatformDatabase)" size="sm" variant="ghost" @click="openSwap(row as PlatformDatabase)">{{ t('bo.data.swap.button') }}</BaseButton>
             <BaseButton v-if="canDropRow(row as PlatformDatabase)" size="sm" variant="ghost" class="text-danger-600" @click="openDrop(row as PlatformDatabase)">{{ t('bo.data.dropDb.button') }}</BaseButton>
           </div>
         </template>
       </DataTable>
     </div>
 
+    <DatabaseSwapsCard ref="swapsCard" @finished="load(true)" />
+
     <NewDatabaseModal v-model="newOpen" :databases="rows" :copy-from="copyFrom" @created="onCreated" />
     <RestoreDatabaseModal v-model="restoreOpen" @restored="onCreated" />
+    <UseForSchoolModal v-model="swapOpen" :database="swapping" :databases="rows" @started="onSwapStarted" />
     <DropDatabaseModal v-model="dropOpen" :database="dropping" @dropped="onDropped" />
   </div>
 </template>

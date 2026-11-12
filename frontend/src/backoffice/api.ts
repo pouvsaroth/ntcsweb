@@ -834,7 +834,7 @@ export type DatabaseFlag = 'missing' | 'unreachable' | 'behind' | 'no_recent_bac
 /** A database staff made in the back office ("Other"). */
 export interface ExtraDatabaseInfo {
   id: number
-  source: 'empty' | 'template' | 'copy' | 'backup' | 'upload'
+  source: 'empty' | 'template' | 'copy' | 'backup' | 'upload' | 'replaced'
   source_database: string | null
   backup_id: number | null
   upload_name: string | null
@@ -866,7 +866,7 @@ export interface BackupRow {
   id: number
   database: string
   tenant_id: number | null
-  trigger: 'manual' | 'scheduled' | 'move'
+  trigger: 'manual' | 'scheduled' | 'move' | 'restore'
   format: 'dump' | 'school' | 'tables'
   /** A custom backup: the tables picked, each with its rows (`full`) or structure only. */
   tables: BackupTable[] | null
@@ -923,6 +923,22 @@ export interface MigrationRunRow {
   [key: string]: unknown
 }
 
+/** Use for a school: a restored database put in place of a school's own (DatabaseSwapper). */
+export interface DatabaseSwapRow {
+  id: number
+  school: { id: number; name: string; slug: string } | null
+  live_database: string
+  restored_database: string
+  kept_as: string
+  backup_id: number | null
+  status: 'queued' | 'running' | 'done' | 'failed'
+  steps: { step: 'check' | 'suspend' | 'backup' | 'swap' | 'migrate' | 'reactivate'; status: 'ok' | 'failed'; message: string | null; ms: number }[]
+  error: string | null
+  staff: string | null
+  created_at: string | null
+  finished_at: string | null
+}
+
 export interface PlatformHealth {
   queue: { waiting: number | null; failed: number; latest_failures: { id: string; queue: string; message: string; failed_at: string }[] }
   scheduler: { last_tick_at: string | null; healthy: boolean }
@@ -948,6 +964,10 @@ export const dataApi = {
   newDatabase: (body: { name: string; source: 'empty' | 'template' | 'copy'; source_database?: string | null; note?: string | null }) =>
     send<{ id: number; name: string; status: string }>('post', '/data/extra-databases', body),
   dropDatabase: (id: number, confirmName: string) => send<void>('delete', `/data/extra-databases/${id}`, { confirm_name: confirmName }),
+  /** Put a ready "Other" database in place of a school's own; the request repeats the school's database name. */
+  useForSchool: (id: number, tenantId: number, confirmName: string) =>
+    send<DatabaseSwapRow>('post', `/data/extra-databases/${id}/use-for-school`, { tenant_id: tenantId, confirm_name: confirmName }),
+  swaps: () => get<DatabaseSwapRow[]>('/data/database-swaps'),
   /** Restore a finished backup into a NEW database. */
   restoreBackup: (name: string, backupId: number, note: string | null) =>
     send<{ id: number; name: string; status: string }>('post', '/data/extra-databases/restore', { name, source: 'backup', backup_id: backupId, note }),

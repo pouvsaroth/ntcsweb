@@ -25,6 +25,9 @@ class ExtraDatabase extends Model
 
     public const SOURCE_UPLOAD = 'upload';
 
+    /** A school's live database, kept under a new name after a restored one was put in its place. */
+    public const SOURCE_REPLACED = 'replaced';
+
     public const STATUS_CREATING = 'creating';
 
     public const STATUS_READY = 'ready';
