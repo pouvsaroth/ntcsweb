@@ -208,7 +208,10 @@ onMounted(async () => {
           </button>
         </template>
         <template #cell-interested_in="{ row }">{{ row.interested_in || '—' }}</template>
-        <template #cell-source="{ row }">{{ t(`frontOffice.inquiries.sources.${row.source}`) }}</template>
+        <template #cell-source="{ row }">
+          {{ t(`frontOffice.inquiries.sources.${row.source}`) }}
+          <span v-if="row.campaign" class="block text-xs text-neutral-500">{{ row.campaign.name }}</span>
+        </template>
         <template #cell-status="{ row }">
           <BaseBadge :variant="statusVariant(row.status)">{{ t(`frontOffice.inquiries.statuses.${row.status}`) }}</BaseBadge>
         </template>
@@ -246,7 +249,7 @@ onMounted(async () => {
         <div class="flex items-start justify-between gap-2">
           <div class="min-w-0">
             <p class="truncate font-medium text-neutral-900">{{ row.name }}</p>
-            <p class="text-xs text-neutral-500">{{ row.phone }} · {{ t(`frontOffice.inquiries.sources.${row.source}`) }}</p>
+            <p class="text-xs text-neutral-500">{{ row.phone }} · {{ t(`frontOffice.inquiries.sources.${row.source}`) }}<template v-if="row.campaign"> · {{ row.campaign.name }}</template></p>
           </div>
           <BaseBadge :variant="statusVariant(row.status)">{{ t(`frontOffice.inquiries.statuses.${row.status}`) }}</BaseBadge>
         </div>

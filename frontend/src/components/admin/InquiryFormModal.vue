@@ -8,6 +8,7 @@ import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
 import SearchableSelect from '@/components/ui/SearchableSelect.vue'
+import { marketingCampaignsService, type CampaignOption } from '@/services/marketingCampaigns'
 import { INQUIRY_SOURCES, INQUIRY_STATUSES, inquiriesService, type Inquiry, type InquiryInput, type StaffOption } from '@/services/inquiries'
 import { ApiRequestError } from '@/types/api'
 
@@ -30,6 +31,7 @@ const form = reactive({
   email: '',
   interested_in: '',
   source: 'walk_in',
+  marketing_campaign_id: '',
   status: 'new',
   next_follow_up_on: '',
   assigned_staff_id: '',
@@ -41,7 +43,7 @@ const saving = ref(false)
 
 watch(
   () => props.modelValue,
-  (open) => {
+  async (open) => {
     if (!open) return
     const i = props.inquiry
     Object.assign(form, {
@@ -52,6 +54,7 @@ watch(
       email: i?.email ?? '',
       interested_in: i?.interested_in ?? '',
       source: i?.source ?? 'walk_in',
+      marketing_campaign_id: i?.marketing_campaign_id ? String(i.marketing_campaign_id) : '',
       status: i?.status ?? 'new',
       next_follow_up_on: i?.next_follow_up_on ?? '',
       assigned_staff_id: i?.assigned_staff_id ? String(i.assigned_staff_id) : '',
@@ -59,8 +62,16 @@ watch(
     })
     errors.value = {}
     error.value = null
+    // Planned / running campaigns, plus the one already picked. None (or no Marketing) hides the picker.
+    campaigns.value = await marketingCampaignsService.options(i?.marketing_campaign_id).catch(() => [])
   },
 )
+
+const campaigns = ref<CampaignOption[]>([])
+const campaignOptions = computed(() => [
+  { value: '', label: t('frontOffice.inquiries.noCampaign') },
+  ...campaigns.value.map((c) => ({ value: String(c.id), label: c.name, hint: c.code ?? undefined })),
+])
 
 const sourceOptions = computed(() => INQUIRY_SOURCES.map((s) => ({ value: s, label: t(`frontOffice.inquiries.sources.${s}`) })))
 const statusOptions = computed(() => INQUIRY_STATUSES.map((s) => ({ value: s, label: t(`frontOffice.inquiries.statuses.${s}`) })))
@@ -86,6 +97,7 @@ async function save() {
     email: form.email.trim() || null,
     interested_in: form.interested_in.trim() || null,
     source: form.source as InquiryInput['source'],
+    marketing_campaign_id: form.marketing_campaign_id ? Number(form.marketing_campaign_id) : null,
     next_follow_up_on: form.next_follow_up_on || null,
     assigned_staff_id: form.assigned_staff_id ? Number(form.assigned_staff_id) : null,
     note: form.note.trim() || null,
@@ -130,6 +142,13 @@ async function save() {
         </div>
         <BaseInput v-model="form.inquiry_date" type="date" required :label="t('frontOffice.inquiries.date')" :error="errors.inquiry_date?.[0]" />
         <BaseSelect v-model="form.source" :options="sourceOptions" required :label="t('frontOffice.inquiries.source')" :error="errors.source?.[0]" />
+        <SearchableSelect
+          v-if="campaigns.length"
+          v-model="form.marketing_campaign_id"
+          :options="campaignOptions"
+          :label="t('frontOffice.inquiries.campaign')"
+          :error="errors.marketing_campaign_id?.[0]"
+        />
         <BaseInput v-model="form.next_follow_up_on" type="date" :label="t('frontOffice.inquiries.nextFollowUp')" :error="errors.next_follow_up_on?.[0]" />
         <SearchableSelect v-model="form.assigned_staff_id" :options="staffOptions" :label="t('frontOffice.inquiries.assignedTo')" :error="errors.assigned_staff_id?.[0]" />
         <BaseSelect v-if="inquiry" v-model="form.status" :options="statusOptions" :label="t('frontOffice.inquiries.status')" :error="errors.status?.[0]" />

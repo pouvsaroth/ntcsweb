@@ -49,6 +49,7 @@ use App\Models\FundProvider;
 use App\Models\GradeCorrection;
 use App\Models\Holiday;
 use App\Models\Inquiry;
+use App\Models\MarketingCampaign;
 use App\Models\Interview;
 use App\Models\InterviewEvaluation;
 use App\Models\Invoice;
@@ -148,6 +149,7 @@ use App\Policies\FundPolicy;
 use App\Policies\FundProviderPolicy;
 use App\Policies\GradeCorrectionPolicy;
 use App\Policies\InquiryPolicy;
+use App\Policies\MarketingCampaignPolicy;
 use App\Policies\InvoicePolicy;
 use App\Policies\LanguagePolicy;
 use App\Policies\LeaveManagementPolicy;
@@ -224,6 +226,7 @@ class AuthServiceProvider extends ServiceProvider
         CurrencyRate::class => CurrencyRatePolicy::class,
         Staff::class => StaffPolicy::class,
         Inquiry::class => InquiryPolicy::class,
+        MarketingCampaign::class => MarketingCampaignPolicy::class,
         Meeting::class => MeetingPolicy::class,
         Appointment::class => AppointmentPolicy::class,
         Visitor::class => VisitorPolicy::class,

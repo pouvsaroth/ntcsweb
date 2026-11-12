@@ -71,6 +71,7 @@ const GROUPS = [
   'Dashboard',
   'Project Management',
   'Front Office',
+  'Marketing',
   'Academic',
   'Students',
   'Staff',
@@ -170,6 +171,9 @@ const MODULES: ModuleEntry[] = [
   tab('Front Office', 'Front Office', 'Meeting arrangement', '/admin/front-office/meetings', ['meetings.view'], crud('meetings')),
   tab('Front Office', 'Front Office', 'Appointment', '/admin/front-office/appointments', ['appointments.view'], crud('appointments')),
   tab('Front Office', 'Front Office', 'Visitor', '/admin/front-office/visitors', ['visitors.view'], crud('visitors')),
+
+  // ── Marketing ──
+  tab('Marketing', 'Marketing', 'Campaigns', '/admin/marketing/campaigns', ['campaigns.view'], crud('campaigns')),
 
   // ── Academic ──
   // Not the website's "Programs" (Website group) — this is the internal program catalog.
@@ -698,6 +702,7 @@ const GROUP_I18N_KEYS: Partial<Record<(typeof GROUPS)[number], string>> = {
   Dashboard: 'dashboard',
   'Project Management': 'projectManagement',
   'Front Office': 'frontOffice',
+  Marketing: 'marketing',
   Academic: 'academic',
   Students: 'students',
   Staff: 'staff',

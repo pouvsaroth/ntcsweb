@@ -315,6 +315,24 @@ class BaseDataSeeder extends Seeder
                     'OTHER' => ['en' => ['name' => 'Other'], 'km' => ['name' => 'ផ្សេងៗ'], 'zh' => ['name' => '其他'], 'ko' => ['name' => '기타'], 'ja' => ['name' => 'その他']],
                 ],
             ],
+            'MARKETING_CHANNEL' => [
+                'name' => 'Marketing Channel',
+                'description' => 'The channel picked for each campaign under Marketing > Campaigns (MarketingCampaign::CHANNEL_CATEGORY).',
+                'sort_order' => 15,
+                'values' => [
+                    'FACEBOOK' => ['en' => ['name' => 'Facebook'], 'km' => ['name' => 'Facebook'], 'zh' => ['name' => 'Facebook'], 'ko' => ['name' => 'Facebook'], 'ja' => ['name' => 'Facebook']],
+                    'TIKTOK' => ['en' => ['name' => 'TikTok'], 'km' => ['name' => 'TikTok'], 'zh' => ['name' => 'TikTok'], 'ko' => ['name' => 'TikTok'], 'ja' => ['name' => 'TikTok']],
+                    'TELEGRAM' => ['en' => ['name' => 'Telegram'], 'km' => ['name' => 'Telegram'], 'zh' => ['name' => 'Telegram'], 'ko' => ['name' => 'Telegram'], 'ja' => ['name' => 'Telegram']],
+                    'YOUTUBE' => ['en' => ['name' => 'YouTube'], 'km' => ['name' => 'YouTube'], 'zh' => ['name' => 'YouTube'], 'ko' => ['name' => 'YouTube'], 'ja' => ['name' => 'YouTube']],
+                    'GOOGLE' => ['en' => ['name' => 'Google / website'], 'km' => ['name' => 'Google / គេហទំព័រ'], 'zh' => ['name' => 'Google / 网站'], 'ko' => ['name' => 'Google / 웹사이트'], 'ja' => ['name' => 'Google・ウェブサイト']],
+                    'FLYER' => ['en' => ['name' => 'Flyer / leaflet'], 'km' => ['name' => 'ខិត្តប័ណ្ណ'], 'zh' => ['name' => '传单'], 'ko' => ['name' => '전단지'], 'ja' => ['name' => 'チラシ']],
+                    'BANNER' => ['en' => ['name' => 'Banner / poster'], 'km' => ['name' => 'ផ្ទាំងផ្សាយពាណិជ្ជកម្ម'], 'zh' => ['name' => '横幅 / 海报'], 'ko' => ['name' => '현수막 / 포스터'], 'ja' => ['name' => 'バナー・ポスター']],
+                    'EVENT' => ['en' => ['name' => 'Event / open day'], 'km' => ['name' => 'កម្មវិធី / ថ្ងៃបើកទ្វារ'], 'zh' => ['name' => '活动 / 开放日'], 'ko' => ['name' => '행사 / 공개의 날'], 'ja' => ['name' => 'イベント・オープンデー']],
+                    'RADIO_TV' => ['en' => ['name' => 'Radio / TV'], 'km' => ['name' => 'វិទ្យុ / ទូរទស្សន៍'], 'zh' => ['name' => '广播 / 电视'], 'ko' => ['name' => '라디오 / TV'], 'ja' => ['name' => 'ラジオ・テレビ']],
+                    'REFERRAL' => ['en' => ['name' => 'Referral'], 'km' => ['name' => 'ការណែនាំ'], 'zh' => ['name' => '推荐'], 'ko' => ['name' => '추천'], 'ja' => ['name' => '紹介']],
+                    'OTHER' => ['en' => ['name' => 'Other'], 'km' => ['name' => 'ផ្សេងៗ'], 'zh' => ['name' => '其他'], 'ko' => ['name' => '기타'], 'ja' => ['name' => 'その他']],
+                ],
+            ],
         ];
     }
 }

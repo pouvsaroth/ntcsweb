@@ -10,6 +10,7 @@ import { payrollTabs } from '@/router/payrollTabs'
 import { performanceTabs } from '@/router/performanceTabs'
 import { canOpenProfessionalDevelopmentTab, professionalDevelopmentTabs } from '@/router/professionalDevelopmentTabs'
 import { frontOfficeTabs } from '@/router/frontOfficeTabs'
+import { marketingTabs } from '@/router/marketingTabs'
 import { recruitmentTabs } from '@/router/recruitmentTabs'
 import { schoolSetupTabs } from '@/router/schoolSetupTabs'
 import { teacherTabs } from '@/router/teacherTabs'
@@ -560,6 +561,23 @@ const adminRoutes: RouteRecordRaw[] = [
       { path: 'job-levels', name: 'admin.organization.job-levels', component: organizationUnits, props: { kind: 'job-levels' } },
       { path: 'reporting', name: 'admin.organization.reporting', component: () => import('@/pages/admin/ReportingManagers.vue') },
       { path: 'hierarchy', name: 'admin.organization.hierarchy', component: () => import('@/pages/admin/OrganizationHierarchy.vue') },
+    ],
+  },
+  {
+    // Marketing: tabs as child routes (see MarketingLayout.vue / marketingTabs.ts).
+    path: 'marketing',
+    component: () => import('@/pages/admin/marketing/MarketingLayout.vue'),
+    meta: { titleKey: 'adminNav.groups.marketing' },
+    children: [
+      {
+        path: '',
+        name: 'admin.marketing',
+        redirect: () => {
+          const auth = useAuthStore()
+          return (marketingTabs.find((tab) => !auth.tabHidden(tab.to) && auth.can(tab.permission)) ?? marketingTabs[0]!).to
+        },
+      },
+      { path: 'campaigns', name: 'admin.marketing.campaigns', component: () => import('@/pages/admin/marketing/Campaigns.vue'), meta: { permission: 'campaigns.view' } },
     ],
   },
   {

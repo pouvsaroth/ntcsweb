@@ -29,6 +29,9 @@ export interface Inquiry {
   email: string | null
   interested_in: string | null
   source: InquirySource
+  /** Marketing > Campaigns: the campaign that brought this inquiry. */
+  marketing_campaign_id: number | null
+  campaign?: { id: number; code: string | null; name: string } | null
   status: InquiryStatus
   next_follow_up_on: string | null
   assigned_staff_id: number | null
@@ -49,6 +52,7 @@ export interface InquiryInput {
   email: string | null
   interested_in: string | null
   source: InquirySource
+  marketing_campaign_id: number | null
   status?: InquiryStatus
   next_follow_up_on: string | null
   assigned_staff_id: number | null

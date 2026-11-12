@@ -10,6 +10,7 @@ use App\Http\Resources\InquiryResource;
 use App\Http\Responses\ApiResponse;
 use App\Models\Inquiry;
 use App\Models\InquiryFollowUp;
+use App\Models\MarketingCampaign;
 use App\Models\Staff;
 use App\Support\Query\ApiQuery;
 use Illuminate\Http\JsonResponse;
@@ -28,14 +29,14 @@ class InquiryController extends Controller
     {
         $this->authorize('viewAny', Inquiry::class);
 
-        $query = Inquiry::query()->with('assignedStaff')->withCount('followUps');
+        $query = Inquiry::query()->with('assignedStaff', 'campaign')->withCount('followUps');
         if ($request->boolean('due')) {
             $query->due();
         }
 
         $inquiries = ApiQuery::for($query, $request)
             ->searchable('name', 'phone', 'interested_in')
-            ->filterable(['status', 'source', 'assigned_staff_id'])
+            ->filterable(['status', 'source', 'assigned_staff_id', 'marketing_campaign_id'])
             ->sortable(['inquiry_date', 'name', 'next_follow_up_on', 'created_at'], default: '-inquiry_date')
             ->paginate();
 
@@ -69,20 +70,36 @@ class InquiryController extends Controller
         return ApiResponse::success($staff);
     }
 
+    /**
+     * Campaigns for the inquiry's "Campaign" picker (front-desk users may not
+     * see Marketing): planned or running ones, plus the one already picked.
+     */
+    public function campaignOptions(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Inquiry::class);
+
+        $campaigns = MarketingCampaign::query()
+            ->where(fn ($q) => $q->whereIn('status', ['planned', 'active'])->orWhere('id', $request->integer('include')))
+            ->orderByDesc('start_on')->orderBy('name')
+            ->get(['id', 'code', 'name', 'channel', 'status']);
+
+        return ApiResponse::success($campaigns);
+    }
+
     public function store(InquiryRequest $request): JsonResponse
     {
         $this->authorize('create', Inquiry::class);
 
         $inquiry = Inquiry::query()->create([...$request->validated(), 'created_by' => $request->user()?->id]);
 
-        return ApiResponse::created(new InquiryResource($inquiry->load('assignedStaff', 'student')));
+        return ApiResponse::created(new InquiryResource($inquiry->load('assignedStaff', 'student', 'campaign')));
     }
 
     public function show(Inquiry $inquiry): JsonResponse
     {
         $this->authorize('view', $inquiry);
 
-        return ApiResponse::success(new InquiryResource($inquiry->load('assignedStaff', 'student', 'followUps')));
+        return ApiResponse::success(new InquiryResource($inquiry->load('assignedStaff', 'student', 'campaign', 'followUps')));
     }
 
     public function update(InquiryRequest $request, Inquiry $inquiry): JsonResponse
@@ -91,7 +108,7 @@ class InquiryController extends Controller
 
         $inquiry->update($request->validated());
 
-        return ApiResponse::success(new InquiryResource($inquiry->load('assignedStaff', 'student', 'followUps')));
+        return ApiResponse::success(new InquiryResource($inquiry->load('assignedStaff', 'student', 'campaign', 'followUps')));
     }
 
     public function destroy(Inquiry $inquiry): JsonResponse
@@ -137,7 +154,7 @@ class InquiryController extends Controller
             ]);
         });
 
-        return ApiResponse::created(new InquiryResource($inquiry->fresh()->load('assignedStaff', 'student', 'followUps')));
+        return ApiResponse::created(new InquiryResource($inquiry->fresh()->load('assignedStaff', 'student', 'campaign', 'followUps')));
     }
 
     /** The inquirer registered: link the new student and close the inquiry as Enrolled. */
@@ -151,6 +168,6 @@ class InquiryController extends Controller
 
         $inquiry->update(['student_id' => $data['student_id'], 'status' => 'enrolled', 'next_follow_up_on' => null]);
 
-        return ApiResponse::success(new InquiryResource($inquiry->load('assignedStaff', 'student', 'followUps')));
+        return ApiResponse::success(new InquiryResource($inquiry->load('assignedStaff', 'student', 'campaign', 'followUps')));
     }
 }

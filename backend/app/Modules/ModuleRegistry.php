@@ -28,6 +28,7 @@ final class ModuleRegistry
             new FrontOffice\FrontOfficeModule,
             new Loan\LoanModule,
             new Fund\FundModule,
+            new Marketing\MarketingModule,
         ])->keyBy(fn (Module $m) => $m->code())->all();
     }
 

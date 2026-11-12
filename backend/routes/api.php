@@ -95,6 +95,7 @@ use App\Http\Controllers\Api\V1\Admin\LookupCategoryController;
 use App\Http\Controllers\Api\V1\Admin\LookupValueController;
 use App\Http\Controllers\Api\V1\Admin\MakeUpClassRequestController;
 use App\Http\Controllers\Api\V1\Admin\InquiryController;
+use App\Http\Controllers\Api\V1\Admin\MarketingCampaignController;
 use App\Http\Controllers\Api\V1\Admin\MeetingController;
 use App\Http\Controllers\Api\V1\Admin\AppointmentController;
 use App\Http\Controllers\Api\V1\Admin\VisitorController;
@@ -509,9 +510,13 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         // Front Office > Inquiry — see InquiryController.
         Route::get('inquiries/summary', [InquiryController::class, 'summary'])->name('inquiries.summary');
         Route::get('inquiries/staff-options', [InquiryController::class, 'staffOptions'])->name('inquiries.staff-options');
+        Route::get('inquiries/campaign-options', [InquiryController::class, 'campaignOptions'])->name('inquiries.campaign-options');
         Route::apiResource('inquiries', InquiryController::class);
         Route::post('inquiries/{inquiry}/follow-ups', [InquiryController::class, 'addFollowUp'])->name('inquiries.follow-ups.store');
         Route::post('inquiries/{inquiry}/enroll', [InquiryController::class, 'enroll'])->name('inquiries.enroll');
+
+        // Marketing > Campaigns: inquiries pick the campaign that brought them.
+        Route::apiResource('marketing-campaigns', MarketingCampaignController::class)->parameters(['marketing-campaigns' => 'campaign']);
 
         // Front Office > Meetings — see MeetingController.
         Route::get('meetings/summary', [MeetingController::class, 'summary'])->name('meetings.summary');

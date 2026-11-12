@@ -1061,6 +1061,16 @@ final class Permissions
 
     public const PROJECTS_DELETE = 'projects.delete';
 
+    // Marketing > Campaigns (MarketingCampaignPolicy): ads, flyers, events ...
+    // with a budget and real cost; inquiries pick the campaign that brought them.
+    public const CAMPAIGNS_VIEW = 'campaigns.view';
+
+    public const CAMPAIGNS_CREATE = 'campaigns.create';
+
+    public const CAMPAIGNS_UPDATE = 'campaigns.update';
+
+    public const CAMPAIGNS_DELETE = 'campaigns.delete';
+
     // Front Office > Inquiry — people who ask about the school and their
     // follow-ups (InquiryPolicy). Adding a follow-up counts as an update.
     public const INQUIRIES_VIEW = 'inquiries.view';
@@ -1812,6 +1822,12 @@ final class Permissions
                 self::VISITORS_UPDATE => 'Update visitors and check them out',
                 self::VISITORS_DELETE => 'Delete visitor records',
             ],
+            'Marketing' => [
+                self::CAMPAIGNS_VIEW => 'View campaigns and their leads',
+                self::CAMPAIGNS_CREATE => 'Add campaigns',
+                self::CAMPAIGNS_UPDATE => 'Update campaigns and their cost',
+                self::CAMPAIGNS_DELETE => 'Delete campaigns',
+            ],
             'Projects' => [
                 self::PROJECTS_VIEW => 'View projects',
                 self::PROJECTS_CREATE => 'Create projects',
@@ -2174,6 +2190,7 @@ final class Permissions
                 self::MEETINGS_DELETE,
                 self::APPOINTMENTS_DELETE,
                 self::VISITORS_DELETE,
+                self::CAMPAIGNS_VIEW, self::CAMPAIGNS_CREATE, self::CAMPAIGNS_UPDATE, self::CAMPAIGNS_DELETE,
             ],
             // Read-only across the board, with a few write exceptions: the
             // teaching catalog itself (who teaches what, in which room) stays

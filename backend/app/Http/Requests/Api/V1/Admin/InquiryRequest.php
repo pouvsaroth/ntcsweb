@@ -28,6 +28,7 @@ class InquiryRequest extends FormRequest
             'email' => ['nullable', 'email', 'max:150'],
             'interested_in' => ['nullable', 'string', 'max:255'],
             'source' => [$required, Rule::in(Inquiry::SOURCES)],
+            'marketing_campaign_id' => ['nullable', 'integer', Rule::exists('tenant.marketing_campaigns', 'id')],
             'status' => ['sometimes', Rule::in(Inquiry::STATUSES)],
             'next_follow_up_on' => ['nullable', 'date_format:Y-m-d'],
             'assigned_staff_id' => ['nullable', 'integer', Rule::exists('tenant.staff', 'id')->whereNull('deleted_at')],

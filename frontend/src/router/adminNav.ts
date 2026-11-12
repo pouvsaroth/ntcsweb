@@ -11,6 +11,7 @@ import { professionalDevelopmentTabs } from '@/router/professionalDevelopmentTab
 import { documentLinks } from '@/router/publicNav'
 import { examinationPermissions } from '@/router/examinationTabs'
 import { frontOfficeTabs } from '@/router/frontOfficeTabs'
+import { marketingTabs } from '@/router/marketingTabs'
 import { recruitmentTabs } from '@/router/recruitmentTabs'
 
 export interface AdminNavItem {
@@ -135,6 +136,13 @@ export const adminNav: AdminNavGroup[] = [
     icon: 'inbox',
     standalone: true,
     items: [{ labelKey: 'adminNav.groups.frontOffice', icon: 'inbox', to: '/admin/front-office', permission: frontOfficeTabs.map((tab) => tab.permission) }],
+  },
+  {
+    // One top-level link; Campaigns (and later Report, Referrals, Broadcast) are tabs (see marketingTabs.ts).
+    labelKey: 'adminNav.groups.marketing',
+    icon: 'chart',
+    standalone: true,
+    items: [{ labelKey: 'adminNav.groups.marketing', icon: 'chart', to: '/admin/marketing', permission: marketingTabs.map((tab) => tab.permission) }],
   },
   {
     labelKey: 'adminNav.groups.platform',
