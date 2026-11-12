@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import BaseAlert from '@/components/ui/BaseAlert.vue'
@@ -8,10 +8,10 @@ import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import BaseSpinner from '@/components/ui/BaseSpinner.vue'
+import CheckInCard from '@/components/admin/CheckInCard.vue'
 import CorrectionFormModal from '@/components/admin/CorrectionFormModal.vue'
 import {
   clock,
-  currentLocation,
   DAY_STYLE,
   myCorrectionsService,
   myOvertimeService,
@@ -28,16 +28,15 @@ import { formatMinutes } from '@/services/timeAttendance'
 import { ApiRequestError } from '@/types/api'
 
 /**
- * A staff member's own Check in / Check out (HRM) — one big button, the
- * time taken by the server, the phone's location if it allows — and their
- * month below. Built phone-first: this is what staff open on arrival.
+ * A staff member's own Check in / Check out (HRM) — CheckInCard (place
+ * status, one big round button, today's hours), this week at a glance, and
+ * their month below. Built phone-first: this is what staff open on arrival.
  */
 const { t, locale } = useI18n()
 
 const today = ref<MyToday | null>(null)
 const loading = ref(true)
 const error = ref<string | null>(null)
-const busy = ref(false)
 const done = ref<string | null>(null)
 const notStaff = ref(false)
 
@@ -45,11 +44,40 @@ const month = ref(thisMonth())
 const days = ref<SheetDay[]>([])
 const totals = ref<SheetTotals | null>(null)
 
-// A live clock.
-const now = ref(new Date())
-let timer: ReturnType<typeof setInterval> | undefined
-const timeText = computed(() => now.value.toLocaleTimeString(locale.value, { hour: '2-digit', minute: '2-digit', second: '2-digit' }))
-const dateText = computed(() => now.value.toLocaleDateString(locale.value, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }))
+// --- This week (Monday to Sunday) ---------------------------------------------------------
+
+function isoDay(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+const weekDates = computed(() => {
+  const monday = new Date()
+  monday.setHours(0, 0, 0, 0)
+  monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7))
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(monday)
+    d.setDate(monday.getDate() + i)
+    return isoDay(d)
+  })
+})
+const weekByDate = ref(new Map<string, SheetDay>())
+const todayIso = isoDay(new Date())
+const week = computed(() => weekDates.value.map((date) => ({ date, day: weekByDate.value.get(date) ?? null })))
+const weekWorked = computed(() => week.value.reduce((sum, w) => sum + (w.day?.worked_minutes ?? 0), 0))
+const weekLate = computed(() => week.value.filter((w) => (w.day?.late_minutes ?? 0) > 0).length)
+const weekDaysIn = computed(() => week.value.filter((w) => w.day?.check_in_at).length)
+
+async function loadWeek() {
+  const months = [...new Set(weekDates.value.map((d) => d.slice(0, 7)))]
+  const results = await Promise.all(months.map((m) => myStaffAttendanceService.month(m).catch(() => null)))
+  const map = new Map<string, SheetDay>()
+  for (const result of results) for (const day of result?.days ?? []) map.set(day.date, day)
+  weekByDate.value = map
+}
+
+function weekLabel(date: string): string {
+  return new Date(`${date}T00:00`).toLocaleDateString(locale.value, { weekday: 'narrow' })
+}
 
 async function loadToday() {
   try {
@@ -126,34 +154,20 @@ async function loadMonth() {
   totals.value = result?.totals ?? null
 }
 
-async function punch(kind: 'in' | 'out') {
-  busy.value = true
-  error.value = null
-  done.value = null
-  try {
-    const location = await currentLocation()
-    const record = kind === 'in' ? await myStaffAttendanceService.checkIn(location) : await myStaffAttendanceService.checkOut(location)
-    done.value = t(kind === 'in' ? 'admin.timeAttendance.my.checkedIn' : 'admin.timeAttendance.my.checkedOut', {
-      time: clock(kind === 'in' ? record.check_in_at : record.check_out_at),
-    })
-    await Promise.all([loadToday(), loadMonth()])
-  } catch (e) {
-    error.value = e instanceof ApiRequestError ? e.message : t('admin.timeAttendance.my.failed')
-  } finally {
-    busy.value = false
-  }
+/** After a check-in / out: today, this week and the month again. */
+async function onPunched() {
+  await Promise.all([loadToday(), loadMonth(), loadWeek()])
 }
 
 watch(month, () => void loadMonth())
 
 onMounted(async () => {
-  timer = setInterval(() => (now.value = new Date()), 1000)
   await loadToday()
   loading.value = false
+  if (notStaff.value) return
   void loadMonth()
+  void loadWeek()
 })
-
-onBeforeUnmount(() => clearInterval(timer))
 </script>
 
 <template>
@@ -164,38 +178,37 @@ onBeforeUnmount(() => clearInterval(timer))
     <BaseAlert v-else-if="notStaff" variant="info">{{ t('admin.timeAttendance.my.notStaff') }}</BaseAlert>
 
     <template v-else>
-      <section class="rounded-2xl border border-neutral-200 bg-white p-6 text-center shadow-[--shadow-card]">
-        <p class="text-4xl font-bold tabular-nums text-neutral-900">{{ timeText }}</p>
-        <p class="mt-1 text-sm text-neutral-500">{{ dateText }}</p>
-        <p v-if="today?.shift" class="mt-3 text-sm text-neutral-700">
-          {{ t('admin.timeAttendance.my.todayShift', { name: today.shift.name, from: today.shift.start_time, to: today.shift.end_time }) }}
-        </p>
-        <p v-else class="mt-3 text-sm text-neutral-500">{{ t('admin.timeAttendance.my.noShift') }}</p>
+      <BaseAlert v-if="error" variant="danger" class="mb-4">{{ error }}</BaseAlert>
+      <BaseAlert v-if="done" variant="success" class="mb-4">{{ done }}</BaseAlert>
 
-        <BaseAlert v-if="error" variant="danger" class="mt-4 text-left">{{ error }}</BaseAlert>
-        <BaseAlert v-if="done" variant="success" class="mt-4 text-left">{{ done }}</BaseAlert>
+      <CheckInCard v-if="today" :today="today" @changed="onPunched" />
 
-        <div class="mt-5">
-          <BaseButton v-if="today?.can_check_in" size="lg" class="w-full" :loading="busy" @click="punch('in')">{{ t('admin.timeAttendance.my.checkIn') }}</BaseButton>
-          <BaseButton v-else-if="today?.can_check_out" size="lg" variant="danger" class="w-full" :loading="busy" @click="punch('out')">
-            {{ t('admin.timeAttendance.my.checkOut') }}
-          </BaseButton>
-          <p v-else class="text-sm font-medium text-success-600">{{ t('admin.timeAttendance.my.allDone') }}</p>
+      <!-- This week at a glance -->
+      <section class="mt-6 rounded-2xl border border-neutral-200 bg-white p-4 shadow-[--shadow-card]">
+        <div class="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+          <h2 class="text-sm font-semibold text-neutral-800">{{ t('admin.timeAttendance.my.thisWeek') }}</h2>
+          <p class="text-xs text-neutral-500">
+            {{ t('admin.timeAttendance.my.weekDays', { count: weekDaysIn }) }} · {{ formatMinutes(weekWorked) }}<template v-if="weekLate"> · <span class="font-medium text-amber-700">{{ t('admin.timeAttendance.my.weekLate', { count: weekLate }) }}</span></template>
+          </p>
         </div>
-
-        <dl v-if="today?.record" class="mt-5 grid grid-cols-2 gap-3 text-sm">
-          <div class="rounded-lg bg-neutral-50 p-3">
-            <dt class="text-neutral-500">{{ t('admin.timeAttendance.checkIn') }}</dt>
-            <dd class="text-lg font-semibold text-neutral-900">{{ clock(today.record.check_in_at) }}</dd>
-            <dd v-if="today.record.late_minutes" class="text-xs text-amber-700">{{ t('admin.timeAttendance.lateBy', { minutes: today.record.late_minutes }) }}</dd>
+        <div class="grid grid-cols-7 gap-1.5">
+          <div
+            v-for="w in week"
+            :key="w.date"
+            class="flex flex-col items-center rounded-xl border px-0.5 py-2"
+            :class="w.date === todayIso ? 'border-primary-400 ring-2 ring-primary-100' : 'border-neutral-100'"
+          >
+            <span class="text-[11px] font-medium uppercase text-neutral-500">{{ weekLabel(w.date) }}</span>
+            <span class="text-sm font-semibold text-neutral-800">{{ Number(w.date.slice(8)) }}</span>
+            <span
+              class="mt-1 flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold"
+              :class="w.day && w.day.status !== 'none' && w.day.status !== 'upcoming' ? DAY_STYLE[w.day.status].cls : 'bg-neutral-100 text-neutral-300'"
+            >
+              {{ w.day && w.day.status !== 'none' && w.day.status !== 'upcoming' ? DAY_STYLE[w.day.status].short : '·' }}
+            </span>
+            <span class="mt-1 text-[10px] tabular-nums text-neutral-500">{{ w.day?.check_in_at ? clock(w.day.check_in_at) : '' }}&nbsp;</span>
           </div>
-          <div class="rounded-lg bg-neutral-50 p-3">
-            <dt class="text-neutral-500">{{ t('admin.timeAttendance.checkOut') }}</dt>
-            <dd class="text-lg font-semibold text-neutral-900">{{ clock(today.record.check_out_at) }}</dd>
-            <dd v-if="today.record.early_leave_minutes" class="text-xs text-orange-700">{{ t('admin.timeAttendance.earlyBy', { minutes: today.record.early_leave_minutes }) }}</dd>
-          </div>
-        </dl>
-        <p class="mt-3 text-xs text-neutral-400">{{ t('admin.timeAttendance.my.locationHint') }}</p>
+        </div>
       </section>
 
       <section class="mt-6">
