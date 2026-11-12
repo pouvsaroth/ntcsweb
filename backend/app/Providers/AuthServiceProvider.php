@@ -41,6 +41,7 @@ use App\Models\ExamApplication;
 use App\Models\ExamScore;
 use App\Models\Expense;
 use App\Models\ExpenseEntity;
+use App\Models\ExpenseSupport;
 use App\Models\FinancialTransaction;
 use App\Models\FormCategory;
 use App\Models\FormTemplate;
@@ -143,6 +144,7 @@ use App\Policies\EnrollmentPolicy;
 use App\Policies\ExamApplicationPolicy;
 use App\Policies\ExamScorePolicy;
 use App\Policies\ExpenseEntityPolicy;
+use App\Policies\ExpenseSupportPolicy;
 use App\Policies\ExpensePolicy;
 use App\Policies\FinancialTransactionPolicy;
 use App\Policies\FormCategoryPolicy;
@@ -289,6 +291,7 @@ class AuthServiceProvider extends ServiceProvider
         Supplier::class => SupplierPolicy::class,
         Company::class => CompanyPolicy::class,
         ExpenseEntity::class => ExpenseEntityPolicy::class,
+        ExpenseSupport::class => ExpenseSupportPolicy::class,
         Borrowing::class => BorrowingPolicy::class,
         Lender::class => BorrowingPolicy::class,
         LoanCustomer::class => LoanCustomerPolicy::class,

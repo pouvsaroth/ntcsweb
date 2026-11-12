@@ -13,4 +13,6 @@ export const expenseTabs: ExpenseTab[] = [
   { to: '/admin/expenses', labelKey: 'adminNav.items.expenses', permission: 'expense.view' },
   // Who an expense is for (Newtech, Flexi, Family...).
   { to: '/admin/expenses/expense-for', labelKey: 'adminNav.items.expenseFor', permission: 'expense-for.view' },
+  // Money or food people gave towards an Expense for (e.g. hospital visitors).
+  { to: '/admin/expenses/support', labelKey: 'adminNav.items.expenseSupport', permission: 'expense-supports.view' },
 ]

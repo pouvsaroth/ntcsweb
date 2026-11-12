@@ -905,6 +905,15 @@ final class Permissions
 
     public const EXPENSE_FOR_DELETE = 'expense-for.delete';
 
+    // Accounting > Expenses > Support (money or food people gave towards an Expense for).
+    public const EXPENSE_SUPPORTS_VIEW = 'expense-supports.view';
+
+    public const EXPENSE_SUPPORTS_CREATE = 'expense-supports.create';
+
+    public const EXPENSE_SUPPORTS_UPDATE = 'expense-supports.update';
+
+    public const EXPENSE_SUPPORTS_DELETE = 'expense-supports.delete';
+
     // Suppliers: one list, shown as Accounting > Vendors and Assets > Suppliers.
     public const SUPPLIERS_VIEW = 'suppliers.view';
 
@@ -1758,6 +1767,10 @@ final class Permissions
                 self::EXPENSE_FOR_CREATE => 'Add to the Expense for list',
                 self::EXPENSE_FOR_UPDATE => 'Update the Expense for list',
                 self::EXPENSE_FOR_DELETE => 'Delete from the Expense for list',
+                self::EXPENSE_SUPPORTS_VIEW => 'View support received (Expenses > Support)',
+                self::EXPENSE_SUPPORTS_CREATE => 'Add support received',
+                self::EXPENSE_SUPPORTS_UPDATE => 'Update support received',
+                self::EXPENSE_SUPPORTS_DELETE => 'Delete support received',
                 self::SUPPLIERS_VIEW => 'View suppliers / vendors',
                 self::SUPPLIERS_CREATE => 'Add suppliers / vendors',
                 self::SUPPLIERS_UPDATE => 'Update suppliers / vendors',
@@ -2002,6 +2015,7 @@ final class Permissions
             self::FUNDS_VIEW, self::FUNDS_CREATE, self::FUNDS_UPDATE, self::FUNDS_DELETE,
             self::CUSTOMER_LOANS_VIEW, self::CUSTOMER_LOANS_CREATE, self::CUSTOMER_LOANS_UPDATE, self::CUSTOMER_LOANS_DELETE,
             self::EXPENSE_FOR_VIEW, self::EXPENSE_FOR_CREATE, self::EXPENSE_FOR_UPDATE, self::EXPENSE_FOR_DELETE,
+            self::EXPENSE_SUPPORTS_VIEW, self::EXPENSE_SUPPORTS_CREATE, self::EXPENSE_SUPPORTS_UPDATE, self::EXPENSE_SUPPORTS_DELETE,
             self::SUPPLIERS_VIEW, self::SUPPLIERS_CREATE, self::SUPPLIERS_UPDATE, self::SUPPLIERS_DELETE,
             self::TRANSACTIONS_VIEW, self::TRANSACTIONS_CREATE,
             self::REPORTS_FINANCIAL_VIEW, self::REPORTS_FINANCIAL_EXPORT,

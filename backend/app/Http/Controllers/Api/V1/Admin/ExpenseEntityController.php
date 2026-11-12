@@ -10,6 +10,7 @@ use App\Http\Requests\Api\V1\Admin\UpdateExpenseEntityRequest;
 use App\Http\Resources\ExpenseEntityResource;
 use App\Http\Responses\ApiResponse;
 use App\Models\ExpenseEntity;
+use App\Models\ExpenseSupport;
 use App\Support\Query\ApiQuery;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -55,8 +56,8 @@ final class ExpenseEntityController extends Controller
     {
         $this->authorize('delete', $expenseEntity);
 
-        if ($expenseEntity->expenses()->exists()) {
-            return ApiResponse::error(__('This is used by expenses and cannot be deleted. Deactivate it instead.'), 422);
+        if ($expenseEntity->expenses()->exists() || ExpenseSupport::query()->where('expense_entity_id', $expenseEntity->id)->exists()) {
+            return ApiResponse::error(__('This is used by expenses or support records and cannot be deleted. Deactivate it instead.'), 422);
         }
 
         $expenseEntity->delete();

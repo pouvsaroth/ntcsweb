@@ -414,6 +414,8 @@ const MODULES: ModuleEntry[] = [
   },
   // A tab of Expenses (/admin/expenses/expense-for).
   { name: 'Expense for', group: 'Accounting', actions: crud('expense-for') },
+  // A tab of Expenses (/admin/expenses/support): money or food people gave.
+  { name: 'Expense support', group: 'Accounting', actions: crud('expense-supports') },
   // One list: Accounting > Vendors and Assets > Suppliers.
   { name: 'Vendors / Suppliers', group: 'Accounting', actions: crud('suppliers') },
   { name: 'Customers', group: 'Loan', actions: crud('loan-customers') },

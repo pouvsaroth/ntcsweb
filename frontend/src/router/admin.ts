@@ -4,6 +4,7 @@ import { firstAccessibleAdminPath } from '@/router/adminNav'
 import { canOpenOrganizationTab, organizationTabs } from '@/router/organizationTabs'
 import { nextShownTab } from '@/router/tabVisibility'
 import { attendanceRecordTabs, attendanceTabs } from '@/router/attendanceTabs'
+import { expenseTabs } from '@/router/expenseTabs'
 import { leaveTabs } from '@/router/leaveTabs'
 import { borrowingsTabs } from '@/router/borrowingsTabs'
 import { payrollTabs } from '@/router/payrollTabs'
@@ -1001,8 +1002,10 @@ const adminRoutes: RouteRecordRaw[] = [
         // Someone who may open only Expense for lands on that tab.
         beforeEnter: () => {
           const auth = useAuthStore()
-          if (!auth.can('expense.view') && auth.can('expense-for.view')) return '/admin/expenses/expense-for'
-          return true
+          if (auth.can('expense.view')) return true
+          // Someone who may open only a later tab lands on the first one they can.
+          const first = expenseTabs.find((tab) => auth.can(tab.permission))
+          return first ? first.to : true
         },
       },
       {
@@ -1010,6 +1013,12 @@ const adminRoutes: RouteRecordRaw[] = [
         name: 'admin.expense-for',
         component: () => import('@/pages/admin/ExpenseEntities.vue'),
         meta: { permission: 'expense-for.view' },
+      },
+      {
+        path: 'support',
+        name: 'admin.expense-support',
+        component: () => import('@/pages/admin/ExpenseSupports.vue'),
+        meta: { permission: 'expense-supports.view' },
       },
     ],
   },

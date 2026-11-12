@@ -52,6 +52,7 @@ use App\Http\Controllers\Api\V1\Admin\CompanyController;
 use App\Http\Controllers\Api\V1\Admin\CompanyInvoiceController;
 use App\Http\Controllers\Api\V1\Admin\BorrowingController;
 use App\Http\Controllers\Api\V1\Admin\ExpenseEntityController;
+use App\Http\Controllers\Api\V1\Admin\ExpenseSupportController;
 use App\Http\Controllers\Api\V1\Admin\LenderController;
 use App\Http\Controllers\Api\V1\Admin\LoanCustomerController;
 use App\Http\Controllers\Api\V1\Admin\SavingsAccountController;
@@ -1029,6 +1030,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
 
         // Accounting > Expense for (Newtech, Flexi, Family...).
         Route::apiResource('expense-entities', ExpenseEntityController::class);
+        // Accounting > Expenses > Support: money or food people gave towards an Expense for.
+        Route::apiResource('expense-supports', ExpenseSupportController::class);
         // Accounting > Borrowings: money borrowed from companies and people.
         Route::apiResource('lenders', LenderController::class);
         // Loan > Customers (shared by Savings and Owe).
