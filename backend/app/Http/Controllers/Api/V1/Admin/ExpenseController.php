@@ -27,10 +27,15 @@ use App\Services\Approvals\ApprovalFlow;
 use App\Support\Approvals\DocumentType;
 use App\Support\Query\ApiQuery;
 use App\Support\Tenancy\TenantContext;
+use App\Support\Accounting\ExpenseStatus;
+use App\Support\Authorization\Permissions;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 final class ExpenseController extends Controller
 {
@@ -166,6 +171,79 @@ final class ExpenseController extends Controller
         $expense = $this->expenses->pay($expense, $cashAccount, $request->user(), $request->validated('paid_date'));
 
         return $this->full($expense, $request->user());
+    }
+
+    /**
+     * Approve selected: each ticked expense is approved as if opened one by
+     * one (flow step, self-approval rule). Those that can't be are skipped,
+     * each with its reason.
+     */
+    public function bulkApprove(Request $request): JsonResponse
+    {
+        $ids = $request->validate(['ids' => ['required', 'array', 'min:1', 'max:'.self::BULK_MAX], 'ids.*' => ['integer']])['ids'];
+        $user = $request->user();
+
+        return $this->eachExpense($ids, function (Expense $expense) use ($user) {
+            if ($expense->status !== ExpenseStatus::PENDING_APPROVAL) {
+                throw ValidationException::withMessages(['status' => __('Not waiting for approval.')]);
+            }
+            if (! $this->flow->mayDecide($expense, $user, 'approve')) {
+                throw new AuthorizationException(__('Not waiting for your approval.'));
+            }
+            $this->flow->approve(
+                $expense,
+                $user,
+                fn (Expense $doc) => $this->expenses->approve($doc, $user),
+                fn (Expense $doc, $nextApprovers) => $this->expenses->notifyApprovers($doc, $nextApprovers),
+            );
+        });
+    }
+
+    /** Pay selected: approved ones are paid from one cash/bank account on one date; the rest are skipped with a reason. */
+    public function bulkPay(Request $request): JsonResponse
+    {
+        abort_unless($request->user()->hasPermission(Permissions::EXPENSE_PAY), 403);
+        $data = $request->validate([
+            'ids' => ['required', 'array', 'min:1', 'max:'.self::BULK_MAX],
+            'ids.*' => ['integer'],
+            'cash_account_id' => ['required', Rule::exists('tenant.accounts', 'id')->where('is_bank_or_cash', true)->where('is_active', true)],
+            'paid_date' => ['nullable', 'date'],
+        ]);
+        $cashAccount = Account::query()->findOrFail($data['cash_account_id']);
+        $user = $request->user();
+
+        return $this->eachExpense($data['ids'], function (Expense $expense) use ($cashAccount, $user, $data) {
+            if ($expense->status !== ExpenseStatus::APPROVED) {
+                throw ValidationException::withMessages(['status' => $expense->status === ExpenseStatus::PAID ? __('Already paid.') : __('Not approved yet.')]);
+            }
+            $this->expenses->pay($expense, $cashAccount, $user, $data['paid_date'] ?? null);
+        });
+    }
+
+    /** Up to this many ticked at once. */
+    private const BULK_MAX = 200;
+
+    /**
+     * Runs one action per expense, each on its own; a failure skips only that one.
+     *
+     * @param  list<int>  $ids
+     */
+    private function eachExpense(array $ids, callable $action): JsonResponse
+    {
+        $done = [];
+        $skipped = [];
+        foreach (Expense::query()->whereIn('id', array_unique($ids))->orderBy('id')->get() as $expense) {
+            try {
+                $action($expense);
+                $done[] = $expense->id;
+            } catch (ValidationException $e) {
+                $skipped[] = ['id' => $expense->id, 'expense_number' => $expense->expense_number, 'reason' => collect($e->errors())->flatten()->first() ?? $e->getMessage()];
+            } catch (AuthorizationException $e) {
+                $skipped[] = ['id' => $expense->id, 'expense_number' => $expense->expense_number, 'reason' => $e->getMessage()];
+            }
+        }
+
+        return ApiResponse::success(['done' => $done, 'skipped' => $skipped]);
     }
 
     public function cancel(CancelExpenseRequest $request, Expense $expense): JsonResponse

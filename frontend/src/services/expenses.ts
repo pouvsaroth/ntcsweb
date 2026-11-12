@@ -64,6 +64,11 @@ export interface ExpenseInput {
   reference_number: string
 }
 
+export interface BulkExpenseResult {
+  done: number[]
+  skipped: { id: number; expense_number: string; reason: string }[]
+}
+
 /** Expenses > Add many: one line of the batch. */
 export interface ExpenseBatchLine {
   account_id: number | null
@@ -120,6 +125,10 @@ export const expensesService = {
   get: (id: number) => apiGetWithMeta<Expense>(`/expenses/${id}`).then((r) => r.data),
 
   create: (input: ExpenseInput) => apiPost<Expense>('/expenses', toExpensePayload(input)),
+  /** Approve selected / Pay selected: each one on its own; those that can't be are skipped with a reason. */
+  bulkApprove: (ids: number[]) => apiPost<BulkExpenseResult>('/expenses/bulk-approve', { ids }),
+  bulkPay: (ids: number[], cashAccountId: number, paidDate: string) =>
+    apiPost<BulkExpenseResult>('/expenses/bulk-pay', { ids, cash_account_id: cashAccountId, paid_date: paidDate }),
   /** Add many: all lines saved together, or none (errors name `lines.N.field`). */
   createMany: (input: ExpenseBatchInput) =>
     apiPost<Expense[]>('/expenses/batch', {
