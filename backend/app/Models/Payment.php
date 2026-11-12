@@ -72,6 +72,12 @@ class Payment extends Model
         return $this->belongsTo(User::class, 'cancelled_by');
     }
 
+    protected static function booted(): void
+    {
+        // Marketing > Referrals: the friend's first completed payment rewards the referrer.
+        static::created(fn (self $payment) => app(\App\Services\Marketing\ReferralService::class)->rewardForPayment($payment));
+    }
+
     public function isCounted(): bool
     {
         return $this->status === PaymentStatus::COMPLETED;

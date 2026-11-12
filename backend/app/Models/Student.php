@@ -40,7 +40,7 @@ use Illuminate\Support\Facades\Storage;
     'date_of_birth', 'gender', 'email', 'phone',
     'house_no', 'street_no', 'village_code', 'other_address',
     'facebook', 'telegram', 'photo_path',
-    'enrollment_date', 'status',
+    'enrollment_date', 'status', 'referred_by_student_id',
 ])]
 class Student extends Model
 {
@@ -89,6 +89,13 @@ class Student extends Model
         static::creating(function (self $student) {
             if ($student->enrollment_date === null) {
                 $student->enrollment_date = Carbon::now(app(TenantContext::class)->get()?->timezone ?: 'Asia/Phnom_Penh')->toDateString();
+            }
+        });
+
+        // Marketing > Referrals: keep the referral row in step with "Referred by".
+        static::saved(function (self $student) {
+            if ($student->wasChanged('referred_by_student_id') || ($student->wasRecentlyCreated && $student->referred_by_student_id !== null)) {
+                app(\App\Services\Marketing\ReferralService::class)->sync($student);
             }
         });
 
@@ -259,5 +266,11 @@ class Student extends Model
         }
 
         return null;
+    }
+
+    /** Marketing > Referrals: the student who brought this one. */
+    public function referredBy(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(self::class, 'referred_by_student_id')->withTrashed();
     }
 }

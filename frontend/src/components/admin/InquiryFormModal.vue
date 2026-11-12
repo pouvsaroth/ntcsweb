@@ -2,6 +2,7 @@
 import { computed, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import ReferrerPicker from '@/components/admin/ReferrerPicker.vue'
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
@@ -32,6 +33,7 @@ const form = reactive({
   interested_in: '',
   source: 'walk_in',
   marketing_campaign_id: '',
+  referred_by_student_id: '',
   status: 'new',
   next_follow_up_on: '',
   assigned_staff_id: '',
@@ -55,6 +57,7 @@ watch(
       interested_in: i?.interested_in ?? '',
       source: i?.source ?? 'walk_in',
       marketing_campaign_id: i?.marketing_campaign_id ? String(i.marketing_campaign_id) : '',
+      referred_by_student_id: i?.referred_by_student_id ? String(i.referred_by_student_id) : '',
       status: i?.status ?? 'new',
       next_follow_up_on: i?.next_follow_up_on ?? '',
       assigned_staff_id: i?.assigned_staff_id ? String(i.assigned_staff_id) : '',
@@ -98,6 +101,8 @@ async function save() {
     interested_in: form.interested_in.trim() || null,
     source: form.source as InquiryInput['source'],
     marketing_campaign_id: form.marketing_campaign_id ? Number(form.marketing_campaign_id) : null,
+    // Only kept while the source is Referral.
+    referred_by_student_id: form.source === 'referral' && form.referred_by_student_id ? Number(form.referred_by_student_id) : null,
     next_follow_up_on: form.next_follow_up_on || null,
     assigned_staff_id: form.assigned_staff_id ? Number(form.assigned_staff_id) : null,
     note: form.note.trim() || null,
@@ -142,6 +147,13 @@ async function save() {
         </div>
         <BaseInput v-model="form.inquiry_date" type="date" required :label="t('frontOffice.inquiries.date')" :error="errors.inquiry_date?.[0]" />
         <BaseSelect v-model="form.source" :options="sourceOptions" required :label="t('frontOffice.inquiries.source')" :error="errors.source?.[0]" />
+        <ReferrerPicker
+          v-if="form.source === 'referral'"
+          v-model="form.referred_by_student_id"
+          :selected="inquiry?.referred_by ?? null"
+          :hint="t('marketing.referrals.inquiryHint')"
+          :error="errors.referred_by_student_id?.[0]"
+        />
         <SearchableSelect
           v-if="campaigns.length"
           v-model="form.marketing_campaign_id"

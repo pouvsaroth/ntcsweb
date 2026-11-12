@@ -37,6 +37,8 @@ class UpdateStudentRequest extends FormRequest
             'date_of_birth' => ['nullable', 'date', 'before:today'],
             'gender' => ['nullable', 'string', 'max:10'],
             'email' => ['nullable', 'email:rfc', 'max:255'],
+            // Marketing > Referrals: the student who brought this one (never themselves).
+            'referred_by_student_id' => ['nullable', 'integer', \Illuminate\Validation\Rule::exists('tenant.students', 'id')->whereNull('deleted_at'), 'not_in:'.(int) ($this->route('student')?->id ?? $this->route('student'))],
             'phone' => ['nullable', 'string', 'max:32'],
 
             'house_no' => ['nullable', 'string', 'max:10'],

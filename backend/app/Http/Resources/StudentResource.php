@@ -47,6 +47,8 @@ class StudentResource extends JsonResource
             'enrollment_date' => $this->enrollment_date?->toDateString(),
             'status' => $this->status,
             'user_id' => $this->user_id,
+            'referred_by_student_id' => $this->referred_by_student_id,
+            'referred_by' => $this->whenLoaded('referredBy', fn () => $this->referredBy ? ['id' => $this->referredBy->id, 'name' => trim($this->referredBy->first_name.' '.$this->referredBy->last_name), 'student_code' => $this->referredBy->student_code] : null),
             'enrollments_count' => $this->whenCounted('enrollments'),
             'guardians_count' => $this->whenCounted('guardians'),
             'educations_count' => $this->whenCounted('educations'),

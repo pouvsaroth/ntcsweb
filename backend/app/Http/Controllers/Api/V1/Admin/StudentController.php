@@ -119,7 +119,7 @@ final class StudentController extends Controller
         // (present only when this call auto-provisioned a new account, i.e.
         // no `user_id` was given) rides in `meta` instead of reshaping `data`.
         return ApiResponse::success(
-            new StudentResource($student->load(['guardians', 'educations'])),
+            new StudentResource($student->load(['guardians', 'educations', 'referredBy'])),
             'Created.',
             $temporaryPassword !== null ? ['temporary_password' => $temporaryPassword] : [],
             Response::HTTP_CREATED,
@@ -130,7 +130,7 @@ final class StudentController extends Controller
     {
         $this->authorize('view', $student);
 
-        $student->load(['guardians', 'educations', 'village.commune.district.province'])->loadCount('enrollments');
+        $student->load(['guardians', 'educations', 'village.commune.district.province', 'referredBy'])->loadCount('enrollments');
 
         return ApiResponse::success(new StudentResource($student));
     }
@@ -166,7 +166,7 @@ final class StudentController extends Controller
             Storage::disk('public')->delete($previousPhotoPath);
         }
 
-        return ApiResponse::success(new StudentResource($student->fresh(['guardians', 'educations'])));
+        return ApiResponse::success(new StudentResource($student->fresh(['guardians', 'educations', 'referredBy'])));
     }
 
     public function destroy(Student $student): JsonResponse

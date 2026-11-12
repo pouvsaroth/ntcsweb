@@ -12,6 +12,7 @@ use App\Models\Inquiry;
 use App\Models\InquiryFollowUp;
 use App\Models\MarketingCampaign;
 use App\Models\Staff;
+use App\Models\Student;
 use App\Support\Query\ApiQuery;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -92,14 +93,14 @@ class InquiryController extends Controller
 
         $inquiry = Inquiry::query()->create([...$request->validated(), 'created_by' => $request->user()?->id]);
 
-        return ApiResponse::created(new InquiryResource($inquiry->load('assignedStaff', 'student', 'campaign')));
+        return ApiResponse::created(new InquiryResource($inquiry->load('assignedStaff', 'student', 'campaign', 'referredBy')));
     }
 
     public function show(Inquiry $inquiry): JsonResponse
     {
         $this->authorize('view', $inquiry);
 
-        return ApiResponse::success(new InquiryResource($inquiry->load('assignedStaff', 'student', 'campaign', 'followUps')));
+        return ApiResponse::success(new InquiryResource($inquiry->load('assignedStaff', 'student', 'campaign', 'referredBy', 'followUps')));
     }
 
     public function update(InquiryRequest $request, Inquiry $inquiry): JsonResponse
@@ -108,7 +109,7 @@ class InquiryController extends Controller
 
         $inquiry->update($request->validated());
 
-        return ApiResponse::success(new InquiryResource($inquiry->load('assignedStaff', 'student', 'campaign', 'followUps')));
+        return ApiResponse::success(new InquiryResource($inquiry->load('assignedStaff', 'student', 'campaign', 'referredBy', 'followUps')));
     }
 
     public function destroy(Inquiry $inquiry): JsonResponse
@@ -154,7 +155,7 @@ class InquiryController extends Controller
             ]);
         });
 
-        return ApiResponse::created(new InquiryResource($inquiry->fresh()->load('assignedStaff', 'student', 'campaign', 'followUps')));
+        return ApiResponse::created(new InquiryResource($inquiry->fresh()->load('assignedStaff', 'student', 'campaign', 'referredBy', 'followUps')));
     }
 
     /** The inquirer registered: link the new student and close the inquiry as Enrolled. */
@@ -168,6 +169,12 @@ class InquiryController extends Controller
 
         $inquiry->update(['student_id' => $data['student_id'], 'status' => 'enrolled', 'next_follow_up_on' => null]);
 
-        return ApiResponse::success(new InquiryResource($inquiry->load('assignedStaff', 'student', 'campaign', 'followUps')));
+        // Marketing > Referrals: the inquiry's "Referred by" carries over when the student has none.
+        $student = Student::query()->find($data['student_id']);
+        if ($inquiry->referred_by_student_id && $student && $student->referred_by_student_id === null && (int) $inquiry->referred_by_student_id !== (int) $student->id) {
+            $student->update(['referred_by_student_id' => $inquiry->referred_by_student_id]);
+        }
+
+        return ApiResponse::success(new InquiryResource($inquiry->load('assignedStaff', 'student', 'campaign', 'referredBy', 'followUps')));
     }
 }

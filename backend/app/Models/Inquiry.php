@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * Tenant-owned. Front Office > Inquiry: someone who asked about the school,
  * followed up until they enrol (student_id) or are not interested.
  */
-#[Fillable(['inquiry_date', 'name', 'gender', 'phone', 'email', 'interested_in', 'source', 'marketing_campaign_id', 'status', 'next_follow_up_on', 'assigned_staff_id', 'student_id', 'enrollment_inquiry_id', 'note', 'created_by'])]
+#[Fillable(['inquiry_date', 'name', 'gender', 'phone', 'email', 'interested_in', 'source', 'marketing_campaign_id', 'referred_by_student_id', 'status', 'next_follow_up_on', 'assigned_staff_id', 'student_id', 'enrollment_inquiry_id', 'note', 'created_by'])]
 class Inquiry extends Model
 {
     use Auditable;
@@ -50,6 +50,12 @@ class Inquiry extends Model
     public function campaign(): BelongsTo
     {
         return $this->belongsTo(MarketingCampaign::class, 'marketing_campaign_id');
+    }
+
+    /** Marketing > Referrals: the student who referred this person. */
+    public function referredBy(): BelongsTo
+    {
+        return $this->belongsTo(Student::class, 'referred_by_student_id')->withTrashed();
     }
 
     public function student(): BelongsTo

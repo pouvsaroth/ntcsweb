@@ -53,6 +53,9 @@ export interface Student {
   guardians?: StudentGuardian[]
   educations?: StudentEducation[]
   created_at: string
+  /** Marketing > Referrals. */
+  referred_by_student_id?: number | null
+  referred_by?: { id: number; name: string; student_code: string | null } | null
 }
 
 export interface StudentInput {
@@ -73,6 +76,8 @@ export interface StudentInput {
   telegram: string
   enrollment_date: string
   status: StudentStatus
+  /** Marketing > Referrals: the student who brought this one ('' = none). Left out = unchanged. */
+  referred_by_student_id?: string
   guardians: StudentGuardian[]
   educations: StudentEducation[]
 }
@@ -101,6 +106,7 @@ function toFormData(input: StudentInput, methodOverride?: 'PUT'): FormData {
   if (input.telegram) form.append('telegram', input.telegram)
   if (input.enrollment_date) form.append('enrollment_date', input.enrollment_date)
   form.append('status', input.status)
+  if (input.referred_by_student_id !== undefined) form.append('referred_by_student_id', input.referred_by_student_id)
 
   input.guardians.forEach((guardian, index) => {
     form.append(`guardians[${index}][guardian_name]`, guardian.guardian_name)

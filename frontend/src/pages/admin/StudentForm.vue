@@ -4,6 +4,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
+import ReferrerPicker from '@/components/admin/ReferrerPicker.vue'
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
@@ -67,10 +68,13 @@ const form = reactive<Omit<StudentInput, 'photo'>>({
   // the real value when editing an existing student.
   enrollment_date: today(),
   status: 'active',
+  referred_by_student_id: '',
   guardians: [],
   educations: [],
 })
 
+/** Marketing > Referrals: the student who brought this one, shown by name in the picker. */
+const referrer = ref<{ id: number; name: string; student_code: string | null } | null>(null)
 const photoFile = ref<File | null>(null)
 const photoPreview = ref<string | null>(null)
 const webcamModalOpen = ref(false)
@@ -198,6 +202,10 @@ async function fillFromInquiry(id: number) {
     if (inquiry.gender) form.gender = inquiry.gender
     form.phone = inquiry.phone
     if (inquiry.email) form.email = inquiry.email
+    if (inquiry.referred_by) {
+      form.referred_by_student_id = String(inquiry.referred_by.id)
+      referrer.value = inquiry.referred_by
+    }
   } catch {
     // Not fatal: the form still works, just empty.
   }
@@ -239,6 +247,8 @@ async function load() {
     form.telegram = student.telegram ?? ''
     form.enrollment_date = student.enrollment_date ?? ''
     form.status = student.status
+    form.referred_by_student_id = student.referred_by_student_id ? String(student.referred_by_student_id) : ''
+    referrer.value = student.referred_by ?? null
     form.guardians = student.guardians ?? []
     form.educations = student.educations ?? []
     photoPreview.value = student.photo_url
@@ -365,6 +375,14 @@ onMounted(load)
           <BaseInput v-model="form.telegram" :label="t('admin.students.telegram')" :error="errors.telegram?.[0]" />
 
           <LookupSelect v-model="form.status" category="STUDENT_STATUS" :label="t('admin.students.status')" />
+          <ReferrerPicker
+            :model-value="form.referred_by_student_id ?? ''"
+            @update:model-value="form.referred_by_student_id = $event"
+            :selected="referrer"
+            :exclude="studentId ? Number(studentId) : null"
+            :hint="t('marketing.referrals.studentHint')"
+            :error="errors.referred_by_student_id?.[0]"
+          />
         </div>
 
         <div class="mt-4">

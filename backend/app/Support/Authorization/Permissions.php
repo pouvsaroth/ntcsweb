@@ -1071,6 +1071,12 @@ final class Permissions
 
     public const CAMPAIGNS_DELETE = 'campaigns.delete';
 
+    // Marketing > Referrals: view = the list and settings; update = change the
+    // settings and give a reward by hand.
+    public const REFERRALS_VIEW = 'referrals.view';
+
+    public const REFERRALS_UPDATE = 'referrals.update';
+
     // Front Office > Inquiry — people who ask about the school and their
     // follow-ups (InquiryPolicy). Adding a follow-up counts as an update.
     public const INQUIRIES_VIEW = 'inquiries.view';
@@ -1831,6 +1837,8 @@ final class Permissions
                 self::CAMPAIGNS_CREATE => 'Add campaigns',
                 self::CAMPAIGNS_UPDATE => 'Update campaigns and their cost',
                 self::CAMPAIGNS_DELETE => 'Delete campaigns',
+                self::REFERRALS_VIEW => 'View referrals and their rewards',
+                self::REFERRALS_UPDATE => 'Change referral settings and give rewards',
             ],
             'Projects' => [
                 self::PROJECTS_VIEW => 'View projects',
@@ -2196,6 +2204,7 @@ final class Permissions
                 self::VISITORS_DELETE,
                 self::CAMPAIGNS_VIEW, self::CAMPAIGNS_CREATE, self::CAMPAIGNS_UPDATE, self::CAMPAIGNS_DELETE,
                 self::DASHBOARD_CARDS_MARKETING,
+                self::REFERRALS_VIEW, self::REFERRALS_UPDATE,
             ],
             // Read-only across the board, with a few write exceptions: the
             // teaching catalog itself (who teaches what, in which room) stays

@@ -177,6 +177,8 @@ const MODULES: ModuleEntry[] = [
   tab('Marketing', 'Marketing', 'Campaigns', '/admin/marketing/campaigns', ['campaigns.view'], crud('campaigns')),
   // Seen with View campaigns.
   tab('Marketing', 'Marketing', 'Report', '/admin/marketing/report', ['campaigns.view'], {}),
+  // Update = change the settings and give a reward by hand.
+  tab('Marketing', 'Marketing', 'Referrals', '/admin/marketing/referrals', ['referrals.view'], { update: 'referrals.update' }),
 
   // ── Academic ──
   // Not the website's "Programs" (Website group) — this is the internal program catalog.

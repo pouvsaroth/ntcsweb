@@ -40,6 +40,8 @@ class StoreStudentRequest extends FormRequest
             // a phone number. Bulk import (StoreStudentImportRequest) is
             // untouched and keeps this nullable, since those rows are
             // historical/legacy data, not new enrollments needing an account.
+            // Marketing > Referrals: the student who brought this one (never themselves).
+            'referred_by_student_id' => ['nullable', 'integer', \Illuminate\Validation\Rule::exists('tenant.students', 'id')->whereNull('deleted_at')],
             'phone' => ['required', 'string', 'max:32', ...($this->filled('user_id') ? [] : [UniqueAccountIdentity::phone()])],
 
             // Structured to match the legacy system's address shape — see

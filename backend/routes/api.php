@@ -97,6 +97,7 @@ use App\Http\Controllers\Api\V1\Admin\MakeUpClassRequestController;
 use App\Http\Controllers\Api\V1\Admin\InquiryController;
 use App\Http\Controllers\Api\V1\Admin\MarketingCampaignController;
 use App\Http\Controllers\Api\V1\Admin\MarketingReportController;
+use App\Http\Controllers\Api\V1\Admin\ReferralController;
 use App\Http\Controllers\Api\V1\Admin\MeetingController;
 use App\Http\Controllers\Api\V1\Admin\AppointmentController;
 use App\Http\Controllers\Api\V1\Admin\VisitorController;
@@ -518,6 +519,14 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
 
         // Marketing > Campaigns: inquiries pick the campaign that brought them.
         Route::get('marketing-report', [MarketingReportController::class, 'index'])->name('marketing-report.index');
+        // Marketing > Referrals: the friend's first payment gives the referrer a reward discount code.
+        Route::get('referrals', [ReferralController::class, 'index'])->name('referrals.index');
+        Route::get('referrals/summary', [ReferralController::class, 'summary'])->name('referrals.summary');
+        Route::get('referrals/settings', [ReferralController::class, 'settings'])->name('referrals.settings');
+        Route::put('referrals/settings', [ReferralController::class, 'updateSettings'])->name('referrals.settings.update');
+        Route::get('referrals/reward-options', [ReferralController::class, 'rewardOptions'])->name('referrals.reward-options');
+        Route::get('referrals/student-options', [ReferralController::class, 'studentOptions'])->name('referrals.student-options');
+        Route::post('referrals/{referral}/give', [ReferralController::class, 'give'])->name('referrals.give');
         Route::get('marketing-report/summary', [MarketingReportController::class, 'summary'])->name('marketing-report.summary');
         Route::apiResource('marketing-campaigns', MarketingCampaignController::class)->parameters(['marketing-campaigns' => 'campaign']);
 

@@ -26,6 +26,8 @@ class InquiryResource extends JsonResource
             'source' => $this->source,
             'marketing_campaign_id' => $this->marketing_campaign_id,
             'campaign' => $this->whenLoaded('campaign', fn () => $this->campaign ? ['id' => $this->campaign->id, 'code' => $this->campaign->code, 'name' => $this->campaign->name] : null),
+            'referred_by_student_id' => $this->referred_by_student_id,
+            'referred_by' => $this->whenLoaded('referredBy', fn () => $this->referredBy ? ['id' => $this->referredBy->id, 'name' => $this->referredBy->fullName(), 'student_code' => $this->referredBy->student_code] : null),
             'status' => $this->status,
             'next_follow_up_on' => $this->next_follow_up_on?->toDateString(),
             'assigned_staff_id' => $this->assigned_staff_id,
