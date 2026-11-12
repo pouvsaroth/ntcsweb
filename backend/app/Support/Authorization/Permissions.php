@@ -1189,6 +1189,9 @@ final class Permissions
     /** Total owed on Accounting > Borrowings; school admin only by default (personal loans too). */
     public const DASHBOARD_CARDS_BORROWINGS = 'dashboard.cards.borrowings';
 
+    /** Leads and enrolled this month, from Marketing (Front Office inquiries). */
+    public const DASHBOARD_CARDS_MARKETING = 'dashboard.cards.marketing';
+
     public const DASHBOARD_CARDS_STUDENT_ATTENDANCE = 'dashboard.cards.student-attendance';
 
     public const DASHBOARD_CARDS_TEACHER_ATTENDANCE = 'dashboard.cards.teacher-attendance';
@@ -1251,6 +1254,7 @@ final class Permissions
                 self::DASHBOARD_CARDS_INVOICES => 'Show the Invoices card',
                 self::DASHBOARD_CARDS_EXPENSE => 'Show the Expense card',
                 self::DASHBOARD_CARDS_BORROWINGS => 'Show the Borrowings card (total owed)',
+                self::DASHBOARD_CARDS_MARKETING => 'Show the Marketing card (leads and enrolled this month)',
                 self::DASHBOARD_CARDS_STUDENT_ATTENDANCE => 'Show the Student Attendance card',
                 self::DASHBOARD_CARDS_TEACHER_ATTENDANCE => 'Show the Teacher Attendance card',
                 self::DASHBOARD_CARDS_REGISTRATION_PENDING => 'Show the Registration Pending card',
@@ -2191,6 +2195,7 @@ final class Permissions
                 self::APPOINTMENTS_DELETE,
                 self::VISITORS_DELETE,
                 self::CAMPAIGNS_VIEW, self::CAMPAIGNS_CREATE, self::CAMPAIGNS_UPDATE, self::CAMPAIGNS_DELETE,
+                self::DASHBOARD_CARDS_MARKETING,
             ],
             // Read-only across the board, with a few write exceptions: the
             // teaching catalog itself (who teaches what, in which room) stays

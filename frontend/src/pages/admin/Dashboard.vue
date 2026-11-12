@@ -12,6 +12,7 @@ import { approvalRequestsService } from '@/services/approvalRequests'
 import { type AttendanceRecord, attendanceService, type AttendanceStatusValue, type MyAttendanceHoursRow } from '@/services/attendance'
 import { type MyDiscountCode, myDiscountCodesService } from '@/services/discountCodes'
 import { enrollmentsService } from '@/services/enrollments'
+import { marketingReportService, type MarketingSummary } from '@/services/marketingReport'
 import { examApplicationsService } from '@/services/examApplications'
 import { type Invoice, invoicesService, type InvoiceStatusValue } from '@/services/invoices'
 import { leaveRequestsService } from '@/services/leaveRequests'
@@ -507,11 +508,19 @@ async function punch(): Promise<void> {
   }
 }
 
+/** Marketing card: leads and enrolled this month (Front Office inquiries). */
+const marketing = ref<MarketingSummary | null>(null)
+async function loadMarketing() {
+  if (!auth.can('dashboard.cards.marketing')) return
+  marketing.value = await marketingReportService.summary().catch(() => null)
+}
+
 function loadAll(): void {
   loadedDay = today()
   loadedAt = Date.now()
   if (!auth.isSuperAdmin && !auth.hasRole('student')) void loadMyToday()
   if (!auth.isSuperAdmin && !auth.hasRole('student')) void loadStats()
+  if (!auth.isSuperAdmin && !auth.hasRole('student')) void loadMarketing()
   if (auth.hasRole('student')) {
     void loadMyHours()
     void loadMyCodes()
@@ -691,6 +700,33 @@ onBeforeUnmount(() => {
           <span class="text-xs font-medium text-neutral-700">{{ t(item.labelKey) }}</span>
         </RouterLink>
       </div>
+
+      <!-- Marketing this month: leads (inquiries), enrolled, conversion, best source. -->
+      <template v-if="marketing">
+        <div class="mt-8 flex items-center justify-between gap-3">
+          <h2 class="text-sm font-semibold uppercase tracking-wide text-neutral-500">{{ t('admin.dashboard.marketingSection') }}</h2>
+          <RouterLink v-if="auth.can('campaigns.view')" to="/admin/marketing/report" class="text-sm font-medium text-primary-700 hover:underline">{{ t('admin.dashboard.marketingOpen') }}</RouterLink>
+        </div>
+        <div class="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <BaseCard>
+            <p class="text-sm font-medium text-neutral-500">{{ t('marketing.report.leads') }}</p>
+            <p class="mt-1 text-2xl font-semibold tabular-nums text-neutral-900">{{ marketing.leads }}</p>
+          </BaseCard>
+          <BaseCard>
+            <p class="text-sm font-medium text-neutral-500">{{ t('marketing.report.enrolled') }}</p>
+            <p class="mt-1 text-2xl font-semibold tabular-nums text-neutral-900">{{ marketing.enrolled }}</p>
+          </BaseCard>
+          <BaseCard>
+            <p class="text-sm font-medium text-neutral-500">{{ t('marketing.report.conversion') }}</p>
+            <p class="mt-1 text-2xl font-semibold tabular-nums text-neutral-900">{{ Number(marketing.conversion) }}%</p>
+          </BaseCard>
+          <BaseCard>
+            <p class="text-sm font-medium text-neutral-500">{{ t('admin.dashboard.marketingTopSource') }}</p>
+            <p class="mt-1 truncate text-lg font-semibold text-neutral-900">{{ marketing.top_source ? t(`frontOffice.inquiries.sources.${marketing.top_source}`) : '—' }}</p>
+            <p v-if="marketing.top_source" class="text-xs text-neutral-500">{{ t('admin.dashboard.marketingLeads', { n: marketing.top_source_leads }) }}</p>
+          </BaseCard>
+        </div>
+      </template>
 
       <template v-if="auth.can('dashboard.attendance.view')">
         <h2 class="mt-8 text-sm font-semibold uppercase tracking-wide text-neutral-500">{{ t('admin.dashboard.attendanceSection') }}</h2>

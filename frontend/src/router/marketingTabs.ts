@@ -11,4 +11,5 @@ export interface MarketingTab {
 
 export const marketingTabs: MarketingTab[] = [
   { to: '/admin/marketing/campaigns', labelKey: 'marketing.tabs.campaigns', permission: 'campaigns.view' },
+  { to: '/admin/marketing/report', labelKey: 'marketing.tabs.report', permission: 'campaigns.view' },
 ]

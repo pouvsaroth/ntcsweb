@@ -96,6 +96,7 @@ use App\Http\Controllers\Api\V1\Admin\LookupValueController;
 use App\Http\Controllers\Api\V1\Admin\MakeUpClassRequestController;
 use App\Http\Controllers\Api\V1\Admin\InquiryController;
 use App\Http\Controllers\Api\V1\Admin\MarketingCampaignController;
+use App\Http\Controllers\Api\V1\Admin\MarketingReportController;
 use App\Http\Controllers\Api\V1\Admin\MeetingController;
 use App\Http\Controllers\Api\V1\Admin\AppointmentController;
 use App\Http\Controllers\Api\V1\Admin\VisitorController;
@@ -516,6 +517,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::post('inquiries/{inquiry}/enroll', [InquiryController::class, 'enroll'])->name('inquiries.enroll');
 
         // Marketing > Campaigns: inquiries pick the campaign that brought them.
+        Route::get('marketing-report', [MarketingReportController::class, 'index'])->name('marketing-report.index');
+        Route::get('marketing-report/summary', [MarketingReportController::class, 'summary'])->name('marketing-report.summary');
         Route::apiResource('marketing-campaigns', MarketingCampaignController::class)->parameters(['marketing-campaigns' => 'campaign']);
 
         // Front Office > Meetings — see MeetingController.

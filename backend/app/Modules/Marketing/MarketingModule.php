@@ -35,4 +35,11 @@ final class MarketingModule extends Module
             'campaigns' => ['Campaigns', 'យុទ្ធនាការ'],
         ];
     }
+
+    public function dashboardPermissions(): array
+    {
+        return [
+            'dashboard.cards.marketing',
+        ];
+    }
 }

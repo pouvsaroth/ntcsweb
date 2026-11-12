@@ -158,6 +158,7 @@ const MODULES: ModuleEntry[] = [
   { name: 'Invoices card', group: 'Dashboard', parent: 'Dashboard cards', actions: { view: 'dashboard.cards.invoices' } },
   { name: 'Expense card', group: 'Dashboard', parent: 'Dashboard cards', actions: { view: 'dashboard.cards.expense' } },
   { name: 'Borrowings card (total owed)', group: 'Dashboard', parent: 'Dashboard cards', actions: { view: 'dashboard.cards.borrowings' } },
+  { name: 'Marketing card (leads this month)', group: 'Dashboard', parent: 'Dashboard cards', actions: { view: 'dashboard.cards.marketing' } },
   { name: 'Student attendance card', group: 'Dashboard', parent: 'Dashboard cards', actions: { view: 'dashboard.cards.student-attendance' } },
   { name: 'Teacher attendance card', group: 'Dashboard', parent: 'Dashboard cards', actions: { view: 'dashboard.cards.teacher-attendance' } },
   { name: 'Users card', group: 'Dashboard', parent: 'Dashboard cards', actions: { view: 'dashboard.cards.users' } },
@@ -174,6 +175,8 @@ const MODULES: ModuleEntry[] = [
 
   // ── Marketing ──
   tab('Marketing', 'Marketing', 'Campaigns', '/admin/marketing/campaigns', ['campaigns.view'], crud('campaigns')),
+  // Seen with View campaigns.
+  tab('Marketing', 'Marketing', 'Report', '/admin/marketing/report', ['campaigns.view'], {}),
 
   // ── Academic ──
   // Not the website's "Programs" (Website group) — this is the internal program catalog.
