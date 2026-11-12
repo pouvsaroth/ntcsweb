@@ -5422,6 +5422,10 @@ const ko: MessageSchema = {
       pageSubtitle: '생성부터 승인, 지급까지의 학교 지출.',
       searchPlaceholder: '지출번호 또는 참조번호로 검색…',
       filterAllStatuses: '모든 상태',
+      paidNow: {
+        label: '지금 지급됨',
+        hint: '이 현금·은행 계정에서 승인 및 지급된 것으로 저장합니다. 체크를 해제하면 승인 대기로 남습니다.',
+      },
       bulk: {
         selected: '{n}건 선택',
         approve: '선택 승인',

@@ -5422,6 +5422,10 @@ const ja: MessageSchema = {
       pageSubtitle: '作成から承認、支払いまでの学校の支出。',
       searchPlaceholder: '支出番号または参照番号で検索…',
       filterAllStatuses: 'すべてのステータス',
+      paidNow: {
+        label: '今すぐ支払い済み',
+        hint: 'この現金・銀行口座から承認済み・支払い済みとして保存します。チェックを外すと承認待ちになります。',
+      },
       bulk: {
         selected: '{n} 件選択',
         approve: '選択を承認',

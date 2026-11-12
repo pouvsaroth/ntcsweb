@@ -6,6 +6,7 @@ namespace App\Http\Requests\Api\V1\Admin;
 
 use App\Models\Expense;
 use App\Models\Tenant;
+use App\Services\Accounting\ExpenseService;
 use App\Support\Accounting\AccountType;
 use App\Support\Billing\PaymentMethod;
 use Illuminate\Foundation\Http\FormRequest;
@@ -22,7 +23,12 @@ class StoreExpenseBatchRequest extends FormRequest
 
     public function authorize(): bool
     {
-        return $this->user()?->can('create', Expense::class) ?? false;
+        $user = $this->user();
+        if ($user === null || ! $user->can('create', Expense::class)) {
+            return false;
+        }
+
+        return ! $this->boolean('paid_now') || ExpenseService::maySelfApprove($user);
     }
 
     public function rules(): array
@@ -34,6 +40,10 @@ class StoreExpenseBatchRequest extends FormRequest
             'currency' => ['nullable', Rule::in([Tenant::CURRENCY_USD, Tenant::CURRENCY_KHR])],
             'payment_method' => ['nullable', Rule::in(PaymentMethod::all())],
             'supplier_id' => ['nullable', 'integer', Rule::exists('tenant.suppliers', 'id')],
+            // "Paid now": saved approved and paid from this cash/bank account (needs Approve + Pay).
+            'paid_now' => ['sometimes', 'boolean'],
+            'cash_account_id' => ['required_if_accepted:paid_now', 'nullable', Rule::exists('tenant.accounts', 'id')->where('is_bank_or_cash', true)->where('is_active', true)],
+            'paid_date' => ['nullable', 'date'],
             'lines' => ['required', 'array', 'min:1', 'max:'.self::MAX_LINES],
             'lines.*.account_id' => [
                 'required',

@@ -10,9 +10,10 @@ import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
 import SearchableSelect from '@/components/ui/SearchableSelect.vue'
+import PaidNowFields from '@/components/admin/PaidNowFields.vue'
 import { accountsService, type Account } from '@/services/accounting'
 import { expenseEntitiesService, type ExpenseEntity } from '@/services/expenseEntities'
-import { expensesService, MAX_EXPENSE_LINES, type ExpenseBatchLine } from '@/services/expenses'
+import { expensesService, MAX_EXPENSE_LINES, type ExpenseBatchLine, type PaidNow } from '@/services/expenses'
 import { paymentMethods } from '@/services/payments'
 import { suppliersService, type Supplier } from '@/services/suppliers'
 import { useAuthStore } from '@/stores/auth'
@@ -119,6 +120,10 @@ const errors = ref<Record<string, string[]>>({})
 const generalError = ref<string | null>(null)
 const submitting = ref(false)
 
+// "Paid now" (ticked by default) for those who may approve and pay.
+const canPayNow = computed(() => auth.can('expense.approve') && auth.can('expense.pay'))
+const paidNow = reactive<PaidNow>({ paid_now: true, cash_account_id: null, paid_date: '' })
+
 /** Server errors name a line by its place among the lines sent ("lines.1.amount"); shown on that row. */
 const sentKeys = ref<number[]>([])
 function lineError(key: number, field: string): string | undefined {
@@ -150,7 +155,7 @@ async function submit() {
   submitting.value = true
   sentKeys.value = filled.value.map((l) => l.key)
   try {
-    const saved = await expensesService.createMany({ ...shared, lines: filled.value })
+    const saved = await expensesService.createMany({ ...shared, lines: filled.value }, canPayNow.value ? paidNow : undefined)
     await router.push({ path: '/admin/expenses', query: { added: String(saved.length) } })
   } catch (error) {
     if (error instanceof ApiRequestError && error.errors) {
@@ -305,6 +310,8 @@ async function submit() {
         </BaseButton>
         <p class="mt-2 text-xs text-neutral-500">{{ t('admin.expenses.batch.hint', { max: MAX_EXPENSE_LINES }) }}</p>
       </section>
+
+      <PaidNowFields v-if="canPayNow" v-model="paidNow" :accounts="accounts" :expense-date="shared.expense_date" :disabled="loading" :errors="errors" />
 
       <div class="flex gap-3">
         <BaseButton type="submit" :loading="submitting" :disabled="loading || !shared.expense_entity_id || !filled.length">

@@ -5426,6 +5426,10 @@ const en = {
       pageSubtitle: 'School expenses, from creation through approval and payment.',
       searchPlaceholder: 'Search by expense or reference number…',
       filterAllStatuses: 'All statuses',
+      paidNow: {
+        label: 'Paid now',
+        hint: 'Saved approved and paid from this cash or bank account. Untick to leave it waiting for approval.',
+      },
       bulk: {
         selected: '{n} selected',
         approve: 'Approve selected',

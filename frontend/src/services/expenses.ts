@@ -64,6 +64,17 @@ export interface ExpenseInput {
   reference_number: string
 }
 
+/** Add expense / Add many: "Paid now" — saved approved and paid from this cash/bank account. */
+export interface PaidNow {
+  paid_now: boolean
+  cash_account_id: number | null
+  paid_date: string
+}
+
+function paidNowPayload(paid?: PaidNow) {
+  return paid?.paid_now ? { paid_now: true, cash_account_id: paid.cash_account_id, paid_date: paid.paid_date || null } : {}
+}
+
 export interface BulkExpenseResult {
   done: number[]
   skipped: { id: number; expense_number: string; reason: string }[]
@@ -124,14 +135,15 @@ export const expensesService = {
 
   get: (id: number) => apiGetWithMeta<Expense>(`/expenses/${id}`).then((r) => r.data),
 
-  create: (input: ExpenseInput) => apiPost<Expense>('/expenses', toExpensePayload(input)),
+  create: (input: ExpenseInput, paid?: PaidNow) => apiPost<Expense>('/expenses', { ...toExpensePayload(input), ...paidNowPayload(paid) }),
   /** Approve selected / Pay selected: each one on its own; those that can't be are skipped with a reason. */
   bulkApprove: (ids: number[]) => apiPost<BulkExpenseResult>('/expenses/bulk-approve', { ids }),
   bulkPay: (ids: number[], cashAccountId: number, paidDate: string) =>
     apiPost<BulkExpenseResult>('/expenses/bulk-pay', { ids, cash_account_id: cashAccountId, paid_date: paidDate }),
   /** Add many: all lines saved together, or none (errors name `lines.N.field`). */
-  createMany: (input: ExpenseBatchInput) =>
+  createMany: (input: ExpenseBatchInput, paid?: PaidNow) =>
     apiPost<Expense[]>('/expenses/batch', {
+      ...paidNowPayload(paid),
       expense_date: input.expense_date,
       for_month: input.for_month || null,
       expense_entity_id: input.expense_entity_id,

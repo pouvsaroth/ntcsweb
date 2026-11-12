@@ -5421,6 +5421,10 @@ const zh: MessageSchema = {
       pageSubtitle: '学校支出，从创建到审批再到付款的全过程。',
       searchPlaceholder: '按支出编号或参考号搜索…',
       filterAllStatuses: '所有状态',
+      paidNow: {
+        label: '已立即支付',
+        hint: '保存为已批准并从此现金或银行账户支付。取消勾选则保留为待批准。',
+      },
       bulk: {
         selected: '已选 {n}',
         approve: '批准所选',

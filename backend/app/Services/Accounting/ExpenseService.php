@@ -14,6 +14,7 @@ use App\Support\Accounting\ExpenseStatus;
 use App\Support\Approvals\DocumentType;
 use App\Support\Audit\AuditAction;
 use App\Support\Audit\AuditLogger;
+use App\Support\Authorization\Permissions;
 use App\Support\Notifications\NotificationType;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Support\Carbon;
@@ -113,7 +114,7 @@ final class ExpenseService
      */
     public function approve(Expense $expense, User $actor): Expense
     {
-        if (! $this->flow->hasFlow(DocumentType::EXPENSE) && $expense->created_by === $actor->getKey()) {
+        if (! $this->flow->hasFlow(DocumentType::EXPENSE) && $expense->created_by === $actor->getKey() && ! self::maySelfApprove($actor)) {
             throw ValidationException::withMessages(['status' => 'You cannot approve an expense you created yourself.']);
         }
 
@@ -122,6 +123,30 @@ final class ExpenseService
         $this->notifyCreator($expense, $actor, NotificationType::EXPENSE_APPROVED);
 
         return $expense;
+    }
+
+    /**
+     * Someone who may both approve and pay expenses may approve their own
+     * (no approval flow set); everyone else's own expenses wait for someone else.
+     */
+    public static function maySelfApprove(User $actor): bool
+    {
+        return $actor->hasPermission(Permissions::EXPENSE_APPROVE) && $actor->hasPermission(Permissions::EXPENSE_PAY);
+    }
+
+    /**
+     * "Paid now" on Add expense / Add many: approve the new expense (when no
+     * approval flow is set — with a flow it was approved at creation only if
+     * the creator is its last approver) and pay it. One that is still waiting
+     * on a flow is left pending.
+     */
+    public function payNow(Expense $expense, Account $cashAccount, User $actor, ?string $date = null): Expense
+    {
+        if ($expense->status === ExpenseStatus::PENDING_APPROVAL && ! $this->flow->hasFlow(DocumentType::EXPENSE)) {
+            $expense = $this->approve($expense, $actor);
+        }
+
+        return $expense->status === ExpenseStatus::APPROVED ? $this->pay($expense, $cashAccount, $actor, $date) : $expense;
     }
 
     private function markApproved(Expense $expense, User $actor, string $description): Expense

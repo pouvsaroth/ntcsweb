@@ -87,7 +87,12 @@ final class ExpenseController extends Controller
 
     public function store(StoreExpenseRequest $request): JsonResponse
     {
-        $expense = $this->expenses->create($request->validated(), $request->user());
+        $data = $request->validated();
+        $expense = DB::transaction(function () use ($data, $request) {
+            $expense = $this->expenses->create($this->expenseFields($data), $request->user());
+
+            return $this->maybePayNow($expense, $data, $request->user());
+        });
 
         return ApiResponse::created(new ExpenseResource($expense->load(['account', 'expenseEntity', 'createdBy'])));
     }
@@ -103,7 +108,7 @@ final class ExpenseController extends Controller
         $shared = array_intersect_key($data, array_flip(['expense_date', 'for_month', 'expense_entity_id', 'currency', 'payment_method', 'supplier_id']));
 
         $expenses = DB::transaction(fn () => array_map(
-            fn (array $line) => $this->expenses->create([...$shared, ...$line], $request->user()),
+            fn (array $line) => $this->maybePayNow($this->expenses->create([...$shared, ...$line], $request->user()), $data, $request->user()),
             array_values($data['lines']),
         ));
 
@@ -218,6 +223,28 @@ final class ExpenseController extends Controller
             }
             $this->expenses->pay($expense, $cashAccount, $user, $data['paid_date'] ?? null);
         });
+    }
+
+    /** @param array<string, mixed> $data */
+    private function expenseFields(array $data): array
+    {
+        return array_diff_key($data, array_flip(['paid_now', 'cash_account_id', 'paid_date']));
+    }
+
+    /**
+     * "Paid now": approve and pay a just-made expense from the picked cash/bank
+     * account, on the paid date (default: the expense date).
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function maybePayNow(Expense $expense, array $data, User $user): Expense
+    {
+        if (empty($data['paid_now'])) {
+            return $expense;
+        }
+        $cash = Account::query()->findOrFail($data['cash_account_id']);
+
+        return $this->expenses->payNow($expense, $cash, $user, $data['paid_date'] ?? $expense->expense_date?->toDateString());
     }
 
     /** Up to this many ticked at once. */

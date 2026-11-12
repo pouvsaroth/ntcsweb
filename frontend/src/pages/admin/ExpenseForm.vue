@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
 import ExpenseEntityFormModal from '@/components/admin/ExpenseEntityFormModal.vue'
+import PaidNowFields from '@/components/admin/PaidNowFields.vue'
 import SupplierFormModal from '@/components/admin/SupplierFormModal.vue'
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
@@ -12,7 +13,7 @@ import BaseSelect from '@/components/ui/BaseSelect.vue'
 import SearchableSelect from '@/components/ui/SearchableSelect.vue'
 import { accountsService, type Account } from '@/services/accounting'
 import { expenseEntitiesService, type ExpenseEntity } from '@/services/expenseEntities'
-import { expensesService, type ExpenseInput } from '@/services/expenses'
+import { expensesService, type ExpenseInput, type PaidNow } from '@/services/expenses'
 import { paymentMethods } from '@/services/payments'
 import { suppliersService, type Supplier } from '@/services/suppliers'
 import { useAuthStore } from '@/stores/auth'
@@ -105,6 +106,10 @@ const errors = ref<Record<string, string[]>>({})
 const generalError = ref<string | null>(null)
 const submitting = ref(false)
 
+// "Paid now" (ticked by default) for those who may approve and pay.
+const canPayNow = computed(() => auth.can('expense.approve') && auth.can('expense.pay'))
+const paidNow = reactive<PaidNow>({ paid_now: true, cash_account_id: null, paid_date: '' })
+
 onMounted(async () => {
   loadingAccounts.value = true
   try {
@@ -127,7 +132,7 @@ async function submit() {
   generalError.value = null
 
   try {
-    const expense = await expensesService.create(form)
+    const expense = await expensesService.create(form, canPayNow.value ? paidNow : undefined)
     await router.push(`/admin/expenses/${expense.id}`)
   } catch (error) {
     if (error instanceof ApiRequestError && error.errors) {
@@ -235,6 +240,8 @@ async function submit() {
           class="block w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm text-neutral-900 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
         />
       </div>
+
+      <PaidNowFields v-if="canPayNow" v-model="paidNow" :accounts="accounts" :expense-date="form.expense_date" :disabled="loadingAccounts" :errors="errors" />
 
       <div class="flex gap-3">
         <BaseButton type="submit" :loading="submitting" :disabled="!form.account_id || !form.expense_entity_id">{{ t('common.save') }}</BaseButton>
