@@ -1106,6 +1106,13 @@ const adminRoutes: RouteRecordRaw[] = [
   // Its old address, from before it was a tab of Expenses.
   { path: 'expense-for', redirect: '/admin/expenses/expense-for' },
   {
+    // Add many: several expenses on one date in one save.
+    path: 'expenses/new-many',
+    name: 'admin.expenses.new-many',
+    component: () => import('@/pages/admin/ExpenseBatchForm.vue'),
+    meta: { permission: 'expense.create', titleKey: 'adminNav.items.expenses' },
+  },
+  {
     path: 'expenses/new',
     name: 'admin.expenses.new',
     component: () => import('@/pages/admin/ExpenseForm.vue'),

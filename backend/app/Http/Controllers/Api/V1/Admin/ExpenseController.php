@@ -10,6 +10,7 @@ use App\Http\Requests\Api\V1\Admin\CancelExpenseRequest;
 use App\Http\Requests\Api\V1\Admin\PayExpenseRequest;
 use App\Http\Requests\Api\V1\Admin\RejectExpenseRequest;
 use App\Http\Requests\Api\V1\Admin\StoreExpenseAttachmentRequest;
+use App\Http\Requests\Api\V1\Admin\StoreExpenseBatchRequest;
 use App\Http\Requests\Api\V1\Admin\StoreExpenseRequest;
 use App\Http\Requests\Api\V1\Admin\UpdateExpenseRequest;
 use App\Http\Resources\ExpenseAttachmentResource;
@@ -28,6 +29,7 @@ use App\Support\Query\ApiQuery;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 final class ExpenseController extends Controller
@@ -83,6 +85,24 @@ final class ExpenseController extends Controller
         $expense = $this->expenses->create($request->validated(), $request->user());
 
         return ApiResponse::created(new ExpenseResource($expense->load(['account', 'expenseEntity', 'createdBy'])));
+    }
+
+    /**
+     * Add many: one expense per line, all on the same date with the same
+     * Expense for / currency / payment method / vendor. Every line is
+     * validated first and they are saved together — one bad line saves none.
+     */
+    public function storeBatch(StoreExpenseBatchRequest $request): JsonResponse
+    {
+        $data = $request->validated();
+        $shared = array_intersect_key($data, array_flip(['expense_date', 'for_month', 'expense_entity_id', 'currency', 'payment_method', 'supplier_id']));
+
+        $expenses = DB::transaction(fn () => array_map(
+            fn (array $line) => $this->expenses->create([...$shared, ...$line], $request->user()),
+            array_values($data['lines']),
+        ));
+
+        return ApiResponse::created(ExpenseResource::collection(collect($expenses)->each->load(['account', 'expenseEntity', 'createdBy'])));
     }
 
     public function show(Request $request, Expense $expense): JsonResponse

@@ -64,6 +64,27 @@ export interface ExpenseInput {
   reference_number: string
 }
 
+/** Expenses > Add many: one line of the batch. */
+export interface ExpenseBatchLine {
+  account_id: number | null
+  amount: string
+  description: string
+  reference_number: string
+}
+
+/** Same as StoreExpenseBatchRequest::MAX_LINES. */
+export const MAX_EXPENSE_LINES = 50
+
+export interface ExpenseBatchInput {
+  expense_date: string
+  for_month: string
+  expense_entity_id: number | null
+  currency: 'USD' | 'KHR'
+  payment_method: string
+  supplier_id: number | null
+  lines: ExpenseBatchLine[]
+}
+
 function toExpensePayload(input: ExpenseInput) {
   return {
     expense_date: input.expense_date,
@@ -99,6 +120,22 @@ export const expensesService = {
   get: (id: number) => apiGetWithMeta<Expense>(`/expenses/${id}`).then((r) => r.data),
 
   create: (input: ExpenseInput) => apiPost<Expense>('/expenses', toExpensePayload(input)),
+  /** Add many: all lines saved together, or none (errors name `lines.N.field`). */
+  createMany: (input: ExpenseBatchInput) =>
+    apiPost<Expense[]>('/expenses/batch', {
+      expense_date: input.expense_date,
+      for_month: input.for_month || null,
+      expense_entity_id: input.expense_entity_id,
+      currency: input.currency,
+      payment_method: input.payment_method || null,
+      supplier_id: input.supplier_id,
+      lines: input.lines.map((l) => ({
+        account_id: l.account_id,
+        amount: l.amount === '' ? null : Number(l.amount),
+        description: l.description.trim() || null,
+        reference_number: l.reference_number.trim() || null,
+      })),
+    }),
   update: (id: number, input: ExpenseInput) => apiPut<Expense>(`/expenses/${id}`, toExpensePayload(input)),
 
   approve: (id: number) => apiPost<Expense>(`/expenses/${id}/approve`),

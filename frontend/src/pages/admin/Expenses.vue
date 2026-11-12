@@ -2,6 +2,7 @@
 import { useAuthStore } from '@/stores/auth'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRoute } from 'vue-router'
 
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
@@ -18,6 +19,8 @@ import { formatMoney } from '@/utils/currency'
 import { formatDate, formatMonth } from '@/utils/date'
 
 const { t } = useI18n()
+// After Add many: how many were saved.
+const addedMany = Number(useRoute().query.added) || 0
 const auth = useAuthStore()
 
 const { items, meta, loading, error, setPage, setSort, sort, setSearch, setFilter, fetch } = usePaginatedResource<Expense>(
@@ -88,6 +91,7 @@ onMounted(() => {
 <template>
   <div>
     <BaseAlert v-if="error" variant="danger" class="mb-4">{{ error }}</BaseAlert>
+    <BaseAlert v-if="addedMany" variant="success" class="mb-4">{{ t('admin.expenses.batch.saved', { n: addedMany }) }}</BaseAlert>
 
     <div class="mb-4 grid items-end gap-3 sm:grid-cols-2 lg:grid-cols-5">
       <input
@@ -109,6 +113,7 @@ onMounted(() => {
         @update:model-value="onEntityFilterChange"
       />
       <BaseInput :model-value="selectedMonth" type="month" :label="t('admin.expenses.filterForMonth')" @update:model-value="onMonthFilterChange" />
+      <BaseButton v-if="auth.can('expense.create')" variant="outline" to="/admin/expenses/new-many">{{ t('admin.expenses.batch.button') }}</BaseButton>
       <BaseButton v-if="auth.can('expense.create')" to="/admin/expenses/new">{{ t('admin.expenses.addExpense') }}</BaseButton>
     </div>
 

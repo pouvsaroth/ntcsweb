@@ -1071,6 +1071,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::post('borrowings/{borrowing}/cancel', [BorrowingController::class, 'cancel'])->name('borrowings.cancel');
         Route::post('borrowings/{borrowing}/contract', [BorrowingController::class, 'uploadContract'])->name('borrowings.contract.store');
         Route::get('borrowings/{borrowing}/contract', [BorrowingController::class, 'downloadContract'])->name('borrowings.contract.show');
+        Route::post('expenses/batch', [ExpenseController::class, 'storeBatch'])->name('expenses.batch');
         Route::apiResource('expenses', ExpenseController::class)->except(['destroy']);
         Route::post('expenses/{expense}/approve', [ExpenseController::class, 'approve'])->name('expenses.approve');
         Route::post('expenses/{expense}/reject', [ExpenseController::class, 'reject'])->name('expenses.reject');
