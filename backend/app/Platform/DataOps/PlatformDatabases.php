@@ -7,16 +7,18 @@ namespace App\Platform\DataOps;
 use App\Models\Tenant;
 use App\Platform\Models\Backup;
 use App\Platform\Models\BackupSchedule;
+use App\Platform\Models\ExtraDatabase;
 use App\Platform\Models\SchoolPlacement;
 use App\Platform\Services\SchoolDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Every database the platform owns: the central one, then each school's.
- * The list comes from `tenants`, never from pg_database — a database nobody
- * registered is not ours, and a registered one that is missing must show as
- * missing rather than not at all.
+ * Every database the platform owns: the central one, then each school's,
+ * then those staff made in the back office (`extra`, ExtraDatabase). The list
+ * comes from `tenants` and `bo_databases`, never from pg_database — a
+ * database nobody registered is not ours, and a registered one that is
+ * missing must show as missing rather than not at all.
  */
 final class PlatformDatabases
 {
@@ -33,7 +35,7 @@ final class PlatformDatabases
      * on a separate server). Shared schools live inside the shared database's
      * row (`schools`), not as rows of their own.
      *
-     * @return list<array{database: string, kind: string, tenant: ?Tenant, schools?: list<Tenant>}>
+     * @return list<array{database: string, kind: string, tenant: ?Tenant, schools?: list<Tenant>, extra?: ExtraDatabase}>
      */
     public function all(): array
     {
@@ -56,6 +58,11 @@ final class PlatformDatabases
             ['database' => (string) config('tenancy.database.template_database'), 'kind' => 'template', 'tenant' => null],
             ['database' => (string) config('tenancy.database.shared_database'), 'kind' => 'shared', 'tenant' => null, 'schools' => $shared],
             ...$own,
+            // Made in the back office; one a school now uses is listed as that school's instead.
+            ...ExtraDatabase::query()->with('staff:id,name')->orderBy('name')->get()
+                ->reject(fn (ExtraDatabase $db) => in_array($db->name, array_column($own, 'database'), true))
+                ->map(fn (ExtraDatabase $db) => ['database' => $db->name, 'kind' => 'extra', 'tenant' => null, 'extra' => $db])
+                ->values()->all(),
         ];
     }
 
@@ -148,6 +155,18 @@ final class PlatformDatabases
                 'pending_migrations' => null,
                 'error' => null,
                 'last_backup_at' => isset($lastGood[$name]) ? Carbon::parse($lastGood[$name])->toIso8601String() : null,
+                'extra' => isset($row['extra']) ? [
+                    'id' => $row['extra']->id,
+                    'source' => $row['extra']->source,
+                    'source_database' => $row['extra']->source_database,
+                    'backup_id' => $row['extra']->backup_id,
+                    'upload_name' => $row['extra']->upload_name,
+                    'status' => $row['extra']->status,
+                    'error' => $row['extra']->error,
+                    'note' => $row['extra']->note,
+                    'staff' => $row['extra']->staff?->name,
+                    'created_at' => $row['extra']->created_at?->toIso8601String(),
+                ] : null,
             ];
 
             try {
@@ -158,7 +177,8 @@ final class PlatformDatabases
                     $out['size_bytes'] = $this->database->sizeOf($name);
                     $out['exists'] = $out['size_bytes'] !== null;
                 }
-                if ($out['exists']) {
+                // An "Other" database may hold anything (or nothing) — no migrations are expected of it.
+                if ($out['exists'] && $row['kind'] !== 'extra') {
                     $applied = match ($row['kind']) {
                         'central' => DB::connection(config('tenancy.database.central_connection'))->table('migrations')->pluck('migration')->all(),
                         'school' => $this->database->appliedMigrations($tenant),
@@ -175,6 +195,7 @@ final class PlatformDatabases
             $expected = match ($row['kind']) {
                 'school' => in_array($tenant->status, [Tenant::STATUS_ACTIVE, Tenant::STATUS_SUSPENDED], true),
                 'shared' => ($row['schools'] ?? []) !== [],
+                'extra' => $row['extra']->status === ExtraDatabase::STATUS_READY,
                 default => true,
             };
             $stale = $out['last_backup_at'] === null || Carbon::parse($out['last_backup_at'])->lessThan($staleBefore);
@@ -184,7 +205,7 @@ final class PlatformDatabases
                 $out['error'] !== null ? 'unreachable' : null,
                 ($out['pending_migrations'] ?? 0) > 0 ? 'behind' : null,
                 // The template holds no data and is never backed up on purpose.
-                $out['exists'] && $schedule->enabled && $stale && $row['kind'] !== 'template' ? 'no_recent_backup' : null,
+                $out['exists'] && $schedule->enabled && $stale && ! in_array($row['kind'], ['template', 'extra'], true) ? 'no_recent_backup' : null,
             ]));
 
             return $out;

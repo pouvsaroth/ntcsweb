@@ -831,9 +831,24 @@ export const billingApi = {
 
 export type DatabaseFlag = 'missing' | 'unreachable' | 'behind' | 'no_recent_backup'
 
+/** A database staff made in the back office ("Other"). */
+export interface ExtraDatabaseInfo {
+  id: number
+  source: 'empty' | 'template' | 'copy' | 'backup' | 'upload'
+  source_database: string | null
+  backup_id: number | null
+  upload_name: string | null
+  status: 'creating' | 'ready' | 'failed'
+  error: string | null
+  note: string | null
+  staff: string | null
+  created_at: string | null
+}
+
 export interface PlatformDatabase {
   database: string
-  kind: 'central' | 'template' | 'shared' | 'school'
+  kind: 'central' | 'template' | 'shared' | 'school' | 'extra'
+  extra: ExtraDatabaseInfo | null
   placement: PlacementMode | null
   server: string | null
   schools: { id: number; name: string; slug: string; status: SchoolStatus }[]
@@ -929,6 +944,10 @@ export const dataApi = {
   migrationRuns: (query: ListQuery) => page<MigrationRunRow>('/data/migration-runs', query),
   migrate: (tenantId: number | 'all') => send<{ batch: string | null; count: number }>('post', '/data/migrate', { tenant_id: tenantId }),
   createDatabase: (tenantId: number) => send<{ batch: string; count: number }>('post', `/data/schools/${tenantId}/create-database`),
+  /** A new "Other" database: empty, from the school template, or a copy of another. */
+  newDatabase: (body: { name: string; source: 'empty' | 'template' | 'copy'; source_database?: string | null; note?: string | null }) =>
+    send<{ id: number; name: string; status: string }>('post', '/data/extra-databases', body),
+  dropDatabase: (id: number, confirmName: string) => send<void>('delete', `/data/extra-databases/${id}`, { confirm_name: confirmName }),
 }
 
 // ── Data ops > Tables ───────────────────────────────────────────────────────

@@ -8,6 +8,7 @@ use App\Platform\Http\Controllers\ChatController;
 use App\Platform\Http\Controllers\HelpCenterController;
 use App\Platform\Http\Controllers\TicketController;
 use App\Platform\Http\Controllers\DataOpsController;
+use App\Platform\Http\Controllers\ExtraDatabaseController;
 use App\Platform\Http\Controllers\TableDataController;
 use App\Platform\Http\Controllers\PaymentController;
 use App\Platform\Http\Controllers\PlanController;
@@ -123,6 +124,9 @@ Route::middleware('platform.staff')->group(function () {
         Route::get('migration-runs', [DataOpsController::class, 'migrationRuns'])->middleware('platform.can:platform.data.read')->name('migrations.index');
         Route::post('migrate', [DataOpsController::class, 'migrate'])->middleware('platform.can:platform.data.migrate')->name('migrate');
         Route::post('schools/{school}/create-database', [DataOpsController::class, 'createDatabase'])->middleware('platform.can:platform.data.migrate')->name('create-database');
+        // "Other" databases: make (empty / template / copy), delete.
+        Route::post('extra-databases', [ExtraDatabaseController::class, 'store'])->middleware('platform.can:platform.data.databases')->name('extra-databases.store');
+        Route::delete('extra-databases/{database}', [ExtraDatabaseController::class, 'destroy'])->middleware('platform.can:platform.data.databases')->name('extra-databases.destroy');
     });
 
     // Organization types (School, Company, Organization, Ministry…).

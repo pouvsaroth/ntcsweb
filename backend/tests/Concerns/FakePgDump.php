@@ -36,8 +36,18 @@ class FakePgDump extends PgDump
         $this->dumped[] = $database;
     }
 
+    /** @var array<string, string> new database => the file restored into it */
+    public array $restored = [];
+
+    /** @var array<string, string> new database => error to throw */
+    public array $failRestoreFor = [];
+
     public function restoreInto(string $path, string $into): void
     {
-        throw new \LogicException('Not used in tests.');
+        if (isset($this->failRestoreFor[$into])) {
+            throw new \RuntimeException($this->failRestoreFor[$into]);
+        }
+
+        $this->restored[$into] = (string) file_get_contents($path);
     }
 }
