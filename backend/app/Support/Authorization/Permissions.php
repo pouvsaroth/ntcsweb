@@ -1077,6 +1077,13 @@ final class Permissions
 
     public const REFERRALS_UPDATE = 'referrals.update';
 
+    // Marketing > Broadcast: create = send to Telegram groups; delete = remove from the history.
+    public const BROADCASTS_VIEW = 'broadcasts.view';
+
+    public const BROADCASTS_CREATE = 'broadcasts.create';
+
+    public const BROADCASTS_DELETE = 'broadcasts.delete';
+
     // Front Office > Inquiry — people who ask about the school and their
     // follow-ups (InquiryPolicy). Adding a follow-up counts as an update.
     public const INQUIRIES_VIEW = 'inquiries.view';
@@ -1839,6 +1846,9 @@ final class Permissions
                 self::CAMPAIGNS_DELETE => 'Delete campaigns',
                 self::REFERRALS_VIEW => 'View referrals and their rewards',
                 self::REFERRALS_UPDATE => 'Change referral settings and give rewards',
+                self::BROADCASTS_VIEW => 'View the broadcast history',
+                self::BROADCASTS_CREATE => 'Send promotions to Telegram groups',
+                self::BROADCASTS_DELETE => 'Delete broadcasts from the history',
             ],
             'Projects' => [
                 self::PROJECTS_VIEW => 'View projects',
@@ -2205,6 +2215,7 @@ final class Permissions
                 self::CAMPAIGNS_VIEW, self::CAMPAIGNS_CREATE, self::CAMPAIGNS_UPDATE, self::CAMPAIGNS_DELETE,
                 self::DASHBOARD_CARDS_MARKETING,
                 self::REFERRALS_VIEW, self::REFERRALS_UPDATE,
+                self::BROADCASTS_VIEW, self::BROADCASTS_CREATE, self::BROADCASTS_DELETE,
             ],
             // Read-only across the board, with a few write exceptions: the
             // teaching catalog itself (who teaches what, in which room) stays

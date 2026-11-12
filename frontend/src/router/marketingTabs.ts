@@ -13,4 +13,5 @@ export const marketingTabs: MarketingTab[] = [
   { to: '/admin/marketing/campaigns', labelKey: 'marketing.tabs.campaigns', permission: 'campaigns.view' },
   { to: '/admin/marketing/report', labelKey: 'marketing.tabs.report', permission: 'campaigns.view' },
   { to: '/admin/marketing/referrals', labelKey: 'marketing.tabs.referrals', permission: 'referrals.view' },
+  { to: '/admin/marketing/broadcast', labelKey: 'marketing.tabs.broadcast', permission: 'broadcasts.view' },
 ]

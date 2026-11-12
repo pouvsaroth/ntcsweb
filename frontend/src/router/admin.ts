@@ -578,6 +578,7 @@ const adminRoutes: RouteRecordRaw[] = [
         },
       },
       { path: 'campaigns', name: 'admin.marketing.campaigns', component: () => import('@/pages/admin/marketing/Campaigns.vue'), meta: { permission: 'campaigns.view' } },
+      { path: 'broadcast', name: 'admin.marketing.broadcast', component: () => import('@/pages/admin/marketing/Broadcasts.vue'), meta: { permission: 'broadcasts.view' } },
       { path: 'referrals', name: 'admin.marketing.referrals', component: () => import('@/pages/admin/marketing/Referrals.vue'), meta: { permission: 'referrals.view' } },
       { path: 'report', name: 'admin.marketing.report', component: () => import('@/pages/admin/marketing/MarketingReport.vue'), meta: { permission: 'campaigns.view' } },
     ],

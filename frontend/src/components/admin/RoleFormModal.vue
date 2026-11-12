@@ -179,6 +179,8 @@ const MODULES: ModuleEntry[] = [
   tab('Marketing', 'Marketing', 'Report', '/admin/marketing/report', ['campaigns.view'], {}),
   // Update = change the settings and give a reward by hand.
   tab('Marketing', 'Marketing', 'Referrals', '/admin/marketing/referrals', ['referrals.view'], { update: 'referrals.update' }),
+  // Add = send to Telegram groups; Delete = remove from the history.
+  tab('Marketing', 'Marketing', 'Broadcast', '/admin/marketing/broadcast', ['broadcasts.view'], { create: 'broadcasts.create', delete: 'broadcasts.delete' }),
 
   // ── Academic ──
   // Not the website's "Programs" (Website group) — this is the internal program catalog.

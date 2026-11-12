@@ -34,6 +34,7 @@ final class MarketingModule extends Module
         return [
             'campaigns' => ['Campaigns', 'យុទ្ធនាការ'],
             'referrals' => ['Referrals', 'ការណែនាំ'],
+            'broadcasts' => ['Broadcast', 'ផ្សព្វផ្សាយ'],
         ];
     }
 

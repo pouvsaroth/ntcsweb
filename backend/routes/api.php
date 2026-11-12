@@ -95,6 +95,7 @@ use App\Http\Controllers\Api\V1\Admin\LookupCategoryController;
 use App\Http\Controllers\Api\V1\Admin\LookupValueController;
 use App\Http\Controllers\Api\V1\Admin\MakeUpClassRequestController;
 use App\Http\Controllers\Api\V1\Admin\InquiryController;
+use App\Http\Controllers\Api\V1\Admin\MarketingBroadcastController;
 use App\Http\Controllers\Api\V1\Admin\MarketingCampaignController;
 use App\Http\Controllers\Api\V1\Admin\MarketingReportController;
 use App\Http\Controllers\Api\V1\Admin\ReferralController;
@@ -520,6 +521,11 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         // Marketing > Campaigns: inquiries pick the campaign that brought them.
         Route::get('marketing-report', [MarketingReportController::class, 'index'])->name('marketing-report.index');
         // Marketing > Referrals: the friend's first payment gives the referrer a reward discount code.
+        // Marketing > Broadcast: a promotion sent to the school's linked Telegram groups, with history.
+        Route::get('marketing-broadcasts/groups', [MarketingBroadcastController::class, 'groups'])->name('marketing-broadcasts.groups');
+        Route::get('marketing-broadcasts', [MarketingBroadcastController::class, 'index'])->name('marketing-broadcasts.index');
+        Route::post('marketing-broadcasts', [MarketingBroadcastController::class, 'store'])->name('marketing-broadcasts.store');
+        Route::delete('marketing-broadcasts/{broadcast}', [MarketingBroadcastController::class, 'destroy'])->name('marketing-broadcasts.destroy');
         Route::get('referrals', [ReferralController::class, 'index'])->name('referrals.index');
         Route::get('referrals/summary', [ReferralController::class, 'summary'])->name('referrals.summary');
         Route::get('referrals/settings', [ReferralController::class, 'settings'])->name('referrals.settings');
