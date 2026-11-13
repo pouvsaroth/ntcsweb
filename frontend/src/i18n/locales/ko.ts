@@ -4902,7 +4902,7 @@ const ko: MessageSchema = {
       sheetSubtitle: '기간 동안 한 반의 학생별 일일 출결을 확인합니다.',
       sheetPickPrompt: '반과 두 날짜를 선택하면 출석부가 표시됩니다.',
       sheetNoDays: '이 기간에 이 반의 출결 기록이 없습니다.',
-      sheetLegend: '✓ 출석 · A 결석 · P 공결 · 30 = 30분 지각',
+      sheetLegend: '✓ 출석 · A 결석 · P 공결 · 30 = 30분 지각 · – 수강 시작 전',
       sheetTotalPresent: '출석',
       sheetTotalLate: '지각',
       sheetTotalAbsent: '결석',

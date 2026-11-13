@@ -25,7 +25,8 @@ use OpenSpout\Writer\XLSX\Writer;
  * Student Attendance > Attendance Sheet: one class over a date range, one
  * row per student and one column per day attendance was taken in the
  * class. Each cell is a mark — ✓ present, A absent, P permission, the late
- * minutes (e.g. "30") when late, blank when not taken — then totals.
+ * minutes (e.g. "30") when late, blank when not taken, "–" before the
+ * student's start study date (not counted) — then totals.
  * Shown on screen, and downloaded as Excel or PDF (the image is drawn in
  * the browser from the same data).
  */
@@ -39,6 +40,9 @@ final class AttendanceSheet
 
     /** Late with no minutes entered. */
     public const LATE = 'L';
+
+    /** A day before the student's start study date: not counted. */
+    public const NOT_STARTED = '–';
 
     public function __construct(
         private readonly TenantContext $context,
@@ -95,12 +99,24 @@ final class AttendanceSheet
         $dates = $records->map(fn (AttendanceRecord $record) => $record->date->toDateString())->unique()->sort()->values()->all();
         $recordsByEnrollment = $records->groupBy('enrollment_id');
 
-        $students = $enrollments->map(function (Enrollment $enrollment) use ($recordsByEnrollment) {
+        $students = $enrollments->map(function (Enrollment $enrollment) use ($recordsByEnrollment, $dates) {
             $marks = [];
             $totals = ['present' => 0, 'late' => 0, 'absent' => 0, 'permission' => 0, 'late_minutes' => 0];
+            $startOn = ($enrollment->start_study_on ?? $enrollment->enrolled_at)?->toDateString();
+
+            // Days before they start studying: "–", and any mark on them is not counted.
+            foreach ($dates as $date) {
+                if ($startOn !== null && $date < $startOn) {
+                    $marks[$date] = self::NOT_STARTED;
+                }
+            }
 
             foreach ($recordsByEnrollment->get($enrollment->id, collect()) as $record) {
-                $marks[$record->date->toDateString()] = self::mark($record->status, $record->late_minutes);
+                $date = $record->date->toDateString();
+                if ($startOn !== null && $date < $startOn) {
+                    continue;
+                }
+                $marks[$date] = self::mark($record->status, $record->late_minutes);
 
                 match ($record->status) {
                     AttendanceStatus::ABSENT => $totals['absent']++,
@@ -122,6 +138,7 @@ final class AttendanceSheet
                     'name' => $enrollment->student->fullName(),
                 ],
                 'table' => $enrollment->table?->name,
+                'start_study_on' => $startOn,
                 'marks' => $marks,
                 'totals' => $totals,
             ];
@@ -160,6 +177,7 @@ final class AttendanceSheet
             self::PERMISSION => (new Style)->setCellAlignment(CellAlignment::CENTER)->setFontBold()->setFontColor('1D4ED8')->setBackgroundColor('DBEAFE'),
             'late' => (new Style)->setCellAlignment(CellAlignment::CENTER)->setFontBold()->setFontColor('92400E')->setBackgroundColor('FEF3C7'),
             self::PRESENT => (new Style)->setCellAlignment(CellAlignment::CENTER)->setFontColor('15803D'),
+            self::NOT_STARTED => (new Style)->setCellAlignment(CellAlignment::CENTER)->setFontColor('9CA3AF')->setBackgroundColor('F3F4F6'),
         ];
 
         $options = new Options;
@@ -250,6 +268,7 @@ final class AttendanceSheet
             self::ABSENT.' = '.__('attendance_sheet.absent'),
             self::PERMISSION.' = '.__('attendance_sheet.permission'),
             '30 = '.__('attendance_sheet.late_minutes_example'),
+            self::NOT_STARTED.' = '.__('attendance_sheet.not_started'),
         ]);
     }
 

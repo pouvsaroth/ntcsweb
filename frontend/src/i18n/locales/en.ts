@@ -4906,7 +4906,7 @@ const en = {
       sheetSubtitle: 'Day-by-day attendance of every student in one class over a date range.',
       sheetPickPrompt: 'Pick a class and both dates to see the sheet.',
       sheetNoDays: 'No attendance was taken in this class on these dates.',
-      sheetLegend: '✓ Present · A Absent · P Permission · 30 = 30 minutes late',
+      sheetLegend: '✓ Present · A Absent · P Permission · 30 = 30 minutes late · – Not started yet',
       sheetTotalPresent: 'Present',
       sheetTotalLate: 'Late',
       sheetTotalAbsent: 'Absent',

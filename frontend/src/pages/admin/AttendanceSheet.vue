@@ -104,9 +104,10 @@ function dayLabel(date: string): string {
   return `${day}-${month}`
 }
 
-type MarkKind = 'present' | 'absent' | 'permission' | 'late' | 'none'
+type MarkKind = 'present' | 'absent' | 'permission' | 'late' | 'notStarted' | 'none'
 function markKind(mark: string | undefined): MarkKind {
   if (!mark) return 'none'
+  if (mark === '–') return 'notStarted'
   if (mark === '✓') return 'present'
   if (mark === 'A') return 'absent'
   if (mark === 'P') return 'permission'
@@ -117,9 +118,10 @@ const markClass: Record<MarkKind, string> = {
   absent: 'bg-red-50 font-semibold text-red-700',
   permission: 'bg-blue-50 font-semibold text-blue-700',
   late: 'bg-amber-50 font-semibold text-amber-800',
+  notStarted: 'bg-neutral-100 text-neutral-400',
   none: 'text-neutral-300',
 }
-const markTone: Record<Exclude<MarkKind, 'none'>, TableImageTone> = {
+const markTone: Record<Exclude<MarkKind, 'none' | 'notStarted'>, TableImageTone> = {
   present: 'success',
   absent: 'danger',
   permission: 'info',
@@ -180,7 +182,9 @@ async function exportImage(): Promise<void> {
         ...data.dates.map((date): TableImageCell => {
           const mark = row.marks[date]
           const kind = markKind(mark)
-          return kind === 'none' ? { text: '' } : { text: mark ?? '', badge: markTone[kind] }
+          if (kind === 'none') return { text: '' }
+          if (kind === 'notStarted') return { text: '–' }
+          return { text: mark ?? '', badge: markTone[kind] }
         }),
         ...totalColumns.value.map((column) => ({ text: String(row.totals[column.key]), bold: true })),
       ]),
@@ -302,7 +306,7 @@ onMounted(async () => {
                 class="w-12 rounded border border-neutral-200 text-center"
               >
                 <div class="border-b border-neutral-100 text-[10px] text-neutral-500">{{ dayLabel(date) }}</div>
-                <div class="py-0.5 text-sm" :class="markClass[markKind(row.marks[date])]">{{ row.marks[date] ?? '–' }}</div>
+                <div class="min-h-6 py-0.5 text-sm" :class="markClass[markKind(row.marks[date])]">{{ row.marks[date] ?? '' }}</div>
               </div>
             </div>
           </div>

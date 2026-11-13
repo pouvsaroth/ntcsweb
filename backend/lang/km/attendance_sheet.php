@@ -12,6 +12,7 @@ return [
     'absent' => 'អវត្តមាន',
     'permission' => 'សុំច្បាប់',
     'late_minutes_example' => 'យឺត (នាទី)',
+    'not_started' => 'មិនទាន់ចាប់ផ្តើមរៀន',
     'total_present' => 'វត្តមាន',
     'total_late' => 'យឺត',
     'total_absent' => 'អវត្តមាន',

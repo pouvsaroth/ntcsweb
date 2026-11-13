@@ -8,6 +8,7 @@
             $mark === Sheet::PRESENT => 'm-present',
             $mark === Sheet::ABSENT => 'm-absent',
             $mark === Sheet::PERMISSION => 'm-permission',
+            $mark === Sheet::NOT_STARTED => 'm-not-started',
             default => 'm-late',
         };
     };
@@ -46,6 +47,7 @@
     .m-absent { color: #b91c1c; background: #fee2e2; font-weight: bold; }
     .m-permission { color: #1d4ed8; background: #dbeafe; font-weight: bold; }
     .m-late { color: #92400e; background: #fef3c7; font-weight: bold; }
+    .m-not-started { color: #9ca3af; background: #f3f4f6; }
     .empty { padding: 24px; text-align: center; color: #6b7280; }
     .foot { margin-top: 6px; color: #6b7280; font-size: 9px; }
 </style>

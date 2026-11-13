@@ -25,7 +25,7 @@ class AttendanceSheetTest extends TestCase
         $enrollments = [];
         foreach (['Anna', 'Bora', 'Chan', 'Dara'] as $name) {
             $student = Student::factory()->create(['first_name' => $name, 'last_name' => 'Test']);
-            $enrollments[$name] = Enrollment::factory()->forClass($class)->create(['student_id' => $student->id]);
+            $enrollments[$name] = Enrollment::factory()->forClass($class)->create(['student_id' => $student->id, 'enrolled_at' => '2026-10-01', 'start_study_on' => '2026-10-01']);
         }
 
         $mark = fn (string $name, string $date, string $status, ?int $late = null) => AttendanceRecord::factory()
@@ -61,6 +61,22 @@ class AttendanceSheetTest extends TestCase
         $this->assertSame('P', $rows['Dara Test']['marks']['2026-11-10']);
         $this->assertSame(['present' => 1, 'late' => 0, 'absent' => 1, 'permission' => 0, 'late_minutes' => 0], $rows['Anna Test']['totals']);
         $this->assertSame(['present' => 1, 'late' => 1, 'absent' => 0, 'permission' => 0, 'late_minutes' => 30], $rows['Chan Test']['totals']);
+    }
+
+    public function test_days_before_the_start_study_date_show_a_dash_and_are_not_counted(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::ATTENDANCE_VIEW]);
+        [$class, $enrollments] = $this->classWithMarks();
+        // Bora starts studying on 05-11: the 03-11 mark is before that.
+        $enrollments['Bora']->update(['start_study_on' => '2026-11-05']);
+
+        $response = $this->getJson("/api/v1/classes/{$class->id}/attendance-sheet?date_from=2026-11-01&date_to=2026-11-30")->assertOk();
+
+        $bora = collect($response->json('data.students'))->keyBy('student.name')['Bora Test'];
+        $this->assertSame('2026-11-05', $bora['start_study_on']);
+        $this->assertSame(['2026-11-03' => '–', '2026-11-10' => '✓'], $bora['marks']);
+        $this->assertSame(['present' => 1, 'late' => 0, 'absent' => 0, 'permission' => 0, 'late_minutes' => 0], $bora['totals']);
+        $this->get("/api/v1/classes/{$class->id}/attendance-sheet/excel?date_from=2026-11-01&date_to=2026-11-30")->assertOk();
     }
 
     public function test_only_studying_students_are_listed_unless_another_status_is_picked(): void

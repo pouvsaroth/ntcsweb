@@ -78,7 +78,8 @@ export interface AttendanceSheetTotals {
  * The Attendance Sheet tab — one class over a date range: `dates` are the
  * days attendance was taken; each student's `marks` maps a date to
  * '✓' present, 'A' absent, 'P' permission, or the late minutes ('L' if late
- * with none entered). A date missing from `marks` = not taken.
+ * with none entered), or '–' before the student's start study date (not
+ * counted). A date missing from `marks` = not taken.
  */
 export interface AttendanceSheet {
   class: { id: number; name: string }
@@ -90,6 +91,8 @@ export interface AttendanceSheet {
     status: EnrollmentStatus
     student: AttendanceStudent
     table: string | null
+    /** Their start study date (yyyy-mm-dd); days before it are '–'. */
+    start_study_on: string | null
     marks: Record<string, string>
     totals: AttendanceSheetTotals
   }[]

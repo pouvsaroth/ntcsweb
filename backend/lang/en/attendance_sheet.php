@@ -12,6 +12,7 @@ return [
     'absent' => 'Absent',
     'permission' => 'Permission',
     'late_minutes_example' => 'Late (minutes)',
+    'not_started' => 'Not started yet',
     'total_present' => 'Present',
     'total_late' => 'Late',
     'total_absent' => 'Absent',

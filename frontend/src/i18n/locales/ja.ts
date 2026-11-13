@@ -4902,7 +4902,7 @@ const ja: MessageSchema = {
       sheetSubtitle: '期間内の1クラスの生徒ごとの日別出欠を表示します。',
       sheetPickPrompt: 'クラスと開始日・終了日を選ぶと出席簿が表示されます。',
       sheetNoDays: 'この期間、このクラスの出欠記録はありません。',
-      sheetLegend: '✓ 出席 · A 欠席 · P 公欠 · 30 = 30分遅刻',
+      sheetLegend: '✓ 出席 · A 欠席 · P 公欠 · 30 = 30分遅刻 · – 受講開始前',
       sheetTotalPresent: '出席',
       sheetTotalLate: '遅刻',
       sheetTotalAbsent: '欠席',

@@ -4901,7 +4901,7 @@ const zh: MessageSchema = {
       sheetSubtitle: '按日期范围查看某班级每位学生的每日考勤。',
       sheetPickPrompt: '选择班级和起止日期以查看考勤表。',
       sheetNoDays: '该班级在这些日期内没有考勤记录。',
-      sheetLegend: '✓ 出席 · A 缺席 · P 请假 · 30 = 迟到 30 分钟',
+      sheetLegend: '✓ 出席 · A 缺席 · P 请假 · 30 = 迟到 30 分钟 · – 尚未开课',
       sheetTotalPresent: '出席',
       sheetTotalLate: '迟到',
       sheetTotalAbsent: '缺席',
