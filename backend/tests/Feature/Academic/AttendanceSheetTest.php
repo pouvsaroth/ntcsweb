@@ -79,6 +79,28 @@ class AttendanceSheetTest extends TestCase
         $this->get("/api/v1/classes/{$class->id}/attendance-sheet/excel?date_from=2026-11-01&date_to=2026-11-30")->assertOk();
     }
 
+    public function test_a_day_nobody_on_the_sheet_has_a_mark_is_left_out(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::ATTENDANCE_VIEW]);
+        [$class, $enrollments] = $this->classWithMarks();
+        // 03-11 was before everyone started: only dashes, so no column.
+        foreach ($enrollments as $enrollment) {
+            $enrollment->update(['start_study_on' => '2026-11-05']);
+        }
+        // 12-11: only Dara has a mark, and Dara has stopped (not on the default sheet).
+        AttendanceRecord::factory()->forEnrollment($enrollments['Dara'])->onDate('2026-11-12')->status(AttendanceStatus::PRESENT)->create();
+        $enrollments['Dara']->update(['status' => Enrollment::STATUS_STOPPED]);
+
+        $response = $this->getJson("/api/v1/classes/{$class->id}/attendance-sheet?date_from=2026-11-01&date_to=2026-11-30")->assertOk();
+
+        $this->assertSame(['2026-11-10'], $response->json('data.dates'));
+        $anna = collect($response->json('data.students'))->keyBy('student.name')['Anna Test'];
+        $this->assertSame(['2026-11-10' => 'A'], $anna['marks']);
+
+        // With every status, Dara's day comes back.
+        $this->assertSame(['2026-11-10', '2026-11-12'], $this->getJson("/api/v1/classes/{$class->id}/attendance-sheet?date_from=2026-11-01&date_to=2026-11-30&status=all")->json('data.dates'));
+    }
+
     public function test_only_studying_students_are_listed_unless_another_status_is_picked(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::ATTENDANCE_VIEW]);

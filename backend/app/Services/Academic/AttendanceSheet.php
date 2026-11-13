@@ -23,8 +23,8 @@ use OpenSpout\Writer\XLSX\Writer;
 
 /**
  * Student Attendance > Attendance Sheet: one class over a date range, one
- * row per student and one column per day attendance was taken in the
- * class. Each cell is a mark — ✓ present, A absent, P permission, the late
+ * row per student and one column per day a student on the sheet has a
+ * mark. Each cell is a mark — ✓ present, A absent, P permission, the late
  * minutes (e.g. "30") when late, blank when not taken, "–" before the
  * student's start study date (not counted) — then totals.
  * Shown on screen, and downloaded as Excel or PDF (the image is drawn in
@@ -142,7 +142,19 @@ final class AttendanceSheet
                 'marks' => $marks,
                 'totals' => $totals,
             ];
-        })->values()->all();
+        })->values();
+
+        // Only days where at least one student on the sheet has a real mark
+        // (not just "–" or blank, e.g. everyone had not started yet, or the
+        // only marks were for students left out by the status filter).
+        $dates = array_values(array_filter($dates, fn (string $date) => $students->contains(
+            fn (array $row) => isset($row['marks'][$date]) && $row['marks'][$date] !== self::NOT_STARTED,
+        )));
+        $students = $students->map(function (array $row) use ($dates) {
+            $row['marks'] = array_intersect_key($row['marks'], array_flip($dates));
+
+            return $row;
+        })->all();
 
         return [
             'class' => ['id' => $classId, 'name' => (string) $class->name],
