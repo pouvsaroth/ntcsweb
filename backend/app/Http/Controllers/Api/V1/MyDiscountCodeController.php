@@ -19,9 +19,9 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Student portal > My discount codes: the codes a student can see (their own
- * codes; main codes that work today only when they have no own code that
- * works; and any code they used),
+ * Student portal > My discount codes: the codes a student can see (codes
+ * given to them, and any code they used — never main codes they were not
+ * given; staff pick those on Enroll),
  * plus their unpaid course invoices a code can still go on. Identity-gated
  * like MyInvoiceController — a student only ever reaches their own rows.
  */
@@ -41,15 +41,10 @@ final class MyDiscountCodeController extends Controller
             ->get()
             ->keyBy('discount_code_id'); // the last use of each code
 
-        $hasOwn = $this->discounts->ownCodes($student->id)->exists();
-        $mainIds = $hasOwn ? [] : $this->discounts->usable(DiscountCode::query()->where('audience', DiscountCode::AUDIENCE_PUBLIC))->pluck('id')->all();
-
         $codes = DiscountCode::query()
             ->where(fn (Builder $q) => $q
                 // Given to this student (any state, so they see expired ones too).
                 ->whereHas('students', fn (Builder $s) => $s->where('students.id', $student->id))
-                // Main codes that work today, when they have no own code that works.
-                ->orWhereIn('id', $mainIds)
                 // Or one they already used.
                 ->orWhereIn('id', $used->keys()))
             ->orderBy('code')

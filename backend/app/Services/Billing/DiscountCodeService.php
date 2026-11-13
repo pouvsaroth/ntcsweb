@@ -253,8 +253,9 @@ final class DiscountCodeService
     }
 
     /**
-     * Student portal: the student puts a code on one of their own unpaid
-     * invoices. The discount comes off the course line's amount.
+     * Student portal: the student puts one of their own codes (given to them)
+     * on one of their own unpaid invoices. The discount comes off the course
+     * line's amount. Main codes are refused here; staff give them on Enroll.
      */
     public function applyToInvoice(Invoice $invoice, string $code, User $actor): Invoice
     {
@@ -277,6 +278,11 @@ final class DiscountCodeService
             ['code' => $discount, 'amount' => $amount] = $this->quote(
                 $code, (int) $invoice->student_id, (float) $line->total, $invoice->currency, lock: true,
             );
+
+            // Students use only codes given to them; main codes are for staff to give.
+            if ($discount->audience !== DiscountCode::AUDIENCE_PERSONAL) {
+                throw ValidationException::withMessages(['discount_code' => __('This discount code is not for you.')]);
+            }
 
             $invoice->update(['discount' => $amount, 'discount_reason' => $this->reasonFor($discount)]);
             $invoice = app(InvoiceService::class)->recalculate($invoice);

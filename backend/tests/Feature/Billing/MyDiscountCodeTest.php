@@ -61,9 +61,9 @@ class MyDiscountCodeTest extends TestCase
         DiscountCode::factory()->create(['code' => 'PUBLIC5', 'currency' => $this->currency()]);
         DiscountCode::factory()->create(['code' => 'EXPIRED', 'starts_on' => now()->subMonth(), 'expires_on' => now()->subDay(), 'currency' => $this->currency()]);
 
-        // No own code yet: every main code that works today.
+        // No code given yet: main codes are not shown to students.
         $this->actingAsTenantUser($this->studentUser);
-        $this->assertSame(['PUBLIC5'], collect($this->getJson('/api/v1/my-discount-codes')->assertOk()->json('data.codes'))->pluck('code')->all());
+        $this->getJson('/api/v1/my-discount-codes')->assertOk()->assertJsonCount(0, 'data.codes');
 
         $this->actingAsAdminWithPermissions([Permissions::DISCOUNT_CODES_VIEW, Permissions::DISCOUNT_CODES_CREATE, Permissions::DISCOUNT_CODES_UPDATE]);
         $main = DiscountCode::factory()->create(['code' => 'VIP20', 'value' => 20, 'currency' => $this->currency()]);
@@ -85,10 +85,17 @@ class MyDiscountCodeTest extends TestCase
     public function test_a_student_puts_a_code_on_their_unpaid_invoice_once(): void
     {
         $invoice = $this->unpaidInvoice();
-        DiscountCode::factory()->create(['code' => 'SAVE10', 'value' => 10, 'currency' => $this->currency()]);
+        DiscountCode::factory()->create(['code' => 'MAIN10', 'value' => 10, 'currency' => $this->currency()]);
+        $mine = DiscountCode::factory()->create(['code' => 'SAVE10', 'value' => 10, 'audience' => 'personal', 'currency' => $this->currency()]);
+        $mine->students()->attach($this->student->id);
 
         $this->actingAsTenantUser($this->studentUser);
         $this->getJson('/api/v1/my-discount-codes')->assertOk()->assertJsonPath('data.invoices.0.id', $invoice->id);
+
+        // A main code they were not given is refused.
+        $this->postJson("/api/v1/my-invoices/{$invoice->id}/discount-code", ['discount_code' => 'MAIN10'])
+            ->assertUnprocessable()->assertJsonValidationErrors('discount_code');
+        $this->assertSame('0.00', (string) $invoice->fresh()->discount);
 
         $this->postJson("/api/v1/my-invoices/{$invoice->id}/discount-code", ['discount_code' => 'save10'])
             ->assertOk()
@@ -103,7 +110,7 @@ class MyDiscountCodeTest extends TestCase
         DiscountCode::factory()->create(['code' => 'MORE', 'currency' => $this->currency()]);
         $this->postJson("/api/v1/my-invoices/{$invoice->id}/discount-code", ['discount_code' => 'MORE'])->assertUnprocessable();
         $this->getJson('/api/v1/my-discount-codes')->assertOk()->assertJsonCount(0, 'data.invoices')
-            ->assertJsonPath('data.codes.1.used_amount', 2.4);
+            ->assertJsonCount(1, 'data.codes')->assertJsonPath('data.codes.0.used_amount', 2.4);
     }
 
     public function test_a_student_cannot_touch_another_students_invoice(): void
