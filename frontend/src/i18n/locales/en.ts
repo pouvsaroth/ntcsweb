@@ -7863,7 +7863,7 @@ const en = {
       schedule: 'Schedule',
       scheduleTitle: 'Schedule Maintenance',
       complete: 'Complete',
-      completeCostPrompt: 'Cost of this maintenance (leave blank for none):',
+      completeCostPrompt: 'Cost of this maintenance in {currency} (leave blank for none):',
       cancelConfirm: 'Cancel this maintenance?',
       overdue: 'Overdue',
       maintenanceStatusScheduled: 'Scheduled',

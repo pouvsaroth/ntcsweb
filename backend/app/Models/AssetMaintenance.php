@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Models\Concerns\HasCurrency;
 use App\Support\Assets\MaintenanceStatus;
 use Database\Factories\AssetMaintenanceFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -20,12 +21,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 #[Fillable([
     'maintenance_number', 'asset_id', 'maintenance_type', 'scheduled_date', 'completed_date', 'description',
-    'repair_shop_id', 'cost', 'status', 'recurrence_interval_months', 'next_maintenance_date', 'notes', 'created_by',
+    'repair_shop_id', 'cost', 'status', 'recurrence_interval_months', 'next_maintenance_date', 'notes', 'created_by', 'currency',
 ])]
 class AssetMaintenance extends Model
 {
     /** @use HasFactory<AssetMaintenanceFactory> */
-    use HasFactory;
+    use HasCurrency, HasFactory;
 
     protected $connection = 'tenant';
 

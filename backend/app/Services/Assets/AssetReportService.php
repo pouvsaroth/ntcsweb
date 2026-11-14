@@ -9,8 +9,11 @@ use App\Models\AssetAssignment;
 use App\Models\AssetIssue;
 use App\Models\AssetMaintenance;
 use App\Models\AssetRepair;
+use App\Services\Billing\CurrencyConversionService;
 use App\Support\Assets\IssueStatus;
 use App\Support\Assets\MaintenanceStatus;
+use App\Support\Tenancy\TenantContext;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -22,6 +25,17 @@ use Illuminate\Support\Facades\DB;
  */
 final class AssetReportService
 {
+    public function __construct(
+        private readonly CurrencyConversionService $currency,
+        private readonly TenantContext $context,
+    ) {}
+
+    /** The currency every converted total here is in. */
+    public function schoolCurrency(): string
+    {
+        return $this->context->getOrFail()->default_currency;
+    }
+
     /**
      * @return array<string, int>
      */
@@ -65,9 +79,16 @@ final class AssetReportService
             ->all();
     }
 
+    /** Every asset's purchase price, each converted to the school's currency at the rate on its purchase date. */
     public function totalInvestment(): float
     {
-        return (float) Asset::query()->sum('purchase_price');
+        $rows = Asset::query()
+            ->whereNotNull('purchase_price')
+            ->select('currency', DB::raw('COALESCE(purchase_date, DATE(created_at)) as tx_date'), DB::raw('SUM(purchase_price) as total'))
+            ->groupBy('currency', DB::raw('COALESCE(purchase_date, DATE(created_at))'))
+            ->get();
+
+        return $this->currency->sumConverted($rows, $this->context->getOrFail());
     }
 
     public function totalRepairCost(?string $dateFrom = null, ?string $dateTo = null): float
@@ -81,32 +102,47 @@ final class AssetReportService
             $query->whereDate('sent_date', '<=', $dateTo);
         }
 
-        return (float) $query->sum('total_cost');
+        // Repairs in USD and KHR: each converted to the school's currency at the rate on its sent date.
+        $rows = $query
+            ->select('currency', DB::raw('DATE(sent_date) as tx_date'), DB::raw('SUM(total_cost) as total'))
+            ->groupBy('currency', DB::raw('DATE(sent_date)'))
+            ->get();
+
+        return $this->currency->sumConverted($rows, $this->context->getOrFail());
     }
 
     /**
+     * `total_cost` is in the school's currency (each repair converted at the
+     * rate on its sent date).
+     *
      * @return list<array{repair_shop_id: int, repair_shop_name: string, repair_count: int, total_cost: float}>
      */
     public function topRepairShops(int $limit = 10): array
     {
+        $tenant = $this->context->getOrFail();
+
         return AssetRepair::query()
             ->join('repair_shops', 'repair_shops.id', '=', 'asset_repairs.repair_shop_id')
             ->select(
                 'repair_shops.id as repair_shop_id',
                 'repair_shops.name as repair_shop_name',
+                'asset_repairs.currency as currency',
+                DB::raw('DATE(asset_repairs.sent_date) as tx_date'),
                 DB::raw('COUNT(asset_repairs.id) as repair_count'),
-                DB::raw('SUM(asset_repairs.total_cost) as total_cost'),
+                DB::raw('SUM(asset_repairs.total_cost) as total'),
             )
-            ->groupBy('repair_shops.id', 'repair_shops.name')
-            ->orderByDesc('total_cost')
-            ->limit($limit)
+            ->groupBy('repair_shops.id', 'repair_shops.name', 'asset_repairs.currency', DB::raw('DATE(asset_repairs.sent_date)'))
             ->get()
-            ->map(fn ($row) => [
-                'repair_shop_id' => (int) $row->repair_shop_id,
-                'repair_shop_name' => $row->repair_shop_name,
-                'repair_count' => (int) $row->repair_count,
-                'total_cost' => (float) $row->total_cost,
+            ->groupBy('repair_shop_id')
+            ->map(fn ($rows) => [
+                'repair_shop_id' => (int) $rows->first()->repair_shop_id,
+                'repair_shop_name' => $rows->first()->repair_shop_name,
+                'repair_count' => (int) $rows->sum('repair_count'),
+                'total_cost' => $this->currency->sumConverted($rows, $tenant),
             ])
+            ->sortByDesc('total_cost')
+            ->take($limit)
+            ->values()
             ->all();
     }
 
@@ -116,7 +152,7 @@ final class AssetReportService
     }
 
     /**
-     * @return \Illuminate\Support\Collection<int, AssetIssue>
+     * @return Collection<int, AssetIssue>
      */
     public function recentIssues(int $limit = 10)
     {
@@ -124,7 +160,7 @@ final class AssetReportService
     }
 
     /**
-     * @return \Illuminate\Support\Collection<int, AssetMaintenance>
+     * @return Collection<int, AssetMaintenance>
      */
     public function upcomingMaintenance(int $days = 30, int $limit = 10)
     {
@@ -138,7 +174,7 @@ final class AssetReportService
     }
 
     /**
-     * @return \Illuminate\Support\Collection<int, Asset>
+     * @return Collection<int, Asset>
      */
     public function warrantyExpiring(int $days = 30, int $limit = 10)
     {

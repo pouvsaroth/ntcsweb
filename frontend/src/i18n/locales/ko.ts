@@ -7859,7 +7859,7 @@ const ko: MessageSchema = {
       schedule: '예약',
       scheduleTitle: '유지보수 예약',
       complete: '완료',
-      completeCostPrompt: '이번 유지보수 비용(없으면 비워두세요):',
+      completeCostPrompt: '이번 유지보수 비용({currency}, 없으면 비워두세요):',
       cancelConfirm: '이 유지보수를 취소하시겠습니까?',
       overdue: '기한 초과',
       maintenanceStatusScheduled: '예정됨',

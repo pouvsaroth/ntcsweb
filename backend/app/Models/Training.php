@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Models\Concerns\Auditable;
+use App\Models\Concerns\HasCurrency;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -14,10 +15,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * (Training Calendar) and the staff assigned to it (training_participants).
  * See docs/hrm/professional-development.md.
  */
-#[Fillable(['title', 'category', 'provider_type', 'trainer', 'mode', 'location', 'start_date', 'end_date', 'start_time', 'end_time', 'hours', 'cost', 'description', 'status', 'created_by'])]
+#[Fillable(['title', 'category', 'provider_type', 'trainer', 'mode', 'location', 'start_date', 'end_date', 'start_time', 'end_time', 'hours', 'cost', 'currency', 'description', 'status', 'created_by'])]
 class Training extends Model
 {
-    use Auditable;
+    use Auditable, HasCurrency;
 
     public const STATUSES = ['planned', 'completed', 'cancelled'];
 

@@ -22,6 +22,7 @@ class ProductResource extends JsonResource
             'description' => $this->description,
             'type' => $this->type,
             'price' => (float) $this->price,
+            'currency' => $this->currency,
             'is_active' => $this->is_active,
             'variants' => ProductVariantResource::collection($this->whenLoaded('variants')),
             'created_at' => $this->created_at?->toIso8601String(),

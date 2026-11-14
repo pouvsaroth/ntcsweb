@@ -25,7 +25,7 @@ class UpdateProductVariantRequest extends FormRequest
 
         return [
             'name' => ['sometimes', 'required', 'string', 'max:64', Rule::unique('tenant.product_variants', 'name')->where('product_id', $variant->product_id)->ignore($variant)],
-            'price_override' => ['nullable', 'numeric', 'min:0', 'max:999999.99'],
+            'price_override' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
             'is_active' => ['sometimes', 'boolean'],
         ];
     }

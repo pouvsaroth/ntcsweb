@@ -29,6 +29,7 @@ class TrainingResource extends JsonResource
             'end_time' => $this->end_time ? substr((string) $this->end_time, 0, 5) : null,
             'hours' => $this->hours !== null ? (float) $this->hours : null,
             'cost' => $this->cost !== null ? (float) $this->cost : null,
+            'currency' => $this->currency,
             'description' => $this->description,
             'status' => $this->status,
             'participants_count' => $this->whenCounted('participants'),

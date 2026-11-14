@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Models\Concerns\Auditable;
+use App\Models\Concerns\HasCurrency;
 use Database\Factories\ProgramFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -25,12 +26,12 @@ use Illuminate\Support\Facades\Storage;
  */
 #[Fillable([
     'title', 'subtitle', 'category', 'level', 'duration_label', 'fee', 'description',
-    'image_path', 'is_featured', 'sort_order', 'status',
+    'image_path', 'is_featured', 'sort_order', 'status', 'currency',
 ])]
 class Program extends Model
 {
     /** @use HasFactory<ProgramFactory> */
-    use Auditable, HasFactory, SoftDeletes;
+    use Auditable, HasCurrency, HasFactory, SoftDeletes;
 
     protected $connection = 'tenant';
 

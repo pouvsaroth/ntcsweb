@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Api\V1\Admin;
 
 use App\Models\Program;
+use App\Models\Tenant;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -32,7 +33,8 @@ class UpdateProgramRequest extends FormRequest
             'category' => ['sometimes', 'required', 'string', 'max:100'],
             'level' => ['sometimes', Rule::in([Program::LEVEL_BEGINNER, Program::LEVEL_INTERMEDIATE, Program::LEVEL_ADVANCED])],
             'duration_label' => ['nullable', 'string', 'max:50'],
-            'fee' => ['nullable', 'numeric', 'min:0', 'max:999999.99'],
+            'fee' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
+            'currency' => ['sometimes', 'required', Rule::in([Tenant::CURRENCY_USD, Tenant::CURRENCY_KHR])],
             'description' => ['nullable', 'string', 'max:5000'],
             // Optional: an update that only changes text fields shouldn't
             // have to re-upload the image.

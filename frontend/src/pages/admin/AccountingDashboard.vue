@@ -7,8 +7,10 @@ import BaseCard from '@/components/ui/BaseCard.vue'
 import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import { accountingReportsService, type AccountingSummary } from '@/services/accounting'
 import { ApiRequestError } from '@/types/api'
+import { useMoney } from '@/composables/useMoney'
 
 const { t } = useI18n()
+const { money } = useMoney()
 
 const summary = ref<AccountingSummary | null>(null)
 const loading = ref(true)
@@ -18,14 +20,14 @@ const stats = computed(() => {
   if (!summary.value) return []
   const s = summary.value
   return [
-    { label: t('admin.accountingDashboard.statTotalRevenue'), value: `$${s.total_revenue.toFixed(2)}` },
-    { label: t('admin.accountingDashboard.statTotalExpenses'), value: `$${s.total_expenses.toFixed(2)}` },
-    { label: t('admin.accountingDashboard.statNetProfit'), value: `$${s.net_profit.toFixed(2)}`, negative: s.net_profit < 0 },
-    { label: t('admin.accountingDashboard.statOutstanding'), value: `$${s.outstanding_receivables.toFixed(2)}` },
-    { label: t('admin.accountingDashboard.statTodaysIncome'), value: `$${s.todays_income.toFixed(2)}` },
-    { label: t('admin.accountingDashboard.statTodaysExpenses'), value: `$${s.todays_expenses.toFixed(2)}` },
-    { label: t('admin.accountingDashboard.statOverdue'), value: `$${s.overdue_receivables.toFixed(2)}` },
-    { label: t('admin.accountingDashboard.statCashBalance'), value: `$${s.total_cash_balance.toFixed(2)}` },
+    { label: t('admin.accountingDashboard.statTotalRevenue'), value: money(s.total_revenue) },
+    { label: t('admin.accountingDashboard.statTotalExpenses'), value: money(s.total_expenses) },
+    { label: t('admin.accountingDashboard.statNetProfit'), value: money(s.net_profit), negative: s.net_profit < 0 },
+    { label: t('admin.accountingDashboard.statOutstanding'), value: money(s.outstanding_receivables) },
+    { label: t('admin.accountingDashboard.statTodaysIncome'), value: money(s.todays_income) },
+    { label: t('admin.accountingDashboard.statTodaysExpenses'), value: money(s.todays_expenses) },
+    { label: t('admin.accountingDashboard.statOverdue'), value: money(s.overdue_receivables) },
+    { label: t('admin.accountingDashboard.statCashBalance'), value: money(s.total_cash_balance) },
   ]
 })
 
@@ -68,7 +70,7 @@ onMounted(async () => {
           <dl v-else class="space-y-2 text-sm">
             <div v-for="account in summary.cash_accounts" :key="account.id" class="flex justify-between">
               <dt class="text-neutral-500">{{ account.code }} — {{ account.name }}</dt>
-              <dd class="font-medium text-neutral-900">${{ account.balance.toFixed(2) }}</dd>
+              <dd class="font-medium text-neutral-900">{{ money(account.balance) }}</dd>
             </div>
           </dl>
         </BaseCard>

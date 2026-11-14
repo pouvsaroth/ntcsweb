@@ -23,6 +23,7 @@ import { useConfirmDialogStore } from '@/stores/confirmDialog'
 import { ApiRequestError } from '@/types/api'
 import { formatDate, formatTimeOfDay } from '@/utils/date'
 import { trainingStatusVariant } from '@/utils/professionalDevelopment'
+import { useMoney } from '@/composables/useMoney'
 
 /**
  * A training: its details, and everyone on it — take attendance and
@@ -32,6 +33,7 @@ const props = defineProps<{ modelValue: boolean; trainingId: number | null }>()
 const emit = defineEmits<{ 'update:modelValue': [boolean]; changed: []; edit: [Training] }>()
 
 const { t } = useI18n()
+const { money } = useMoney()
 const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
 const canManage = computed(() => auth.can('trainings.update'))
@@ -205,7 +207,7 @@ const selectClass =
         </div>
         <div>
           <dt class="text-neutral-500">{{ t('proDev.trainings.hours') }} · {{ t('proDev.trainings.cost') }}</dt>
-          <dd class="font-medium text-neutral-900">{{ training.hours ?? '—' }} · {{ training.cost ?? '—' }}</dd>
+          <dd class="font-medium text-neutral-900">{{ training.hours ?? '—' }} · {{ training.cost != null ? money(training.cost, training.currency) : '—' }}</dd>
         </div>
       </dl>
       <p v-if="training.description" class="whitespace-pre-line rounded-lg bg-neutral-50 px-3 py-2 text-sm text-neutral-700">{{ training.description }}</p>

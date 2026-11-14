@@ -7859,7 +7859,7 @@ const ja: MessageSchema = {
       schedule: '予定を登録',
       scheduleTitle: 'メンテナンスを予定',
       complete: '完了',
-      completeCostPrompt: 'このメンテナンスの費用（なければ空欄）：',
+      completeCostPrompt: 'このメンテナンスの費用（{currency}、なければ空欄）：',
       cancelConfirm: 'このメンテナンスをキャンセルしますか？',
       overdue: '期限超過',
       maintenanceStatusScheduled: '予定済み',

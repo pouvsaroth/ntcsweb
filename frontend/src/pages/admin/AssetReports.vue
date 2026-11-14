@@ -14,8 +14,10 @@ import { apiDownload } from '@/services/http'
 import { assetReportsService, type AssetRepairCostReport, type AssetStatusReport } from '@/services/assetReports'
 import { ApiRequestError } from '@/types/api'
 import { formatDate, formatDateTime } from '@/utils/date'
+import { useMoney } from '@/composables/useMoney'
 
 const { t } = useI18n()
+const { money } = useMoney()
 
 type Tab = 'inventory' | 'status' | 'repairs' | 'repair-cost' | 'maintenance' | 'assignments' | 'history'
 
@@ -161,12 +163,12 @@ onMounted(() => loadActiveTab())
       <BaseCard>
         <div class="mb-3 flex items-center justify-between">
           <h2 class="text-sm font-semibold text-neutral-800">{{ t('admin.assetReports.byRepairShop') }}</h2>
-          <p class="text-lg font-semibold text-neutral-900">${{ repairCostReport.total_repair_cost.toFixed(2) }}</p>
+          <p class="text-lg font-semibold text-neutral-900">{{ money(repairCostReport.total_repair_cost) }}</p>
         </div>
         <dl class="space-y-2 text-sm">
           <div v-for="shop in repairCostReport.by_repair_shop" :key="shop.repair_shop_id" class="flex justify-between">
             <dt class="text-neutral-500">{{ shop.repair_shop_name }} ({{ shop.repair_count }})</dt>
-            <dd class="font-medium text-neutral-900">${{ shop.total_cost.toFixed(2) }}</dd>
+            <dd class="font-medium text-neutral-900">{{ money(shop.total_cost) }}</dd>
           </div>
         </dl>
       </BaseCard>
@@ -186,7 +188,7 @@ onMounted(() => loadActiveTab())
         :loading="inventory.loading.value"
       >
         <template #cell-category="{ row }">{{ row.category?.name ?? '—' }}</template>
-        <template #cell-purchase_price="{ row }">${{ row.purchase_price.toFixed(2) }}</template>
+        <template #cell-purchase_price="{ row }">{{ money(row.purchase_price, row.currency) }}</template>
       </DataTable>
       <BasePagination v-if="inventory.meta.value" :meta="inventory.meta.value" class="mt-4" @update:page="inventory.setPage" />
     </template>
@@ -204,7 +206,7 @@ onMounted(() => loadActiveTab())
         :loading="repairs.loading.value"
       >
         <template #cell-asset="{ row }">{{ row.asset?.asset_number ?? '—' }}</template>
-        <template #cell-total_cost="{ row }">${{ row.total_cost.toFixed(2) }}</template>
+        <template #cell-total_cost="{ row }">{{ money(row.total_cost, row.currency) }}</template>
       </DataTable>
       <BasePagination v-if="repairs.meta.value" :meta="repairs.meta.value" class="mt-4" @update:page="repairs.setPage" />
     </template>

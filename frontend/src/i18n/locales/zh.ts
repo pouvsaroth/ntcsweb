@@ -7858,7 +7858,7 @@ const zh: MessageSchema = {
       schedule: '排定',
       scheduleTitle: '排定保养',
       complete: '完成',
-      completeCostPrompt: '此次保养的费用（无则留空）：',
+      completeCostPrompt: '此次保养的费用（{currency}，无则留空）：',
       cancelConfirm: '取消此次保养？',
       overdue: '已逾期',
       maintenanceStatusScheduled: '已排定',

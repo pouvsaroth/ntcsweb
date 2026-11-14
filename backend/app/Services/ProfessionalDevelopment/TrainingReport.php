@@ -12,6 +12,8 @@ use App\Models\Position;
 use App\Models\Staff;
 use App\Models\Training;
 use App\Models\TrainingParticipant;
+use App\Services\Billing\CurrencyConversionService;
+use App\Support\Tenancy\TenantContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 
@@ -24,13 +26,30 @@ use Illuminate\Support\Collection;
  */
 final class TrainingReport
 {
+    public function __construct(
+        private readonly CurrencyConversionService $currency,
+        private readonly TenantContext $context,
+    ) {}
+
+    /** A training's cost in the school's currency (converted at the rate on its start date). */
+    private function cost(Training $t): float
+    {
+        $school = $this->context->getOrFail()->default_currency;
+        $amount = (float) ($t->cost ?? 0);
+        if ($amount === 0.0 || ($t->currency ?: $school) === $school) {
+            return $amount;
+        }
+
+        return $this->currency->convert($amount, $t->currency, $school, $this->currency->rateForDate($t->start_date));
+    }
+
     /** @return array<string, mixed> */
     public function build(CarbonImmutable $from, CarbonImmutable $to): array
     {
         $range = [$from->toDateString(), $to->toDateString()];
 
         $trainings = Training::query()->whereBetween('start_date', $range)
-            ->get(['id', 'title', 'category', 'start_date', 'hours', 'cost', 'status']);
+            ->get(['id', 'title', 'category', 'start_date', 'hours', 'cost', 'currency', 'status']);
         $completedIds = $trainings->where('status', 'completed')->pluck('id')->all();
 
         /** @var Collection<int, TrainingParticipant> $participants */
@@ -54,7 +73,7 @@ final class TrainingReport
             'attendance_rate' => $onCompleted->count() > 0 ? (int) round($attended->count() * 100 / $onCompleted->count()) : null,
             'staff_trained' => $attended->pluck('staff_id')->unique()->count(),
             'hours' => round($attended->sum($hoursOf), 1),
-            'cost' => round((float) $trainings->where('status', 'completed')->sum(fn (Training $t) => (float) ($t->cost ?? 0)), 2),
+            'cost' => round((float) $trainings->where('status', 'completed')->sum(fn (Training $t) => $this->cost($t)), 2),
             'certificates' => $certificates->count(),
             'observations' => $observations->count(),
             'average_rating' => $observations->count() > 0 ? round((float) $observations->avg(fn ($o) => (float) $o->average_rating), 2) : null,
@@ -65,6 +84,8 @@ final class TrainingReport
         ];
 
         return [
+            // Costs are converted to this currency (trainings can be in USD or KHR).
+            'currency' => $this->context->getOrFail()->default_currency,
             'from' => $range[0],
             'to' => $range[1],
             'totals' => $totals,
@@ -108,7 +129,7 @@ final class TrainingReport
             $rows[$key] ??= ['category' => $t->category, 'trainings' => 0, 'attended' => 0, 'hours' => 0.0, 'cost' => 0.0];
             $rows[$key]['trainings']++;
             if ($t->status === 'completed') {
-                $rows[$key]['cost'] += (float) ($t->cost ?? 0);
+                $rows[$key]['cost'] += $this->cost($t);
             }
         }
         $categoryOf = $trainings->mapWithKeys(fn (Training $t) => [$t->id => $t->category ?: '']);

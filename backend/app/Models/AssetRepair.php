@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Models\Concerns\HasCurrency;
 use App\Support\Assets\RepairStatus;
 use Database\Factories\AssetRepairFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -25,12 +26,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'diagnosis_cost', 'parts_cost', 'labor_cost', 'transport_cost', 'other_cost', 'total_cost',
     'warranty_days', 'condition_after_repair',
     'decision', 'decision_by', 'decision_date', 'decision_reason',
-    'expense_id', 'notes', 'created_by',
+    'expense_id', 'notes', 'created_by', 'currency',
 ])]
 class AssetRepair extends Model
 {
     /** @use HasFactory<AssetRepairFactory> */
-    use HasFactory;
+    use HasCurrency, HasFactory;
 
     protected $connection = 'tenant';
 

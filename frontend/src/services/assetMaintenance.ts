@@ -18,6 +18,7 @@ export interface AssetMaintenance {
   repair_shop_id: number | null
   repair_shop: { id: number; name: string } | null
   cost: number | null
+  currency: 'USD' | 'KHR'
   status: MaintenanceStatus
   is_overdue: boolean
   recurrence_interval_months: number | null
@@ -47,7 +48,7 @@ export const assetMaintenanceService = {
 
   schedule: (assetId: number, input: ScheduleMaintenanceInput) => apiPost<AssetMaintenance>(`/assets/${assetId}/maintenance`, input),
 
-  complete: (id: number, input: { completed_date?: string; cost?: string; description?: string }) =>
+  complete: (id: number, input: { completed_date?: string; cost?: string; currency?: 'USD' | 'KHR'; description?: string }) =>
     apiPost<AssetMaintenance>(`/asset-maintenance/${id}/complete`, { ...input, cost: input.cost ? Number(input.cost) : undefined }),
 
   cancel: (id: number) => apiPost<AssetMaintenance>(`/asset-maintenance/${id}/cancel`),

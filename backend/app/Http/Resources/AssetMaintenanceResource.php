@@ -27,6 +27,7 @@ class AssetMaintenanceResource extends JsonResource
             'repair_shop_id' => $this->repair_shop_id,
             'repair_shop' => $this->whenLoaded('repairShop', fn () => $this->repairShop !== null ? ['id' => $this->repairShop->id, 'name' => $this->repairShop->name] : null),
             'cost' => $this->cost !== null ? (float) $this->cost : null,
+            'currency' => $this->currency,
             'status' => $this->status,
             'is_overdue' => $this->isOverdue(),
             'recurrence_interval_months' => $this->recurrence_interval_months,

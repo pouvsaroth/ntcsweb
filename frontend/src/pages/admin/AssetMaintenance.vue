@@ -13,8 +13,10 @@ import { assetMaintenanceService, maintenanceStatuses, type AssetMaintenance, ty
 import { ApiRequestError } from '@/types/api'
 import { formatDate } from '@/utils/date'
 import { useConfirmDialogStore } from '@/stores/confirmDialog'
+import { useMoney } from '@/composables/useMoney'
 
 const { t } = useI18n()
+const { schoolCurrency } = useMoney()
 const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
 
@@ -37,12 +39,14 @@ function onStatusFilterChange(value: string) {
 const actionError = ref<string | null>(null)
 
 async function completeMaintenance(record: AssetMaintenance) {
-  const cost = window.prompt(t('admin.assetMaintenance.completeCostPrompt'))
+  // Typed in the school's currency, and saved with it.
+  const currency = schoolCurrency()
+  const cost = window.prompt(t('admin.assetMaintenance.completeCostPrompt', { currency }))
   if (cost === null) return
   actionError.value = null
 
   try {
-    await assetMaintenanceService.complete(record.id, { cost: cost || undefined })
+    await assetMaintenanceService.complete(record.id, { cost: cost || undefined, currency })
     await fetch()
   } catch (e) {
     actionError.value = e instanceof ApiRequestError ? e.message : t('admin.assetMaintenance.actionFailed')

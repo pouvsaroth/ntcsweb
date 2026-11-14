@@ -13,8 +13,10 @@ import DataTable from '@/components/ui/DataTable.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { programsService, type Program, type ProgramLevel } from '@/services/programs'
 import { useConfirmDialogStore } from '@/stores/confirmDialog'
+import { useMoney } from '@/composables/useMoney'
 
 const { t } = useI18n()
+const { money } = useMoney()
 const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
 
@@ -95,7 +97,7 @@ onMounted(() => fetch())
           {{ t(`admin.programs.level${row.level.charAt(0).toUpperCase()}${row.level.slice(1)}`) }}
         </BaseBadge>
       </template>
-      <template #cell-fee="{ row }">{{ row.fee !== null ? `$${row.fee.toFixed(2)}` : '—' }}</template>
+      <template #cell-fee="{ row }">{{ row.fee !== null ? money(row.fee, row.currency) : '—' }}</template>
       <template #cell-is_featured="{ row }">
         <span v-if="row.is_featured" class="text-sm font-medium text-secondary-700">{{ t('common.yes') }}</span>
         <span v-else class="text-sm text-neutral-400">{{ t('common.no') }}</span>

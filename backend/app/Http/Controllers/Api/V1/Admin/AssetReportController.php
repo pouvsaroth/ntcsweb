@@ -46,8 +46,8 @@ final class AssetReportController extends Controller
         if ($request->string('format')->toString() === 'csv') {
             $assets = $query->build()->get();
 
-            return $this->csv('inventory-report', ['Asset Number', 'Name', 'Category', 'Status', 'Condition', 'Location', 'Purchase Price'], $assets->map(fn (Asset $a) => [
-                $a->asset_number, $a->name, $a->category?->name, $a->status, $a->condition, $a->location?->name, number_format((float) $a->purchase_price, 2, '.', ''),
+            return $this->csv('inventory-report', ['Asset Number', 'Name', 'Category', 'Status', 'Condition', 'Location', 'Purchase Price', 'Currency'], $assets->map(fn (Asset $a) => [
+                $a->asset_number, $a->name, $a->category?->name, $a->status, $a->condition, $a->location?->name, number_format((float) $a->purchase_price, 2, '.', ''), $a->currency,
             ]));
         }
 
@@ -76,8 +76,8 @@ final class AssetReportController extends Controller
         if ($request->string('format')->toString() === 'csv') {
             $repairs = $query->build()->get();
 
-            return $this->csv('repair-report', ['Repair Number', 'Asset', 'Repair Shop', 'Status', 'Sent Date', 'Total Cost'], $repairs->map(fn (AssetRepair $r) => [
-                $r->repair_number, $r->asset?->asset_number, $r->repairShop?->name, $r->status, (string) $r->sent_date, number_format((float) $r->total_cost, 2, '.', ''),
+            return $this->csv('repair-report', ['Repair Number', 'Asset', 'Repair Shop', 'Status', 'Sent Date', 'Total Cost', 'Currency'], $repairs->map(fn (AssetRepair $r) => [
+                $r->repair_number, $r->asset?->asset_number, $r->repairShop?->name, $r->status, (string) $r->sent_date, number_format((float) $r->total_cost, 2, '.', ''), $r->currency,
             ]));
         }
 
@@ -93,12 +93,13 @@ final class AssetReportController extends Controller
         $shops = $this->reports->topRepairShops(50);
 
         if ($request->string('format')->toString() === 'csv') {
-            return $this->csv('repair-cost-report', ['Repair Shop', 'Repair Count', 'Total Cost'], collect($shops)->map(
+            return $this->csv('repair-cost-report', ['Repair Shop', 'Repair Count', 'Total Cost ('.$this->reports->schoolCurrency().')'], collect($shops)->map(
                 fn (array $row) => [$row['repair_shop_name'], $row['repair_count'], number_format($row['total_cost'], 2, '.', '')]
             ));
         }
 
         return ApiResponse::success([
+            'currency' => $this->reports->schoolCurrency(),
             'total_repair_cost' => $this->reports->totalRepairCost($dateFrom, $dateTo),
             'by_repair_shop' => $shops,
         ]);
@@ -115,8 +116,8 @@ final class AssetReportController extends Controller
         if ($request->string('format')->toString() === 'csv') {
             $records = $query->build()->get();
 
-            return $this->csv('maintenance-report', ['Maintenance Number', 'Asset', 'Type', 'Status', 'Scheduled Date', 'Cost'], $records->map(fn (AssetMaintenance $m) => [
-                $m->maintenance_number, $m->asset?->asset_number, $m->maintenance_type, $m->status, (string) $m->scheduled_date, number_format((float) ($m->cost ?? 0), 2, '.', ''),
+            return $this->csv('maintenance-report', ['Maintenance Number', 'Asset', 'Type', 'Status', 'Scheduled Date', 'Cost', 'Currency'], $records->map(fn (AssetMaintenance $m) => [
+                $m->maintenance_number, $m->asset?->asset_number, $m->maintenance_type, $m->status, (string) $m->scheduled_date, number_format((float) ($m->cost ?? 0), 2, '.', ''), $m->currency,
             ]));
         }
 

@@ -10,16 +10,21 @@ import BaseSelect from '@/components/ui/BaseSelect.vue'
 import { accountsService, type Account } from '@/services/accounting'
 import { assetConditions, type AssetCondition } from '@/services/assets'
 import type { CompleteRepairInput } from '@/services/assetRepairs'
+import { useMoney } from '@/composables/useMoney'
+import CurrencySelect from '@/components/ui/CurrencySelect.vue'
 
 const props = defineProps<{
   modelValue: boolean
   submitting?: boolean
   error?: string | null
+  /** The repair's currency so far (empty = the school's). */
+  currency?: 'USD' | 'KHR' | null
 }>()
 
 const emit = defineEmits<{ 'update:modelValue': [value: boolean]; confirm: [payload: CompleteRepairInput] }>()
 
 const { t } = useI18n()
+const { money, schoolCurrency } = useMoney()
 
 const accounts = ref<Account[]>([])
 const expenseAccountOptions = computed(() => accounts.value.filter((a) => a.type === 'EXPENSE' && a.is_active).map((a) => ({ value: String(a.id), label: `${a.code} — ${a.name}` })))
@@ -38,6 +43,7 @@ const form = reactive({
   labor_cost: '0',
   transport_cost: '0',
   other_cost: '0',
+  currency: schoolCurrency() as 'USD' | 'KHR',
 })
 
 const total = computed(() =>
@@ -60,6 +66,7 @@ watch(
     form.labor_cost = '0'
     form.transport_cost = '0'
     form.other_cost = '0'
+    form.currency = props.currency ?? schoolCurrency()
   },
 )
 
@@ -74,6 +81,7 @@ function submit() {
     labor_cost: form.labor_cost,
     transport_cost: form.transport_cost,
     other_cost: form.other_cost,
+    currency: form.currency,
   })
 }
 </script>
@@ -92,6 +100,8 @@ function submit() {
         :hint="t('admin.assetRepairs.expenseAccountHint')"
       />
 
+      <CurrencySelect v-model="form.currency" class="max-w-xs" />
+
       <div class="grid grid-cols-3 gap-4">
         <BaseInput v-model="form.diagnosis_cost" type="number" :label="t('admin.assetRepairs.diagnosisCost')" />
         <BaseInput v-model="form.parts_cost" type="number" :label="t('admin.assetRepairs.partsCost')" />
@@ -102,7 +112,7 @@ function submit() {
         <BaseInput v-model="form.other_cost" type="number" :label="t('admin.assetRepairs.otherCost')" />
         <div>
           <label class="mb-1.5 block text-sm font-medium text-neutral-700">{{ t('admin.assetRepairs.totalCost') }}</label>
-          <p class="mt-2 text-lg font-semibold text-neutral-900">${{ total.toFixed(2) }}</p>
+          <p class="mt-2 text-lg font-semibold text-neutral-900">{{ money(total, form.currency) }}</p>
         </div>
       </div>
 

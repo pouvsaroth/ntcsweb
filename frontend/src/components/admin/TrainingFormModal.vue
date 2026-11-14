@@ -21,6 +21,8 @@ import {
   type TrainingStatus,
 } from '@/services/professionalDevelopment'
 import { ApiRequestError } from '@/types/api'
+import CurrencySelect from '@/components/ui/CurrencySelect.vue'
+import { useMoney } from '@/composables/useMoney'
 
 /**
  * Plan a training, or edit one: what, who runs it, where and when, and the
@@ -37,6 +39,7 @@ const props = defineProps<{
 const emit = defineEmits<{ 'update:modelValue': [boolean]; saved: [Training] }>()
 
 const { t } = useI18n()
+const { schoolCurrency } = useMoney()
 
 function todayIso(): string {
   const d = new Date()
@@ -56,6 +59,7 @@ const form = reactive({
   end_time: '',
   hours: '',
   cost: '',
+  currency: schoolCurrency() as 'USD' | 'KHR',
   description: '',
   status: 'planned' as TrainingStatus,
   participant_ids: [] as string[],
@@ -94,6 +98,7 @@ watch(
       end_time: tr?.end_time ?? '',
       hours: tr?.hours != null ? String(tr.hours) : '',
       cost: tr?.cost != null ? String(tr.cost) : '',
+      currency: tr?.currency ?? schoolCurrency(),
       description: tr?.description ?? '',
       status: tr?.status ?? props.preset?.status ?? 'planned',
       participant_ids: tr ? (tr.participants ?? []).map((p) => String(p.staff_id)) : props.preset?.staff_id ? [String(props.preset.staff_id)] : [],
@@ -146,6 +151,7 @@ async function save() {
     end_time: form.end_time || null,
     hours: num(form.hours),
     cost: num(form.cost),
+    currency: form.currency,
     description: form.description.trim() || null,
     status: form.status,
     participant_ids: form.participant_ids.map(Number),
@@ -202,11 +208,12 @@ async function save() {
         <BaseInput v-model="form.end_date" type="date" required :label="t('proDev.trainings.endDate')" :error="errors.end_date?.[0]" />
       </div>
 
-      <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <div class="grid grid-cols-2 gap-4 sm:grid-cols-5">
         <BaseInput v-model="form.start_time" type="time" :label="t('proDev.trainings.startTime')" :error="errors.start_time?.[0]" />
         <BaseInput v-model="form.end_time" type="time" :label="t('proDev.trainings.endTime')" :error="errors.end_time?.[0]" />
         <BaseInput v-model="form.hours" type="number" :label="t('proDev.trainings.hours')" :error="errors.hours?.[0]" />
         <BaseInput v-model="form.cost" type="number" :label="t('proDev.trainings.cost')" :error="errors.cost?.[0]" />
+        <CurrencySelect v-model="form.currency" :error="errors.currency?.[0]" />
       </div>
 
       <div>

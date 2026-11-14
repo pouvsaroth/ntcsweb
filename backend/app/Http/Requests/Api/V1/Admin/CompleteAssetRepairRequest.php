@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Api\V1\Admin;
 
 use App\Models\AssetRepair;
+use App\Models\Tenant;
 use App\Support\Assets\AssetCondition;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -27,6 +28,7 @@ class CompleteAssetRepairRequest extends FormRequest
             'repair_description' => ['nullable', 'string', 'max:2000'],
             'condition_after_repair' => ['nullable', Rule::in(AssetCondition::all())],
             'warranty_days' => ['nullable', 'integer', 'min:0'],
+            'currency' => ['sometimes', 'required', Rule::in([Tenant::CURRENCY_USD, Tenant::CURRENCY_KHR])],
             'diagnosis_cost' => ['sometimes', 'numeric', 'min:0'],
             'parts_cost' => ['sometimes', 'numeric', 'min:0'],
             'labor_cost' => ['sometimes', 'numeric', 'min:0'],

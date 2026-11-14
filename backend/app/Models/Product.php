@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Models\Concerns\Auditable;
+use App\Models\Concerns\HasCurrency;
 use App\Support\Billing\ProductType;
 use Database\Factories\ProductFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -27,11 +28,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string $price
  * @property bool $is_active
  */
-#[Fillable(['code', 'name', 'description', 'type', 'price', 'is_active', 'revenue_account_id'])]
+#[Fillable(['code', 'name', 'description', 'type', 'price', 'currency', 'is_active', 'revenue_account_id'])]
 class Product extends Model
 {
     /** @use HasFactory<ProductFactory> */
-    use Auditable, HasFactory, SoftDeletes;
+    use Auditable, HasCurrency, HasFactory, SoftDeletes;
 
     protected $connection = 'tenant';
 

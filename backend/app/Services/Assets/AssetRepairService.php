@@ -16,6 +16,7 @@ use App\Support\Assets\AssetStatus;
 use App\Support\Assets\RepairStatus;
 use App\Support\Audit\AuditAction;
 use App\Support\Audit\AuditLogger;
+use App\Support\Billing\Money;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -97,7 +98,7 @@ final class AssetRepairService
 
             $fields = array_intersect_key($data, array_flip([
                 'status', 'diagnosis', 'repair_description',
-                'diagnosis_cost', 'parts_cost', 'labor_cost', 'transport_cost', 'other_cost',
+                'diagnosis_cost', 'parts_cost', 'labor_cost', 'transport_cost', 'other_cost', 'currency',
             ]));
 
             $repair->fill($fields);
@@ -132,7 +133,7 @@ final class AssetRepairService
 
             $fields = array_intersect_key($data, array_flip([
                 'repair_description', 'condition_after_repair', 'warranty_days',
-                'diagnosis_cost', 'parts_cost', 'labor_cost', 'transport_cost', 'other_cost',
+                'diagnosis_cost', 'parts_cost', 'labor_cost', 'transport_cost', 'other_cost', 'currency',
             ]));
 
             $repair->fill($fields);
@@ -148,7 +149,8 @@ final class AssetRepairService
                 'expense_date' => now()->toDateString(),
                 'account_id' => $expenseAccountId,
                 'amount' => (float) $repair->total_cost,
-                'currency' => $tenant->default_currency,
+                // The repair's own currency, so a KHR repair is a KHR expense.
+                'currency' => $repair->currency ?: $tenant->default_currency,
                 'vendor' => $repair->repairShop?->name,
                 'description' => "Repair {$repair->repair_number} for asset {$asset->asset_number}",
                 'reference_number' => $repair->repair_number,
@@ -177,11 +179,11 @@ final class AssetRepairService
                 'Assets',
                 $repair,
                 new: ['total_cost' => (float) $repair->total_cost, 'expense_id' => $expense->getKey()],
-                description: "Completed repair {$repair->repair_number} — total cost \${$repair->total_cost}",
+                description: "Completed repair {$repair->repair_number} — total cost ".Money::format($repair->total_cost, $repair->currency),
                 actor: $actor,
             );
 
-            $this->history->log($asset, AssetHistoryEvent::REPAIR_COMPLETED, "Repair {$repair->repair_number} completed — total cost \${$repair->total_cost}.", actor: $actor);
+            $this->history->log($asset, AssetHistoryEvent::REPAIR_COMPLETED, "Repair {$repair->repair_number} completed — total cost ".Money::format($repair->total_cost, $repair->currency).'.', actor: $actor);
 
             return $repair;
         });

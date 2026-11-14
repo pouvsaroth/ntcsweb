@@ -103,6 +103,7 @@ export interface Asset {
   category: { id: number; code: string; name: string } | null
   purchase_date: string | null
   purchase_price: number
+  currency: 'USD' | 'KHR'
   current_value: number | null
   supplier_id: number | null
   supplier: { id: number; name: string } | null
@@ -141,6 +142,7 @@ export interface AssetInput {
   asset_tag: string
   purchase_date: string
   purchase_price: string
+  currency: 'USD' | 'KHR'
   current_value: string
   supplier_id: number | null
   warranty_start_date: string
@@ -168,6 +170,7 @@ function toAssetPayload(input: AssetInput) {
     purchase_date: input.purchase_date || null,
     purchase_price: input.purchase_price ? Number(input.purchase_price) : null,
     current_value: input.current_value ? Number(input.current_value) : null,
+    currency: input.currency,
     supplier_id: input.supplier_id,
     warranty_start_date: input.warranty_start_date || null,
     warranty_end_date: input.warranty_end_date || null,

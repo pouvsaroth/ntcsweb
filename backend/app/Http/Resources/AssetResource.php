@@ -32,6 +32,7 @@ class AssetResource extends JsonResource
             ] : null),
             'purchase_date' => $this->purchase_date?->toDateString(),
             'purchase_price' => (float) $this->purchase_price,
+            'currency' => $this->currency,
             'current_value' => $this->current_value !== null ? (float) $this->current_value : null,
             'supplier_id' => $this->supplier_id,
             'supplier' => $this->whenLoaded('supplier', fn () => $this->supplier !== null ? ['id' => $this->supplier->id, 'name' => $this->supplier->name] : null),

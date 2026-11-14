@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Models\Concerns\HasCurrency;
 use App\Support\Assets\AssetCondition;
 use App\Support\Assets\AssetStatus;
 use Database\Factories\AssetFactory;
@@ -41,12 +42,12 @@ use Illuminate\Support\Arr;
     'location_id', 'department_id', 'status', 'condition',
     'hostname', 'mac_address', 'ip_address', 'specs',
     'disposal_date', 'disposal_reason', 'disposal_method', 'disposal_value', 'disposal_approved_by', 'disposed_by',
-    'notes', 'created_by',
+    'notes', 'created_by', 'currency',
 ])]
 class Asset extends Model
 {
     /** @use HasFactory<AssetFactory> */
-    use HasFactory, SoftDeletes;
+    use HasCurrency, HasFactory, SoftDeletes;
 
     protected $connection = 'tenant';
 

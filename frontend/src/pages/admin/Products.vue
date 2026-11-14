@@ -14,8 +14,10 @@ import EditIconButton from '@/components/ui/EditIconButton.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { productsService, productTypes, type Product, type ProductType } from '@/services/products'
 import { useConfirmDialogStore } from '@/stores/confirmDialog'
+import { useMoney } from '@/composables/useMoney'
 
 const { t } = useI18n()
+const { money } = useMoney()
 const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
 
@@ -101,7 +103,7 @@ onMounted(() => fetch())
       @sort="(col) => setSort(sort === col ? `-${col}` : col)"
     >
       <template #cell-type="{ row }">{{ t(`admin.products.type${typeKey(row.type as ProductType)}`) }}</template>
-      <template #cell-price="{ row }">${{ row.price.toFixed(2) }}</template>
+      <template #cell-price="{ row }">{{ money(row.price, row.currency) }}</template>
       <template #cell-is_active="{ row }">
         <BaseBadge :variant="row.is_active ? 'success' : 'neutral'">
           {{ row.is_active ? t('admin.products.statusActive') : t('admin.products.statusInactive') }}

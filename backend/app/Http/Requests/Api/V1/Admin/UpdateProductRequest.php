@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Api\V1\Admin;
 
 use App\Models\Product;
+use App\Models\Tenant;
 use App\Support\Billing\ProductType;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -32,7 +33,8 @@ class UpdateProductRequest extends FormRequest
             // Never retroactive — see InvoiceItem's docblock: changing this
             // only affects invoices created after the change, since every
             // item already snapshots the price it was billed at.
-            'price' => ['sometimes', 'required', 'numeric', 'min:0', 'max:999999.99'],
+            'price' => ['sometimes', 'required', 'numeric', 'min:0', 'max:99999999.99'],
+            'currency' => ['sometimes', 'required', Rule::in([Tenant::CURRENCY_USD, Tenant::CURRENCY_KHR])],
             'is_active' => ['sometimes', 'boolean'],
         ];
     }

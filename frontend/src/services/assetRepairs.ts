@@ -34,6 +34,7 @@ export interface AssetRepair {
   transport_cost: number
   other_cost: number
   total_cost: number
+  currency: 'USD' | 'KHR'
   warranty_days: number | null
   condition_after_repair: AssetCondition | null
   decision: RepairDecision | null
@@ -63,6 +64,7 @@ export interface CompleteRepairInput {
   labor_cost: string
   transport_cost: string
   other_cost: string
+  currency: 'USD' | 'KHR'
 }
 
 export const assetRepairsService = {
@@ -88,6 +90,7 @@ export const assetRepairsService = {
       labor_cost: string
       transport_cost: string
       other_cost: string
+      currency: 'USD' | 'KHR'
     }>,
   ) => apiPut<AssetRepair>(`/asset-repairs/${id}`, input),
 

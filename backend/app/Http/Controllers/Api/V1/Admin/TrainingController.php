@@ -9,6 +9,7 @@ use App\Http\Resources\TrainingResource;
 use App\Http\Responses\ApiResponse;
 use App\Models\Position;
 use App\Models\Staff;
+use App\Models\Tenant;
 use App\Models\Training;
 use App\Models\TrainingParticipant;
 use App\Models\User;
@@ -17,6 +18,7 @@ use App\Services\ProfessionalDevelopment\TrainingCertificates;
 use App\Support\Authorization\Permissions;
 use App\Support\Notifications\NotificationType;
 use App\Support\Query\ApiQuery;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
@@ -76,7 +78,7 @@ final class TrainingController extends Controller
         $this->authorizeView($request);
         $data = $request->validate(['month' => ['required', 'date_format:Y-m']]);
 
-        $first = \Carbon\CarbonImmutable::createFromFormat('Y-m-d', $data['month'].'-01')->startOfDay();
+        $first = CarbonImmutable::createFromFormat('Y-m-d', $data['month'].'-01')->startOfDay();
         // Whole weeks around the month, as the grid shows them.
         $from = $first->startOfWeek()->toDateString();
         $to = $first->endOfMonth()->endOfWeek()->toDateString();
@@ -278,6 +280,7 @@ final class TrainingController extends Controller
             'end_time' => ['nullable', 'date_format:H:i', 'after:start_time'],
             'hours' => ['nullable', 'numeric', 'min:0', 'max:9999'],
             'cost' => ['nullable', 'numeric', 'min:0', 'max:9999999999'],
+            'currency' => ['sometimes', 'required', Rule::in([Tenant::CURRENCY_USD, Tenant::CURRENCY_KHR])],
             'description' => ['nullable', 'string', 'max:10000'],
             'status' => ['sometimes', Rule::in(Training::STATUSES)],
             'participant_ids' => ['sometimes', 'array', 'max:500'],

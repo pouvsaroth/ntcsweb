@@ -9,6 +9,8 @@ import BaseModal from '@/components/ui/BaseModal.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
 import { programsService, type Program, type ProgramLevel } from '@/services/programs'
 import { ApiRequestError } from '@/types/api'
+import CurrencySelect from '@/components/ui/CurrencySelect.vue'
+import { useMoney } from '@/composables/useMoney'
 
 const props = defineProps<{
   modelValue: boolean
@@ -19,6 +21,7 @@ const props = defineProps<{
 const emit = defineEmits<{ 'update:modelValue': [value: boolean]; saved: [] }>()
 
 const { t } = useI18n()
+const { schoolCurrency } = useMoney()
 
 const isEditing = computed(() => props.program != null)
 
@@ -29,6 +32,7 @@ const form = reactive({
   level: 'beginner' as ProgramLevel,
   duration_label: '',
   fee: '',
+  currency: schoolCurrency() as 'USD' | 'KHR',
   description: '',
   is_featured: false,
   sort_order: 0,
@@ -63,6 +67,7 @@ watch(
     form.level = props.program?.level ?? 'beginner'
     form.duration_label = props.program?.duration_label ?? ''
     form.fee = props.program?.fee != null ? String(props.program.fee) : ''
+    form.currency = props.program?.currency ?? schoolCurrency()
     form.description = props.program?.description ?? ''
     form.is_featured = props.program?.is_featured ?? false
     form.sort_order = props.program?.sort_order ?? 0
@@ -151,14 +156,16 @@ async function submit() {
         <BaseInput v-model="form.duration_label" :label="t('admin.programs.durationLabel')" :hint="t('admin.programs.durationLabelHint')" :error="errors.duration_label?.[0]" />
       </div>
 
-      <BaseInput
-        v-model="form.fee"
-        type="number"
-        :label="t('admin.programs.fee')"
-        :hint="t('admin.programs.feeHint')"
-        :error="errors.fee?.[0]"
-        class="max-w-xs"
-      />
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <BaseInput
+          v-model="form.fee"
+          type="number"
+          :label="t('admin.programs.fee')"
+          :hint="t('admin.programs.feeHint')"
+          :error="errors.fee?.[0]"
+        />
+        <CurrencySelect v-model="form.currency" :error="errors.currency?.[0]" />
+      </div>
 
       <div>
         <label class="mb-1.5 block text-sm font-medium text-neutral-700">{{ t('admin.programs.description') }}</label>

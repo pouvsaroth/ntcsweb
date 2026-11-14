@@ -17,6 +17,8 @@ import { useInvoicePrint } from '@/composables/useInvoicePrint'
 import { useTaskProgress } from '@/composables/useTaskProgress'
 import { useAuthStore } from '@/stores/auth'
 import { ApiRequestError } from '@/types/api'
+import { useMoney } from '@/composables/useMoney'
+import { convertCurrency } from '@/utils/currency'
 
 /** yyyy-MM-dd in the viewer's local time — matches EnrollmentPackageForm's own helper. */
 function today(): string {
@@ -25,6 +27,7 @@ function today(): string {
 }
 
 const { t } = useI18n()
+const { money, schoolCurrency } = useMoney()
 const router = useRouter()
 const auth = useAuthStore()
 
@@ -58,13 +61,13 @@ function selectStudent(student: Student) {
 const products = ref<Product[]>([])
 const loadingProducts = ref(true)
 
-const productOptions = computed(() => products.value.map((p) => ({ value: String(p.id), label: `${p.name} — $${p.price.toFixed(2)}` })))
+const productOptions = computed(() => products.value.map((p) => ({ value: String(p.id), label: `${p.name} — ${money(p.price, p.currency)}` })))
 
 function variantOptions(productId: number | null) {
   const product = products.value.find((p) => p.id === productId)
   return (product?.variants ?? []).map((v) => ({
     value: String(v.id),
-    label: v.price_override !== null ? `${v.name} — $${v.price_override.toFixed(2)}` : v.name,
+    label: v.price_override !== null ? `${v.name} — ${money(v.price_override, product?.currency)}` : v.name,
   }))
 }
 
@@ -117,7 +120,8 @@ function itemPreviewTotal(item: InvoiceItemInput): number {
   if (!item.product_id) return 0
   const product = products.value.find((p) => p.id === item.product_id)
   const variant = product?.variants?.find((v) => v.id === item.product_variant_id)
-  const catalogPrice = variant?.price_override ?? product?.price ?? 0
+  // The catalog price is in the product's currency; the invoice is in the school's (the server converts the same way).
+  const catalogPrice = convertCurrency(variant?.price_override ?? product?.price ?? 0, product?.currency ?? schoolCurrency(), schoolCurrency(), auth.khrPerUsdRate)
   const unitPrice = item.unit_price.trim() ? Number(item.unit_price) : catalogPrice
   const discount = item.discount.trim() ? Number(item.discount) : 0
   return Math.max(0, item.quantity * unitPrice - discount)
@@ -313,7 +317,7 @@ onMounted(async () => {
           </div>
 
           <div class="mt-2 flex items-center justify-between">
-            <span class="text-sm text-neutral-500">{{ t('admin.invoices.lineTotal') }}: ${{ itemPreviewTotal(item).toFixed(2) }}</span>
+            <span class="text-sm text-neutral-500">{{ t('admin.invoices.lineTotal') }}: {{ money(itemPreviewTotal(item)) }}</span>
             <button
               v-if="form.items.length > 1"
               type="button"
@@ -341,8 +345,8 @@ onMounted(async () => {
       </section>
 
       <div class="rounded-lg bg-neutral-50 p-4 text-sm">
-        <div class="flex justify-between"><span class="text-neutral-500">{{ t('admin.invoices.summarySubtotal') }}</span><span>${{ subtotalPreview.toFixed(2) }}</span></div>
-        <div class="mt-1 flex justify-between font-semibold text-neutral-900"><span>{{ t('admin.invoices.summaryTotal') }}</span><span>${{ totalPreview.toFixed(2) }}</span></div>
+        <div class="flex justify-between"><span class="text-neutral-500">{{ t('admin.invoices.summarySubtotal') }}</span><span>{{ money(subtotalPreview) }}</span></div>
+        <div class="mt-1 flex justify-between font-semibold text-neutral-900"><span>{{ t('admin.invoices.summaryTotal') }}</span><span>{{ money(totalPreview) }}</span></div>
         <p class="mt-2 text-xs text-neutral-400">{{ t('admin.invoices.totalPreviewHint') }}</p>
       </div>
 

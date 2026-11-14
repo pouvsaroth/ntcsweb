@@ -33,6 +33,8 @@ final class AssetDashboardController extends Controller
             'counts_by_status' => $this->reports->countsByStatus(),
             'counts_by_category' => $this->reports->countsByCategory(),
             'counts_by_location' => $this->reports->countsByLocation(),
+            // Converted to the school's currency (assets and repairs can be in USD or KHR).
+            'currency' => $this->reports->schoolCurrency(),
             'total_investment' => $this->reports->totalInvestment(),
             'total_repair_cost' => $this->reports->totalRepairCost(),
             'open_issues_count' => $this->reports->openIssuesCount(),

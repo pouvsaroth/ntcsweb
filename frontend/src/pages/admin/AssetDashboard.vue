@@ -8,8 +8,10 @@ import BaseCard from '@/components/ui/BaseCard.vue'
 import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import { ApiRequestError } from '@/types/api'
 import { formatDate } from '@/utils/date'
+import { useMoney } from '@/composables/useMoney'
 
 const { t } = useI18n()
+const { money } = useMoney()
 
 const summary = ref<AssetDashboardSummary | null>(null)
 const loading = ref(true)
@@ -25,8 +27,8 @@ const stats = computed(() => {
   const s = summary.value
   return [
     { label: t('admin.assetDashboard.statTotalAssets'), value: String(totalAssets.value) },
-    { label: t('admin.assetDashboard.statTotalInvestment'), value: `$${s.total_investment.toFixed(2)}` },
-    { label: t('admin.assetDashboard.statTotalRepairCost'), value: `$${s.total_repair_cost.toFixed(2)}` },
+    { label: t('admin.assetDashboard.statTotalInvestment'), value: money(s.total_investment) },
+    { label: t('admin.assetDashboard.statTotalRepairCost'), value: money(s.total_repair_cost) },
     { label: t('admin.assetDashboard.statOpenIssues'), value: String(s.open_issues_count) },
     { label: t('admin.assetDashboard.statOpenRepairs'), value: String(s.open_repairs_count) },
     { label: t('admin.assetDashboard.statActiveAssignments'), value: String(s.assignment_totals.active) },
@@ -99,7 +101,7 @@ onMounted(async () => {
           <dl v-else class="space-y-2 text-sm">
             <div v-for="shop in summary.top_repair_shops" :key="shop.repair_shop_id" class="flex justify-between">
               <dt class="text-neutral-500">{{ shop.repair_shop_name }} ({{ shop.repair_count }})</dt>
-              <dd class="font-medium text-neutral-900">${{ shop.total_cost.toFixed(2) }}</dd>
+              <dd class="font-medium text-neutral-900">{{ money(shop.total_cost) }}</dd>
             </div>
           </dl>
         </BaseCard>

@@ -13,7 +13,7 @@ import DataTable from '@/components/ui/DataTable.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { incomeService } from '@/services/financialTransactions'
 import type { FinancialTransaction } from '@/services/financialTransactions'
-import { formatMoney } from '@/utils/currency'
+import { useMoney } from '@/composables/useMoney'
 import { formatDate, formatMonth } from '@/utils/date'
 
 const { t } = useI18n()
@@ -21,7 +21,9 @@ const auth = useAuthStore()
 
 const { items, meta, loading, error, setPage, setFilter, fetch } = usePaginatedResource<FinancialTransaction>((query) => incomeService.list(query))
 
-const money = (row: FinancialTransaction) => formatMoney(row.amount, row.currency === 'KHR' ? 'KHR' : 'USD')
+const { money: inCurrency } = useMoney()
+/** In the row's own currency; a row with none is in the school's currency. */
+const money = (row: FinancialTransaction) => inCurrency(row.amount, row.currency)
 
 // For month: the month the income belongs to, not the day it came in.
 const selectedMonth = ref('')

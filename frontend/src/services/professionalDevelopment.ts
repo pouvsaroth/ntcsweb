@@ -72,6 +72,7 @@ export interface Training {
   end_time: string | null
   hours: number | null
   cost: number | null
+  currency: 'USD' | 'KHR'
   description: string | null
   status: TrainingStatus
   participants_count?: number
@@ -93,6 +94,7 @@ export interface TrainingInput {
   end_time: string | null
   hours: number | null
   cost: number | null
+  currency: 'USD' | 'KHR'
   description: string | null
   status?: TrainingStatus
   participant_ids?: number[]
@@ -460,6 +462,8 @@ export const developmentPlansService = {
 
 // --- Training reports (TrainingReportController) ----------------------------
 export interface TrainingReport {
+  /** Costs are converted to this currency (the school's). */
+  currency: 'USD' | 'KHR'
   from: string
   to: string
   totals: {

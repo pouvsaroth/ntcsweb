@@ -5,13 +5,20 @@ declare(strict_types=1);
 namespace Tests\Feature\Accounting;
 
 use App\Models\CurrencyRate;
+use App\Models\CustomerLoanPayment;
+use App\Models\Expense;
+use App\Models\ExpenseEntity;
 use App\Models\FinancialTransaction;
 use App\Models\Invoice;
+use App\Models\Payment;
 use App\Models\Product;
 use App\Models\Student;
+use App\Models\Supplier;
+use App\Services\Accounting\FinancialTransactionService;
 use App\Support\Authorization\Permissions;
 use App\Support\Billing\PaymentMethod;
 use App\Support\Billing\ProductType;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\HasAcademicAdmin;
 use Tests\Concerns\HasChartOfAccounts;
@@ -65,7 +72,7 @@ class AccountingDashboardTest extends TestCase
         $this->postJson("/api/v1/invoices/{$invoiceId}/payments", ['amount' => 100, 'payment_method' => PaymentMethod::CASH])->assertCreated();
 
         $paidOn = FinancialTransaction::query()->firstOrFail()->transaction_date->toDateString();
-        $dayAfter = \Carbon\CarbonImmutable::parse($paidOn)->addDay()->toDateString();
+        $dayAfter = CarbonImmutable::parse($paidOn)->addDay()->toDateString();
 
         $this->getJson("/api/v1/accounting/dashboard?today={$paidOn}")->assertOk()->assertJsonPath('data.todays_income', 100);
         $quietDay = $this->getJson("/api/v1/accounting/dashboard?today={$dayAfter}")->assertOk()->assertJsonPath('data.todays_income', 0);
@@ -84,19 +91,17 @@ class AccountingDashboardTest extends TestCase
         $this->admin->load('tenant');
         CurrencyRate::factory()->create(['effective_date' => now(), 'khr_per_usd' => 4100]);
 
-        $course = Product::factory()->create(['type' => ProductType::COURSE_FEE, 'price' => 80000]);
+        $course = Product::factory()->create(['type' => ProductType::COURSE_FEE, 'price' => 80000, 'currency' => 'KHR']);
         $student = Student::factory()->create();
         $invoiceId = $this->postJson('/api/v1/invoices', [
             'student_id' => $student->id,
             'items' => [['product_id' => $course->id, 'quantity' => 1]],
-        ])->assertCreated()->json('data.id');
-        // Only EnrollmentService passes a currency through InvoiceService::create().
-        Invoice::query()->whereKey($invoiceId)->update(['currency' => 'KHR']);
+        ])->assertCreated()->assertJsonPath('data.currency', 'KHR')->json('data.id');
 
         $this->postJson("/api/v1/invoices/{$invoiceId}/payments", ['amount' => 80000, 'payment_method' => PaymentMethod::CASH])->assertCreated();
 
         $this->assertSame('KHR', FinancialTransaction::query()->firstOrFail()->currency);
-        $this->assertSame('KHR', \App\Models\Payment::query()->firstOrFail()->currency);
+        $this->assertSame('KHR', Payment::query()->firstOrFail()->currency);
 
         $response = $this->getJson('/api/v1/accounting/dashboard')->assertOk();
         $response->assertJsonPath('data.currency', 'KHR');
@@ -139,12 +144,12 @@ class AccountingDashboardTest extends TestCase
         $this->actingAsAdminWithPermissions([Permissions::ACCOUNTING_DASHBOARD_VIEW]);
         $this->setUpChartOfAccounts();
 
-        $supplier = \App\Models\Supplier::factory()->create(['name' => 'EDC']);
+        $supplier = Supplier::factory()->create(['name' => 'EDC']);
         $today = now()->toDateString();
         $yesterday = now()->subDay()->toDateString();
-        $ledger = app(\App\Services\Accounting\FinancialTransactionService::class);
+        $ledger = app(FinancialTransactionService::class);
         foreach ([[$yesterday, 40, 'March bill'], [$today, 25, 'April bill']] as [$date, $amount, $description]) {
-            $expense = \App\Models\Expense::factory()->create([
+            $expense = Expense::factory()->create([
                 'account_id' => $this->electricityAccount->id, 'expense_entity_id' => $this->expenseEntity->id,
                 'supplier_id' => $supplier->id, 'amount' => $amount, 'currency' => 'USD', 'description' => $description,
             ]);
@@ -167,8 +172,8 @@ class AccountingDashboardTest extends TestCase
         $this->actingAsAdminWithPermissions([Permissions::INVOICES_CREATE, Permissions::PAYMENTS_CREATE, Permissions::ACCOUNTING_DASHBOARD_VIEW]);
         $this->setUpChartOfAccounts();
         $this->expenseEntity->update(['is_school' => true]);
-        $family = \App\Models\ExpenseEntity::factory()->create(['name' => 'Family']);
-        $ledger = app(\App\Services\Accounting\FinancialTransactionService::class);
+        $family = ExpenseEntity::factory()->create(['name' => 'Family']);
+        $ledger = app(FinancialTransactionService::class);
 
         // Income: a student payment (school) and Owe interest (not school).
         $course = Product::factory()->create(['type' => ProductType::COURSE_FEE, 'price' => 100]);
@@ -177,11 +182,11 @@ class AccountingDashboardTest extends TestCase
         $this->postJson("/api/v1/invoices/{$invoiceId}/payments", ['amount' => 100, 'payment_method' => PaymentMethod::CASH])->assertCreated();
         // The school's day the payment was booked on (see the UTC test above).
         $today = FinancialTransaction::query()->firstOrFail()->transaction_date->toDateString();
-        $ledger->postLending('INCOME', $this->cashAccount, $this->otherIncomeAccount, 30, 'USD', $today, 'Loan interest', (new \App\Models\CustomerLoanPayment)->getMorphClass(), 999, $this->admin);
+        $ledger->postLending('INCOME', $this->cashAccount, $this->otherIncomeAccount, 30, 'USD', $today, 'Loan interest', (new CustomerLoanPayment)->getMorphClass(), 999, $this->admin);
 
         // Expenses: for the school 40, for the family 25, none picked 10.
         foreach ([[$this->expenseEntity->id, 40], [$family->id, 25], [null, 10]] as [$entity, $amount]) {
-            $expense = \App\Models\Expense::factory()->create(['account_id' => $this->electricityAccount->id, 'expense_entity_id' => $entity, 'amount' => $amount, 'currency' => 'USD']);
+            $expense = Expense::factory()->create(['account_id' => $this->electricityAccount->id, 'expense_entity_id' => $entity, 'amount' => $amount, 'currency' => 'USD']);
             $ledger->postExpensePayment($this->electricityAccount, $this->cashAccount, $amount, $today, $expense, $this->admin);
         }
 

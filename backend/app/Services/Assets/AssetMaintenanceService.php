@@ -89,6 +89,7 @@ final class AssetMaintenanceService
                 'status' => MaintenanceStatus::COMPLETED,
                 'completed_date' => $completedDate,
                 'cost' => $data['cost'] ?? $maintenance->cost,
+                'currency' => $data['currency'] ?? $maintenance->currency,
                 'description' => $data['description'] ?? $maintenance->description,
                 'next_maintenance_date' => $nextDate,
             ]);

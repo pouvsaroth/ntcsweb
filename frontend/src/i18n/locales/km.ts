@@ -7859,7 +7859,7 @@ const km: MessageSchema = {
       schedule: 'កំណត់ពេល',
       scheduleTitle: 'កំណត់ពេលការថែទាំ',
       complete: 'បញ្ចប់',
-      completeCostPrompt: 'ថ្លៃដើមនៃការថែទាំនេះ (ទុកទទេប្រសិនបើគ្មាន)៖',
+      completeCostPrompt: 'ថ្លៃដើមនៃការថែទាំនេះ ជា {currency} (ទុកទទេប្រសិនបើគ្មាន)៖',
       cancelConfirm: 'លុបចោលការថែទាំនេះ?',
       overdue: 'ហួសកំណត់',
       maintenanceStatusScheduled: 'បានកំណត់ពេល',

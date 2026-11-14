@@ -21,6 +21,7 @@ export interface Product {
   description: string | null
   type: ProductType
   price: number
+  currency: 'USD' | 'KHR'
   is_active: boolean
   /** Present on `show`/`update`; absent (not empty) on the list endpoint. */
   variants?: ProductVariant[]
@@ -34,6 +35,7 @@ export interface ProductInput {
   type: ProductType
   /** Empty string on a blank field — the caller trims/converts before sending. */
   price: string
+  currency: 'USD' | 'KHR'
   is_active: boolean
 }
 
@@ -51,6 +53,7 @@ function toProductPayload(input: ProductInput) {
     description: input.description || null,
     type: input.type,
     price: Number(input.price) || 0,
+    currency: input.currency,
     is_active: input.is_active,
   }
 }

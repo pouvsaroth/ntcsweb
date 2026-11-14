@@ -10,8 +10,10 @@ import DataTable from '@/components/ui/DataTable.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { assetRepairsService, repairStatuses, type AssetRepair, type RepairStatus } from '@/services/assetRepairs'
 import { ApiRequestError } from '@/types/api'
+import { useMoney } from '@/composables/useMoney'
 
 const { t } = useI18n()
+const { money } = useMoney()
 
 const { items, meta, loading, error, setPage, setSearch, setFilter, fetch } = usePaginatedResource<AssetRepair>((query) => assetRepairsService.list(query))
 
@@ -99,7 +101,7 @@ onMounted(() => fetch())
       </template>
       <template #cell-repair_shop="{ row }">{{ row.repair_shop?.name ?? '—' }}</template>
       <template #cell-status="{ row }">{{ t(`admin.assetRepairs.repairStatus${statusKey(row.status)}`) }}</template>
-      <template #cell-total_cost="{ row }">${{ row.total_cost.toFixed(2) }}</template>
+      <template #cell-total_cost="{ row }">{{ money(row.total_cost, row.currency) }}</template>
       <template #cell-actions="{ row }">
         <div class="flex justify-end gap-3">
           <button
@@ -126,6 +128,7 @@ onMounted(() => fetch())
 
     <CompleteAssetRepairModal
       :model-value="completingRepair !== null"
+      :currency="completingRepair?.currency"
       :submitting="completeSubmitting"
       :error="completeError"
       @update:model-value="completingRepair = null"

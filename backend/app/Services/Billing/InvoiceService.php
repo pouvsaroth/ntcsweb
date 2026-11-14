@@ -9,6 +9,7 @@ use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Product;
 use App\Models\ProductVariant;
+use App\Models\Tenant;
 use App\Models\User;
 use App\Support\Audit\AuditAction;
 use App\Support\Audit\AuditLogger;
@@ -32,6 +33,7 @@ final class InvoiceService
         private readonly TenantContext $context,
         private readonly BillingNumberGenerator $numbers,
         private readonly AuditLogger $audit,
+        private readonly CurrencyConversionService $currencyConversion,
     ) {}
 
     /**
@@ -69,11 +71,9 @@ final class InvoiceService
                 'notes' => $data['notes'] ?? null,
                 'payment_type' => $data['payment_type'] ?? null,
                 'created_by' => $actor->getKey(),
-                // Omitted entirely when not given, rather than passed as
-                // null, so every existing caller keeps the model's own
-                // default ('USD') — see EnrollmentService, the one caller
-                // that does pass this, for a school billing in Riel.
-                ...(isset($data['currency']) ? ['currency' => $data['currency']] : []),
+                // Not given = the school's own currency (a Riel school's
+                // invoice is in KHR), never an assumed USD.
+                'currency' => $data['currency'] ?? $tenant->default_currency,
             ]);
 
             foreach ($data['items'] as $itemData) {
@@ -119,7 +119,9 @@ final class InvoiceService
         // A caller may override the catalog price (e.g. a negotiated fee) —
         // otherwise the variant's/product's current price is snapshotted
         // here and never re-read live again; see this model's migration.
-        $unitPrice = round((float) ($itemData['unit_price'] ?? ($variant?->effectivePrice() ?? $product->price)), 2);
+        $unitPrice = isset($itemData['unit_price'])
+            ? round((float) $itemData['unit_price'], 2)
+            : $this->catalogPrice((float) ($variant?->effectivePrice() ?? $product->price), $product, $invoice);
         $discount = round((float) ($itemData['discount'] ?? 0), 2);
         $subtotal = round($quantity * $unitPrice, 2);
         $total = max(0, round($subtotal - $discount, 2));
@@ -140,6 +142,29 @@ final class InvoiceService
             'reference_type' => $itemData['reference_type'] ?? null,
             'reference_id' => $itemData['reference_id'] ?? null,
         ]);
+    }
+
+    /**
+     * The catalog price in the invoice's currency: a USD product on a KHR
+     * invoice (or the other way) is converted at the rate on the invoice
+     * date, never copied across as if it were the same money.
+     */
+    private function catalogPrice(float $price, Product $product, Invoice $invoice): float
+    {
+        $from = $product->currency ?: $invoice->currency;
+        $to = $invoice->currency;
+
+        if ($from !== $to) {
+            $rate = $this->currencyConversion->rateForDate($invoice->invoice_date ?? now());
+            if ($rate === null) {
+                throw ValidationException::withMessages([
+                    'items' => "This invoice is in {$to}, but no exchange rate has been entered yet to convert {$product->name}'s {$from} price. Add one under Currency Rates first.",
+                ]);
+            }
+            $price = $this->currencyConversion->convert($price, $from, $to, $rate);
+        }
+
+        return $to === Tenant::CURRENCY_KHR ? round($price) : round($price, 2);
     }
 
     /**

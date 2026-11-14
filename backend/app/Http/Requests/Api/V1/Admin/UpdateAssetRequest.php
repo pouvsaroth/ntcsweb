@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Api\V1\Admin;
 
 use App\Models\Asset;
+use App\Models\Tenant;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -40,6 +41,7 @@ class UpdateAssetRequest extends FormRequest
             'purchase_date' => ['nullable', 'date'],
             'purchase_price' => ['nullable', 'numeric', 'min:0', 'max:99999999999999.99'],
             'current_value' => ['nullable', 'numeric', 'min:0', 'max:99999999999999.99'],
+            'currency' => ['sometimes', 'required', Rule::in([Tenant::CURRENCY_USD, Tenant::CURRENCY_KHR])],
             'supplier_id' => ['nullable', Rule::exists('tenant.suppliers', 'id')],
             'warranty_start_date' => ['nullable', 'date'],
             'warranty_end_date' => ['nullable', 'date', 'after_or_equal:warranty_start_date'],

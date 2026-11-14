@@ -15,8 +15,11 @@ import { assetsService, type AssetInput } from '@/services/assets'
 import { departmentsService, type Department } from '@/services/departments'
 import { suppliersService, type Supplier } from '@/services/suppliers'
 import { ApiRequestError } from '@/types/api'
+import CurrencySelect from '@/components/ui/CurrencySelect.vue'
+import { useMoney } from '@/composables/useMoney'
 
 const { t } = useI18n()
+const { schoolCurrency } = useMoney()
 const auth = useAuthStore()
 const route = useRoute()
 const router = useRouter()
@@ -35,6 +38,7 @@ const form = reactive<AssetInput>({
   purchase_date: '',
   purchase_price: '',
   current_value: '',
+  currency: schoolCurrency(),
   supplier_id: null,
   warranty_start_date: '',
   warranty_end_date: '',
@@ -89,6 +93,7 @@ onMounted(async () => {
       form.purchase_date = asset.purchase_date ?? ''
       form.purchase_price = String(asset.purchase_price ?? '')
       form.current_value = asset.current_value !== null ? String(asset.current_value) : ''
+      form.currency = asset.currency
       form.supplier_id = asset.supplier_id
       form.warranty_start_date = asset.warranty_start_date ?? ''
       form.warranty_end_date = asset.warranty_end_date ?? ''
@@ -178,6 +183,7 @@ async function submit() {
         <div class="grid grid-cols-2 gap-4">
           <BaseInput v-model="form.purchase_date" type="date" :label="t('admin.assets.purchaseDate')" :error="errors.purchase_date?.[0]" />
           <BaseInput v-model="form.purchase_price" type="number" :label="t('admin.assets.purchasePrice')" :error="errors.purchase_price?.[0]" />
+          <CurrencySelect v-model="form.currency" :error="errors.currency?.[0]" />
         </div>
         <div class="grid grid-cols-2 gap-4">
           <BaseInput v-model="form.current_value" type="number" :label="t('admin.assets.currentValue')" :error="errors.current_value?.[0]" />

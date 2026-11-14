@@ -9,7 +9,7 @@ import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import DataTable from '@/components/ui/DataTable.vue'
 import { trainingReportsService, type TrainingReport } from '@/services/professionalDevelopment'
 import { ApiRequestError } from '@/types/api'
-import { formatMoney } from '@/utils/currency'
+import { useMoney } from '@/composables/useMoney'
 import { formatDate } from '@/utils/date'
 
 /**
@@ -18,6 +18,7 @@ import { formatDate } from '@/utils/date'
  * (including people with no training yet), downloadable as CSV.
  */
 const { t, locale } = useI18n()
+const { money } = useMoney()
 
 const year = new Date().getFullYear()
 const from = ref(`${year}-01-01`)
@@ -69,7 +70,7 @@ const cards = computed(() => {
       value: s.attendance_rate != null ? `${s.attendance_rate}%` : '—',
       sub: t('proDev.reports.cards.attendedOf', { n: s.attended, total: s.assigned }),
     },
-    { key: 'cost', label: t('proDev.reports.cards.cost'), value: formatMoney(s.cost, 'USD'), sub: t('proDev.reports.cards.completedOnly') },
+    { key: 'cost', label: t('proDev.reports.cards.cost'), value: money(s.cost), sub: t('proDev.reports.cards.completedOnly') },
     { key: 'certificates', label: t('proDev.reports.cards.certificates'), value: String(s.certificates), sub: '' },
     {
       key: 'observations',
@@ -209,7 +210,7 @@ onMounted(load)
         <div class="hidden sm:block">
           <DataTable :columns="categoryColumns" :rows="categoryRows" row-key="key" :empty-message="t('proDev.reports.noTrainings')">
             <template #cell-category="{ row }">{{ row.category ?? t('proDev.reports.noCategory') }}</template>
-            <template #cell-cost="{ row }">{{ formatMoney(row.cost, 'USD') }}</template>
+            <template #cell-cost="{ row }">{{ money(row.cost) }}</template>
           </DataTable>
         </div>
         <div class="space-y-2 sm:hidden">
@@ -218,7 +219,7 @@ onMounted(load)
             <p class="font-medium text-neutral-900">{{ row.category ?? t('proDev.reports.noCategory') }}</p>
             <p class="mt-0.5 text-xs text-neutral-500">
               {{ t('proDev.reports.trainingsN', { n: row.trainings }) }} · {{ t('proDev.reports.attendedN', { n: row.attended }) }} · {{ t('proDev.hoursCount', { n: row.hours }) }} ·
-              {{ formatMoney(row.cost, 'USD') }}
+              {{ money(row.cost) }}
             </p>
           </div>
         </div>

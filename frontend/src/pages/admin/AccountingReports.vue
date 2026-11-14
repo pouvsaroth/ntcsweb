@@ -9,8 +9,10 @@ import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import { accountingReportsService, type CashFlowReport, type ProfitLossReport, type ReportLine } from '@/services/accounting'
 import { apiDownload } from '@/services/http'
 import { ApiRequestError } from '@/types/api'
+import { useMoney } from '@/composables/useMoney'
 
 const { t } = useI18n()
+const { money } = useMoney()
 
 type Tab = 'revenue' | 'expenses' | 'profit-loss' | 'cash-flow'
 
@@ -110,9 +112,9 @@ onMounted(() => load())
         <table class="w-full text-left text-sm">
           <thead class="text-neutral-500"><tr><th class="pb-2 font-medium">{{ t('admin.accountingReports.columnAccount') }}</th><th class="pb-2 text-right font-medium">{{ t('admin.accountingReports.columnAmount') }}</th></tr></thead>
           <tbody class="divide-y divide-neutral-100">
-            <tr v-for="line in revenue.lines" :key="line.account_id"><td class="py-2">{{ line.account_code }} — {{ line.account_name }}</td><td class="py-2 text-right">${{ line.amount.toFixed(2) }}</td></tr>
+            <tr v-for="line in revenue.lines" :key="line.account_id"><td class="py-2">{{ line.account_code }} — {{ line.account_name }}</td><td class="py-2 text-right">{{ money(line.amount) }}</td></tr>
           </tbody>
-          <tfoot><tr class="border-t border-neutral-200 font-semibold text-neutral-900"><td class="pt-2">{{ t('admin.accountingReports.total') }}</td><td class="pt-2 text-right">${{ revenue.total.toFixed(2) }}</td></tr></tfoot>
+          <tfoot><tr class="border-t border-neutral-200 font-semibold text-neutral-900"><td class="pt-2">{{ t('admin.accountingReports.total') }}</td><td class="pt-2 text-right">{{ money(revenue.total) }}</td></tr></tfoot>
         </table>
         <p v-if="revenue.lines.length === 0" class="py-6 text-center text-sm text-neutral-400">{{ t('admin.accountingReports.noData') }}</p>
       </div>
@@ -121,9 +123,9 @@ onMounted(() => load())
         <table class="w-full text-left text-sm">
           <thead class="text-neutral-500"><tr><th class="pb-2 font-medium">{{ t('admin.accountingReports.columnAccount') }}</th><th class="pb-2 text-right font-medium">{{ t('admin.accountingReports.columnAmount') }}</th></tr></thead>
           <tbody class="divide-y divide-neutral-100">
-            <tr v-for="line in expenses.lines" :key="line.account_id"><td class="py-2">{{ line.account_code }} — {{ line.account_name }}</td><td class="py-2 text-right">${{ line.amount.toFixed(2) }}</td></tr>
+            <tr v-for="line in expenses.lines" :key="line.account_id"><td class="py-2">{{ line.account_code }} — {{ line.account_name }}</td><td class="py-2 text-right">{{ money(line.amount) }}</td></tr>
           </tbody>
-          <tfoot><tr class="border-t border-neutral-200 font-semibold text-neutral-900"><td class="pt-2">{{ t('admin.accountingReports.total') }}</td><td class="pt-2 text-right">${{ expenses.total.toFixed(2) }}</td></tr></tfoot>
+          <tfoot><tr class="border-t border-neutral-200 font-semibold text-neutral-900"><td class="pt-2">{{ t('admin.accountingReports.total') }}</td><td class="pt-2 text-right">{{ money(expenses.total) }}</td></tr></tfoot>
         </table>
         <p v-if="expenses.lines.length === 0" class="py-6 text-center text-sm text-neutral-400">{{ t('admin.accountingReports.noData') }}</p>
       </div>
@@ -132,39 +134,39 @@ onMounted(() => load())
         <div class="rounded-[--radius-card] border border-neutral-200 bg-white p-5">
           <h2 class="mb-3 text-sm font-semibold text-neutral-800">{{ t('admin.accountingReports.tabRevenue') }}</h2>
           <dl class="space-y-2 text-sm">
-            <div v-for="line in profitLoss.revenue.lines" :key="line.account_name" class="flex justify-between"><dt class="text-neutral-500">{{ line.account_name }}</dt><dd class="font-medium text-neutral-900">${{ line.amount.toFixed(2) }}</dd></div>
+            <div v-for="line in profitLoss.revenue.lines" :key="line.account_name" class="flex justify-between"><dt class="text-neutral-500">{{ line.account_name }}</dt><dd class="font-medium text-neutral-900">{{ money(line.amount) }}</dd></div>
           </dl>
-          <div class="mt-3 flex justify-between border-t border-neutral-200 pt-3 text-sm font-semibold text-neutral-900"><span>{{ t('admin.accountingReports.total') }}</span><span>${{ profitLoss.revenue.total.toFixed(2) }}</span></div>
+          <div class="mt-3 flex justify-between border-t border-neutral-200 pt-3 text-sm font-semibold text-neutral-900"><span>{{ t('admin.accountingReports.total') }}</span><span>{{ money(profitLoss.revenue.total) }}</span></div>
         </div>
         <div class="rounded-[--radius-card] border border-neutral-200 bg-white p-5">
           <h2 class="mb-3 text-sm font-semibold text-neutral-800">{{ t('admin.accountingReports.tabExpenses') }}</h2>
           <dl class="space-y-2 text-sm">
-            <div v-for="line in profitLoss.expenses.lines" :key="line.account_name" class="flex justify-between"><dt class="text-neutral-500">{{ line.account_name }}</dt><dd class="font-medium text-neutral-900">${{ line.amount.toFixed(2) }}</dd></div>
+            <div v-for="line in profitLoss.expenses.lines" :key="line.account_name" class="flex justify-between"><dt class="text-neutral-500">{{ line.account_name }}</dt><dd class="font-medium text-neutral-900">{{ money(line.amount) }}</dd></div>
           </dl>
-          <div class="mt-3 flex justify-between border-t border-neutral-200 pt-3 text-sm font-semibold text-neutral-900"><span>{{ t('admin.accountingReports.total') }}</span><span>${{ profitLoss.expenses.total.toFixed(2) }}</span></div>
+          <div class="mt-3 flex justify-between border-t border-neutral-200 pt-3 text-sm font-semibold text-neutral-900"><span>{{ t('admin.accountingReports.total') }}</span><span>{{ money(profitLoss.expenses.total) }}</span></div>
         </div>
         <div class="lg:col-span-2 rounded-[--radius-card] border p-5 text-center" :class="profitLoss.is_profit ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'">
           <p class="text-sm font-medium" :class="profitLoss.is_profit ? 'text-green-700' : 'text-danger-700'">{{ profitLoss.is_profit ? t('admin.accountingReports.netProfit') : t('admin.accountingReports.netLoss') }}</p>
-          <p class="mt-1 text-3xl font-bold" :class="profitLoss.is_profit ? 'text-green-800' : 'text-danger-800'">${{ Math.abs(profitLoss.net_profit).toFixed(2) }}</p>
+          <p class="mt-1 text-3xl font-bold" :class="profitLoss.is_profit ? 'text-green-800' : 'text-danger-800'">{{ money(Math.abs(profitLoss.net_profit)) }}</p>
         </div>
       </div>
 
       <div v-else-if="activeTab === 'cash-flow' && cashFlow" class="rounded-[--radius-card] border border-neutral-200 bg-white p-5">
         <dl class="space-y-3 text-sm">
-          <div class="flex justify-between"><dt class="text-neutral-500">{{ t('admin.accountingReports.openingBalance') }}</dt><dd class="font-medium text-neutral-900">${{ cashFlow.opening.toFixed(2) }}</dd></div>
-          <div class="flex justify-between"><dt class="text-neutral-500">{{ t('admin.accountingReports.studentPayments') }}</dt><dd class="font-medium text-green-700">+${{ cashFlow.student_payments.toFixed(2) }}</dd></div>
-          <div class="flex justify-between"><dt class="text-neutral-500">{{ t('admin.accountingReports.otherIncome') }}</dt><dd class="font-medium text-green-700">+${{ cashFlow.other_income.toFixed(2) }}</dd></div>
-          <div v-if="cashFlow.loans_received" class="flex justify-between"><dt class="text-neutral-500">{{ t('admin.accountingReports.loansReceived') }}</dt><dd class="font-medium text-green-700">+${{ cashFlow.loans_received.toFixed(2) }}</dd></div>
-          <div v-if="cashFlow.savings_deposits" class="flex justify-between"><dt class="text-neutral-500">{{ t('admin.accountingReports.savingsDeposits') }}</dt><dd class="font-medium text-green-700">+${{ cashFlow.savings_deposits.toFixed(2) }}</dd></div>
-          <div v-if="cashFlow.loan_collections" class="flex justify-between"><dt class="text-neutral-500">{{ t('admin.accountingReports.loanCollections') }}</dt><dd class="font-medium text-green-700">+${{ cashFlow.loan_collections.toFixed(2) }}</dd></div>
-          <div v-if="cashFlow.fund_in" class="flex justify-between"><dt class="text-neutral-500">{{ t('admin.accountingReports.fundIn') }}</dt><dd class="font-medium text-green-700">+${{ cashFlow.fund_in.toFixed(2) }}</dd></div>
-          <div v-if="cashFlow.loan_interest_received" class="flex justify-between"><dt class="text-neutral-500">{{ t('admin.accountingReports.loanInterestReceived') }}</dt><dd class="font-medium text-green-700">+${{ cashFlow.loan_interest_received.toFixed(2) }}</dd></div>
-          <div class="flex justify-between"><dt class="text-neutral-500">{{ t('admin.accountingReports.expensesOut') }}</dt><dd class="font-medium text-danger-700">-${{ cashFlow.expenses.toFixed(2) }}</dd></div>
-          <div v-if="cashFlow.loan_repayments" class="flex justify-between"><dt class="text-neutral-500">{{ t('admin.accountingReports.loanRepayments') }}</dt><dd class="font-medium text-danger-700">-${{ cashFlow.loan_repayments.toFixed(2) }}</dd></div>
-          <div v-if="cashFlow.savings_withdrawals" class="flex justify-between"><dt class="text-neutral-500">{{ t('admin.accountingReports.savingsWithdrawals') }}</dt><dd class="font-medium text-danger-700">-${{ cashFlow.savings_withdrawals.toFixed(2) }}</dd></div>
-          <div v-if="cashFlow.fund_out" class="flex justify-between"><dt class="text-neutral-500">{{ t('admin.accountingReports.fundOut') }}</dt><dd class="font-medium text-danger-700">-${{ cashFlow.fund_out.toFixed(2) }}</dd></div>
-          <div v-if="cashFlow.loans_given" class="flex justify-between"><dt class="text-neutral-500">{{ t('admin.accountingReports.loansGiven') }}</dt><dd class="font-medium text-danger-700">-${{ cashFlow.loans_given.toFixed(2) }}</dd></div>
-          <div class="flex justify-between border-t border-neutral-200 pt-3 font-semibold text-neutral-900"><dt>{{ t('admin.accountingReports.closingBalance') }}</dt><dd>${{ cashFlow.closing.toFixed(2) }}</dd></div>
+          <div class="flex justify-between"><dt class="text-neutral-500">{{ t('admin.accountingReports.openingBalance') }}</dt><dd class="font-medium text-neutral-900">{{ money(cashFlow.opening) }}</dd></div>
+          <div class="flex justify-between"><dt class="text-neutral-500">{{ t('admin.accountingReports.studentPayments') }}</dt><dd class="font-medium text-green-700">+{{ money(cashFlow.student_payments) }}</dd></div>
+          <div class="flex justify-between"><dt class="text-neutral-500">{{ t('admin.accountingReports.otherIncome') }}</dt><dd class="font-medium text-green-700">+{{ money(cashFlow.other_income) }}</dd></div>
+          <div v-if="cashFlow.loans_received" class="flex justify-between"><dt class="text-neutral-500">{{ t('admin.accountingReports.loansReceived') }}</dt><dd class="font-medium text-green-700">+{{ money(cashFlow.loans_received) }}</dd></div>
+          <div v-if="cashFlow.savings_deposits" class="flex justify-between"><dt class="text-neutral-500">{{ t('admin.accountingReports.savingsDeposits') }}</dt><dd class="font-medium text-green-700">+{{ money(cashFlow.savings_deposits) }}</dd></div>
+          <div v-if="cashFlow.loan_collections" class="flex justify-between"><dt class="text-neutral-500">{{ t('admin.accountingReports.loanCollections') }}</dt><dd class="font-medium text-green-700">+{{ money(cashFlow.loan_collections) }}</dd></div>
+          <div v-if="cashFlow.fund_in" class="flex justify-between"><dt class="text-neutral-500">{{ t('admin.accountingReports.fundIn') }}</dt><dd class="font-medium text-green-700">+{{ money(cashFlow.fund_in) }}</dd></div>
+          <div v-if="cashFlow.loan_interest_received" class="flex justify-between"><dt class="text-neutral-500">{{ t('admin.accountingReports.loanInterestReceived') }}</dt><dd class="font-medium text-green-700">+{{ money(cashFlow.loan_interest_received) }}</dd></div>
+          <div class="flex justify-between"><dt class="text-neutral-500">{{ t('admin.accountingReports.expensesOut') }}</dt><dd class="font-medium text-danger-700">-{{ money(cashFlow.expenses) }}</dd></div>
+          <div v-if="cashFlow.loan_repayments" class="flex justify-between"><dt class="text-neutral-500">{{ t('admin.accountingReports.loanRepayments') }}</dt><dd class="font-medium text-danger-700">-{{ money(cashFlow.loan_repayments) }}</dd></div>
+          <div v-if="cashFlow.savings_withdrawals" class="flex justify-between"><dt class="text-neutral-500">{{ t('admin.accountingReports.savingsWithdrawals') }}</dt><dd class="font-medium text-danger-700">-{{ money(cashFlow.savings_withdrawals) }}</dd></div>
+          <div v-if="cashFlow.fund_out" class="flex justify-between"><dt class="text-neutral-500">{{ t('admin.accountingReports.fundOut') }}</dt><dd class="font-medium text-danger-700">-{{ money(cashFlow.fund_out) }}</dd></div>
+          <div v-if="cashFlow.loans_given" class="flex justify-between"><dt class="text-neutral-500">{{ t('admin.accountingReports.loansGiven') }}</dt><dd class="font-medium text-danger-700">-{{ money(cashFlow.loans_given) }}</dd></div>
+          <div class="flex justify-between border-t border-neutral-200 pt-3 font-semibold text-neutral-900"><dt>{{ t('admin.accountingReports.closingBalance') }}</dt><dd>{{ money(cashFlow.closing) }}</dd></div>
         </dl>
       </div>
     </template>

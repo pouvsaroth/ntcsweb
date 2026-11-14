@@ -14,8 +14,10 @@ import DataTable from '@/components/ui/DataTable.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { financialTransactionsService, transactionTypes, type FinancialTransaction, type TransactionType } from '@/services/financialTransactions'
 import { formatDate } from '@/utils/date'
+import { useMoney } from '@/composables/useMoney'
 
 const { t } = useI18n()
+const { money } = useMoney()
 const auth = useAuthStore()
 
 const { items, meta, loading, error, setPage, setFilter, fetch } = usePaginatedResource<FinancialTransaction>((query) =>
@@ -93,7 +95,7 @@ onMounted(() => fetch())
       </template>
       <template #cell-debit_account="{ row }">{{ row.debit_account.code }} — {{ row.debit_account.name }}</template>
       <template #cell-credit_account="{ row }">{{ row.credit_account.code }} — {{ row.credit_account.name }}</template>
-      <template #cell-amount="{ row }">${{ row.amount.toFixed(2) }}</template>
+      <template #cell-amount="{ row }">{{ money(row.amount, row.currency) }}</template>
     </DataTable>
 
     <BasePagination v-if="meta" :meta="meta" sticky class="mt-4" @update:page="setPage" />

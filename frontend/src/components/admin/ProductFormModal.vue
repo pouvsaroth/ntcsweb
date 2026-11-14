@@ -9,6 +9,7 @@ import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
 import BaseSpinner from '@/components/ui/BaseSpinner.vue'
+import CurrencySelect from '@/components/ui/CurrencySelect.vue'
 import {
   productsService,
   productTypes,
@@ -20,6 +21,7 @@ import {
 } from '@/services/products'
 import { ApiRequestError } from '@/types/api'
 import { useConfirmDialogStore } from '@/stores/confirmDialog'
+import { useMoney } from '@/composables/useMoney'
 
 const props = defineProps<{
   modelValue: boolean
@@ -30,6 +32,7 @@ const props = defineProps<{
 const emit = defineEmits<{ 'update:modelValue': [value: boolean]; saved: [] }>()
 
 const { t } = useI18n()
+const { money, schoolCurrency } = useMoney()
 const confirmDialog = useConfirmDialogStore()
 
 const isEditing = computed(() => props.product != null)
@@ -41,6 +44,7 @@ const form = reactive<ProductInput>({
   description: '',
   type: 'OTHER',
   price: '',
+  currency: schoolCurrency(),
   is_active: true,
 })
 
@@ -146,6 +150,7 @@ watch(
       form.description = ''
       form.type = 'OTHER'
       form.price = ''
+      form.currency = schoolCurrency()
       form.is_active = true
       return
     }
@@ -161,6 +166,7 @@ watch(
       form.description = fresh.description ?? ''
       form.type = fresh.type
       form.price = String(fresh.price)
+      form.currency = fresh.currency
       form.is_active = fresh.is_active
       variants.value = fresh.variants ?? []
     } catch (error) {
@@ -226,6 +232,7 @@ async function submit() {
       <div class="grid grid-cols-2 gap-4">
         <BaseSelect v-model="form.type" :options="typeOptions" :label="t('admin.products.type')" />
         <BaseInput v-model="form.price" type="number" required :label="t('admin.products.price')" :error="errors.price?.[0]" />
+        <CurrencySelect v-model="form.currency" :error="errors.currency?.[0]" />
       </div>
 
       <label class="flex items-center gap-2 text-sm font-medium text-neutral-700">
@@ -248,7 +255,7 @@ async function submit() {
             <div class="min-w-0">
               <p class="font-medium text-neutral-800">{{ variant.name }}</p>
               <p class="text-xs text-neutral-500">
-                {{ variant.price_override !== null ? `$${variant.price_override.toFixed(2)}` : t('admin.products.variantUsesProductPrice') }}
+                {{ variant.price_override !== null ? money(variant.price_override, form.currency) : t('admin.products.variantUsesProductPrice') }}
               </p>
             </div>
             <BaseBadge :variant="variant.is_active ? 'success' : 'neutral'">

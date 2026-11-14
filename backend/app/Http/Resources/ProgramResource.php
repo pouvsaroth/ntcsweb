@@ -23,6 +23,7 @@ class ProgramResource extends JsonResource
             'level' => $this->level,
             'duration_label' => $this->duration_label,
             'fee' => $this->fee !== null ? (float) $this->fee : null,
+            'currency' => $this->currency,
             'description' => $this->description,
             'image_url' => $this->imageUrl(),
             'is_featured' => $this->is_featured,
