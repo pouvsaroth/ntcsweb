@@ -7,8 +7,8 @@ namespace App\Services\Accounting;
 use App\Models\Account;
 use App\Models\Borrowing;
 use App\Models\BorrowingRepayment;
-use App\Models\Expense;
 use App\Models\CustomerLoanPayment;
+use App\Models\Expense;
 use App\Models\FinancialTransaction;
 use App\Models\FundTransaction;
 use App\Models\Payment;
@@ -115,7 +115,7 @@ final class AccountingReportService
         $notSchool = fn ($q) => $q->select('id')->from('expense_entities')->where('is_school', false);
         $query
             ->where(fn ($q) => $q->whereNull('reference_type')->orWhereNotIn('reference_type', [
-                (new \App\Models\CustomerLoanPayment)->getMorphClass(),
+                (new CustomerLoanPayment)->getMorphClass(),
                 (new SavingsTransaction)->getMorphClass(),
                 (new FundTransaction)->getMorphClass(),
                 (new Borrowing)->getMorphClass(),
@@ -341,7 +341,7 @@ final class AccountingReportService
 
         foreach ($query->get() as $row) {
             $rate = $this->currency->rateForDate($row->tx_date);
-            $converted = $this->currency->convert((float) $row->total, $row->currency, $tenant->default_currency, $rate);
+            $converted = $this->currency->convert((float) $row->total, $row->currency, CurrencyConversionService::target($tenant), $rate);
             $result[$row->{$column}] = ($result[$row->{$column}] ?? 0.0) + $converted;
         }
 

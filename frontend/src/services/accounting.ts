@@ -73,37 +73,50 @@ export interface AccountingSummary {
   total_cash_balance: number
 }
 
+/** Each report figure in the school's currency plus USD and KHR (each record converted at its own date's rate). */
 export interface ReportLine {
   account_id: number
   account_code: string
   account_name: string
   amount: number
+  amount_usd: number
+  amount_khr: number
+}
+
+export interface ReportTotals<L> {
+  lines: L[]
+  total: number
+  total_usd: number
+  total_khr: number
 }
 
 export interface ProfitLossReport {
-  revenue: { lines: { account_name: string; amount: number }[]; total: number }
-  expenses: { lines: { account_name: string; amount: number }[]; total: number }
+  revenue: ReportTotals<{ account_name: string; amount: number; amount_usd: number; amount_khr: number }>
+  expenses: ReportTotals<{ account_name: string; amount: number; amount_usd: number; amount_khr: number }>
   net_profit: number
+  net_profit_usd: number
+  net_profit_khr: number
   is_profit: boolean
 }
 
-export interface CashFlowReport {
-  opening: number
-  student_payments: number
-  other_income: number
-  /** Accounting > Borrowings: money borrowed in / principal paid back. */
-  loans_received: number
-  savings_deposits: number
-  savings_withdrawals: number
-  loans_given: number
-  loan_collections: number
-  loan_interest_received: number
-  fund_in: number
-  fund_out: number
-  expenses: number
-  loan_repayments: number
-  closing: number
-}
+/** Accounting > Borrowings: loans_received / loan_repayments = money borrowed in / principal paid back. */
+export type CashFlowKey =
+  | 'opening'
+  | 'student_payments'
+  | 'other_income'
+  | 'loans_received'
+  | 'savings_deposits'
+  | 'savings_withdrawals'
+  | 'loans_given'
+  | 'loan_collections'
+  | 'loan_interest_received'
+  | 'fund_in'
+  | 'fund_out'
+  | 'expenses'
+  | 'loan_repayments'
+  | 'closing'
+
+export type CashFlowReport = Record<CashFlowKey | `${CashFlowKey}_usd` | `${CashFlowKey}_khr`, number>
 
 export interface DateRangeFilter {
   date_from?: string
@@ -140,10 +153,10 @@ export const accountingReportsService = {
     apiGetWithMeta<IncomeDetail>('/accounting/dashboard/expenses', { params }).then((r) => r.data),
 
   revenue: (params: DateRangeFilter = {}) =>
-    apiGetWithMeta<{ lines: ReportLine[]; total: number }>('/accounting/reports/revenue', { params }).then((r) => r.data),
+    apiGetWithMeta<ReportTotals<ReportLine>>('/accounting/reports/revenue', { params }).then((r) => r.data),
 
   expenses: (params: DateRangeFilter = {}) =>
-    apiGetWithMeta<{ lines: ReportLine[]; total: number }>('/accounting/reports/expenses', { params }).then((r) => r.data),
+    apiGetWithMeta<ReportTotals<ReportLine>>('/accounting/reports/expenses', { params }).then((r) => r.data),
 
   profitLoss: (params: DateRangeFilter = {}) => apiGetWithMeta<ProfitLossReport>('/accounting/reports/profit-loss', { params }).then((r) => r.data),
 

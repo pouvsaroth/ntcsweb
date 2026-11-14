@@ -17,6 +17,54 @@ use Illuminate\Support\Carbon;
  */
 final class CurrencyConversionService
 {
+    /** Set only inside in(): the currency totals are converted into instead of the school's. */
+    private static ?string $target = null;
+
+    /**
+     * Runs `$report` with every converted total going into `$currency`
+     * instead of the school's default currency. Reports run once per
+     * currency this way to show a USD column and a KHR column, each record
+     * still converted at the rate on its own date.
+     *
+     * @template T
+     *
+     * @param  \Closure(): T  $report
+     * @return T
+     */
+    public static function in(string $currency, \Closure $report): mixed
+    {
+        $previous = self::$target;
+        self::$target = $currency;
+
+        try {
+            return $report();
+        } finally {
+            self::$target = $previous;
+        }
+    }
+
+    /**
+     * `$report` run in USD and in KHR.
+     *
+     * @template T
+     *
+     * @param  \Closure(): T  $report
+     * @return array{USD: T, KHR: T}
+     */
+    public static function both(\Closure $report): array
+    {
+        return [
+            Tenant::CURRENCY_USD => self::in(Tenant::CURRENCY_USD, $report),
+            Tenant::CURRENCY_KHR => self::in(Tenant::CURRENCY_KHR, $report),
+        ];
+    }
+
+    /** The currency converted totals go into: the school's, unless inside in(). */
+    public static function target(Tenant $tenant): string
+    {
+        return self::$target ?? $tenant->default_currency;
+    }
+
     /**
      * The KHR-per-USD rate in effect on `$date` — the most recent
      * `currency_rates` row on or before it. Falls back to the earliest rate
@@ -76,7 +124,7 @@ final class CurrencyConversionService
 
         foreach ($rows as $row) {
             $rate = $this->rateForDate($row->tx_date);
-            $total += $this->convert((float) $row->total, $row->currency, $tenant->default_currency, $rate);
+            $total += $this->convert((float) $row->total, $row->currency, self::target($tenant), $rate);
         }
 
         return round($total, 2);

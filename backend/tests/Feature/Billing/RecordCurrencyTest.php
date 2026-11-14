@@ -11,6 +11,7 @@ use App\Models\AuditLog;
 use App\Models\CurrencyRate;
 use App\Models\Enrollment;
 use App\Models\Expense;
+use App\Models\FinancialTransaction;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Payment;
@@ -202,6 +203,39 @@ class RecordCurrencyTest extends TestCase
         $this->assertStringContainsString('41,000 ៛', $html);
         $this->assertStringContainsString('No exchange rate entered yet', $html);
         $this->assertStringNotContainsString('$41,000', $html);
+    }
+
+    public function test_accounting_reports_show_dollars_and_riel_each_at_its_own_date_rate(): void
+    {
+        $this->khrSchool([Permissions::REPORTS_FINANCIAL_VIEW, Permissions::REPORTS_FINANCIAL_EXPORT]);
+        $this->setUpChartOfAccounts();
+        CurrencyRate::query()->create(['effective_date' => '2026-06-01', 'khr_per_usd' => 4100]);
+        // 40,000 ៛ in May (= $10 at 4,000) and $10 in June (= 41,000 ៛ at 4,100).
+        FinancialTransaction::factory()->between($this->cashAccount, $this->courseFeesAccount)
+            ->create(['transaction_date' => '2026-05-10', 'amount' => 40000, 'currency' => 'KHR']);
+        FinancialTransaction::factory()->between($this->cashAccount, $this->courseFeesAccount)
+            ->create(['transaction_date' => '2026-06-10', 'amount' => 10, 'currency' => 'USD']);
+        $range = 'date_from=2026-05-01&date_to=2026-06-30';
+
+        $this->getJson("/api/v1/accounting/reports/revenue?{$range}")->assertOk()
+            ->assertJsonPath('data.total', 81000)
+            ->assertJsonPath('data.total_usd', 20)
+            ->assertJsonPath('data.total_khr', 81000)
+            ->assertJsonPath('data.lines.0.amount_usd', 20)
+            ->assertJsonPath('data.lines.0.amount_khr', 81000);
+
+        $this->getJson("/api/v1/accounting/reports/profit-loss?{$range}")->assertOk()
+            ->assertJsonPath('data.net_profit_usd', 20)
+            ->assertJsonPath('data.net_profit_khr', 81000);
+
+        $this->getJson("/api/v1/accounting/reports/cash-flow?{$range}")->assertOk()
+            ->assertJsonPath('data.other_income_usd', 20)
+            ->assertJsonPath('data.other_income_khr', 81000)
+            ->assertJsonPath('data.closing', 81000);
+
+        $csv = $this->get("/api/v1/accounting/reports/revenue?format=csv&{$range}")->assertOk()->getContent();
+        $this->assertStringContainsString('"Amount (USD)","Amount (KHR)"', $csv);
+        $this->assertStringContainsString('20.00,81000', $csv);
     }
 
     public function test_class_revenue_converts_dollar_and_riel_invoices_before_adding(): void
