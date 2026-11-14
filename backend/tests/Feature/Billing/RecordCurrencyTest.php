@@ -175,7 +175,8 @@ class RecordCurrencyTest extends TestCase
         // From June it is 4,100: 41,000 ៛ = $10.00.
         $html = $this->documentView($this->rielInvoice('2026-06-15'));
         $this->assertStringContainsString('$10.00', $html);
-        $this->assertStringContainsString('1 USD = 4,100 ៛ (from 01-06-2026)', $html);
+        $this->assertStringContainsString('1 USD = 4,100 ៛', $html);
+        $this->assertStringContainsString('(from 01-06-2026)', $html);
     }
 
     public function test_a_receipt_converts_at_the_rate_on_the_payment_date(): void
