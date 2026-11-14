@@ -12,8 +12,10 @@ export function formatMoney(amount: number, currency: 'USD' | 'KHR'): string {
     return `${(Math.round(amount) || 0).toLocaleString()} ៛`
   }
 
-  const fixed = amount.toFixed(2)
-  return `$${fixed === '-0.00' ? '0.00' : fixed}`
+  // Thousands separators like the printed documents: "$29,242.65".
+  const rounded = Math.round(amount * 100) / 100 || 0
+  const text = Math.abs(rounded).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  return rounded < 0 ? `-$${text}` : `$${text}`
 }
 
 /**
