@@ -15,6 +15,7 @@ use App\Support\Approvals\DocumentType;
 use App\Support\Audit\AuditAction;
 use App\Support\Audit\AuditLogger;
 use App\Support\Authorization\Permissions;
+use App\Support\Billing\Money;
 use App\Support\Notifications\NotificationType;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Support\Carbon;
@@ -97,7 +98,7 @@ final class ExpenseService
                 'Expenses',
                 $expense,
                 new: ['amount' => (float) $expense->amount, 'account_id' => $expense->account_id],
-                description: "Created expense {$expense->expense_number} — \${$expense->amount}",
+                description: "Created expense {$expense->expense_number} — ".Money::format($expense->amount, $expense->currency),
                 actor: $actor,
             );
 
@@ -258,7 +259,7 @@ final class ExpenseService
                 'Expenses',
                 $expense,
                 new: ['cash_account' => $cashAccount->auditDisplayName(), 'amount' => (float) $expense->amount],
-                description: "Paid expense {$expense->expense_number} — \${$expense->amount} from {$cashAccount->auditDisplayName()}",
+                description: "Paid expense {$expense->expense_number} — ".Money::format($expense->amount, $expense->currency)." from {$cashAccount->auditDisplayName()}",
                 actor: $actor,
             );
 

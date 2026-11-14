@@ -8,7 +8,10 @@ use App\Models\AcademicProgram;
 use App\Models\CoursePackage;
 use App\Models\Enrollment;
 use App\Models\Student;
+use App\Services\Billing\CurrencyConversionService;
 use App\Support\Billing\InvoiceStatus;
+use App\Support\Tenancy\TenantContext;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -26,6 +29,43 @@ use Illuminate\Support\Facades\DB;
  */
 final class AcademicReportService
 {
+    public function __construct(
+        private readonly CurrencyConversionService $currency,
+        private readonly TenantContext $context,
+    ) {}
+
+    /** The currency every revenue figure here is in. */
+    public function schoolCurrency(): string
+    {
+        return $this->context->getOrFail()->default_currency;
+    }
+
+    /**
+     * Invoice-line revenue per `$key`, in the school's currency: USD and KHR
+     * invoices are each converted at the rate on their invoice date, never
+     * added up raw.
+     *
+     * @param  Builder<Enrollment>  $query  already joined to invoice_items and invoices
+     * @return array<int|string, float>
+     */
+    private function revenueBy(Builder $query, string $key): array
+    {
+        $tenant = $this->context->getOrFail();
+
+        return $query
+            ->select(
+                DB::raw("{$key} as group_key"),
+                'invoices.currency as currency',
+                DB::raw('DATE(invoices.invoice_date) as tx_date'),
+                DB::raw('SUM(invoice_items.total) as total'),
+            )
+            ->groupBy(DB::raw($key), 'invoices.currency', DB::raw('DATE(invoices.invoice_date)'))
+            ->get()
+            ->groupBy('group_key')
+            ->map(fn ($rows) => $this->currency->sumConverted($rows, $tenant))
+            ->all();
+    }
+
     /**
      * @return array<string, int>
      */
@@ -95,10 +135,10 @@ final class AcademicReportService
             $query->whereDate('invoices.invoice_date', '<=', $dateTo);
         }
 
+        $revenue = $this->revenueBy(clone $query, 'enrollments.academic_program_id');
         $rows = $query
             ->select(
                 'enrollments.academic_program_id',
-                DB::raw('SUM(invoice_items.total) as revenue'),
                 DB::raw('COUNT(DISTINCT enrollments.id) as enrollment_count'),
             )
             ->groupBy('enrollments.academic_program_id')
@@ -115,7 +155,7 @@ final class AcademicReportService
             ->map(fn (AcademicProgram $program) => [
                 'academic_program_id' => (int) $program->id,
                 'program_name' => $program->name,
-                'revenue' => (float) $rows[$program->id]->revenue,
+                'revenue' => $revenue[$program->id] ?? 0.0,
                 'enrollment_count' => (int) $rows[$program->id]->enrollment_count,
             ])
             ->sortByDesc('revenue')
@@ -148,11 +188,11 @@ final class AcademicReportService
             $query->whereDate('invoices.invoice_date', '<=', $dateTo);
         }
 
+        $revenue = $this->revenueBy(clone $query, 'enrollments.course_package_id');
         $rows = $query
             ->select(
                 'enrollments.course_package_id',
                 DB::raw('COUNT(DISTINCT enrollments.student_id) as students'),
-                DB::raw('SUM(invoice_items.total) as revenue'),
             )
             ->groupBy('enrollments.course_package_id')
             ->get()
@@ -169,7 +209,7 @@ final class AcademicReportService
                 'course_package_id' => (int) $package->id,
                 'package_name' => $package->name,
                 'students' => (int) $rows[$package->id]->students,
-                'revenue' => (float) $rows[$package->id]->revenue,
+                'revenue' => $revenue[$package->id] ?? 0.0,
             ])
             ->sortByDesc('revenue')
             ->values()
@@ -189,16 +229,13 @@ final class AcademicReportService
 
         // `enrollments`/`invoice_items`/`invoices` all live in the tenant
         // database now, so this is one ordinary join grouped by class_id.
-        $revenue = Enrollment::query()
+        $revenue = $this->revenueBy(Enrollment::query()
             ->join('invoice_items', function ($join) {
                 $join->on('invoice_items.reference_id', '=', 'enrollments.id')
                     ->where('invoice_items.reference_type', '=', Enrollment::class);
             })
             ->join('invoices', 'invoices.id', '=', 'invoice_items.invoice_id')
-            ->whereNotIn('invoices.status', [InvoiceStatus::CANCELLED, InvoiceStatus::VOID])
-            ->select('enrollments.class_id', DB::raw('SUM(invoice_items.total) as revenue'))
-            ->groupBy('enrollments.class_id')
-            ->pluck('revenue', 'class_id');
+            ->whereNotIn('invoices.status', [InvoiceStatus::CANCELLED, InvoiceStatus::VOID]), 'enrollments.class_id');
 
         // `classes`, `class_teachers` and `staff` all live in the tenant
         // database now, so every assigned teacher/assistant's name is one
@@ -222,27 +259,37 @@ final class AcademicReportService
                 'teacher' => $row->teacher_names,
                 'capacity' => $row->capacity !== null ? (int) $row->capacity : null,
                 'students' => (int) ($enrollmentCounts[$row->class_id] ?? 0),
-                'revenue' => (float) ($revenue[$row->class_id] ?? 0),
+                'revenue' => $revenue[$row->class_id] ?? 0.0,
             ])
             ->all();
     }
 
     /**
-     * @return array{total_invoiced: float, total_paid: float, balance: float}
+     * @return array{currency: string, total_invoiced: float, total_paid: float, balance: float}
      */
     public function studentFinancialSummary(Student $student): array
     {
-        $row = DB::connection('tenant')->table('invoices')
+        $rows = DB::connection('tenant')->table('invoices')
             ->where('student_id', $student->getKey())
             ->whereNotIn('status', [InvoiceStatus::CANCELLED, InvoiceStatus::VOID])
             // A STOPPED invoice's remaining balance was written off, not owed.
+            ->select('currency', DB::raw('DATE(invoice_date) as tx_date'))
             ->selectRaw('COALESCE(SUM(total), 0) as total_invoiced, COALESCE(SUM(paid_amount), 0) as total_paid, COALESCE(SUM(CASE WHEN status = ? THEN 0 ELSE balance END), 0) as balance', [InvoiceStatus::STOPPED])
-            ->first();
+            ->groupBy('currency', DB::raw('DATE(invoice_date)'))
+            ->get();
+
+        // USD and KHR invoices converted to the school's currency, never added raw.
+        $tenant = $this->context->getOrFail();
+        $sum = fn (string $column) => $this->currency->sumConverted(
+            $rows->map(fn ($r) => (object) ['currency' => $r->currency, 'tx_date' => $r->tx_date, 'total' => $r->{$column}]),
+            $tenant,
+        );
 
         return [
-            'total_invoiced' => (float) $row->total_invoiced,
-            'total_paid' => (float) $row->total_paid,
-            'balance' => (float) $row->balance,
+            'currency' => $tenant->default_currency,
+            'total_invoiced' => $sum('total_invoiced'),
+            'total_paid' => $sum('total_paid'),
+            'balance' => $sum('balance'),
         ];
     }
 }

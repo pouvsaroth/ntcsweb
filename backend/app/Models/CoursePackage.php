@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Models\Concerns\Auditable;
 use App\Support\Audit\AuditAction;
+use App\Support\Billing\Money;
 use Database\Factories\CoursePackageFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -150,7 +151,7 @@ class CoursePackage extends Model
     protected function auditDescriptionForChange(string $action, array $old, array $new): ?string
     {
         if ($action === AuditAction::PACKAGE_PRICE_CHANGED) {
-            return "Changed {$this->name} price from \${$old['price']} to \${$new['price']}";
+            return "Changed {$this->name} price from ".Money::format($old['price'], $this->currency).' to '.Money::format($new['price'], $this->currency);
         }
 
         return null;

@@ -6,9 +6,9 @@
 {{ __('invoice.issued_notice') }}
 
 **{{ __('invoice.invoice') }}:** {{ $invoice->invoice_number }}
-**{{ __('invoice.total') }}:** ${{ number_format((float) $invoice->total, 2) }}
-**{{ __('invoice.paid') }}:** ${{ number_format((float) $invoice->paid_amount, 2) }}
-**{{ __('invoice.balance') }}:** ${{ number_format((float) $invoice->balance, 2) }}
+**{{ __('invoice.total') }}:** {{ \App\Support\Billing\Money::format($invoice->total, $invoice->currency) }}
+**{{ __('invoice.paid') }}:** {{ \App\Support\Billing\Money::format($invoice->paid_amount, $invoice->currency) }}
+**{{ __('invoice.balance') }}:** {{ \App\Support\Billing\Money::format($invoice->balance, $invoice->currency) }}
 
 {{ __('invoice.attached_notice') }}
 

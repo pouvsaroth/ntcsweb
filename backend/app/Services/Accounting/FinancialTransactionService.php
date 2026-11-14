@@ -15,6 +15,7 @@ use App\Support\Accounting\TransactionStatus;
 use App\Support\Accounting\TransactionType;
 use App\Support\Audit\AuditAction;
 use App\Support\Audit\AuditLogger;
+use App\Support\Billing\Money;
 use App\Support\Tenancy\TenantContext;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Carbon;
@@ -107,7 +108,7 @@ final class FinancialTransactionService
                 'Accounting',
                 $transaction,
                 new: ['amount' => $amount, 'account' => $revenueAccount->auditDisplayName()],
-                description: "Recognized revenue \${$amount} in {$revenueAccount->auditDisplayName()} from payment {$payment->payment_number}",
+                description: 'Recognized revenue '.Money::format($amount, $transaction->currency)." in {$revenueAccount->auditDisplayName()} from payment {$payment->payment_number}",
                 actor: $actor,
             );
         }
@@ -162,7 +163,7 @@ final class FinancialTransactionService
             'Accounting',
             $reversal,
             old: ['reverses' => $original->transaction_number],
-            description: "Reversed transaction {$original->transaction_number} (\${$original->amount}) via {$reversal->transaction_number}",
+            description: "Reversed transaction {$original->transaction_number} (".Money::format($original->amount, $original->currency).") via {$reversal->transaction_number}",
             actor: $actor,
         );
 
@@ -199,7 +200,7 @@ final class FinancialTransactionService
             'Accounting',
             $transaction,
             new: ['from' => $from->auditDisplayName(), 'to' => $to->auditDisplayName(), 'amount' => $amount],
-            description: "Transferred \${$amount} from {$from->auditDisplayName()} to {$to->auditDisplayName()}",
+            description: 'Transferred '.Money::format($amount, $transaction->currency)." from {$from->auditDisplayName()} to {$to->auditDisplayName()}",
             actor: $actor,
         );
 
@@ -233,7 +234,7 @@ final class FinancialTransactionService
             'Accounting',
             $transaction,
             new: ['debit' => $debit->auditDisplayName(), 'credit' => $credit->auditDisplayName(), 'amount' => $amount],
-            description: "Manual adjustment \${$amount}: {$description}",
+            description: 'Manual adjustment '.Money::format($amount, $transaction->currency).": {$description}",
             actor: $actor,
         );
 
@@ -360,7 +361,7 @@ final class FinancialTransactionService
             'Accounting',
             $transaction,
             new: ['account' => $revenueAccount->auditDisplayName(), 'amount' => $amount],
-            description: "Recorded manual income \${$amount} in {$revenueAccount->auditDisplayName()}".($description ? ": {$description}" : ''),
+            description: 'Recorded manual income '.Money::format($amount, $transaction->currency)." in {$revenueAccount->auditDisplayName()}".($description ? ": {$description}" : ''),
             actor: $actor,
         );
 

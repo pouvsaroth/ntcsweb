@@ -13,13 +13,16 @@ use App\Models\FinancialTransaction;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Services\Accounting\AccountingReportService;
+use App\Services\Billing\CurrencyConversionService;
 use App\Support\Accounting\AccountType;
 use App\Support\Authorization\Permissions;
 use App\Support\Tenancy\TenantContext;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Every figure is a single aggregate query — see AccountingReportService's
@@ -32,6 +35,7 @@ final class AccountingDashboardController extends Controller
     public function __construct(
         private readonly AccountingReportService $reports,
         private readonly TenantContext $tenantContext,
+        private readonly CurrencyConversionService $currency,
     ) {}
 
     public function summary(Request $request): JsonResponse
@@ -61,8 +65,8 @@ final class AccountingDashboardController extends Controller
             'net_profit' => round($revenue - $expenses, 2),
             'todays_income' => $this->reports->totalRevenue($today, $today, $school),
             'todays_expenses' => $this->reports->totalExpenses($today, $today, $school),
-            'outstanding_receivables' => (float) Invoice::query()->outstanding()->sum('balance'),
-            'overdue_receivables' => (float) Invoice::query()->overdue()->sum('balance'),
+            'outstanding_receivables' => $this->receivables(Invoice::query()->outstanding()),
+            'overdue_receivables' => $this->receivables(Invoice::query()->overdue()),
             ...$this->cashByAccount(),
         ]);
     }
@@ -231,6 +235,22 @@ final class AccountingDashboardController extends Controller
         $parts = array_filter([$payment->student?->fullName() ?? $payment->invoice?->company?->name, $payment->invoice?->courseName()]);
 
         return $parts === [] ? $transaction->description : implode(' — ', $parts);
+    }
+
+    /**
+     * Unpaid invoice balances in the school's currency: USD and KHR invoices
+     * are each converted at the rate on their invoice date, never added raw.
+     *
+     * @param  Builder<Invoice>  $query
+     */
+    private function receivables(Builder $query): float
+    {
+        $rows = $query
+            ->select('currency', DB::raw('DATE(invoice_date) as tx_date'), DB::raw('SUM(balance) as total'))
+            ->groupBy('currency', DB::raw('DATE(invoice_date)'))
+            ->get();
+
+        return $this->currency->sumConverted($rows, $this->tenantContext->getOrFail());
     }
 
     /**

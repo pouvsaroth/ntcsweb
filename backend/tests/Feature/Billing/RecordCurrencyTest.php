@@ -4,12 +4,17 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Billing;
 
+use App\Mail\InvoiceMail;
 use App\Models\Asset;
 use App\Models\AssetRepair;
 use App\Models\AuditLog;
 use App\Models\CurrencyRate;
+use App\Models\Enrollment;
 use App\Models\Expense;
+use App\Models\Invoice;
+use App\Models\InvoiceItem;
 use App\Models\Product;
+use App\Models\SchoolClass;
 use App\Models\Student;
 use App\Models\Tenant;
 use App\Support\Assets\AssetStatus;
@@ -99,5 +104,46 @@ class RecordCurrencyTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.currency', 'KHR')
             ->assertJsonPath('data.total_investment', 1400000);
+    }
+
+    public function test_outstanding_balances_convert_dollar_and_riel_invoices_before_adding(): void
+    {
+        $this->khrSchool([Permissions::ACCOUNTING_DASHBOARD_VIEW]);
+        Invoice::factory()->create(['currency' => 'USD', 'total' => 10, 'balance' => 10]);
+        Invoice::factory()->create(['currency' => 'KHR', 'total' => 30000, 'balance' => 30000]);
+
+        // $10 × 4,000 + 30,000 ៛ = 70,000 ៛ — not 30,010.
+        $this->getJson('/api/v1/accounting/dashboard')
+            ->assertOk()
+            ->assertJsonPath('data.currency', 'KHR')
+            ->assertJsonPath('data.outstanding_receivables', 70000);
+    }
+
+    public function test_the_invoice_email_shows_riel_as_riel(): void
+    {
+        $this->khrSchool([]);
+        $invoice = Invoice::factory()->create(['currency' => 'KHR', 'total' => 30000, 'balance' => 30000]);
+
+        $html = (new InvoiceMail($invoice))->render();
+
+        $this->assertStringContainsString('30,000 ៛', $html);
+        $this->assertStringNotContainsString('$30,000', $html);
+    }
+
+    public function test_class_revenue_converts_dollar_and_riel_invoices_before_adding(): void
+    {
+        $this->khrSchool([Permissions::ACADEMIC_REPORTS_VIEW]);
+        $class = SchoolClass::factory()->create();
+        foreach ([['USD', 10], ['KHR', 30000]] as [$currency, $amount]) {
+            $enrollment = Enrollment::factory()->forClass($class)->create();
+            $invoice = Invoice::factory()->create(['currency' => $currency, 'total' => $amount, 'balance' => $amount]);
+            InvoiceItem::factory()->forInvoice($invoice)->create([
+                'unit_price' => $amount, 'subtotal' => $amount, 'total' => $amount, 'quantity' => 1,
+                'reference_type' => Enrollment::class, 'reference_id' => $enrollment->id,
+            ]);
+        }
+
+        $row = collect($this->getJson('/api/v1/academic-reports/classes')->assertOk()->json('data'))->firstWhere('class_id', $class->id);
+        $this->assertEqualsWithDelta(70000, $row['revenue'], 0.001);
     }
 }

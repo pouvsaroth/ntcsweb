@@ -14,6 +14,7 @@ use App\Models\User;
 use App\Support\Audit\AuditAction;
 use App\Support\Audit\AuditLogger;
 use App\Support\Billing\InvoiceStatus;
+use App\Support\Billing\Money;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -97,7 +98,7 @@ final class InvoiceService
                     'tax' => (float) $invoice->tax,
                     'total' => (float) $invoice->total,
                 ],
-                description: "Created invoice {$invoice->invoice_number} — total \${$invoice->total}",
+                description: "Created invoice {$invoice->invoice_number} — total ".Money::format($invoice->total, $invoice->currency),
             );
 
             return $invoice->load(['items.product', 'items.variant', 'student']);

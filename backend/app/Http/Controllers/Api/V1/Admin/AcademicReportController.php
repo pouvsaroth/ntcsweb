@@ -53,7 +53,7 @@ final class AcademicReportController extends Controller
         $rows = $this->reports->programRevenue($dateFrom, $dateTo);
 
         if ($request->string('format')->toString() === 'csv') {
-            return $this->csv('program-revenue-report', ['Program', 'Enrollments', 'Revenue'], collect($rows)->map(
+            return $this->csv('program-revenue-report', ['Program', 'Enrollments', 'Revenue ('.$this->reports->schoolCurrency().')'], collect($rows)->map(
                 fn (array $row) => [$row['program_name'], $row['enrollment_count'], number_format($row['revenue'], 2, '.', '')]
             ));
         }
@@ -68,7 +68,7 @@ final class AcademicReportController extends Controller
         $rows = $this->reports->packageSales($dateFrom, $dateTo);
 
         if ($request->string('format')->toString() === 'csv') {
-            return $this->csv('package-sales-report', ['Package', 'Students', 'Revenue'], collect($rows)->map(
+            return $this->csv('package-sales-report', ['Package', 'Students', 'Revenue ('.$this->reports->schoolCurrency().')'], collect($rows)->map(
                 fn (array $row) => [$row['package_name'], $row['students'], number_format($row['revenue'], 2, '.', '')]
             ));
         }
@@ -82,7 +82,7 @@ final class AcademicReportController extends Controller
         $rows = $this->reports->classReport();
 
         if ($request->string('format')->toString() === 'csv') {
-            return $this->csv('class-report', ['Class', 'Teacher', 'Capacity', 'Students', 'Revenue'], collect($rows)->map(
+            return $this->csv('class-report', ['Class', 'Teacher', 'Capacity', 'Students', 'Revenue ('.$this->reports->schoolCurrency().')'], collect($rows)->map(
                 fn (array $row) => [$row['class_name'], $row['teacher'], $row['capacity'], $row['students'], number_format($row['revenue'], 2, '.', '')]
             ));
         }
