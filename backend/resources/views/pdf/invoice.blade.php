@@ -57,6 +57,9 @@
     .totals tr.total td { border-top: 2px solid #1f2937; font-weight: bold; font-size: 13px; padding-top: 6px; }
     .totals tr.balance td { font-weight: bold; color: #dc2626; }
     .totals tr.received td { font-weight: bold; font-size: 13px; }
+    .totals tr.currencies td { color: #6b7280; font-size: 10px; font-weight: bold; padding-bottom: 2px; }
+    .totals td.value { padding-left: 10px; white-space: nowrap; }
+    .rate { margin: 6px 0 0; text-align: right; color: #6b7280; font-size: 10px; }
     table.payments { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
     table.payments th { text-align: left; border-bottom: 2px solid #1f2937; padding: 5px 4px; font-size: 10px; text-transform: uppercase; }
     table.payments td { padding: 5px 4px; border-bottom: 1px solid #e5e7eb; }
@@ -80,6 +83,13 @@
         $money = fn (float $amount) => $invoice->currency === 'KHR'
             ? number_format(round($amount)).' ៛'
             : '$'.number_format($amount, 2);
+
+        // Every total is shown in USD and in KHR (two columns). The other
+        // side is converted with the Currency Rates rate in effect on this
+        // document's date: the payment date on a receipt, else the invoice date.
+        $rateRow = \App\Support\Billing\Money::rateOn(($receiptPayment ?? null)?->payment_date ?? $invoice->invoice_date);
+        $rate = $rateRow !== null ? (float) $rateRow->khr_per_usd : null;
+        $both = fn (float $amount) => \App\Support\Billing\Money::pairText($amount, $invoice->currency, $rate);
 
         // Only present when this invoice came from an enrollment (see
         // EnrollmentService) — a manually-created invoice has no class to
@@ -207,7 +217,8 @@
                 <th class="num">{{ __('invoice.qty') }}</th>
                 <th class="num">{{ __('invoice.unit_price') }}</th>
                 <th class="num">{{ __('invoice.discount') }}</th>
-                <th class="num">{{ __('invoice.total') }}</th>
+                <th class="num">{{ __('invoice.total') }} (USD)</th>
+                <th class="num">{{ __('invoice.total') }} (KHR)</th>
             </tr>
         </thead>
         <tbody>
@@ -217,7 +228,8 @@
                     <td class="num">{{ $item->quantity }}</td>
                     <td class="num">{{ $money((float) $item->unit_price) }}</td>
                     <td class="num">{{ $money((float) $item->discount) }}</td>
-                    <td class="num">{{ $money((float) $item->total) }}</td>
+                    <td class="num">{{ $both((float) $item->total)['USD'] }}</td>
+                    <td class="num">{{ $both((float) $item->total)['KHR'] }}</td>
                 </tr>
             @endforeach
         </tbody>
@@ -227,21 +239,27 @@
     <div class="pay-left"></div>
     <div class="totals">
         <table>
-            <tr><td class="label">{{ __('invoice.subtotal') }}</td><td class="value">{{ $money((float) $invoice->subtotal) }}</td></tr>
-            <tr><td class="label">{{ __('invoice.discount') }}</td><td class="value">{{ $money((float) $invoice->discount) }}</td></tr>
-            <tr><td class="label">{{ __('invoice.tax') }}</td><td class="value">{{ $money((float) $invoice->tax) }}</td></tr>
-            <tr class="total"><td class="label">{{ __('invoice.total') }}</td><td class="value">{{ $money((float) $invoice->total) }}</td></tr>
+            <tr class="currencies"><td></td><td class="value">USD</td><td class="value">KHR</td></tr>
+            <tr><td class="label">{{ __('invoice.subtotal') }}</td><td class="value">{{ $both((float) $invoice->subtotal)['USD'] }}</td><td class="value">{{ $both((float) $invoice->subtotal)['KHR'] }}</td></tr>
+            <tr><td class="label">{{ __('invoice.discount') }}</td><td class="value">{{ $both((float) $invoice->discount)['USD'] }}</td><td class="value">{{ $both((float) $invoice->discount)['KHR'] }}</td></tr>
+            <tr><td class="label">{{ __('invoice.tax') }}</td><td class="value">{{ $both((float) $invoice->tax)['USD'] }}</td><td class="value">{{ $both((float) $invoice->tax)['KHR'] }}</td></tr>
+            <tr class="total"><td class="label">{{ __('invoice.total') }}</td><td class="value">{{ $both((float) $invoice->total)['USD'] }}</td><td class="value">{{ $both((float) $invoice->total)['KHR'] }}</td></tr>
             @if($receipt)
             @if($paidBefore > 0)
-            <tr><td class="label">{{ __('invoice.paid_before') }}</td><td class="value">{{ $money($paidBefore) }}</td></tr>
+            <tr><td class="label">{{ __('invoice.paid_before') }}</td><td class="value">{{ $both($paidBefore)['USD'] }}</td><td class="value">{{ $both($paidBefore)['KHR'] }}</td></tr>
             @endif
-            <tr class="received"><td class="label">{{ __('invoice.amount_received') }}</td><td class="value">{{ $money((float) $receipt->amount) }}</td></tr>
-            <tr class="balance"><td class="label">{{ __('invoice.balance') }}</td><td class="value">{{ $money($balanceAfter) }}</td></tr>
+            <tr class="received"><td class="label">{{ __('invoice.amount_received') }}</td><td class="value">{{ $both((float) $receipt->amount)['USD'] }}</td><td class="value">{{ $both((float) $receipt->amount)['KHR'] }}</td></tr>
+            <tr class="balance"><td class="label">{{ __('invoice.balance') }}</td><td class="value">{{ $both($balanceAfter)['USD'] }}</td><td class="value">{{ $both($balanceAfter)['KHR'] }}</td></tr>
             @else
-            <tr><td class="label">{{ __('invoice.paid') }}</td><td class="value">{{ $money((float) $invoice->paid_amount) }}</td></tr>
-            <tr class="balance"><td class="label">{{ __('invoice.balance') }}</td><td class="value">{{ $money((float) $invoice->balance) }}</td></tr>
+            <tr><td class="label">{{ __('invoice.paid') }}</td><td class="value">{{ $both((float) $invoice->paid_amount)['USD'] }}</td><td class="value">{{ $both((float) $invoice->paid_amount)['KHR'] }}</td></tr>
+            <tr class="balance"><td class="label">{{ __('invoice.balance') }}</td><td class="value">{{ $both((float) $invoice->balance)['USD'] }}</td><td class="value">{{ $both((float) $invoice->balance)['KHR'] }}</td></tr>
             @endif
         </table>
+        @if($rateRow)
+            <p class="rate">{{ __('invoice.exchange_rate') }}: 1 USD = {{ number_format((float) $rateRow->khr_per_usd) }} ៛ <span style="white-space: nowrap">({{ __('invoice.rate_from', ['date' => $rateRow->effective_date->format('d-m-Y')]) }})</span></p>
+        @else
+            <p class="rate">{{ __('invoice.no_rate') }}</p>
+        @endif
     </div>
     </div>
 
@@ -266,7 +284,7 @@
     @if($invoice->payments->isNotEmpty() && ! $receipt)
         <table class="payments">
             <thead>
-                <tr><th>{{ __('invoice.payment_history') }}</th><th class="num">{{ __('invoice.method') }}</th><th class="num">{{ __('invoice.date') }}</th><th class="num">{{ __('invoice.amount') }}</th></tr>
+                <tr><th>{{ __('invoice.payment_history') }}</th><th class="num">{{ __('invoice.method') }}</th><th class="num">{{ __('invoice.date') }}</th><th class="num">{{ __('invoice.amount') }} (USD)</th><th class="num">{{ __('invoice.amount') }} (KHR)</th></tr>
             </thead>
             <tbody>
                 @foreach($invoice->payments as $payment)
@@ -274,7 +292,8 @@
                         <td>{{ $payment->payment_number }}</td>
                         <td class="num">{{ __('invoice.methods.'.strtolower($payment->payment_method)) }}</td>
                         <td class="num">{{ $payment->payment_date->format('d-m-Y') }}</td>
-                        <td class="num">{{ $money((float) $payment->amount) }}</td>
+                        <td class="num">{{ $both((float) $payment->amount)['USD'] }}</td>
+                        <td class="num">{{ $both((float) $payment->amount)['KHR'] }}</td>
                     </tr>
                 @endforeach
             </tbody>

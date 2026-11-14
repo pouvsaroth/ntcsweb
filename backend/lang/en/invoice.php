@@ -92,4 +92,7 @@ return [
     'issued_notice' => 'Your invoice has been issued.',
     'attached_notice' => 'Please find your invoice attached.',
     'thanks' => 'Thanks,',
+    'exchange_rate' => 'Exchange rate',
+    'rate_from' => 'from :date',
+    'no_rate' => 'No exchange rate entered yet, so the other currency cannot be shown.',
 ];

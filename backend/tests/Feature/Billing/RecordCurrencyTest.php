@@ -13,6 +13,7 @@ use App\Models\Enrollment;
 use App\Models\Expense;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
+use App\Models\Payment;
 use App\Models\Product;
 use App\Models\SchoolClass;
 use App\Models\Student;
@@ -20,6 +21,7 @@ use App\Models\Tenant;
 use App\Support\Assets\AssetStatus;
 use App\Support\Authorization\Permissions;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\View;
 use Tests\Concerns\HasAcademicAdmin;
 use Tests\Concerns\HasAssetCatalog;
 use Tests\Concerns\HasChartOfAccounts;
@@ -128,6 +130,77 @@ class RecordCurrencyTest extends TestCase
 
         $this->assertStringContainsString('30,000 ៛', $html);
         $this->assertStringNotContainsString('$30,000', $html);
+        // ...and in dollars too, at 4,000 ៛ a dollar.
+        $this->assertStringContainsString('$7.50', $html);
+    }
+
+    private function documentView(Invoice $invoice, ?Payment $payment = null): string
+    {
+        $invoice->load(['student', 'items', 'invoiceStudents', 'payments']);
+
+        return View::make($payment ? 'pdf.receipt' : 'pdf.invoice', [
+            'payment' => $payment,
+            'invoice' => $invoice,
+            'tenant' => $this->tenant,
+            'issuerStaff' => null,
+            'logoDataUri' => null,
+            'stampDataUri' => null,
+            'signatureDataUri' => null,
+            'khmerFontRegular' => '',
+            'khmerFontBold' => '',
+        ])->render();
+    }
+
+    private function rielInvoice(string $date): Invoice
+    {
+        $invoice = Invoice::factory()->forStudent(Student::factory()->create())->create([
+            'currency' => 'KHR', 'invoice_date' => $date, 'subtotal' => 41000, 'total' => 41000, 'paid_amount' => 0, 'balance' => 41000,
+        ]);
+        InvoiceItem::factory()->forInvoice($invoice)->create(['unit_price' => 41000, 'subtotal' => 41000, 'total' => 41000, 'quantity' => 1, 'discount' => 0]);
+
+        return $invoice;
+    }
+
+    public function test_an_invoice_shows_dollars_and_riel_at_the_rate_on_its_date(): void
+    {
+        $this->khrSchool([]);
+        CurrencyRate::query()->create(['effective_date' => '2026-06-01', 'khr_per_usd' => 4100]);
+
+        // Before June the 4,000 rate is in effect: 41,000 ៛ = $10.25.
+        $html = $this->documentView($this->rielInvoice('2026-05-20'));
+        $this->assertStringContainsString('41,000 ៛', $html);
+        $this->assertStringContainsString('$10.25', $html);
+        $this->assertStringContainsString('1 USD = 4,000 ៛', $html);
+
+        // From June it is 4,100: 41,000 ៛ = $10.00.
+        $html = $this->documentView($this->rielInvoice('2026-06-15'));
+        $this->assertStringContainsString('$10.00', $html);
+        $this->assertStringContainsString('1 USD = 4,100 ៛ (from 01-06-2026)', $html);
+    }
+
+    public function test_a_receipt_converts_at_the_rate_on_the_payment_date(): void
+    {
+        $this->khrSchool([]);
+        CurrencyRate::query()->create(['effective_date' => '2026-06-01', 'khr_per_usd' => 4100]);
+        $invoice = $this->rielInvoice('2026-05-20');
+        $payment = Payment::factory()->forInvoice($invoice)->create(['amount' => 41000, 'payment_date' => '2026-06-10']);
+
+        $html = $this->documentView($invoice, $payment);
+
+        $this->assertStringContainsString('1 USD = 4,100 ៛', $html);
+        $this->assertStringContainsString('$10.00', $html);
+    }
+
+    public function test_with_no_rate_entered_the_other_currency_shows_a_dash_not_a_guess(): void
+    {
+        $this->khrSchool([]);
+        CurrencyRate::query()->delete();
+
+        $html = $this->documentView($this->rielInvoice('2026-05-20'));
+
+        $this->assertStringContainsString('41,000 ៛', $html);
+        $this->assertStringContainsString('No exchange rate entered yet', $html);
+        $this->assertStringNotContainsString('$41,000', $html);
     }
 
     public function test_class_revenue_converts_dollar_and_riel_invoices_before_adding(): void
