@@ -19,6 +19,7 @@ use App\Models\Product;
 use App\Models\SchoolClass;
 use App\Models\Student;
 use App\Models\Tenant;
+use App\Models\Training;
 use App\Support\Assets\AssetStatus;
 use App\Support\Authorization\Permissions;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -236,6 +237,46 @@ class RecordCurrencyTest extends TestCase
         $csv = $this->get("/api/v1/accounting/reports/revenue?format=csv&{$range}")->assertOk()->getContent();
         $this->assertStringContainsString('"Amount (USD)","Amount (KHR)"', $csv);
         $this->assertStringContainsString('20.00,81000', $csv);
+    }
+
+    public function test_asset_reports_show_dollars_and_riel_at_each_record_date_rate(): void
+    {
+        $this->khrSchool([Permissions::ASSET_REPORTS_VIEW, Permissions::ASSET_REPORTS_EXPORT]);
+        CurrencyRate::query()->create(['effective_date' => '2026-06-01', 'khr_per_usd' => 4100]);
+        $this->setUpAssetCatalog();
+        $asset = $this->createAsset(['purchase_price' => 335, 'purchase_date' => '2026-01-10']);
+        Asset::query()->whereKey($asset->id)->update(['currency' => 'USD']);
+        // 41,000 ៛ in May (= $10.25 at 4,000) and $10 in June (= 41,000 ៛ at 4,100), same shop.
+        AssetRepair::factory()->forAsset($asset)->create(['repair_shop_id' => $this->repairShop->id, 'sent_date' => '2026-05-10', 'total_cost' => 41000, 'currency' => 'KHR']);
+        AssetRepair::factory()->forAsset($asset)->create(['repair_shop_id' => $this->repairShop->id, 'sent_date' => '2026-06-10', 'total_cost' => 10, 'currency' => 'USD']);
+
+        $this->getJson('/api/v1/assets/reports/inventory')->assertOk()
+            ->assertJsonPath('data.0.purchase_price_usd', 335)
+            ->assertJsonPath('data.0.purchase_price_khr', 1340000);
+        $inventoryCsv = (string) $this->get('/api/v1/assets/reports/inventory?format=csv')->getContent();
+        $this->assertStringContainsString('"Purchase Price (USD)","Purchase Price (KHR)"', $inventoryCsv);
+        $this->assertStringContainsString('335.00,1340000,USD', $inventoryCsv);
+
+        $this->getJson('/api/v1/assets/reports/repair-cost')->assertOk()
+            ->assertJsonPath('data.total_repair_cost_usd', 20.25)
+            ->assertJsonPath('data.total_repair_cost_khr', 82000)
+            ->assertJsonPath('data.by_repair_shop.0.total_cost_usd', 20.25)
+            ->assertJsonPath('data.by_repair_shop.0.total_cost_khr', 82000);
+    }
+
+    public function test_the_training_report_shows_cost_in_dollars_and_riel(): void
+    {
+        $this->khrSchool([Permissions::PROFESSIONAL_DEVELOPMENT_VIEW]);
+        foreach ([[100, 'USD'], [40000, 'KHR']] as [$cost, $currency]) {
+            Training::query()->create(['title' => 'Workshop', 'category' => 'ICT', 'status' => 'completed', 'hours' => 2, 'cost' => $cost, 'currency' => $currency, 'start_date' => '2026-03-10', 'end_date' => '2026-03-10']);
+        }
+
+        // $100 + 40,000 ៛ (= $10) at 4,000.
+        $this->getJson('/api/v1/professional-development/reports?from=2026-01-01&to=2026-12-31')->assertOk()
+            ->assertJsonPath('data.totals.cost_usd', 110)
+            ->assertJsonPath('data.totals.cost_khr', 440000)
+            ->assertJsonPath('data.by_category.0.cost_usd', 110)
+            ->assertJsonPath('data.by_category.0.cost_khr', 440000);
     }
 
     public function test_class_revenue_converts_dollar_and_riel_invoices_before_adding(): void

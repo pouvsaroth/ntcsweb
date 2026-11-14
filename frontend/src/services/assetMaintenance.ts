@@ -18,6 +18,9 @@ export interface AssetMaintenance {
   repair_shop_id: number | null
   repair_shop: { id: number; name: string } | null
   cost: number | null
+  /** In USD and in KHR at the rate on the record's own date (null = no rate entered). */
+  cost_usd: number | null
+  cost_khr: number | null
   currency: 'USD' | 'KHR'
   status: MaintenanceStatus
   is_overdue: boolean

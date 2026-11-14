@@ -16,8 +16,11 @@ use App\Models\AssetAssignment;
 use App\Models\AssetHistory;
 use App\Models\AssetMaintenance;
 use App\Models\AssetRepair;
+use App\Models\Tenant;
 use App\Services\Assets\AssetReportService;
+use App\Services\Billing\CurrencyConversionService;
 use App\Support\Authorization\Permissions;
+use App\Support\Billing\Money;
 use App\Support\Query\ApiQuery;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -46,8 +49,9 @@ final class AssetReportController extends Controller
         if ($request->string('format')->toString() === 'csv') {
             $assets = $query->build()->get();
 
-            return $this->csv('inventory-report', ['Asset Number', 'Name', 'Category', 'Status', 'Condition', 'Location', 'Purchase Price', 'Currency'], $assets->map(fn (Asset $a) => [
-                $a->asset_number, $a->name, $a->category?->name, $a->status, $a->condition, $a->location?->name, number_format((float) $a->purchase_price, 2, '.', ''), $a->currency,
+            return $this->csv('inventory-report', ['Asset Number', 'Name', 'Category', 'Status', 'Condition', 'Location', 'Purchase Price (USD)', 'Purchase Price (KHR)', 'Entered In'], $assets->map(fn (Asset $a) => [
+                $a->asset_number, $a->name, $a->category?->name, $a->status, $a->condition, $a->location?->name,
+                ...$this->bothCells($a->purchase_price, $a->currency, $a->purchase_date ?? $a->created_at), $a->currency,
             ]));
         }
 
@@ -76,8 +80,9 @@ final class AssetReportController extends Controller
         if ($request->string('format')->toString() === 'csv') {
             $repairs = $query->build()->get();
 
-            return $this->csv('repair-report', ['Repair Number', 'Asset', 'Repair Shop', 'Status', 'Sent Date', 'Total Cost', 'Currency'], $repairs->map(fn (AssetRepair $r) => [
-                $r->repair_number, $r->asset?->asset_number, $r->repairShop?->name, $r->status, (string) $r->sent_date, number_format((float) $r->total_cost, 2, '.', ''), $r->currency,
+            return $this->csv('repair-report', ['Repair Number', 'Asset', 'Repair Shop', 'Status', 'Sent Date', 'Total Cost (USD)', 'Total Cost (KHR)', 'Entered In'], $repairs->map(fn (AssetRepair $r) => [
+                $r->repair_number, $r->asset?->asset_number, $r->repairShop?->name, $r->status, (string) $r->sent_date,
+                ...$this->bothCells($r->total_cost, $r->currency, $r->sent_date ?? $r->created_at), $r->currency,
             ]));
         }
 
@@ -90,17 +95,28 @@ final class AssetReportController extends Controller
 
         $dateFrom = $request->filled('date_from') ? $request->string('date_from')->toString() : null;
         $dateTo = $request->filled('date_to') ? $request->string('date_to')->toString() : null;
-        $shops = $this->reports->topRepairShops(50);
+        // Run once per currency: every repair converted at the rate on its own sent date.
+        $both = CurrencyConversionService::both(fn () => [
+            'total' => $this->reports->totalRepairCost($dateFrom, $dateTo),
+            'shops' => collect($this->reports->topRepairShops(50))->keyBy('repair_shop_id'),
+        ]);
+        $school = $both[$this->reports->schoolCurrency()];
+        $shops = $school['shops']->map(fn (array $row) => $row + [
+            'total_cost_usd' => (float) ($both[Tenant::CURRENCY_USD]['shops'][$row['repair_shop_id']]['total_cost'] ?? 0),
+            'total_cost_khr' => round((float) ($both[Tenant::CURRENCY_KHR]['shops'][$row['repair_shop_id']]['total_cost'] ?? 0)),
+        ])->values();
 
         if ($request->string('format')->toString() === 'csv') {
-            return $this->csv('repair-cost-report', ['Repair Shop', 'Repair Count', 'Total Cost ('.$this->reports->schoolCurrency().')'], collect($shops)->map(
-                fn (array $row) => [$row['repair_shop_name'], $row['repair_count'], number_format($row['total_cost'], 2, '.', '')]
+            return $this->csv('repair-cost-report', ['Repair Shop', 'Repair Count', 'Total Cost (USD)', 'Total Cost (KHR)'], $shops->map(
+                fn (array $row) => [$row['repair_shop_name'], $row['repair_count'], number_format($row['total_cost_usd'], 2, '.', ''), number_format($row['total_cost_khr'], 0, '.', '')]
             ));
         }
 
         return ApiResponse::success([
             'currency' => $this->reports->schoolCurrency(),
-            'total_repair_cost' => $this->reports->totalRepairCost($dateFrom, $dateTo),
+            'total_repair_cost' => $school['total'],
+            'total_repair_cost_usd' => $both[Tenant::CURRENCY_USD]['total'],
+            'total_repair_cost_khr' => round($both[Tenant::CURRENCY_KHR]['total']),
             'by_repair_shop' => $shops,
         ]);
     }
@@ -116,8 +132,9 @@ final class AssetReportController extends Controller
         if ($request->string('format')->toString() === 'csv') {
             $records = $query->build()->get();
 
-            return $this->csv('maintenance-report', ['Maintenance Number', 'Asset', 'Type', 'Status', 'Scheduled Date', 'Cost', 'Currency'], $records->map(fn (AssetMaintenance $m) => [
-                $m->maintenance_number, $m->asset?->asset_number, $m->maintenance_type, $m->status, (string) $m->scheduled_date, number_format((float) ($m->cost ?? 0), 2, '.', ''), $m->currency,
+            return $this->csv('maintenance-report', ['Maintenance Number', 'Asset', 'Type', 'Status', 'Scheduled Date', 'Cost (USD)', 'Cost (KHR)', 'Entered In'], $records->map(fn (AssetMaintenance $m) => [
+                $m->maintenance_number, $m->asset?->asset_number, $m->maintenance_type, $m->status, (string) $m->scheduled_date,
+                ...$this->bothCells($m->cost ?? 0, $m->currency, $m->scheduled_date ?? $m->created_at), $m->currency,
             ]));
         }
 
@@ -167,6 +184,17 @@ final class AssetReportController extends Controller
         }
 
         return ApiResponse::success(AssetHistoryResource::collection($query->sortable(['occurred_at'], default: '-occurred_at')->paginate()));
+    }
+
+    /** @return array{0: string, 1: string} the amount in USD and in KHR at the rate on `$date` */
+    private function bothCells(float|int|string|null $amount, ?string $currency, mixed $date): array
+    {
+        $pair = Money::pairOn($amount ?? 0, $currency, $date);
+
+        return [
+            $pair['USD'] === null ? '' : number_format($pair['USD'], 2, '.', ''),
+            $pair['KHR'] === null ? '' : number_format($pair['KHR'], 0, '.', ''),
+        ];
     }
 
     private function authorizeView(Request $request): void

@@ -18,6 +18,9 @@ import { useMoney } from '@/composables/useMoney'
 
 const { t } = useI18n()
 const { money } = useMoney()
+// Two columns: USD | KHR, each record at the rate on its own date (from the API); "—" when no rate.
+const usd = (n: number | null | undefined) => (n == null ? '—' : money(n, 'USD'))
+const khr = (n: number | null | undefined) => (n == null ? '—' : money(n, 'KHR'))
 
 type Tab = 'inventory' | 'status' | 'repairs' | 'repair-cost' | 'maintenance' | 'assignments' | 'history'
 
@@ -161,16 +164,24 @@ onMounted(() => loadActiveTab())
 
     <template v-else-if="activeTab === 'repair-cost' && repairCostReport">
       <BaseCard>
-        <div class="mb-3 flex items-center justify-between">
-          <h2 class="text-sm font-semibold text-neutral-800">{{ t('admin.assetReports.byRepairShop') }}</h2>
-          <p class="text-lg font-semibold text-neutral-900">{{ money(repairCostReport.total_repair_cost) }}</p>
-        </div>
-        <dl class="space-y-2 text-sm">
-          <div v-for="shop in repairCostReport.by_repair_shop" :key="shop.repair_shop_id" class="flex justify-between">
-            <dt class="text-neutral-500">{{ shop.repair_shop_name }} ({{ shop.repair_count }})</dt>
-            <dd class="font-medium text-neutral-900">{{ money(shop.total_cost) }}</dd>
-          </div>
-        </dl>
+        <h2 class="mb-3 text-sm font-semibold text-neutral-800">{{ t('admin.assetReports.byRepairShop') }}</h2>
+        <table class="w-full text-sm">
+          <thead class="text-neutral-500"><tr><th></th><th class="pb-2 text-right font-medium">USD</th><th class="pb-2 pl-4 text-right font-medium">KHR</th></tr></thead>
+          <tbody>
+            <tr v-for="shop in repairCostReport.by_repair_shop" :key="shop.repair_shop_id">
+              <td class="py-1 text-neutral-500">{{ shop.repair_shop_name }} ({{ shop.repair_count }})</td>
+              <td class="py-1 text-right font-medium whitespace-nowrap text-neutral-900">{{ usd(shop.total_cost_usd) }}</td>
+              <td class="py-1 pl-4 text-right font-medium whitespace-nowrap text-neutral-900">{{ khr(shop.total_cost_khr) }}</td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr class="border-t border-neutral-200 font-semibold text-neutral-900">
+              <td class="pt-2">{{ t('admin.accountingReports.total') }}</td>
+              <td class="pt-2 text-right whitespace-nowrap">{{ usd(repairCostReport.total_repair_cost_usd) }}</td>
+              <td class="pt-2 pl-4 text-right whitespace-nowrap">{{ khr(repairCostReport.total_repair_cost_khr) }}</td>
+            </tr>
+          </tfoot>
+        </table>
       </BaseCard>
     </template>
 
@@ -181,14 +192,16 @@ onMounted(() => loadActiveTab())
           { key: 'name', label: t('admin.assets.columnName') },
           { key: 'category', label: t('admin.assets.columnCategory') },
           { key: 'status', label: t('admin.assets.columnStatus') },
-          { key: 'purchase_price', label: t('admin.assets.purchasePrice'), align: 'text-right' },
+          { key: 'purchase_price_usd', label: `${t('admin.assets.purchasePrice')} (USD)`, align: 'text-right' },
+          { key: 'purchase_price_khr', label: `${t('admin.assets.purchasePrice')} (KHR)`, align: 'text-right' },
         ]"
         :rows="inventory.items.value"
         row-key="id"
         :loading="inventory.loading.value"
       >
         <template #cell-category="{ row }">{{ row.category?.name ?? '—' }}</template>
-        <template #cell-purchase_price="{ row }">{{ money(row.purchase_price, row.currency) }}</template>
+        <template #cell-purchase_price_usd="{ row }"><span class="whitespace-nowrap">{{ usd(row.purchase_price_usd) }}</span></template>
+        <template #cell-purchase_price_khr="{ row }"><span class="whitespace-nowrap">{{ khr(row.purchase_price_khr) }}</span></template>
       </DataTable>
       <BasePagination v-if="inventory.meta.value" :meta="inventory.meta.value" class="mt-4" @update:page="inventory.setPage" />
     </template>
@@ -199,14 +212,16 @@ onMounted(() => loadActiveTab())
           { key: 'repair_number', label: t('admin.assetRepairs.columnNumber') },
           { key: 'asset', label: t('admin.assetRepairs.columnAsset') },
           { key: 'status', label: t('admin.assetRepairs.status') },
-          { key: 'total_cost', label: t('admin.assetRepairs.totalCost'), align: 'text-right' },
+          { key: 'total_cost_usd', label: `${t('admin.assetRepairs.totalCost')} (USD)`, align: 'text-right' },
+          { key: 'total_cost_khr', label: `${t('admin.assetRepairs.totalCost')} (KHR)`, align: 'text-right' },
         ]"
         :rows="repairs.items.value"
         row-key="id"
         :loading="repairs.loading.value"
       >
         <template #cell-asset="{ row }">{{ row.asset?.asset_number ?? '—' }}</template>
-        <template #cell-total_cost="{ row }">{{ money(row.total_cost, row.currency) }}</template>
+        <template #cell-total_cost_usd="{ row }"><span class="whitespace-nowrap">{{ usd(row.total_cost_usd) }}</span></template>
+        <template #cell-total_cost_khr="{ row }"><span class="whitespace-nowrap">{{ khr(row.total_cost_khr) }}</span></template>
       </DataTable>
       <BasePagination v-if="repairs.meta.value" :meta="repairs.meta.value" class="mt-4" @update:page="repairs.setPage" />
     </template>

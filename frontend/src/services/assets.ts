@@ -103,6 +103,9 @@ export interface Asset {
   category: { id: number; code: string; name: string } | null
   purchase_date: string | null
   purchase_price: number
+  /** In USD and in KHR at the rate on the record's own date (null = no rate entered). */
+  purchase_price_usd: number | null
+  purchase_price_khr: number | null
   currency: 'USD' | 'KHR'
   current_value: number | null
   supplier_id: number | null

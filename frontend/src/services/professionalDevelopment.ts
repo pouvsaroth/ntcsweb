@@ -476,6 +476,9 @@ export interface TrainingReport {
     staff_trained: number
     hours: number
     cost: number
+    /** Completed trainings' cost in USD and in KHR, each at the rate on its start date. */
+    cost_usd: number
+    cost_khr: number
     certificates: number
     observations: number
     average_rating: number | null
@@ -484,7 +487,7 @@ export interface TrainingReport {
     plan_goals_done: number
   }
   by_month: { month: string; trainings: number; attended: number; hours: number }[]
-  by_category: { category: string | null; trainings: number; attended: number; hours: number; cost: number }[]
+  by_category: { category: string | null; trainings: number; attended: number; hours: number; cost: number; cost_usd: number; cost_khr: number }[]
   by_staff: {
     staff_id: number
     name: string

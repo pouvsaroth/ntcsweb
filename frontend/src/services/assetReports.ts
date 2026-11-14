@@ -13,7 +13,9 @@ export interface AssetStatusReport {
 
 export interface AssetRepairCostReport {
   total_repair_cost: number
-  by_repair_shop: { repair_shop_id: number; repair_shop_name: string; repair_count: number; total_cost: number }[]
+  total_repair_cost_usd: number
+  total_repair_cost_khr: number
+  by_repair_shop: { repair_shop_id: number; repair_shop_name: string; repair_count: number; total_cost: number; total_cost_usd: number; total_cost_khr: number }[]
 }
 
 export const assetReportsService = {

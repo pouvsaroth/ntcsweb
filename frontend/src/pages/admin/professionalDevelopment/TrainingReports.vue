@@ -70,7 +70,8 @@ const cards = computed(() => {
       value: s.attendance_rate != null ? `${s.attendance_rate}%` : '—',
       sub: t('proDev.reports.cards.attendedOf', { n: s.attended, total: s.assigned }),
     },
-    { key: 'cost', label: t('proDev.reports.cards.cost'), value: money(s.cost), sub: t('proDev.reports.cards.completedOnly') },
+    // USD with KHR under it, each training converted at the rate on its start date.
+    { key: 'cost', label: t('proDev.reports.cards.cost'), value: money(s.cost_usd, 'USD'), sub: `${money(s.cost_khr, 'KHR')} · ${t('proDev.reports.cards.completedOnly')}` },
     { key: 'certificates', label: t('proDev.reports.cards.certificates'), value: String(s.certificates), sub: '' },
     {
       key: 'observations',
@@ -122,7 +123,8 @@ const categoryColumns = computed(() => [
   { key: 'trainings', label: t('proDev.reports.trainings') },
   { key: 'attended', label: t('proDev.reports.attended') },
   { key: 'hours', label: t('proDev.reports.hours') },
-  { key: 'cost', label: t('proDev.reports.cost') },
+  { key: 'cost_usd', label: `${t('proDev.reports.cost')} (USD)` },
+  { key: 'cost_khr', label: `${t('proDev.reports.cost')} (KHR)` },
 ])
 const categoryRows = computed(() => (report.value?.by_category ?? []).map((r, i) => ({ ...r, key: i })))
 
@@ -210,7 +212,8 @@ onMounted(load)
         <div class="hidden sm:block">
           <DataTable :columns="categoryColumns" :rows="categoryRows" row-key="key" :empty-message="t('proDev.reports.noTrainings')">
             <template #cell-category="{ row }">{{ row.category ?? t('proDev.reports.noCategory') }}</template>
-            <template #cell-cost="{ row }">{{ money(row.cost) }}</template>
+            <template #cell-cost_usd="{ row }"><span class="whitespace-nowrap">{{ money(row.cost_usd, 'USD') }}</span></template>
+            <template #cell-cost_khr="{ row }"><span class="whitespace-nowrap">{{ money(row.cost_khr, 'KHR') }}</span></template>
           </DataTable>
         </div>
         <div class="space-y-2 sm:hidden">
@@ -219,7 +222,7 @@ onMounted(load)
             <p class="font-medium text-neutral-900">{{ row.category ?? t('proDev.reports.noCategory') }}</p>
             <p class="mt-0.5 text-xs text-neutral-500">
               {{ t('proDev.reports.trainingsN', { n: row.trainings }) }} · {{ t('proDev.reports.attendedN', { n: row.attended }) }} · {{ t('proDev.hoursCount', { n: row.hours }) }} ·
-              {{ money(row.cost) }}
+              {{ money(row.cost_usd, 'USD') }} · {{ money(row.cost_khr, 'KHR') }}
             </p>
           </div>
         </div>

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Resources;
 
 use App\Models\AssetRepair;
+use App\Support\Billing\Money;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -36,6 +37,8 @@ class AssetRepairResource extends JsonResource
             'transport_cost' => (float) $this->transport_cost,
             'other_cost' => (float) $this->other_cost,
             'total_cost' => (float) $this->total_cost,
+            // In USD and in KHR at the rate on the record's own date.
+            ...(fn (array $p) => ['total_cost_usd' => $p['USD'], 'total_cost_khr' => $p['KHR']])(Money::pairOn($this->total_cost, $this->currency, $this->sent_date ?? $this->created_at)),
             'currency' => $this->currency,
             'warranty_days' => $this->warranty_days,
             'condition_after_repair' => $this->condition_after_repair,

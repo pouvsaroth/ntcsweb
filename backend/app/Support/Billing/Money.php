@@ -61,6 +61,40 @@ final class Money
         return ['USD' => round($value, 2), 'KHR' => $rate !== null ? round($value * $rate) : null];
     }
 
+    /**
+     * The KHR-per-USD rate in effect on `$date`, remembered for the rest of
+     * this request / queued job (a list converts many rows on few dates).
+     */
+    public static function khrPerUsdOn(Carbon|string|null $date): ?float
+    {
+        $key = $date === null ? now()->toDateString() : Carbon::parse($date)->toDateString();
+        if (! app()->bound('money.rates')) {
+            app()->scoped('money.rates', fn () => new \ArrayObject);
+        }
+        $cache = app('money.rates');
+        if (! $cache->offsetExists($key)) {
+            $row = self::rateOn($key);
+            $cache[$key] = $row !== null ? (float) $row->khr_per_usd : null;
+        }
+
+        return $cache[$key];
+    }
+
+    /**
+     * One record's amount in USD and in KHR, converted at the rate on its
+     * own date. Null amount stays null on both sides.
+     *
+     * @return array{USD: float|null, KHR: float|null}
+     */
+    public static function pairOn(float|int|string|null $amount, ?string $currency, Carbon|string|null $date): array
+    {
+        if ($amount === null) {
+            return ['USD' => null, 'KHR' => null];
+        }
+
+        return self::pair($amount, $currency, self::khrPerUsdOn($date));
+    }
+
     /** Both sides as text, "—" where there is no rate. @return array{USD: string, KHR: string} */
     public static function pairText(float|int|string|null $amount, ?string $currency, ?float $khrPerUsd): array
     {

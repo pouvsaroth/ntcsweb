@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Resources;
 
 use App\Models\AssetMaintenance;
+use App\Support\Billing\Money;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -27,6 +28,8 @@ class AssetMaintenanceResource extends JsonResource
             'repair_shop_id' => $this->repair_shop_id,
             'repair_shop' => $this->whenLoaded('repairShop', fn () => $this->repairShop !== null ? ['id' => $this->repairShop->id, 'name' => $this->repairShop->name] : null),
             'cost' => $this->cost !== null ? (float) $this->cost : null,
+            // In USD and in KHR at the rate on the record's own date.
+            ...(fn (array $p) => ['cost_usd' => $p['USD'], 'cost_khr' => $p['KHR']])(Money::pairOn($this->cost, $this->currency, $this->scheduled_date ?? $this->created_at)),
             'currency' => $this->currency,
             'status' => $this->status,
             'is_overdue' => $this->isOverdue(),

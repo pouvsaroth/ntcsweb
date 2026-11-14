@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Resources;
 
 use App\Models\Asset;
+use App\Support\Billing\Money;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -32,6 +33,8 @@ class AssetResource extends JsonResource
             ] : null),
             'purchase_date' => $this->purchase_date?->toDateString(),
             'purchase_price' => (float) $this->purchase_price,
+            // In USD and in KHR at the rate on the record's own date.
+            ...(fn (array $p) => ['purchase_price_usd' => $p['USD'], 'purchase_price_khr' => $p['KHR']])(Money::pairOn($this->purchase_price, $this->currency, $this->purchase_date ?? $this->created_at)),
             'currency' => $this->currency,
             'current_value' => $this->current_value !== null ? (float) $this->current_value : null,
             'supplier_id' => $this->supplier_id,

@@ -34,6 +34,9 @@ export interface AssetRepair {
   transport_cost: number
   other_cost: number
   total_cost: number
+  /** In USD and in KHR at the rate on the record's own date (null = no rate entered). */
+  total_cost_usd: number | null
+  total_cost_khr: number | null
   currency: 'USD' | 'KHR'
   warranty_days: number | null
   condition_after_repair: AssetCondition | null
