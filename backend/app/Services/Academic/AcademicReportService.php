@@ -8,6 +8,7 @@ use App\Models\AcademicProgram;
 use App\Models\CoursePackage;
 use App\Models\Enrollment;
 use App\Models\Student;
+use App\Models\Tenant;
 use App\Services\Billing\CurrencyConversionService;
 use App\Support\Billing\InvoiceStatus;
 use App\Support\Tenancy\TenantContext;
@@ -41,12 +42,12 @@ final class AcademicReportService
     }
 
     /**
-     * Invoice-line revenue per `$key`, in the school's currency: USD and KHR
-     * invoices are each converted at the rate on their invoice date, never
-     * added up raw.
+     * Invoice-line revenue per `$key`, in the school's currency and in USD
+     * and KHR: each invoice is converted at the rate on its invoice date,
+     * never added up raw.
      *
      * @param  Builder<Enrollment>  $query  already joined to invoice_items and invoices
-     * @return array<int|string, float>
+     * @return array<int|string, array{revenue: float, revenue_usd: float, revenue_khr: float}>
      */
     private function revenueBy(Builder $query, string $key): array
     {
@@ -62,9 +63,15 @@ final class AcademicReportService
             ->groupBy(DB::raw($key), 'invoices.currency', DB::raw('DATE(invoices.invoice_date)'))
             ->get()
             ->groupBy('group_key')
-            ->map(fn ($rows) => $this->currency->sumConverted($rows, $tenant))
+            ->map(fn ($rows) => [
+                'revenue' => $this->currency->sumConverted($rows, $tenant),
+                'revenue_usd' => CurrencyConversionService::in(Tenant::CURRENCY_USD, fn () => $this->currency->sumConverted($rows, $tenant)),
+                'revenue_khr' => round(CurrencyConversionService::in(Tenant::CURRENCY_KHR, fn () => $this->currency->sumConverted($rows, $tenant))),
+            ])
             ->all();
     }
+
+    private const NO_REVENUE = ['revenue' => 0.0, 'revenue_usd' => 0.0, 'revenue_khr' => 0.0];
 
     /**
      * @return array<string, int>
@@ -155,7 +162,7 @@ final class AcademicReportService
             ->map(fn (AcademicProgram $program) => [
                 'academic_program_id' => (int) $program->id,
                 'program_name' => $program->name,
-                'revenue' => $revenue[$program->id] ?? 0.0,
+                ...($revenue[$program->id] ?? self::NO_REVENUE),
                 'enrollment_count' => (int) $rows[$program->id]->enrollment_count,
             ])
             ->sortByDesc('revenue')
@@ -209,7 +216,7 @@ final class AcademicReportService
                 'course_package_id' => (int) $package->id,
                 'package_name' => $package->name,
                 'students' => (int) $rows[$package->id]->students,
-                'revenue' => $revenue[$package->id] ?? 0.0,
+                ...($revenue[$package->id] ?? self::NO_REVENUE),
             ])
             ->sortByDesc('revenue')
             ->values()
@@ -259,7 +266,7 @@ final class AcademicReportService
                 'teacher' => $row->teacher_names,
                 'capacity' => $row->capacity !== null ? (int) $row->capacity : null,
                 'students' => (int) ($enrollmentCounts[$row->class_id] ?? 0),
-                'revenue' => $revenue[$row->class_id] ?? 0.0,
+                ...($revenue[$row->class_id] ?? self::NO_REVENUE),
             ])
             ->all();
     }
@@ -285,11 +292,13 @@ final class AcademicReportService
             $tenant,
         );
 
-        return [
-            'currency' => $tenant->default_currency,
-            'total_invoiced' => $sum('total_invoiced'),
-            'total_paid' => $sum('total_paid'),
-            'balance' => $sum('balance'),
-        ];
+        $summary = ['currency' => $tenant->default_currency];
+        foreach (['total_invoiced', 'total_paid', 'balance'] as $column) {
+            $summary[$column] = $sum($column);
+            $summary["{$column}_usd"] = CurrencyConversionService::in(Tenant::CURRENCY_USD, fn () => $sum($column));
+            $summary["{$column}_khr"] = round(CurrencyConversionService::in(Tenant::CURRENCY_KHR, fn () => $sum($column)));
+        }
+
+        return $summary;
     }
 }

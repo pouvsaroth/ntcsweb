@@ -158,7 +158,7 @@ onMounted(async () => {
 
     <BaseAlert v-if="error || deleteError" variant="danger" class="mb-4">{{ error || deleteError }}</BaseAlert>
 
-    <!-- Expenses − support money, per Expense for and currency -->
+    <!-- Expenses − support money, per Expense for, in USD and KHR -->
     <div v-if="summary.length" class="mb-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
       <div v-for="block in summary" :key="block.expense_entity.id" class="rounded-[--radius-card] border border-neutral-200 bg-white p-4 shadow-[--shadow-card]">
         <div class="mb-2 flex items-start justify-between gap-2">
@@ -166,22 +166,29 @@ onMounted(async () => {
           <p class="text-right text-xs text-neutral-500">{{ t('admin.expenseSupports.peopleLine', { money: block.money_count, food: block.food_count }) }}</p>
         </div>
         <p v-if="!block.currencies.length" class="text-sm text-neutral-500">{{ t('admin.expenseSupports.noMoneyYet') }}</p>
-        <div v-for="line in block.currencies" :key="line.currency" class="border-t border-neutral-100 py-2 first:border-t-0 first:pt-0">
-          <dl class="space-y-0.5 text-sm">
-            <div class="flex justify-between gap-2">
-              <dt class="text-neutral-600">{{ t('admin.expenseSupports.expensesTotal') }}</dt>
-              <dd class="tabular-nums">{{ formatMoney(line.expenses, line.currency) }}</dd>
-            </div>
-            <div class="flex justify-between gap-2">
-              <dt class="text-neutral-600">− {{ t('admin.expenseSupports.supportMoney') }}</dt>
-              <dd class="text-green-700 tabular-nums">{{ formatMoney(line.support, line.currency) }}</dd>
-            </div>
-            <div class="flex justify-between gap-2 border-t border-dashed border-neutral-200 pt-1 font-semibold">
-              <dt class="text-neutral-800">{{ line.net < 0 ? t('admin.expenseSupports.leftOver') : t('admin.expenseSupports.youPaid') }}</dt>
-              <dd class="tabular-nums" :class="line.net < 0 ? 'text-green-700' : 'text-neutral-900'">{{ formatMoney(Math.abs(line.net), line.currency) }}</dd>
-            </div>
-          </dl>
-        </div>
+        <!-- USD | KHR: every expense and support converted at the rate on its own date. -->
+        <table v-else class="w-full text-sm">
+          <thead class="text-xs text-neutral-500">
+            <tr><th></th><th class="pb-1 text-right font-medium">USD</th><th class="pb-1 pl-3 text-right font-medium">KHR</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="py-0.5 text-neutral-600">{{ t('admin.expenseSupports.expensesTotal') }}</td>
+              <td class="py-0.5 text-right whitespace-nowrap tabular-nums">{{ formatMoney(block.totals.expenses_usd, 'USD') }}</td>
+              <td class="py-0.5 pl-3 text-right whitespace-nowrap tabular-nums">{{ formatMoney(block.totals.expenses_khr, 'KHR') }}</td>
+            </tr>
+            <tr>
+              <td class="py-0.5 text-neutral-600">− {{ t('admin.expenseSupports.supportMoney') }}</td>
+              <td class="py-0.5 text-right whitespace-nowrap text-green-700 tabular-nums">{{ formatMoney(block.totals.support_usd, 'USD') }}</td>
+              <td class="py-0.5 pl-3 text-right whitespace-nowrap text-green-700 tabular-nums">{{ formatMoney(block.totals.support_khr, 'KHR') }}</td>
+            </tr>
+            <tr class="border-t border-dashed border-neutral-200 font-semibold" :class="block.totals.net_usd < 0 ? 'text-green-700' : 'text-neutral-900'">
+              <td class="pt-1 text-neutral-800">{{ block.totals.net_usd < 0 ? t('admin.expenseSupports.leftOver') : t('admin.expenseSupports.youPaid') }}</td>
+              <td class="pt-1 text-right whitespace-nowrap tabular-nums">{{ formatMoney(Math.abs(block.totals.net_usd), 'USD') }}</td>
+              <td class="pt-1 pl-3 text-right whitespace-nowrap tabular-nums">{{ formatMoney(Math.abs(block.totals.net_khr), 'KHR') }}</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
 

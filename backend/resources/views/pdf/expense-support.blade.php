@@ -45,30 +45,32 @@
         <table class="grid summary">
             <thead>
                 <tr>
-                    <th>{{ __('expense_support.expense_for') }}</th>
-                    <th class="num">{{ __('expense_support.expenses') }}</th>
-                    <th class="num">{{ __('expense_support.support_money') }}</th>
-                    <th class="num">{{ __('expense_support.net') }}</th>
-                    <th class="num">{{ __('expense_support.people') }}</th>
+                    <th rowspan="2">{{ __('expense_support.expense_for') }}</th>
+                    <th class="num" colspan="2">{{ __('expense_support.expenses') }}</th>
+                    <th class="num" colspan="2">{{ __('expense_support.support_money') }}</th>
+                    <th class="num" colspan="2">{{ __('expense_support.net') }}</th>
+                    <th class="num" rowspan="2">{{ __('expense_support.people') }}</th>
+                </tr>
+                <tr>
+                    <th class="num">USD</th><th class="num">KHR</th>
+                    <th class="num">USD</th><th class="num">KHR</th>
+                    <th class="num">USD</th><th class="num">KHR</th>
                 </tr>
             </thead>
             <tbody>
+                {{-- Each expense / support converted at the rate on its own date. --}}
                 @foreach ($report['summary'] as $block)
-                    @forelse ($block['currencies'] as $i => $line)
-                        <tr>
-                            <td>{{ $i === 0 ? $block['expense_entity']['name'] : '' }}</td>
-                            <td class="num">{{ ExpenseSupportReport::money($line['expenses'], $line['currency']) }}</td>
-                            <td class="num">{{ ExpenseSupportReport::money($line['support'], $line['currency']) }}</td>
-                            <td class="num net">{{ ExpenseSupportReport::money($line['net'], $line['currency']) }}</td>
-                            <td class="num">{{ $i === 0 ? __('expense_support.people_line', ['money' => $block['money_count'], 'food' => $block['food_count']]) : '' }}</td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td>{{ $block['expense_entity']['name'] }}</td>
-                            <td class="num">—</td><td class="num">—</td><td class="num">—</td>
-                            <td class="num">{{ __('expense_support.people_line', ['money' => $block['money_count'], 'food' => $block['food_count']]) }}</td>
-                        </tr>
-                    @endforelse
+                    @php($t = $block['totals'])
+                    <tr>
+                        <td>{{ $block['expense_entity']['name'] }}</td>
+                        <td class="num">{{ ExpenseSupportReport::money($t['expenses_usd'], 'USD') }}</td>
+                        <td class="num">{{ ExpenseSupportReport::money($t['expenses_khr'], 'KHR') }}</td>
+                        <td class="num">{{ ExpenseSupportReport::money($t['support_usd'], 'USD') }}</td>
+                        <td class="num">{{ ExpenseSupportReport::money($t['support_khr'], 'KHR') }}</td>
+                        <td class="num net">{{ ExpenseSupportReport::money($t['net_usd'], 'USD') }}</td>
+                        <td class="num net">{{ ExpenseSupportReport::money($t['net_khr'], 'KHR') }}</td>
+                        <td class="num">{{ __('expense_support.people_line', ['money' => $block['money_count'], 'food' => $block['food_count']]) }}</td>
+                    </tr>
                 @endforeach
             </tbody>
         </table>
@@ -88,7 +90,8 @@
                     <th>{{ __('expense_support.relationship') }}</th>
                     <th>{{ __('expense_support.kind') }}</th>
                     <th>{{ __('expense_support.items') }}</th>
-                    <th class="num">{{ __('expense_support.amount') }}</th>
+                    <th class="num">{{ __('expense_support.amount') }} (USD)</th>
+                    <th class="num">{{ __('expense_support.amount') }} (KHR)</th>
                     <th>{{ __('expense_support.expense_for') }}</th>
                     <th>{{ __('expense_support.note') }}</th>
                 </tr>
@@ -103,7 +106,8 @@
                         <td>{{ $row['relationship'] }}</td>
                         <td>{{ $row['kind'] }}</td>
                         <td>{{ $row['items'] }}</td>
-                        <td class="num">{{ $row['amount'] !== null ? ExpenseSupportReport::money($row['amount'], $row['currency']) : '' }}</td>
+                        <td class="num nowrap">{{ $row['USD'] }}</td>
+                        <td class="num nowrap">{{ $row['KHR'] }}</td>
                         <td>{{ $row['expense_for'] }}</td>
                         <td>{{ $row['note'] }}</td>
                     </tr>

@@ -53,8 +53,8 @@ final class AcademicReportController extends Controller
         $rows = $this->reports->programRevenue($dateFrom, $dateTo);
 
         if ($request->string('format')->toString() === 'csv') {
-            return $this->csv('program-revenue-report', ['Program', 'Enrollments', 'Revenue ('.$this->reports->schoolCurrency().')'], collect($rows)->map(
-                fn (array $row) => [$row['program_name'], $row['enrollment_count'], number_format($row['revenue'], 2, '.', '')]
+            return $this->csv('program-revenue-report', ['Program', 'Enrollments', 'Revenue (USD)', 'Revenue (KHR)'], collect($rows)->map(
+                fn (array $row) => [$row['program_name'], $row['enrollment_count'], ...$this->revenueCells($row)]
             ));
         }
 
@@ -68,8 +68,8 @@ final class AcademicReportController extends Controller
         $rows = $this->reports->packageSales($dateFrom, $dateTo);
 
         if ($request->string('format')->toString() === 'csv') {
-            return $this->csv('package-sales-report', ['Package', 'Students', 'Revenue ('.$this->reports->schoolCurrency().')'], collect($rows)->map(
-                fn (array $row) => [$row['package_name'], $row['students'], number_format($row['revenue'], 2, '.', '')]
+            return $this->csv('package-sales-report', ['Package', 'Students', 'Revenue (USD)', 'Revenue (KHR)'], collect($rows)->map(
+                fn (array $row) => [$row['package_name'], $row['students'], ...$this->revenueCells($row)]
             ));
         }
 
@@ -82,8 +82,8 @@ final class AcademicReportController extends Controller
         $rows = $this->reports->classReport();
 
         if ($request->string('format')->toString() === 'csv') {
-            return $this->csv('class-report', ['Class', 'Teacher', 'Capacity', 'Students', 'Revenue ('.$this->reports->schoolCurrency().')'], collect($rows)->map(
-                fn (array $row) => [$row['class_name'], $row['teacher'], $row['capacity'], $row['students'], number_format($row['revenue'], 2, '.', '')]
+            return $this->csv('class-report', ['Class', 'Teacher', 'Capacity', 'Students', 'Revenue (USD)', 'Revenue (KHR)'], collect($rows)->map(
+                fn (array $row) => [$row['class_name'], $row['teacher'], $row['capacity'], $row['students'], ...$this->revenueCells($row)]
             ));
         }
 
@@ -109,6 +109,12 @@ final class AcademicReportController extends Controller
             $request->filled('date_from') ? $request->string('date_from')->toString() : null,
             $request->filled('date_to') ? $request->string('date_to')->toString() : null,
         ];
+    }
+
+    /** @param  array{revenue_usd: float, revenue_khr: float}  $row  @return list<string> */
+    private function revenueCells(array $row): array
+    {
+        return [number_format($row['revenue_usd'], 2, '.', ''), number_format($row['revenue_khr'], 0, '.', '')];
     }
 
     private function csv(string $filename, array $headers, Collection $rows): HttpResponse

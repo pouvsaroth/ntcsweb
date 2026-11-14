@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Accounting;
 
+use App\Models\CurrencyRate;
 use App\Models\Expense;
 use App\Models\ExpenseSupport;
 use App\Support\Accounting\ExpenseStatus;
@@ -118,6 +119,32 @@ class ExpenseSupportTest extends TestCase
         $this->assertEquals(['currency' => 'KHR', 'expenses' => 200000, 'support' => 50000, 'net' => 150000], $lines['KHR']);
         $this->assertCount(3, $data['rows']);
         $this->assertSame('12-11-2026', $data['rows'][0]['support_date']);
+    }
+
+    public function test_the_summary_also_shows_everything_in_dollars_and_riel(): void
+    {
+        $this->asManager();
+        CurrencyRate::query()->create(['effective_date' => '2026-01-01', 'khr_per_usd' => 4000]);
+        $id = $this->expenseEntity->id;
+        foreach ([[600, 'USD'], [200000, 'KHR']] as [$amount, $currency]) {
+            Expense::factory()->create([
+                'account_id' => $this->electricityAccount->id, 'expense_entity_id' => $id, 'amount' => $amount, 'currency' => $currency,
+                'status' => ExpenseStatus::PAID, 'expense_date' => '2026-11-12',
+            ]);
+        }
+        ExpenseSupport::query()->create(['name' => 'P', 'support_date' => '2026-11-12', 'expense_entity_id' => $id, 'kind' => 'money', 'amount' => 150, 'currency' => 'USD']);
+        ExpenseSupport::query()->create(['name' => 'Q', 'support_date' => '2026-11-12', 'expense_entity_id' => $id, 'kind' => 'money', 'amount' => 50000, 'currency' => 'KHR']);
+
+        $data = $this->getJson("/api/v1/expense-supports/summary?expense_entity_id={$id}")->assertOk()->json('data');
+
+        // $600 + 200,000 ៛ (= $50) and 150 $ + 50,000 ៛ (= $12.50), at 4,000 ៛ a dollar.
+        $this->assertEquals([
+            'expenses_usd' => 650, 'expenses_khr' => 2600000,
+            'support_usd' => 162.5, 'support_khr' => 650000,
+            'net_usd' => 487.5, 'net_khr' => 1950000,
+        ], $data['summary'][0]['totals']);
+        $this->assertSame(['$150.00', '600,000 ៛'], [$data['rows'][0]['USD'], $data['rows'][0]['KHR']]);
+        $this->assertSame(['$12.50', '50,000 ៛'], [$data['rows'][1]['USD'], $data['rows'][1]['KHR']]);
     }
 
     public function test_the_support_list_downloads_as_excel_and_pdf(): void

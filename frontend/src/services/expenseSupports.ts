@@ -60,6 +60,8 @@ function toPayload(input: ExpenseSupportInput) {
 export interface SupportSummaryBlock {
   expense_entity: { id: number; name: string }
   currencies: { currency: 'USD' | 'KHR'; expenses: number; support: number; net: number }[]
+  /** All currencies together, in USD and in KHR (each record at the rate on its own date). */
+  totals: { expenses_usd: number; expenses_khr: number; support_usd: number; support_khr: number; net_usd: number; net_khr: number }
   money_count: number
   food_count: number
 }

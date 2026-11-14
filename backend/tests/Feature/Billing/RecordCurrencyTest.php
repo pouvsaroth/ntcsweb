@@ -240,7 +240,7 @@ class RecordCurrencyTest extends TestCase
 
     public function test_class_revenue_converts_dollar_and_riel_invoices_before_adding(): void
     {
-        $this->khrSchool([Permissions::ACADEMIC_REPORTS_VIEW]);
+        $this->khrSchool([Permissions::ACADEMIC_REPORTS_VIEW, Permissions::ACADEMIC_REPORTS_EXPORT]);
         $class = SchoolClass::factory()->create();
         foreach ([['USD', 10], ['KHR', 30000]] as [$currency, $amount]) {
             $enrollment = Enrollment::factory()->forClass($class)->create();
@@ -253,5 +253,10 @@ class RecordCurrencyTest extends TestCase
 
         $row = collect($this->getJson('/api/v1/academic-reports/classes')->assertOk()->json('data'))->firstWhere('class_id', $class->id);
         $this->assertEqualsWithDelta(70000, $row['revenue'], 0.001);
+        // ...and in both currencies: $10 + 30,000 ៛ (= $7.50).
+        $this->assertEqualsWithDelta(17.5, $row['revenue_usd'], 0.001);
+        $this->assertEqualsWithDelta(70000, $row['revenue_khr'], 0.001);
+        $csv = $this->get('/api/v1/academic-reports/classes?format=csv')->getContent();
+        $this->assertStringContainsString('"Revenue (USD)","Revenue (KHR)"', (string) $csv);
     }
 }
