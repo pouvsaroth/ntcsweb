@@ -43,12 +43,95 @@ export interface CardField {
   text?: string
   /** Staff photo only. */
   shape?: CardShape
+  /** Text only: a CARD_FONTS name; none = the app's own font. */
+  font?: string
 }
 
 /** Each field's value for one staff member: text, or an image URL (QR: the text to encode). */
 export type CardValues = Partial<Record<CardFieldType, string | null>>
 
 export const isImageField = (type: CardFieldType): type is ImageFieldType => (IMAGE_FIELD_TYPES as readonly string[]).includes(type)
+
+/**
+ * Fonts a text field can use: Khmer and Latin Google Fonts (loaded only when
+ * a card uses them) plus two fonts every computer has. A font without Khmer
+ * letters falls back to Noto Sans Khmer for Khmer text, letter by letter.
+ */
+export interface CardFont {
+  name: string
+  khmer: boolean
+  /** Has a bold weight; without one the browser thickens the regular. */
+  bold: boolean
+  system?: boolean
+}
+export const CARD_FONTS: CardFont[] = [
+  { name: 'Battambang', khmer: true, bold: true },
+  { name: 'Kantumruy Pro', khmer: true, bold: true },
+  { name: 'Hanuman', khmer: true, bold: true },
+  { name: 'Suwannaphum', khmer: true, bold: true },
+  { name: 'Nokora', khmer: true, bold: true },
+  { name: 'Noto Serif Khmer', khmer: true, bold: true },
+  { name: 'Content', khmer: true, bold: true },
+  { name: 'Siemreap', khmer: true, bold: false },
+  { name: 'Moul', khmer: true, bold: false },
+  { name: 'Moulpali', khmer: true, bold: false },
+  { name: 'Koulen', khmer: true, bold: false },
+  { name: 'Bokor', khmer: true, bold: false },
+  { name: 'Dangrek', khmer: true, bold: false },
+  { name: 'Preahvihear', khmer: true, bold: false },
+  { name: 'Angkor', khmer: true, bold: false },
+  { name: 'Freehand', khmer: true, bold: false },
+  { name: 'Fasthand', khmer: true, bold: false },
+  { name: 'Roboto', khmer: false, bold: true },
+  { name: 'Open Sans', khmer: false, bold: true },
+  { name: 'Montserrat', khmer: false, bold: true },
+  { name: 'Poppins', khmer: false, bold: true },
+  { name: 'Lato', khmer: false, bold: true },
+  { name: 'Oswald', khmer: false, bold: true },
+  { name: 'Playfair Display', khmer: false, bold: true },
+  { name: 'Merriweather', khmer: false, bold: true },
+  { name: 'Arial', khmer: false, bold: true, system: true },
+  { name: 'Times New Roman', khmer: false, bold: true, system: true },
+]
+
+/** CSS font-family for a field: its font first, then the app's fonts. */
+export function cardFontStack(font: string | undefined | null): string | null {
+  if (!font || !CARD_FONTS.some((f) => f.name === font)) return null
+  return `"${font}", "Inter", "Noto Sans Khmer", sans-serif`
+}
+
+const fontCss = new Map<string, Promise<void>>()
+/** Adds the Google Fonts stylesheet for these fonts (once each) and waits until it and the font files are loaded. */
+export async function loadCardFonts(names: Iterable<string | undefined | null>): Promise<void> {
+  const wanted = [...new Set([...names].filter((n): n is string => !!n))]
+    .map((n) => CARD_FONTS.find((f) => f.name === n))
+    .filter((f): f is CardFont => !!f && !f.system)
+  await Promise.all(
+    wanted.map((font) => {
+      let ready = fontCss.get(font.name)
+      if (!ready) {
+        ready = new Promise<void>((resolve) => {
+          const link = document.createElement('link')
+          link.rel = 'stylesheet'
+          link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(font.name).replace(/%20/g, '+')}${font.bold ? ':wght@400;700' : ''}&display=swap`
+          link.onload = () => resolve()
+          link.onerror = () => resolve()
+          document.head.appendChild(link)
+        }).then(() =>
+          Promise.all([
+            document.fonts.load(`400 40px "${font.name}"`, 'Aaសុខ'),
+            font.bold ? document.fonts.load(`700 40px "${font.name}"`, 'Aaសុខ') : Promise.resolve(),
+          ]).then(
+            () => undefined,
+            () => undefined,
+          ),
+        )
+        fontCss.set(font.name, ready)
+      }
+      return ready
+    }),
+  )
+}
 
 /** 1 pt = 0.3528 mm. */
 export const PT_TO_MM = 0.3528

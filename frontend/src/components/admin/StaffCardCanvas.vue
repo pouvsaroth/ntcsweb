@@ -2,7 +2,7 @@
 import QRCode from 'qrcode'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
-import { isImageField, PT_TO_MM, type CardField, type CardValues } from '@/utils/staffCard'
+import { cardFontStack, isImageField, loadCardFonts, PT_TO_MM, type CardField, type CardValues } from '@/utils/staffCard'
 
 /**
  * One side of a staff card, drawn at `scale` px per mm. In editable mode a
@@ -48,6 +48,13 @@ watch(
 
 // Images that failed to load (e.g. a deleted file) are left out, as in the printed PNG.
 const failed = ref(new Set<string>())
+// Load any Google font the fields use (the text shows in it once loaded).
+watch(
+  () => props.fields.map((f) => f.font).join('|'),
+  () => void loadCardFonts(props.fields.map((f) => f.font)),
+  { immediate: true },
+)
+
 function imageFor(field: CardField): string | null {
   const url = field.type === 'qr' ? qrImage.value : (props.values[field.type] ?? null)
   return url && !failed.value.has(url) ? url : null
@@ -65,6 +72,8 @@ function fieldStyle(field: CardField) {
   const style: Record<string, string> = { left: px(field.x), top: px(field.y), width: px(field.w), height: px(field.h) }
   if (!isImageField(field.type)) {
     style.fontSize = px((field.font_size ?? 8) * PT_TO_MM)
+    const stack = cardFontStack(field.font)
+    if (stack) style.fontFamily = stack
     style.color = field.color ?? '#111111'
     style.fontWeight = field.bold ? '700' : '400'
     style.textAlign = field.align ?? 'left'

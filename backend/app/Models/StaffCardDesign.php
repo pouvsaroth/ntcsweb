@@ -32,6 +32,9 @@ class StaffCardDesign extends Model
 
     public const SHAPES = ['rect', 'rounded', 'circle'];
 
+    /** Fonts a text field can use — kept in step with CARD_FONTS (frontend utils/staffCard.ts). */
+    public const FONTS = ['Battambang', 'Kantumruy Pro', 'Hanuman', 'Suwannaphum', 'Nokora', 'Noto Serif Khmer', 'Content', 'Siemreap', 'Moul', 'Moulpali', 'Koulen', 'Bokor', 'Dangrek', 'Preahvihear', 'Angkor', 'Freehand', 'Fasthand', 'Roboto', 'Open Sans', 'Montserrat', 'Poppins', 'Lato', 'Oswald', 'Playfair Display', 'Merriweather', 'Arial', 'Times New Roman'];
+
     protected $connection = 'tenant';
 
     protected function casts(): array

@@ -4185,7 +4185,11 @@ const en = {
       selectVillage: 'Select village',
     },
     staffCards: {
+      font: 'Font',
+      fontDefault: 'Default (Inter / Noto Sans Khmer)',
+      fontKhmer: 'Khmer',
       print: {
+        oneSided: 'Only the front is printed: the back of this design is empty.',
         subtitle: 'Pick staff, then download each card or every card on A4 / A5 sheets.',
         allDepartments: 'All departments',
         staff: 'Staff',

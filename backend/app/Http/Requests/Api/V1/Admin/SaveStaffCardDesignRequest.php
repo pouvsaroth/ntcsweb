@@ -64,6 +64,7 @@ class SaveStaffCardDesignRequest extends FormRequest
             $rules["{$side}.*.align"] = ['nullable', Rule::in(StaffCardDesign::ALIGNS)];
             $rules["{$side}.*.text"] = ['nullable', 'string', 'max:300'];
             $rules["{$side}.*.shape"] = ['nullable', Rule::in(StaffCardDesign::SHAPES)];
+            $rules["{$side}.*.font"] = ['nullable', Rule::in(StaffCardDesign::FONTS)];
         }
 
         return $rules;
@@ -90,6 +91,7 @@ class SaveStaffCardDesignRequest extends FormRequest
             'align' => $f['align'] ?? null,
             'text' => $f['text'] ?? null,
             'shape' => $f['shape'] ?? null,
+            'font' => $f['font'] ?? null,
         ], static fn ($v) => $v !== null), $fields));
     }
 }

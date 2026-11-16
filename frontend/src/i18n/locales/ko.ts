@@ -4181,7 +4181,11 @@ const ko: MessageSchema = {
       selectVillage: '마을 선택',
     },
     staffCards: {
+      font: '글꼴',
+      fontDefault: '기본 (Inter / Noto Sans Khmer)',
+      fontKhmer: '크메르',
       print: {
+        oneSided: '앞면만 인쇄합니다: 이 디자인의 뒷면이 비어 있습니다.',
         subtitle: '직원을 고른 뒤 카드를 한 장씩 또는 A4 / A5 용지에 모아 내려받으세요.',
         allDepartments: '모든 부서',
         staff: '직원',

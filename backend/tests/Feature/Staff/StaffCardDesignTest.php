@@ -31,7 +31,7 @@ class StaffCardDesignTest extends TestCase
         $this->asDesigner();
 
         $fields = json_encode([
-            ['id' => 'a', 'type' => 'full_name', 'x' => 30.04, 'y' => 20, 'w' => 50, 'h' => 6, 'font_size' => 10, 'color' => '#112233', 'bold' => true, 'align' => 'center', 'junk' => 'x'],
+            ['id' => 'a', 'type' => 'full_name', 'x' => 30.04, 'y' => 20, 'w' => 50, 'h' => 6, 'font_size' => 10, 'color' => '#112233', 'bold' => true, 'align' => 'center', 'font' => 'Battambang', 'junk' => 'x'],
             ['id' => 'b', 'type' => 'photo', 'x' => 4, 'y' => 12, 'w' => 22, 'h' => 28, 'shape' => 'rounded'],
             ['id' => 'c', 'type' => 'text', 'x' => 4, 'y' => 2, 'w' => 70, 'h' => 5, 'text' => 'កាតបុគ្គលិក'],
         ]);
@@ -45,6 +45,7 @@ class StaffCardDesignTest extends TestCase
             ->assertJsonPath('data.width_mm', 85.6)
             ->assertJsonPath('data.front_fields.0.x', 30)
             ->assertJsonPath('data.front_fields.0.align', 'center')
+            ->assertJsonPath('data.front_fields.0.font', 'Battambang')
             ->assertJsonPath('data.front_fields.1.shape', 'rounded')
             ->assertJsonPath('data.front_fields.2.text', 'កាតបុគ្គលិក')
             ->assertJsonPath('data.back_background_url', null)
@@ -81,9 +82,9 @@ class StaffCardDesignTest extends TestCase
 
         $this->postJson('/api/v1/staff-card-designs', [
             'name' => 'Bad', 'width_mm' => 5, 'height_mm' => 54,
-            'front_fields' => [['id' => 'a', 'type' => 'salary', 'x' => 0, 'y' => 0, 'w' => 10, 'h' => 5, 'color' => 'red']],
+            'front_fields' => [['id' => 'a', 'type' => 'salary', 'x' => 0, 'y' => 0, 'w' => 10, 'h' => 5, 'color' => 'red', 'font' => 'Comic Sans']],
             'back_fields' => [],
-        ])->assertUnprocessable()->assertJsonValidationErrors(['width_mm', 'front_fields.0.type', 'front_fields.0.color']);
+        ])->assertUnprocessable()->assertJsonValidationErrors(['width_mm', 'front_fields.0.type', 'front_fields.0.color', 'front_fields.0.font']);
     }
 
     public function test_viewing_only_cannot_add_or_delete(): void

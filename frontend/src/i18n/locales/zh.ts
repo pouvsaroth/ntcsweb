@@ -4180,7 +4180,11 @@ const zh: MessageSchema = {
       selectVillage: '选择村庄',
     },
     staffCards: {
+      font: '字体',
+      fontDefault: '默认 (Inter / Noto Sans Khmer)',
+      fontKhmer: '高棉文',
       print: {
+        oneSided: '只打印正面：此设计的背面为空。',
         subtitle: '选择员工，然后逐张下载卡片，或将所有卡片排在 A4 / A5 纸上下载。',
         allDepartments: '所有部门',
         staff: '员工',

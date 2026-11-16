@@ -17,6 +17,7 @@ import { useConfirmDialogStore } from '@/stores/confirmDialog'
 import { ApiRequestError } from '@/types/api'
 import { formatDate } from '@/utils/date'
 import {
+  CARD_FONTS,
   CARD_PRESETS,
   IMAGE_FIELD_TYPES,
   isImageField,
@@ -198,6 +199,11 @@ function onKey(event: KeyboardEvent) {
 }
 onMounted(() => window.addEventListener('keydown', onKey))
 onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
+
+const fontOptions = computed(() => [
+  { value: '', label: t('admin.staffCards.fontDefault') },
+  ...CARD_FONTS.map((f) => ({ value: f.name, label: f.khmer ? `${f.name} · ${t('admin.staffCards.fontKhmer')}` : f.name })),
+])
 
 const alignOptions = computed(() => (['left', 'center', 'right'] as CardAlign[]).map((a) => ({ value: a, label: t(`admin.staffCards.align.${a}`) })))
 const shapeOptions = computed(() => (['rect', 'rounded', 'circle'] as CardShape[]).map((s) => ({ value: s, label: t(`admin.staffCards.shapes.${s}`) })))
@@ -399,6 +405,7 @@ onMounted(async () => {
               <BaseInput :model-value="String(selected.h)" type="number" :label="t('admin.staffCards.h')" @update:model-value="patch({ h: num($event, 1, 300) })" />
             </div>
             <template v-if="!isImageField(selected.type)">
+              <BaseSelect :model-value="selected.font ?? ''" :options="fontOptions" :label="t('admin.staffCards.font')" @update:model-value="patch({ font: $event || undefined })" />
               <div class="grid grid-cols-2 gap-2">
                 <BaseInput :model-value="String(selected.font_size ?? 8)" type="number" :label="t('admin.staffCards.fontSize')" @update:model-value="patch({ font_size: num($event, 3, 72) })" />
                 <label class="block text-sm">

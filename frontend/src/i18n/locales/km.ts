@@ -4181,7 +4181,11 @@ const km: MessageSchema = {
       selectVillage: 'ជ្រើសរើសភូមិ',
     },
     staffCards: {
+      font: 'ពុម្ពអក្សរ',
+      fontDefault: 'លំនាំដើម (Inter / Noto Sans Khmer)',
+      fontKhmer: 'ខ្មែរ',
       print: {
+        oneSided: 'បោះពុម្ពតែផ្នែកមុខ៖ ផ្នែកក្រោយនៃគំរូនេះទទេ។',
         subtitle: 'ជ្រើសបុគ្គលិក រួចទាញយកកាតនីមួយៗ ឬកាតទាំងអស់លើក្រដាស A4 / A5។',
         allDepartments: 'គ្រប់នាយកដ្ឋាន',
         staff: 'បុគ្គលិក',

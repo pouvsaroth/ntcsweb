@@ -4181,7 +4181,11 @@ const ja: MessageSchema = {
       selectVillage: '村を選択',
     },
     staffCards: {
+      font: 'フォント',
+      fontDefault: '標準 (Inter / Noto Sans Khmer)',
+      fontKhmer: 'クメール',
       print: {
+        oneSided: '表面のみ印刷します：このデザインの裏面は空です。',
         subtitle: '職員を選び、カードを1枚ずつ、または A4 / A5 用紙にまとめてダウンロードします。',
         allDepartments: 'すべての部署',
         staff: '職員',

@@ -1,6 +1,6 @@
 import QRCode from 'qrcode'
 
-import { isImageField, PT_TO_MM, type CardField, type CardValues } from '@/utils/staffCard'
+import { cardFontStack, isImageField, loadCardFonts, PT_TO_MM, type CardField, type CardValues } from '@/utils/staffCard'
 
 /**
  * HRM > Staff cards: draws cards onto a canvas at 300 dpi — one card (front,
@@ -172,7 +172,7 @@ async function drawSide(ctx: CanvasRenderingContext2D, x0: number, y0: number, d
     ctx.beginPath()
     ctx.rect(fx, fy, fw, fh)
     ctx.clip()
-    ctx.font = `${field.bold ? 700 : 400} ${size}px ${family}`
+    ctx.font = `${field.bold ? 700 : 400} ${size}px ${cardFontStack(field.font) ?? family}`
     ctx.fillStyle = field.color ?? '#111111'
     ctx.textBaseline = 'middle'
     const align = field.align ?? 'left'
@@ -198,7 +198,8 @@ async function drawSide(ctx: CanvasRenderingContext2D, x0: number, y0: number, d
   }
 }
 
-async function fontsReady(): Promise<void> {
+async function fontsReady(design: RenderDesign): Promise<void> {
+  await loadCardFonts([...design.front_fields, ...design.back_fields].map((f) => f.font))
   const family = fontFamily()
   await Promise.all([document.fonts.load(`400 40px ${family}`, 'Aaសុខ'), document.fonts.load(`700 40px ${family}`, 'Aaសុខ')]).catch(() => undefined)
   await document.fonts.ready
@@ -210,7 +211,7 @@ const toBlob = (canvas: HTMLCanvasElement) =>
 // ---- One card --------------------------------------------------------------------
 /** One staff member's card at 300 dpi: one side, or front and back side by side. */
 export async function renderCardImage(design: RenderDesign, values: CardValues, sides: CardSide[]): Promise<Blob> {
-  await fontsReady()
+  await fontsReady(design)
   const gap = 4 * PX_PER_MM
   const W = design.width_mm * PX_PER_MM
   const H = design.height_mm * PX_PER_MM
@@ -272,7 +273,7 @@ export async function renderSheets(
 ): Promise<{ blobs: Blob[]; layout: SheetLayout }> {
   const layout = sheetLayout(size, design.width_mm, design.height_mm)
   if (!layout.perPage) throw new Error('card-too-big')
-  await fontsReady()
+  await fontsReady(design)
   const [short, long] = SHEETS[size]
   const pw = layout.landscape ? long : short
   const ph = layout.landscape ? short : long

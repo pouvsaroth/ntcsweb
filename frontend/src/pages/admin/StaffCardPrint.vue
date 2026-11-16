@@ -57,8 +57,14 @@ nextYear.setFullYear(nextYear.getFullYear() + 1)
 const pad = (n: number) => String(n).padStart(2, '0')
 const expiry = ref(`${nextYear.getFullYear()}-${pad(nextYear.getMonth() + 1)}-${pad(nextYear.getDate())}`)
 
+// A side with no photo and no fields would print as a blank page, so it's left out.
+const hasSide = (side: CardSide) => !!design.value && (design.value[`${side}_fields`].length > 0 || !!design.value[`${side}_background_url`])
+const twoSided = computed(() => hasSide('front') && hasSide('back'))
 const sidesChoice = ref<'both' | 'front' | 'back'>('both')
-const sides = computed<CardSide[]>(() => (sidesChoice.value === 'both' ? ['front', 'back'] : [sidesChoice.value]))
+const sides = computed<CardSide[]>(() => {
+  if (!twoSided.value) return [hasSide('back') && !hasSide('front') ? 'back' : 'front']
+  return sidesChoice.value === 'both' ? ['front', 'back'] : [sidesChoice.value]
+})
 const sideOptions = computed(() => (['both', 'front', 'back'] as const).map((v) => ({ value: v, label: t(`admin.staffCards.print.sides.${v}`) })))
 
 const sheetChoice = ref<'auto' | SheetSize>('auto')
@@ -206,7 +212,8 @@ onMounted(async () => {
           <span class="mb-1 block font-medium text-neutral-700">{{ t('admin.staffCards.fieldTypes.expiry_date') }}</span>
           <DateInput v-model="expiry" />
         </label>
-        <BaseSelect v-model="sidesChoice" :options="sideOptions" :label="t('admin.staffCards.print.sidesLabel')" />
+        <BaseSelect v-if="twoSided" v-model="sidesChoice" :options="sideOptions" :label="t('admin.staffCards.print.sidesLabel')" />
+        <p v-else class="self-end pb-2 text-xs text-neutral-500">{{ t('admin.staffCards.print.oneSided') }}</p>
         <BaseSelect v-model="sheetChoice" :options="sheetOptions" :label="t('admin.staffCards.print.sheet')" />
       </div>
 
@@ -226,7 +233,7 @@ onMounted(async () => {
             <BaseButton :disabled="!selected.length || !layout?.perPage" :loading="busy === 'sheets'" @click="makeSheets">{{ t('admin.staffCards.print.makeSheets') }}</BaseButton>
           </div>
         </div>
-        <p v-if="sidesChoice === 'both'" class="mt-2 text-xs text-neutral-500">{{ t('admin.staffCards.print.duplexHint') }}</p>
+        <p v-if="sides.length === 2" class="mt-2 text-xs text-neutral-500">{{ t('admin.staffCards.print.duplexHint') }}</p>
 
         <div v-if="sheets.length" class="mt-4">
           <div class="mb-3 flex flex-wrap gap-2">
