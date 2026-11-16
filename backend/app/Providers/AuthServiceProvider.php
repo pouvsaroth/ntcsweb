@@ -98,6 +98,7 @@ use App\Models\SchoolClass;
 use App\Models\Shift;
 use App\Models\SocialSecurityScheme;
 use App\Models\Staff;
+use App\Models\StaffCardDesign;
 use App\Models\StaffAttendance;
 use App\Models\StaffGeofenceRule;
 use App\Models\StaffLoan;
@@ -184,6 +185,7 @@ use App\Policies\RolePolicy;
 use App\Policies\SavingsAccountPolicy;
 use App\Policies\SchoolClassPolicy;
 use App\Policies\StaffAttendancePolicy;
+use App\Policies\StaffCardDesignPolicy;
 use App\Policies\StaffPolicy;
 use App\Policies\StudentFeedbackPolicy;
 use App\Policies\StudentPolicy;
@@ -292,6 +294,7 @@ class AuthServiceProvider extends ServiceProvider
         Company::class => CompanyPolicy::class,
         ExpenseEntity::class => ExpenseEntityPolicy::class,
         ExpenseSupport::class => ExpenseSupportPolicy::class,
+        StaffCardDesign::class => StaffCardDesignPolicy::class,
         Borrowing::class => BorrowingPolicy::class,
         Lender::class => BorrowingPolicy::class,
         LoanCustomer::class => LoanCustomerPolicy::class,

@@ -437,6 +437,25 @@ const adminRoutes: RouteRecordRaw[] = [
     component: () => import('@/pages/admin/StaffForm.vue'),
     meta: { titleKey: 'adminNav.items.staffList' },
   },
+  // HRM > Staff cards: card designs (size, front/back photo, fields dragged onto it).
+  {
+    path: 'staff-cards',
+    name: 'admin.staffCards',
+    component: () => import('@/pages/admin/StaffCards.vue'),
+    meta: { titleKey: 'adminNav.items.staffCards', permission: 'staff-cards.view' },
+  },
+  {
+    path: 'staff-cards/new',
+    name: 'admin.staffCards.new',
+    component: () => import('@/pages/admin/StaffCardDesigner.vue'),
+    meta: { titleKey: 'adminNav.items.staffCardNew', permission: 'staff-cards.create' },
+  },
+  {
+    path: 'staff-cards/:id/edit',
+    name: 'admin.staffCards.edit',
+    component: () => import('@/pages/admin/StaffCardDesigner.vue'),
+    meta: { titleKey: 'adminNav.items.staffCardDesign', permission: 'staff-cards.view' },
+  },
   {
     path: 'staff-status-history',
     name: 'admin.staff-status-history',

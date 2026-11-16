@@ -53,6 +53,7 @@ use App\Http\Controllers\Api\V1\Admin\CompanyInvoiceController;
 use App\Http\Controllers\Api\V1\Admin\BorrowingController;
 use App\Http\Controllers\Api\V1\Admin\ExpenseEntityController;
 use App\Http\Controllers\Api\V1\Admin\ExpenseSupportController;
+use App\Http\Controllers\Api\V1\Admin\StaffCardDesignController;
 use App\Http\Controllers\Api\V1\Admin\LenderController;
 use App\Http\Controllers\Api\V1\Admin\LoanCustomerController;
 use App\Http\Controllers\Api\V1\Admin\SavingsAccountController;
@@ -895,6 +896,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('organization/chart', OrganizationChartController::class)->name('organization.chart');
 
         Route::apiResource('staff', StaffController::class);
+        // HRM > Staff cards: card designs (photos are multipart, so updates POST with _method=PUT).
+        Route::apiResource('staff-card-designs', StaffCardDesignController::class)->parameters(['staff-card-designs' => 'design']);
         Route::post('staff/{staff}/status', [StaffController::class, 'changeStatus'])->name('staff.status.update');
         // HRM > Staff > Education (docs/hrm/staff-education.md).
         Route::get('staff/{staff}/educations', [StaffEducationController::class, 'index'])->name('staff.educations.index');

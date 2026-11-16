@@ -734,6 +734,15 @@ final class Permissions
     /** Own profile only: HRM > Staff shows just their own record, editable except work fields — see StaffPolicy. */
     public const STAFF_UPDATE_OWN = 'staff.update-own';
 
+    // HRM > Staff cards: the school's own card designs (size, front/back photo, fields placed on it).
+    public const STAFF_CARDS_VIEW = 'staff-cards.view';
+
+    public const STAFF_CARDS_CREATE = 'staff-cards.create';
+
+    public const STAFF_CARDS_UPDATE = 'staff-cards.update';
+
+    public const STAFF_CARDS_DELETE = 'staff-cards.delete';
+
     // Products — the sellable catalog every invoice item bills against.
     public const PRODUCTS_VIEW = 'products.view';
 
@@ -1684,6 +1693,10 @@ final class Permissions
                 self::STAFF_DELETE => 'Delete staff',
                 self::STAFF_CHANGE_STATUS => 'Change a staff member\'s status (probation, on leave, suspended, ...)',
                 self::STAFF_UPDATE_OWN => 'See and update only their own staff profile (work fields stay locked)',
+                self::STAFF_CARDS_VIEW => 'View staff card designs and print staff cards',
+                self::STAFF_CARDS_CREATE => 'Add staff card designs',
+                self::STAFF_CARDS_UPDATE => 'Update staff card designs',
+                self::STAFF_CARDS_DELETE => 'Delete staff card designs',
             ],
             'Products' => [
                 self::PRODUCTS_VIEW => 'View products',
@@ -1979,6 +1992,7 @@ final class Permissions
             self::BRANCHES_CREATE, self::BRANCHES_UPDATE, self::BRANCHES_DELETE, self::DEPARTMENTS_VIEW, self::DEPARTMENTS_CREATE, self::DEPARTMENTS_UPDATE, self::DEPARTMENTS_DELETE,
             self::TEAMS_CREATE, self::TEAMS_UPDATE, self::TEAMS_DELETE, self::JOB_GRADES_CREATE, self::JOB_GRADES_UPDATE, self::JOB_GRADES_DELETE, self::JOB_LEVELS_CREATE, self::JOB_LEVELS_UPDATE, self::JOB_LEVELS_DELETE,
             self::STAFF_VIEW, self::STAFF_CREATE, self::STAFF_UPDATE, self::STAFF_DELETE, self::STAFF_CHANGE_STATUS,
+            self::STAFF_CARDS_VIEW, self::STAFF_CARDS_CREATE, self::STAFF_CARDS_UPDATE, self::STAFF_CARDS_DELETE,
         ];
 
         // Not folded into $academicManagement: financial access is

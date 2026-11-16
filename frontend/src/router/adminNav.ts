@@ -204,6 +204,8 @@ export const adminNav: AdminNavGroup[] = [
       // Staff in a teacher position: qualifications, assignments, homeroom, load, ... (teacherTabs.ts).
       { labelKey: 'adminNav.items.teachers', icon: 'academic', to: '/admin/teachers', permission: teacherTabs.map((tab) => tab.permission), module: 'hrm' },
       { labelKey: 'adminNav.items.staffStatusHistory', icon: 'clock', to: '/admin/staff-status-history', permission: 'staff.view' },
+      // Card designs: size, front/back photo and fields dragged onto the card.
+      { labelKey: 'adminNav.items.staffCards', icon: 'identification', to: '/admin/staff-cards', permission: 'staff-cards.view', module: 'hrm' },
       // One link; School, Branch, Department, ... are tabs on the page itself
       // (see organizationTabs.ts). Shown to anyone who can open any one tab.
       { labelKey: 'adminNav.items.organizationManagement', icon: 'template', to: '/admin/organization', permission: organizationTabs.flatMap((tab) => tab.permission) },

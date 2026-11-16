@@ -271,6 +271,8 @@ const MODULES: ModuleEntry[] = [
 
   // ── HRM ──
   { name: 'Staff', group: 'Staff', actions: { ...crud('staff'), status: 'staff.change-status' } },
+  // HRM > Staff cards (/admin/staff-cards): card designs.
+  { name: 'Staff cards', group: 'Staff', actions: crud('staff-cards') },
   { name: 'Own staff profile only (see and edit just their own)', group: 'Staff', actions: { update: 'staff.update-own' } },
   { name: 'Teachers', group: 'Staff', parent: 'Teachers', menu: true, actions: { view: 'teachers.view' } },
   tab('Staff', 'Teachers', 'Qualification', '/admin/teachers/qualifications', ['teachers.view'], tabCud('teacher-qualifications')),
