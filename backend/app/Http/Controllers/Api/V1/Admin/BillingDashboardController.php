@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponse;
 use App\Models\Invoice;
 use App\Models\Payment;
+use App\Models\Tenant;
 use App\Services\Billing\CurrencyConversionService;
 use App\Support\Authorization\Permissions;
 use App\Support\Billing\InvoiceStatus;
@@ -77,13 +78,19 @@ final class BillingDashboardController extends Controller
             ->groupBy('currency', DB::raw('DATE(invoice_date)'))
             ->get();
 
+        $money = [];
+        foreach (['todays_sales' => $todaysSalesRows, 'todays_payments' => $todaysPaymentsRows, 'outstanding' => $outstandingRows, 'overdue' => $overdueRows] as $key => $rows) {
+            // In the school's currency, plus `_usd` / `_khr` (each row at its own date's rate).
+            $both = $this->both($rows, $tenant);
+            $money[$key] = $both[$tenant->default_currency];
+            $money["{$key}_usd"] = $both['USD'];
+            $money["{$key}_khr"] = $both['KHR'];
+        }
+
         return ApiResponse::success([
-            // Every amount below is already converted to this currency.
+            // The plain amounts below are already converted to this currency.
             'currency' => $tenant->default_currency,
-            'todays_sales' => $this->currency->sumConverted($todaysSalesRows, $tenant),
-            'todays_payments' => $this->currency->sumConverted($todaysPaymentsRows, $tenant),
-            'outstanding' => $this->currency->sumConverted($outstandingRows, $tenant),
-            'overdue' => $this->currency->sumConverted($overdueRows, $tenant),
+            ...$money,
             'invoice_counts' => [
                 'total' => (int) $statusCounts->sum(),
                 'paid' => (int) ($statusCounts[InvoiceStatus::PAID] ?? 0),
@@ -132,15 +139,32 @@ final class BillingDashboardController extends Controller
             ->groupBy('payment_method');
 
         $rows = $counts->keys()
-            ->map(fn (string $method) => [
-                'payment_method' => $method,
-                'count' => (int) $counts[$method],
-                'total' => $this->currency->sumConverted($amountRows[$method] ?? [], $tenant),
-            ])
+            ->map(function (string $method) use ($counts, $amountRows, $tenant) {
+                $both = $this->both($amountRows[$method] ?? [], $tenant);
+
+                return [
+                    'payment_method' => $method,
+                    'count' => (int) $counts[$method],
+                    'total' => $both[$tenant->default_currency],
+                    'total_usd' => $both['USD'],
+                    'total_khr' => $both['KHR'],
+                ];
+            })
             ->sortByDesc('total')
             ->values();
 
         return ApiResponse::success($rows);
+    }
+
+    /**
+     * Grouped currency/date rows summed in USD and in KHR.
+     *
+     * @param  iterable<object{currency: string, tx_date: string, total: mixed}>  $rows
+     * @return array{USD: float, KHR: float}
+     */
+    private function both(iterable $rows, Tenant $tenant): array
+    {
+        return CurrencyConversionService::both(fn () => $this->currency->sumConverted($rows, $tenant));
     }
 
     private function scopedPayments(Request $request): Builder

@@ -5,7 +5,7 @@ import { useI18n } from 'vue-i18n'
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseCard from '@/components/ui/BaseCard.vue'
 import BaseSpinner from '@/components/ui/BaseSpinner.vue'
-import { billingService, type BillingSummary, type PaymentsByMethodRow } from '@/services/billing'
+import { billingService, type BillingSummary, type BillingSummaryMoney, type PaymentsByMethodRow } from '@/services/billing'
 import { ApiRequestError } from '@/types/api'
 import { formatMoney } from '@/utils/currency'
 
@@ -26,12 +26,14 @@ function toPascalCase(value: string): string {
 
 const stats = computed(() => {
   if (!summary.value) return []
-  const currency = summary.value.currency
+  const s = summary.value
+  // USD with KHR under it — each amount at the rate on its own date.
+  const tile = (labelKey: string, key: BillingSummaryMoney) => ({ label: t(labelKey), value: formatMoney(s[`${key}_usd`], 'USD'), khr: formatMoney(s[`${key}_khr`], 'KHR') })
   return [
-    { label: t('admin.billing.statTodaysSales'), value: formatMoney(summary.value.todays_sales, currency) },
-    { label: t('admin.billing.statTodaysPayments'), value: formatMoney(summary.value.todays_payments, currency) },
-    { label: t('admin.billing.statOutstanding'), value: formatMoney(summary.value.outstanding, currency) },
-    { label: t('admin.billing.statOverdue'), value: formatMoney(summary.value.overdue, currency) },
+    tile('admin.billing.statTodaysSales', 'todays_sales'),
+    tile('admin.billing.statTodaysPayments', 'todays_payments'),
+    tile('admin.billing.statOutstanding', 'outstanding'),
+    tile('admin.billing.statOverdue', 'overdue'),
   ]
 })
 
@@ -48,7 +50,10 @@ const invoiceCounts = computed(() => {
   ]
 })
 
-const paymentsByMethodTotal = computed(() => paymentsByMethod.value.reduce((sum, row) => sum + row.total, 0))
+const paymentsByMethodTotal = computed(() => ({
+  usd: paymentsByMethod.value.reduce((sum, row) => sum + row.total_usd, 0),
+  khr: paymentsByMethod.value.reduce((sum, row) => sum + row.total_khr, 0),
+}))
 
 onMounted(async () => {
   loading.value = true
@@ -79,6 +84,7 @@ onMounted(async () => {
         <BaseCard v-for="stat in stats" :key="stat.label">
           <p class="text-sm font-medium text-neutral-500">{{ stat.label }}</p>
           <p class="mt-1 text-3xl font-bold text-neutral-900">{{ stat.value }}</p>
+          <p class="text-base font-semibold text-neutral-600">{{ stat.khr }}</p>
         </BaseCard>
       </div>
 
@@ -101,21 +107,24 @@ onMounted(async () => {
               <tr>
                 <th class="pb-2 font-medium">{{ t('admin.billing.columnMethod') }}</th>
                 <th class="pb-2 text-right font-medium">{{ t('admin.billing.columnCount') }}</th>
-                <th class="pb-2 text-right font-medium">{{ t('admin.billing.columnTotal') }}</th>
+                <th class="pb-2 text-right font-medium">{{ t('admin.billing.columnTotal') }} (USD)</th>
+                <th class="pb-2 pl-3 text-right font-medium">{{ t('admin.billing.columnTotal') }} (KHR)</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-neutral-100">
               <tr v-for="row in paymentsByMethod" :key="row.payment_method">
                 <td class="py-2 text-neutral-700">{{ t(`admin.payments.method${toPascalCase(row.payment_method)}`) }}</td>
                 <td class="py-2 text-right text-neutral-700">{{ row.count }}</td>
-                <td class="py-2 text-right text-neutral-700">{{ formatMoney(row.total, summary?.currency ?? 'USD') }}</td>
+                <td class="whitespace-nowrap py-2 text-right tabular-nums text-neutral-700">{{ formatMoney(row.total_usd, 'USD') }}</td>
+                <td class="whitespace-nowrap py-2 pl-3 text-right tabular-nums text-neutral-700">{{ formatMoney(row.total_khr, 'KHR') }}</td>
               </tr>
             </tbody>
             <tfoot>
               <tr class="border-t border-neutral-200 font-semibold text-neutral-900">
                 <td class="pt-2">{{ t('admin.billing.total') }}</td>
                 <td class="pt-2 text-right">{{ paymentsByMethod.reduce((sum, r) => sum + r.count, 0) }}</td>
-                <td class="pt-2 text-right">{{ formatMoney(paymentsByMethodTotal, summary?.currency ?? 'USD') }}</td>
+                <td class="whitespace-nowrap pt-2 text-right tabular-nums">{{ formatMoney(paymentsByMethodTotal.usd, 'USD') }}</td>
+                <td class="whitespace-nowrap pt-2 pl-3 text-right tabular-nums">{{ formatMoney(paymentsByMethodTotal.khr, 'KHR') }}</td>
               </tr>
             </tfoot>
           </table>

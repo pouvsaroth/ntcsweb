@@ -1,12 +1,12 @@
 import { apiGetWithMeta } from '@/services/http'
 
-export interface BillingSummary {
-  /** Every amount below is already converted to this currency — see BillingDashboardController. */
-  currency: 'USD' | 'KHR'
-  todays_sales: number
-  todays_payments: number
-  outstanding: number
-  overdue: number
+export type BillingSummaryMoney = 'todays_sales' | 'todays_payments' | 'outstanding' | 'overdue'
+
+/**
+ * The plain amounts are in `currency` (the school's); each also comes as
+ * `<field>_usd` / `<field>_khr`, every row at the rate on its own date.
+ */
+export type BillingSummary = { currency: 'USD' | 'KHR' } & Record<BillingSummaryMoney | `${BillingSummaryMoney}_usd` | `${BillingSummaryMoney}_khr`, number> & {
   invoice_counts: {
     total: number
     paid: number
@@ -21,6 +21,8 @@ export interface PaymentsByMethodRow {
   payment_method: string
   count: number
   total: number
+  total_usd: number
+  total_khr: number
 }
 
 export const billingService = {

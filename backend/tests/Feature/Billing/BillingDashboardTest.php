@@ -114,5 +114,30 @@ class BillingDashboardTest extends TestCase
 
         $response->assertJsonPath('data.currency', 'KHR');
         $this->assertEqualsWithDelta(605000.0, $response->json('data.outstanding'), 0.001);
+        // The same figure in both currencies; the USD side is just the dollars.
+        $this->assertEqualsWithDelta(605000.0, $response->json('data.outstanding_khr'), 0.001);
+        $this->assertEqualsWithDelta(150.0, $response->json('data.outstanding_usd'), 0.001);
+    }
+
+    public function test_every_amount_is_also_given_in_dollars_and_riel(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::INVOICES_CREATE, Permissions::PAYMENTS_CREATE, Permissions::BILLING_REPORTS_VIEW]);
+        CurrencyRate::factory()->create(['effective_date' => '2020-01-01', 'khr_per_usd' => 4000]);
+        $product = Product::factory()->create(['price' => 40, 'currency' => 'USD']);
+
+        $invoiceId = $this->postJson('/api/v1/invoices', [
+            'student_id' => Student::factory()->create()->id,
+            'currency' => 'USD',
+            'items' => [['product_id' => $product->id, 'quantity' => 1]],
+        ])->assertCreated()->json('data.id');
+        $this->postJson("/api/v1/invoices/{$invoiceId}/payments", ['amount' => 15, 'payment_method' => PaymentMethod::CASH])->assertCreated();
+
+        $data = $this->getJson('/api/v1/billing/dashboard')->assertOk()->json('data');
+        $this->assertEquals([40, 160000], [$data['todays_sales_usd'], $data['todays_sales_khr']]);
+        $this->assertEquals([15, 60000], [$data['todays_payments_usd'], $data['todays_payments_khr']]);
+        $this->assertEquals([25, 100000], [$data['outstanding_usd'], $data['outstanding_khr']]);
+
+        $cash = collect($this->getJson('/api/v1/billing/reports/payments-by-method')->assertOk()->json('data'))->keyBy('payment_method')['CASH'];
+        $this->assertEquals([15, 15, 60000], [$cash['total'], $cash['total_usd'], $cash['total_khr']]);
     }
 }
