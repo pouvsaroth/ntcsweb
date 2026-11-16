@@ -55,7 +55,7 @@ final class StaffCardDesignController extends Controller
     {
         $design = new StaffCardDesign([
             'card_for' => $request->cardFor(),
-            ...$request->safe()->only(['name', 'width_mm', 'height_mm']),
+            ...$request->safe()->only(['name', 'width_mm', 'height_mm', 'has_front', 'has_back']),
             'front_fields' => $request->fields('front_fields') ?? [],
             'back_fields' => $request->fields('back_fields') ?? [],
             'created_by' => $request->user()->getKey(),
@@ -68,7 +68,7 @@ final class StaffCardDesignController extends Controller
 
     public function update(SaveStaffCardDesignRequest $request, StaffCardDesign $design): JsonResponse
     {
-        $design->fill($request->safe()->only(['name', 'width_mm', 'height_mm']));
+        $design->fill($request->safe()->only(['name', 'width_mm', 'height_mm', 'has_front', 'has_back']));
         foreach (['front_fields', 'back_fields'] as $side) {
             $fields = $request->fields($side);
             if ($fields !== null) {

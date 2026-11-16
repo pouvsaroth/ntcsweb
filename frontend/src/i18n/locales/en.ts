@@ -4267,6 +4267,8 @@ const en = {
       loadFailed: 'Could not load the card design.',
       nameRequired: 'Enter a name for the card design.',
       unsaved: 'You have unsaved changes. Leave anyway?',
+      cardSides: 'Card sides',
+      sideEmpty: '{side} is ticked but empty: add a photo or a field, or untick it.',
       unsavedShort: 'Not saved',
       name: 'Design name',
       namePlaceholder: 'e.g. Teacher card',

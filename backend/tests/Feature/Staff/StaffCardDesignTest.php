@@ -90,6 +90,25 @@ class StaffCardDesignTest extends TestCase
         ])->assertUnprocessable()->assertJsonValidationErrors(['width_mm', 'front_fields.0.type', 'front_fields.0.color', 'front_fields.0.font']);
     }
 
+    public function test_a_design_picks_its_sides_but_keeps_at_least_one(): void
+    {
+        $this->asDesigner();
+        $field = ['id' => 'a', 'type' => 'full_name', 'x' => 2, 'y' => 2, 'w' => 30, 'h' => 6];
+
+        $id = $this->postJson('/api/v1/staff-card-designs', [
+            'name' => 'Front only', 'width_mm' => 85.6, 'height_mm' => 54, 'has_front' => true, 'has_back' => false,
+            'front_fields' => [$field], 'back_fields' => [],
+        ])->assertCreated()->assertJsonPath('data.has_front', true)->assertJsonPath('data.has_back', false)->json('data.id');
+
+        $this->postJson("/api/v1/staff-card-designs/{$id}", ['_method' => 'PUT', 'has_front' => false])
+            ->assertUnprocessable()->assertJsonValidationErrors(['has_front']);
+        $this->postJson("/api/v1/staff-card-designs/{$id}", ['_method' => 'PUT', 'has_front' => false, 'has_back' => true, 'back_fields' => [$field]])
+            ->assertOk()->assertJsonPath('data.has_front', false)->assertJsonPath('data.has_back', true);
+        // Not sent: both sides, as before.
+        $this->postJson('/api/v1/staff-card-designs', ['name' => 'Both', 'width_mm' => 85.6, 'height_mm' => 54, 'front_fields' => [], 'back_fields' => []])
+            ->assertCreated()->assertJsonPath('data.has_back', true);
+    }
+
     public function test_student_cards_are_their_own_list_with_student_fields_and_permissions(): void
     {
         $this->actingAsAdminWithPermissions([

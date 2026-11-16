@@ -49,6 +49,17 @@ const fieldTypes = computed(() => fieldTypesFor(cardFor.value))
 
 type Side = 'front' | 'back'
 const form = reactive({ name: '', width: 85.6, height: 54 })
+// Which sides the card has; at least one. Unticking keeps that side's work but it isn't printed.
+const sidesOn = reactive<Record<Side, boolean>>({ front: true, back: true })
+function toggleSide(s: Side, on: boolean) {
+  const other: Side = s === 'front' ? 'back' : 'front'
+  if (!on && !sidesOn[other]) return
+  sidesOn[s] = on
+  dirty.value = true
+  error.value = null
+  if (on) side.value = s
+  else if (side.value === s) side.value = other
+}
 const fields = reactive<Record<Side, CardField[]>>({ front: [], back: [] })
 const side = ref<Side>('front')
 const selectedId = ref<string | null>(null)
@@ -222,6 +233,9 @@ async function load() {
     form.name = design.name
     form.width = design.width_mm
     form.height = design.height_mm
+    sidesOn.front = design.has_front
+    sidesOn.back = design.has_back
+    side.value = design.has_front ? 'front' : 'back'
     fields.front = design.front_fields
     fields.back = design.back_fields
     customSize.value = preset.value === 'custom'
@@ -239,6 +253,14 @@ async function save() {
     error.value = t('admin.staffCards.nameRequired')
     return
   }
+  // A ticked side needs something on it, or it prints blank.
+  for (const s of ['front', 'back'] as Side[]) {
+    if (sidesOn[s] && !fields[s].length && !photoUrl(s === 'front' ? 'front_background' : 'back_background')) {
+      side.value = s
+      error.value = t('admin.staffCards.sideEmpty', { side: t(`admin.staffCards.${s}`) })
+      return
+    }
+  }
   saving.value = true
   try {
     const input = {
@@ -246,6 +268,8 @@ async function save() {
       name: form.name.trim(),
       width_mm: cardW.value,
       height_mm: cardH.value,
+      has_front: sidesOn.front,
+      has_back: sidesOn.back,
       front_fields: fields.front,
       back_fields: fields.back,
       front_background: files.front_background,
@@ -352,7 +376,21 @@ onMounted(async () => {
         <!-- The card -->
         <section class="order-1 min-w-0 rounded-[--radius-card] border border-neutral-200 bg-white p-3 shadow-[--shadow-card] lg:order-2">
           <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
-            <div class="inline-flex rounded-lg border border-neutral-200 p-0.5">
+            <div class="flex flex-wrap items-center gap-3">
+            <div class="flex items-center gap-3 text-sm text-neutral-700">
+              <span class="font-medium">{{ t('admin.staffCards.cardSides') }}</span>
+              <label v-for="s in ['front', 'back'] as const" :key="s" class="inline-flex cursor-pointer items-center gap-1.5">
+                <input
+                  type="checkbox"
+                  class="h-4 w-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+                  :checked="sidesOn[s]"
+                  :disabled="sidesOn[s] && !sidesOn[s === 'front' ? 'back' : 'front']"
+                  @change="toggleSide(s, ($event.target as HTMLInputElement).checked)"
+                />
+                {{ t(`admin.staffCards.${s}`) }}
+              </label>
+            </div>
+            <div v-if="sidesOn.front && sidesOn.back" class="inline-flex rounded-lg border border-neutral-200 p-0.5">
               <button
                 v-for="s in ['front', 'back'] as const"
                 :key="s"
@@ -363,6 +401,7 @@ onMounted(async () => {
               >
                 {{ t(`admin.staffCards.${s}`) }} <span class="text-xs opacity-75">({{ fields[s].length }})</span>
               </button>
+            </div>
             </div>
             <div class="flex flex-wrap items-center gap-2">
               <label class="cursor-pointer rounded-lg border border-neutral-300 px-3 py-1.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50">

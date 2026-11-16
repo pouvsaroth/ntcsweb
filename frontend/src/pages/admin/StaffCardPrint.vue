@@ -119,7 +119,8 @@ const pad = (n: number) => String(n).padStart(2, '0')
 const expiry = ref(`${nextYear.getFullYear()}-${pad(nextYear.getMonth() + 1)}-${pad(nextYear.getDate())}`)
 
 // A side with no photo and no fields would print as a blank page, so it's left out.
-const hasSide = (side: CardSide) => !!design.value && (design.value[`${side}_fields`].length > 0 || !!design.value[`${side}_background_url`])
+// An unticked side isn't printed either.
+const hasSide = (side: CardSide) => !!design.value && design.value[`has_${side}`] && (design.value[`${side}_fields`].length > 0 || !!design.value[`${side}_background_url`])
 const twoSided = computed(() => hasSide('front') && hasSide('back'))
 const sidesChoice = ref<'both' | 'front' | 'back'>('both')
 const sides = computed<CardSide[]>(() => {

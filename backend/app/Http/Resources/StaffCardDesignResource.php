@@ -17,6 +17,8 @@ class StaffCardDesignResource extends JsonResource
             'id' => $this->id,
             'card_for' => $this->card_for,
             'name' => $this->name,
+            'has_front' => (bool) $this->has_front,
+            'has_back' => (bool) $this->has_back,
             'width_mm' => (float) $this->width_mm,
             'height_mm' => (float) $this->height_mm,
             'front_background_url' => $this->url($this->front_background_path),

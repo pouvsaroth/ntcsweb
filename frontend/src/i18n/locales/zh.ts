@@ -4262,6 +4262,8 @@ const zh: MessageSchema = {
       loadFailed: '无法加载卡片设计。',
       nameRequired: '请输入卡片设计名称。',
       unsaved: '有未保存的更改。仍要离开吗？',
+      cardSides: '卡片面',
+      sideEmpty: '已勾选{side}但内容为空：请添加图片或字段，或取消勾选。',
       unsavedShort: '未保存',
       name: '设计名称',
       namePlaceholder: '例如：教师卡',

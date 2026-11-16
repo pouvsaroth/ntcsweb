@@ -11,6 +11,9 @@ export interface StaffCardDesign {
   name: string
   width_mm: number
   height_mm: number
+  /** Which sides the card has (Front / Back ticks); an unticked side isn't printed. */
+  has_front: boolean
+  has_back: boolean
   front_background_url: string | null
   back_background_url: string | null
   /** Signature / stamp image for the Signature field. */
@@ -48,6 +51,8 @@ export interface StaffCardDesignInput {
   name?: string
   width_mm?: number
   height_mm?: number
+  has_front?: boolean
+  has_back?: boolean
   front_fields?: CardField[]
   back_fields?: CardField[]
   front_background?: File | null
@@ -64,6 +69,8 @@ function toFormData(input: StaffCardDesignInput, methodOverride?: 'PUT'): FormDa
   if (input.name !== undefined) form.append('name', input.name)
   if (input.width_mm !== undefined) form.append('width_mm', String(input.width_mm))
   if (input.height_mm !== undefined) form.append('height_mm', String(input.height_mm))
+  if (input.has_front !== undefined) form.append('has_front', input.has_front ? '1' : '0')
+  if (input.has_back !== undefined) form.append('has_back', input.has_back ? '1' : '0')
   if (input.front_fields !== undefined) form.append('front_fields', JSON.stringify(input.front_fields))
   if (input.back_fields !== undefined) form.append('back_fields', JSON.stringify(input.back_fields))
   for (const key of ['front_background', 'back_background', 'signature'] as const) {

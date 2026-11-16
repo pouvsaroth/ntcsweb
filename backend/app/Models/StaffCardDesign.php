@@ -15,10 +15,13 @@ use Illuminate\Support\Facades\Storage;
  * background photo per side and the fields placed on each side. A field is
  * {id, type, x, y, w, h (mm), font_size (pt), color, bold, align, text?, shape?}.
  */
-#[Fillable(['card_for', 'name', 'width_mm', 'height_mm', 'front_background_path', 'back_background_path', 'signature_path', 'front_fields', 'back_fields', 'created_by'])]
+#[Fillable(['card_for', 'name', 'width_mm', 'height_mm', 'has_front', 'has_back', 'front_background_path', 'back_background_path', 'signature_path', 'front_fields', 'back_fields', 'created_by'])]
 class StaffCardDesign extends Model
 {
     use Auditable, HasFactory;
+
+    /** New designs have both sides unless told otherwise (matches the column defaults). */
+    protected $attributes = ['has_front' => true, 'has_back' => true];
 
     /** Who the card is for: HRM > Staff cards or Students > Student cards. */
     public const FOR_STAFF = 'staff';
@@ -57,6 +60,8 @@ class StaffCardDesign extends Model
             'height_mm' => 'decimal:2',
             'front_fields' => 'array',
             'back_fields' => 'array',
+            'has_front' => 'boolean',
+            'has_back' => 'boolean',
         ];
     }
 

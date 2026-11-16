@@ -4263,6 +4263,8 @@ const ja: MessageSchema = {
       loadFailed: 'カードデザインを読み込めませんでした。',
       nameRequired: 'カードデザインの名前を入力してください。',
       unsaved: '保存されていない変更があります。移動しますか？',
+      cardSides: 'カードの面',
+      sideEmpty: '{side}にチェックがありますが空です。画像か項目を追加するか、チェックを外してください。',
       unsavedShort: '未保存',
       name: 'デザイン名',
       namePlaceholder: '例：教師用カード',

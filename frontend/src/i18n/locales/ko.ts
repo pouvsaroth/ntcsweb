@@ -4263,6 +4263,8 @@ const ko: MessageSchema = {
       loadFailed: '카드 디자인을 불러올 수 없습니다.',
       nameRequired: '카드 디자인 이름을 입력하세요.',
       unsaved: '저장하지 않은 변경 사항이 있습니다. 나가시겠습니까?',
+      cardSides: '카드 면',
+      sideEmpty: '{side}이(가) 선택되었지만 비어 있습니다. 사진이나 항목을 추가하거나 선택을 해제하세요.',
       unsavedShort: '저장 안 됨',
       name: '디자인 이름',
       namePlaceholder: '예: 교사 카드',

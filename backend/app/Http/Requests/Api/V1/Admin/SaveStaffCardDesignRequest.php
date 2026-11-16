@@ -61,6 +61,9 @@ class SaveStaffCardDesignRequest extends FormRequest
             'remove_front_background' => ['sometimes', 'boolean'],
             'remove_back_background' => ['sometimes', 'boolean'],
             'remove_signature' => ['sometimes', 'boolean'],
+            // Which sides the card has; at least one.
+            'has_front' => ['sometimes', 'boolean'],
+            'has_back' => ['sometimes', 'boolean'],
         ];
 
         foreach (['front_fields', 'back_fields'] as $side) {
@@ -81,6 +84,18 @@ class SaveStaffCardDesignRequest extends FormRequest
         }
 
         return $rules;
+    }
+
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            $design = $this->route('design');
+            $front = $this->has('has_front') ? $this->boolean('has_front') : ($design instanceof StaffCardDesign ? $design->has_front : true);
+            $back = $this->has('has_back') ? $this->boolean('has_back') : ($design instanceof StaffCardDesign ? $design->has_back : true);
+            if (! $front && ! $back) {
+                $validator->errors()->add('has_front', 'Tick the front, the back or both.');
+            }
+        });
     }
 
     /** Only the known keys of each field, numbers rounded to 0.1 mm; null when the side wasn't sent. */

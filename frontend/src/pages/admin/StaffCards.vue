@@ -79,7 +79,7 @@ onMounted(() => void fetch())
       <div v-for="design in items" :key="design.id" class="flex flex-col rounded-[--radius-card] border border-neutral-200 bg-white p-4 shadow-[--shadow-card]">
         <div class="flex flex-wrap items-start justify-center gap-3 rounded-lg bg-neutral-100 p-3">
           <StaffCardCanvas
-            v-for="side in ['front', 'back'] as const"
+            v-for="side in (['front', 'back'] as const).filter((s) => design[`has_${s}`])"
             :key="side"
             :width-mm="design.width_mm"
             :height-mm="design.height_mm"
