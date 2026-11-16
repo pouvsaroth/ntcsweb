@@ -15,15 +15,28 @@ use Illuminate\Support\Facades\Storage;
  * background photo per side and the fields placed on each side. A field is
  * {id, type, x, y, w, h (mm), font_size (pt), color, bold, align, text?, shape?}.
  */
-#[Fillable(['name', 'width_mm', 'height_mm', 'front_background_path', 'back_background_path', 'signature_path', 'front_fields', 'back_fields', 'created_by'])]
+#[Fillable(['card_for', 'name', 'width_mm', 'height_mm', 'front_background_path', 'back_background_path', 'signature_path', 'front_fields', 'back_fields', 'created_by'])]
 class StaffCardDesign extends Model
 {
     use Auditable, HasFactory;
+
+    /** Who the card is for: HRM > Staff cards or Students > Student cards. */
+    public const FOR_STAFF = 'staff';
+
+    public const FOR_STUDENT = 'student';
+
+    public const CARD_FOR = [self::FOR_STAFF, self::FOR_STUDENT];
 
     /** What can be placed on a card. Text ones take font settings; the rest are image boxes. */
     public const TEXT_FIELDS = [
         'full_name', 'other_name', 'employee_code', 'position', 'department',
         'phone', 'email', 'gender', 'date_of_birth', 'hire_date', 'expiry_date', 'text',
+    ];
+
+    /** A student card's text fields (class, course, ... from their current enrollment). */
+    public const STUDENT_TEXT_FIELDS = [
+        'full_name', 'english_name', 'student_code', 'class_name', 'course', 'program', 'academic_year',
+        'phone', 'guardian_phone', 'gender', 'date_of_birth', 'enrollment_date', 'expiry_date', 'text',
     ];
 
     public const IMAGE_FIELDS = ['photo', 'qr', 'logo', 'signature'];
@@ -47,9 +60,9 @@ class StaffCardDesign extends Model
         ];
     }
 
-    public static function fieldTypes(): array
+    public static function fieldTypes(string $cardFor = self::FOR_STAFF): array
     {
-        return [...self::TEXT_FIELDS, ...self::IMAGE_FIELDS];
+        return [...($cardFor === self::FOR_STUDENT ? self::STUDENT_TEXT_FIELDS : self::TEXT_FIELDS), ...self::IMAGE_FIELDS];
     }
 
     public function url(?string $path): ?string

@@ -78,6 +78,15 @@ final class Permissions
 
     public const STUDENTS_APPROVE_REGISTRATION = 'students.approve-registration';
 
+    // Students > Student cards: the school's student card designs, and printing them.
+    public const STUDENT_CARDS_VIEW = 'student-cards.view';
+
+    public const STUDENT_CARDS_CREATE = 'student-cards.create';
+
+    public const STUDENT_CARDS_UPDATE = 'student-cards.update';
+
+    public const STUDENT_CARDS_DELETE = 'student-cards.delete';
+
     // Buildings — the physical buildings a school's classrooms belong to.
     public const BUILDINGS_VIEW = 'buildings.view';
 
@@ -1336,6 +1345,10 @@ final class Permissions
                 self::STUDENTS_UPDATE => 'Update students',
                 self::STUDENTS_DELETE => 'Delete students',
                 self::STUDENTS_APPROVE_REGISTRATION => 'Approve or reject public self-registrations',
+                self::STUDENT_CARDS_VIEW => 'View student card designs and print student cards',
+                self::STUDENT_CARDS_CREATE => 'Add student card designs',
+                self::STUDENT_CARDS_UPDATE => 'Update student card designs',
+                self::STUDENT_CARDS_DELETE => 'Delete student card designs',
             ],
             'Buildings' => [
                 self::BUILDINGS_VIEW => 'View buildings',
@@ -1959,6 +1972,7 @@ final class Permissions
     {
         $academicManagement = [
             self::STUDENTS_VIEW, self::STUDENTS_CREATE, self::STUDENTS_UPDATE, self::STUDENTS_DELETE,
+            self::STUDENT_CARDS_VIEW, self::STUDENT_CARDS_CREATE, self::STUDENT_CARDS_UPDATE, self::STUDENT_CARDS_DELETE,
             self::STUDENTS_APPROVE_REGISTRATION,
             self::BUILDINGS_VIEW, self::BUILDINGS_CREATE, self::BUILDINGS_UPDATE, self::BUILDINGS_DELETE,
             self::CLASSROOMS_VIEW, self::CLASSROOMS_CREATE, self::CLASSROOMS_UPDATE, self::CLASSROOMS_DELETE,

@@ -255,6 +255,8 @@ const MODULES: ModuleEntry[] = [
   // ── Students ──
   // Create also opens Student imports; Approve = approve online registrations.
   { name: 'Students (and Student imports)', group: 'Students', actions: { ...crud('students'), approve: 'students.approve-registration' } },
+  // Students > Student cards (/admin/student-cards): card designs.
+  { name: 'Student cards', group: 'Students', actions: crud('student-cards') },
   {
     name: 'Enrollments',
     group: 'Students',

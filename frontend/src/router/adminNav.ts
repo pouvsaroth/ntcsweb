@@ -194,6 +194,8 @@ export const adminNav: AdminNavGroup[] = [
       { labelKey: 'adminNav.items.studentsList', icon: 'users', to: '/admin/students', permission: 'students.view' },
       { labelKey: 'adminNav.items.studentImports', icon: 'upload', to: '/admin/student-imports', permission: 'students.create' },
       { labelKey: 'adminNav.items.enrollments', icon: 'clipboardList', to: '/admin/enrollments', permission: 'enrollments.view' },
+      // Card designs for students: size, front/back photo and fields dragged onto the card.
+      { labelKey: 'adminNav.items.studentCards', icon: 'identification', to: '/admin/student-cards', permission: 'student-cards.view' },
     ],
   },
   {

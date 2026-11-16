@@ -897,6 +897,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
 
         Route::apiResource('staff', StaffController::class);
         // HRM > Staff cards: card designs (photos are multipart, so updates POST with _method=PUT).
+        // Students > Student cards > print: students with their class, course, ... for the cards.
+        Route::get('student-cards/students', [StaffCardDesignController::class, 'students'])->name('student-cards.students');
         Route::apiResource('staff-card-designs', StaffCardDesignController::class)->parameters(['staff-card-designs' => 'design']);
         Route::post('staff/{staff}/status', [StaffController::class, 'changeStatus'])->name('staff.status.update');
         // HRM > Staff > Education (docs/hrm/staff-education.md).

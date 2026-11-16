@@ -21,7 +21,19 @@ class SaveStaffCardDesignRequest extends FormRequest
 
         return $design instanceof StaffCardDesign
             ? ($this->user()?->can('update', $design) ?? false)
-            : ($this->user()?->can('create', StaffCardDesign::class) ?? false);
+            : ($this->user()?->can('create', [StaffCardDesign::class, $this->cardFor()]) ?? false);
+    }
+
+    /** Staff or student card: fixed once the design exists. */
+    public function cardFor(): string
+    {
+        $design = $this->route('design');
+        if ($design instanceof StaffCardDesign) {
+            return $design->card_for;
+        }
+        $cardFor = $this->input('card_for');
+
+        return is_string($cardFor) && in_array($cardFor, StaffCardDesign::CARD_FOR, true) ? $cardFor : StaffCardDesign::FOR_STAFF;
     }
 
     protected function prepareForValidation(): void
@@ -39,6 +51,7 @@ class SaveStaffCardDesignRequest extends FormRequest
     {
         $creating = ! $this->route('design') instanceof StaffCardDesign;
         $rules = [
+            'card_for' => ['sometimes', Rule::in(StaffCardDesign::CARD_FOR)],
             'name' => [$creating ? 'required' : 'sometimes', 'string', 'max:100'],
             'width_mm' => [$creating ? 'required' : 'sometimes', 'numeric', 'min:20', 'max:300'],
             'height_mm' => [$creating ? 'required' : 'sometimes', 'numeric', 'min:20', 'max:300'],
@@ -53,7 +66,7 @@ class SaveStaffCardDesignRequest extends FormRequest
         foreach (['front_fields', 'back_fields'] as $side) {
             $rules[$side] = [$creating ? 'present' : 'sometimes', 'array', 'max:60'];
             $rules["{$side}.*.id"] = ['required', 'string', 'max:40'];
-            $rules["{$side}.*.type"] = ['required', Rule::in(StaffCardDesign::fieldTypes())];
+            $rules["{$side}.*.type"] = ['required', Rule::in(StaffCardDesign::fieldTypes($this->cardFor()))];
             $rules["{$side}.*.x"] = ['required', 'numeric', 'min:-300', 'max:300'];
             $rules["{$side}.*.y"] = ['required', 'numeric', 'min:-300', 'max:300'];
             $rules["{$side}.*.w"] = ['required', 'numeric', 'min:1', 'max:300'];

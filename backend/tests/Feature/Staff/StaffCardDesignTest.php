@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Staff;
 
+use App\Models\Enrollment;
+use App\Models\SchoolClass;
 use App\Models\StaffCardDesign;
+use App\Models\Student;
 use App\Support\Authorization\Permissions;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -85,6 +88,56 @@ class StaffCardDesignTest extends TestCase
             'front_fields' => [['id' => 'a', 'type' => 'salary', 'x' => 0, 'y' => 0, 'w' => 10, 'h' => 5, 'color' => 'red', 'font' => 'Comic Sans']],
             'back_fields' => [],
         ])->assertUnprocessable()->assertJsonValidationErrors(['width_mm', 'front_fields.0.type', 'front_fields.0.color', 'front_fields.0.font']);
+    }
+
+    public function test_student_cards_are_their_own_list_with_student_fields_and_permissions(): void
+    {
+        $this->actingAsAdminWithPermissions([
+            Permissions::STUDENT_CARDS_VIEW, Permissions::STUDENT_CARDS_CREATE, Permissions::STUDENT_CARDS_UPDATE, Permissions::STUDENT_CARDS_DELETE,
+        ]);
+        $staffDesign = StaffCardDesign::factory()->create();
+
+        $fields = [['id' => 'a', 'type' => 'student_code', 'x' => 5, 'y' => 5, 'w' => 30, 'h' => 5], ['id' => 'b', 'type' => 'class_name', 'x' => 5, 'y' => 12, 'w' => 30, 'h' => 5]];
+        $id = $this->postJson('/api/v1/staff-card-designs', ['card_for' => 'student', 'name' => 'Student card', 'width_mm' => 54, 'height_mm' => 85.6, 'front_fields' => $fields, 'back_fields' => []])
+            ->assertCreated()->assertJsonPath('data.card_for', 'student')->json('data.id');
+
+        // Each list shows only its own kind; staff cards need staff-card permissions.
+        $this->getJson('/api/v1/staff-card-designs?card_for=student')->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $id);
+        $this->getJson('/api/v1/staff-card-designs')->assertForbidden();
+        $this->getJson("/api/v1/staff-card-designs/{$staffDesign->id}")->assertForbidden();
+
+        // A staff-only field can't go on a student card.
+        $this->postJson("/api/v1/staff-card-designs/{$id}", ['_method' => 'PUT', 'front_fields' => [['id' => 'c', 'type' => 'employee_code', 'x' => 0, 'y' => 0, 'w' => 10, 'h' => 5]]])
+            ->assertUnprocessable()->assertJsonValidationErrors(['front_fields.0.type']);
+    }
+
+    public function test_students_for_cards_come_with_their_class_and_guardian_phone(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::STUDENT_CARDS_VIEW]);
+        $class = SchoolClass::factory()->create(['name' => 'English 1A']);
+        $other = SchoolClass::factory()->create(['name' => 'Math 2B']);
+        $dara = Student::factory()->create(['student_code' => 'S001', 'english_name' => 'Dara']);
+        $dara->guardians()->create(['guardian_name' => 'Sok Mom', 'guardian_type' => 'Mother', 'phone' => '012 111 222']);
+        Enrollment::factory()->forStudent($dara)->forClass($class)->create();
+        $sok = Student::factory()->create(['student_code' => 'S002']);
+        Enrollment::factory()->forStudent($sok)->forClass($other)->create();
+
+        $this->getJson('/api/v1/student-cards/students')->assertOk()->assertJsonCount(2, 'data');
+        $this->getJson("/api/v1/student-cards/students?class_id={$class->id}")
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.student_code', 'S001')
+            ->assertJsonPath('data.0.english_name', 'Dara')
+            ->assertJsonPath('data.0.class_name', 'English 1A')
+            ->assertJsonPath('data.0.guardian_phone', '012 111 222');
+        $this->getJson('/api/v1/student-cards/students?search=s002')->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.class_name', 'Math 2B');
+    }
+
+    public function test_staff_card_permissions_do_not_open_student_cards(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::STAFF_CARDS_VIEW]);
+        $this->getJson('/api/v1/staff-card-designs?card_for=student')->assertForbidden();
+        $this->getJson('/api/v1/student-cards/students')->assertForbidden();
     }
 
     public function test_viewing_only_cannot_add_or_delete(): void

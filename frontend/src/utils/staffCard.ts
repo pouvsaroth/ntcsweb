@@ -1,11 +1,15 @@
 import type { Staff } from '@/services/staff'
+import type { CardStudent } from '@/services/staffCardDesigns'
 import { formatDate } from '@/utils/date'
 
 /**
- * HRM > Staff cards: what can be placed on a card and where each value comes
- * from. Positions and sizes are in mm from the card's top-left corner; font
- * sizes in pt. Kept in step with StaffCardDesign::TEXT_FIELDS / IMAGE_FIELDS.
+ * HRM > Staff cards and Students > Student cards: what can be placed on a
+ * card and where each value comes from. Positions and sizes are in mm from
+ * the card's top-left corner; font sizes in pt. Kept in step with
+ * StaffCardDesign::TEXT_FIELDS / STUDENT_TEXT_FIELDS / IMAGE_FIELDS.
  */
+export type CardFor = 'staff' | 'student'
+
 export const TEXT_FIELD_TYPES = [
   'full_name',
   'other_name',
@@ -20,9 +24,29 @@ export const TEXT_FIELD_TYPES = [
   'expiry_date',
   'text',
 ] as const
+/** A student card's text fields: class, course, program and year come from their current enrollment. */
+export const STUDENT_TEXT_FIELD_TYPES = [
+  'full_name',
+  'english_name',
+  'student_code',
+  'class_name',
+  'course',
+  'program',
+  'academic_year',
+  'phone',
+  'guardian_phone',
+  'gender',
+  'date_of_birth',
+  'enrollment_date',
+  'expiry_date',
+  'text',
+] as const
 export const IMAGE_FIELD_TYPES = ['photo', 'qr', 'logo', 'signature'] as const
 
-export type TextFieldType = (typeof TEXT_FIELD_TYPES)[number]
+export type TextFieldType = (typeof TEXT_FIELD_TYPES)[number] | (typeof STUDENT_TEXT_FIELD_TYPES)[number]
+
+/** The fields this kind of card can use, text first. */
+export const fieldTypesFor = (cardFor: CardFor): CardFieldType[] => [...(cardFor === 'student' ? STUDENT_TEXT_FIELD_TYPES : TEXT_FIELD_TYPES), ...IMAGE_FIELD_TYPES]
 export type ImageFieldType = (typeof IMAGE_FIELD_TYPES)[number]
 export type CardFieldType = TextFieldType | ImageFieldType
 export type CardAlign = 'left' | 'center' | 'right'
@@ -158,6 +182,14 @@ export function newField(type: CardFieldType, cardW: number, cardH: number, cx?:
     date_of_birth: [25, 4.5],
     hire_date: [25, 4.5],
     expiry_date: [25, 4.5],
+    english_name: [45, 6],
+    student_code: [30, 5],
+    class_name: [35, 5],
+    course: [40, 5],
+    program: [40, 5],
+    academic_year: [25, 4.5],
+    guardian_phone: [30, 4.5],
+    enrollment_date: [25, 4.5],
     text: [40, 5],
     photo: [22, 28],
     qr: [16, 16],
@@ -171,7 +203,8 @@ export function newField(type: CardFieldType, cardW: number, cardH: number, cx?:
   const y = Math.min(Math.max((cy ?? cardH / 2) - h / 2, 0), cardH - h)
   const field: CardField = { id: Math.random().toString(36).slice(2, 10), type, x: round1(x), y: round1(y), w, h }
   if (!isImageField(type)) {
-    Object.assign(field, { font_size: type === 'full_name' || type === 'other_name' ? 10 : 7, color: '#111111', bold: type === 'full_name' || type === 'other_name', align: 'left' })
+    const name = type === 'full_name' || type === 'other_name' || type === 'english_name'
+    Object.assign(field, { font_size: name ? 10 : 7, color: '#111111', bold: name, align: 'left' })
   }
   if (type === 'photo') field.shape = 'rounded'
   return field
@@ -187,6 +220,43 @@ export interface CardSource {
   genderLabel: (gender: string) => string
   /** Shown when there's no staff member (designing with no staff to pick). */
   sample: Partial<Record<TextFieldType, string>>
+}
+
+export interface StudentCardSource {
+  student: CardStudent | null
+  logoUrl: string | null
+  /** The design's signature / stamp (students have none of their own). */
+  signatureUrl: string | null
+  expiry: string | null
+  genderLabel: (gender: string) => string
+  sample: Partial<Record<TextFieldType, string>>
+}
+
+export function studentCardValues(source: StudentCardSource): CardValues {
+  const s = source.student
+  if (!s) {
+    return { ...source.sample, expiry_date: source.expiry, qr: source.sample.student_code ?? 'STUDENT', logo: source.logoUrl, signature: source.signatureUrl, photo: null }
+  }
+  const date = (value: string | null | undefined) => (value ? formatDate(value) : null)
+  return {
+    full_name: s.full_name,
+    english_name: s.english_name,
+    student_code: s.student_code,
+    class_name: s.class_name,
+    course: s.course,
+    program: s.program,
+    academic_year: s.academic_year,
+    phone: s.phone,
+    guardian_phone: s.guardian_phone,
+    gender: s.gender ? source.genderLabel(s.gender) : null,
+    date_of_birth: date(s.date_of_birth),
+    enrollment_date: date(s.enrollment_date),
+    expiry_date: source.expiry,
+    photo: s.photo_url,
+    qr: s.student_code,
+    logo: source.logoUrl,
+    signature: source.signatureUrl,
+  }
 }
 
 export function staffCardValues(source: CardSource): CardValues {

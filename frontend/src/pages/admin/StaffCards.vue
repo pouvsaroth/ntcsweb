@@ -7,6 +7,7 @@ import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BasePagination from '@/components/ui/BasePagination.vue'
 import BaseSpinner from '@/components/ui/BaseSpinner.vue'
+import { useCardKind } from '@/composables/useCardKind'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { staffCardDesignsService, type StaffCardDesign } from '@/services/staffCardDesigns'
 import { useAuthStore } from '@/stores/auth'
@@ -15,33 +16,21 @@ import { ApiRequestError } from '@/types/api'
 import { formatDate } from '@/utils/date'
 import type { CardField, CardValues } from '@/utils/staffCard'
 
-/** HRM > Staff cards: the school's card designs, each shown with its front and back. */
+/** HRM > Staff cards / Students > Student cards: the school's card designs, each shown with its front and back. */
 const { t } = useI18n()
+const { cardFor, isStudent, base, permission, fieldLabel, sample } = useCardKind()
 const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
 
-const { items, meta, loading, error, setPage, setSearch, fetch } = usePaginatedResource<StaffCardDesign>((query) => staffCardDesignsService.list(query))
+const { items, meta, loading, error, setPage, setSearch, fetch } = usePaginatedResource<StaffCardDesign>((query) => staffCardDesignsService.list(query, cardFor.value))
 
-const canCreate = computed(() => auth.can('staff-cards.create'))
-const canUpdate = computed(() => auth.can('staff-cards.update'))
-const canDelete = computed(() => auth.can('staff-cards.delete'))
+const canCreate = computed(() => auth.can(permission('create')))
+const canUpdate = computed(() => auth.can(permission('update')))
+const canDelete = computed(() => auth.can(permission('delete')))
 
-// Thumbnails show each field's name instead of a real staff member's details.
-const labels = computed<CardValues>(() => ({
-  full_name: 'Sok Dara',
-  other_name: 'សុខ ដារា',
-  employee_code: 'ST0001',
-  position: t('admin.staffCards.fieldTypes.position'),
-  department: t('admin.staffCards.fieldTypes.department'),
-  phone: '012 345 678',
-  email: 'dara@example.com',
-  gender: t('admin.staffCards.genders.male'),
-  date_of_birth: '15-04-1995',
-  hire_date: '01-09-2024',
-  expiry_date: '31-12-2027',
-  qr: 'ST0001',
-}))
-const placeholder = (field: CardField) => t(`admin.staffCards.fieldTypes.${field.type}`)
+// Thumbnails show made-up details instead of a real person's.
+const labels = computed<CardValues>(() => ({ ...sample.value, expiry_date: '31-12-2027', qr: isStudent.value ? 'STU0001' : 'ST0001' }))
+const placeholder = (field: CardField) => fieldLabel(field.type)
 const thumbScale = (design: StaffCardDesign) => Math.min(150 / design.width_mm, 150 / design.height_mm)
 const thumbValues = (design: StaffCardDesign): CardValues => ({ ...labels.value, logo: design.school_logo_url, signature: design.signature_url })
 
@@ -68,7 +57,7 @@ onMounted(() => void fetch())
 
 <template>
   <div>
-    <p class="mb-4 text-sm text-neutral-500">{{ t('admin.staffCards.pageSubtitle') }}</p>
+    <p class="mb-4 text-sm text-neutral-500">{{ isStudent ? t('admin.staffCards.studentPageSubtitle') : t('admin.staffCards.pageSubtitle') }}</p>
 
     <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
       <input
@@ -77,7 +66,7 @@ onMounted(() => void fetch())
         class="block w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200 sm:max-w-sm"
         @input="onSearch(($event.target as HTMLInputElement).value)"
       />
-      <BaseButton v-if="canCreate" to="/admin/staff-cards/new">{{ t('admin.staffCards.add') }}</BaseButton>
+      <BaseButton v-if="canCreate" :to="`${base}/new`">{{ t('admin.staffCards.add') }}</BaseButton>
     </div>
 
     <BaseAlert v-if="error || deleteError" variant="danger" class="mb-4">{{ error || deleteError }}</BaseAlert>
@@ -111,8 +100,8 @@ onMounted(() => void fetch())
             <p v-if="design.updated_at" class="text-xs text-neutral-400">{{ t('admin.staffCards.updatedOn', { date: formatDate(design.updated_at) }) }}</p>
           </div>
           <div class="flex shrink-0 items-center gap-3">
-            <RouterLink :to="`/admin/staff-cards/${design.id}/print`" class="text-sm font-medium text-primary-700 hover:underline">{{ t('admin.staffCards.printCards') }}</RouterLink>
-            <RouterLink v-if="canUpdate" :to="`/admin/staff-cards/${design.id}/edit`" class="text-sm font-medium text-primary-700 hover:underline">{{ t('admin.staffCards.design') }}</RouterLink>
+            <RouterLink :to="`${base}/${design.id}/print`" class="text-sm font-medium text-primary-700 hover:underline">{{ t('admin.staffCards.printCards') }}</RouterLink>
+            <RouterLink v-if="canUpdate" :to="`${base}/${design.id}/edit`" class="text-sm font-medium text-primary-700 hover:underline">{{ t('admin.staffCards.design') }}</RouterLink>
             <button v-if="canDelete" type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(design)">{{ t('admin.staffCards.delete') }}</button>
           </div>
         </div>

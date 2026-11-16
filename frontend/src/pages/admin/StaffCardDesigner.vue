@@ -10,8 +10,9 @@ import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
 import BaseSpinner from '@/components/ui/BaseSpinner.vue'
+import { useCardKind } from '@/composables/useCardKind'
 import { staffService, type Staff } from '@/services/staff'
-import { staffCardDesignsService, type StaffCardDesign } from '@/services/staffCardDesigns'
+import { staffCardDesignsService, type CardStudent, type StaffCardDesign } from '@/services/staffCardDesigns'
 import { useAuthStore } from '@/stores/auth'
 import { useConfirmDialogStore } from '@/stores/confirmDialog'
 import { ApiRequestError } from '@/types/api'
@@ -19,11 +20,11 @@ import { formatDate } from '@/utils/date'
 import {
   CARD_FONTS,
   CARD_PRESETS,
-  IMAGE_FIELD_TYPES,
   isImageField,
   newField,
+  fieldTypesFor,
   staffCardValues,
-  TEXT_FIELD_TYPES,
+  studentCardValues,
   type CardAlign,
   type CardField,
   type CardFieldType,
@@ -42,7 +43,9 @@ const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
 
 const designId = computed(() => (route.params.id ? Number(route.params.id) : null))
-const canSave = computed(() => (designId.value ? auth.can('staff-cards.update') : auth.can('staff-cards.create')))
+const { cardFor, isStudent, base, routePrefix, permission, fieldLabel, sample } = useCardKind()
+const canSave = computed(() => (designId.value ? auth.can(permission('update')) : auth.can(permission('create'))))
+const fieldTypes = computed(() => fieldTypesFor(cardFor.value))
 
 type Side = 'front' | 'back'
 const form = reactive({ name: '', width: 85.6, height: 54 })
@@ -109,34 +112,29 @@ const scale = computed(() => {
 })
 
 // ---- Preview data ----------------------------------------------------------
+// Staff cards preview with a staff member, student cards with a student.
 const staffList = ref<Staff[]>([])
-const previewStaffId = ref('')
-const previewStaff = computed(() => staffList.value.find((s) => String(s.id) === previewStaffId.value) ?? null)
-const staffOptions = computed(() => [{ value: '', label: t('admin.staffCards.sampleStaff') }, ...staffList.value.map((s) => ({ value: String(s.id), label: `${s.employee_code} · ${s.full_name}` }))])
+const studentList = ref<CardStudent[]>([])
+const previewId = ref('')
+const previewStaff = computed(() => staffList.value.find((s) => String(s.id) === previewId.value) ?? null)
+const previewStudent = computed(() => studentList.value.find((s) => String(s.id) === previewId.value) ?? null)
+const staffOptions = computed(() =>
+  isStudent.value
+    ? [{ value: '', label: t('admin.staffCards.sampleStudent') }, ...studentList.value.map((s) => ({ value: String(s.id), label: `${s.student_code} · ${s.full_name}` }))]
+    : [{ value: '', label: t('admin.staffCards.sampleStaff') }, ...staffList.value.map((s) => ({ value: String(s.id), label: `${s.employee_code} · ${s.full_name}` }))],
+)
 const nextYear = new Date()
 nextYear.setFullYear(nextYear.getFullYear() + 1)
-const values = computed(() =>
-  staffCardValues({
-    staff: previewStaff.value,
+const values = computed(() => {
+  const common = {
     logoUrl: saved.value?.school_logo_url ?? null,
     signatureUrl: photoUrl('signature'),
     expiry: formatDate(nextYear),
-    genderLabel: (g) => (['male', 'female'].includes(g.toLowerCase()) ? t(`admin.staffCards.genders.${g.toLowerCase()}`) : g),
-    sample: {
-      full_name: 'Sok Dara',
-      other_name: 'សុខ ដារា',
-      employee_code: 'ST0001',
-      position: t('admin.staffCards.samplePosition'),
-      department: t('admin.staffCards.sampleDepartment'),
-      phone: '012 345 678',
-      email: 'dara@example.com',
-      gender: t('admin.staffCards.genders.male'),
-      date_of_birth: '15-04-1995',
-      hire_date: '01-09-2024',
-    },
-  }),
-)
-const fieldLabel = (type: CardFieldType) => t(`admin.staffCards.fieldTypes.${type}`)
+    genderLabel: (g: string) => (['male', 'female'].includes(g.toLowerCase()) ? t(`admin.staffCards.genders.${g.toLowerCase()}`) : g),
+    sample: sample.value,
+  }
+  return isStudent.value ? studentCardValues({ ...common, student: previewStudent.value }) : staffCardValues({ ...common, staff: previewStaff.value })
+})
 const placeholder = (field: CardField) => (field.type === 'text' ? t('admin.staffCards.yourText') : fieldLabel(field.type))
 
 // ---- Fields ------------------------------------------------------------------
@@ -153,7 +151,7 @@ function addField(type: CardFieldType, x?: number, y?: number) {
   dirty.value = true
 }
 function onDrop(type: string, x: number, y: number) {
-  if ((TEXT_FIELD_TYPES as readonly string[]).includes(type) || (IMAGE_FIELD_TYPES as readonly string[]).includes(type)) addField(type as CardFieldType, x, y)
+  if ((fieldTypes.value as string[]).includes(type)) addField(type as CardFieldType, x, y)
 }
 function onDragStart(event: DragEvent, type: CardFieldType) {
   event.dataTransfer?.setData('text/staff-card-field', type)
@@ -244,6 +242,7 @@ async function save() {
   saving.value = true
   try {
     const input = {
+      ...(designId.value ? {} : { card_for: cardFor.value }),
       name: form.name.trim(),
       width_mm: cardW.value,
       height_mm: cardH.value,
@@ -266,7 +265,7 @@ async function save() {
     }
     dirty.value = false
     notice.value = t('admin.staffCards.saved')
-    if (!designId.value) await router.replace({ name: 'admin.staffCards.edit', params: { id: design.id } })
+    if (!designId.value) await router.replace({ name: `${routePrefix.value}.edit`, params: { id: design.id } })
   } catch (e) {
     error.value = e instanceof ApiRequestError ? e.message : t('admin.staffCards.saveFailed')
   } finally {
@@ -281,18 +280,25 @@ onBeforeRouteLeave(async () => {
 
 onMounted(async () => {
   await load()
-  // Preview with a real staff member when this user can see staff.
-  if (auth.can('staff.view')) staffList.value = await staffService.listAll().catch(() => [])
+  // A design opened under the other kind of card: go to its own page.
+  if (saved.value && saved.value.card_for !== cardFor.value) {
+    dirty.value = false
+    await router.replace(`${saved.value.card_for === 'student' ? '/admin/student-cards' : '/admin/staff-cards'}/${saved.value.id}/edit`)
+    return
+  }
+  // Preview with a real person: students for student cards, staff (when this user can see staff) for staff cards.
+  if (isStudent.value) studentList.value = await staffCardDesignsService.students({}).catch(() => [])
+  else if (auth.can('staff.view')) staffList.value = await staffService.listAll().catch(() => [])
 })
 </script>
 
 <template>
   <div>
     <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-      <RouterLink to="/admin/staff-cards" class="text-sm font-medium text-primary-700 hover:underline">← {{ t('admin.staffCards.backToList') }}</RouterLink>
+      <RouterLink :to="base" class="text-sm font-medium text-primary-700 hover:underline">← {{ t('admin.staffCards.backToList') }}</RouterLink>
       <div class="flex items-center gap-3">
         <span v-if="dirty" class="text-xs text-warning-700">{{ t('admin.staffCards.unsavedShort') }}</span>
-        <RouterLink v-if="designId && !dirty" :to="`/admin/staff-cards/${designId}/print`" class="text-sm font-medium text-primary-700 hover:underline">{{ t('admin.staffCards.printCards') }}</RouterLink>
+        <RouterLink v-if="designId && !dirty" :to="`${base}/${designId}/print`" class="text-sm font-medium text-primary-700 hover:underline">{{ t('admin.staffCards.printCards') }}</RouterLink>
         <BaseButton v-if="canSave" :loading="saving" @click="save">{{ t('admin.staffCards.save') }}</BaseButton>
       </div>
     </div>
@@ -329,7 +335,7 @@ onMounted(async () => {
           <p class="mb-2 text-xs text-neutral-500">{{ t('admin.staffCards.fieldsHint') }}</p>
           <div class="grid grid-cols-2 gap-1.5 lg:grid-cols-1">
             <button
-              v-for="type in [...TEXT_FIELD_TYPES, ...IMAGE_FIELD_TYPES]"
+              v-for="type in fieldTypes"
               :key="type"
               type="button"
               draggable="true"
@@ -388,7 +394,7 @@ onMounted(async () => {
           <p class="mt-2 text-xs text-neutral-500">{{ t('admin.staffCards.backgroundHint', { w: cardW, h: cardH, pw: Math.round((cardW / 25.4) * 300), ph: Math.round((cardH / 25.4) * 300) }) }}</p>
 
           <div class="mt-3 max-w-sm">
-            <BaseSelect v-model="previewStaffId" :options="staffOptions" :label="t('admin.staffCards.previewWith')" />
+            <BaseSelect v-model="previewId" :options="staffOptions" :label="t('admin.staffCards.previewWith')" />
           </div>
         </section>
 
@@ -421,7 +427,7 @@ onMounted(async () => {
             </template>
             <BaseSelect v-if="selected.type === 'photo'" :model-value="selected.shape ?? 'rounded'" :options="shapeOptions" :label="t('admin.staffCards.shape')" @update:model-value="patch({ shape: $event as CardShape })" />
             <div v-if="selected.type === 'signature'" class="space-y-1.5">
-              <p class="text-xs text-neutral-500">{{ t('admin.staffCards.signatureHint') }}</p>
+              <p class="text-xs text-neutral-500">{{ isStudent ? t('admin.staffCards.studentSignatureHint') : t('admin.staffCards.signatureHint') }}</p>
               <div class="flex flex-wrap items-center gap-2">
                 <label class="cursor-pointer rounded-lg border border-neutral-300 px-3 py-1.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50">
                   {{ t('admin.staffCards.uploadSignature') }}

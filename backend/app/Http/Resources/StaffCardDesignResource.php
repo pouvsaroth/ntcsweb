@@ -15,6 +15,7 @@ class StaffCardDesignResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'card_for' => $this->card_for,
             'name' => $this->name,
             'width_mm' => (float) $this->width_mm,
             'height_mm' => (float) $this->height_mm,
