@@ -286,6 +286,7 @@ onMounted(async () => {
       <RouterLink to="/admin/staff-cards" class="text-sm font-medium text-primary-700 hover:underline">← {{ t('admin.staffCards.backToList') }}</RouterLink>
       <div class="flex items-center gap-3">
         <span v-if="dirty" class="text-xs text-warning-700">{{ t('admin.staffCards.unsavedShort') }}</span>
+        <RouterLink v-if="designId && !dirty" :to="`/admin/staff-cards/${designId}/print`" class="text-sm font-medium text-primary-700 hover:underline">{{ t('admin.staffCards.printCards') }}</RouterLink>
         <BaseButton v-if="canSave" :loading="saving" @click="save">{{ t('admin.staffCards.save') }}</BaseButton>
       </div>
     </div>

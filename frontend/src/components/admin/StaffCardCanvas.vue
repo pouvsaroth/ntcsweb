@@ -46,9 +46,14 @@ watch(
   { immediate: true },
 )
 
+// Images that failed to load (e.g. a deleted file) are left out, as in the printed PNG.
+const failed = ref(new Set<string>())
 function imageFor(field: CardField): string | null {
-  if (field.type === 'qr') return qrImage.value
-  return props.values[field.type] ?? null
+  const url = field.type === 'qr' ? qrImage.value : (props.values[field.type] ?? null)
+  return url && !failed.value.has(url) ? url : null
+}
+function onImageError(url: string) {
+  failed.value = new Set([...failed.value, url])
 }
 
 function textFor(field: CardField): string {
@@ -166,6 +171,7 @@ const cardStyle = computed(() => ({
           class="pointer-events-none h-full w-full"
           :class="field.type === 'photo' ? 'object-cover' : 'object-contain'"
           :style="{ borderRadius: imageRadius(field) }"
+          @error="onImageError(imageFor(field)!)"
         />
         <span
           v-else-if="editable"

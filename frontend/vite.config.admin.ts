@@ -72,6 +72,11 @@ export default defineConfig({
         target: 'http://localhost:8080',
         changeOrigin: true,
       },
+      // Uploaded files from this same origin, as on the server (Staff cards draws them onto a canvas).
+      '/storage': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
     },
   },
 })

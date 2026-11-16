@@ -451,6 +451,12 @@ const adminRoutes: RouteRecordRaw[] = [
     meta: { titleKey: 'adminNav.items.staffCardNew', permission: 'staff-cards.create' },
   },
   {
+    path: 'staff-cards/:id/print',
+    name: 'admin.staffCards.print',
+    component: () => import('@/pages/admin/StaffCardPrint.vue'),
+    meta: { titleKey: 'adminNav.items.staffCardPrint', permission: 'staff-cards.view' },
+  },
+  {
     path: 'staff-cards/:id/edit',
     name: 'admin.staffCards.edit',
     component: () => import('@/pages/admin/StaffCardDesigner.vue'),

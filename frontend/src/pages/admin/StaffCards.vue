@@ -111,6 +111,7 @@ onMounted(() => void fetch())
             <p v-if="design.updated_at" class="text-xs text-neutral-400">{{ t('admin.staffCards.updatedOn', { date: formatDate(design.updated_at) }) }}</p>
           </div>
           <div class="flex shrink-0 items-center gap-3">
+            <RouterLink :to="`/admin/staff-cards/${design.id}/print`" class="text-sm font-medium text-primary-700 hover:underline">{{ t('admin.staffCards.printCards') }}</RouterLink>
             <RouterLink v-if="canUpdate" :to="`/admin/staff-cards/${design.id}/edit`" class="text-sm font-medium text-primary-700 hover:underline">{{ t('admin.staffCards.design') }}</RouterLink>
             <button v-if="canDelete" type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(design)">{{ t('admin.staffCards.delete') }}</button>
           </div>
