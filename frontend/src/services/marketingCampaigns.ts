@@ -31,6 +31,15 @@ export interface MarketingCampaign {
   enrolled_count: number
   cost_per_lead: number | null
   cost_per_student: number | null
+  /** USD and KHR at the rate on the start date. */
+  budget_usd?: number | null
+  budget_khr?: number | null
+  spent_usd?: number | null
+  spent_khr?: number | null
+  cost_per_lead_usd?: number | null
+  cost_per_lead_khr?: number | null
+  cost_per_student_usd?: number | null
+  cost_per_student_khr?: number | null
   created_at: string
 }
 

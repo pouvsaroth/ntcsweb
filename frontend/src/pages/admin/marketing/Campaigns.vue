@@ -16,7 +16,7 @@ import { CAMPAIGN_STATUSES, marketingCampaignsService, type CampaignStatus, type
 import { useAuthStore } from '@/stores/auth'
 import { useConfirmDialogStore } from '@/stores/confirmDialog'
 import { ApiRequestError } from '@/types/api'
-import { formatMoney } from '@/utils/currency'
+import { moneyOrDash } from '@/utils/currency'
 import { formatDate } from '@/utils/date'
 
 // Marketing > Campaigns: each campaign, its cost, and the leads and students it brought.
@@ -66,7 +66,8 @@ const columns = computed(() => [
   { key: 'actions', label: '', align: 'text-right' },
 ])
 
-const money = (row: MarketingCampaign, value: number | null) => (value === null ? '—' : formatMoney(value, row.currency))
+/** USD / KHR at the rate on the campaign's start date. */
+const both = (usd?: number | null, khr?: number | null) => `${moneyOrDash(usd, 'USD')} / ${moneyOrDash(khr, 'KHR')}`
 const dates = (row: MarketingCampaign) => `${formatDate(row.start_on)} – ${row.end_on ? formatDate(row.end_on) : t('marketing.campaigns.noEnd')}`
 
 const formOpen = ref(false)
@@ -139,7 +140,7 @@ onMounted(() => {
           <dl class="mt-2 grid grid-cols-3 gap-2 text-center text-xs">
             <div class="rounded-md bg-neutral-50 p-1.5">
               <dt class="text-neutral-500">{{ t('marketing.campaigns.cost') }}</dt>
-              <dd class="font-semibold tabular-nums text-neutral-900">{{ money(row, row.spent) }}</dd>
+              <dd class="font-semibold tabular-nums text-neutral-900">{{ moneyOrDash(row.spent_usd, 'USD') }}<span class="block text-xs font-normal text-neutral-500">{{ moneyOrDash(row.spent_khr, 'KHR') }}</span></dd>
             </div>
             <div class="rounded-md bg-neutral-50 p-1.5">
               <dt class="text-neutral-500">{{ t('marketing.campaigns.leads') }}</dt>
@@ -166,16 +167,17 @@ onMounted(() => {
       </template>
       <template #cell-dates="{ row }"><span class="whitespace-nowrap">{{ dates(row) }}</span></template>
       <template #cell-cost="{ row }">
-        <p class="font-semibold tabular-nums">{{ money(row, row.spent) }}</p>
-        <p v-if="row.budget !== null" class="text-xs text-neutral-500">{{ t('marketing.campaigns.ofBudget', { budget: money(row, row.budget) }) }}</p>
+        <p class="whitespace-nowrap font-semibold tabular-nums">{{ moneyOrDash(row.spent_usd, 'USD') }}</p>
+        <p class="whitespace-nowrap tabular-nums">{{ moneyOrDash(row.spent_khr, 'KHR') }}</p>
+        <p v-if="row.budget !== null" class="whitespace-nowrap text-xs text-neutral-500">{{ t('marketing.campaigns.ofBudget', { budget: both(row.budget_usd, row.budget_khr) }) }}</p>
       </template>
       <template #cell-leads="{ row }">
         <p class="tabular-nums">{{ row.leads_count }}</p>
-        <p v-if="row.cost_per_lead !== null" class="text-xs text-neutral-500">{{ t('marketing.campaigns.each', { amount: money(row, row.cost_per_lead) }) }}</p>
+        <p v-if="row.cost_per_lead !== null" class="text-xs text-neutral-500">{{ t('marketing.campaigns.each', { amount: both(row.cost_per_lead_usd, row.cost_per_lead_khr) }) }}</p>
       </template>
       <template #cell-enrolled="{ row }">
         <p class="tabular-nums">{{ row.enrolled_count }}</p>
-        <p v-if="row.cost_per_student !== null" class="text-xs text-neutral-500">{{ t('marketing.campaigns.each', { amount: money(row, row.cost_per_student) }) }}</p>
+        <p v-if="row.cost_per_student !== null" class="text-xs text-neutral-500">{{ t('marketing.campaigns.each', { amount: both(row.cost_per_student_usd, row.cost_per_student_khr) }) }}</p>
       </template>
       <template #cell-status="{ row }">
         <BaseBadge :variant="statusVariant(row.status)">{{ t(`marketing.campaigns.statuses.${row.status}`) }}</BaseBadge>

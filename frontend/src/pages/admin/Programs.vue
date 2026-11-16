@@ -9,14 +9,14 @@ import BaseBadge from '@/components/ui/BaseBadge.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import EditIconButton from '@/components/ui/EditIconButton.vue'
 import BasePagination from '@/components/ui/BasePagination.vue'
+import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import DataTable from '@/components/ui/DataTable.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { programsService, type Program, type ProgramLevel } from '@/services/programs'
 import { useConfirmDialogStore } from '@/stores/confirmDialog'
-import { useMoney } from '@/composables/useMoney'
+import { moneyOrDash } from '@/utils/currency'
 
 const { t } = useI18n()
-const { money } = useMoney()
 const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
 
@@ -29,7 +29,9 @@ const columns = [
   { key: 'title', label: t('admin.programs.columnTitle'), sortable: true },
   { key: 'category', label: t('admin.programs.columnCategory') },
   { key: 'level', label: t('admin.programs.columnLevel') },
-  { key: 'fee', label: t('admin.programs.columnFee') },
+  // USD and KHR at today's rate.
+  { key: 'fee', label: `${t('admin.programs.columnFee')} (USD)`, align: 'text-right' },
+  { key: 'fee_khr', label: `${t('admin.programs.columnFee')} (KHR)`, align: 'text-right' },
   { key: 'is_featured', label: t('admin.programs.columnFeatured') },
   { key: 'status', label: t('admin.programs.columnStatus') },
   { key: 'actions', label: t('admin.programs.columnActions'), align: 'text-right' },
@@ -74,7 +76,32 @@ onMounted(() => fetch())
 
     <BaseAlert v-if="error" variant="danger" class="mb-4">{{ error }}</BaseAlert>
 
+    <!-- Cards on small screens (below sm) -->
+    <div class="sm:hidden">
+      <div v-if="loading" class="flex justify-center py-10"><BaseSpinner /></div>
+      <p v-else-if="items.length === 0" class="rounded-[--radius-card] border border-dashed border-neutral-300 py-10 text-center text-sm text-neutral-500">{{ t('admin.programs.emptyMessage') }}</p>
+      <div v-else class="space-y-2">
+        <div v-for="row in items" :key="row.id" class="rounded-[--radius-card] border border-neutral-200 bg-white p-3 shadow-[--shadow-card]">
+          <div class="flex items-start justify-between gap-2">
+            <div class="min-w-0">
+              <p class="truncate font-medium text-neutral-900">{{ row.title }}</p>
+              <p v-if="row.subtitle" class="truncate text-xs text-neutral-500">{{ row.subtitle }}</p>
+            </div>
+            <div class="shrink-0 text-right font-semibold tabular-nums text-neutral-900">{{ moneyOrDash(row.fee_usd, 'USD') }}<span class="block text-xs font-normal text-neutral-500">{{ moneyOrDash(row.fee_khr, 'KHR') }}</span></div>
+          </div>
+          <div class="mt-2 flex items-center justify-between gap-2">
+            <BaseBadge :variant="row.status === 'active' ? 'success' : 'neutral'">{{ row.status === 'active' ? t('admin.programs.statusActive') : t('admin.programs.statusInactive') }}</BaseBadge>
+            <div class="flex items-center gap-2">
+              <EditIconButton v-if="auth.can('programs.update')" @click="openEdit(row)" />
+              <button v-if="auth.can('programs.delete')" type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row)">{{ t('admin.programs.delete') }}</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <DataTable
+      class="hidden sm:block"
       :columns="columns"
       :rows="items"
       row-key="id"
@@ -97,7 +124,8 @@ onMounted(() => fetch())
           {{ t(`admin.programs.level${row.level.charAt(0).toUpperCase()}${row.level.slice(1)}`) }}
         </BaseBadge>
       </template>
-      <template #cell-fee="{ row }">{{ row.fee !== null ? money(row.fee, row.currency) : '—' }}</template>
+      <template #cell-fee="{ row }"><span class="whitespace-nowrap">{{ moneyOrDash(row.fee_usd, 'USD') }}</span></template>
+      <template #cell-fee_khr="{ row }"><span class="whitespace-nowrap">{{ moneyOrDash(row.fee_khr, 'KHR') }}</span></template>
       <template #cell-is_featured="{ row }">
         <span v-if="row.is_featured" class="text-sm font-medium text-secondary-700">{{ t('common.yes') }}</span>
         <span v-else class="text-sm text-neutral-400">{{ t('common.no') }}</span>

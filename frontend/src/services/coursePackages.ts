@@ -27,6 +27,17 @@ export interface CoursePackage {
   fee_video: number | null
   fee_monthly_online: number | null
   fee_term_online: number | null
+  /** USD and KHR at today's rate. */
+  fee_monthly_usd?: number | null
+  fee_monthly_khr?: number | null
+  fee_term_usd?: number | null
+  fee_term_khr?: number | null
+  fee_video_usd?: number | null
+  fee_video_khr?: number | null
+  fee_monthly_online_usd?: number | null
+  fee_monthly_online_khr?: number | null
+  fee_term_online_usd?: number | null
+  fee_term_online_khr?: number | null
   currency: CoursePackageCurrency
   duration: string | null
   /** The school's order in every dropdown and list (lower first, then by name). */

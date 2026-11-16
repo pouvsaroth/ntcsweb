@@ -9,12 +9,14 @@ import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BasePagination from '@/components/ui/BasePagination.vue'
+import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import DataTable from '@/components/ui/DataTable.vue'
 import EditIconButton from '@/components/ui/EditIconButton.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { coursePackagesService, type CoursePackage } from '@/services/coursePackages'
 import { ApiRequestError } from '@/types/api'
 import { useConfirmDialogStore } from '@/stores/confirmDialog'
+import { moneyOrDash } from '@/utils/currency'
 
 const { t } = useI18n()
 const auth = useAuthStore()
@@ -87,14 +89,42 @@ onMounted(() => fetch())
 
     <BaseAlert v-if="error || deleteError" variant="danger" class="mb-4">{{ error || deleteError }}</BaseAlert>
 
-    <DataTable :columns="columns" :rows="items" row-key="id" :loading="loading" :empty-message="t('admin.coursePackages.emptyMessage')">
+    <!-- Cards on small screens (below sm) -->
+    <div class="sm:hidden">
+      <div v-if="loading" class="flex justify-center py-10"><BaseSpinner /></div>
+      <p v-else-if="items.length === 0" class="rounded-[--radius-card] border border-dashed border-neutral-300 py-10 text-center text-sm text-neutral-500">{{ t('admin.coursePackages.emptyMessage') }}</p>
+      <div v-else class="space-y-2">
+        <div v-for="row in items" :key="row.id" class="rounded-[--radius-card] border border-neutral-200 bg-white p-3 shadow-[--shadow-card]">
+          <div class="flex items-start justify-between gap-2">
+            <div class="min-w-0">
+              <p class="truncate font-medium text-neutral-900">{{ row.name }}</p>
+              <p class="text-xs text-neutral-500">{{ row.code }}<template v-if="row.academic_program"> · {{ row.academic_program.code }}</template></p>
+            </div>
+            <BaseBadge :variant="row.is_active ? 'success' : 'neutral'">{{ row.is_active ? t('admin.coursePackages.statusActive') : t('admin.coursePackages.statusInactive') }}</BaseBadge>
+          </div>
+          <dl class="mt-2 space-y-0.5 text-xs">
+              <div v-if="row.fee_monthly !== null" class="flex justify-between gap-2"><dt class="text-neutral-500">{{ t('admin.coursePackages.columnFeeMonthly') }}</dt><dd class="text-right tabular-nums">{{ moneyOrDash(row.fee_monthly_usd, 'USD') }} / {{ moneyOrDash(row.fee_monthly_khr, 'KHR') }}</dd></div>
+              <div v-if="row.fee_term !== null" class="flex justify-between gap-2"><dt class="text-neutral-500">{{ t('admin.coursePackages.columnFeeTerm') }}</dt><dd class="text-right tabular-nums">{{ moneyOrDash(row.fee_term_usd, 'USD') }} / {{ moneyOrDash(row.fee_term_khr, 'KHR') }}</dd></div>
+              <div v-if="row.fee_video !== null" class="flex justify-between gap-2"><dt class="text-neutral-500">{{ t('admin.coursePackages.columnFeeVideo') }}</dt><dd class="text-right tabular-nums">{{ moneyOrDash(row.fee_video_usd, 'USD') }} / {{ moneyOrDash(row.fee_video_khr, 'KHR') }}</dd></div>
+              <div v-if="row.fee_monthly_online !== null" class="flex justify-between gap-2"><dt class="text-neutral-500">{{ t('admin.coursePackages.columnFeeMonthlyOnline') }}</dt><dd class="text-right tabular-nums">{{ moneyOrDash(row.fee_monthly_online_usd, 'USD') }} / {{ moneyOrDash(row.fee_monthly_online_khr, 'KHR') }}</dd></div>
+              <div v-if="row.fee_term_online !== null" class="flex justify-between gap-2"><dt class="text-neutral-500">{{ t('admin.coursePackages.columnFeeTermOnline') }}</dt><dd class="text-right tabular-nums">{{ moneyOrDash(row.fee_term_online_usd, 'USD') }} / {{ moneyOrDash(row.fee_term_online_khr, 'KHR') }}</dd></div>
+          </dl>
+          <div class="mt-2 flex items-center justify-end gap-2">
+            <EditIconButton v-if="auth.can('course-packages.update')" @click="openEdit(row)" />
+            <button v-if="auth.can('course-packages.delete')" type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row)">{{ t('admin.coursePackages.delete') }}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <DataTable class="hidden sm:block" :columns="columns" :rows="items" row-key="id" :loading="loading" :empty-message="t('admin.coursePackages.emptyMessage')">
       <template #cell-program="{ row }">{{ row.academic_program?.code ?? '—' }}</template>
       <template #cell-books="{ row }">{{ row.books?.map((b) => b.title).join(', ') || '—' }}</template>
-      <template #cell-fee_monthly="{ row }">{{ row.fee_monthly !== null ? row.fee_monthly.toFixed(2) : '—' }}</template>
-      <template #cell-fee_term="{ row }">{{ row.fee_term !== null ? row.fee_term.toFixed(2) : '—' }}</template>
-      <template #cell-fee_video="{ row }">{{ row.fee_video !== null ? row.fee_video.toFixed(2) : '—' }}</template>
-      <template #cell-fee_monthly_online="{ row }">{{ row.fee_monthly_online !== null ? row.fee_monthly_online.toFixed(2) : '—' }}</template>
-      <template #cell-fee_term_online="{ row }">{{ row.fee_term_online !== null ? row.fee_term_online.toFixed(2) : '—' }}</template>
+      <template #cell-fee_monthly="{ row }"><span class="whitespace-nowrap tabular-nums"><template v-if="row.fee_monthly !== null">{{ moneyOrDash(row.fee_monthly_usd, 'USD') }}<span class="block text-xs font-normal text-neutral-500">{{ moneyOrDash(row.fee_monthly_khr, 'KHR') }}</span></template><template v-else>—</template></span></template>
+      <template #cell-fee_term="{ row }"><span class="whitespace-nowrap tabular-nums"><template v-if="row.fee_term !== null">{{ moneyOrDash(row.fee_term_usd, 'USD') }}<span class="block text-xs font-normal text-neutral-500">{{ moneyOrDash(row.fee_term_khr, 'KHR') }}</span></template><template v-else>—</template></span></template>
+      <template #cell-fee_video="{ row }"><span class="whitespace-nowrap tabular-nums"><template v-if="row.fee_video !== null">{{ moneyOrDash(row.fee_video_usd, 'USD') }}<span class="block text-xs font-normal text-neutral-500">{{ moneyOrDash(row.fee_video_khr, 'KHR') }}</span></template><template v-else>—</template></span></template>
+      <template #cell-fee_monthly_online="{ row }"><span class="whitespace-nowrap tabular-nums"><template v-if="row.fee_monthly_online !== null">{{ moneyOrDash(row.fee_monthly_online_usd, 'USD') }}<span class="block text-xs font-normal text-neutral-500">{{ moneyOrDash(row.fee_monthly_online_khr, 'KHR') }}</span></template><template v-else>—</template></span></template>
+      <template #cell-fee_term_online="{ row }"><span class="whitespace-nowrap tabular-nums"><template v-if="row.fee_term_online !== null">{{ moneyOrDash(row.fee_term_online_usd, 'USD') }}<span class="block text-xs font-normal text-neutral-500">{{ moneyOrDash(row.fee_term_online_khr, 'KHR') }}</span></template><template v-else>—</template></span></template>
       <template #cell-currency="{ row }">{{ row.currency }}</template>
       <template #cell-is_active="{ row }">
         <BaseBadge :variant="row.is_active ? 'success' : 'neutral'">

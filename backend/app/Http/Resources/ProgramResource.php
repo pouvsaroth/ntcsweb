@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Resources;
 
 use App\Models\Program;
+use App\Support\Billing\Money;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -24,6 +25,8 @@ class ProgramResource extends JsonResource
             'duration_label' => $this->duration_label,
             'fee' => $this->fee !== null ? (float) $this->fee : null,
             'currency' => $this->currency,
+            // A fee has no date of its own: USD and KHR at today's rate.
+            ...Money::fields('fee', $this->fee, $this->currency, null),
             'description' => $this->description,
             'image_url' => $this->imageUrl(),
             'is_featured' => $this->is_featured,

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Resources;
 
 use App\Models\CoursePackage;
+use App\Support\Billing\Money;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -30,6 +31,12 @@ class CoursePackageResource extends JsonResource
             'fee_monthly_online' => $this->fee_monthly_online !== null ? (float) $this->fee_monthly_online : null,
             'fee_term_online' => $this->fee_term_online !== null ? (float) $this->fee_term_online : null,
             'currency' => $this->currency,
+            // Fees have no date of their own: USD and KHR at today's rate.
+            ...Money::fields('fee_monthly', $this->fee_monthly, $this->currency, null),
+            ...Money::fields('fee_term', $this->fee_term, $this->currency, null),
+            ...Money::fields('fee_video', $this->fee_video, $this->currency, null),
+            ...Money::fields('fee_monthly_online', $this->fee_monthly_online, $this->currency, null),
+            ...Money::fields('fee_term_online', $this->fee_term_online, $this->currency, null),
             'duration' => $this->duration,
             'sort_order' => $this->sort_order,
             'product_id' => $this->product_id,

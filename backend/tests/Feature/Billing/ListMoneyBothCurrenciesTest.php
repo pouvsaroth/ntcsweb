@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Billing;
 
+use App\Models\CoursePackage;
 use App\Models\CurrencyRate;
 use App\Models\Expense;
 use App\Models\FinancialTransaction;
 use App\Models\Invoice;
+use App\Models\MarketingCampaign;
 use App\Models\Payment;
+use App\Models\Product;
 use App\Models\Tenant;
 use App\Support\Authorization\Permissions;
 use App\Support\Billing\InvoiceStatus;
@@ -28,7 +31,7 @@ class ListMoneyBothCurrenciesTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->actingAsAdminWithPermissions([Permissions::INVOICES_VIEW, Permissions::PAYMENTS_VIEW, Permissions::TRANSACTIONS_VIEW, Permissions::EXPENSE_VIEW]);
+        $this->actingAsAdminWithPermissions([Permissions::INVOICES_VIEW, Permissions::PAYMENTS_VIEW, Permissions::TRANSACTIONS_VIEW, Permissions::EXPENSE_VIEW, Permissions::PRODUCTS_VIEW, Permissions::COURSE_PACKAGES_VIEW, Permissions::CAMPAIGNS_VIEW]);
         CurrencyRate::factory()->create(['effective_date' => '2026-01-01', 'khr_per_usd' => 4000]);
         CurrencyRate::factory()->create(['effective_date' => '2026-06-01', 'khr_per_usd' => 4100]);
     }
@@ -56,6 +59,22 @@ class ListMoneyBothCurrenciesTest extends TestCase
 
         $line = $this->getJson('/api/v1/financial-transactions')->assertOk()->json('data.0');
         $this->assertEquals([10, 40000], [$line['amount_usd'], $line['amount_khr']]);
+    }
+
+    public function test_prices_use_todays_rate_and_a_campaign_its_start_dates(): void
+    {
+        Product::factory()->create(['price' => 10, 'currency' => 'USD']);
+        CoursePackage::factory()->create(['fee_monthly' => 30, 'currency' => 'USD']);
+        MarketingCampaign::factory()->create(['start_on' => '2026-03-01', 'budget' => 200, 'currency' => 'USD']);
+
+        // Today: the 4100 rate.
+        $product = $this->getJson('/api/v1/products')->assertOk()->json('data.0');
+        $this->assertEquals([10, 41000], [$product['price_usd'], $product['price_khr']]);
+        $package = $this->getJson('/api/v1/course-packages')->assertOk()->json('data.0');
+        $this->assertEquals([30, 123000], [$package['fee_monthly_usd'], $package['fee_monthly_khr']]);
+        // 1 March: the 4000 rate.
+        $campaign = $this->getJson('/api/v1/marketing-campaigns')->assertOk()->json('data.0');
+        $this->assertEquals([200, 800000], [$campaign['budget_usd'], $campaign['budget_khr']]);
     }
 
     public function test_expenses_carry_both_currencies_at_the_expense_dates_rate(): void

@@ -12,6 +12,9 @@ export interface Program {
   level: ProgramLevel
   duration_label: string | null
   fee: number | null
+  /** USD and KHR at today's rate. */
+  fee_usd?: number | null
+  fee_khr?: number | null
   currency: 'USD' | 'KHR'
   description: string | null
   image_url: string | null

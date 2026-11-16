@@ -108,6 +108,9 @@ export interface Asset {
   purchase_price_khr: number | null
   currency: 'USD' | 'KHR'
   current_value: number | null
+  /** USD and KHR at today's rate. */
+  current_value_usd?: number | null
+  current_value_khr?: number | null
   supplier_id: number | null
   supplier: { id: number; name: string } | null
   warranty_start_date: string | null

@@ -37,6 +37,8 @@ class AssetResource extends JsonResource
             ...(fn (array $p) => ['purchase_price_usd' => $p['USD'], 'purchase_price_khr' => $p['KHR']])(Money::pairOn($this->purchase_price, $this->currency, $this->purchase_date ?? $this->created_at)),
             'currency' => $this->currency,
             'current_value' => $this->current_value !== null ? (float) $this->current_value : null,
+            // What it is worth now: today's rate.
+            ...Money::fields('current_value', $this->current_value, $this->currency, null),
             'supplier_id' => $this->supplier_id,
             'supplier' => $this->whenLoaded('supplier', fn () => $this->supplier !== null ? ['id' => $this->supplier->id, 'name' => $this->supplier->name] : null),
             'warranty_start_date' => $this->warranty_start_date?->toDateString(),

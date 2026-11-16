@@ -21,6 +21,9 @@ export interface Product {
   description: string | null
   type: ProductType
   price: number
+  /** USD and KHR at today's rate. */
+  price_usd?: number | null
+  price_khr?: number | null
   currency: 'USD' | 'KHR'
   is_active: boolean
   /** Present on `show`/`update`; absent (not empty) on the list endpoint. */

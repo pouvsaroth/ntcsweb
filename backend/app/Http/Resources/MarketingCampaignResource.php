@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Resources;
 
 use App\Models\MarketingCampaign;
+use App\Support\Billing\Money;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -41,6 +42,11 @@ class MarketingCampaignResource extends JsonResource
             // Cost per lead / per student, from the real cost.
             'cost_per_lead' => $spent !== null && $leads > 0 ? round($spent / $leads, 2) : null,
             'cost_per_student' => $spent !== null && $enrolled > 0 ? round($spent / $enrolled, 2) : null,
+            // USD and KHR at the rate on the campaign's start date.
+            ...Money::fields('budget', $this->budget, $this->currency, $this->start_on),
+            ...Money::fields('spent', $spent, $this->currency, $this->start_on),
+            ...Money::fields('cost_per_lead', $spent !== null && $leads > 0 ? round($spent / $leads, 2) : null, $this->currency, $this->start_on),
+            ...Money::fields('cost_per_student', $spent !== null && $enrolled > 0 ? round($spent / $enrolled, 2) : null, $this->currency, $this->start_on),
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }

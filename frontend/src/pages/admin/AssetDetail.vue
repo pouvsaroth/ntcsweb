@@ -29,9 +29,10 @@ import { ApiRequestError } from '@/types/api'
 import { formatDate, formatDateTime } from '@/utils/date'
 import { useConfirmDialogStore } from '@/stores/confirmDialog'
 import { useMoney } from '@/composables/useMoney'
+import { moneyOrDash } from '@/utils/currency'
 
 const { t } = useI18n()
-const { money, schoolCurrency } = useMoney()
+const { schoolCurrency } = useMoney()
 const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
 const route = useRoute()
@@ -521,8 +522,8 @@ onMounted(load)
           <h2 class="mb-3 text-sm font-semibold text-neutral-800">{{ t('admin.assets.sectionPurchase') }}</h2>
           <dl class="grid grid-cols-2 gap-3 text-sm">
             <div><dt class="text-neutral-500">{{ t('admin.assets.purchaseDate') }}</dt><dd class="font-medium text-neutral-900">{{ formatDate(asset.purchase_date) }}</dd></div>
-            <div><dt class="text-neutral-500">{{ t('admin.assets.purchasePrice') }}</dt><dd class="font-medium text-neutral-900">{{ money(asset.purchase_price, asset.currency) }}</dd></div>
-            <div><dt class="text-neutral-500">{{ t('admin.assets.currentValue') }}</dt><dd class="font-medium text-neutral-900">{{ asset.current_value !== null ? money(asset.current_value, asset.currency) : '—' }}</dd></div>
+            <div><dt class="text-neutral-500">{{ t('admin.assets.purchasePrice') }}</dt><dd class="font-medium tabular-nums text-neutral-900">{{ moneyOrDash(asset.purchase_price_usd, 'USD') }}<span class="block text-xs font-normal text-neutral-500">{{ moneyOrDash(asset.purchase_price_khr, 'KHR') }}</span></dd></div>
+            <div><dt class="text-neutral-500">{{ t('admin.assets.currentValue') }}</dt><dd class="font-medium tabular-nums text-neutral-900"><template v-if="asset.current_value !== null">{{ moneyOrDash(asset.current_value_usd, 'USD') }}<span class="block text-xs font-normal text-neutral-500">{{ moneyOrDash(asset.current_value_khr, 'KHR') }}</span></template><template v-else>—</template></dd></div>
             <div><dt class="text-neutral-500">{{ t('admin.assets.supplier') }}</dt><dd class="font-medium text-neutral-900">{{ asset.supplier?.name ?? '—' }}</dd></div>
           </dl>
         </div>
@@ -645,7 +646,7 @@ onMounted(load)
         >
           <template #cell-repair_shop="{ row }">{{ row.repair_shop?.name ?? '—' }}</template>
           <template #cell-status="{ row }">{{ t(`admin.assetRepairs.repairStatus${row.status.toLowerCase().split('_').map((p: string) => p.charAt(0).toUpperCase() + p.slice(1)).join('')}`) }}</template>
-          <template #cell-total_cost="{ row }">{{ money(row.total_cost, row.currency) }}</template>
+          <template #cell-total_cost="{ row }"><span class="whitespace-nowrap tabular-nums">{{ moneyOrDash(row.total_cost_usd, 'USD') }}<span class="block text-xs font-normal text-neutral-500">{{ moneyOrDash(row.total_cost_khr, 'KHR') }}</span></span></template>
           <template #cell-actions="{ row }">
             <div class="flex justify-end gap-3">
               <button

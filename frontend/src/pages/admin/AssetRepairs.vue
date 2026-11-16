@@ -6,14 +6,14 @@ import CompleteAssetRepairModal from '@/components/admin/CompleteAssetRepairModa
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BasePagination from '@/components/ui/BasePagination.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
+import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import DataTable from '@/components/ui/DataTable.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { assetRepairsService, repairStatuses, type AssetRepair, type RepairStatus } from '@/services/assetRepairs'
 import { ApiRequestError } from '@/types/api'
-import { useMoney } from '@/composables/useMoney'
+import { moneyOrDash } from '@/utils/currency'
 
 const { t } = useI18n()
-const { money } = useMoney()
 
 const { items, meta, loading, error, setPage, setSearch, setFilter, fetch } = usePaginatedResource<AssetRepair>((query) => assetRepairsService.list(query))
 
@@ -68,7 +68,9 @@ const columns = computed(() => [
   { key: 'asset', label: t('admin.assetRepairs.columnAsset') },
   { key: 'repair_shop', label: t('admin.assetRepairs.repairShop') },
   { key: 'status', label: t('admin.assetRepairs.status') },
-  { key: 'total_cost', label: t('admin.assetRepairs.totalCost'), align: 'text-right' },
+  // USD and KHR at the rate on the day it was sent.
+  { key: 'total_cost', label: `${t('admin.assetRepairs.totalCost')} (USD)`, align: 'text-right' },
+  { key: 'total_cost_khr', label: `${t('admin.assetRepairs.totalCost')} (KHR)`, align: 'text-right' },
   { key: 'actions', label: t('admin.assets.columnActions'), align: 'text-right' },
 ])
 
@@ -94,14 +96,40 @@ onMounted(() => fetch())
       <BaseSelect :model-value="selectedStatus" :options="statusOptions" :placeholder="t('admin.assetRepairs.filterAllStatuses')" @update:model-value="onStatusFilterChange" />
     </div>
 
-    <DataTable :columns="columns" :rows="items" row-key="id" :loading="loading" :empty-message="t('admin.assetRepairs.emptyMessage')">
+    <!-- Cards on small screens (below sm) -->
+    <div class="sm:hidden">
+      <div v-if="loading" class="flex justify-center py-10"><BaseSpinner /></div>
+      <p v-else-if="items.length === 0" class="rounded-[--radius-card] border border-dashed border-neutral-300 py-10 text-center text-sm text-neutral-500">{{ t('admin.assetRepairs.emptyMessage') }}</p>
+      <div v-else class="space-y-2">
+        <div v-for="row in items" :key="row.id" class="rounded-[--radius-card] border border-neutral-200 bg-white p-3 shadow-[--shadow-card]">
+          <div class="flex items-start justify-between gap-2">
+            <div class="min-w-0">
+              <p class="truncate font-medium text-neutral-900">{{ row.repair_number }}</p>
+              <p class="text-xs text-neutral-500">
+                <RouterLink v-if="row.asset" :to="`/admin/assets/${row.asset.id}`" class="text-primary-700">{{ row.asset.asset_number }}</RouterLink>
+                · {{ row.repair_shop?.name ?? '—' }}
+              </p>
+              <p class="text-xs text-neutral-500">{{ t(`admin.assetRepairs.repairStatus${statusKey(row.status)}`) }}</p>
+            </div>
+            <div class="shrink-0 text-right font-semibold tabular-nums text-neutral-900">{{ moneyOrDash(row.total_cost_usd, 'USD') }}<span class="block text-xs font-normal text-neutral-500">{{ moneyOrDash(row.total_cost_khr, 'KHR') }}</span></div>
+          </div>
+          <div class="mt-2 flex justify-end gap-3">
+            <button v-if="!['REPAIR_COMPLETED', 'RETURNED', 'CANCELLED'].includes(row.status)" type="button" class="text-sm font-medium text-primary-700 hover:underline" @click="completingRepair = row">{{ t('admin.assetRepairs.complete') }}</button>
+            <button v-if="!['RETURNED', 'CANCELLED'].includes(row.status)" type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="cancelRepair(row)">{{ t('common.cancel') }}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <DataTable class="hidden sm:block" :columns="columns" :rows="items" row-key="id" :loading="loading" :empty-message="t('admin.assetRepairs.emptyMessage')">
       <template #cell-asset="{ row }">
         <RouterLink v-if="row.asset" :to="`/admin/assets/${row.asset.id}`" class="text-primary-700 hover:underline">{{ row.asset.asset_number }}</RouterLink>
         <span v-else>—</span>
       </template>
       <template #cell-repair_shop="{ row }">{{ row.repair_shop?.name ?? '—' }}</template>
       <template #cell-status="{ row }">{{ t(`admin.assetRepairs.repairStatus${statusKey(row.status)}`) }}</template>
-      <template #cell-total_cost="{ row }">{{ money(row.total_cost, row.currency) }}</template>
+      <template #cell-total_cost="{ row }"><span class="whitespace-nowrap">{{ moneyOrDash(row.total_cost_usd, 'USD') }}</span></template>
+      <template #cell-total_cost_khr="{ row }"><span class="whitespace-nowrap">{{ moneyOrDash(row.total_cost_khr, 'KHR') }}</span></template>
       <template #cell-actions="{ row }">
         <div class="flex justify-end gap-3">
           <button
