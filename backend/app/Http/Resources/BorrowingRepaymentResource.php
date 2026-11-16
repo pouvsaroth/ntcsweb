@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Resources;
 
 use App\Models\BorrowingRepayment;
+use App\Support\Billing\Money;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -31,6 +32,12 @@ class BorrowingRepaymentResource extends JsonResource
             'principal' => $this->principal,
             'interest' => $this->interest,
             'amount' => $this->amount,
+            // USD and KHR at the rate on the day it was paid (needs the loan's currency).
+            ...($loan === null ? [] : [
+                ...Money::fields('principal', $this->principal, $loan->currency, $this->paid_on),
+                ...Money::fields('interest', $this->interest, $loan->currency, $this->paid_on),
+                ...Money::fields('amount', $this->amount, $loan->currency, $this->paid_on),
+            ]),
             'cash_account' => $this->whenLoaded('cashAccount', fn () => $this->cashAccount ? ['id' => $this->cashAccount->id, 'code' => $this->cashAccount->code, 'name' => $this->cashAccount->name] : null),
             'interest_expense_id' => $this->interest_expense_id,
             'note' => $this->note,

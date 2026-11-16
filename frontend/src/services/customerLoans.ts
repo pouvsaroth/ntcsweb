@@ -47,6 +47,15 @@ export interface CustomerLoan {
   paid_principal: number
   paid_interest: number
   outstanding: number
+  /** USD and KHR: amount at the lent date's rate, the rest at today's (next payment: its due date's). */
+  amount_usd?: number | null
+  amount_khr?: number | null
+  outstanding_usd?: number | null
+  outstanding_khr?: number | null
+  monthly_payment_usd?: number | null
+  monthly_payment_khr?: number | null
+  next_payment_total_usd?: number | null
+  next_payment_total_khr?: number | null
   late_count: number
   next_payment: ScheduleRow | null
   /** One month of interest as the loan stands (suggested for a flexible loan). */

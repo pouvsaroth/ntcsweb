@@ -16,7 +16,7 @@ import { expenseEntitiesService, type ExpenseEntity } from '@/services/expenseEn
 import { useAuthStore } from '@/stores/auth'
 import { useConfirmDialogStore } from '@/stores/confirmDialog'
 import { ApiRequestError } from '@/types/api'
-import { formatMoney } from '@/utils/currency'
+import { formatMoney, moneyOrDash } from '@/utils/currency'
 import { formatDate } from '@/utils/date'
 
 /**
@@ -168,11 +168,14 @@ onMounted(async () => {
                 <p class="truncate text-sm font-semibold text-neutral-800">{{ row.loan?.lender?.name ?? '—' }}</p>
                 <p class="text-xs text-neutral-500">{{ formatDate(row.paid_on) }} · {{ t('admin.borrowings.forName', { name: row.loan?.borrowed_for?.name ?? '—' }) }}</p>
               </div>
-              <p class="font-semibold text-neutral-900">{{ money(row.amount, row.loan?.currency ?? 'USD') }}</p>
+              <div class="text-right">
+                <p class="whitespace-nowrap font-semibold text-neutral-900">{{ moneyOrDash(row.amount_usd, 'USD') }}</p>
+                <p class="whitespace-nowrap text-sm text-neutral-600">{{ moneyOrDash(row.amount_khr, 'KHR') }}</p>
+              </div>
             </div>
             <div class="mt-1 flex items-center justify-between gap-2">
               <p class="text-xs text-neutral-500">
-                {{ t('admin.borrowings.principal') }} {{ money(row.principal, row.loan?.currency ?? 'USD') }} · {{ t('admin.borrowings.interest') }} {{ money(row.interest, row.loan?.currency ?? 'USD') }}
+                {{ t('admin.borrowings.principal') }} {{ moneyOrDash(row.principal_usd, 'USD') }} / {{ moneyOrDash(row.principal_khr, 'KHR') }} · {{ t('admin.borrowings.interest') }} {{ moneyOrDash(row.interest_usd, 'USD') }} / {{ moneyOrDash(row.interest_khr, 'KHR') }}
               </p>
               <button v-if="canManage" type="button" class="text-sm font-medium text-danger-600" @click="remove(row)">{{ t('admin.borrowings.delete') }}</button>
             </div>
@@ -188,7 +191,8 @@ onMounted(async () => {
                 <th class="px-4 py-3 font-medium">{{ t('admin.borrowings.borrowedFor') }}</th>
                 <th class="px-4 py-3 text-right font-medium">{{ t('admin.borrowings.principal') }}</th>
                 <th class="px-4 py-3 text-right font-medium">{{ t('admin.borrowings.interest') }}</th>
-                <th class="px-4 py-3 text-right font-medium">{{ t('admin.borrowings.payTotal') }}</th>
+                <th class="px-4 py-3 text-right font-medium">{{ t('admin.borrowings.payTotal') }} (USD)</th>
+                <th class="px-4 py-3 text-right font-medium">{{ t('admin.borrowings.payTotal') }} (KHR)</th>
                 <th class="px-4 py-3 font-medium">{{ t('admin.borrowings.paidFrom') }}</th>
                 <th v-if="canManage" class="px-4 py-3" />
               </tr>
@@ -201,9 +205,10 @@ onMounted(async () => {
                   <p v-if="row.note || row.loan?.reference" class="text-xs text-neutral-500">{{ [row.loan?.reference, row.note].filter(Boolean).join(' · ') }}</p>
                 </td>
                 <td class="px-4 py-3 text-neutral-700">{{ row.loan?.borrowed_for?.name ?? '—' }}</td>
-                <td class="px-4 py-3 text-right tabular-nums">{{ money(row.principal, row.loan?.currency ?? 'USD') }}</td>
-                <td class="px-4 py-3 text-right tabular-nums">{{ money(row.interest, row.loan?.currency ?? 'USD') }}</td>
-                <td class="px-4 py-3 text-right font-semibold tabular-nums">{{ money(row.amount, row.loan?.currency ?? 'USD') }}</td>
+                <td class="whitespace-nowrap px-4 py-3 text-right tabular-nums">{{ moneyOrDash(row.principal_usd, 'USD') }}<p class="text-xs text-neutral-500">{{ moneyOrDash(row.principal_khr, 'KHR') }}</p></td>
+                <td class="whitespace-nowrap px-4 py-3 text-right tabular-nums">{{ moneyOrDash(row.interest_usd, 'USD') }}<p class="text-xs text-neutral-500">{{ moneyOrDash(row.interest_khr, 'KHR') }}</p></td>
+                <td class="whitespace-nowrap px-4 py-3 text-right font-semibold tabular-nums">{{ moneyOrDash(row.amount_usd, 'USD') }}</td>
+                <td class="whitespace-nowrap px-4 py-3 text-right font-semibold tabular-nums">{{ moneyOrDash(row.amount_khr, 'KHR') }}</td>
                 <td class="px-4 py-3 text-neutral-700">{{ row.cash_account?.name ?? '—' }}</td>
                 <td v-if="canManage" class="px-4 py-3 text-right">
                   <button type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row)">{{ t('admin.borrowings.delete') }}</button>

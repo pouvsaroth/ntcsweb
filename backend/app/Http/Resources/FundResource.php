@@ -6,6 +6,7 @@ namespace App\Http\Resources;
 
 use App\Models\Fund;
 use App\Models\FundTransaction;
+use App\Support\Billing\Money;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -37,6 +38,8 @@ class FundResource extends JsonResource
             'total_in' => $in,
             'total_out' => $out,
             'balance' => round($in - $out, 2),
+            // The balance now, in USD and KHR at today's rate.
+            ...Money::fields('balance', round($in - $out, 2), $this->currency, null),
             'entries_count' => (int) ($this->entries_count ?? 0),
             'last_entry_on' => $this->last_entry_on ? substr((string) $this->last_entry_on, 0, 10) : null,
             'statement' => $this->when($this->statement !== null, fn () => array_map(fn (array $row) => [

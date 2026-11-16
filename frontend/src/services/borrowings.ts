@@ -64,6 +64,13 @@ export interface BorrowingRepayment {
   principal: string
   interest: string
   amount: string
+  /** USD and KHR at the rate on the day it was paid. */
+  principal_usd?: number | null
+  principal_khr?: number | null
+  interest_usd?: number | null
+  interest_khr?: number | null
+  amount_usd?: number | null
+  amount_khr?: number | null
   cash_account?: { id: number; code: string; name: string } | null
   interest_expense_id: number | null
   note: string | null
@@ -112,6 +119,15 @@ export interface Borrowing {
   paid_principal: number
   paid_interest: number
   outstanding: number
+  /** USD and KHR: amount at the received date's rate, the rest at today's (next payment: its due date's). */
+  amount_usd?: number | null
+  amount_khr?: number | null
+  outstanding_usd?: number | null
+  outstanding_khr?: number | null
+  monthly_payment_usd?: number | null
+  monthly_payment_khr?: number | null
+  next_payment_total_usd?: number | null
+  next_payment_total_khr?: number | null
   late_count: number
   next_payment: ScheduleRow | null
   /** One month's interest on what is owed now (suggested on a flexible loan). */

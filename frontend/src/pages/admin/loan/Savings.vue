@@ -15,7 +15,7 @@ import DataTable from '@/components/ui/DataTable.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { savingsService, type SavingsAccount, type SavingsSummaryRow } from '@/services/savings'
 import { useAuthStore } from '@/stores/auth'
-import { formatMoney } from '@/utils/currency'
+import { formatMoney, moneyOrDash } from '@/utils/currency'
 import { formatDate } from '@/utils/date'
 
 // Loan > Savings: every customer savings account, its balance, deposit / withdraw, and the statement.
@@ -57,13 +57,14 @@ const columns = computed(() => [
   { key: 'account_no', label: t('admin.savings.accountNo') },
   { key: 'customer', label: t('admin.savings.customer') },
   { key: 'currency', label: t('admin.savings.currency') },
-  { key: 'balance', label: t('admin.savings.balance'), align: 'text-right' },
+  // The balance now, in USD and KHR at today's rate.
+  { key: 'balance', label: `${t('admin.savings.balance')} (USD)`, align: 'text-right' },
+  { key: 'balance_khr', label: `${t('admin.savings.balance')} (KHR)`, align: 'text-right' },
   { key: 'last_entry_on', label: t('admin.savings.lastEntry') },
   { key: 'status', label: t('admin.savings.status') },
   { key: 'actions', label: '', align: 'text-right' },
 ])
 
-const money = (row: SavingsAccount) => formatMoney(row.balance, row.currency)
 
 const openModal = ref(false)
 const entryModal = ref(false)
@@ -140,7 +141,8 @@ onMounted(() => {
               </p>
             </div>
             <div class="text-right">
-              <p class="font-semibold tabular-nums text-neutral-900">{{ money(row) }}</p>
+              <p class="whitespace-nowrap font-semibold tabular-nums text-neutral-900">{{ moneyOrDash(row.balance_usd, 'USD') }}</p>
+              <p class="whitespace-nowrap text-sm tabular-nums text-neutral-600">{{ moneyOrDash(row.balance_khr, 'KHR') }}</p>
               <BaseBadge v-if="row.status === 'closed'" variant="neutral">{{ t('admin.savings.statuses.closed') }}</BaseBadge>
             </div>
           </button>
@@ -161,7 +163,8 @@ onMounted(() => {
         <p class="font-medium text-neutral-900">{{ row.customer?.name ?? '—' }}</p>
         <p v-if="row.customer?.phone" class="text-xs text-neutral-500">{{ row.customer.phone }}</p>
       </template>
-      <template #cell-balance="{ row }"><span class="font-semibold tabular-nums">{{ money(row) }}</span></template>
+      <template #cell-balance="{ row }"><span class="whitespace-nowrap font-semibold tabular-nums">{{ moneyOrDash(row.balance_usd, 'USD') }}</span></template>
+      <template #cell-balance_khr="{ row }"><span class="whitespace-nowrap font-semibold tabular-nums">{{ moneyOrDash(row.balance_khr, 'KHR') }}</span></template>
       <template #cell-last_entry_on="{ row }">{{ row.last_entry_on ? formatDate(row.last_entry_on) : '—' }}</template>
       <template #cell-status="{ row }">
         <BaseBadge :variant="row.status === 'open' ? 'success' : 'neutral'">{{ t(`admin.savings.statuses.${row.status}`) }}</BaseBadge>

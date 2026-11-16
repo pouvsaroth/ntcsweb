@@ -16,7 +16,7 @@ import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { fundsService, type Fund, type FundEntryType, type FundSummaryRow } from '@/services/funds'
 import { lookupsService, type LookupOption } from '@/services/lookups'
 import { useAuthStore } from '@/stores/auth'
-import { formatMoney } from '@/utils/currency'
+import { formatMoney, moneyOrDash } from '@/utils/currency'
 import { formatDate } from '@/utils/date'
 
 // Fund > Funds: every fund, its type and balance; money in / out, and the statement.
@@ -62,13 +62,14 @@ const columns = computed(() => [
   { key: 'fund_no', label: t('admin.funds.fundNo') },
   { key: 'name', label: t('admin.funds.name') },
   { key: 'type', label: t('admin.funds.type') },
-  { key: 'balance', label: t('admin.funds.balance'), align: 'text-right' },
+  // The balance now, in USD and KHR at today's rate.
+  { key: 'balance', label: `${t('admin.funds.balance')} (USD)`, align: 'text-right' },
+  { key: 'balance_khr', label: `${t('admin.funds.balance')} (KHR)`, align: 'text-right' },
   { key: 'last_entry_on', label: t('admin.funds.lastEntry') },
   { key: 'status', label: t('admin.funds.status') },
   { key: 'actions', label: '', align: 'text-right' },
 ])
 
-const money = (row: Fund) => formatMoney(row.balance, row.currency)
 
 const formOpen = ref(false)
 const entryModal = ref(false)
@@ -140,7 +141,8 @@ onMounted(() => {
               <p class="mt-0.5 text-xs text-neutral-500">{{ row.fund_no }} · {{ typeName(row.fund_type) }} · {{ row.currency }}</p>
             </div>
             <div class="text-right">
-              <p class="font-semibold tabular-nums text-neutral-900">{{ money(row) }}</p>
+              <p class="whitespace-nowrap font-semibold tabular-nums text-neutral-900">{{ moneyOrDash(row.balance_usd, 'USD') }}</p>
+              <p class="whitespace-nowrap text-sm tabular-nums text-neutral-600">{{ moneyOrDash(row.balance_khr, 'KHR') }}</p>
               <BaseBadge v-if="row.status === 'closed'" variant="neutral">{{ t('admin.funds.statuses.closed') }}</BaseBadge>
             </div>
           </button>
@@ -162,7 +164,8 @@ onMounted(() => {
         <p class="text-xs text-neutral-500">{{ row.currency }}</p>
       </template>
       <template #cell-type="{ row }">{{ typeName(row.fund_type) }}</template>
-      <template #cell-balance="{ row }"><span class="font-semibold tabular-nums">{{ money(row) }}</span></template>
+      <template #cell-balance="{ row }"><span class="whitespace-nowrap font-semibold tabular-nums">{{ moneyOrDash(row.balance_usd, 'USD') }}</span></template>
+      <template #cell-balance_khr="{ row }"><span class="whitespace-nowrap font-semibold tabular-nums">{{ moneyOrDash(row.balance_khr, 'KHR') }}</span></template>
       <template #cell-last_entry_on="{ row }">{{ row.last_entry_on ? formatDate(row.last_entry_on) : '—' }}</template>
       <template #cell-status="{ row }">
         <BaseBadge :variant="row.status === 'active' ? 'success' : 'neutral'">{{ t(`admin.funds.statuses.${row.status}`) }}</BaseBadge>

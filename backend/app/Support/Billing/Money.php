@@ -95,6 +95,14 @@ final class Money
         return self::pair($amount, $currency, self::khrPerUsdOn($date));
     }
 
+    /** Drops the rates remembered by khrPerUsdOn() (a rate was added or changed). */
+    public static function forgetRates(): void
+    {
+        if (app()->bound('money.rates')) {
+            app('money.rates')->exchangeArray([]);
+        }
+    }
+
     /**
      * `<key>_usd` and `<key>_khr` for an API row: the amount in both
      * currencies at the rate on `$date`. A null currency is the school's.

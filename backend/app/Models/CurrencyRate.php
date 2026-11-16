@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Models\Concerns\Auditable;
+use App\Support\Billing\Money;
 use Database\Factories\CurrencyRateFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -35,6 +36,13 @@ class CurrencyRate extends Model
             'effective_date' => 'date',
             'khr_per_usd' => 'decimal:4',
         ];
+    }
+
+    /** A new or changed rate must not be missed by rates Money already looked up. */
+    protected static function booted(): void
+    {
+        static::saved(fn () => Money::forgetRates());
+        static::deleted(fn () => Money::forgetRates());
     }
 
     public function creator(): BelongsTo

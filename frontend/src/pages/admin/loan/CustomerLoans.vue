@@ -14,7 +14,7 @@ import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { customerLoansService, type CustomerLoan, type CustomerLoanStatus, type CustomerLoanSummary } from '@/services/customerLoans'
 import { useAuthStore } from '@/stores/auth'
-import { formatMoney } from '@/utils/currency'
+import { formatMoney, moneyOrDash } from '@/utils/currency'
 import { formatDate } from '@/utils/date'
 
 /**
@@ -140,12 +140,12 @@ onMounted(() => {
               <BaseBadge v-else :variant="statusVariant[loan.status]">{{ t(`admin.borrowings.statuses.${loan.status}`) }}</BaseBadge>
             </div>
             <p class="mt-1 text-sm font-semibold text-neutral-900">
-              {{ money(loan.amount, loan.currency) }}
-              <span v-if="loan.status === 'active'" class="font-normal text-neutral-500">· {{ t('admin.customerLoans.owed') }} {{ money(loan.outstanding, loan.currency) }}</span>
+              {{ moneyOrDash(loan.amount_usd, 'USD') }} / {{ moneyOrDash(loan.amount_khr, 'KHR') }}
+              <span v-if="loan.status === 'active'" class="block font-normal text-neutral-500">{{ t('admin.customerLoans.owed') }} {{ moneyOrDash(loan.outstanding_usd, 'USD') }} / {{ moneyOrDash(loan.outstanding_khr, 'KHR') }}</span>
             </p>
             <p class="text-xs text-neutral-500">
               <template v-if="loan.flexible">{{ t('admin.borrowings.flexible') }}</template>
-              <template v-else>{{ t('admin.borrowings.monthlyOf', { amount: money(loan.monthly_payment, loan.currency), months: loan.term_months }) }}</template>
+              <template v-else>{{ t('admin.borrowings.monthlyOf', { amount: `${moneyOrDash(loan.monthly_payment_usd, 'USD')} / ${moneyOrDash(loan.monthly_payment_khr, 'KHR')}`, months: loan.term_months }) }}</template>
               <template v-if="loan.next_payment"> · {{ t('admin.borrowings.nextDue', { date: formatDate(loan.next_payment.due_on) }) }}</template>
             </p>
           </button>
@@ -160,8 +160,10 @@ onMounted(() => {
           <thead class="border-b border-neutral-200 bg-neutral-50 text-neutral-500">
             <tr>
               <th class="px-4 py-3 font-medium">{{ t('admin.customerLoans.customer') }}</th>
-              <th class="px-4 py-3 text-right font-medium">{{ t('admin.customerLoans.amount') }}</th>
-              <th class="px-4 py-3 text-right font-medium">{{ t('admin.customerLoans.owed') }}</th>
+              <th class="px-4 py-3 text-right font-medium">{{ t('admin.customerLoans.amount') }} (USD)</th>
+              <th class="px-4 py-3 text-right font-medium">{{ t('admin.customerLoans.amount') }} (KHR)</th>
+              <th class="px-4 py-3 text-right font-medium">{{ t('admin.customerLoans.owed') }} (USD)</th>
+              <th class="px-4 py-3 text-right font-medium">{{ t('admin.customerLoans.owed') }} (KHR)</th>
               <th class="px-4 py-3 font-medium">{{ t('admin.borrowings.interest') }}</th>
               <th class="px-4 py-3 text-right font-medium">{{ t('admin.borrowings.monthly') }}</th>
               <th class="px-4 py-3 font-medium">{{ t('admin.borrowings.nextPayment') }}</th>
@@ -175,18 +177,21 @@ onMounted(() => {
                 <button type="button" class="text-left font-medium text-primary-700 hover:underline" @click="open(loan)">{{ loan.customer?.name ?? '—' }}</button>
                 <p class="text-xs text-neutral-500">{{ loan.loan_no }} · {{ formatDate(loan.lent_on) }}<template v-if="loan.reference"> · {{ loan.reference }}</template></p>
               </td>
-              <td class="px-4 py-3 text-right tabular-nums">{{ money(loan.amount, loan.currency) }}</td>
-              <td class="px-4 py-3 text-right font-semibold tabular-nums">{{ money(loan.outstanding, loan.currency) }}</td>
+              <td class="whitespace-nowrap px-4 py-3 text-right tabular-nums">{{ moneyOrDash(loan.amount_usd, 'USD') }}</td>
+              <td class="whitespace-nowrap px-4 py-3 text-right tabular-nums">{{ moneyOrDash(loan.amount_khr, 'KHR') }}</td>
+              <td class="whitespace-nowrap px-4 py-3 text-right font-semibold tabular-nums">{{ moneyOrDash(loan.outstanding_usd, 'USD') }}</td>
+              <td class="whitespace-nowrap px-4 py-3 text-right font-semibold tabular-nums">{{ moneyOrDash(loan.outstanding_khr, 'KHR') }}</td>
               <td class="px-4 py-3 text-neutral-700">{{ interestLabel(loan) }}</td>
               <td v-if="loan.flexible" class="px-4 py-3 text-right text-neutral-500">{{ t('admin.borrowings.flexible') }}</td>
               <td v-else class="px-4 py-3 text-right tabular-nums">
-                {{ money(loan.monthly_payment, loan.currency) }}
+                <span class="whitespace-nowrap">{{ moneyOrDash(loan.monthly_payment_usd, 'USD') }}</span>
+                <p class="whitespace-nowrap">{{ moneyOrDash(loan.monthly_payment_khr, 'KHR') }}</p>
                 <p class="text-xs text-neutral-500">× {{ loan.term_months }}</p>
               </td>
               <td class="px-4 py-3 text-neutral-700">
                 <template v-if="loan.next_payment">
                   <span :class="loan.next_payment.late ? 'font-medium text-danger-700' : ''">{{ formatDate(loan.next_payment.due_on) }}</span>
-                  <p class="text-xs text-neutral-500">{{ money((loan.next_payment.due_principal ?? loan.next_payment.principal) + loan.next_payment.interest, loan.currency) }}</p>
+                  <p class="whitespace-nowrap text-xs text-neutral-500">{{ moneyOrDash(loan.next_payment_total_usd, 'USD') }} / {{ moneyOrDash(loan.next_payment_total_khr, 'KHR') }}</p>
                 </template>
                 <template v-else>—</template>
               </td>

@@ -36,6 +36,9 @@ export interface SavingsAccount {
   total_in: number
   total_out: number
   balance: number
+  /** The balance in USD and KHR at today's rate. */
+  balance_usd?: number | null
+  balance_khr?: number | null
   entries_count: number
   last_entry_on: string | null
   /** Oldest first, with the running balance — only when one account is loaded. */

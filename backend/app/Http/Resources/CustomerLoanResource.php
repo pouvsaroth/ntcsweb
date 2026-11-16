@@ -6,6 +6,7 @@ namespace App\Http\Resources;
 
 use App\Models\CustomerLoan;
 use App\Services\Borrowings\BorrowingSchedule;
+use App\Support\Billing\Money;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -68,6 +69,12 @@ class CustomerLoanResource extends JsonResource
             'paid_principal' => round($paidPrincipal, 2),
             'paid_interest' => round($paidInterest, 2),
             'outstanding' => $outstanding,
+            // USD and KHR: the amount at the rate on its date, what is owed and
+            // the monthly payment at today's, the next payment at its due date's.
+            ...Money::fields('amount', $this->amount, $this->currency, $this->lent_on),
+            ...Money::fields('outstanding', $outstanding, $this->currency, null),
+            ...Money::fields('monthly_payment', $plan[0]['total'] ?? 0, $this->currency, null),
+            ...Money::fields('next_payment_total', $next === null ? null : ($next['due_principal'] ?? $next['principal']) + $next['interest'], $this->currency, $next['due_on'] ?? null),
             'late_count' => $this->status === 'active' ? $unpaid->where('late', true)->count() : 0,
             'next_payment' => $next,
             'month_interest' => BorrowingSchedule::monthInterest($this->resource, $outstanding),

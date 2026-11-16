@@ -6,6 +6,7 @@ namespace Tests\Feature\Accounting;
 
 use App\Models\Account;
 use App\Models\Borrowing;
+use App\Models\CurrencyRate;
 use App\Models\Expense;
 use App\Models\ExpenseEntity;
 use App\Models\FinancialTransaction;
@@ -72,6 +73,26 @@ class BorrowingRepaymentTest extends TestCase
 
         $noAccount = $this->borrow(['cash_account_id' => null]);
         $this->assertFalse($noAccount['posted']);
+    }
+
+    public function test_loans_and_repayments_also_come_in_dollars_and_riel(): void
+    {
+        CurrencyRate::factory()->create(['effective_date' => '2020-01-01', 'khr_per_usd' => 4000]);
+        $loan = $this->borrow();
+        $this->postJson("/api/v1/borrowings/{$loan['id']}/repayments", [
+            'paid_on' => now()->toDateString(), 'principal' => 100, 'interest' => 12, 'cash_account_id' => $this->cashAccount->id,
+        ])->assertCreated();
+
+        $row = $this->getJson('/api/v1/borrowings')->assertOk()->json('data.0');
+        $this->assertEquals([1200, 4800000], [$row['amount_usd'], $row['amount_khr']]);
+        $this->assertEquals([1100, 4400000], [$row['outstanding_usd'], $row['outstanding_khr']]);
+        $this->assertEquals([112, 448000], [$row['monthly_payment_usd'], $row['monthly_payment_khr']]);
+        $this->assertEquals([112, 448000], [$row['next_payment_total_usd'], $row['next_payment_total_khr']]);
+
+        $paid = $this->getJson('/api/v1/borrowing-repayments')->assertOk()->json('data.0');
+        $this->assertEquals([100, 400000], [$paid['principal_usd'], $paid['principal_khr']]);
+        $this->assertEquals([12, 48000], [$paid['interest_usd'], $paid['interest_khr']]);
+        $this->assertEquals([112, 448000], [$paid['amount_usd'], $paid['amount_khr']]);
     }
 
     public function test_a_repayment_lowers_the_debt_and_its_interest_is_a_family_expense(): void
