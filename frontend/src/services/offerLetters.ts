@@ -45,6 +45,8 @@ export interface OfferLetter {
   employment_type: EmploymentType
   salary: number
   salary_currency: SalaryCurrency
+  salary_usd?: number | null
+  salary_khr?: number | null
   start_date: string
   probation_months: number | null
   expires_on: string | null

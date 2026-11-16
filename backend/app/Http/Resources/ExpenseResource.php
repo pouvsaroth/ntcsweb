@@ -6,6 +6,7 @@ namespace App\Http\Resources;
 
 use App\Models\Expense;
 use App\Models\Tenant;
+use App\Support\Billing\Money;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -41,6 +42,8 @@ class ExpenseResource extends JsonResource
             'amount' => (float) $this->amount,
             // Empty on older expenses = the school's default currency.
             'currency' => $this->currency ?? app(TenantContext::class)->get()?->default_currency ?? Tenant::CURRENCY_USD,
+            // USD and KHR at the rate on the expense date.
+            ...Money::fields('amount', $this->amount, $this->currency, $this->expense_date),
             'payment_method' => $this->payment_method,
             'supplier_id' => $this->supplier_id,
             'vendor' => $this->vendor,

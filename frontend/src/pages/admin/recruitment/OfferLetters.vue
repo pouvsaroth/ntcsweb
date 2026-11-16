@@ -18,7 +18,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useConfirmDialogStore } from '@/stores/confirmDialog'
 import { useSiteStore } from '@/stores/site'
 import { ApiRequestError } from '@/types/api'
-import { formatMoney } from '@/utils/currency'
+import { moneyOrDash } from '@/utils/currency'
 import { formatDate } from '@/utils/date'
 import { printOfferLetter } from '@/utils/printOfferLetter'
 
@@ -53,7 +53,9 @@ function onStatus(value: string) {
 const columns = computed(() => [
   { key: 'reference', label: t('admin.recruitment.manpower.reference') },
   { key: 'applicant', label: t('admin.recruitment.applicants.name') },
-  { key: 'salary', label: t('admin.recruitment.offers.salary') },
+  // USD and KHR, at the rate on the day the offer was made.
+  { key: 'salary', label: `${t('admin.recruitment.offers.salary')} (USD)`, align: 'text-right' },
+  { key: 'salary_khr', label: `${t('admin.recruitment.offers.salary')} (KHR)`, align: 'text-right' },
   { key: 'start_date', label: t('admin.recruitment.offers.startDate') },
   { key: 'expires_on', label: t('admin.recruitment.offers.expiresOn') },
   { key: 'status', label: t('admin.recruitment.positions.status') },
@@ -156,7 +158,7 @@ onMounted(() => {
             <BaseBadge :variant="OFFER_STATUS_VARIANT[row.status]" class="shrink-0">{{ t(`admin.recruitment.offerStatuses.${row.status}`) }}</BaseBadge>
           </div>
           <p class="mt-2 text-xs text-neutral-600">
-            {{ formatMoney(row.salary, row.salary_currency) }} · {{ t('admin.recruitment.offers.startsOn', { date: formatDate(row.start_date) }) }}
+            {{ moneyOrDash(row.salary_usd, 'USD') }} / {{ moneyOrDash(row.salary_khr, 'KHR') }} · {{ t('admin.recruitment.offers.startsOn', { date: formatDate(row.start_date) }) }}
           </p>
           <p v-if="row.hired_staff_id" class="text-xs font-medium text-success-600">{{ t('admin.recruitment.offers.hired') }}</p>
           <div class="mt-2 flex flex-wrap items-center justify-end gap-2">
@@ -178,7 +180,8 @@ onMounted(() => {
           <p class="font-medium text-neutral-800">{{ row.applicant?.name }}</p>
           <p class="text-xs text-neutral-500">{{ row.position_title }}</p>
         </template>
-        <template #cell-salary="{ row }">{{ formatMoney(row.salary, row.salary_currency) }}</template>
+        <template #cell-salary="{ row }"><span class="whitespace-nowrap">{{ moneyOrDash(row.salary_usd, 'USD') }}</span></template>
+        <template #cell-salary_khr="{ row }"><span class="whitespace-nowrap">{{ moneyOrDash(row.salary_khr, 'KHR') }}</span></template>
         <template #cell-start_date="{ row }">{{ formatDate(row.start_date) }}</template>
         <template #cell-expires_on="{ row }">{{ formatDate(row.expires_on) }}</template>
         <template #cell-status="{ row }">

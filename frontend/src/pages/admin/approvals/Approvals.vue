@@ -32,7 +32,7 @@ import { resultApprovalsService, type GradeCorrectionRow, type ResultSheetRow } 
 import { ApiRequestError } from '@/types/api'
 import { formatDate } from '@/utils/date'
 import { genderLabel } from '@/utils/gender'
-import { useMoney } from '@/composables/useMoney'
+import { moneyOrDash } from '@/utils/currency'
 
 /**
  * The approval queue — every pending/decided item across the generic
@@ -74,7 +74,8 @@ type MergedRow = {
 }
 
 const { t } = useI18n()
-const { money } = useMoney()
+/** USD / KHR at the rate on the expense date. */
+const bothMoney = (usd?: number | null, khr?: number | null) => `${moneyOrDash(usd, 'USD')} / ${moneyOrDash(khr, 'KHR')}`
 const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
 
@@ -407,7 +408,7 @@ async function load() {
             id: r.id,
             reference: r.expense_number,
             requestor: r.created_by ?? '—',
-            subject: t('admin.approvals.expenseSubject', { amount: money(r.amount, r.currency), account: r.account.name }),
+            subject: t('admin.approvals.expenseSubject', { amount: bothMoney(r.amount_usd, r.amount_khr), account: r.account.name }),
             status,
             createdAt: r.created_at,
             flow: r.approval_flow ?? null,
@@ -807,7 +808,7 @@ function leaveSubject(r: LeaveRequest): string {
         <dl v-else-if="detail.kind === 'expense' && detail.expense" class="grid gap-y-2 text-sm">
           <div><dt class="text-neutral-500">{{ t('admin.expenses.columnDate') }}</dt><dd class="font-medium text-neutral-900">{{ formatDate(detail.expense.expense_date) }}</dd></div>
           <div><dt class="text-neutral-500">{{ t('admin.expenses.columnAccount') }}</dt><dd class="font-medium text-neutral-900">{{ detail.expense.account.code }} — {{ detail.expense.account.name }}</dd></div>
-          <div><dt class="text-neutral-500">{{ t('admin.expenses.columnAmount') }}</dt><dd class="font-medium text-neutral-900">{{ money(detail.expense.amount, detail.expense.currency) }}</dd></div>
+          <div><dt class="text-neutral-500">{{ t('admin.expenses.columnAmount') }}</dt><dd class="font-medium text-neutral-900">{{ bothMoney(detail.expense.amount_usd, detail.expense.amount_khr) }}</dd></div>
           <div v-if="detail.expense.vendor"><dt class="text-neutral-500">{{ t('admin.expenses.columnVendor') }}</dt><dd class="font-medium text-neutral-900">{{ detail.expense.vendor }}</dd></div>
           <div v-if="detail.expense.description"><dt class="text-neutral-500">{{ t('admin.expenses.description') }}</dt><dd class="whitespace-pre-line font-medium text-neutral-900">{{ detail.expense.description }}</dd></div>
           <div v-if="detail.expense.rejected_reason"><dt class="text-neutral-500">{{ t('admin.leaveRequests.decisionReason') }}</dt><dd class="font-medium text-neutral-900">{{ detail.expense.rejected_reason }}</dd></div>

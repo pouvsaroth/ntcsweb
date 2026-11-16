@@ -17,6 +17,9 @@ export interface ExpenseSupport {
   kind: SupportKind
   /** Money: the amount; food: an optional estimate. */
   amount: number | null
+  /** USD and KHR at the rate on the record date; null when there is no rate. */
+  amount_usd?: number | null
+  amount_khr?: number | null
   currency: 'USD' | 'KHR' | null
   /** Food: what they brought. */
   items: string | null

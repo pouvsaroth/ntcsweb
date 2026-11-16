@@ -18,7 +18,7 @@ import PayExpenseModal from '@/components/admin/PayExpenseModal.vue'
 import { expensesService, expenseStatuses, type BulkExpenseResult, type Expense, type ExpenseStatus } from '@/services/expenses'
 import { useConfirmDialogStore } from '@/stores/confirmDialog'
 import { ApiRequestError } from '@/types/api'
-import { formatMoney } from '@/utils/currency'
+import { moneyOrDash } from '@/utils/currency'
 import { formatDate, formatMonth } from '@/utils/date'
 
 const { t } = useI18n()
@@ -136,7 +136,9 @@ const columns = [
   { key: 'expense_entity', label: t('admin.expenses.expenseFor') },
   { key: 'account', label: t('admin.expenses.columnAccount') },
   { key: 'vendor', label: t('admin.expenses.columnVendor') },
-  { key: 'amount', label: t('admin.expenses.columnAmount'), sortable: true, align: 'text-right' },
+  // USD and KHR, at the rate on the expense date.
+  { key: 'amount', label: `${t('admin.expenses.columnAmount')} (USD)`, sortable: true, align: 'text-right' },
+  { key: 'amount_khr', label: `${t('admin.expenses.columnAmount')} (KHR)`, align: 'text-right' },
   { key: 'status', label: t('admin.expenses.columnStatus') },
 ]
 
@@ -236,7 +238,10 @@ onMounted(() => {
           <p v-if="row.expense_entity" class="truncate text-xs text-neutral-500">{{ t('admin.expenses.expenseFor') }}: {{ row.expense_entity.name }}</p>
           <div class="mt-1 flex items-center justify-between gap-2">
             <p class="truncate text-xs text-neutral-500">{{ row.vendor ?? '—' }}</p>
-            <p class="shrink-0 text-base font-semibold text-neutral-900">{{ formatMoney(row.amount, row.currency) }}</p>
+            <div class="shrink-0 text-right">
+              <p class="text-base font-semibold text-neutral-900">{{ moneyOrDash(row.amount_usd, 'USD') }}</p>
+              <p class="text-sm text-neutral-600">{{ moneyOrDash(row.amount_khr, 'KHR') }}</p>
+            </div>
           </div>
         </RouterLink>
         </div>
@@ -264,7 +269,8 @@ onMounted(() => {
       <template #cell-expense_entity="{ row }">{{ row.expense_entity?.name ?? '—' }}</template>
       <template #cell-account="{ row }">{{ row.account.code }} — {{ row.account.name }}</template>
       <template #cell-vendor="{ row }">{{ row.vendor ?? '—' }}</template>
-      <template #cell-amount="{ row }">{{ formatMoney(row.amount, row.currency) }}</template>
+      <template #cell-amount="{ row }"><span class="whitespace-nowrap">{{ moneyOrDash(row.amount_usd, 'USD') }}</span></template>
+      <template #cell-amount_khr="{ row }"><span class="whitespace-nowrap">{{ moneyOrDash(row.amount_khr, 'KHR') }}</span></template>
       <template #cell-status="{ row }">
         <BaseBadge :variant="statusVariant[row.status]">{{ t(`admin.expenses.status${statusKey(row.status)}`) }}</BaseBadge>
       </template>

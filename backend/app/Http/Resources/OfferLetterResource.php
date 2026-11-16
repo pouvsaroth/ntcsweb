@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Resources;
 
 use App\Models\OfferLetter;
+use App\Support\Billing\Money;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -48,6 +49,8 @@ class OfferLetterResource extends JsonResource
             'employment_type' => $this->employment_type,
             'salary' => (float) $this->salary,
             'salary_currency' => $this->salary_currency,
+            // USD and KHR at the rate on the day the offer was made.
+            ...Money::fields('salary', $this->salary, $this->salary_currency, $this->created_at),
             'start_date' => $this->start_date?->toDateString(),
             'probation_months' => $this->probation_months,
             'expires_on' => $this->expires_on?->toDateString(),

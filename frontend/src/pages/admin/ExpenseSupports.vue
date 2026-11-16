@@ -18,7 +18,7 @@ import { expenseSupportsService, type ExpenseSupport, type SupportSummaryBlock }
 import { useAuthStore } from '@/stores/auth'
 import { useConfirmDialogStore } from '@/stores/confirmDialog'
 import { ApiRequestError } from '@/types/api'
-import { formatMoney } from '@/utils/currency'
+import { formatMoney, moneyOrDash } from '@/utils/currency'
 import { formatDate } from '@/utils/date'
 
 /** Accounting > Expenses > Support: who gave money or food towards an Expense for (e.g. visitors at the hospital). */
@@ -99,12 +99,13 @@ const columns = computed(() => [
   { key: 'support_date', label: t('admin.expenseSupports.supportDate') },
   { key: 'name', label: t('admin.expenseSupports.name') },
   { key: 'kind', label: t('admin.expenseSupports.given') },
-  { key: 'amount', label: t('admin.expenseSupports.amount'), align: 'text-right' },
+  // USD and KHR, at the rate on the support date.
+  { key: 'amount', label: `${t('admin.expenseSupports.amount')} (USD)`, align: 'text-right' },
+  { key: 'amount_khr', label: `${t('admin.expenseSupports.amount')} (KHR)`, align: 'text-right' },
   { key: 'expense_entity', label: t('admin.expenses.expenseFor') },
   ...(canEdit.value ? [{ key: 'actions', label: '', align: 'text-right' }] : []),
 ])
 
-const money = (row: ExpenseSupport) => (row.amount != null && row.currency ? formatMoney(row.amount, row.currency) : '—')
 const relationship = (row: ExpenseSupport) => (row.relationship ? t(`admin.expenseSupports.relationships.${row.relationship}`) : '')
 
 const modalOpen = ref(false)
@@ -214,7 +215,10 @@ onMounted(async () => {
             </div>
             <div class="text-right">
               <BaseBadge :variant="row.kind === 'money' ? 'success' : 'warning'">{{ t(`admin.expenseSupports.kinds.${row.kind}`) }}</BaseBadge>
-              <p class="mt-1 text-sm font-semibold whitespace-nowrap text-neutral-900 tabular-nums">{{ money(row) }}</p>
+              <template v-if="row.amount != null">
+                <p class="mt-1 text-sm font-semibold whitespace-nowrap text-neutral-900 tabular-nums">{{ moneyOrDash(row.amount_usd, 'USD') }}</p>
+                <p class="text-sm whitespace-nowrap text-neutral-600 tabular-nums">{{ moneyOrDash(row.amount_khr, 'KHR') }}</p>
+              </template>
             </div>
           </div>
           <p v-if="row.items" class="mt-1 text-sm text-neutral-700">{{ row.items }}</p>
@@ -245,7 +249,8 @@ onMounted(async () => {
         <BaseBadge :variant="row.kind === 'money' ? 'success' : 'warning'">{{ t(`admin.expenseSupports.kinds.${row.kind}`) }}</BaseBadge>
         <p v-if="row.items" class="mt-0.5 max-w-xs text-xs text-neutral-600">{{ row.items }}</p>
       </template>
-      <template #cell-amount="{ row }"><span class="whitespace-nowrap tabular-nums">{{ money(row as ExpenseSupport) }}</span></template>
+      <template #cell-amount="{ row }"><span class="whitespace-nowrap tabular-nums">{{ moneyOrDash(row.amount_usd, 'USD') }}</span></template>
+      <template #cell-amount_khr="{ row }"><span class="whitespace-nowrap tabular-nums">{{ moneyOrDash(row.amount_khr, 'KHR') }}</span></template>
       <template #cell-expense_entity="{ row }">{{ row.expense_entity?.name ?? '—' }}</template>
       <template #cell-actions="{ row }">
         <div class="flex justify-end gap-2">

@@ -27,6 +27,9 @@ export interface Expense {
   /** Who it is for (Accounting > Expense for); null on older expenses. */
   expense_entity: { id: number; name: string } | null
   amount: number
+  /** USD and KHR at the rate on the record date; null when there is no rate. */
+  amount_usd?: number | null
+  amount_khr?: number | null
   currency: 'USD' | 'KHR'
   payment_method: string | null
   /** The vendor picked from the Suppliers list; `vendor` is its name (or a name typed on older expenses). */

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Billing;
 
 use App\Models\CurrencyRate;
+use App\Models\Expense;
 use App\Models\FinancialTransaction;
 use App\Models\Invoice;
 use App\Models\Payment;
@@ -13,6 +14,7 @@ use App\Support\Authorization\Permissions;
 use App\Support\Billing\InvoiceStatus;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\HasAcademicAdmin;
+use Tests\Concerns\HasChartOfAccounts;
 use Tests\TestCase;
 
 /**
@@ -21,12 +23,12 @@ use Tests\TestCase;
  */
 class ListMoneyBothCurrenciesTest extends TestCase
 {
-    use HasAcademicAdmin, RefreshDatabase;
+    use HasAcademicAdmin, HasChartOfAccounts, RefreshDatabase;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->actingAsAdminWithPermissions([Permissions::INVOICES_VIEW, Permissions::PAYMENTS_VIEW, Permissions::TRANSACTIONS_VIEW]);
+        $this->actingAsAdminWithPermissions([Permissions::INVOICES_VIEW, Permissions::PAYMENTS_VIEW, Permissions::TRANSACTIONS_VIEW, Permissions::EXPENSE_VIEW]);
         CurrencyRate::factory()->create(['effective_date' => '2026-01-01', 'khr_per_usd' => 4000]);
         CurrencyRate::factory()->create(['effective_date' => '2026-06-01', 'khr_per_usd' => 4100]);
     }
@@ -54,5 +56,18 @@ class ListMoneyBothCurrenciesTest extends TestCase
 
         $line = $this->getJson('/api/v1/financial-transactions')->assertOk()->json('data.0');
         $this->assertEquals([10, 40000], [$line['amount_usd'], $line['amount_khr']]);
+    }
+
+    public function test_expenses_carry_both_currencies_at_the_expense_dates_rate(): void
+    {
+        $this->setUpChartOfAccounts();
+        Expense::factory()->create([
+            'account_id' => $this->electricityAccount->id, 'expense_entity_id' => $this->expenseEntity->id,
+            'amount' => 50, 'currency' => 'USD', 'expense_date' => '2026-07-05', 'created_by' => null,
+        ]);
+
+        // 5 July, at 4100.
+        $row = $this->getJson('/api/v1/expenses')->assertOk()->json('data.0');
+        $this->assertEquals([50, 205000], [$row['amount_usd'], $row['amount_khr']]);
     }
 }
