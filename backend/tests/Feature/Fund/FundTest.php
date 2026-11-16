@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Fund;
 
+use App\Models\CurrencyRate;
 use App\Models\FinancialTransaction;
 use App\Models\Fund;
 use App\Models\LookupCategory;
@@ -86,6 +87,22 @@ class FundTest extends TestCase
     {
         $this->postJson('/api/v1/funds', ['name' => 'X', 'fund_type' => 'NOPE', 'currency' => 'USD', 'opened_on' => now()->toDateString()])
             ->assertJsonValidationErrors('fund_type');
+    }
+
+    public function test_the_statement_gives_each_entry_in_dollars_and_riel_at_its_own_dates_rate(): void
+    {
+        CurrencyRate::factory()->create(['effective_date' => '2020-01-01', 'khr_per_usd' => 4000]);
+        CurrencyRate::factory()->create(['effective_date' => now()->subDays(5)->toDateString(), 'khr_per_usd' => 4100]);
+        $fund = $this->create(); // 1,000 opening, 10 days ago (4000)
+        $this->entry($fund['id'], 'in', 500)->assertCreated(); // today (4100)
+        $this->entry($fund['id'], 'out', 200)->assertCreated();
+
+        $shown = $this->getJson("/api/v1/funds/{$fund['id']}")->assertOk()->json('data');
+        $this->assertEquals([1000, 4000000], [$shown['statement'][0]['amount_usd'], $shown['statement'][0]['amount_khr']]);
+        $this->assertEquals([1500, 6150000], [$shown['statement'][1]['balance_usd'], $shown['statement'][1]['balance_khr']]);
+        $this->assertEquals([1500, 6050000], [$shown['total_in_usd'], $shown['total_in_khr']]);
+        $this->assertEquals([200, 820000], [$shown['total_out_usd'], $shown['total_out_khr']]);
+        $this->assertEquals([1300, 5330000], [$shown['balance_usd'], $shown['balance_khr']]);
     }
 
     public function test_money_in_and_out_keep_a_running_balance_and_never_go_below_zero(): void

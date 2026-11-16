@@ -10,7 +10,7 @@ import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import { borrowingsService, type Borrowing } from '@/services/borrowings'
 import { useAuthStore } from '@/stores/auth'
 import { ApiRequestError } from '@/types/api'
-import { formatMoney } from '@/utils/currency'
+import { formatMoney, moneyOrDash } from '@/utils/currency'
 import { formatDate } from '@/utils/date'
 
 /**
@@ -77,10 +77,10 @@ onMounted(async () => {
       <p v-if="loan.purpose" class="text-sm text-neutral-500">{{ loan.purpose }}</p>
 
       <dl class="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
-        <div><dt class="text-neutral-500">{{ t('admin.borrowings.amount') }}</dt><dd class="font-semibold">{{ money(loan.amount) }}</dd></div>
-        <div><dt class="text-neutral-500">{{ t('admin.borrowings.paidBack') }}</dt><dd class="font-semibold">{{ money(loan.paid_principal) }}</dd></div>
-        <div><dt class="text-neutral-500">{{ t('admin.borrowings.interestPaid') }}</dt><dd class="font-semibold">{{ money(loan.paid_interest) }}</dd></div>
-        <div><dt class="text-neutral-500">{{ t('admin.borrowings.outstanding') }}</dt><dd class="font-semibold text-primary-800">{{ money(loan.outstanding) }}</dd></div>
+        <div><dt class="text-neutral-500">{{ t('admin.borrowings.amount') }}</dt><dd class="font-semibold tabular-nums">{{ moneyOrDash(loan.amount_usd, 'USD') }}<span class="block text-xs font-normal text-neutral-500">{{ moneyOrDash(loan.amount_khr, 'KHR') }}</span></dd></div>
+        <div><dt class="text-neutral-500">{{ t('admin.borrowings.paidBack') }}</dt><dd class="font-semibold tabular-nums">{{ moneyOrDash(loan.paid_principal_usd, 'USD') }}<span class="block text-xs font-normal text-neutral-500">{{ moneyOrDash(loan.paid_principal_khr, 'KHR') }}</span></dd></div>
+        <div><dt class="text-neutral-500">{{ t('admin.borrowings.interestPaid') }}</dt><dd class="font-semibold tabular-nums">{{ moneyOrDash(loan.paid_interest_usd, 'USD') }}<span class="block text-xs font-normal text-neutral-500">{{ moneyOrDash(loan.paid_interest_khr, 'KHR') }}</span></dd></div>
+        <div><dt class="text-neutral-500">{{ t('admin.borrowings.outstanding') }}</dt><dd class="font-semibold tabular-nums text-primary-800">{{ moneyOrDash(loan.outstanding_usd, 'USD') }}<span class="block text-xs font-normal text-neutral-500">{{ moneyOrDash(loan.outstanding_khr, 'KHR') }}</span></dd></div>
       </dl>
 
       <template v-if="!loan.flexible">
@@ -104,7 +104,7 @@ onMounted(async () => {
               <td class="py-1.5 pr-3">{{ formatDate(row.due_on) }}</td>
               <td class="py-1.5 pr-3 text-right tabular-nums">{{ money(row.principal) }}</td>
               <td class="py-1.5 pr-3 text-right tabular-nums">{{ money(row.interest) }}</td>
-              <td class="py-1.5 pr-3 text-right font-semibold tabular-nums">{{ money(row.total) }}</td>
+              <td class="whitespace-nowrap py-1.5 pr-3 text-right font-semibold tabular-nums">{{ moneyOrDash(row.total_usd, 'USD') }}<span class="block text-xs font-normal text-neutral-500">{{ moneyOrDash(row.total_khr, 'KHR') }}</span></td>
               <td class="py-1.5 pr-3 text-right tabular-nums">{{ money(row.balance) }}</td>
               <td class="py-1.5 text-xs">
                 <span v-if="row.paid" class="text-green-700">{{ t('admin.borrowings.paid') }}</span>
@@ -117,7 +117,7 @@ onMounted(async () => {
               <td colspan="2" class="py-2">{{ t('admin.accountingReports.total') }}</td>
               <td class="py-2 pr-3 text-right tabular-nums">{{ money(loan.totals.principal) }}</td>
               <td class="py-2 pr-3 text-right tabular-nums">{{ money(loan.totals.interest) }}</td>
-              <td class="py-2 pr-3 text-right tabular-nums">{{ money(loan.totals.total) }}</td>
+              <td class="whitespace-nowrap py-2 pr-3 text-right tabular-nums">{{ moneyOrDash(loan.plan_total_usd, 'USD') }}<span class="block text-xs font-normal text-neutral-500">{{ moneyOrDash(loan.plan_total_khr, 'KHR') }}</span></td>
               <td colspan="2" />
             </tr>
           </tfoot>

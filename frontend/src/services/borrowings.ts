@@ -48,6 +48,9 @@ export interface ScheduleRow {
   paid?: boolean
   late?: boolean
   due_principal?: number
+  /** Statement: this month's total in USD and KHR at the due date's rate. */
+  total_usd?: number | null
+  total_khr?: number | null
 }
 
 export interface BorrowingRepayment {
@@ -132,6 +135,13 @@ export interface Borrowing {
   next_payment: ScheduleRow | null
   /** One month's interest on what is owed now (suggested on a flexible loan). */
   month_interest: number
+  /** Statement: the plan total and what was paid, each payment at its own date's rate. */
+  plan_total_usd?: number | null
+  plan_total_khr?: number | null
+  paid_principal_usd?: number | null
+  paid_principal_khr?: number | null
+  paid_interest_usd?: number | null
+  paid_interest_khr?: number | null
   schedule?: ScheduleRow[]
   repayments?: BorrowingRepayment[]
   created_at: string

@@ -74,7 +74,16 @@ class BorrowingResource extends JsonResource
             'late_count' => $this->status === 'active' ? $unpaid->where('late', true)->count() : 0,
             'next_payment' => $next,
             'month_interest' => BorrowingSchedule::monthInterest($this->resource, (float) $this->amount - $paidPrincipal),
-            'schedule' => $this->when($this->withSchedule, $schedule),
+            // Statement: each month's total in USD and KHR at its due date's
+            // rate; paid so far summed payment by payment at each paid date's.
+            'schedule' => $this->when($this->withSchedule, fn () => array_map(fn (array $row) => [...$row, ...Money::fields('total', $row['total'], $this->currency, $row['due_on'])], $schedule)),
+            ...($this->withSchedule ? [
+                ...Money::sumFields('plan_total', array_map(fn (array $row) => [$row['total'], $row['due_on']], $schedule), $this->currency),
+                ...($this->relationLoaded('repayments') ? [
+                    ...Money::sumFields('paid_principal', $this->repayments->map(fn ($p) => [$p->principal, $p->paid_on]), $this->currency),
+                    ...Money::sumFields('paid_interest', $this->repayments->map(fn ($p) => [$p->interest, $p->paid_on]), $this->currency),
+                ] : []),
+            ] : []),
             'repayments' => $this->when($this->withSchedule && $this->relationLoaded('repayments'), fn () => BorrowingRepaymentResource::collection($this->repayments)),
             'created_at' => $this->created_at?->toIso8601String(),
         ];

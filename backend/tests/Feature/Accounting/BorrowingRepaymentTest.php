@@ -93,6 +93,13 @@ class BorrowingRepaymentTest extends TestCase
         $this->assertEquals([100, 400000], [$paid['principal_usd'], $paid['principal_khr']]);
         $this->assertEquals([12, 48000], [$paid['interest_usd'], $paid['interest_khr']]);
         $this->assertEquals([112, 448000], [$paid['amount_usd'], $paid['amount_khr']]);
+
+        // The statement: each month's total, the plan total, and what was paid.
+        $statement = $this->getJson("/api/v1/borrowings/{$loan['id']}")->assertOk()->json('data');
+        $this->assertEquals([112, 448000], [$statement['schedule'][0]['total_usd'], $statement['schedule'][0]['total_khr']]);
+        $this->assertEquals([1344, 5376000], [$statement['plan_total_usd'], $statement['plan_total_khr']]);
+        $this->assertEquals([100, 400000], [$statement['paid_principal_usd'], $statement['paid_principal_khr']]);
+        $this->assertEquals([12, 48000], [$statement['paid_interest_usd'], $statement['paid_interest_khr']]);
     }
 
     public function test_a_repayment_lowers_the_debt_and_its_interest_is_a_family_expense(): void

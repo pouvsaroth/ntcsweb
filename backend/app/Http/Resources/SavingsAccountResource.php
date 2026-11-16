@@ -50,7 +50,14 @@ class SavingsAccountResource extends JsonResource
             'statement' => $this->when($this->statement !== null, fn () => array_map(fn (array $row) => [
                 ...(new SavingsEntryResource($row['entry']))->toArray($request),
                 'balance' => $row['balance'],
+                // USD and KHR at the rate on the entry's date.
+                ...Money::fields('amount', $row['entry']->amount, $this->currency, $row['entry']->transacted_on),
+                ...Money::fields('balance', $row['balance'], $this->currency, $row['entry']->transacted_on),
             ], $this->statement ?? [])),
+            ...($this->statement === null ? [] : [
+                ...Money::sumFields('total_in', collect($this->statement)->filter(fn (array $row) => $row['entry']->type !== 'withdrawal')->map(fn (array $row) => [$row['entry']->amount, $row['entry']->transacted_on]), $this->currency),
+                ...Money::sumFields('total_out', collect($this->statement)->filter(fn (array $row) => $row['entry']->type === 'withdrawal')->map(fn (array $row) => [$row['entry']->amount, $row['entry']->transacted_on]), $this->currency),
+            ]),
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }

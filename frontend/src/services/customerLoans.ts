@@ -56,6 +56,13 @@ export interface CustomerLoan {
   monthly_payment_khr?: number | null
   next_payment_total_usd?: number | null
   next_payment_total_khr?: number | null
+  /** Statement: the plan total and what was paid, each payment at its own date's rate. */
+  plan_total_usd?: number | null
+  plan_total_khr?: number | null
+  paid_principal_usd?: number | null
+  paid_principal_khr?: number | null
+  paid_interest_usd?: number | null
+  paid_interest_khr?: number | null
   late_count: number
   next_payment: ScheduleRow | null
   /** One month of interest as the loan stands (suggested for a flexible loan). */

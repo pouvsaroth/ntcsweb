@@ -13,7 +13,7 @@ import { customerLoansService, type CustomerLoan, type CustomerLoanPayment } fro
 import { useAuthStore } from '@/stores/auth'
 import { useConfirmDialogStore } from '@/stores/confirmDialog'
 import { ApiRequestError } from '@/types/api'
-import { formatMoney } from '@/utils/currency'
+import { formatMoney, moneyOrDash } from '@/utils/currency'
 import { formatDate } from '@/utils/date'
 import { exportTableAsImage } from '@/utils/tableImage'
 
@@ -220,10 +220,10 @@ onMounted(load)
       <p v-if="!loan.posted && isActive" class="mt-1 text-xs text-amber-700 print:hidden">{{ t('admin.customerLoans.notPostedHint') }}</p>
 
       <dl class="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
-        <div><dt class="text-neutral-500">{{ t('admin.customerLoans.amount') }}</dt><dd class="font-semibold tabular-nums">{{ money(loan.amount) }}</dd></div>
-        <div><dt class="text-neutral-500">{{ t('admin.customerLoans.principalBack') }}</dt><dd class="font-semibold tabular-nums">{{ money(loan.paid_principal) }}</dd></div>
-        <div><dt class="text-neutral-500">{{ t('admin.customerLoans.interestReceived') }}</dt><dd class="font-semibold tabular-nums text-green-700">{{ money(loan.paid_interest) }}</dd></div>
-        <div><dt class="text-neutral-500">{{ t('admin.customerLoans.owed') }}</dt><dd class="text-base font-semibold tabular-nums text-primary-800">{{ money(loan.outstanding) }}</dd></div>
+        <div><dt class="text-neutral-500">{{ t('admin.customerLoans.amount') }}</dt><dd class="font-semibold tabular-nums">{{ moneyOrDash(loan.amount_usd, 'USD') }}<span class="block text-xs font-normal text-neutral-500">{{ moneyOrDash(loan.amount_khr, 'KHR') }}</span></dd></div>
+        <div><dt class="text-neutral-500">{{ t('admin.customerLoans.principalBack') }}</dt><dd class="font-semibold tabular-nums">{{ moneyOrDash(loan.paid_principal_usd, 'USD') }}<span class="block text-xs font-normal text-neutral-500">{{ moneyOrDash(loan.paid_principal_khr, 'KHR') }}</span></dd></div>
+        <div><dt class="text-neutral-500">{{ t('admin.customerLoans.interestReceived') }}</dt><dd class="font-semibold tabular-nums text-green-700">{{ moneyOrDash(loan.paid_interest_usd, 'USD') }}<span class="block text-xs font-normal text-neutral-500">{{ moneyOrDash(loan.paid_interest_khr, 'KHR') }}</span></dd></div>
+        <div><dt class="text-neutral-500">{{ t('admin.customerLoans.owed') }}</dt><dd class="text-base font-semibold tabular-nums text-primary-800">{{ moneyOrDash(loan.outstanding_usd, 'USD') }}<span class="block text-xs font-normal text-neutral-500">{{ moneyOrDash(loan.outstanding_khr, 'KHR') }}</span></dd></div>
       </dl>
 
       <template v-if="!loan.flexible && loan.schedule?.length">
@@ -245,7 +245,7 @@ onMounted(load)
                 <BaseBadge v-if="row.paid" variant="success" class="ml-1">{{ t('admin.borrowings.paid') }}</BaseBadge>
                 <BaseBadge v-else-if="row.late && isActive" variant="danger" class="ml-1">{{ t('admin.borrowings.late') }}</BaseBadge>
               </p>
-              <p class="font-semibold tabular-nums">{{ money(row.total) }}</p>
+              <p class="text-right font-semibold tabular-nums">{{ moneyOrDash(row.total_usd, 'USD') }}<span class="block text-xs font-normal text-neutral-500">{{ moneyOrDash(row.total_khr, 'KHR') }}</span></p>
             </div>
             <p class="mt-0.5 text-xs text-neutral-500">
               {{ t('admin.customerLoans.startAmount') }} {{ money(row.start ?? row.balance + row.principal) }} → {{ money(row.balance) }}
@@ -280,7 +280,7 @@ onMounted(load)
                 <td class="px-3 py-2 text-right tabular-nums">{{ money(row.balance) }}</td>
                 <td class="px-3 py-2 text-right tabular-nums">{{ money(row.principal) }}</td>
                 <td class="px-3 py-2 text-right tabular-nums">{{ money(row.interest) }}</td>
-                <td class="px-3 py-2 text-right font-semibold tabular-nums">{{ money(row.total) }}</td>
+                <td class="whitespace-nowrap px-3 py-2 text-right font-semibold tabular-nums">{{ moneyOrDash(row.total_usd, 'USD') }}<span class="block text-xs font-normal text-neutral-500">{{ moneyOrDash(row.total_khr, 'KHR') }}</span></td>
                 <td v-if="canPayRows" class="px-3 py-1.5 text-right print:hidden">
                   <BaseButton v-if="!row.paid" size="sm" @click="openPay(row.no)">{{ t('admin.customerLoans.pay') }}</BaseButton>
                 </td>
@@ -291,7 +291,7 @@ onMounted(load)
                 <td class="px-3 py-2" colspan="4">{{ t('admin.customerLoans.total') }}</td>
                 <td class="px-3 py-2 text-right tabular-nums">{{ money(loan.totals.principal) }}</td>
                 <td class="px-3 py-2 text-right tabular-nums">{{ money(loan.totals.interest) }}</td>
-                <td class="px-3 py-2 text-right tabular-nums">{{ money(loan.totals.total) }}</td>
+                <td class="whitespace-nowrap px-3 py-2 text-right tabular-nums">{{ moneyOrDash(loan.plan_total_usd, 'USD') }}<span class="block text-xs font-normal text-neutral-500">{{ moneyOrDash(loan.plan_total_khr, 'KHR') }}</span></td>
                 <td v-if="canPayRows" class="print:hidden"></td>
               </tr>
             </tfoot>

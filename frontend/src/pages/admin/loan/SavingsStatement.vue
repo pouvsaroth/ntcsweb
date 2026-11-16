@@ -12,7 +12,7 @@ import { savingsService, type SavingsAccount, type SavingsEntry } from '@/servic
 import { useAuthStore } from '@/stores/auth'
 import { useConfirmDialogStore } from '@/stores/confirmDialog'
 import { ApiRequestError } from '@/types/api'
-import { formatMoney } from '@/utils/currency'
+import { moneyOrDash } from '@/utils/currency'
 import { formatDate } from '@/utils/date'
 
 /**
@@ -34,7 +34,6 @@ const loading = ref(true)
 const error = ref<string | null>(null)
 const actionError = ref<string | null>(null)
 
-const money = (value: number) => formatMoney(value, account.value?.currency ?? 'USD')
 const todayText = formatDate(new Date())
 const printPage = () => window.print()
 const entries = computed<SavingsEntry[]>(() => account.value?.statement ?? [])
@@ -142,9 +141,9 @@ onMounted(load)
       <p v-if="account.notes" class="mt-3 text-sm text-neutral-500">{{ account.notes }}</p>
 
       <dl class="mt-4 grid grid-cols-3 gap-3 text-sm">
-        <div><dt class="text-neutral-500">{{ t('admin.savings.totalIn') }}</dt><dd class="font-semibold tabular-nums text-green-700">{{ money(account.total_in) }}</dd></div>
-        <div><dt class="text-neutral-500">{{ t('admin.savings.totalOut') }}</dt><dd class="font-semibold tabular-nums text-amber-700">{{ money(account.total_out) }}</dd></div>
-        <div><dt class="text-neutral-500">{{ t('admin.savings.balance') }}</dt><dd class="text-base font-semibold tabular-nums text-neutral-900">{{ money(account.balance) }}</dd></div>
+        <div><dt class="text-neutral-500">{{ t('admin.savings.totalIn') }}</dt><dd class="font-semibold tabular-nums text-green-700">{{ moneyOrDash(account.total_in_usd, 'USD') }}<span class="block text-xs font-normal text-neutral-500">{{ moneyOrDash(account.total_in_khr, 'KHR') }}</span></dd></div>
+        <div><dt class="text-neutral-500">{{ t('admin.savings.totalOut') }}</dt><dd class="font-semibold tabular-nums text-amber-700">{{ moneyOrDash(account.total_out_usd, 'USD') }}<span class="block text-xs font-normal text-neutral-500">{{ moneyOrDash(account.total_out_khr, 'KHR') }}</span></dd></div>
+        <div><dt class="text-neutral-500">{{ t('admin.savings.balance') }}</dt><dd class="text-base font-semibold tabular-nums text-neutral-900">{{ moneyOrDash(account.balance_usd, 'USD') }}<span class="block text-xs font-normal text-neutral-500">{{ moneyOrDash(account.balance_khr, 'KHR') }}</span></dd></div>
       </dl>
 
       <p v-if="entries.length === 0" class="mt-6 rounded-lg border border-dashed border-neutral-300 py-8 text-center text-sm text-neutral-500">{{ t('admin.savings.noEntries') }}</p>
@@ -159,11 +158,11 @@ onMounted(load)
                 <p v-if="entry.remark" class="mt-0.5 text-xs text-neutral-600">{{ entry.remark }}</p>
               </div>
               <p class="font-semibold tabular-nums" :class="entry.type === 'withdrawal' ? 'text-amber-700' : 'text-green-700'">
-                {{ entry.type === 'withdrawal' ? '-' : '+' }}{{ money(entry.amount) }}
+                {{ entry.type === 'withdrawal' ? '-' : '+' }}{{ moneyOrDash(entry.amount_usd, 'USD') }}<span class="block text-xs font-normal text-neutral-500">{{ moneyOrDash(entry.amount_khr, 'KHR') }}</span>
               </p>
             </div>
             <div class="mt-1 flex items-center justify-between text-xs text-neutral-500">
-              <span>{{ t('admin.savings.balance') }}: <span class="font-medium text-neutral-800">{{ money(entry.balance ?? 0) }}</span></span>
+              <span>{{ t('admin.savings.balance') }}: <span class="font-medium text-neutral-800">{{ moneyOrDash(entry.balance_usd, 'USD') }} / {{ moneyOrDash(entry.balance_khr, 'KHR') }}</span></span>
               <button v-if="canDelete && isOpen" type="button" class="font-medium text-danger-600 hover:text-red-700" @click="removeEntry(entry)">{{ t('admin.savings.removeEntry') }}</button>
             </div>
           </div>
@@ -187,9 +186,9 @@ onMounted(load)
                 <td class="whitespace-nowrap py-2 pr-3 tabular-nums">{{ formatDate(entry.transacted_on) }}</td>
                 <td class="whitespace-nowrap py-2 pr-3">{{ t(`admin.savings.entryTypes.${entry.type}`) }}</td>
                 <td class="py-2 pr-3 text-neutral-600">{{ entry.remark ?? '' }}</td>
-                <td class="whitespace-nowrap py-2 pr-3 text-right tabular-nums text-green-700">{{ entry.type !== 'withdrawal' ? money(entry.amount) : '' }}</td>
-                <td class="whitespace-nowrap py-2 pr-3 text-right tabular-nums text-amber-700">{{ entry.type === 'withdrawal' ? money(entry.amount) : '' }}</td>
-                <td class="whitespace-nowrap py-2 pr-3 text-right font-medium tabular-nums">{{ money(entry.balance ?? 0) }}</td>
+                <td class="whitespace-nowrap py-2 pr-3 text-right tabular-nums text-green-700"><template v-if="entry.type !== 'withdrawal'">{{ moneyOrDash(entry.amount_usd, 'USD') }}<span class="block text-xs font-normal text-neutral-500">{{ moneyOrDash(entry.amount_khr, 'KHR') }}</span></template></td>
+                <td class="whitespace-nowrap py-2 pr-3 text-right tabular-nums text-amber-700"><template v-if="entry.type === 'withdrawal'">{{ moneyOrDash(entry.amount_usd, 'USD') }}<span class="block text-xs font-normal text-neutral-500">{{ moneyOrDash(entry.amount_khr, 'KHR') }}</span></template></td>
+                <td class="whitespace-nowrap py-2 pr-3 text-right font-medium tabular-nums">{{ moneyOrDash(entry.balance_usd, 'USD') }}<span class="block text-xs font-normal text-neutral-500">{{ moneyOrDash(entry.balance_khr, 'KHR') }}</span></td>
                 <td v-if="canDelete && isOpen" class="py-2 text-right print:hidden">
                   <button type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="removeEntry(entry)">{{ t('admin.savings.removeEntry') }}</button>
                 </td>

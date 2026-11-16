@@ -117,6 +117,29 @@ final class Money
         return [$key.'_usd' => $pair['USD'], $key.'_khr' => $pair['KHR']];
     }
 
+    /**
+     * `<key>_usd` and `<key>_khr` for a sum of amounts, each converted at the
+     * rate on its own date first (both null if any of them has no rate).
+     *
+     * @param  iterable<array{0: float|int|string, 1: Carbon|string|null}>  $items  [amount, date] pairs
+     * @return array<string, float|null>
+     */
+    public static function sumFields(string $key, iterable $items, ?string $currency): array
+    {
+        $usd = 0.0;
+        $khr = 0.0;
+        foreach ($items as [$amount, $date]) {
+            $one = self::fields('one', $amount, $currency, $date);
+            if ($one['one_usd'] === null || $one['one_khr'] === null) {
+                return [$key.'_usd' => null, $key.'_khr' => null];
+            }
+            $usd += $one['one_usd'];
+            $khr += $one['one_khr'];
+        }
+
+        return [$key.'_usd' => round($usd, 2), $key.'_khr' => round($khr)];
+    }
+
     /** Both sides as text, "—" where there is no rate. @return array{USD: string, KHR: string} */
     public static function pairText(float|int|string|null $amount, ?string $currency, ?float $khrPerUsd): array
     {

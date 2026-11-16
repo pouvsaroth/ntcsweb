@@ -34,6 +34,7 @@ class FundResource extends JsonResource
             'status' => $this->status,
             'opened_on' => $this->opened_on?->toDateString(),
             'target_amount' => $this->target_amount !== null ? (float) $this->target_amount : null,
+            ...Money::fields('target_amount', $this->target_amount, $this->currency, null),
             'description' => $this->description,
             'total_in' => $in,
             'total_out' => $out,
@@ -45,7 +46,14 @@ class FundResource extends JsonResource
             'statement' => $this->when($this->statement !== null, fn () => array_map(fn (array $row) => [
                 ...(new FundEntryResource($row['entry']))->toArray($request),
                 'balance' => $row['balance'],
+                // USD and KHR at the rate on the entry's date.
+                ...Money::fields('amount', $row['entry']->amount, $this->currency, $row['entry']->transacted_on),
+                ...Money::fields('balance', $row['balance'], $this->currency, $row['entry']->transacted_on),
             ], $this->statement ?? [])),
+            ...($this->statement === null ? [] : [
+                ...Money::sumFields('total_in', collect($this->statement)->filter(fn (array $row) => $row['entry']->type !== 'out')->map(fn (array $row) => [$row['entry']->amount, $row['entry']->transacted_on]), $this->currency),
+                ...Money::sumFields('total_out', collect($this->statement)->filter(fn (array $row) => $row['entry']->type === 'out')->map(fn (array $row) => [$row['entry']->amount, $row['entry']->transacted_on]), $this->currency),
+            ]),
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }

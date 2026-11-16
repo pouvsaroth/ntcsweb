@@ -14,7 +14,7 @@ import { lookupsService, type LookupOption } from '@/services/lookups'
 import { useAuthStore } from '@/stores/auth'
 import { useConfirmDialogStore } from '@/stores/confirmDialog'
 import { ApiRequestError } from '@/types/api'
-import { formatMoney } from '@/utils/currency'
+import { moneyOrDash } from '@/utils/currency'
 import { formatDate } from '@/utils/date'
 
 /**
@@ -37,7 +37,6 @@ const error = ref<string | null>(null)
 const actionError = ref<string | null>(null)
 const types = ref<LookupOption[]>([])
 
-const money = (value: number) => formatMoney(value, fund.value?.currency ?? 'USD')
 const todayText = formatDate(new Date())
 const printPage = () => window.print()
 const entries = computed<FundEntry[]>(() => fund.value?.statement ?? [])
@@ -147,14 +146,14 @@ onMounted(async () => {
       <p v-if="fund.description" class="mt-3 text-sm text-neutral-500">{{ fund.description }}</p>
 
       <dl class="mt-4 grid grid-cols-3 gap-3 text-sm">
-        <div><dt class="text-neutral-500">{{ t('admin.funds.totalIn') }}</dt><dd class="font-semibold tabular-nums text-green-700">{{ money(fund.total_in) }}</dd></div>
-        <div><dt class="text-neutral-500">{{ t('admin.funds.totalOut') }}</dt><dd class="font-semibold tabular-nums text-amber-700">{{ money(fund.total_out) }}</dd></div>
-        <div><dt class="text-neutral-500">{{ t('admin.funds.balance') }}</dt><dd class="text-base font-semibold tabular-nums text-neutral-900">{{ money(fund.balance) }}</dd></div>
+        <div><dt class="text-neutral-500">{{ t('admin.funds.totalIn') }}</dt><dd class="font-semibold tabular-nums text-green-700">{{ moneyOrDash(fund.total_in_usd, 'USD') }}<span class="block text-xs font-normal text-neutral-500">{{ moneyOrDash(fund.total_in_khr, 'KHR') }}</span></dd></div>
+        <div><dt class="text-neutral-500">{{ t('admin.funds.totalOut') }}</dt><dd class="font-semibold tabular-nums text-amber-700">{{ moneyOrDash(fund.total_out_usd, 'USD') }}<span class="block text-xs font-normal text-neutral-500">{{ moneyOrDash(fund.total_out_khr, 'KHR') }}</span></dd></div>
+        <div><dt class="text-neutral-500">{{ t('admin.funds.balance') }}</dt><dd class="text-base font-semibold tabular-nums text-neutral-900">{{ moneyOrDash(fund.balance_usd, 'USD') }}<span class="block text-xs font-normal text-neutral-500">{{ moneyOrDash(fund.balance_khr, 'KHR') }}</span></dd></div>
       </dl>
 
       <div v-if="fund.target_amount" class="mt-3">
         <div class="flex justify-between text-xs text-neutral-500">
-          <span>{{ t('admin.funds.target') }}: {{ money(fund.target_amount) }}</span>
+          <span>{{ t('admin.funds.target') }}: {{ moneyOrDash(fund.target_amount_usd, 'USD') }} / {{ moneyOrDash(fund.target_amount_khr, 'KHR') }}</span>
           <span>{{ progress }}%</span>
         </div>
         <div class="mt-1 h-2 rounded-full bg-neutral-100">
@@ -175,11 +174,11 @@ onMounted(async () => {
                 <p v-if="entry.remark" class="mt-0.5 text-xs text-neutral-500">{{ entry.remark }}</p>
               </div>
               <p class="font-semibold tabular-nums" :class="entry.type === 'out' ? 'text-amber-700' : 'text-green-700'">
-                {{ entry.type === 'out' ? '-' : '+' }}{{ money(entry.amount) }}
+                {{ entry.type === 'out' ? '-' : '+' }}{{ moneyOrDash(entry.amount_usd, 'USD') }}<span class="block text-xs font-normal text-neutral-500">{{ moneyOrDash(entry.amount_khr, 'KHR') }}</span>
               </p>
             </div>
             <div class="mt-1 flex items-center justify-between text-xs text-neutral-500">
-              <span>{{ t('admin.funds.balance') }}: <span class="font-medium text-neutral-800">{{ money(entry.balance ?? 0) }}</span></span>
+              <span>{{ t('admin.funds.balance') }}: <span class="font-medium text-neutral-800">{{ moneyOrDash(entry.balance_usd, 'USD') }} / {{ moneyOrDash(entry.balance_khr, 'KHR') }}</span></span>
               <button v-if="canDelete && isActive" type="button" class="font-medium text-danger-600 hover:text-red-700" @click="removeEntry(entry)">{{ t('admin.funds.removeEntry') }}</button>
             </div>
           </div>
@@ -203,9 +202,9 @@ onMounted(async () => {
                 <td class="whitespace-nowrap py-2 pr-3 tabular-nums">{{ formatDate(entry.transacted_on) }}</td>
                 <td class="py-2 pr-3">{{ entry.party ?? '' }}</td>
                 <td class="py-2 pr-3 text-neutral-600">{{ entry.remark ?? '' }}</td>
-                <td class="whitespace-nowrap py-2 pr-3 text-right tabular-nums text-green-700">{{ entry.type === 'in' ? money(entry.amount) : '' }}</td>
-                <td class="whitespace-nowrap py-2 pr-3 text-right tabular-nums text-amber-700">{{ entry.type === 'out' ? money(entry.amount) : '' }}</td>
-                <td class="whitespace-nowrap py-2 pr-3 text-right font-medium tabular-nums">{{ money(entry.balance ?? 0) }}</td>
+                <td class="whitespace-nowrap py-2 pr-3 text-right tabular-nums text-green-700"><template v-if="entry.type === 'in'">{{ moneyOrDash(entry.amount_usd, 'USD') }}<span class="block text-xs font-normal text-neutral-500">{{ moneyOrDash(entry.amount_khr, 'KHR') }}</span></template></td>
+                <td class="whitespace-nowrap py-2 pr-3 text-right tabular-nums text-amber-700"><template v-if="entry.type === 'out'">{{ moneyOrDash(entry.amount_usd, 'USD') }}<span class="block text-xs font-normal text-neutral-500">{{ moneyOrDash(entry.amount_khr, 'KHR') }}</span></template></td>
+                <td class="whitespace-nowrap py-2 pr-3 text-right font-medium tabular-nums">{{ moneyOrDash(entry.balance_usd, 'USD') }}<span class="block text-xs font-normal text-neutral-500">{{ moneyOrDash(entry.balance_khr, 'KHR') }}</span></td>
                 <td v-if="canDelete && isActive" class="py-2 text-right print:hidden">
                   <button type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="removeEntry(entry)">{{ t('admin.funds.removeEntry') }}</button>
                 </td>

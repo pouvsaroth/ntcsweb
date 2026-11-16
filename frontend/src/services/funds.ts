@@ -23,6 +23,11 @@ export interface FundEntry {
   posted: boolean
   /** Balance after this entry (statement only). */
   balance?: number
+  /** Statement: the amount and balance in USD and KHR at the entry date's rate. */
+  amount_usd?: number | null
+  amount_khr?: number | null
+  balance_usd?: number | null
+  balance_khr?: number | null
 }
 
 /** Fund > Funds: one pot of the school's money in one currency. */
@@ -37,8 +42,15 @@ export interface Fund {
   status: FundStatus
   opened_on: string
   target_amount: number | null
+  target_amount_usd?: number | null
+  target_amount_khr?: number | null
   description: string | null
   total_in: number
+  /** Statement: money in / out summed entry by entry, each at its own date's rate. */
+  total_in_usd?: number | null
+  total_in_khr?: number | null
+  total_out_usd?: number | null
+  total_out_khr?: number | null
   total_out: number
   balance: number
   /** The balance in USD and KHR at today's rate. */
