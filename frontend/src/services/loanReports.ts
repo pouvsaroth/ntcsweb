@@ -2,7 +2,13 @@ import { apiGet } from '@/services/http'
 
 type Currency = 'USD' | 'KHR'
 
-export interface LoanReportSavingsTotal {
+/** `<field>_usd` / `<field>_khr`: moved money at its own date's rate, balances (balance, owed, late) at today's rate. */
+type Both<F extends string> = Record<`${F}_usd` | `${F}_khr`, number>
+export type SavingsMoney = 'deposits' | 'withdrawals' | 'balance'
+export type LoanMoney = 'lent' | 'collected' | 'interest' | 'owed' | 'late'
+export type PositionMoney = 'savings' | 'owed' | 'net'
+
+export interface LoanReportSavingsTotal extends Both<SavingsMoney> {
   currency: Currency
   accounts: number
   open_accounts: number
@@ -10,7 +16,7 @@ export interface LoanReportSavingsTotal {
   withdrawals: number
   balance: number
 }
-export interface LoanReportSavingsRow {
+export interface LoanReportSavingsRow extends Both<SavingsMoney> {
   customer_id: number
   name: string
   code: string | null
@@ -20,7 +26,7 @@ export interface LoanReportSavingsRow {
   withdrawals: number
   balance: number
 }
-export interface LoanReportLoansTotal {
+export interface LoanReportLoansTotal extends Both<LoanMoney> {
   currency: Currency
   active_loans: number
   late_loans: number
@@ -30,7 +36,7 @@ export interface LoanReportLoansTotal {
   owed: number
   late: number
 }
-export interface LoanReportLoansRow {
+export interface LoanReportLoansRow extends Both<LoanMoney> {
   customer_id: number
   name: string
   code: string | null
@@ -42,7 +48,7 @@ export interface LoanReportLoansRow {
   owed: number
   late: number
 }
-export interface LoanReportPosition {
+export interface LoanReportPosition extends Both<PositionMoney> {
   customer_id: number
   name: string
   code: string | null
@@ -57,8 +63,9 @@ export interface LoanReportPosition {
 export interface LoanReport {
   from: string
   to: string
-  savings: { totals: LoanReportSavingsTotal[]; customers: LoanReportSavingsRow[] } | null
-  loans: { totals: LoanReportLoansTotal[]; customers: LoanReportLoansRow[] } | null
+  /** `all`: both currencies together, in USD and in KHR. */
+  savings: { totals: LoanReportSavingsTotal[]; all: Both<SavingsMoney>; customers: LoanReportSavingsRow[] } | null
+  loans: { totals: LoanReportLoansTotal[]; all: Both<LoanMoney>; customers: LoanReportLoansRow[] } | null
   positions: LoanReportPosition[] | null
 }
 

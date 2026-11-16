@@ -7,7 +7,7 @@ import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import { lookupsService, type LookupOption } from '@/services/lookups'
-import { marketingReportService, type MarketingCampaignRow, type MarketingReportData, type MoneyRow } from '@/services/marketingReport'
+import { marketingReportService, type MarketingCampaignRow, type MarketingReportData } from '@/services/marketingReport'
 import { ApiRequestError } from '@/types/api'
 import { formatMoney } from '@/utils/currency'
 import { formatDate } from '@/utils/date'
@@ -49,8 +49,17 @@ async function load() {
   }
 }
 
-const fees = (rows: MoneyRow[]) => (rows.length ? rows.map((r) => formatMoney(r.amount, r.currency)).join(' · ') : '—')
-const money = (row: MarketingCampaignRow, value: number | null) => (value === null || !row.currency ? '—' : formatMoney(value, row.currency))
+// Every amount shows as USD | KHR, converted by the API (cost at the rate on
+// the campaign's start date, each fee payment at its payment date's rate).
+const usd = (value: number | null | undefined) => (value === null || value === undefined ? '—' : formatMoney(value, 'USD'))
+const khr = (value: number | null | undefined) => (value === null || value === undefined ? '—' : formatMoney(value, 'KHR'))
+type CampaignMoney = 'spent' | 'cost_per_lead' | 'cost_per_student' | 'fees'
+const moneyCols: { key: CampaignMoney; labelKey: string }[] = [
+  { key: 'spent', labelKey: 'marketing.report.cost' },
+  { key: 'cost_per_lead', labelKey: 'marketing.report.perLead' },
+  { key: 'cost_per_student', labelKey: 'marketing.report.perStudent' },
+  { key: 'fees', labelKey: 'marketing.report.fees' },
+]
 const campaignName = (row: MarketingCampaignRow) => row.name ?? t('marketing.report.noCampaign')
 const percent = (value: number) => `${Number(value)}%`
 
@@ -61,7 +70,7 @@ const tiles = computed(() => {
     { label: t('marketing.report.leads'), value: String(totals.leads), hint: t('marketing.report.openHint', { n: totals.open }) },
     { label: t('marketing.report.enrolled'), value: String(totals.enrolled), hint: t('marketing.report.notInterestedHint', { n: totals.not_interested }) },
     { label: t('marketing.report.conversion'), value: percent(totals.conversion), hint: t('marketing.report.conversionHint') },
-    { label: t('marketing.report.fees'), value: fees(totals.fees), hint: t('marketing.report.feesHint') },
+    { label: t('marketing.report.fees'), value: usd(totals.fees_usd), sub: khr(totals.fees_khr), hint: t('marketing.report.feesHint') },
   ]
 })
 
@@ -98,6 +107,7 @@ onMounted(() => {
         <div v-for="tile in tiles" :key="tile.label" class="rounded-[--radius-card] border border-neutral-200 bg-white p-4 shadow-[--shadow-card]">
           <p class="text-xs font-medium uppercase tracking-wide text-neutral-500">{{ tile.label }}</p>
           <p class="mt-1 text-xl font-semibold tabular-nums text-neutral-900 sm:text-2xl">{{ tile.value }}</p>
+          <p v-if="'sub' in tile" class="text-sm font-semibold tabular-nums text-neutral-700">{{ tile.sub }}</p>
           <p class="mt-0.5 text-xs text-neutral-500">{{ tile.hint }}</p>
         </div>
       </div>
@@ -127,24 +137,32 @@ onMounted(() => {
                 <dd class="font-semibold tabular-nums">{{ percent(row.conversion) }}</dd>
               </div>
             </dl>
-            <p v-if="row.id" class="mt-2 text-xs text-neutral-600">
-              {{ t('marketing.report.cost') }}: {{ money(row, row.spent) }} · {{ t('marketing.report.perStudent') }}: {{ money(row, row.cost_per_student) }}
-            </p>
-            <p class="text-xs text-neutral-600">{{ t('marketing.report.fees') }}: {{ fees(row.fees) }}</p>
+            <table class="mt-2 w-full text-xs">
+              <thead class="text-neutral-500"><tr><th></th><th class="text-right font-medium">USD</th><th class="pl-3 text-right font-medium">KHR</th></tr></thead>
+              <tbody>
+                <template v-for="col in moneyCols" :key="col.key">
+                  <tr v-if="row.id || col.key === 'fees'">
+                    <td class="py-0.5 text-neutral-500">{{ t(col.labelKey) }}</td>
+                    <td class="whitespace-nowrap py-0.5 text-right tabular-nums text-neutral-800">{{ usd(row[`${col.key}_usd`]) }}</td>
+                    <td class="whitespace-nowrap py-0.5 pl-3 text-right tabular-nums text-neutral-800">{{ khr(row[`${col.key}_khr`]) }}</td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
           </div>
         </div>
         <div class="mb-6 hidden overflow-x-auto rounded-[--radius-card] border border-neutral-200 bg-white sm:block">
           <table class="w-full text-left text-sm">
             <thead class="bg-neutral-50 text-neutral-500">
               <tr>
-                <th class="px-3 py-2 font-medium">{{ t('marketing.report.campaign') }}</th>
-                <th class="px-3 py-2 text-right font-medium">{{ t('marketing.report.leads') }}</th>
-                <th class="px-3 py-2 text-right font-medium">{{ t('marketing.report.enrolled') }}</th>
-                <th class="px-3 py-2 text-right font-medium">{{ t('marketing.report.conversion') }}</th>
-                <th class="px-3 py-2 text-right font-medium">{{ t('marketing.report.cost') }}</th>
-                <th class="px-3 py-2 text-right font-medium">{{ t('marketing.report.perLead') }}</th>
-                <th class="px-3 py-2 text-right font-medium">{{ t('marketing.report.perStudent') }}</th>
-                <th class="px-3 py-2 text-right font-medium">{{ t('marketing.report.fees') }}</th>
+                <th rowspan="2" class="px-3 py-2 font-medium">{{ t('marketing.report.campaign') }}</th>
+                <th rowspan="2" class="px-3 py-2 text-right font-medium">{{ t('marketing.report.leads') }}</th>
+                <th rowspan="2" class="px-3 py-2 text-right font-medium">{{ t('marketing.report.enrolled') }}</th>
+                <th rowspan="2" class="px-3 py-2 text-right font-medium">{{ t('marketing.report.conversion') }}</th>
+                <th v-for="col in moneyCols" :key="col.key" colspan="2" class="px-3 pt-2 text-center font-medium">{{ t(col.labelKey) }}</th>
+              </tr>
+              <tr class="text-xs">
+                <template v-for="col in moneyCols" :key="col.key"><th class="px-3 pb-2 text-right font-medium">USD</th><th class="px-3 pb-2 text-right font-medium">KHR</th></template>
               </tr>
             </thead>
             <tbody class="divide-y divide-neutral-100">
@@ -156,10 +174,10 @@ onMounted(() => {
                 <td class="px-3 py-2 text-right tabular-nums">{{ row.leads }}</td>
                 <td class="px-3 py-2 text-right tabular-nums">{{ row.enrolled }}</td>
                 <td class="px-3 py-2 text-right tabular-nums">{{ percent(row.conversion) }}</td>
-                <td class="px-3 py-2 text-right tabular-nums">{{ money(row, row.spent) }}</td>
-                <td class="px-3 py-2 text-right tabular-nums">{{ money(row, row.cost_per_lead) }}</td>
-                <td class="px-3 py-2 text-right tabular-nums">{{ money(row, row.cost_per_student) }}</td>
-                <td class="px-3 py-2 text-right tabular-nums">{{ fees(row.fees) }}</td>
+                <template v-for="col in moneyCols" :key="col.key">
+                  <td class="whitespace-nowrap px-3 py-2 text-right tabular-nums">{{ usd(row[`${col.key}_usd`]) }}</td>
+                  <td class="whitespace-nowrap px-3 py-2 text-right tabular-nums">{{ khr(row[`${col.key}_khr`]) }}</td>
+                </template>
               </tr>
             </tbody>
           </table>

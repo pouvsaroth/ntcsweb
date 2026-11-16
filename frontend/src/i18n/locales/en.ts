@@ -7093,7 +7093,7 @@ const en = {
     },
     loanReports: {
       title: 'Loan reports',
-      subtitle: 'Savings and money owed for a period, per currency.',
+      subtitle: 'Savings and money owed for a period, in USD and KHR.',
       from: 'From',
       to: 'To',
       show: 'Show',
@@ -7160,7 +7160,7 @@ const en = {
     fundReports: {
       byProvider: 'Money in by provider', noProvider: 'No provider named', noProviderMoney: 'No money in during this period.', times: 'Times', timesGiven: 'Given {n} times',
       title: 'Fund reports',
-      subtitle: 'Money in and out of every fund for a period, per currency.',
+      subtitle: 'Money in and out of every fund for a period, in USD and KHR.',
       from: 'From',
       to: 'To',
       type: 'Fund type',

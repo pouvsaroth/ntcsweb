@@ -6,16 +6,18 @@ import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseSpinner from '@/components/ui/BaseSpinner.vue'
-import { loanReportsService, type LoanReport } from '@/services/loanReports'
+import { loanReportsService, type LoanMoney, type LoanReport, type PositionMoney, type SavingsMoney } from '@/services/loanReports'
 import { useAuthStore } from '@/stores/auth'
 import { ApiRequestError } from '@/types/api'
 import { formatMoney } from '@/utils/currency'
 import { formatDate } from '@/utils/date'
 
 /**
- * Loan > Reports: Savings and Owe for a period, per currency (never added
- * together). Totals, then per customer; with both menus, each customer's
- * position (savings kept vs money owed). Print prints the report only.
+ * Loan > Reports: Savings and Owe for a period. Totals, then per customer;
+ * with both menus, each customer's position (savings kept vs money owed).
+ * Every amount shows as two columns, USD | KHR (converted by the API: money
+ * that moved at its own date's rate, balances now at today's rate). Print
+ * prints the report only.
  */
 const { t } = useI18n()
 const auth = useAuthStore()
@@ -48,6 +50,31 @@ const savingsTotals = computed(() => report.value?.savings?.totals.filter((r) =>
 const loanTotals = computed(() => report.value?.loans?.totals.filter((r) => r.active_loans > 0 || r.lent > 0 || r.collected > 0 || r.interest > 0) ?? [])
 const savingsRows = computed(() => report.value?.savings?.customers.filter((r) => r.balance !== 0 || r.deposits > 0 || r.withdrawals > 0) ?? [])
 const loanRows = computed(() => report.value?.loans?.customers.filter((r) => r.owed > 0 || r.lent > 0 || r.collected > 0 || r.interest > 0) ?? [])
+
+type Field<F> = { key: F; labelKey: string; color: string }
+const loanFields: Field<LoanMoney>[] = [
+  { key: 'lent', labelKey: 'admin.loanReports.lent', color: '' },
+  { key: 'collected', labelKey: 'admin.loanReports.collected', color: '' },
+  { key: 'interest', labelKey: 'admin.loanReports.interest', color: 'text-green-700' },
+  { key: 'owed', labelKey: 'admin.loanReports.owedNow', color: 'font-semibold' },
+  { key: 'late', labelKey: 'admin.loanReports.lateNow', color: 'text-danger-600' },
+]
+const savingsFields: Field<SavingsMoney>[] = [
+  { key: 'deposits', labelKey: 'admin.loanReports.deposits', color: 'text-green-700' },
+  { key: 'withdrawals', labelKey: 'admin.loanReports.withdrawals', color: 'text-amber-700' },
+  { key: 'balance', labelKey: 'admin.loanReports.balanceNow', color: 'font-semibold' },
+]
+const positionFields: Field<PositionMoney>[] = [
+  { key: 'savings', labelKey: 'admin.loanReports.savingsKept', color: '' },
+  { key: 'owed', labelKey: 'admin.loanReports.owedNow', color: '' },
+  { key: 'net', labelKey: 'admin.loanReports.net', color: 'font-semibold' },
+]
+// Reads `<field>_usd` / `<field>_khr` off any report row.
+const usd = (row: object, field: string) => formatMoney((row as Record<string, number>)[`${field}_usd`] ?? 0, 'USD')
+const khr = (row: object, field: string) => formatMoney((row as Record<string, number>)[`${field}_khr`] ?? 0, 'KHR')
+const activeLoans = computed(() => report.value?.loans?.totals.reduce((n, r) => n + r.active_loans, 0) ?? 0)
+const lateLoans = computed(() => report.value?.loans?.totals.reduce((n, r) => n + r.late_loans, 0) ?? 0)
+const openAccounts = computed(() => report.value?.savings?.totals.reduce((n, r) => n + r.open_accounts, 0) ?? 0)
 
 const printPage = () => window.print()
 
@@ -82,22 +109,18 @@ onMounted(load)
       <section v-if="report.loans">
         <h2 class="mb-3 text-base font-semibold text-neutral-900">{{ t('adminNav.items.customerLoans') }}</h2>
         <p v-if="loanTotals.length === 0" class="rounded-lg border border-dashed border-neutral-300 py-6 text-center text-sm text-neutral-500">{{ t('admin.loanReports.nothing') }}</p>
-        <div v-else class="grid gap-3 sm:grid-cols-2">
-          <div v-for="row in loanTotals" :key="row.currency" class="rounded-[--radius-card] border border-neutral-200 bg-white p-4">
-            <p class="text-xs font-medium uppercase tracking-wide text-neutral-500">{{ row.currency }} · {{ t('admin.customerLoans.loansCount', { n: row.active_loans }) }}</p>
-            <dl class="mt-2 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-              <div><dt class="text-neutral-500">{{ t('admin.loanReports.lent') }}</dt><dd class="font-semibold tabular-nums">{{ formatMoney(row.lent, row.currency) }}</dd></div>
-              <div><dt class="text-neutral-500">{{ t('admin.loanReports.collected') }}</dt><dd class="font-semibold tabular-nums">{{ formatMoney(row.collected, row.currency) }}</dd></div>
-              <div><dt class="text-neutral-500">{{ t('admin.loanReports.interest') }}</dt><dd class="font-semibold tabular-nums text-green-700">{{ formatMoney(row.interest, row.currency) }}</dd></div>
-              <div><dt class="text-neutral-500">{{ t('admin.loanReports.owedNow') }}</dt><dd class="font-semibold tabular-nums text-primary-800">{{ formatMoney(row.owed, row.currency) }}</dd></div>
-              <div class="col-span-2">
-                <dt class="text-neutral-500">{{ t('admin.loanReports.lateNow') }}</dt>
-                <dd class="font-semibold tabular-nums" :class="row.late > 0 ? 'text-danger-600' : ''">
-                  {{ formatMoney(row.late, row.currency) }}<span v-if="row.late_loans" class="font-normal text-neutral-500"> · {{ t('admin.borrowings.lateCount', { count: row.late_loans }) }}</span>
-                </dd>
-              </div>
-            </dl>
-          </div>
+        <div v-else class="max-w-xl rounded-[--radius-card] border border-neutral-200 bg-white p-4">
+          <p class="text-xs font-medium uppercase tracking-wide text-neutral-500">{{ t('admin.customerLoans.loansCount', { n: activeLoans }) }}<template v-if="lateLoans"> · {{ t('admin.borrowings.lateCount', { count: lateLoans }) }}</template></p>
+          <table class="mt-2 w-full text-sm">
+            <thead class="text-xs text-neutral-500"><tr><th></th><th class="pb-1 text-right font-medium">USD</th><th class="pb-1 pl-4 text-right font-medium">KHR</th></tr></thead>
+            <tbody>
+              <tr v-for="field in loanFields" :key="field.key">
+                <td class="py-1 text-neutral-500">{{ t(field.labelKey) }}</td>
+                <td class="whitespace-nowrap py-1 text-right font-semibold tabular-nums" :class="field.color">{{ usd(report.loans.all, field.key) }}</td>
+                <td class="whitespace-nowrap py-1 pl-4 text-right font-semibold tabular-nums" :class="field.color">{{ khr(report.loans.all, field.key) }}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
 
         <template v-if="loanRows.length">
@@ -105,13 +128,11 @@ onMounted(load)
           <div class="space-y-2 sm:hidden print:hidden">
             <div v-for="row in loanRows" :key="`${row.customer_id}-${row.currency}`" class="rounded-lg border border-neutral-200 bg-white p-3 text-sm">
               <div class="flex justify-between gap-2">
-                <p class="font-medium text-neutral-900">{{ row.name }}</p>
-                <p class="font-semibold tabular-nums">{{ formatMoney(row.owed, row.currency) }}</p>
+                <p class="font-medium text-neutral-900">{{ row.name }} <span class="text-xs text-neutral-500">· {{ row.currency }}</span></p>
+                <p class="text-right font-semibold tabular-nums">{{ usd(row, 'owed') }}<br />{{ khr(row, 'owed') }}</p>
               </div>
               <p class="mt-1 text-xs text-neutral-500">
-                {{ t('admin.loanReports.lent') }} {{ formatMoney(row.lent, row.currency) }} · {{ t('admin.loanReports.collected') }} {{ formatMoney(row.collected, row.currency) }} ·
-                {{ t('admin.loanReports.interest') }} {{ formatMoney(row.interest, row.currency) }}
-                <span v-if="row.late > 0" class="text-danger-600"> · {{ t('admin.borrowings.late') }} {{ formatMoney(row.late, row.currency) }}</span>
+                <template v-for="(field, i) in loanFields.filter((f) => f.key !== 'owed')" :key="field.key"><template v-if="i"> · </template>{{ t(field.labelKey) }} {{ usd(row, field.key) }} / {{ khr(row, field.key) }}</template>
               </p>
             </div>
           </div>
@@ -119,24 +140,20 @@ onMounted(load)
             <table class="w-full text-left text-sm">
               <thead class="border-b border-neutral-200 bg-neutral-50 text-neutral-500">
                 <tr>
-                  <th class="px-4 py-2 font-medium">{{ t('admin.customerLoans.customer') }}</th>
-                  <th class="px-4 py-2 font-medium">{{ t('admin.savings.currency') }}</th>
-                  <th class="px-4 py-2 text-right font-medium">{{ t('admin.loanReports.lent') }}</th>
-                  <th class="px-4 py-2 text-right font-medium">{{ t('admin.loanReports.collected') }}</th>
-                  <th class="px-4 py-2 text-right font-medium">{{ t('admin.loanReports.interest') }}</th>
-                  <th class="px-4 py-2 text-right font-medium">{{ t('admin.loanReports.owedNow') }}</th>
-                  <th class="px-4 py-2 text-right font-medium">{{ t('admin.loanReports.lateNow') }}</th>
+                  <th rowspan="2" class="px-4 py-2 font-medium">{{ t('admin.customerLoans.customer') }}</th>
+                  <th v-for="field in loanFields" :key="field.key" colspan="2" class="px-4 pt-2 text-center font-medium">{{ t(field.labelKey) }}</th>
+                </tr>
+                <tr class="text-xs">
+                  <template v-for="field in loanFields" :key="field.key"><th class="px-4 pb-2 text-right font-medium">USD</th><th class="px-4 pb-2 text-right font-medium">KHR</th></template>
                 </tr>
               </thead>
               <tbody class="divide-y divide-neutral-100">
                 <tr v-for="row in loanRows" :key="`${row.customer_id}-${row.currency}`">
-                  <td class="px-4 py-2">{{ row.name }} <span v-if="row.code" class="text-xs text-neutral-500">({{ row.code }})</span></td>
-                  <td class="px-4 py-2 text-neutral-600">{{ row.currency }}</td>
-                  <td class="px-4 py-2 text-right tabular-nums">{{ formatMoney(row.lent, row.currency) }}</td>
-                  <td class="px-4 py-2 text-right tabular-nums">{{ formatMoney(row.collected, row.currency) }}</td>
-                  <td class="px-4 py-2 text-right tabular-nums text-green-700">{{ formatMoney(row.interest, row.currency) }}</td>
-                  <td class="px-4 py-2 text-right font-semibold tabular-nums">{{ formatMoney(row.owed, row.currency) }}</td>
-                  <td class="px-4 py-2 text-right tabular-nums" :class="row.late > 0 ? 'text-danger-600' : 'text-neutral-400'">{{ formatMoney(row.late, row.currency) }}</td>
+                  <td class="px-4 py-2">{{ row.name }} <span v-if="row.code" class="text-xs text-neutral-500">({{ row.code }})</span> <span class="text-xs text-neutral-500">· {{ row.currency }}</span></td>
+                  <template v-for="field in loanFields" :key="field.key">
+                    <td class="whitespace-nowrap px-4 py-2 text-right tabular-nums" :class="field.color">{{ usd(row, field.key) }}</td>
+                    <td class="whitespace-nowrap px-4 py-2 text-right tabular-nums" :class="field.color">{{ khr(row, field.key) }}</td>
+                  </template>
                 </tr>
               </tbody>
             </table>
@@ -148,15 +165,18 @@ onMounted(load)
       <section v-if="report.savings">
         <h2 class="mb-3 text-base font-semibold text-neutral-900">{{ t('adminNav.items.savings') }}</h2>
         <p v-if="savingsTotals.length === 0" class="rounded-lg border border-dashed border-neutral-300 py-6 text-center text-sm text-neutral-500">{{ t('admin.loanReports.nothing') }}</p>
-        <div v-else class="grid gap-3 sm:grid-cols-2">
-          <div v-for="row in savingsTotals" :key="row.currency" class="rounded-[--radius-card] border border-neutral-200 bg-white p-4">
-            <p class="text-xs font-medium uppercase tracking-wide text-neutral-500">{{ row.currency }} · {{ t('admin.savings.openAccounts', { n: row.open_accounts }) }}</p>
-            <dl class="mt-2 grid grid-cols-3 gap-x-4 text-sm">
-              <div><dt class="text-neutral-500">{{ t('admin.loanReports.deposits') }}</dt><dd class="font-semibold tabular-nums text-green-700">{{ formatMoney(row.deposits, row.currency) }}</dd></div>
-              <div><dt class="text-neutral-500">{{ t('admin.loanReports.withdrawals') }}</dt><dd class="font-semibold tabular-nums text-amber-700">{{ formatMoney(row.withdrawals, row.currency) }}</dd></div>
-              <div><dt class="text-neutral-500">{{ t('admin.loanReports.balanceNow') }}</dt><dd class="font-semibold tabular-nums">{{ formatMoney(row.balance, row.currency) }}</dd></div>
-            </dl>
-          </div>
+        <div v-else class="max-w-xl rounded-[--radius-card] border border-neutral-200 bg-white p-4">
+          <p class="text-xs font-medium uppercase tracking-wide text-neutral-500">{{ t('admin.savings.openAccounts', { n: openAccounts }) }}</p>
+          <table class="mt-2 w-full text-sm">
+            <thead class="text-xs text-neutral-500"><tr><th></th><th class="pb-1 text-right font-medium">USD</th><th class="pb-1 pl-4 text-right font-medium">KHR</th></tr></thead>
+            <tbody>
+              <tr v-for="field in savingsFields" :key="field.key">
+                <td class="py-1 text-neutral-500">{{ t(field.labelKey) }}</td>
+                <td class="whitespace-nowrap py-1 text-right font-semibold tabular-nums" :class="field.color">{{ usd(report.savings.all, field.key) }}</td>
+                <td class="whitespace-nowrap py-1 pl-4 text-right font-semibold tabular-nums" :class="field.color">{{ khr(report.savings.all, field.key) }}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
 
         <template v-if="savingsRows.length">
@@ -164,11 +184,11 @@ onMounted(load)
           <div class="space-y-2 sm:hidden print:hidden">
             <div v-for="row in savingsRows" :key="`${row.customer_id}-${row.currency}`" class="rounded-lg border border-neutral-200 bg-white p-3 text-sm">
               <div class="flex justify-between gap-2">
-                <p class="font-medium text-neutral-900">{{ row.name }}</p>
-                <p class="font-semibold tabular-nums">{{ formatMoney(row.balance, row.currency) }}</p>
+                <p class="font-medium text-neutral-900">{{ row.name }} <span class="text-xs text-neutral-500">· {{ row.currency }}</span></p>
+                <p class="text-right font-semibold tabular-nums">{{ usd(row, 'balance') }}<br />{{ khr(row, 'balance') }}</p>
               </div>
               <p class="mt-1 text-xs text-neutral-500">
-                {{ t('admin.loanReports.deposits') }} {{ formatMoney(row.deposits, row.currency) }} · {{ t('admin.loanReports.withdrawals') }} {{ formatMoney(row.withdrawals, row.currency) }}
+                <template v-for="(field, i) in savingsFields.filter((f) => f.key !== 'balance')" :key="field.key"><template v-if="i"> · </template>{{ t(field.labelKey) }} {{ usd(row, field.key) }} / {{ khr(row, field.key) }}</template>
               </p>
             </div>
           </div>
@@ -176,20 +196,20 @@ onMounted(load)
             <table class="w-full text-left text-sm">
               <thead class="border-b border-neutral-200 bg-neutral-50 text-neutral-500">
                 <tr>
-                  <th class="px-4 py-2 font-medium">{{ t('admin.savings.customer') }}</th>
-                  <th class="px-4 py-2 font-medium">{{ t('admin.savings.currency') }}</th>
-                  <th class="px-4 py-2 text-right font-medium">{{ t('admin.loanReports.deposits') }}</th>
-                  <th class="px-4 py-2 text-right font-medium">{{ t('admin.loanReports.withdrawals') }}</th>
-                  <th class="px-4 py-2 text-right font-medium">{{ t('admin.loanReports.balanceNow') }}</th>
+                  <th rowspan="2" class="px-4 py-2 font-medium">{{ t('admin.savings.customer') }}</th>
+                  <th v-for="field in savingsFields" :key="field.key" colspan="2" class="px-4 pt-2 text-center font-medium">{{ t(field.labelKey) }}</th>
+                </tr>
+                <tr class="text-xs">
+                  <template v-for="field in savingsFields" :key="field.key"><th class="px-4 pb-2 text-right font-medium">USD</th><th class="px-4 pb-2 text-right font-medium">KHR</th></template>
                 </tr>
               </thead>
               <tbody class="divide-y divide-neutral-100">
                 <tr v-for="row in savingsRows" :key="`${row.customer_id}-${row.currency}`">
-                  <td class="px-4 py-2">{{ row.name }} <span v-if="row.code" class="text-xs text-neutral-500">({{ row.code }})</span></td>
-                  <td class="px-4 py-2 text-neutral-600">{{ row.currency }}</td>
-                  <td class="px-4 py-2 text-right tabular-nums text-green-700">{{ formatMoney(row.deposits, row.currency) }}</td>
-                  <td class="px-4 py-2 text-right tabular-nums text-amber-700">{{ formatMoney(row.withdrawals, row.currency) }}</td>
-                  <td class="px-4 py-2 text-right font-semibold tabular-nums">{{ formatMoney(row.balance, row.currency) }}</td>
+                  <td class="px-4 py-2">{{ row.name }} <span v-if="row.code" class="text-xs text-neutral-500">({{ row.code }})</span> <span class="text-xs text-neutral-500">· {{ row.currency }}</span></td>
+                  <template v-for="field in savingsFields" :key="field.key">
+                    <td class="whitespace-nowrap px-4 py-2 text-right tabular-nums" :class="field.color">{{ usd(row, field.key) }}</td>
+                    <td class="whitespace-nowrap px-4 py-2 text-right tabular-nums" :class="field.color">{{ khr(row, field.key) }}</td>
+                  </template>
                 </tr>
               </tbody>
             </table>
@@ -201,28 +221,43 @@ onMounted(load)
       <section v-if="report.positions && report.positions.length">
         <h2 class="mb-1 text-base font-semibold text-neutral-900">{{ t('admin.loanReports.positions') }}</h2>
         <p class="mb-3 text-sm text-neutral-500">{{ t('admin.loanReports.positionsHint') }}</p>
-        <div class="overflow-x-auto rounded-[--radius-card] border border-neutral-200 bg-white">
-          <table class="w-full text-left text-sm">
-            <thead class="border-b border-neutral-200 bg-neutral-50 text-neutral-500">
-              <tr>
-                <th class="px-4 py-2 font-medium">{{ t('admin.savings.customer') }}</th>
-                <th class="px-4 py-2 font-medium">{{ t('admin.savings.currency') }}</th>
-                <th class="px-4 py-2 text-right font-medium">{{ t('admin.loanReports.savingsKept') }}</th>
-                <th class="px-4 py-2 text-right font-medium">{{ t('admin.loanReports.owedNow') }}</th>
-                <th class="px-4 py-2 text-right font-medium">{{ t('admin.loanReports.net') }}</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-neutral-100">
-              <tr v-for="row in report.positions" :key="`${row.customer_id}-${row.currency}`">
-                <td class="px-4 py-2">{{ row.name }}</td>
-                <td class="px-4 py-2 text-neutral-600">{{ row.currency }}</td>
-                <td class="whitespace-nowrap px-4 py-2 text-right tabular-nums">{{ formatMoney(row.savings, row.currency) }}</td>
-                <td class="whitespace-nowrap px-4 py-2 text-right tabular-nums">{{ formatMoney(row.owed, row.currency) }}</td>
-                <td class="whitespace-nowrap px-4 py-2 text-right font-semibold tabular-nums" :class="row.net > 0 ? 'text-danger-600' : 'text-green-700'">{{ formatMoney(row.net, row.currency) }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+          <div class="space-y-2 sm:hidden print:hidden">
+            <div v-for="row in report.positions" :key="`${row.customer_id}-${row.currency}`" class="rounded-lg border border-neutral-200 bg-white p-3 text-sm">
+              <p class="font-medium text-neutral-900">{{ row.name }} <span class="text-xs text-neutral-500">· {{ row.currency }}</span></p>
+              <table class="mt-2 w-full text-xs">
+                <thead class="text-neutral-500"><tr><th></th><th class="text-right font-medium">USD</th><th class="pl-3 text-right font-medium">KHR</th></tr></thead>
+                <tbody>
+                  <tr v-for="field in positionFields" :key="field.key">
+                    <td class="py-0.5 text-neutral-500">{{ t(field.labelKey) }}</td>
+                    <td class="whitespace-nowrap py-0.5 text-right tabular-nums" :class="field.color">{{ usd(row, field.key) }}</td>
+                    <td class="whitespace-nowrap py-0.5 pl-3 text-right tabular-nums" :class="field.color">{{ khr(row, field.key) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="hidden overflow-x-auto rounded-[--radius-card] border border-neutral-200 bg-white sm:block print:block">
+            <table class="w-full text-left text-sm">
+              <thead class="border-b border-neutral-200 bg-neutral-50 text-neutral-500">
+                <tr>
+                  <th rowspan="2" class="px-4 py-2 font-medium">{{ t('admin.savings.customer') }}</th>
+                  <th v-for="field in positionFields" :key="field.key" colspan="2" class="px-4 pt-2 text-center font-medium">{{ t(field.labelKey) }}</th>
+                </tr>
+                <tr class="text-xs">
+                  <template v-for="field in positionFields" :key="field.key"><th class="px-4 pb-2 text-right font-medium">USD</th><th class="px-4 pb-2 text-right font-medium">KHR</th></template>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-neutral-100">
+                <tr v-for="row in report.positions" :key="`${row.customer_id}-${row.currency}`">
+                  <td class="px-4 py-2">{{ row.name }} <span class="text-xs text-neutral-500">· {{ row.currency }}</span></td>
+                  <template v-for="field in positionFields" :key="field.key">
+                    <td class="whitespace-nowrap px-4 py-2 text-right tabular-nums" :class="field.color">{{ usd(row, field.key) }}</td>
+                    <td class="whitespace-nowrap px-4 py-2 text-right tabular-nums" :class="field.color">{{ khr(row, field.key) }}</td>
+                  </template>
+                </tr>
+              </tbody>
+            </table>
+          </div>
       </section>
     </div>
   </div>

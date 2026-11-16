@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Marketing;
 
+use App\Models\CurrencyRate;
 use App\Models\Inquiry;
 use App\Models\MarketingCampaign;
 use App\Models\Payment;
@@ -70,6 +71,28 @@ class MarketingReportTest extends TestCase
         $none = end($data['by_campaign']);
         $this->assertNull($none['id']);
         $this->assertSame(1, $none['leads']);
+    }
+
+    public function test_cost_and_fees_also_in_dollars_and_riel(): void
+    {
+        $this->actingAsAdminWithPermissions([Permissions::CAMPAIGNS_VIEW]);
+        CurrencyRate::query()->create(['effective_date' => '2020-01-01', 'khr_per_usd' => 4000]);
+        $ads = MarketingCampaign::factory()->create(['spent' => 400000, 'currency' => 'KHR']);
+        $sok = Student::factory()->create();
+        $this->inquiry(['marketing_campaign_id' => $ads->id, 'status' => 'enrolled', 'student_id' => $sok->id]);
+        $this->inquiry(['marketing_campaign_id' => $ads->id]);
+        $this->pay($sok, 20, '2026-11-06');
+        $this->pay($sok, 40000, '2026-11-07', 'KHR');
+
+        $data = $this->getJson('/api/v1/marketing-report?from=2026-11-01&to=2026-11-30')->assertOk()->json('data');
+
+        // $20 + 40,000 ៛ (= $10); spent 400,000 ៛ (= $100) over 2 leads, 1 student.
+        $this->assertEquals([30, 120000], [$data['totals']['fees_usd'], $data['totals']['fees_khr']]);
+        $first = $data['by_campaign'][0];
+        $this->assertEquals([100, 400000], [$first['spent_usd'], $first['spent_khr']]);
+        $this->assertEquals([50, 200000], [$first['cost_per_lead_usd'], $first['cost_per_lead_khr']]);
+        $this->assertEquals([100, 400000], [$first['cost_per_student_usd'], $first['cost_per_student_khr']]);
+        $this->assertEquals([30, 120000], [$first['fees_usd'], $first['fees_khr']]);
     }
 
     public function test_the_dashboard_card_summary_needs_the_card_or_campaigns(): void

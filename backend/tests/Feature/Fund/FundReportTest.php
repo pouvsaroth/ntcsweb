@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Fund;
 
+use App\Models\CurrencyRate;
 use App\Models\LookupCategory;
 use App\Models\LookupValue;
 use App\Support\Authorization\Permissions;
@@ -78,6 +79,19 @@ class FundReportTest extends TestCase
         $this->assertEqualsCanonicalizing(['Building fund', 'Scholarship fund', 'Building KHR'], collect($data['funds'])->pluck('name')->all());
         $fund = collect($data['funds'])->firstWhere('name', 'Building fund');
         $this->assertEquals([1000, 300, 200, 1100], [$fund['opening'], $fund['money_in'], $fund['money_out'], $fund['closing']]);
+    }
+
+    public function test_all_funds_together_in_dollars_and_riel(): void
+    {
+        CurrencyRate::query()->create(['effective_date' => '2020-01-01', 'khr_per_usd' => 4000]);
+        $data = $this->getJson('/api/v1/fund-reports?from='.now()->subWeek()->toDateString().'&to='.now()->toDateString())->assertOk()->json('data');
+
+        // USD funds: opening 1,000, in 800, out 200, closing 1,600; KHR fund: in and closing 400,000 ៛ (= $100).
+        $this->assertSame(3, $data['all']['funds']);
+        $this->assertEquals([1000, 900, 200, 1700], [$data['all']['opening_usd'], $data['all']['money_in_usd'], $data['all']['money_out_usd'], $data['all']['closing_usd']]);
+        $this->assertEquals([4000000, 3600000, 800000, 6800000], [$data['all']['opening_khr'], $data['all']['money_in_khr'], $data['all']['money_out_khr'], $data['all']['closing_khr']]);
+        $khrFund = collect($data['funds'])->firstWhere('name', 'Building KHR');
+        $this->assertEquals([100, 400000], [$khrFund['closing_usd'], $khrFund['closing_khr']]);
     }
 
     public function test_the_end_date_and_type_filter(): void

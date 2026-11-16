@@ -29,12 +29,22 @@ export interface MarketingCampaignRow extends MarketingCounts {
   cost_per_student: number | null
   /** Paid by the students these leads became, since they asked. */
   fees: MoneyRow[]
+  /** Cost at the rate on the campaign's start date; null when no cost. */
+  spent_usd: number | null
+  spent_khr: number | null
+  cost_per_lead_usd: number | null
+  cost_per_lead_khr: number | null
+  cost_per_student_usd: number | null
+  cost_per_student_khr: number | null
+  /** Fees, each payment at the rate on its payment date. */
+  fees_usd: number
+  fees_khr: number
 }
 
 export interface MarketingReportData {
   from: string
   to: string
-  totals: MarketingCounts & { fees: MoneyRow[] }
+  totals: MarketingCounts & { fees: MoneyRow[]; fees_usd: number; fees_khr: number }
   by_source: (MarketingCounts & { source: InquirySource })[]
   by_campaign: MarketingCampaignRow[]
 }

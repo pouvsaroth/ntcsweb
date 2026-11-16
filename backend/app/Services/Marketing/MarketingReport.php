@@ -7,7 +7,7 @@ namespace App\Services\Marketing;
 use App\Models\Inquiry;
 use App\Models\MarketingCampaign;
 use App\Models\Payment;
-use Illuminate\Database\Eloquent\Builder;
+use App\Support\Billing\Money;
 use Illuminate\Support\Collection;
 
 /**
@@ -38,7 +38,7 @@ final class MarketingReport
 
         $campaigns = MarketingCampaign::query()
             ->whereIn('id', $inquiries->pluck('marketing_campaign_id')->filter()->unique()->values())
-            ->get(['id', 'code', 'name', 'channel', 'currency', 'spent'])
+            ->get(['id', 'code', 'name', 'channel', 'currency', 'spent', 'start_on'])
             ->keyBy('id');
 
         $byCampaign = [];
@@ -46,6 +46,9 @@ final class MarketingReport
             $campaign = $campaigns->get($campaignId);
             $counts = $this->counts($rows);
             $spent = $campaign?->spent !== null ? (float) $campaign->spent : null;
+            // Spent in USD and KHR at the rate on the campaign's start date.
+            $spentBoth = Money::pairOn($spent, $campaign?->currency, $campaign?->start_on?->toDateString());
+            $per = fn (?float $amount, int $n, int $decimals) => $amount !== null && $n > 0 ? round($amount / $n, $decimals) : null;
             $byCampaign[] = [
                 'id' => $campaign?->id,
                 'code' => $campaign?->code,
@@ -56,7 +59,16 @@ final class MarketingReport
                 ...$counts,
                 'cost_per_lead' => $spent !== null && $counts['leads'] > 0 ? round($spent / $counts['leads'], 2) : null,
                 'cost_per_student' => $spent !== null && $counts['enrolled'] > 0 ? round($spent / $counts['enrolled'], 2) : null,
+                'spent_usd' => $spentBoth['USD'],
+                'spent_khr' => $spentBoth['KHR'],
+                'cost_per_lead_usd' => $per($spentBoth['USD'], $counts['leads'], 2),
+                'cost_per_lead_khr' => $per($spentBoth['KHR'], $counts['leads'], 0),
+                'cost_per_student_usd' => $per($spentBoth['USD'], $counts['enrolled'], 2),
+                'cost_per_student_khr' => $per($spentBoth['KHR'], $counts['enrolled'], 0),
                 'fees' => $fees['by_campaign'][$campaignId] ?? [],
+                // Fees in USD and KHR, each payment at the rate on its payment date.
+                'fees_usd' => round($fees['by_campaign_both'][$campaignId]['USD'] ?? 0, 2),
+                'fees_khr' => round($fees['by_campaign_both'][$campaignId]['KHR'] ?? 0),
             ];
         }
         // Campaigns first, most leads first; "No campaign" last.
@@ -65,7 +77,7 @@ final class MarketingReport
         return [
             'from' => $from,
             'to' => $to,
-            'totals' => [...$this->counts($inquiries), 'fees' => $fees['total']],
+            'totals' => [...$this->counts($inquiries), 'fees' => $fees['total'], 'fees_usd' => round($fees['total_both']['USD'] ?? 0, 2), 'fees_khr' => round($fees['total_both']['KHR'] ?? 0)],
             'by_source' => $bySource,
             'by_campaign' => $byCampaign,
         ];
@@ -109,7 +121,7 @@ final class MarketingReport
      * after the inquiry date; a student counted once per campaign.
      *
      * @param  Collection<int, Inquiry>  $inquiries
-     * @return array{total: list<array{currency: string, amount: float}>, by_campaign: array<int, list<array{currency: string, amount: float}>>}
+     * @return array{total: list<array{currency: string, amount: float}>, by_campaign: array<int, list<array{currency: string, amount: float}>>, total_both: array<string, float>, by_campaign_both: array<int, array<string, float>>}
      */
     private function fees(Collection $inquiries): array
     {
@@ -123,8 +135,15 @@ final class MarketingReport
             }
         }
         if ($pairs === []) {
-            return ['total' => [], 'by_campaign' => []];
+            return ['total' => [], 'by_campaign' => [], 'total_both' => [], 'by_campaign_both' => []];
         }
+        $addBoth = function (array &$sums, Payment $payment): void {
+            $pair = Money::pairOn($payment->amount, $payment->currency, $payment->payment_date?->toDateString());
+            $sums['USD'] = ($sums['USD'] ?? 0) + ($pair['USD'] ?? 0);
+            $sums['KHR'] = ($sums['KHR'] ?? 0) + ($pair['KHR'] ?? 0);
+        };
+        $byCampaignBoth = [];
+        $totalBoth = [];
 
         $payments = Payment::query()->completed()
             ->whereIn('student_id', array_unique(array_column($pairs, 'student')))
@@ -139,6 +158,8 @@ final class MarketingReport
                     continue;
                 }
                 $byCampaign[$pair['campaign']][$payment->currency] = ($byCampaign[$pair['campaign']][$payment->currency] ?? 0) + (float) $payment->amount;
+                $byCampaignBoth[$pair['campaign']] ??= [];
+                $addBoth($byCampaignBoth[$pair['campaign']], $payment);
             }
             $firstDate[$pair['student']] = min($firstDate[$pair['student']] ?? $pair['date'], $pair['date']);
         }
@@ -151,6 +172,7 @@ final class MarketingReport
                     continue;
                 }
                 $total[$payment->currency] = ($total[$payment->currency] ?? 0) + (float) $payment->amount;
+                $addBoth($totalBoth, $payment);
             }
         }
 
@@ -159,6 +181,8 @@ final class MarketingReport
         return [
             'total' => $list($total),
             'by_campaign' => array_map($list, $byCampaign),
+            'total_both' => $totalBoth,
+            'by_campaign_both' => $byCampaignBoth,
         ];
     }
 }

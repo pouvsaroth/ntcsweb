@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Loan;
 
+use App\Models\CurrencyRate;
 use App\Models\LoanCustomer;
 use App\Support\Authorization\Permissions;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -68,7 +69,25 @@ class LoanReportTest extends TestCase
         $this->assertEquals(1100, $owe['owed']);
         $this->assertSame('Sok Dara', $data['loans']['customers'][0]['name']);
 
-        $this->assertSame([['customer_id' => $this->dara->id, 'name' => 'Sok Dara', 'code' => $this->dara->fresh()->code, 'currency' => 'USD', 'savings' => 550, 'owed' => 1100, 'net' => 550]], $data['positions']);
+        $position = ['customer_id' => $this->dara->id, 'name' => 'Sok Dara', 'code' => $this->dara->fresh()->code, 'currency' => 'USD', 'savings' => 550, 'owed' => 1100, 'net' => 550];
+        $this->assertCount(1, $data['positions']);
+        $this->assertSame($position, array_intersect_key($data['positions'][0], $position));
+    }
+
+    public function test_every_amount_is_also_given_in_dollars_and_riel(): void
+    {
+        CurrencyRate::query()->create(['effective_date' => '2020-01-01', 'khr_per_usd' => 4000]);
+        $today = now()->toDateString();
+        $data = $this->getJson("/api/v1/loan-reports?from={$today}&to={$today}")->assertOk()->json('data');
+
+        // Everything here is in USD, so KHR = USD × 4,000.
+        $this->assertEquals(['deposits_usd' => 200, 'deposits_khr' => 800000, 'withdrawals_usd' => 150, 'withdrawals_khr' => 600000, 'balance_usd' => 550, 'balance_khr' => 2200000], $data['savings']['all']);
+        $this->assertEquals(4800000, $data['loans']['all']['lent_khr']);
+        $this->assertEquals(400000, $data['loans']['all']['collected_khr']);
+        $this->assertEquals(48000, $data['loans']['all']['interest_khr']);
+        $this->assertEquals(4400000, $data['loans']['all']['owed_khr']);
+        $this->assertEquals(4400000, $data['loans']['customers'][0]['owed_khr']);
+        $this->assertEquals([2200000, 4400000, 2200000], [$data['positions'][0]['savings_khr'], $data['positions'][0]['owed_khr'], $data['positions'][0]['net_khr']]);
     }
 
     public function test_a_period_before_any_activity_still_shows_balances_now(): void
