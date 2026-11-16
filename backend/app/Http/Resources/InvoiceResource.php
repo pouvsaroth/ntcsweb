@@ -6,6 +6,7 @@ namespace App\Http\Resources;
 
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
+use App\Support\Billing\Money;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -48,6 +49,10 @@ class InvoiceResource extends JsonResource
             'paid_amount' => (float) $this->paid_amount,
             'balance' => (float) $this->balance,
             'currency' => $this->currency,
+            // Each amount in USD and KHR at the rate on the invoice date.
+            ...Money::fields('total', $this->total, $this->currency, $this->invoice_date),
+            ...Money::fields('paid_amount', $this->paid_amount, $this->currency, $this->invoice_date),
+            ...Money::fields('balance', $this->balance, $this->currency, $this->invoice_date),
             // Only the list endpoint eager-loads items.reference/items.product
             // for this — see InvoiceController::index().
             'course' => $this->when($this->hasCourseRelationsLoaded(), fn () => $this->resource->courseName()),

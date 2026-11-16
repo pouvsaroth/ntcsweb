@@ -19,6 +19,9 @@ export interface Payment {
   /** null for a payment on a company class invoice. */
   student_id: number | null
   amount: number
+  /** USD and KHR at the rate on the record date; null when there is no rate. */
+  amount_usd?: number | null
+  amount_khr?: number | null
   /** Always its invoice's currency. */
   currency: 'USD' | 'KHR'
   payment_method: PaymentMethodValue

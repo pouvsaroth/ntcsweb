@@ -11,6 +11,7 @@ import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseMultiSelect from '@/components/ui/BaseMultiSelect.vue'
 import BasePagination from '@/components/ui/BasePagination.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
+import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import DataTable from '@/components/ui/DataTable.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import {
@@ -21,7 +22,7 @@ import {
   type InvoiceStatusValue,
   type PaymentTypeValue,
 } from '@/services/invoices'
-import { formatMoney } from '@/utils/currency'
+import { moneyOrDash } from '@/utils/currency'
 import { formatDate } from '@/utils/date'
 
 const { t } = useI18n()
@@ -87,8 +88,11 @@ const columns = [
   { key: 'student', label: t('admin.invoices.columnStudent') },
   { key: 'course', label: t('admin.invoices.monthlyColumnCourse') },
   { key: 'payment_type', label: t('admin.invoices.columnPaymentType') },
-  { key: 'total', label: t('admin.invoices.columnTotal'), sortable: true, align: 'text-right' },
-  { key: 'balance', label: t('admin.invoices.columnBalance'), sortable: true, align: 'text-right' },
+  // Each amount in USD and KHR, at the rate on the invoice date.
+  { key: 'total', label: `${t('admin.invoices.columnTotal')} (USD)`, sortable: true, align: 'text-right' },
+  { key: 'total_khr', label: `${t('admin.invoices.columnTotal')} (KHR)`, align: 'text-right' },
+  { key: 'balance', label: `${t('admin.invoices.columnBalance')} (USD)`, sortable: true, align: 'text-right' },
+  { key: 'balance_khr', label: `${t('admin.invoices.columnBalance')} (KHR)`, align: 'text-right' },
   { key: 'status', label: t('admin.invoices.columnStatus') },
   { key: 'due_date', label: t('admin.invoices.columnDueDate'), sortable: true },
   { key: 'created_at', label: t('admin.invoices.columnCreatedAt'), sortable: true },
@@ -126,7 +130,49 @@ onMounted(() => setFilter('status', selectedStatuses.value.length > 0 ? selected
       <BaseButton v-if="auth.can('invoices.create')" to="/admin/invoices/new">{{ t('admin.invoices.addInvoice') }}</BaseButton>
     </div>
 
+    <!-- Cards on small screens (below sm) -->
+    <div class="sm:hidden">
+      <div v-if="loading" class="flex justify-center py-10"><BaseSpinner /></div>
+      <p v-else-if="items.length === 0" class="rounded-[--radius-card] border border-dashed border-neutral-300 py-10 text-center text-sm text-neutral-500">
+        {{ t('admin.invoices.emptyMessage') }}
+      </p>
+      <div v-else class="space-y-2">
+        <RouterLink
+          v-for="row in items"
+          :key="row.id"
+          :to="`/admin/invoices/${row.id}`"
+          class="block rounded-[--radius-card] border border-neutral-200 bg-white p-3 shadow-[--shadow-card]"
+        >
+          <div class="flex items-start justify-between gap-2">
+            <div class="min-w-0">
+              <p class="truncate font-medium text-neutral-900">{{ row.student?.name ?? row.company?.name ?? '—' }}</p>
+              <p class="text-xs text-neutral-500">{{ [row.invoice_number, row.course, formatDate(row.due_date)].filter(Boolean).join(' · ') }}</p>
+            </div>
+            <BaseBadge :variant="statusVariant[row.status]">{{ t(`admin.invoices.status${statusKey(row.status)}`) }}</BaseBadge>
+          </div>
+          <table class="mt-2 w-full text-sm">
+            <thead class="text-xs text-neutral-500">
+              <tr><th></th><th class="text-right font-medium">USD</th><th class="text-right font-medium">KHR</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="text-neutral-500">{{ t('admin.invoices.columnTotal') }}</td>
+                <td class="whitespace-nowrap text-right text-neutral-800">{{ moneyOrDash(row.total_usd, 'USD') }}</td>
+                <td class="whitespace-nowrap pl-2 text-right text-neutral-800">{{ moneyOrDash(row.total_khr, 'KHR') }}</td>
+              </tr>
+              <tr>
+                <td class="text-neutral-500">{{ t('admin.invoices.columnBalance') }}</td>
+                <td class="whitespace-nowrap text-right font-semibold text-neutral-900">{{ moneyOrDash(row.balance_usd, 'USD') }}</td>
+                <td class="whitespace-nowrap pl-2 text-right font-semibold text-neutral-900">{{ moneyOrDash(row.balance_khr, 'KHR') }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </RouterLink>
+      </div>
+    </div>
+
     <DataTable
+      class="hidden sm:block"
       :columns="columns"
       :rows="items"
       row-key="id"
@@ -140,8 +186,10 @@ onMounted(() => setFilter('status', selectedStatuses.value.length > 0 ? selected
       <template #cell-payment_type="{ row }">
         {{ row.payment_type ? t(`admin.invoices.paymentType${paymentTypeKey(row.payment_type)}`) : '—' }}
       </template>
-      <template #cell-total="{ row }">{{ formatMoney(row.total, row.currency) }}</template>
-      <template #cell-balance="{ row }">{{ formatMoney(row.balance, row.currency) }}</template>
+      <template #cell-total="{ row }"><span class="whitespace-nowrap">{{ moneyOrDash(row.total_usd, 'USD') }}</span></template>
+      <template #cell-total_khr="{ row }"><span class="whitespace-nowrap">{{ moneyOrDash(row.total_khr, 'KHR') }}</span></template>
+      <template #cell-balance="{ row }"><span class="whitespace-nowrap">{{ moneyOrDash(row.balance_usd, 'USD') }}</span></template>
+      <template #cell-balance_khr="{ row }"><span class="whitespace-nowrap">{{ moneyOrDash(row.balance_khr, 'KHR') }}</span></template>
       <template #cell-status="{ row }">
         <BaseBadge :variant="statusVariant[row.status]">{{ t(`admin.invoices.status${statusKey(row.status)}`) }}</BaseBadge>
       </template>

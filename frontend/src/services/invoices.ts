@@ -94,6 +94,13 @@ export interface Invoice {
   total: number
   paid_amount: number
   balance: number
+  /** USD and KHR at the rate on the record date; null when there is no rate. */
+  total_usd?: number | null
+  total_khr?: number | null
+  paid_amount_usd?: number | null
+  paid_amount_khr?: number | null
+  balance_usd?: number | null
+  balance_khr?: number | null
   currency: Currency
   /** List endpoint only: the enrollment's course package name, else the items' product names — see InvoiceResource::courseName(). */
   course?: string | null

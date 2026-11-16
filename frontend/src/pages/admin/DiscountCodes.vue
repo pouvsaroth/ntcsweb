@@ -18,7 +18,7 @@ import { discountCodesService, type DiscountCode, type DiscountEffectiveStatus }
 import { useAuthStore } from '@/stores/auth'
 import { useConfirmDialogStore } from '@/stores/confirmDialog'
 import { ApiRequestError } from '@/types/api'
-import { formatMoney } from '@/utils/currency'
+import { moneyOrDash } from '@/utils/currency'
 import { formatDate } from '@/utils/date'
 
 // Invoices > Discount codes: codes students use for money off when they enroll.
@@ -62,9 +62,10 @@ const statusVariant: Record<DiscountEffectiveStatus, 'success' | 'neutral' | 'wa
 
 /** "10% (up to $20.00)" or "$5.00". */
 function discountText(row: DiscountCode): string {
-  if (row.discount_type === 'amount') return formatMoney(row.value, row.currency)
+  // USD / KHR at today's rate (a code has no date of its own).
+  if (row.discount_type === 'amount') return `${moneyOrDash(row.value_usd, 'USD')} / ${moneyOrDash(row.value_khr, 'KHR')}`
   const percent = `${Number(row.value)}%`
-  return row.max_discount ? t('admin.discountCodes.percentUpTo', { percent, max: formatMoney(row.max_discount, row.currency) }) : percent
+  return row.max_discount ? t('admin.discountCodes.percentUpTo', { percent, max: `${moneyOrDash(row.max_discount_usd, 'USD')} / ${moneyOrDash(row.max_discount_khr, 'KHR')}` }) : percent
 }
 
 /** "01-11-2026 → 30-11-2026", or "01-11-2026 → No end date". */

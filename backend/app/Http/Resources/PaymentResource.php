@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Resources;
 
 use App\Models\Payment;
+use App\Support\Billing\Money;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -23,6 +24,7 @@ class PaymentResource extends JsonResource
             'student_id' => $this->student_id,
             'amount' => (float) $this->amount,
             'currency' => $this->currency,
+            ...Money::fields('amount', $this->amount, $this->currency, $this->payment_date),
             'payment_method' => $this->payment_method,
             'status' => $this->status,
             'payment_date' => $this->payment_date?->toDateString(),

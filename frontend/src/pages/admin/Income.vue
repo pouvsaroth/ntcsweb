@@ -13,7 +13,7 @@ import DataTable from '@/components/ui/DataTable.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { incomeService } from '@/services/financialTransactions'
 import type { FinancialTransaction } from '@/services/financialTransactions'
-import { useMoney } from '@/composables/useMoney'
+import { moneyOrDash } from '@/utils/currency'
 import { formatDate, formatMonth } from '@/utils/date'
 
 const { t } = useI18n()
@@ -21,9 +21,6 @@ const auth = useAuthStore()
 
 const { items, meta, loading, error, setPage, setFilter, fetch } = usePaginatedResource<FinancialTransaction>((query) => incomeService.list(query))
 
-const { money: inCurrency } = useMoney()
-/** In the row's own currency; a row with none is in the school's currency. */
-const money = (row: FinancialTransaction) => inCurrency(row.amount, row.currency)
 
 // For month: the month the income belongs to, not the day it came in.
 const selectedMonth = ref('')
@@ -38,7 +35,9 @@ const columns = [
   { key: 'transaction_number', label: t('admin.income.columnReference') },
   { key: 'credit_account', label: t('admin.income.columnAccount') },
   { key: 'description', label: t('admin.income.columnDescription') },
-  { key: 'amount', label: t('admin.income.columnAmount'), align: 'text-right' },
+  // USD and KHR, at the rate on the transaction date.
+  { key: 'amount', label: `${t('admin.income.columnAmount')} (USD)`, align: 'text-right' },
+  { key: 'amount_khr', label: `${t('admin.income.columnAmount')} (KHR)`, align: 'text-right' },
 ]
 
 const modalOpen = ref(false)
@@ -75,7 +74,10 @@ onMounted(() => fetch())
               <p class="truncate font-medium text-neutral-900">{{ row.transaction_number }}</p>
               <p class="text-xs text-neutral-500">{{ formatDate(row.transaction_date) }} · {{ t('admin.income.forMonth') }} {{ formatMonth(row.for_month) }}</p>
             </div>
-            <p class="shrink-0 text-base font-semibold text-neutral-900">{{ money(row) }}</p>
+            <div class="shrink-0 text-right">
+              <p class="text-base font-semibold text-neutral-900">{{ moneyOrDash(row.amount_usd, 'USD') }}</p>
+              <p class="text-sm text-neutral-600">{{ moneyOrDash(row.amount_khr, 'KHR') }}</p>
+            </div>
           </div>
           <p class="mt-2 truncate text-sm text-neutral-700">{{ row.credit_account.code }} — {{ row.credit_account.name }}</p>
           <p v-if="row.description" class="mt-0.5 text-xs text-neutral-500">{{ row.description }}</p>
@@ -89,7 +91,8 @@ onMounted(() => fetch())
       <template #cell-credit_account="{ row }">{{ row.credit_account.code }} — {{ row.credit_account.name }}</template>
       <!-- Long payment descriptions are cut short so Amount stays in view. -->
       <template #cell-description="{ row }"><span class="block max-w-xs truncate" :title="row.description ?? ''">{{ row.description ?? '—' }}</span></template>
-      <template #cell-amount="{ row }"><span class="whitespace-nowrap">{{ money(row as FinancialTransaction) }}</span></template>
+      <template #cell-amount="{ row }"><span class="whitespace-nowrap">{{ moneyOrDash(row.amount_usd, 'USD') }}</span></template>
+      <template #cell-amount_khr="{ row }"><span class="whitespace-nowrap">{{ moneyOrDash(row.amount_khr, 'KHR') }}</span></template>
     </DataTable>
 
     <BasePagination v-if="meta" :meta="meta" sticky class="mt-4" @update:page="setPage" />

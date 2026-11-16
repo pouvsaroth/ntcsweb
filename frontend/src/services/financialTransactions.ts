@@ -16,6 +16,9 @@ export interface FinancialTransaction {
   debit_account: { id: number; code: string; name: string }
   credit_account: { id: number; code: string; name: string }
   amount: number
+  /** USD and KHR at the rate on the record date; null when there is no rate. */
+  amount_usd?: number | null
+  amount_khr?: number | null
   currency: string
   description: string | null
   reference_type: string | null

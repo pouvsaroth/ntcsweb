@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Resources;
 
 use App\Models\DiscountCode;
+use App\Support\Billing\Money;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -33,6 +34,9 @@ class DiscountCodeResource extends JsonResource
             'value' => (float) $this->value,
             'max_discount' => $this->max_discount !== null ? (float) $this->max_discount : null,
             'currency' => $this->currency,
+            // A code has no date of its own: today's rate.
+            ...($this->discount_type === 'amount' ? Money::fields('value', $this->value, $this->currency, null) : ['value_usd' => null, 'value_khr' => null]),
+            ...Money::fields('max_discount', $this->max_discount, $this->currency, null),
             'starts_on' => $this->starts_on?->toDateString(),
             'expires_on' => $this->expires_on?->toDateString(),
             'uses_count' => $uses,

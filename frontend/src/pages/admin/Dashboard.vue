@@ -23,7 +23,7 @@ import CheckInCard from '@/components/admin/CheckInCard.vue'
 import { type TermStudyAlert, termStudyAlertsService } from '@/services/termStudyAlerts'
 import { resignationRequestsService } from '@/services/resignationRequests'
 import { useAuthStore } from '@/stores/auth'
-import { formatMoney } from '@/utils/currency'
+import { formatMoney, moneyOrDash } from '@/utils/currency'
 import { formatDate } from '@/utils/date'
 
 const auth = useAuthStore()
@@ -826,8 +826,12 @@ onBeforeUnmount(() => {
                 <p class="text-xs text-neutral-500">{{ [row.invoice_number, row.course, formatDate(row.due_date)].filter(Boolean).join(' · ') }}</p>
                 <p class="mt-1 text-sm">
                   <span class="text-neutral-500">{{ t('admin.invoices.columnBalance') }}:</span>
-                  <span class="font-semibold text-danger-600"> {{ amount(row.balance, row.currency) }}</span>
-                  <span class="text-neutral-400"> / {{ amount(row.total, row.currency) }}</span>
+                  <span class="font-semibold text-danger-600"> {{ maskedText(moneyOrDash(row.balance_usd, 'USD')) }}</span>
+                  <span class="text-neutral-400"> / {{ maskedText(moneyOrDash(row.total_usd, 'USD')) }}</span>
+                </p>
+                <p class="text-sm">
+                  <span class="font-semibold text-danger-600">{{ maskedText(moneyOrDash(row.balance_khr, 'KHR')) }}</span>
+                  <span class="text-neutral-400"> / {{ maskedText(moneyOrDash(row.total_khr, 'KHR')) }}</span>
                 </p>
               </RouterLink>
             </li>
@@ -839,9 +843,12 @@ onBeforeUnmount(() => {
                   <th class="py-1.5 pr-4 font-medium">{{ t('admin.invoices.columnStudent') }}</th>
                   <th class="py-1.5 pr-4 font-medium">{{ t('admin.invoices.columnNumber') }}</th>
                   <th class="py-1.5 pr-4 font-medium">{{ t('admin.invoices.monthlyColumnCourse') }}</th>
-                  <th class="py-1.5 pr-4 text-right font-medium">{{ t('admin.invoices.columnTotal') }}</th>
-                  <th class="py-1.5 pr-4 text-right font-medium">{{ t('admin.dashboard.unpaidInvoicesColumnPaid') }}</th>
-                  <th class="py-1.5 pr-4 text-right font-medium">{{ t('admin.invoices.columnBalance') }}</th>
+                  <th class="py-1.5 pr-4 text-right font-medium">{{ t('admin.invoices.columnTotal') }} (USD)</th>
+                  <th class="py-1.5 pr-4 text-right font-medium">{{ t('admin.invoices.columnTotal') }} (KHR)</th>
+                  <th class="py-1.5 pr-4 text-right font-medium">{{ t('admin.dashboard.unpaidInvoicesColumnPaid') }} (USD)</th>
+                  <th class="py-1.5 pr-4 text-right font-medium">{{ t('admin.dashboard.unpaidInvoicesColumnPaid') }} (KHR)</th>
+                  <th class="py-1.5 pr-4 text-right font-medium">{{ t('admin.invoices.columnBalance') }} (USD)</th>
+                  <th class="py-1.5 pr-4 text-right font-medium">{{ t('admin.invoices.columnBalance') }} (KHR)</th>
                   <th class="py-1.5 pr-4 font-medium">{{ t('admin.invoices.columnStatus') }}</th>
                   <th class="py-1.5 pr-4 font-medium">{{ t('admin.invoices.columnDueDate') }}</th>
                 </tr>
@@ -853,9 +860,12 @@ onBeforeUnmount(() => {
                     <RouterLink :to="`/admin/invoices/${row.id}`" class="font-medium text-primary-700 hover:text-primary-800">{{ row.invoice_number }}</RouterLink>
                   </td>
                   <td class="py-1.5 pr-4 text-neutral-700">{{ row.course ?? '—' }}</td>
-                  <td class="whitespace-nowrap py-1.5 pr-4 text-right text-neutral-700">{{ amount(row.total, row.currency) }}</td>
-                  <td class="whitespace-nowrap py-1.5 pr-4 text-right text-neutral-700">{{ amount(row.paid_amount, row.currency) }}</td>
-                  <td class="whitespace-nowrap py-1.5 pr-4 text-right font-semibold text-danger-600">{{ amount(row.balance, row.currency) }}</td>
+                  <td class="whitespace-nowrap py-1.5 pr-4 text-right text-neutral-700">{{ maskedText(moneyOrDash(row.total_usd, 'USD')) }}</td>
+                  <td class="whitespace-nowrap py-1.5 pr-4 text-right text-neutral-700">{{ maskedText(moneyOrDash(row.total_khr, 'KHR')) }}</td>
+                  <td class="whitespace-nowrap py-1.5 pr-4 text-right text-neutral-700">{{ maskedText(moneyOrDash(row.paid_amount_usd, 'USD')) }}</td>
+                  <td class="whitespace-nowrap py-1.5 pr-4 text-right text-neutral-700">{{ maskedText(moneyOrDash(row.paid_amount_khr, 'KHR')) }}</td>
+                  <td class="whitespace-nowrap py-1.5 pr-4 text-right font-semibold text-danger-600">{{ maskedText(moneyOrDash(row.balance_usd, 'USD')) }}</td>
+                  <td class="whitespace-nowrap py-1.5 pr-4 text-right font-semibold text-danger-600">{{ maskedText(moneyOrDash(row.balance_khr, 'KHR')) }}</td>
                   <td class="py-1.5 pr-4">
                     <BaseBadge :variant="unpaidStatusVariant[row.status] ?? 'primary'">{{ invoiceStatusLabel(row.status) }}</BaseBadge>
                   </td>

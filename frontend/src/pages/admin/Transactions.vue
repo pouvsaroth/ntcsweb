@@ -10,14 +10,14 @@ import BaseBadge from '@/components/ui/BaseBadge.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BasePagination from '@/components/ui/BasePagination.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
+import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import DataTable from '@/components/ui/DataTable.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { financialTransactionsService, transactionTypes, type FinancialTransaction, type TransactionType } from '@/services/financialTransactions'
 import { formatDate } from '@/utils/date'
-import { useMoney } from '@/composables/useMoney'
+import { moneyOrDash } from '@/utils/currency'
 
 const { t } = useI18n()
-const { money } = useMoney()
 const auth = useAuthStore()
 
 const { items, meta, loading, error, setPage, setFilter, fetch } = usePaginatedResource<FinancialTransaction>((query) =>
@@ -55,7 +55,9 @@ const columns = [
   { key: 'type', label: t('admin.transactions.columnType') },
   { key: 'debit_account', label: t('admin.transactions.columnDebit') },
   { key: 'credit_account', label: t('admin.transactions.columnCredit') },
-  { key: 'amount', label: t('admin.transactions.columnAmount'), align: 'text-right' },
+  // USD and KHR, at the rate on the transaction date.
+  { key: 'amount', label: `${t('admin.transactions.columnAmount')} (USD)`, align: 'text-right' },
+  { key: 'amount_khr', label: `${t('admin.transactions.columnAmount')} (KHR)`, align: 'text-right' },
 ]
 
 const transferModalOpen = ref(false)
@@ -88,14 +90,40 @@ onMounted(() => fetch())
       />
     </div>
 
-    <DataTable :columns="columns" :rows="items" row-key="id" :loading="loading" :empty-message="t('admin.transactions.emptyMessage')">
+    <!-- Cards on small screens (below sm) -->
+    <div class="sm:hidden">
+      <div v-if="loading" class="flex justify-center py-10"><BaseSpinner /></div>
+      <p v-else-if="items.length === 0" class="rounded-[--radius-card] border border-dashed border-neutral-300 py-10 text-center text-sm text-neutral-500">
+        {{ t('admin.transactions.emptyMessage') }}
+      </p>
+      <div v-else class="space-y-2">
+        <div v-for="row in items" :key="row.id" class="rounded-[--radius-card] border border-neutral-200 bg-white p-3 shadow-[--shadow-card]">
+          <div class="flex items-start justify-between gap-2">
+            <div class="min-w-0">
+              <p class="truncate font-medium text-neutral-900">{{ row.transaction_number }}</p>
+              <p class="text-xs text-neutral-500">{{ formatDate(row.transaction_date) }}</p>
+            </div>
+            <BaseBadge :variant="typeVariant[row.type as TransactionType]">{{ t(`admin.transactions.type${typeKey(row.type as TransactionType)}`) }}</BaseBadge>
+          </div>
+          <p class="mt-2 truncate text-xs text-neutral-600">{{ t('admin.transactions.columnDebit') }}: {{ row.debit_account.code }} — {{ row.debit_account.name }}</p>
+          <p class="truncate text-xs text-neutral-600">{{ t('admin.transactions.columnCredit') }}: {{ row.credit_account.code }} — {{ row.credit_account.name }}</p>
+          <div class="mt-2 flex justify-between text-sm font-semibold text-neutral-900">
+            <span>{{ moneyOrDash(row.amount_usd, 'USD') }}</span>
+            <span>{{ moneyOrDash(row.amount_khr, 'KHR') }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <DataTable class="hidden sm:block" :columns="columns" :rows="items" row-key="id" :loading="loading" :empty-message="t('admin.transactions.emptyMessage')">
       <template #cell-transaction_date="{ row }">{{ formatDate(row.transaction_date) }}</template>
       <template #cell-type="{ row }">
         <BaseBadge :variant="typeVariant[row.type as TransactionType]">{{ t(`admin.transactions.type${typeKey(row.type as TransactionType)}`) }}</BaseBadge>
       </template>
       <template #cell-debit_account="{ row }">{{ row.debit_account.code }} — {{ row.debit_account.name }}</template>
       <template #cell-credit_account="{ row }">{{ row.credit_account.code }} — {{ row.credit_account.name }}</template>
-      <template #cell-amount="{ row }">{{ money(row.amount, row.currency) }}</template>
+      <template #cell-amount="{ row }"><span class="whitespace-nowrap">{{ moneyOrDash(row.amount_usd, 'USD') }}</span></template>
+      <template #cell-amount_khr="{ row }"><span class="whitespace-nowrap">{{ moneyOrDash(row.amount_khr, 'KHR') }}</span></template>
     </DataTable>
 
     <BasePagination v-if="meta" :meta="meta" sticky class="mt-4" @update:page="setPage" />

@@ -1,0 +1,58 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Tests\Feature\Billing;
+
+use App\Models\CurrencyRate;
+use App\Models\FinancialTransaction;
+use App\Models\Invoice;
+use App\Models\Payment;
+use App\Models\Tenant;
+use App\Support\Authorization\Permissions;
+use App\Support\Billing\InvoiceStatus;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\HasAcademicAdmin;
+use Tests\TestCase;
+
+/**
+ * Lists on screen show every amount in USD and KHR, each converted at the
+ * rate on its own record's date.
+ */
+class ListMoneyBothCurrenciesTest extends TestCase
+{
+    use HasAcademicAdmin, RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->actingAsAdminWithPermissions([Permissions::INVOICES_VIEW, Permissions::PAYMENTS_VIEW, Permissions::TRANSACTIONS_VIEW]);
+        CurrencyRate::factory()->create(['effective_date' => '2026-01-01', 'khr_per_usd' => 4000]);
+        CurrencyRate::factory()->create(['effective_date' => '2026-06-01', 'khr_per_usd' => 4100]);
+    }
+
+    public function test_invoices_and_payments_carry_both_currencies_at_their_own_dates_rate(): void
+    {
+        $invoice = Invoice::factory()->status(InvoiceStatus::PARTIALLY_PAID)->create([
+            'invoice_date' => '2026-02-10', 'currency' => 'USD', 'total' => 100, 'paid_amount' => 40, 'balance' => 60,
+        ]);
+        Payment::factory()->create(['invoice_id' => $invoice->id, 'student_id' => $invoice->student_id, 'amount' => 82000, 'currency' => 'KHR', 'payment_date' => '2026-07-01']);
+
+        $row = collect($this->getJson('/api/v1/invoices')->assertOk()->json('data'))->firstWhere('id', $invoice->id);
+        $this->assertEquals([100, 400000], [$row['total_usd'], $row['total_khr']]);
+        $this->assertEquals([40, 160000], [$row['paid_amount_usd'], $row['paid_amount_khr']]);
+        $this->assertEquals([60, 240000], [$row['balance_usd'], $row['balance_khr']]);
+
+        // 82,000 riel on 1 July, at 4100.
+        $payment = $this->getJson('/api/v1/payments')->assertOk()->json('data.0');
+        $this->assertEquals([20, 82000], [$payment['amount_usd'], $payment['amount_khr']]);
+    }
+
+    public function test_ledger_lines_carry_both_currencies(): void
+    {
+        FinancialTransaction::factory()->create(['amount' => 40000, 'currency' => Tenant::CURRENCY_KHR, 'transaction_date' => '2026-03-01']);
+
+        $line = $this->getJson('/api/v1/financial-transactions')->assertOk()->json('data.0');
+        $this->assertEquals([10, 40000], [$line['amount_usd'], $line['amount_khr']]);
+    }
+}

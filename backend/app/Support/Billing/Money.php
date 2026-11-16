@@ -95,6 +95,20 @@ final class Money
         return self::pair($amount, $currency, self::khrPerUsdOn($date));
     }
 
+    /**
+     * `<key>_usd` and `<key>_khr` for an API row: the amount in both
+     * currencies at the rate on `$date`. A null currency is the school's.
+     *
+     * @return array<string, float|null>
+     */
+    public static function fields(string $key, float|int|string|null $amount, ?string $currency, Carbon|string|null $date): array
+    {
+        $currency ??= app(\App\Support\Tenancy\TenantContext::class)->get()?->default_currency ?? Tenant::CURRENCY_USD;
+        $pair = self::pairOn($amount, $currency, $date);
+
+        return [$key.'_usd' => $pair['USD'], $key.'_khr' => $pair['KHR']];
+    }
+
     /** Both sides as text, "—" where there is no rate. @return array{USD: string, KHR: string} */
     public static function pairText(float|int|string|null $amount, ?string $currency, ?float $khrPerUsd): array
     {

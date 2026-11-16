@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Resources;
 
 use App\Models\FinancialTransaction;
+use App\Support\Billing\Money;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -34,6 +35,7 @@ class FinancialTransactionResource extends JsonResource
             ]),
             'amount' => (float) $this->amount,
             'currency' => $this->currency,
+            ...Money::fields('amount', $this->amount, $this->currency, $this->transaction_date),
             'description' => $this->description,
             'reference_type' => $this->reference_type,
             'reference_id' => $this->reference_id,

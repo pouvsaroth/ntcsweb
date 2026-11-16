@@ -39,6 +39,11 @@ export interface DiscountCode {
   discount_type: DiscountType
   value: number
   max_discount: number | null
+  /** At today's rate; value_* is null on a percent code. */
+  value_usd?: number | null
+  value_khr?: number | null
+  max_discount_usd?: number | null
+  max_discount_khr?: number | null
   currency: 'USD' | 'KHR'
   starts_on: string
   /** null = no end date */

@@ -27,6 +27,11 @@ export function formatMoney(amount: number, currency: 'USD' | 'KHR'): string {
  * `khrPerUsd` null (no rate entered yet) passes the amount through
  * unconverted, same as the backend does.
  */
+/** formatMoney, or "—" when there is no amount (no rate on file for that date). */
+export function moneyOrDash(amount: number | null | undefined, currency: 'USD' | 'KHR'): string {
+  return amount === null || amount === undefined ? '—' : formatMoney(amount, currency)
+}
+
 export function convertCurrency(amount: number, from: 'USD' | 'KHR', to: 'USD' | 'KHR', khrPerUsd: number | null): number {
   if (from === to || khrPerUsd === null || khrPerUsd <= 0) return amount
 
