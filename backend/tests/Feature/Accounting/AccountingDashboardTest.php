@@ -109,6 +109,46 @@ class AccountingDashboardTest extends TestCase
         $this->assertEqualsWithDelta(80000.0, $response->json('data.todays_income'), 0.001);
     }
 
+    public function test_every_figure_is_also_given_in_dollars_and_riel(): void
+    {
+        $this->actingAsAdminWithPermissions([
+            Permissions::INVOICES_CREATE, Permissions::PAYMENTS_CREATE, Permissions::ACCOUNTING_DASHBOARD_VIEW,
+        ]);
+        $this->setUpChartOfAccounts();
+        CurrencyRate::factory()->create(['effective_date' => '2020-01-01', 'khr_per_usd' => 4000]);
+
+        // A $100 invoice paid in full and an 80,000 ៛ invoice left unpaid.
+        $usd = Product::factory()->create(['type' => ProductType::COURSE_FEE, 'price' => 100, 'currency' => 'USD']);
+        $khr = Product::factory()->create(['type' => ProductType::COURSE_FEE, 'price' => 80000, 'currency' => 'KHR']);
+        $paidId = $this->postJson('/api/v1/invoices', [
+            'student_id' => Student::factory()->create()->id,
+            'currency' => 'USD',
+            'items' => [['product_id' => $usd->id, 'quantity' => 1]],
+        ])->assertCreated()->json('data.id');
+        $this->postJson("/api/v1/invoices/{$paidId}/payments", ['amount' => 100, 'payment_method' => PaymentMethod::CASH])->assertCreated();
+        $this->postJson('/api/v1/invoices', [
+            'student_id' => Student::factory()->create()->id,
+            'currency' => 'KHR',
+            'items' => [['product_id' => $khr->id, 'quantity' => 1]],
+        ])->assertCreated();
+
+        $data = $this->getJson('/api/v1/accounting/dashboard')->assertOk()->json('data');
+
+        $this->assertEquals([100, 400000], [$data['total_revenue_usd'], $data['total_revenue_khr']]);
+        $this->assertEquals([100, 400000], [$data['net_profit_usd'], $data['net_profit_khr']]);
+        $this->assertEquals([100, 400000], [$data['todays_income_usd'], $data['todays_income_khr']]);
+        $this->assertEquals([20, 80000], [$data['outstanding_receivables_usd'], $data['outstanding_receivables_khr']]);
+        $this->assertEquals([100, 400000], [$data['total_cash_balance_usd'], $data['total_cash_balance_khr']]);
+        $cash = collect($data['cash_accounts'])->firstWhere('balance', 100);
+        $this->assertEquals([100, 400000], [$cash['balance_usd'], $cash['balance_khr']]);
+
+        $today = now()->toDateString();
+        $income = $this->getJson("/api/v1/accounting/dashboard/income?date_from={$today}&date_to={$today}")->assertOk()->json('data');
+        $this->assertEquals([100, 100, 400000], [$income['total'], $income['total_usd'], $income['total_khr']]);
+        $expenses = $this->getJson("/api/v1/accounting/dashboard/expenses?date_from={$today}&date_to={$today}")->assertOk()->json('data');
+        $this->assertEquals([0, 0], [$expenses['total_usd'], $expenses['total_khr']]);
+    }
+
     public function test_the_income_detail_lists_each_posting_oldest_first_and_adds_up_to_the_tile(): void
     {
         $this->actingAsAdminWithPermissions([

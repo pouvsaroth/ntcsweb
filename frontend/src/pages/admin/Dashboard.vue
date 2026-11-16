@@ -220,10 +220,11 @@ function formatHours(hours: number): string {
 
 /** Active enrollments right now — same "studying" definition as the Classes list's active-student count/filter, not Student.status. */
 const studyingEnrollmentsCount = ref<string>('—')
-const monthlyIncome = ref<string>('—')
-const dailyIncome = ref<string>('—')
-const monthlyExpense = ref<string>('—')
-const dailyExpense = ref<string>('—')
+// Each tile: [USD, KHR] — every amount at the rate on its own date.
+const monthlyIncome = ref<[string, string]>(['—', ''])
+const dailyIncome = ref<[string, string]>(['—', ''])
+const monthlyExpense = ref<[string, string]>(['—', ''])
+const dailyExpense = ref<[string, string]>(['—', ''])
 const absentToday = ref<AttendanceRecord[]>([])
 const absenceStatusVariant: Record<AttendanceStatusValue, 'success' | 'danger' | 'warning' | 'neutral'> = {
   PRESENT: 'success',
@@ -273,10 +274,8 @@ async function loadUnpaidInvoices(): Promise<void> {
   }
 }
 
-let currency: 'USD' | 'KHR' = 'USD'
-
-function money(amount: number): string {
-  return formatMoney(amount, currency)
+function moneyPair(usd: number, khr: number): [string, string] {
+  return [formatMoney(usd, 'USD'), formatMoney(khr, 'KHR')]
 }
 
 /**
@@ -416,11 +415,10 @@ async function loadStats(): Promise<void> {
     try {
       // The school's own income and expense only (no Loan/Fund, no non-school Expense for).
       const summary = await accountingReportsService.dashboard({ date_from: firstOfMonth(), date_to: today(), today: today(), school_only: true })
-      currency = summary.currency
-      monthlyIncome.value = money(summary.total_revenue)
-      dailyIncome.value = money(summary.todays_income)
-      monthlyExpense.value = money(summary.total_expenses)
-      dailyExpense.value = money(summary.todays_expenses)
+      monthlyIncome.value = moneyPair(summary.total_revenue_usd, summary.total_revenue_khr)
+      dailyIncome.value = moneyPair(summary.todays_income_usd, summary.todays_income_khr)
+      monthlyExpense.value = moneyPair(summary.total_expenses_usd, summary.total_expenses_khr)
+      dailyExpense.value = moneyPair(summary.todays_expenses_usd, summary.todays_expenses_khr)
     } catch {
       // Left as '—' — most likely the signed-in admin just lacks accounting-dashboard.view.
     }
@@ -905,25 +903,29 @@ onBeforeUnmount(() => {
           <button type="button" class="rounded-[--radius-card] text-left transition hover:ring-2 hover:ring-primary-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500" @click="openIncomeDetail('income', 'month')">
             <BaseCard class="h-full">
               <p class="text-sm font-medium text-neutral-500">{{ t('admin.dashboard.statMonthlyIncome') }}</p>
-              <p class="mt-1 text-3xl font-bold text-neutral-900">{{ maskedText(monthlyIncome) }}</p>
+              <p class="mt-1 text-3xl font-bold text-neutral-900">{{ maskedText(monthlyIncome[0]) }}</p>
+              <p v-if="monthlyIncome[1]" class="text-base font-semibold text-neutral-600">{{ maskedText(monthlyIncome[1]) }}</p>
             </BaseCard>
           </button>
           <button type="button" class="rounded-[--radius-card] text-left transition hover:ring-2 hover:ring-primary-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500" @click="openIncomeDetail('income', 'today')">
             <BaseCard class="h-full">
               <p class="text-sm font-medium text-neutral-500">{{ t('admin.dashboard.statDailyIncome') }}</p>
-              <p class="mt-1 text-3xl font-bold text-neutral-900">{{ maskedText(dailyIncome) }}</p>
+              <p class="mt-1 text-3xl font-bold text-neutral-900">{{ maskedText(dailyIncome[0]) }}</p>
+              <p v-if="dailyIncome[1]" class="text-base font-semibold text-neutral-600">{{ maskedText(dailyIncome[1]) }}</p>
             </BaseCard>
           </button>
           <button type="button" class="rounded-[--radius-card] text-left transition hover:ring-2 hover:ring-primary-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500" @click="openIncomeDetail('expense', 'month')">
             <BaseCard class="h-full">
               <p class="text-sm font-medium text-neutral-500">{{ t('admin.dashboard.statMonthlyExpense') }}</p>
-              <p class="mt-1 text-3xl font-bold text-neutral-900">{{ maskedText(monthlyExpense) }}</p>
+              <p class="mt-1 text-3xl font-bold text-neutral-900">{{ maskedText(monthlyExpense[0]) }}</p>
+              <p v-if="monthlyExpense[1]" class="text-base font-semibold text-neutral-600">{{ maskedText(monthlyExpense[1]) }}</p>
             </BaseCard>
           </button>
           <button type="button" class="rounded-[--radius-card] text-left transition hover:ring-2 hover:ring-primary-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500" @click="openIncomeDetail('expense', 'today')">
             <BaseCard class="h-full">
               <p class="text-sm font-medium text-neutral-500">{{ t('admin.dashboard.statDailyExpense') }}</p>
-              <p class="mt-1 text-3xl font-bold text-neutral-900">{{ maskedText(dailyExpense) }}</p>
+              <p class="mt-1 text-3xl font-bold text-neutral-900">{{ maskedText(dailyExpense[0]) }}</p>
+              <p v-if="dailyExpense[1]" class="text-base font-semibold text-neutral-600">{{ maskedText(dailyExpense[1]) }}</p>
             </BaseCard>
           </button>
         </div>
@@ -950,7 +952,7 @@ onBeforeUnmount(() => {
           </li>
           <li class="flex justify-between border-t border-neutral-200 py-2 text-sm font-semibold text-neutral-900">
             <span>{{ t('admin.dashboard.incomeDetailTotal') }}</span>
-            <span>{{ amount(incomeDetail.total, incomeDetail.currency) }}</span>
+            <span class="text-right">{{ amount(incomeDetail.total_usd, 'USD') }}<br />{{ amount(incomeDetail.total_khr, 'KHR') }}</span>
           </li>
         </ul>
         <table class="hidden min-w-full text-sm sm:table">
@@ -973,7 +975,7 @@ onBeforeUnmount(() => {
           <tfoot class="sticky bottom-0 bg-white">
             <tr class="border-t border-neutral-200 font-semibold text-neutral-900">
               <td class="px-3 py-2" colspan="2">{{ t('admin.dashboard.incomeDetailTotal') }}</td>
-              <td class="whitespace-nowrap px-3 py-2 text-right">{{ amount(incomeDetail.total, incomeDetail.currency) }}</td>
+              <td class="whitespace-nowrap px-3 py-2 text-right">{{ amount(incomeDetail.total_usd, 'USD') }}<br />{{ amount(incomeDetail.total_khr, 'KHR') }}</td>
             </tr>
           </tfoot>
         </table>

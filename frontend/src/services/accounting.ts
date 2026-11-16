@@ -59,18 +59,22 @@ export const accountsService = {
   reactivate: (id: number) => apiPost<Account>(`/accounts/${id}/reactivate`),
 }
 
-export interface AccountingSummary {
-  /** Every amount below is already converted to this currency — see AccountingDashboardController. */
-  currency: 'USD' | 'KHR'
-  total_revenue: number
-  total_expenses: number
-  net_profit: number
-  todays_income: number
-  todays_expenses: number
-  outstanding_receivables: number
-  overdue_receivables: number
-  cash_accounts: { id: number; code: string; name: string; balance: number }[]
-  total_cash_balance: number
+export type AccountingSummaryMoney =
+  | 'total_revenue'
+  | 'total_expenses'
+  | 'net_profit'
+  | 'todays_income'
+  | 'todays_expenses'
+  | 'outstanding_receivables'
+  | 'overdue_receivables'
+  | 'total_cash_balance'
+
+/**
+ * The plain fields are in `currency` (the school's); each also comes as
+ * `<field>_usd` / `<field>_khr`, every amount at the rate on its own date.
+ */
+export type AccountingSummary = { currency: 'USD' | 'KHR' } & Record<AccountingSummaryMoney | `${AccountingSummaryMoney}_usd` | `${AccountingSummaryMoney}_khr`, number> & {
+  cash_accounts: { id: number; code: string; name: string; balance: number; balance_usd: number; balance_khr: number }[]
 }
 
 /** Each report figure in the school's currency plus USD and KHR (each record converted at its own date's rate). */
@@ -137,6 +141,9 @@ export interface IncomeDetail {
   /** `total` is converted to this currency — the same figure as the dashboard tile. */
   currency: 'USD' | 'KHR'
   total: number
+  /** The same total in USD and in KHR, each row at the rate on its own date. */
+  total_usd: number
+  total_khr: number
   items: IncomeDetailItem[]
 }
 

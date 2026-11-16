@@ -53,13 +53,40 @@ final class AccountingDashboardController extends Controller
 
         // The main Dashboard asks for the school's own money only (see AccountingReportService::schoolScope()).
         $school = $request->boolean('school_only');
+        $currency = $this->tenantContext->getOrFail()->default_currency;
+
+        // Every figure in USD and in KHR (each amount at the rate on its own
+        // date); the plain fields stay in the school's currency, as before.
+        $both = CurrencyConversionService::both(fn () => $this->figures($dateFrom, $dateTo, $today, $school));
+        $main = $both[$currency];
+
+        $data = ['currency' => $currency, ...$main];
+        foreach ($main as $key => $value) {
+            if (is_numeric($value)) {
+                $data["{$key}_usd"] = $both['USD'][$key];
+                $data["{$key}_khr"] = $both['KHR'][$key];
+            }
+        }
+        $data['cash_accounts'] = array_map(fn (array $account, int $i) => [
+            ...$account,
+            'balance_usd' => $both['USD']['cash_accounts'][$i]['balance'],
+            'balance_khr' => $both['KHR']['cash_accounts'][$i]['balance'],
+        ], $main['cash_accounts'], array_keys($main['cash_accounts']));
+
+        return ApiResponse::success($data);
+    }
+
+    /**
+     * The summary figures, converted into CurrencyConversionService::target().
+     *
+     * @return array<string, mixed>
+     */
+    private function figures(?string $dateFrom, ?string $dateTo, string $today, bool $school): array
+    {
         $revenue = $this->reports->totalRevenue($dateFrom, $dateTo, $school);
         $expenses = $this->reports->totalExpenses($dateFrom, $dateTo, $school);
 
-        return ApiResponse::success([
-            // Every figure below is already converted to this currency — see
-            // AccountingReportService's own docblock.
-            'currency' => $this->tenantContext->getOrFail()->default_currency,
+        return [
             'total_revenue' => $revenue,
             'total_expenses' => $expenses,
             'net_profit' => round($revenue - $expenses, 2),
@@ -68,7 +95,7 @@ final class AccountingDashboardController extends Controller
             'outstanding_receivables' => $this->receivables(Invoice::query()->outstanding()),
             'overdue_receivables' => $this->receivables(Invoice::query()->overdue()),
             ...$this->cashByAccount(),
-        ]);
+        ];
     }
 
     /**
@@ -130,9 +157,14 @@ final class AccountingDashboardController extends Controller
             ->filter()
             ->values();
 
+        $total = CurrencyConversionService::both(fn () => $this->reports->totalRevenue($validated['date_from'], $validated['date_to'], $request->boolean('school_only')));
+        $currency = $this->tenantContext->getOrFail()->default_currency;
+
         return ApiResponse::success([
-            'currency' => $this->tenantContext->getOrFail()->default_currency,
-            'total' => $this->reports->totalRevenue($validated['date_from'], $validated['date_to'], $request->boolean('school_only')),
+            'currency' => $currency,
+            'total' => $total[$currency],
+            'total_usd' => $total['USD'],
+            'total_khr' => $total['KHR'],
             'items' => $rows,
         ]);
     }
@@ -187,9 +219,14 @@ final class AccountingDashboardController extends Controller
             ->filter()
             ->values();
 
+        $total = CurrencyConversionService::both(fn () => $this->reports->totalExpenses($validated['date_from'], $validated['date_to'], $request->boolean('school_only')));
+        $currency = $this->tenantContext->getOrFail()->default_currency;
+
         return ApiResponse::success([
-            'currency' => $this->tenantContext->getOrFail()->default_currency,
-            'total' => $this->reports->totalExpenses($validated['date_from'], $validated['date_to'], $request->boolean('school_only')),
+            'currency' => $currency,
+            'total' => $total[$currency],
+            'total_usd' => $total['USD'],
+            'total_khr' => $total['KHR'],
             'items' => $rows,
         ]);
     }

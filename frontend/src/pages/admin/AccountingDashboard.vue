@@ -5,12 +5,11 @@ import { useI18n } from 'vue-i18n'
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseCard from '@/components/ui/BaseCard.vue'
 import BaseSpinner from '@/components/ui/BaseSpinner.vue'
-import { accountingReportsService, type AccountingSummary } from '@/services/accounting'
+import { accountingReportsService, type AccountingSummary, type AccountingSummaryMoney } from '@/services/accounting'
 import { ApiRequestError } from '@/types/api'
-import { useMoney } from '@/composables/useMoney'
+import { formatMoney } from '@/utils/currency'
 
 const { t } = useI18n()
-const { money } = useMoney()
 
 const summary = ref<AccountingSummary | null>(null)
 const loading = ref(true)
@@ -19,15 +18,22 @@ const loadError = ref<string | null>(null)
 const stats = computed(() => {
   if (!summary.value) return []
   const s = summary.value
+  // Every tile in USD and KHR — each amount at the rate on its own date.
+  const tile = (labelKey: string, key: AccountingSummaryMoney) => ({
+    label: t(labelKey),
+    value: formatMoney(s[`${key}_usd`], 'USD'),
+    khr: formatMoney(s[`${key}_khr`], 'KHR'),
+    negative: key === 'net_profit' && s[`${key}_usd`] < 0,
+  })
   return [
-    { label: t('admin.accountingDashboard.statTotalRevenue'), value: money(s.total_revenue) },
-    { label: t('admin.accountingDashboard.statTotalExpenses'), value: money(s.total_expenses) },
-    { label: t('admin.accountingDashboard.statNetProfit'), value: money(s.net_profit), negative: s.net_profit < 0 },
-    { label: t('admin.accountingDashboard.statOutstanding'), value: money(s.outstanding_receivables) },
-    { label: t('admin.accountingDashboard.statTodaysIncome'), value: money(s.todays_income) },
-    { label: t('admin.accountingDashboard.statTodaysExpenses'), value: money(s.todays_expenses) },
-    { label: t('admin.accountingDashboard.statOverdue'), value: money(s.overdue_receivables) },
-    { label: t('admin.accountingDashboard.statCashBalance'), value: money(s.total_cash_balance) },
+    tile('admin.accountingDashboard.statTotalRevenue', 'total_revenue'),
+    tile('admin.accountingDashboard.statTotalExpenses', 'total_expenses'),
+    tile('admin.accountingDashboard.statNetProfit', 'net_profit'),
+    tile('admin.accountingDashboard.statOutstanding', 'outstanding_receivables'),
+    tile('admin.accountingDashboard.statTodaysIncome', 'todays_income'),
+    tile('admin.accountingDashboard.statTodaysExpenses', 'todays_expenses'),
+    tile('admin.accountingDashboard.statOverdue', 'overdue_receivables'),
+    tile('admin.accountingDashboard.statCashBalance', 'total_cash_balance'),
   ]
 })
 
@@ -60,6 +66,7 @@ onMounted(async () => {
         <BaseCard v-for="stat in stats" :key="stat.label">
           <p class="text-sm font-medium text-neutral-500">{{ stat.label }}</p>
           <p class="mt-1 text-3xl font-bold" :class="stat.negative ? 'text-danger-600' : 'text-neutral-900'">{{ stat.value }}</p>
+          <p class="text-base font-semibold" :class="stat.negative ? 'text-danger-600' : 'text-neutral-600'">{{ stat.khr }}</p>
         </BaseCard>
       </div>
 
@@ -67,12 +74,18 @@ onMounted(async () => {
         <BaseCard>
           <h2 class="mb-3 text-sm font-semibold text-neutral-800">{{ t('admin.accountingDashboard.cashAccountsTitle') }}</h2>
           <p v-if="summary.cash_accounts.length === 0" class="text-sm text-neutral-400">{{ t('admin.accountingDashboard.noData') }}</p>
-          <dl v-else class="space-y-2 text-sm">
-            <div v-for="account in summary.cash_accounts" :key="account.id" class="flex justify-between">
-              <dt class="text-neutral-500">{{ account.code }} — {{ account.name }}</dt>
-              <dd class="font-medium text-neutral-900">{{ money(account.balance) }}</dd>
-            </div>
-          </dl>
+          <table v-else class="w-full text-sm">
+            <thead class="text-xs text-neutral-500">
+              <tr><th></th><th class="pb-1 text-right font-medium">USD</th><th class="pb-1 pl-4 text-right font-medium">KHR</th></tr>
+            </thead>
+            <tbody>
+              <tr v-for="account in summary.cash_accounts" :key="account.id">
+                <td class="py-1 text-neutral-500">{{ account.code }} — {{ account.name }}</td>
+                <td class="whitespace-nowrap py-1 text-right font-medium tabular-nums text-neutral-900">{{ formatMoney(account.balance_usd, 'USD') }}</td>
+                <td class="whitespace-nowrap py-1 pl-4 text-right font-medium tabular-nums text-neutral-900">{{ formatMoney(account.balance_khr, 'KHR') }}</td>
+              </tr>
+            </tbody>
+          </table>
         </BaseCard>
       </div>
     </template>
