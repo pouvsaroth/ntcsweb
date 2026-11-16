@@ -8,10 +8,12 @@ import BaseCard from '@/components/ui/BaseCard.vue'
 import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import { ApiRequestError } from '@/types/api'
 import { formatDate } from '@/utils/date'
-import { useMoney } from '@/composables/useMoney'
+import { formatMoney } from '@/utils/currency'
 
 const { t } = useI18n()
-const { money } = useMoney()
+// USD and KHR side by side — each record at the rate on its own date.
+const usd = (value: number | null) => (value === null ? '—' : formatMoney(value, 'USD'))
+const khr = (value: number | null) => (value === null ? '—' : formatMoney(value, 'KHR'))
 
 const summary = ref<AssetDashboardSummary | null>(null)
 const loading = ref(true)
@@ -27,8 +29,8 @@ const stats = computed(() => {
   const s = summary.value
   return [
     { label: t('admin.assetDashboard.statTotalAssets'), value: String(totalAssets.value) },
-    { label: t('admin.assetDashboard.statTotalInvestment'), value: money(s.total_investment) },
-    { label: t('admin.assetDashboard.statTotalRepairCost'), value: money(s.total_repair_cost) },
+    { label: t('admin.assetDashboard.statTotalInvestment'), value: usd(s.total_investment_usd), khr: khr(s.total_investment_khr) },
+    { label: t('admin.assetDashboard.statTotalRepairCost'), value: usd(s.total_repair_cost_usd), khr: khr(s.total_repair_cost_khr) },
     { label: t('admin.assetDashboard.statOpenIssues'), value: String(s.open_issues_count) },
     { label: t('admin.assetDashboard.statOpenRepairs'), value: String(s.open_repairs_count) },
     { label: t('admin.assetDashboard.statActiveAssignments'), value: String(s.assignment_totals.active) },
@@ -70,6 +72,7 @@ onMounted(async () => {
         <BaseCard v-for="stat in stats" :key="stat.label">
           <p class="text-sm font-medium text-neutral-500">{{ stat.label }}</p>
           <p class="mt-1 text-3xl font-bold text-neutral-900">{{ stat.value }}</p>
+          <p v-if="'khr' in stat" class="text-base font-semibold text-neutral-600">{{ stat.khr }}</p>
         </BaseCard>
       </div>
 
@@ -98,12 +101,18 @@ onMounted(async () => {
         <BaseCard>
           <h2 class="mb-3 text-sm font-semibold text-neutral-800">{{ t('admin.assetDashboard.topRepairShopsTitle') }}</h2>
           <p v-if="summary.top_repair_shops.length === 0" class="text-sm text-neutral-400">{{ t('admin.assetDashboard.noData') }}</p>
-          <dl v-else class="space-y-2 text-sm">
-            <div v-for="shop in summary.top_repair_shops" :key="shop.repair_shop_id" class="flex justify-between">
-              <dt class="text-neutral-500">{{ shop.repair_shop_name }} ({{ shop.repair_count }})</dt>
-              <dd class="font-medium text-neutral-900">{{ money(shop.total_cost) }}</dd>
-            </div>
-          </dl>
+          <table v-else class="w-full text-sm">
+            <thead class="text-xs text-neutral-500">
+              <tr><th></th><th class="pb-1 text-right font-medium">USD</th><th class="pb-1 pl-3 text-right font-medium">KHR</th></tr>
+            </thead>
+            <tbody>
+              <tr v-for="shop in summary.top_repair_shops" :key="shop.repair_shop_id">
+                <td class="py-1 text-neutral-500">{{ shop.repair_shop_name }} ({{ shop.repair_count }})</td>
+                <td class="whitespace-nowrap py-1 text-right font-medium tabular-nums text-neutral-900">{{ usd(shop.total_cost_usd) }}</td>
+                <td class="whitespace-nowrap py-1 pl-3 text-right font-medium tabular-nums text-neutral-900">{{ khr(shop.total_cost_khr) }}</td>
+              </tr>
+            </tbody>
+          </table>
         </BaseCard>
 
         <BaseCard>

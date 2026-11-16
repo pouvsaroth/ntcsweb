@@ -107,7 +107,11 @@ class RecordCurrencyTest extends TestCase
         $this->getJson('/api/v1/assets/dashboard')
             ->assertOk()
             ->assertJsonPath('data.currency', 'KHR')
-            ->assertJsonPath('data.total_investment', 1400000);
+            ->assertJsonPath('data.total_investment', 1400000)
+            // ...and the same in both currencies: $335 + 60,000 ៛ ÷ 4,000 = $350.
+            ->assertJsonPath('data.total_investment_khr', 1400000)
+            ->assertJsonPath('data.total_investment_usd', 350)
+            ->assertJsonPath('data.total_repair_cost_usd', 0);
     }
 
     public function test_outstanding_balances_convert_dollar_and_riel_invoices_before_adding(): void
