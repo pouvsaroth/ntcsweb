@@ -45,6 +45,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'status', 'decision_reason', 'remark', 'decided_by', 'decided_at', 'sold_at', 'received_at', 'paid_back_at',
     'photo_received_date', 'photo_received_remark', 'photo_received_by',
     'certificate_issued_date', 'certificate_issued_remark', 'certificate_issued_by',
+        'temporary_issued_date', 'temporary_issued_by',
 ])]
 class ExamApplication extends Model
 {
@@ -100,6 +101,7 @@ class ExamApplication extends Model
             'paid_back_at' => 'datetime',
             'photo_received_date' => 'date',
             'certificate_issued_date' => 'date',
+            'temporary_issued_date' => 'date',
         ];
     }
 

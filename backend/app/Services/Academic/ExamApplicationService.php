@@ -20,8 +20,8 @@ use App\Support\Billing\ProductType;
 use App\Support\Notifications\NotificationType;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Collection as BaseCollection;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Collection as BaseCollection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -514,11 +514,13 @@ final class ExamApplicationService
      * Examination → Certificate's "Issued": the certificate was handed to
      * the student. Same rules as markPhotoReceived() — passed applications
      * only, saving again overwrites, one audited update per row.
+     * `$temporary`: a temporary (watermarked) certificate was handed out —
+     * only temporary_issued_date is recorded; the real Issued stays as is.
      *
      * @param  list<int>  $ids
      * @return Collection<int, ExamApplication>
      */
-    public function markCertificateIssued(array $ids, string $issuedDate, ?string $remark, User $actor): Collection
+    public function markCertificateIssued(array $ids, string $issuedDate, ?string $remark, User $actor, bool $temporary = false): Collection
     {
         $applications = ExamApplication::query()->whereIn('id', $ids)->get();
         $passedIds = ExamApplication::query()->whereIn('id', $ids)->passed()->pluck('id')->all();
@@ -527,9 +529,12 @@ final class ExamApplicationService
             throw ValidationException::withMessages(['ids' => 'Only students who passed the exam can be issued a certificate.']);
         }
 
-        DB::transaction(function () use ($applications, $issuedDate, $remark, $actor) {
+        DB::transaction(function () use ($applications, $issuedDate, $remark, $actor, $temporary) {
             foreach ($applications as $application) {
-                $application->update([
+                $application->update($temporary ? [
+                    'temporary_issued_date' => $issuedDate,
+                    'temporary_issued_by' => $actor->getKey(),
+                ] : [
                     'certificate_issued_date' => $issuedDate,
                     'certificate_issued_remark' => $remark,
                     'certificate_issued_by' => $actor->getKey(),

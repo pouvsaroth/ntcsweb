@@ -85,6 +85,7 @@ class ExamApplicationResource extends JsonResource
             'photo_received_remark' => $this->photo_received_remark,
             'certificate_issued_date' => $this->certificate_issued_date?->toDateString(),
             'certificate_issued_remark' => $this->certificate_issued_remark,
+            'temporary_issued_date' => $this->temporary_issued_date?->toDateString(),
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }

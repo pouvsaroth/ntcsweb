@@ -19,7 +19,7 @@ import { useAuthStore } from '@/stores/auth'
 import { certificateValues, todayIso } from '@/utils/certificate'
 import { formatDate } from '@/utils/date'
 import { printImages } from '@/utils/printImage'
-import { renderCardImage, type CardSide } from '@/utils/staffCardRender'
+import { addWatermark, renderCardImage, type CardSide } from '@/utils/staffCardRender'
 import { exportTableAsImage } from '@/utils/tableImage'
 
 /**
@@ -124,6 +124,7 @@ const selectedRows = computed(() =>
 
 const columns = computed(() => [
   { key: 'photo_received', label: t('admin.examCertificate.columnPhotoReceived') },
+  { key: 'temporary', label: t('admin.examCertificate.columnTemporary') },
   { key: 'issued', label: t('admin.examCertificate.columnIssued') },
   { key: 'full_name', label: t('admin.exams.columnFullName') },
   { key: 'book', label: t('admin.exams.columnBook') },
@@ -192,6 +193,7 @@ async function exportImage() {
       subtitle: [scope, `${t('admin.examCertificate.exportedOn')} ${formatDate(new Date())}`].join('  ·  '),
       columns: [
         { label: t('admin.examCertificate.columnPhotoReceived'), width: 150, maxWidth: 260 },
+        { label: t('admin.examCertificate.columnTemporary'), width: 130 },
         { label: t('admin.examCertificate.columnIssued'), width: 150, maxWidth: 260 },
         { label: t('admin.exams.columnFullName'), width: 200 },
         { label: t('admin.exams.columnBook'), width: 160, maxWidth: 260 },
@@ -202,6 +204,7 @@ async function exportImage() {
       ],
       rows: rows.map((row) => [
         dateCell(row.photo_received_date, row.photo_received_remark, 'admin.examCertificate.notReceived'),
+        dateCell(row.temporary_issued_date, null, 'admin.examCertificate.notIssued'),
         dateCell(row.certificate_issued_date, row.certificate_issued_remark, 'admin.examCertificate.notIssued'),
         { text: row.student.name, bold: true },
         { text: bookName(row) },
@@ -257,6 +260,9 @@ watch(designId, (id) => {
 const issueDate = ref(todayIso())
 /** After printing, mark the ticked students who aren't Issued yet as Issued on the issue date. */
 const markIssued = ref(true)
+/** A temporary certificate: printed with the បណ្តោះអាសន្ន watermark, recorded as the Temporary issue date (not Issued). */
+const temporary = ref(false)
+const WATERMARK = 'បណ្តោះអាសន្ន'
 const printing = ref(false)
 const printNotice = ref<string | null>(null)
 
@@ -294,7 +300,10 @@ async function printCertificates() {
     // One page per side, one student after another (not all at once: each page is a 300 dpi image).
     for (const row of rows) {
       const values = certificateValues(sourceFor(row, d))
-      for (const side of sides) pages.push(await renderCardImage(d, values, [side]))
+      for (const side of sides) {
+        const page = await renderCardImage(d, values, [side])
+        pages.push(temporary.value ? await addWatermark(page, WATERMARK) : page)
+      }
     }
     await printImages(pages, t('admin.examCertificate.printCertificate'), `${d.width_mm}mm ${d.height_mm}mm`)
   } catch {
@@ -304,11 +313,16 @@ async function printCertificates() {
   }
 
   try {
-    const toMark = selectedRows.value.filter((row) => !row.certificate_issued_date).map((row) => row.id)
+    // A temporary one is recorded for every ticked student (printing again moves the date);
+    // the real one only for those not Issued yet, who keep their date.
+    const toMark = selectedRows.value.filter((row) => temporary.value || !row.certificate_issued_date).map((row) => row.id)
     if (markIssued.value && canUpdate.value && toMark.length > 0) {
       if (issueDate.value && issueDate.value <= todayIso()) {
-        await examApplicationsService.markCertificateIssued(toMark, issueDate.value, null)
-        printNotice.value = t('admin.examCertificate.markedIssued', { count: toMark.length, date: formatDate(issueDate.value) })
+        await examApplicationsService.markCertificateIssued(toMark, issueDate.value, null, temporary.value)
+        printNotice.value = t(temporary.value ? 'admin.examCertificate.markedTemporary' : 'admin.examCertificate.markedIssued', {
+          count: toMark.length,
+          date: formatDate(issueDate.value),
+        })
         await onSaved()
       } else {
         printNotice.value = t('admin.examCertificate.futureNotMarked')
@@ -412,9 +426,13 @@ onMounted(async () => {
           <label class="mb-1 block text-sm font-medium text-neutral-700">{{ t('admin.examCertificate.issueDate') }}</label>
           <DateInput v-model="issueDate" />
         </div>
+        <label class="inline-flex items-center gap-2 pb-2 text-sm font-medium text-neutral-700">
+          <input v-model="temporary" type="checkbox" class="rounded border-neutral-300 text-primary-600 focus:ring-primary-500" />
+          {{ t('admin.examCertificate.temporary') }}
+        </label>
         <label v-if="canUpdate" class="inline-flex items-center gap-2 pb-2 text-sm text-neutral-700">
           <input v-model="markIssued" type="checkbox" class="rounded border-neutral-300 text-primary-600 focus:ring-primary-500" />
-          {{ t('admin.examCertificate.markIssuedOnPrint') }}
+          {{ t(temporary ? 'admin.examCertificate.markTemporaryOnPrint' : 'admin.examCertificate.markIssuedOnPrint') }}
         </label>
       </div>
       <p v-if="!designs.length" class="mt-2 text-xs text-neutral-500">
@@ -460,6 +478,12 @@ onMounted(async () => {
           </p>
         </template>
         <span v-else class="text-sm text-neutral-400">{{ t('admin.examCertificate.notReceived') }}</span>
+      </template>
+      <template #cell-temporary="{ row }">
+        <BaseBadge v-if="(row as ExamApplication).temporary_issued_date" variant="warning">
+          {{ formatDate((row as ExamApplication).temporary_issued_date) }}
+        </BaseBadge>
+        <span v-else class="text-sm text-neutral-400">{{ t('admin.examCertificate.notIssued') }}</span>
       </template>
       <template #cell-issued="{ row }">
         <template v-if="(row as ExamApplication).certificate_issued_date">

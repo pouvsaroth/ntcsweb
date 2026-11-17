@@ -71,6 +71,8 @@ export interface ExamApplication {
   /** Examination → Certificate: the day the certificate was handed to the student. */
   certificate_issued_date?: string | null
   certificate_issued_remark?: string | null
+  /** Examination → Certificate: the day a temporary (watermarked) certificate was handed out. */
+  temporary_issued_date?: string | null
   created_at: string
 }
 
@@ -178,8 +180,8 @@ export const examApplicationsService = {
   markPhotoReceived: (ids: number[], receivedDate: string, remark: string | null) =>
     apiPost<ExamApplication[]>('/exam-applications/photo-received', { ids, received_date: receivedDate, remark }),
 
-  markCertificateIssued: (ids: number[], issuedDate: string, remark: string | null) =>
-    apiPost<ExamApplication[]>('/exam-applications/certificate-issued', { ids, issued_date: issuedDate, remark }),
+  markCertificateIssued: (ids: number[], issuedDate: string, remark: string | null, temporary = false) =>
+    apiPost<ExamApplication[]>('/exam-applications/certificate-issued', { ids, issued_date: issuedDate, remark, temporary }),
 
   approve: (id: number) => apiPost<ExamApplication>(`/exam-applications/${id}/approve`),
   reject: (id: number, reason: string) => apiPost<ExamApplication>(`/exam-applications/${id}/reject`, { reason }),

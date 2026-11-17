@@ -111,6 +111,23 @@ class ExamCertificateTest extends TestCase
         $this->assertSame([$waiting->id], $no->all());
     }
 
+    public function test_a_temporary_certificate_records_only_the_temporary_issue_date(): void
+    {
+        $admin = $this->actingAsAdminWithPermissions([Permissions::EXAM_APPLICATIONS_VIEW, Permissions::EXAM_APPLICATIONS_UPDATE]);
+        $application = $this->scoredApplication(90);
+
+        $this->postJson('/api/v1/exam-applications/certificate-issued', [
+            'ids' => [$application->id],
+            'issued_date' => now()->toDateString(),
+            'temporary' => true,
+        ])->assertOk()->assertJsonPath('data.0.temporary_issued_date', now()->toDateString());
+
+        $fresh = $application->fresh();
+        $this->assertSame(now()->toDateString(), $fresh->temporary_issued_date->toDateString());
+        $this->assertSame($admin->id, (int) $fresh->temporary_issued_by);
+        $this->assertNull($fresh->certificate_issued_date);
+    }
+
     public function test_a_certificate_cannot_be_issued_to_a_student_who_did_not_pass_or_in_the_future(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::EXAM_APPLICATIONS_UPDATE]);

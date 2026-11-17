@@ -311,3 +311,37 @@ export async function renderSheets(
   }
   return { blobs, layout }
 }
+
+// ---- Watermark -------------------------------------------------------------------
+/**
+ * A rendered page with a big, faint word across its middle (e.g. បណ្តោះអាសន្ន on
+ * a temporary certificate), corner to corner.
+ */
+export async function addWatermark(page: Blob, text: string): Promise<Blob> {
+  await loadCardFonts(['Moul'])
+  const image = await createImageBitmap(page)
+  const canvas = document.createElement('canvas')
+  canvas.width = image.width
+  canvas.height = image.height
+  const ctx = canvas.getContext('2d')
+  if (!ctx) throw new Error('Canvas is not available in this browser.')
+  ctx.drawImage(image, 0, 0)
+  const angle = -Math.atan2(canvas.height, canvas.width)
+  const diagonal = Math.hypot(canvas.width, canvas.height)
+  ctx.save()
+  ctx.translate(canvas.width / 2, canvas.height / 2)
+  ctx.rotate(angle)
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  let size = canvas.width / 6
+  ctx.font = `${size}px "Moul", "Noto Sans Khmer", sans-serif`
+  const width = ctx.measureText(text).width
+  if (width > diagonal * 0.8) {
+    size *= (diagonal * 0.8) / width
+    ctx.font = `${size}px "Moul", "Noto Sans Khmer", sans-serif`
+  }
+  ctx.fillStyle = 'rgba(200, 30, 30, 0.22)'
+  ctx.fillText(text, 0, 0)
+  ctx.restore()
+  return toBlob(canvas)
+}

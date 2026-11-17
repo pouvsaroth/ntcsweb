@@ -262,9 +262,11 @@ final class ExamApplicationController extends Controller
         $data = $request->validate([
             'issued_date' => ['required', 'date', 'before_or_equal:today'],
             'remark' => ['nullable', 'string', 'max:500'],
+            // A temporary certificate (watermarked) only records temporary_issued_date.
+            'temporary' => ['sometimes', 'boolean'],
         ]);
 
-        $applications = $this->examApplications->markCertificateIssued($ids, $data['issued_date'], $data['remark'] ?? null, $request->user());
+        $applications = $this->examApplications->markCertificateIssued($ids, $data['issued_date'], $data['remark'] ?? null, $request->user(), (bool) ($data['temporary'] ?? false));
 
         return ApiResponse::success(ExamApplicationResource::collection($applications->load([...self::WITH, 'score.academicYear'])));
     }
