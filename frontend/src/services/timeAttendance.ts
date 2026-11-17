@@ -161,6 +161,33 @@ export const geofencesService = {
   removeRule: (id: number) => apiDelete(`/geofence-rules/${id}`),
 }
 
+/** A school Wi-Fi, known by the internet address its phones reach the server from (one IP or a range). */
+export interface SchoolNetwork {
+  id: number
+  name: string
+  ip_range: string
+  is_active: boolean
+  note: string | null
+  /** This device is on it now. */
+  is_current: boolean
+}
+
+export interface SchoolNetworkInput {
+  name: string
+  ip_range: string
+  is_active: boolean
+  note: string | null
+}
+
+export const schoolNetworksService = {
+  list: () => apiGet<SchoolNetwork[]>('/school-networks'),
+  /** The address this device is on now, what "Add this network" would save, and the saved network it matches. */
+  current: () => apiGet<{ ip: string; ip_range: string; network: SchoolNetwork | null }>('/school-networks/current'),
+  create: (input: SchoolNetworkInput) => apiPost<SchoolNetwork>('/school-networks', input),
+  update: (id: number, input: SchoolNetworkInput) => apiPut<SchoolNetwork>(`/school-networks/${id}`, input),
+  remove: (id: number) => apiDelete(`/school-networks/${id}`),
+}
+
 /**
  * Reads a place from what someone pasted: "11.5564, 104.9282", or a Google
  * Maps link (…/@11.5564,104.9282,17z or …?q=11.5564,104.9282).

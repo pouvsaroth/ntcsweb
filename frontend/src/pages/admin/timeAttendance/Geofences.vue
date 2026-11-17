@@ -14,7 +14,7 @@ import EditIconButton from '@/components/ui/EditIconButton.vue'
 import SearchableSelect from '@/components/ui/SearchableSelect.vue'
 import { currentLocation } from '@/services/staffAttendance'
 import { staffService, type Staff } from '@/services/staff'
-import { geofencesService, parseLatLng, type Geofence, type GeofenceRule, type LatLng } from '@/services/timeAttendance'
+import { geofencesService, parseLatLng, schoolNetworksService, type Geofence, type GeofenceRule, type LatLng, type SchoolNetwork } from '@/services/timeAttendance'
 import { useAuthStore } from '@/stores/auth'
 import { useConfirmDialogStore } from '@/stores/confirmDialog'
 import { ApiRequestError } from '@/types/api'
@@ -23,6 +23,8 @@ import { ApiRequestError } from '@/types/api'
  * HRM > Attendance & Time > Geofences — the places staff may check in / out
  * from the app: circles (pin + radius) or areas (polygon corners), drawn
  * on a map. While any place is on, check-in outside all of them is refused.
+ * Then the school Wi-Fi: on one of its networks (known by the school's
+ * internet address) staff check in / out with no location — either works.
  * Below them, staff with their own rule: anywhere, or only some places.
  */
 const { t } = useI18n()
@@ -41,12 +43,21 @@ const error = ref<string | null>(null)
 const actionError = ref<string | null>(null)
 const highlightId = ref<number | null>(null)
 const activeCount = computed(() => zones.value.filter((z) => z.is_active).length)
+const networks = ref<SchoolNetwork[]>([])
+/** This device's internet address now, and the saved network it is on. */
+const current = ref<{ ip: string; ip_range: string; network: SchoolNetwork | null } | null>(null)
+const activeNetworks = computed(() => networks.value.filter((n) => n.is_active).length)
 
 async function load() {
   loading.value = true
   error.value = null
   try {
-    ;[zones.value, rules.value] = await Promise.all([geofencesService.list(), geofencesService.rules()])
+    ;[zones.value, rules.value, networks.value, current.value] = await Promise.all([
+      geofencesService.list(),
+      geofencesService.rules(),
+      schoolNetworksService.list(),
+      schoolNetworksService.current().catch(() => null),
+    ])
   } catch (e) {
     error.value = e instanceof ApiRequestError ? e.message : t('admin.timeAttendance.geofences.loadFailed')
   } finally {
@@ -168,6 +179,65 @@ async function toggle(zone: Geofence) {
   }
 }
 
+// --- School Wi-Fi -------------------------------------------------------------------
+
+const netOpen = ref(false)
+const netEditing = ref<SchoolNetwork | null>(null)
+const netForm = reactive({ name: '', ip_range: '', is_active: true, note: '' })
+const netErrors = ref<Record<string, string[]>>({})
+const netSaveError = ref<string | null>(null)
+const netSaving = ref(false)
+
+/** Edit one, add by typing an address, or "Add this network" (the address this device is on now). */
+function openNetwork(network: SchoolNetwork | null, ipRange = '') {
+  netEditing.value = network
+  netForm.name = network?.name ?? ''
+  netForm.ip_range = network?.ip_range ?? ipRange
+  netForm.is_active = network?.is_active ?? true
+  netForm.note = network?.note ?? ''
+  netErrors.value = {}
+  netSaveError.value = null
+  netOpen.value = true
+}
+
+async function saveNetwork() {
+  netSaving.value = true
+  netErrors.value = {}
+  netSaveError.value = null
+  const input = { name: netForm.name, ip_range: netForm.ip_range.trim(), is_active: netForm.is_active, note: netForm.note.trim() || null }
+  try {
+    netEditing.value ? await schoolNetworksService.update(netEditing.value.id, input) : await schoolNetworksService.create(input)
+    netOpen.value = false
+    await load()
+  } catch (e) {
+    if (e instanceof ApiRequestError && e.errors) netErrors.value = e.errors
+    else netSaveError.value = e instanceof ApiRequestError ? e.message : t('admin.timeAttendance.saveFailed')
+  } finally {
+    netSaving.value = false
+  }
+}
+
+async function toggleNetwork(network: SchoolNetwork) {
+  actionError.value = null
+  try {
+    await schoolNetworksService.update(network.id, { name: network.name, ip_range: network.ip_range, is_active: !network.is_active, note: network.note })
+    await load()
+  } catch (e) {
+    actionError.value = e instanceof ApiRequestError ? e.message : t('admin.timeAttendance.saveFailed')
+  }
+}
+
+async function removeNetwork(network: SchoolNetwork) {
+  if (!(await confirmDialog.confirm({ message: t('admin.timeAttendance.geofences.wifiDeleteConfirm', { name: network.name }), danger: true }))) return
+  actionError.value = null
+  try {
+    await schoolNetworksService.remove(network.id)
+    await load()
+  } catch (e) {
+    actionError.value = e instanceof ApiRequestError ? e.message : t('admin.organization.deleteFailed')
+  }
+}
+
 // --- Staff rules -------------------------------------------------------------------
 
 const ruleOpen = ref(false)
@@ -235,8 +305,14 @@ onMounted(() => void load())
       <!-- What it does, in one line -->
       <div class="flex flex-wrap items-start gap-3">
         <div class="min-w-0 flex-1">
-          <p class="text-sm font-medium" :class="activeCount > 0 ? 'text-success-700' : 'text-neutral-600'">
-            {{ activeCount > 0 ? t('admin.timeAttendance.geofences.onSummary', { count: activeCount }, activeCount) : t('admin.timeAttendance.geofences.offSummary') }}
+          <p class="text-sm font-medium" :class="activeCount > 0 || activeNetworks > 0 ? 'text-success-700' : 'text-neutral-600'">
+            {{
+              activeCount > 0
+                ? t('admin.timeAttendance.geofences.onSummary', { count: activeCount }, activeCount)
+                : activeNetworks > 0
+                  ? t('admin.timeAttendance.geofences.wifiOnlySummary')
+                  : t('admin.timeAttendance.geofences.offSummary')
+            }}
           </p>
           <p class="text-xs text-neutral-500">{{ t('admin.timeAttendance.geofences.help') }}</p>
         </div>
@@ -280,6 +356,51 @@ onMounted(() => void load())
           </div>
         </div>
       </div>
+
+      <!-- School Wi-Fi: no location needed on it -->
+      <section class="rounded-[--radius-card] border border-neutral-200 bg-white p-4 shadow-[--shadow-card]">
+        <div class="mb-3 flex flex-wrap items-start gap-2">
+          <div class="min-w-[14rem] flex-1">
+            <h3 class="text-sm font-semibold text-neutral-800">{{ t('admin.timeAttendance.geofences.wifiTitle') }}</h3>
+            <p class="text-xs text-neutral-500">{{ t('admin.timeAttendance.geofences.wifiHelp') }}</p>
+          </div>
+          <div v-if="canCreate" class="flex flex-wrap gap-2">
+            <BaseButton v-if="current && !current.network" size="sm" @click="openNetwork(null, current.ip_range)">{{ t('admin.timeAttendance.geofences.wifiAddThis') }}</BaseButton>
+            <BaseButton size="sm" variant="outline" @click="openNetwork(null)">{{ t('admin.timeAttendance.geofences.wifiAddByAddress') }}</BaseButton>
+          </div>
+        </div>
+
+        <p v-if="current" class="mb-3 rounded-lg bg-neutral-50 px-3 py-2 text-xs text-neutral-600">
+          {{ t('admin.timeAttendance.geofences.wifiThisDevice') }} <span class="break-all font-mono font-semibold text-neutral-800">{{ current.ip }}</span>
+          <span v-if="current.network" class="text-success-700"> · {{ t('admin.timeAttendance.geofences.wifiOnNetwork', { name: current.network.name }) }}</span>
+        </p>
+
+        <p v-if="networks.length === 0" class="py-4 text-center text-sm text-neutral-500">{{ t('admin.timeAttendance.geofences.wifiEmpty') }}</p>
+        <!-- Cards at every size: a short list -->
+        <div v-else class="grid gap-2 sm:grid-cols-2">
+          <div v-for="network in networks" :key="network.id" class="rounded-lg border p-3" :class="network.is_current ? 'border-primary-300 bg-primary-50/40' : 'border-neutral-200'">
+            <div class="flex items-start justify-between gap-2">
+              <div class="min-w-0">
+                <p class="truncate text-sm font-semibold text-neutral-800">{{ network.name }}</p>
+                <p class="break-all font-mono text-xs text-neutral-600">{{ network.ip_range }}</p>
+                <p v-if="network.note" class="mt-0.5 truncate text-xs text-neutral-500">{{ network.note }}</p>
+              </div>
+              <div class="flex shrink-0 flex-col items-end gap-1">
+                <BaseBadge :variant="network.is_active ? 'success' : 'neutral'">{{ network.is_active ? t('admin.timeAttendance.geofences.on') : t('admin.timeAttendance.geofences.off') }}</BaseBadge>
+                <BaseBadge v-if="network.is_current" variant="primary">{{ t('admin.timeAttendance.geofences.wifiThisDeviceBadge') }}</BaseBadge>
+              </div>
+            </div>
+            <div v-if="canUpdate || canDelete" class="mt-2 flex items-center justify-end gap-3">
+              <button v-if="canUpdate" type="button" class="text-sm font-medium text-neutral-600 hover:text-neutral-800" @click="toggleNetwork(network)">
+                {{ network.is_active ? t('admin.timeAttendance.geofences.turnOff') : t('admin.timeAttendance.geofences.turnOn') }}
+              </button>
+              <EditIconButton v-if="canUpdate" @click="openNetwork(network)" />
+              <button v-if="canDelete" type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="removeNetwork(network)">{{ t('admin.organization.delete') }}</button>
+            </div>
+          </div>
+        </div>
+        <p class="mt-3 text-xs text-neutral-500">{{ t('admin.timeAttendance.geofences.wifiChangeTip') }}</p>
+      </section>
 
       <!-- Staff with their own rule -->
       <section class="rounded-[--radius-card] border border-neutral-200 bg-white p-4 shadow-[--shadow-card]">
@@ -389,6 +510,35 @@ onMounted(() => void load())
       <template #footer>
         <BaseButton variant="outline" @click="formOpen = false">{{ t('common.close') }}</BaseButton>
         <BaseButton :loading="saving" @click="save">{{ t('common.save') }}</BaseButton>
+      </template>
+    </BaseModal>
+
+    <!-- Add / edit a school Wi-Fi -->
+    <BaseModal v-model="netOpen" :title="netEditing ? t('admin.timeAttendance.geofences.wifiEdit') : t('admin.timeAttendance.geofences.wifiAdd')">
+      <form class="space-y-4" @submit.prevent="saveNetwork">
+        <BaseAlert v-if="netSaveError" variant="danger">{{ netSaveError }}</BaseAlert>
+        <BaseInput v-model="netForm.name" required :label="t('admin.timeAttendance.geofences.name')" :placeholder="t('admin.timeAttendance.geofences.wifiNamePlaceholder')" :error="netErrors.name?.[0]" />
+        <div>
+          <BaseInput v-model="netForm.ip_range" required :label="t('admin.timeAttendance.geofences.wifiAddress')" placeholder="203.0.113.7" :error="netErrors.ip_range?.[0]" />
+          <p class="mt-1 text-xs text-neutral-500">{{ t('admin.timeAttendance.geofences.wifiAddressHint') }}</p>
+          <button
+            v-if="current && netForm.ip_range.trim() !== current.ip_range"
+            type="button"
+            class="mt-1 text-xs font-medium text-primary-700 hover:underline"
+            @click="netForm.ip_range = current.ip_range"
+          >
+            {{ t('admin.timeAttendance.geofences.wifiUseThis', { ip: current.ip_range }) }}
+          </button>
+        </div>
+        <BaseInput v-model="netForm.note" :label="t('admin.timeAttendance.geofences.note')" />
+        <label class="flex items-center gap-2 text-sm text-neutral-700">
+          <input v-model="netForm.is_active" type="checkbox" class="rounded border-neutral-300 text-primary-600 focus:ring-primary-500" />
+          {{ t('admin.timeAttendance.geofences.wifiActiveLabel') }}
+        </label>
+      </form>
+      <template #footer>
+        <BaseButton variant="outline" @click="netOpen = false">{{ t('common.close') }}</BaseButton>
+        <BaseButton :loading="netSaving" @click="saveNetwork">{{ t('common.save') }}</BaseButton>
       </template>
     </BaseModal>
 

@@ -144,6 +144,7 @@ use App\Http\Controllers\Api\V1\Admin\ScheduleChangeController;
 use App\Http\Controllers\Api\V1\Admin\SchoolCalendarController;
 use App\Http\Controllers\Api\V1\Admin\SchoolClassController;
 use App\Http\Controllers\Api\V1\Admin\SchoolDocumentsController;
+use App\Http\Controllers\Api\V1\Admin\SchoolNetworkController;
 use App\Http\Controllers\Api\V1\Admin\SchoolSettingsController;
 use App\Http\Controllers\Api\V1\Admin\ShiftController;
 use App\Http\Controllers\Api\V1\Admin\StaffAttendanceController;
@@ -763,6 +764,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::put('geofence-rules', [GeofenceController::class, 'saveRule'])->name('geofence-rules.save');
         Route::delete('geofence-rules/{rule}', [GeofenceController::class, 'destroyRule'])->whereNumber('rule')->name('geofence-rules.destroy');
         Route::apiResource('geofences', GeofenceController::class)->except(['show']);
+        Route::get('school-networks/current', [SchoolNetworkController::class, 'current'])->name('school-networks.current');
+        Route::apiResource('school-networks', SchoolNetworkController::class)->except(['show']);
         Route::get('staff-attendance/sheet', [StaffAttendanceController::class, 'sheet'])->name('staff-attendance.sheet');
         Route::get('staff-attendance/report', [StaffAttendanceController::class, 'report'])->name('staff-attendance.report');
         Route::apiResource('overtime-requests', OvertimeRequestController::class)->only(['index', 'store', 'show', 'destroy']);

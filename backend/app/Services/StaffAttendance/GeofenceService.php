@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\StaffAttendance;
 
 use App\Models\Geofence;
+use App\Models\SchoolNetwork;
 use App\Models\Staff;
 use App\Models\StaffGeofenceRule;
 use Illuminate\Support\Collection;
@@ -12,8 +13,10 @@ use Illuminate\Validation\ValidationException;
 
 /**
  * Where a staff member may check in / out from the app. With no active
- * zone, anywhere. Otherwise inside one of their zones: every active zone,
- * or only their rule's zones (StaffGeofenceRule), or anywhere by their rule.
+ * zone and no active school Wi-Fi, anywhere. Otherwise on a school Wi-Fi
+ * (SchoolNetwork — tried first, no location needed) or inside one of their
+ * zones: every active zone, or only their rule's zones (StaffGeofenceRule),
+ * or anywhere by their rule.
  *
  * Distances are on a flat local projection around the point — exact to
  * well under a metre over a school campus.
@@ -34,7 +37,8 @@ final class GeofenceService
     public function zonesFor(Staff $staff): ?Collection
     {
         $active = Geofence::query()->where('is_active', true)->orderBy('name')->get();
-        if ($active->isEmpty()) {
+        // Only Wi-Fi set up: places are still needed, just no zone (empty).
+        if ($active->isEmpty() && ! $this->hasNetworks()) {
             return null;
         }
 
@@ -53,19 +57,48 @@ final class GeofenceService
         return $active;
     }
 
+    public function hasNetworks(): bool
+    {
+        return SchoolNetwork::query()->where('is_active', true)->exists();
+    }
+
+    /** The active school Wi-Fi this address belongs to, if any. */
+    public function networkFor(?string $ip): ?SchoolNetwork
+    {
+        if ($ip === null || $ip === '') {
+            return null;
+        }
+
+        return SchoolNetwork::query()->where('is_active', true)->orderBy('name')->get()
+            ->first(fn (SchoolNetwork $network) => $network->matches($ip));
+    }
+
     /**
-     * Refuses a check-in / out outside the staff member's zones. Returns the
-     * zone it was made in (null when no zone is needed).
+     * Refuses a check-in / out away from the staff member's places. On a
+     * school Wi-Fi it passes without a location; otherwise it needs one
+     * inside a zone. Null when no place is needed.
      */
-    public function assertInside(Staff $staff, ?float $latitude, ?float $longitude, ?float $accuracy, string $field): ?Geofence
+    public function assertAllowed(Staff $staff, ?float $latitude, ?float $longitude, ?float $accuracy, ?string $ip, string $field): ?CheckInPlace
     {
         $zones = $this->zonesFor($staff);
         if ($zones === null) {
             return null;
         }
 
+        $network = $this->networkFor($ip);
+        if ($network !== null) {
+            return new CheckInPlace(CheckInPlace::WIFI, $network->name);
+        }
+
+        $wifi = $this->hasNetworks();
+        if ($zones->isEmpty()) {
+            throw ValidationException::withMessages([$field => __('Connect to the school Wi-Fi to check in or out.')]);
+        }
+
         if ($latitude === null || $longitude === null) {
-            throw ValidationException::withMessages([$field => __('Turn on location to check in or out — it must be at one of the check-in places.')]);
+            throw ValidationException::withMessages([$field => $wifi
+                ? __('Connect to the school Wi-Fi, or turn on location, to check in or out.')
+                : __('Turn on location to check in or out — it must be at one of the check-in places.')]);
         }
 
         $tolerance = min(self::MAX_TOLERANCE_M, max(0.0, $accuracy ?? 0.0));
@@ -74,17 +107,17 @@ final class GeofenceService
         foreach ($zones as $zone) {
             $distance = $this->distanceOutside($zone, $latitude, $longitude);
             if ($distance <= $tolerance) {
-                return $zone;
+                return new CheckInPlace(CheckInPlace::LOCATION, $zone->name);
             }
             if ($distance < $nearestDistance) {
                 [$nearest, $nearestDistance] = [$zone, $distance];
             }
         }
 
-        throw ValidationException::withMessages([$field => __('You are :distance from :place. Check in or out only at a check-in place.', [
-            'distance' => self::formatDistance($nearestDistance),
-            'place' => $nearest?->name,
-        ])]);
+        $replace = ['distance' => self::formatDistance($nearestDistance), 'place' => $nearest?->name];
+        throw ValidationException::withMessages([$field => $wifi
+            ? __('You are :distance from :place. Connect to the school Wi-Fi, or check in or out at a check-in place.', $replace)
+            : __('You are :distance from :place. Check in or out only at a check-in place.', $replace)]);
     }
 
     /** Metres from the point to the zone's edge — 0 inside. */

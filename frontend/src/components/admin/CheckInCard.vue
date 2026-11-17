@@ -34,6 +34,11 @@ const dateText = computed(() => now.value.toLocaleDateString(locale.value, { wee
 
 const { location, state: locationState, start: startLocation } = useLiveLocation()
 const required = computed(() => props.today.geofence?.required ?? false)
+/** On a school Wi-Fi now: no location needed (the server sees the school's internet address). */
+const onWifi = computed(() => (required.value ? (props.today.geofence?.wifi ?? null) : null))
+const wifiSetUp = computed(() => props.today.geofence?.wifi_set_up ?? false)
+/** Only Wi-Fi is set up (no zone): location can't help. */
+const wifiOnly = computed(() => required.value && (props.today.geofence?.zones.length ?? 0) === 0)
 const zoneCheck = computed(() => {
   if (!required.value || !location.value) return null
   return checkZones(props.today.geofence.zones, location.value.latitude, location.value.longitude, location.value.accuracy, props.today.geofence.max_tolerance_m)
@@ -41,21 +46,36 @@ const zoneCheck = computed(() => {
 /** Something to press today. */
 const canPunch = computed(() => props.today.can_check_in || props.today.can_check_out)
 /** The place rule lets them press now (the server checks again). */
-const placeOk = computed(() => !required.value || zoneCheck.value?.inside != null)
+const placeOk = computed(() => !required.value || onWifi.value !== null || zoneCheck.value?.inside != null)
 
-type Place = { tone: 'ok' | 'bad' | 'wait' | 'muted'; title: string; detail?: string }
+/** Worse than this, the phone is sharing only an approximate location (precise location off). */
+const APPROXIMATE_M = 500
+
+type Place = { tone: 'ok' | 'bad' | 'wait' | 'muted'; title: string; detail?: string; wifi?: boolean }
 const place = computed<Place | null>(() => {
   if (!canPunch.value) return null
   if (!required.value) return { tone: 'muted', title: t('admin.timeAttendance.my.locationHint') }
-  if (locationState.value === 'denied') return { tone: 'bad', title: t('admin.timeAttendance.my.locationOff'), detail: t('admin.timeAttendance.my.locationOffHelp') }
-  if (locationState.value === 'unavailable' && !location.value) return { tone: 'bad', title: t('admin.timeAttendance.my.locationUnavailable'), detail: t('admin.timeAttendance.my.locationOffHelp') }
+  if (onWifi.value) return { tone: 'ok', wifi: true, title: t('admin.timeAttendance.my.onWifi', { name: onWifi.value }), detail: t('admin.timeAttendance.my.onWifiHint') }
+  if (wifiOnly.value) return { tone: 'bad', wifi: true, title: t('admin.timeAttendance.my.connectWifi'), detail: t('admin.timeAttendance.my.connectWifiHelp') }
+  // Location failed — say the school Wi-Fi works too, when there is one.
+  const orWifi = wifiSetUp.value ? ` ${t('admin.timeAttendance.my.orWifi')}` : ''
+  if (locationState.value === 'denied') return { tone: 'bad', title: t('admin.timeAttendance.my.locationOff'), detail: t('admin.timeAttendance.my.locationOffHelp') + orWifi }
+  if (locationState.value === 'unavailable' && !location.value) return { tone: 'bad', title: t('admin.timeAttendance.my.locationUnavailable'), detail: t('admin.timeAttendance.my.locationOffHelp') + orWifi }
   if (!zoneCheck.value) return { tone: 'wait', title: t('admin.timeAttendance.my.locating') }
   const accuracy = location.value?.accuracy ? ` · ±${location.value.accuracy} m` : ''
   if (zoneCheck.value.inside) return { tone: 'ok', title: t('admin.timeAttendance.my.atPlace', { place: zoneCheck.value.inside.name }), detail: t('admin.timeAttendance.my.insidePlace') + accuracy }
+  // Precise location off: the phone blurs its position by a kilometre or more, so "1.1 km away" would mislead.
+  if ((location.value?.accuracy ?? 0) > APPROXIMATE_M) {
+    return {
+      tone: 'bad',
+      title: t('admin.timeAttendance.my.approxLocation', { accuracy: formatDistance(location.value!.accuracy!) }),
+      detail: t('admin.timeAttendance.my.approxLocationHelp') + orWifi,
+    }
+  }
   return {
     tone: 'bad',
     title: t('admin.timeAttendance.my.awayFrom', { distance: formatDistance(zoneCheck.value.distance), place: zoneCheck.value.nearest?.name ?? '' }),
-    detail: t('admin.timeAttendance.my.moveInside') + accuracy,
+    detail: t('admin.timeAttendance.my.moveInside') + orWifi + accuracy,
   }
 })
 
@@ -110,10 +130,21 @@ const confirmTime = ref('')
 const busy = ref(false)
 const message = ref<{ ok: boolean; text: string } | null>(null)
 
+/** Looks again: the location, and — when the school has Wi-Fi — whether the phone is on it now (today is reloaded). */
+function retryPlace() {
+  if (!wifiOnly.value && locationState.value !== 'ok') startLocation()
+  if (wifiSetUp.value) emit('changed')
+}
+
+/** On a place label: "Wi-Fi · Newtech HQ Wi-Fi" when it was made on the school Wi-Fi. */
+function placeLabel(name: string | null | undefined, via: string | null | undefined): string {
+  return via === 'wifi' ? `${t('admin.timeAttendance.my.viaWifi')} · ${name ?? ''}` : (name ?? '')
+}
+
 function ask() {
   if (mode.value === 'done' || busy.value) return
   if (!placeOk.value) {
-    if (locationState.value === 'denied' || locationState.value === 'unavailable') startLocation()
+    retryPlace()
     return
   }
   confirmTime.value = clock(new Date().toISOString())
@@ -144,7 +175,7 @@ async function punch() {
 // Ask the phone where it is only when it matters (places are on and there is something to press) —
 // otherwise the location is read once, when pressing.
 watch(
-  () => required.value && canPunch.value,
+  () => required.value && canPunch.value && onWifi.value === null && !wifiOnly.value,
   (needed) => {
     if (needed && locationState.value === 'idle') startLocation()
   },
@@ -225,7 +256,10 @@ onBeforeUnmount(() => clearInterval(timer))
 
         <!-- Where they are -->
         <div v-if="place" class="flex items-start gap-2 rounded-xl border px-3 py-2 text-left text-sm" :class="PLACE_STYLE[place.tone]">
-          <svg class="mt-0.5 h-4 w-4 shrink-0" :class="place.tone === 'wait' ? 'animate-pulse' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <svg v-if="place.wifi" class="mt-0.5 h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8.288 15.038a5.25 5.25 0 017.424 0M5.106 11.856c3.807-3.808 9.98-3.808 13.788 0M1.924 8.674c5.565-5.565 14.587-5.565 20.152 0M12.53 18.22l-.53.53-.53-.53a.75.75 0 011.06 0z" />
+          </svg>
+          <svg v-else class="mt-0.5 h-4 w-4 shrink-0" :class="place.tone === 'wait' ? 'animate-pulse' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
             <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
           </svg>
@@ -233,7 +267,7 @@ onBeforeUnmount(() => clearInterval(timer))
             <p class="font-semibold">{{ place.title }}</p>
             <p v-if="place.detail" class="text-xs opacity-80">{{ place.detail }}</p>
           </div>
-          <button v-if="place.tone === 'bad'" type="button" class="shrink-0 text-xs font-semibold underline" @click="startLocation">{{ t('admin.timeAttendance.my.tryAgain') }}</button>
+          <button v-if="place.tone === 'bad'" type="button" class="shrink-0 text-xs font-semibold underline" @click="retryPlace">{{ t('admin.timeAttendance.my.tryAgain') }}</button>
         </div>
 
         <p v-if="message" class="rounded-xl px-3 py-2 text-left text-sm font-medium" :class="message.ok ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'">{{ message.text }}</p>
@@ -249,14 +283,14 @@ onBeforeUnmount(() => clearInterval(timer))
             <p class="text-[11px] font-medium uppercase tracking-wide text-neutral-500">{{ t('admin.timeAttendance.checkIn') }}</p>
             <p class="text-sm font-semibold tabular-nums" :class="today.record?.check_in_at ? 'text-neutral-900' : 'text-neutral-400'">{{ today.record?.check_in_at ? clock(today.record.check_in_at) : '--:--' }}</p>
             <p v-if="today.record?.late_minutes" class="text-[11px] font-medium text-amber-700">{{ t('admin.timeAttendance.lateBy', { minutes: today.record.late_minutes }) }}</p>
-            <p v-else-if="today.record?.check_in_geofence" class="truncate text-[11px] text-neutral-500">{{ today.record.check_in_geofence }}</p>
+            <p v-else-if="today.record?.check_in_geofence" class="truncate text-[11px] text-neutral-500">{{ placeLabel(today.record.check_in_geofence, today.record.check_in_via) }}</p>
             <p v-else-if="today.record?.check_in_at" class="text-[11px] font-medium text-green-700">{{ t('admin.timeAttendance.my.onTime') }}</p>
           </div>
           <div class="px-2 py-2.5">
             <p class="text-[11px] font-medium uppercase tracking-wide text-neutral-500">{{ t('admin.timeAttendance.checkOut') }}</p>
             <p class="text-sm font-semibold tabular-nums" :class="today.record?.check_out_at ? 'text-neutral-900' : 'text-neutral-400'">{{ today.record?.check_out_at ? clock(today.record.check_out_at) : '--:--' }}</p>
             <p v-if="today.record?.early_leave_minutes" class="text-[11px] font-medium text-orange-700">{{ t('admin.timeAttendance.earlyBy', { minutes: today.record.early_leave_minutes }) }}</p>
-            <p v-else-if="today.record?.check_out_geofence" class="truncate text-[11px] text-neutral-500">{{ today.record.check_out_geofence }}</p>
+            <p v-else-if="today.record?.check_out_geofence" class="truncate text-[11px] text-neutral-500">{{ placeLabel(today.record.check_out_geofence, today.record.check_out_via) }}</p>
           </div>
         </div>
 

@@ -95,6 +95,7 @@ use App\Models\Role;
 use App\Models\SalaryStructure;
 use App\Models\SavingsAccount;
 use App\Models\SchoolClass;
+use App\Models\SchoolNetwork;
 use App\Models\Shift;
 use App\Models\SocialSecurityScheme;
 use App\Models\Staff;
@@ -266,6 +267,7 @@ class AuthServiceProvider extends ServiceProvider
         Holiday::class => StaffAttendancePolicy::class,
         Geofence::class => StaffAttendancePolicy::class,
         StaffGeofenceRule::class => StaffAttendancePolicy::class,
+        SchoolNetwork::class => StaffAttendancePolicy::class,
         StaffAttendance::class => StaffAttendancePolicy::class,
         OvertimeRequest::class => OvertimeRequestPolicy::class,
         AttendanceCorrection::class => AttendanceCorrectionPolicy::class,

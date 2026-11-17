@@ -53,6 +53,9 @@ final class MyStaffAttendanceController extends Controller
                 'required' => $zones !== null,
                 'max_tolerance_m' => GeofenceService::MAX_TOLERANCE_M,
                 'zones' => $zones !== null ? GeofenceResource::collection($zones)->resolve($request) : [],
+                // On a school Wi-Fi right now: the page lets them press without a location.
+                'wifi' => $zones !== null ? $this->geofences->networkFor($request->ip())?->name : null,
+                'wifi_set_up' => $zones !== null && $this->geofences->hasNetworks(),
             ],
         ]);
     }
@@ -74,14 +77,14 @@ final class MyStaffAttendanceController extends Controller
     {
         [$lat, $lng, $accuracy] = $this->location($request);
 
-        return ApiResponse::success(new StaffAttendanceResource($this->attendance->checkIn($this->staffOrFail($request), $lat, $lng, $accuracy)->load('shift')));
+        return ApiResponse::success(new StaffAttendanceResource($this->attendance->checkIn($this->staffOrFail($request), $lat, $lng, $accuracy, $request->ip())->load('shift')));
     }
 
     public function checkOut(Request $request): JsonResponse
     {
         [$lat, $lng, $accuracy] = $this->location($request);
 
-        return ApiResponse::success(new StaffAttendanceResource($this->attendance->checkOut($this->staffOrFail($request), $lat, $lng, $accuracy)->load('shift')));
+        return ApiResponse::success(new StaffAttendanceResource($this->attendance->checkOut($this->staffOrFail($request), $lat, $lng, $accuracy, $request->ip())->load('shift')));
     }
 
     /** @return array{0: float|null, 1: float|null, 2: float|null} latitude, longitude, the phone's accuracy in metres */

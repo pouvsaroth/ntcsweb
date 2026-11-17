@@ -80,6 +80,12 @@ function mapLink(location: { lat: number; lng: number } | null): string | null {
   return location ? `https://www.google.com/maps?q=${location.lat},${location.lng}` : null
 }
 
+/** A check-in place, with "Wi-Fi ·" in front when it was made on the school Wi-Fi. */
+function placeLabel(name: string | null | undefined, via: string | null | undefined): string {
+  if (!name) return ''
+  return via === 'wifi' ? `${t('admin.timeAttendance.my.viaWifi')} · ${name}` : name
+}
+
 // --- Add / fix ------------------------------------------------------------------
 
 const staff = ref<Staff[]>([])
@@ -185,6 +191,14 @@ onMounted(async () => {
             <template v-if="row.early_leave_minutes">{{ t('admin.timeAttendance.earlyBy', { minutes: row.early_leave_minutes }) }} · </template>
             {{ row.check_in_source ? t(`admin.timeAttendance.sources.${row.check_in_source}`) : '' }}
           </p>
+          <p v-if="row.check_in_geofence || row.check_out_geofence" class="truncate text-xs text-success-700">
+            {{
+              [placeLabel(row.check_in_geofence, row.check_in_via), placeLabel(row.check_out_geofence, row.check_out_via)]
+                .filter(Boolean)
+                .filter((v, i, all) => all.indexOf(v) === i)
+                .join(' → ')
+            }}
+          </p>
           <div v-if="canManage" class="mt-2 flex justify-end gap-3">
             <EditIconButton v-if="canUpdate" @click="openEdit(row)" />
             <button v-if="canDelete" type="button" class="text-sm font-medium text-danger-600" @click="remove(row)">{{ t('admin.organization.delete') }}</button>
@@ -220,7 +234,12 @@ onMounted(async () => {
         <template #cell-source="{ row }">
           <p>{{ row.check_in_source ? t(`admin.timeAttendance.sources.${row.check_in_source}`) : '—' }}</p>
           <p v-if="row.check_in_geofence || row.check_out_geofence" class="text-xs text-success-700">
-            {{ [row.check_in_geofence, row.check_out_geofence].filter(Boolean).filter((v, i, all) => all.indexOf(v) === i).join(' → ') }}
+            {{
+              [placeLabel(row.check_in_geofence, row.check_in_via), placeLabel(row.check_out_geofence, row.check_out_via)]
+                .filter(Boolean)
+                .filter((v, i, all) => all.indexOf(v) === i)
+                .join(' → ')
+            }}
           </p>
           <a v-if="mapLink(row.check_in_location)" :href="mapLink(row.check_in_location)!" target="_blank" rel="noopener" class="text-xs text-primary-700 hover:underline">
             {{ t('admin.timeAttendance.onMap') }}

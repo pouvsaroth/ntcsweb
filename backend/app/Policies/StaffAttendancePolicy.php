@@ -6,6 +6,7 @@ namespace App\Policies;
 
 use App\Models\Geofence;
 use App\Models\Holiday;
+use App\Models\SchoolNetwork;
 use App\Models\Shift;
 use App\Models\StaffAttendance;
 use App\Models\StaffGeofenceRule;
@@ -61,7 +62,7 @@ class StaffAttendancePolicy
             Shift::class => 'shifts',
             WorkSchedule::class => 'staff-shifts',
             Holiday::class => 'holidays',
-            Geofence::class, StaffGeofenceRule::class => 'geofences',
+            Geofence::class, StaffGeofenceRule::class, SchoolNetwork::class => 'geofences',
             default => null,
         };
     }

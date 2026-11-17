@@ -58,6 +58,9 @@ export interface StaffAttendanceRecord {
   /** The check-in place (geofence) it was made at. */
   check_in_geofence?: string | null
   check_out_geofence?: string | null
+  /** How the check-in / out was allowed: on a school Wi-Fi or by location (null: no place needed). */
+  check_in_via?: 'wifi' | 'location' | null
+  check_out_via?: 'wifi' | 'location' | null
   status: DayStatus
   late_minutes: number
   early_leave_minutes: number
@@ -98,7 +101,15 @@ export interface MyToday {
   can_check_in: boolean
   can_check_out: boolean
   /** required: they must be inside one of `zones` (each check-in place). */
-  geofence: { required: boolean; max_tolerance_m: number; zones: import('@/services/timeAttendance').Geofence[] }
+  geofence: {
+    required: boolean
+    max_tolerance_m: number
+    zones: import('@/services/timeAttendance').Geofence[]
+    /** The school Wi-Fi this phone is on now (no location needed), else null. */
+    wifi?: string | null
+    /** The school has a Wi-Fi set up — say so when the location fails. */
+    wifi_set_up?: boolean
+  }
 }
 
 /** Where the phone is: latitude, longitude, and how sure it is (metres). */
