@@ -10,13 +10,16 @@ import BasePagination from '@/components/ui/BasePagination.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
 import SearchableSelect from '@/components/ui/SearchableSelect.vue'
 import DataTable from '@/components/ui/DataTable.vue'
+import DateInput from '@/components/ui/DateInput.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { academicYearsService } from '@/services/academicYears'
 import { examApplicationsService, type ExamApplication } from '@/services/examApplications'
+import { staffCardDesignsService, type StaffCardDesign } from '@/services/staffCardDesigns'
 import { useAuthStore } from '@/stores/auth'
-import { renderCertificateSample } from '@/utils/certificateSample'
+import { certificateValues, todayIso } from '@/utils/certificate'
 import { formatDate } from '@/utils/date'
 import { printImages } from '@/utils/printImage'
+import { renderCardImage, type CardSide } from '@/utils/staffCardRender'
 import { exportTableAsImage } from '@/utils/tableImage'
 
 /**
@@ -25,7 +28,9 @@ import { exportTableAsImage } from '@/utils/tableImage'
  * the academic year their score was entered in. When a student hands in the
  * photo for their certificate, staff tick them and click "Received Photo";
  * once the certificate is handed over, "Issued". "Print Certificate" prints
- * one page per ticked student.
+ * one page per ticked student on a certificate design (Examination >
+ * Certificate designs), with one issue date for them all — and can mark
+ * them Issued on that date.
  */
 const { t } = useI18n()
 const auth = useAuthStore()
@@ -218,34 +223,99 @@ async function exportImage() {
 }
 
 // --- Print Certificate -----------------------------------------------------------
-// One A4 portrait page per ticked student. A placeholder page for now — see
-// utils/certificateSample.ts, which the real certificate design replaces.
+// One page per ticked student on the picked certificate design, all with the
+// same issue date; then (ticked) they're marked Issued on that date.
 
+const canViewDesigns = computed(() => auth.can('certificate-designs.view'))
+const designs = ref<StaffCardDesign[]>([])
+const designId = ref('')
+const design = computed(() => designs.value.find((d) => String(d.id) === designId.value) ?? null)
+const designOptions = computed(() => designs.value.map((d) => ({ value: String(d.id), label: d.name })))
+const DESIGN_KEY = 'exam-certificate-design'
+
+async function loadDesigns() {
+  if (!canViewDesigns.value) return
+  const result = await staffCardDesignsService.list({ page: 1, per_page: 100 }, 'certificate')
+  designs.value = result.data
+  let remembered: string | null = null
+  try {
+    remembered = localStorage.getItem(DESIGN_KEY)
+  } catch {
+    // Storage blocked: just start with the first design.
+  }
+  designId.value = designs.value.some((d) => String(d.id) === remembered) ? remembered! : designs.value[0] ? String(designs.value[0].id) : ''
+}
+watch(designId, (id) => {
+  try {
+    if (id) localStorage.setItem(DESIGN_KEY, id)
+  } catch {
+    // Not remembered — fine.
+  }
+})
+
+/** One issue date for every certificate printed now (dd-mm-yyyy in the box, ISO here). */
+const issueDate = ref(todayIso())
+/** After printing, mark the ticked students who aren't Issued yet as Issued on the issue date. */
+const markIssued = ref(true)
 const printing = ref(false)
+const printNotice = ref<string | null>(null)
+
+function sourceFor(row: ExamApplication, d: StaffCardDesign) {
+  return {
+    name_km: row.student.name,
+    name_en: row.student.english_name,
+    gender: row.student.gender,
+    date_of_birth: row.student.date_of_birth,
+    course: row.enrollment.course_package?.name ?? null,
+    book: row.book?.title ?? null,
+    exam_date: row.exam_date,
+    mention: row.score?.mention ?? null,
+    score: row.score ? String(row.score.score) : null,
+    file_code: row.file_code,
+    student_code: row.student.student_code,
+    academic_year: row.score?.academic_year?.name ?? null,
+    photo_url: row.student.photo_url,
+    issue_date: issueDate.value || null,
+    logoUrl: d.school_logo_url,
+    signatureUrl: d.signature_url,
+  }
+}
 
 async function printCertificates() {
+  const d = design.value
+  if (!d) return
   printing.value = true
   exportError.value = null
+  printNotice.value = null
   try {
-    const pages = await Promise.all(
-      selectedRows.value.map((row) =>
-        renderCertificateSample({
-          heading: t('admin.examCertificate.sampleHeading'),
-          note: t('admin.examCertificate.sampleNote'),
-          lines: [
-            [t('admin.exams.columnFullName'), row.student.name],
-            [t('admin.exams.columnBook'), bookName(row)],
-            [t('admin.examCertificate.columnScore'), row.score ? String(row.score.score) : '—'],
-            [t('admin.examCertificate.columnMention'), row.score ? t(`admin.myScores.mentions.${row.score.mention}`) : '—'],
-            [t('admin.examCertificate.academicYear'), row.score?.academic_year?.name ?? '—'],
-            [t('admin.exams.columnExamDate'), formatDate(row.exam_date)],
-          ],
-        }),
-      ),
-    )
-    await printImages(pages, t('admin.examCertificate.printCertificate'), 'A4 portrait')
+    const rows = sortedLikeList(selectedRows.value)
+    const sides = (['front', 'back'] as CardSide[]).filter((side) => d[`has_${side}`])
+    const pages: Blob[] = []
+    // One page per side, one student after another (not all at once: each page is a 300 dpi image).
+    for (const row of rows) {
+      const values = certificateValues(sourceFor(row, d))
+      for (const side of sides) pages.push(await renderCardImage(d, values, [side]))
+    }
+    await printImages(pages, t('admin.examCertificate.printCertificate'), `${d.width_mm}mm ${d.height_mm}mm`)
   } catch {
     exportError.value = t('admin.examCertificate.printFailed')
+    printing.value = false
+    return
+  }
+
+  try {
+    const toMark = selectedRows.value.filter((row) => !row.certificate_issued_date).map((row) => row.id)
+    if (markIssued.value && canUpdate.value && toMark.length > 0) {
+      if (issueDate.value && issueDate.value <= todayIso()) {
+        await examApplicationsService.markCertificateIssued(toMark, issueDate.value, null)
+        printNotice.value = t('admin.examCertificate.markedIssued', { count: toMark.length, date: formatDate(issueDate.value) })
+        await onSaved()
+      } else {
+        printNotice.value = t('admin.examCertificate.futureNotMarked')
+      }
+    }
+  } catch {
+    exportError.value = t('admin.examCertificate.markIssuedFailed')
   } finally {
     printing.value = false
   }
@@ -258,6 +328,9 @@ async function onSaved() {
 
 onMounted(async () => {
   void fetch()
+  void loadDesigns().catch(() => {
+    // No designs offered — the hint below says where to add one.
+  })
   void loadStudentOptions().catch(() => {
     // The picker just stays empty — the list itself still works.
   })
@@ -281,7 +354,7 @@ onMounted(async () => {
         <BaseButton variant="outline" :loading="exporting" :title="selectedRows.length ? t('admin.examCertificate.exportSelectedHint') : t('admin.examCertificate.exportAllHint')" @click="exportImage">
           {{ t('admin.examCertificate.exportImage') }}<template v-if="selectedRows.length"> ({{ selectedRows.length }})</template>
         </BaseButton>
-        <BaseButton variant="outline" :loading="printing" :disabled="selectedRows.length === 0" @click="printCertificates">
+        <BaseButton variant="outline" :loading="printing" :disabled="selectedRows.length === 0 || !design" @click="printCertificates">
           {{ t('admin.examCertificate.printCertificate') }}<template v-if="selectedRows.length"> ({{ selectedRows.length }})</template>
         </BaseButton>
         <BaseButton v-if="canUpdate" :disabled="selectedIds.length === 0" @click="openModal('photo')">
@@ -328,8 +401,32 @@ onMounted(async () => {
       </label>
     </div>
 
+    <!-- Print settings: the design, and one issue date for every ticked student -->
+    <div class="mb-4 rounded-[--radius-card] border border-neutral-200 bg-white p-3 shadow-[--shadow-card]">
+      <div class="flex flex-wrap items-end gap-x-4 gap-y-3">
+        <div v-if="designs.length" class="w-full sm:w-64">
+          <label class="mb-1 block text-sm font-medium text-neutral-700">{{ t('admin.examCertificate.design') }}</label>
+          <BaseSelect v-model="designId" :options="designOptions" />
+        </div>
+        <div class="w-full sm:w-44">
+          <label class="mb-1 block text-sm font-medium text-neutral-700">{{ t('admin.examCertificate.issueDate') }}</label>
+          <DateInput v-model="issueDate" />
+        </div>
+        <label v-if="canUpdate" class="inline-flex items-center gap-2 pb-2 text-sm text-neutral-700">
+          <input v-model="markIssued" type="checkbox" class="rounded border-neutral-300 text-primary-600 focus:ring-primary-500" />
+          {{ t('admin.examCertificate.markIssuedOnPrint') }}
+        </label>
+      </div>
+      <p v-if="!designs.length" class="mt-2 text-xs text-neutral-500">
+        {{ canViewDesigns ? t('admin.examCertificate.noDesign') : t('admin.examCertificate.noDesignAccess') }}
+        <RouterLink v-if="canViewDesigns" to="/admin/exams/certificate-designs" class="font-medium text-primary-700 hover:underline">{{ t('admin.examCertificate.addDesign') }}</RouterLink>
+      </p>
+      <p v-else class="mt-2 text-xs text-neutral-500">{{ t('admin.examCertificate.printHint') }}</p>
+    </div>
+
     <BaseAlert v-if="error" variant="danger" class="mb-4">{{ error }}</BaseAlert>
     <BaseAlert v-if="exportError" variant="danger" class="mb-4">{{ exportError }}</BaseAlert>
+    <BaseAlert v-if="printNotice" variant="success" class="mb-4">{{ printNotice }}</BaseAlert>
 
     <!-- Always selectable: ticking picks who Print Certificate prints, even
          for someone who can't record Received Photo / Issued. -->
