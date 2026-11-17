@@ -250,6 +250,7 @@ const MODULES: ModuleEntry[] = [
   // These two open with Exams: View.
   tab('Academic', 'Examination', 'Make-up Exam', '/admin/exams/make-up', ['exam-applications.view']),
   tab('Academic', 'Examination', 'Certificate', '/admin/exams/certificate', ['exam-applications.view']),
+  tab('Academic', 'Examination', 'Certificate designs', '/admin/exams/certificate-designs', ['certificate-designs.view'], crud('certificate-designs')),
   { name: 'Academic reports', group: 'Academic', actions: { view: 'academic-reports.view', export: 'academic-reports.export' } },
 
   // ── Students ──

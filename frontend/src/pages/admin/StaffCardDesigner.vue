@@ -10,7 +10,7 @@ import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
 import BaseSpinner from '@/components/ui/BaseSpinner.vue'
-import { useCardKind } from '@/composables/useCardKind'
+import { cardBase, useCardKind } from '@/composables/useCardKind'
 import { staffService, type Staff } from '@/services/staff'
 import { staffCardDesignsService, type CardStudent, type StaffCardDesign } from '@/services/staffCardDesigns'
 import { useAuthStore } from '@/stores/auth'
@@ -20,6 +20,7 @@ import { formatDate } from '@/utils/date'
 import {
   CARD_FONTS,
   CARD_PRESETS,
+  CERTIFICATE_PRESETS,
   isImageField,
   newField,
   fieldTypesFor,
@@ -43,14 +44,15 @@ const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
 
 const designId = computed(() => (route.params.id ? Number(route.params.id) : null))
-const { cardFor, isStudent, base, routePrefix, permission, fieldLabel, sample } = useCardKind()
+const { cardFor, isStudent, isCertificate, base, routePrefix, permission, fieldLabel, sample, textKey } = useCardKind()
 const canSave = computed(() => (designId.value ? auth.can(permission('update')) : auth.can(permission('create'))))
 const fieldTypes = computed(() => fieldTypesFor(cardFor.value))
 
 type Side = 'front' | 'back'
-const form = reactive({ name: '', width: 85.6, height: 54 })
+// A new certificate starts as an A4 portrait page with a front only; a card as an ID card, both sides.
+const form = reactive(isCertificate.value ? { name: '', width: 210, height: 297 } : { name: '', width: 85.6, height: 54 })
 // Which sides the card has; at least one. Unticking keeps that side's work but it isn't printed.
-const sidesOn = reactive<Record<Side, boolean>>({ front: true, back: true })
+const sidesOn = reactive<Record<Side, boolean>>({ front: true, back: !isCertificate.value })
 function toggleSide(s: Side, on: boolean) {
   const other: Side = s === 'front' ? 'back' : 'front'
   if (!on && !sidesOn[other]) return
@@ -98,11 +100,12 @@ onBeforeUnmount(() => Object.values(previews).forEach((url) => url && URL.revoke
 const backgroundKey = computed<PhotoKey>(() => (side.value === 'front' ? 'front_background' : 'back_background'))
 
 // ---- Size ------------------------------------------------------------------
-const preset = computed(() => CARD_PRESETS.find((p) => p.width === Number(form.width) && p.height === Number(form.height))?.key ?? 'custom')
-const presetOptions = computed(() => [...CARD_PRESETS.map((p) => ({ value: p.key, label: t(`admin.staffCards.sizes.${p.key}`) })), { value: 'custom', label: t('admin.staffCards.sizes.custom') }])
+const presets = computed<readonly { key: string; width: number; height: number }[]>(() => (isCertificate.value ? CERTIFICATE_PRESETS : CARD_PRESETS))
+const preset = computed(() => presets.value.find((p) => p.width === Number(form.width) && p.height === Number(form.height))?.key ?? 'custom')
+const presetOptions = computed(() => [...presets.value.map((p) => ({ value: p.key, label: t(`admin.staffCards.sizes.${p.key}`) })), { value: 'custom', label: t('admin.staffCards.sizes.custom') }])
 const customSize = ref(false)
 function onPreset(key: string) {
-  const found = CARD_PRESETS.find((p) => p.key === key)
+  const found = presets.value.find((p) => p.key === key)
   customSize.value = !found
   if (found) {
     form.width = found.width
@@ -118,7 +121,8 @@ const stage = ref<HTMLElement | null>(null)
 const { width: stageWidth } = useElementSize(stage)
 const scale = computed(() => {
   const fit = (stageWidth.value - 24) / cardW.value
-  const tall = 560 / cardH.value
+  // A page (certificate) gets more height, so small fields can be placed exactly.
+  const tall = (Math.max(cardW.value, cardH.value) > 150 ? 1000 : 560) / cardH.value
   return Math.max(Math.min(fit, tall, 8), 1.5)
 })
 
@@ -144,6 +148,8 @@ const values = computed(() => {
     genderLabel: (g: string) => (['male', 'female'].includes(g.toLowerCase()) ? t(`admin.staffCards.genders.${g.toLowerCase()}`) : g),
     sample: sample.value,
   }
+  // Certificates design with the school's own example; real students are filled in on Examination > Certificate.
+  if (isCertificate.value) return { ...sample.value, qr: sample.value.file_code ?? 'NTS', logo: common.logoUrl, signature: common.signatureUrl, photo: null }
   return isStudent.value ? studentCardValues({ ...common, student: previewStudent.value }) : staffCardValues({ ...common, staff: previewStaff.value })
 })
 const placeholder = (field: CardField) => (field.type === 'text' ? t('admin.staffCards.yourText') : fieldLabel(field.type))
@@ -153,9 +159,14 @@ const current = computed(() => fields[side.value])
 const selected = computed(() => current.value.find((f) => f.id === selectedId.value) ?? null)
 
 function addField(type: CardFieldType, x?: number, y?: number) {
-  // Tapped (not dropped): step each new field down-right so they don't stack.
-  const step = (current.value.length % 6) * 3
-  const field = newField(type, cardW.value, cardH.value, x ?? cardW.value / 2 - 6 + step, y ?? cardH.value / 2 - 6 + step)
+  // Tapped (not dropped): step each new field down-right so they don't stack —
+  // on a page (certificate), one under the other down the page.
+  const n = current.value.length
+  const page = Math.max(cardW.value, cardH.value) > 150
+  const step = (n % 6) * 3
+  const tapX = page ? cardW.value / 2 : cardW.value / 2 - 6 + step
+  const tapY = page ? 30 + (n % Math.max(1, Math.floor((cardH.value - 40) / 13))) * 13 : cardH.value / 2 - 6 + step
+  const field = newField(type, cardW.value, cardH.value, x ?? tapX, y ?? tapY)
   if (type === 'text') field.text = t('admin.staffCards.yourText')
   fields[side.value].push(field)
   selectedId.value = field.id
@@ -307,7 +318,7 @@ onMounted(async () => {
   // A design opened under the other kind of card: go to its own page.
   if (saved.value && saved.value.card_for !== cardFor.value) {
     dirty.value = false
-    await router.replace(`${saved.value.card_for === 'student' ? '/admin/student-cards' : '/admin/staff-cards'}/${saved.value.id}/edit`)
+    await router.replace(`${cardBase(saved.value.card_for)}/${saved.value.id}/edit`)
     return
   }
   // Preview with a real person: students for student cards, staff (when this user can see staff) for staff cards.
@@ -319,10 +330,12 @@ onMounted(async () => {
 <template>
   <div>
     <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-      <RouterLink :to="base" class="text-sm font-medium text-primary-700 hover:underline">← {{ t('admin.staffCards.backToList') }}</RouterLink>
+      <RouterLink :to="base" class="text-sm font-medium text-primary-700 hover:underline">← {{ t(textKey('backToList')) }}</RouterLink>
       <div class="flex items-center gap-3">
         <span v-if="dirty" class="text-xs text-warning-700">{{ t('admin.staffCards.unsavedShort') }}</span>
-        <RouterLink v-if="designId && !dirty" :to="`${base}/${designId}/print`" class="text-sm font-medium text-primary-700 hover:underline">{{ t('admin.staffCards.printCards') }}</RouterLink>
+        <RouterLink v-if="designId && !dirty" :to="isCertificate ? '/admin/exams/certificate' : `${base}/${designId}/print`" class="text-sm font-medium text-primary-700 hover:underline">
+          {{ isCertificate ? t('admin.staffCards.printCertificates') : t('admin.staffCards.printCards') }}
+        </RouterLink>
         <BaseButton v-if="canSave" :loading="saving" @click="save">{{ t('admin.staffCards.save') }}</BaseButton>
       </div>
     </div>
@@ -334,8 +347,8 @@ onMounted(async () => {
     <template v-else>
       <!-- Name and size -->
       <div class="mb-4 grid gap-3 rounded-[--radius-card] border border-neutral-200 bg-white p-4 shadow-[--shadow-card] sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_16rem_8rem_8rem]">
-        <BaseInput v-model="form.name" :label="t('admin.staffCards.name')" :placeholder="t('admin.staffCards.namePlaceholder')" required @update:model-value="dirty = true" />
-        <BaseSelect :model-value="customSize ? 'custom' : preset" :options="presetOptions" :label="t('admin.staffCards.size')" @update:model-value="onPreset" />
+        <BaseInput v-model="form.name" :label="t('admin.staffCards.name')" :placeholder="t(textKey('namePlaceholder'))" required @update:model-value="dirty = true" />
+        <BaseSelect :model-value="customSize ? 'custom' : preset" :options="presetOptions" :label="t(textKey('size'))" @update:model-value="onPreset" />
         <BaseInput
           :model-value="String(form.width)"
           type="number"
@@ -356,7 +369,7 @@ onMounted(async () => {
         <!-- Field list: drag onto the card, or tap to add -->
         <aside class="order-3 rounded-[--radius-card] border border-neutral-200 bg-white p-3 shadow-[--shadow-card] lg:order-1">
           <p class="text-sm font-semibold text-neutral-900">{{ t('admin.staffCards.fields') }}</p>
-          <p class="mb-2 text-xs text-neutral-500">{{ t('admin.staffCards.fieldsHint') }}</p>
+          <p class="mb-2 text-xs text-neutral-500">{{ t(textKey('fieldsHint')) }}</p>
           <div class="grid grid-cols-2 gap-1.5 lg:grid-cols-1">
             <button
               v-for="type in fieldTypes"
@@ -378,7 +391,7 @@ onMounted(async () => {
           <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
             <div class="flex flex-wrap items-center gap-3">
             <div class="flex items-center gap-3 text-sm text-neutral-700">
-              <span class="font-medium">{{ t('admin.staffCards.cardSides') }}</span>
+              <span class="font-medium">{{ t(textKey('cardSides')) }}</span>
               <label v-for="s in ['front', 'back'] as const" :key="s" class="inline-flex cursor-pointer items-center gap-1.5">
                 <input
                   type="checkbox"
@@ -405,7 +418,7 @@ onMounted(async () => {
             </div>
             <div class="flex flex-wrap items-center gap-2">
               <label class="cursor-pointer rounded-lg border border-neutral-300 px-3 py-1.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50">
-                {{ photoUrl(backgroundKey) ? t('admin.staffCards.changeBackground') : t('admin.staffCards.uploadBackground') }}
+                {{ photoUrl(backgroundKey) ? t(textKey('changeBackground')) : t(textKey('uploadBackground')) }}
                 <input type="file" accept="image/*" class="hidden" @change="pickPhoto(backgroundKey, $event)" />
               </label>
               <button v-if="photoUrl(backgroundKey)" type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="removePhoto(backgroundKey)">
@@ -430,11 +443,12 @@ onMounted(async () => {
               @drop="onDrop"
             />
           </div>
-          <p class="mt-2 text-xs text-neutral-500">{{ t('admin.staffCards.backgroundHint', { w: cardW, h: cardH, pw: Math.round((cardW / 25.4) * 300), ph: Math.round((cardH / 25.4) * 300) }) }}</p>
+          <p class="mt-2 text-xs text-neutral-500">{{ t(textKey('backgroundHint'), { w: cardW, h: cardH, pw: Math.round((cardW / 25.4) * 300), ph: Math.round((cardH / 25.4) * 300) }) }}</p>
 
-          <div class="mt-3 max-w-sm">
+          <div v-if="!isCertificate" class="mt-3 max-w-sm">
             <BaseSelect v-model="previewId" :options="staffOptions" :label="t('admin.staffCards.previewWith')" />
           </div>
+          <p v-else class="mt-3 text-xs text-neutral-500">{{ t('admin.staffCards.certificatePreviewHint') }}</p>
         </section>
 
         <!-- The selected field -->
@@ -466,7 +480,9 @@ onMounted(async () => {
             </template>
             <BaseSelect v-if="selected.type === 'photo'" :model-value="selected.shape ?? 'rounded'" :options="shapeOptions" :label="t('admin.staffCards.shape')" @update:model-value="patch({ shape: $event as CardShape })" />
             <div v-if="selected.type === 'signature'" class="space-y-1.5">
-              <p class="text-xs text-neutral-500">{{ isStudent ? t('admin.staffCards.studentSignatureHint') : t('admin.staffCards.signatureHint') }}</p>
+              <p class="text-xs text-neutral-500">
+                {{ isCertificate ? t('admin.staffCards.certificateSignatureHint') : isStudent ? t('admin.staffCards.studentSignatureHint') : t('admin.staffCards.signatureHint') }}
+              </p>
               <div class="flex flex-wrap items-center gap-2">
                 <label class="cursor-pointer rounded-lg border border-neutral-300 px-3 py-1.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50">
                   {{ t('admin.staffCards.uploadSignature') }}

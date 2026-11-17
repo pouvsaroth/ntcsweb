@@ -1175,6 +1175,16 @@ final class Permissions
 
     public const EXAM_APPLICATIONS_REJECT = 'exam-applications.reject';
 
+    // Examination > Certificate designs: the certificate layouts (card
+    // designer, card_for = certificate) that Print Certificate fills in.
+    public const CERTIFICATE_DESIGNS_VIEW = 'certificate-designs.view';
+
+    public const CERTIFICATE_DESIGNS_CREATE = 'certificate-designs.create';
+
+    public const CERTIFICATE_DESIGNS_UPDATE = 'certificate-designs.update';
+
+    public const CERTIFICATE_DESIGNS_DELETE = 'certificate-designs.delete';
+
     // Exam Scores — the Grades tab: entering a 0–100 score against an
     // approved exam application (see ExamScore). VIEW/UPDATE alone only
     // reach applications whose enrollment is in a class the user's own
@@ -1936,6 +1946,10 @@ final class Permissions
                 self::EXAM_APPLICATIONS_DELETE => 'Delete exam applications',
                 self::EXAM_APPLICATIONS_APPROVE => 'Approve exam applications',
                 self::EXAM_APPLICATIONS_REJECT => 'Reject exam applications',
+                self::CERTIFICATE_DESIGNS_VIEW => 'View certificate designs',
+                self::CERTIFICATE_DESIGNS_CREATE => 'Add certificate designs',
+                self::CERTIFICATE_DESIGNS_UPDATE => 'Update certificate designs',
+                self::CERTIFICATE_DESIGNS_DELETE => 'Delete certificate designs',
             ],
             'Exam Scores' => [
                 self::EXAM_SCORES_VIEW => 'View exam scores (own classes)',
@@ -2249,6 +2263,10 @@ final class Permissions
                 self::EXAM_APPLICATIONS_DELETE,
                 self::EXAM_APPLICATIONS_APPROVE,
                 self::EXAM_APPLICATIONS_REJECT,
+                self::CERTIFICATE_DESIGNS_VIEW,
+                self::CERTIFICATE_DESIGNS_CREATE,
+                self::CERTIFICATE_DESIGNS_UPDATE,
+                self::CERTIFICATE_DESIGNS_DELETE,
                 self::EXAM_SCORES_VIEW,
                 self::EXAM_SCORES_UPDATE,
                 self::EXAM_SCORES_MANAGE_ALL,

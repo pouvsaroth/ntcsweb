@@ -371,6 +371,25 @@ const adminRoutes: RouteRecordRaw[] = [
     component: () => import('@/pages/admin/ExamCertificate.vue'),
     meta: { titleKey: 'adminNav.items.certificate', headerTabs: 'examination' },
   },
+  // Examination > Certificate designs: the card designer for certificates (meta.cardFor), printed from Certificate.
+  {
+    path: 'exams/certificate-designs',
+    name: 'admin.certificateDesigns',
+    component: () => import('@/pages/admin/CertificateDesigns.vue'),
+    meta: { titleKey: 'adminNav.items.certificateDesigns', permission: 'certificate-designs.view', cardFor: 'certificate', headerTabs: 'examination' },
+  },
+  {
+    path: 'exams/certificate-designs/new',
+    name: 'admin.certificateDesigns.new',
+    component: () => import('@/pages/admin/CertificateDesigner.vue'),
+    meta: { titleKey: 'adminNav.items.certificateDesignNew', permission: 'certificate-designs.create', cardFor: 'certificate', headerTabs: 'examination' },
+  },
+  {
+    path: 'exams/certificate-designs/:id/edit',
+    name: 'admin.certificateDesigns.edit',
+    component: () => import('@/pages/admin/CertificateDesigner.vue'),
+    meta: { titleKey: 'adminNav.items.certificateDesign', permission: 'certificate-designs.view', cardFor: 'certificate', headerTabs: 'examination' },
+  },
   {
     path: 'exams/make-up',
     name: 'admin.exams.make-up',

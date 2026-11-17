@@ -3,12 +3,12 @@ import type { CardStudent } from '@/services/staffCardDesigns'
 import { formatDate } from '@/utils/date'
 
 /**
- * HRM > Staff cards and Students > Student cards: what can be placed on a
- * card and where each value comes from. Positions and sizes are in mm from
+ * HRM > Staff cards, Students > Student cards and Examination > Certificate
+ * designs: what can be placed on a card and where each value comes from. Positions and sizes are in mm from
  * the card's top-left corner; font sizes in pt. Kept in step with
- * StaffCardDesign::TEXT_FIELDS / STUDENT_TEXT_FIELDS / IMAGE_FIELDS.
+ * StaffCardDesign::TEXT_FIELDS / STUDENT_TEXT_FIELDS / CERTIFICATE_TEXT_FIELDS / IMAGE_FIELDS.
  */
-export type CardFor = 'staff' | 'student'
+export type CardFor = 'staff' | 'student' | 'certificate'
 
 export const TEXT_FIELD_TYPES = [
   'full_name',
@@ -41,12 +41,39 @@ export const STUDENT_TEXT_FIELD_TYPES = [
   'expiry_date',
   'text',
 ] as const
+/** A certificate's text fields: Khmer and English side by side (see utils/certificate.ts); the issue date in parts for the printed dots. */
+export const CERTIFICATE_TEXT_FIELD_TYPES = [
+  'name_km',
+  'name_en',
+  'gender_km',
+  'gender_en',
+  'dob_km',
+  'dob_en',
+  'course',
+  'book',
+  'exam_date_km',
+  'exam_date_en',
+  'mention_km',
+  'mention_en',
+  'score',
+  'file_code',
+  'student_code',
+  'academic_year',
+  'issue_day_km',
+  'issue_month_km',
+  'issue_year_km',
+  'issue_date_en',
+  'text',
+] as const
 export const IMAGE_FIELD_TYPES = ['photo', 'qr', 'logo', 'signature'] as const
 
-export type TextFieldType = (typeof TEXT_FIELD_TYPES)[number] | (typeof STUDENT_TEXT_FIELD_TYPES)[number]
+export type TextFieldType = (typeof TEXT_FIELD_TYPES)[number] | (typeof STUDENT_TEXT_FIELD_TYPES)[number] | (typeof CERTIFICATE_TEXT_FIELD_TYPES)[number]
 
 /** The fields this kind of card can use, text first. */
-export const fieldTypesFor = (cardFor: CardFor): CardFieldType[] => [...(cardFor === 'student' ? STUDENT_TEXT_FIELD_TYPES : TEXT_FIELD_TYPES), ...IMAGE_FIELD_TYPES]
+export const fieldTypesFor = (cardFor: CardFor): CardFieldType[] => [
+  ...(cardFor === 'certificate' ? CERTIFICATE_TEXT_FIELD_TYPES : cardFor === 'student' ? STUDENT_TEXT_FIELD_TYPES : TEXT_FIELD_TYPES),
+  ...IMAGE_FIELD_TYPES,
+]
 export type ImageFieldType = (typeof IMAGE_FIELD_TYPES)[number]
 export type CardFieldType = TextFieldType | ImageFieldType
 export type CardAlign = 'left' | 'center' | 'right'
@@ -166,6 +193,14 @@ export const CARD_PRESETS = [
   { key: 'a7', width: 105, height: 74 },
 ] as const
 
+/** Certificate page sizes; new certificates start as A4 portrait. */
+export const CERTIFICATE_PRESETS = [
+  { key: 'a4Portrait', width: 210, height: 297 },
+  { key: 'a4Landscape', width: 297, height: 210 },
+  { key: 'a5Portrait', width: 148, height: 210 },
+  { key: 'a5Landscape', width: 210, height: 148 },
+] as const
+
 const round1 = (n: number) => Math.round(n * 10) / 10
 
 /** A new field of this type, centred on (cx, cy) mm and kept inside the card. */
@@ -190,21 +225,40 @@ export function newField(type: CardFieldType, cardW: number, cardH: number, cx?:
     academic_year: [25, 4.5],
     guardian_phone: [30, 4.5],
     enrollment_date: [25, 4.5],
+    name_km: [45, 6],
+    name_en: [45, 6],
+    gender_km: [12, 4.5],
+    gender_en: [8, 4.5],
+    dob_km: [30, 4.5],
+    dob_en: [25, 4.5],
+    book: [40, 4.5],
+    exam_date_km: [30, 4.5],
+    exam_date_en: [25, 4.5],
+    mention_km: [20, 4.5],
+    mention_en: [20, 4.5],
+    score: [12, 4.5],
+    file_code: [25, 4.5],
+    issue_day_km: [8, 4.5],
+    issue_month_km: [15, 4.5],
+    issue_year_km: [12, 4.5],
+    issue_date_en: [30, 4.5],
     text: [40, 5],
     photo: [22, 28],
     qr: [16, 16],
     logo: [14, 14],
     signature: [22, 10],
   }
+  // A page (certificate) gets everything about twice as big as on an ID card.
+  const big = Math.max(cardW, cardH) > 150 ? 2 : 1
   const [w0, h0] = size[type]
-  const w = Math.min(w0, cardW)
-  const h = Math.min(h0, cardH)
+  const w = Math.min(w0 * big, cardW)
+  const h = Math.min(h0 * big, cardH)
   const x = Math.min(Math.max((cx ?? cardW / 2) - w / 2, 0), cardW - w)
   const y = Math.min(Math.max((cy ?? cardH / 2) - h / 2, 0), cardH - h)
   const field: CardField = { id: Math.random().toString(36).slice(2, 10), type, x: round1(x), y: round1(y), w, h }
   if (!isImageField(type)) {
-    const name = type === 'full_name' || type === 'other_name' || type === 'english_name'
-    Object.assign(field, { font_size: name ? 10 : 7, color: '#111111', bold: name, align: 'left' })
+    const name = type === 'full_name' || type === 'other_name' || type === 'english_name' || type === 'name_km' || type === 'name_en'
+    Object.assign(field, { font_size: (name ? 10 : 7) * big, color: '#111111', bold: name, align: 'left' })
   }
   if (type === 'photo') field.shape = 'rounded'
   return field

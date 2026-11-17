@@ -10,7 +10,7 @@ import BaseMultiSelect from '@/components/ui/BaseMultiSelect.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
 import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import DateInput from '@/components/ui/DateInput.vue'
-import { useCardKind } from '@/composables/useCardKind'
+import { cardBase, useCardKind } from '@/composables/useCardKind'
 import { classesService, type SchoolClass } from '@/services/classes'
 import { staffService, type Staff } from '@/services/staff'
 import { staffCardDesignsService, type CardStudent, type StaffCardDesign } from '@/services/staffCardDesigns'
@@ -238,7 +238,8 @@ onMounted(async () => {
     design.value = await staffCardDesignsService.get(Number(route.params.id))
     // A design opened under the other kind of card: go to its own page.
     if (design.value.card_for !== (isStudent.value ? 'student' : 'staff')) {
-      await router.replace(`${design.value.card_for === 'student' ? '/admin/student-cards' : '/admin/staff-cards'}/${design.value.id}/print`)
+      // Certificates are printed from Examination > Certificate.
+      await router.replace(design.value.card_for === 'certificate' ? '/admin/exams/certificate' : `${cardBase(design.value.card_for)}/${design.value.id}/print`)
       return
     }
     if (isStudent.value) {

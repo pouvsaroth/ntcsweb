@@ -152,6 +152,41 @@ class StaffCardDesignTest extends TestCase
         $this->getJson('/api/v1/student-cards/students?search=s002')->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.class_name', 'Math 2B');
     }
 
+    public function test_certificate_designs_are_their_own_list_with_certificate_fields_and_permissions(): void
+    {
+        $this->actingAsAdminWithPermissions([
+            Permissions::CERTIFICATE_DESIGNS_VIEW, Permissions::CERTIFICATE_DESIGNS_CREATE, Permissions::CERTIFICATE_DESIGNS_UPDATE, Permissions::CERTIFICATE_DESIGNS_DELETE,
+        ]);
+        $studentDesign = StaffCardDesign::factory()->create(['card_for' => StaffCardDesign::FOR_STUDENT]);
+
+        // A4 portrait, front only, Khmer + English fields.
+        $fields = [
+            ['id' => 'a', 'type' => 'name_km', 'x' => 40, 'y' => 120, 'w' => 70, 'h' => 9, 'font_size' => 16, 'font' => 'Moul'],
+            ['id' => 'b', 'type' => 'name_en', 'x' => 150, 'y' => 120, 'w' => 50, 'h' => 9],
+            ['id' => 'c', 'type' => 'mention_km', 'x' => 40, 'y' => 170, 'w' => 40, 'h' => 9],
+            ['id' => 'd', 'type' => 'issue_day_km', 'x' => 120, 'y' => 220, 'w' => 12, 'h' => 8],
+            ['id' => 'e', 'type' => 'photo', 'x' => 90, 'y' => 140, 'w' => 32, 'h' => 45, 'shape' => 'rect'],
+        ];
+        $id = $this->postJson('/api/v1/staff-card-designs', [
+            'card_for' => 'certificate', 'name' => 'NTS certificate', 'width_mm' => 210, 'height_mm' => 297,
+            'has_front' => true, 'has_back' => false, 'front_fields' => $fields, 'back_fields' => [],
+        ])->assertCreated()
+            ->assertJsonPath('data.card_for', 'certificate')
+            ->assertJsonPath('data.has_back', false)
+            ->assertJsonPath('data.front_fields.0.type', 'name_km')
+            ->json('data.id');
+
+        $this->getJson('/api/v1/staff-card-designs?card_for=certificate')->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $id);
+        // Certificate permissions don't open student cards (or staff cards).
+        $this->getJson('/api/v1/staff-card-designs?card_for=student')->assertForbidden();
+        $this->getJson("/api/v1/staff-card-designs/{$studentDesign->id}")->assertForbidden();
+
+        // A student-card field can't go on a certificate.
+        $this->postJson("/api/v1/staff-card-designs/{$id}", ['_method' => 'PUT', 'front_fields' => [['id' => 'x', 'type' => 'guardian_phone', 'x' => 0, 'y' => 0, 'w' => 10, 'h' => 5]]])
+            ->assertUnprocessable()->assertJsonValidationErrors(['front_fields.0.type']);
+        $this->deleteJson("/api/v1/staff-card-designs/{$id}")->assertNoContent();
+    }
+
     public function test_staff_card_permissions_do_not_open_student_cards(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::STAFF_CARDS_VIEW]);

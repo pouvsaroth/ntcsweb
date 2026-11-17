@@ -8,7 +8,7 @@ use App\Models\StaffCardDesign;
 use App\Models\User;
 use App\Support\Authorization\Permissions;
 
-/** HRM > Staff cards and Students > Student cards: each kind of card has its own permissions. */
+/** HRM > Staff cards, Students > Student cards and Examination > Certificate designs: each kind has its own permissions. */
 class StaffCardDesignPolicy
 {
     private const PERMISSIONS = [
@@ -23,6 +23,12 @@ class StaffCardDesignPolicy
             'create' => Permissions::STUDENT_CARDS_CREATE,
             'update' => Permissions::STUDENT_CARDS_UPDATE,
             'delete' => Permissions::STUDENT_CARDS_DELETE,
+        ],
+        StaffCardDesign::FOR_CERTIFICATE => [
+            'view' => Permissions::CERTIFICATE_DESIGNS_VIEW,
+            'create' => Permissions::CERTIFICATE_DESIGNS_CREATE,
+            'update' => Permissions::CERTIFICATE_DESIGNS_UPDATE,
+            'delete' => Permissions::CERTIFICATE_DESIGNS_DELETE,
         ],
     ];
 

@@ -10,6 +10,8 @@ export interface ExaminationTab {
   to: string
   labelKey: string
   permission: string[]
+  /** Also active on pages under this path (e.g. a design's editor). */
+  prefix?: string
 }
 
 const GRADEBOOK = ['gradebook.view', 'gradebook.enter', 'gradebook.manage-all', 'gradebook.approve']
@@ -32,6 +34,7 @@ export const examinationTabs: ExaminationTab[] = [
   // Make-up applications and certificates are exam applications: the same permission as Exams.
   { to: '/admin/exams/make-up', labelKey: 'adminNav.items.makeUpExam', permission: ['exam-applications.view'] },
   { to: '/admin/exams/certificate', labelKey: 'adminNav.items.certificate', permission: ['exam-applications.view'] },
+  { to: '/admin/exams/certificate-designs', labelKey: 'adminNav.items.certificateDesigns', permission: ['certificate-designs.view'], prefix: '/admin/exams/certificate-designs/' },
 ]
 
 export const examinationPermissions = [...new Set(examinationTabs.flatMap((tab) => tab.permission))]

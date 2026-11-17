@@ -19,7 +19,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
-/** HRM > Staff cards and Students > Student cards: the school's card designs (?card_for=staff|student). */
+/** HRM > Staff cards, Students > Student cards and Examination > Certificate designs: the school's designs (?card_for=staff|student|certificate). */
 final class StaffCardDesignController extends Controller
 {
     /** Uploaded photo inputs => their column. */

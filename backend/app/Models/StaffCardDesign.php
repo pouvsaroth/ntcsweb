@@ -11,7 +11,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
 
 /**
- * Tenant-owned. HRM > Staff cards: one card design — its size in mm, a
+ * Tenant-owned. HRM > Staff cards, Students > Student cards and
+ * Examination > Certificate designs: one card design — its size in mm, a
  * background photo per side and the fields placed on each side. A field is
  * {id, type, x, y, w, h (mm), font_size (pt), color, bold, align, text?, shape?}.
  */
@@ -28,7 +29,10 @@ class StaffCardDesign extends Model
 
     public const FOR_STUDENT = 'student';
 
-    public const CARD_FOR = [self::FOR_STAFF, self::FOR_STUDENT];
+    /** Examination > Certificate designs: printed for students who passed the exam. */
+    public const FOR_CERTIFICATE = 'certificate';
+
+    public const CARD_FOR = [self::FOR_STAFF, self::FOR_STUDENT, self::FOR_CERTIFICATE];
 
     /** What can be placed on a card. Text ones take font settings; the rest are image boxes. */
     public const TEXT_FIELDS = [
@@ -40,6 +44,18 @@ class StaffCardDesign extends Model
     public const STUDENT_TEXT_FIELDS = [
         'full_name', 'english_name', 'student_code', 'class_name', 'course', 'program', 'academic_year',
         'phone', 'guardian_phone', 'gender', 'date_of_birth', 'enrollment_date', 'expiry_date', 'text',
+    ];
+
+    /**
+     * A certificate's text fields — Khmer and English versions side by side,
+     * from the passed exam (book, score, mention, exam date, file code) and
+     * the student; the issue date in parts to sit on the printed dots.
+     */
+    public const CERTIFICATE_TEXT_FIELDS = [
+        'name_km', 'name_en', 'gender_km', 'gender_en', 'dob_km', 'dob_en',
+        'course', 'book', 'exam_date_km', 'exam_date_en', 'mention_km', 'mention_en', 'score',
+        'file_code', 'student_code', 'academic_year',
+        'issue_day_km', 'issue_month_km', 'issue_year_km', 'issue_date_en', 'text',
     ];
 
     public const IMAGE_FIELDS = ['photo', 'qr', 'logo', 'signature'];
@@ -67,7 +83,13 @@ class StaffCardDesign extends Model
 
     public static function fieldTypes(string $cardFor = self::FOR_STAFF): array
     {
-        return [...($cardFor === self::FOR_STUDENT ? self::STUDENT_TEXT_FIELDS : self::TEXT_FIELDS), ...self::IMAGE_FIELDS];
+        $text = match ($cardFor) {
+            self::FOR_STUDENT => self::STUDENT_TEXT_FIELDS,
+            self::FOR_CERTIFICATE => self::CERTIFICATE_TEXT_FIELDS,
+            default => self::TEXT_FIELDS,
+        };
+
+        return [...$text, ...self::IMAGE_FIELDS];
     }
 
     public function url(?string $path): ?string

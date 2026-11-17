@@ -16,9 +16,9 @@ import { ApiRequestError } from '@/types/api'
 import { formatDate } from '@/utils/date'
 import type { CardField, CardValues } from '@/utils/staffCard'
 
-/** HRM > Staff cards / Students > Student cards: the school's card designs, each shown with its front and back. */
+/** HRM > Staff cards / Students > Student cards / Examination > Certificate designs: the school's designs, each shown with its sides. */
 const { t } = useI18n()
-const { cardFor, isStudent, base, permission, fieldLabel, sample } = useCardKind()
+const { cardFor, isStudent, isCertificate, base, permission, fieldLabel, sample, textKey } = useCardKind()
 const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
 
@@ -29,7 +29,7 @@ const canUpdate = computed(() => auth.can(permission('update')))
 const canDelete = computed(() => auth.can(permission('delete')))
 
 // Thumbnails show made-up details instead of a real person's.
-const labels = computed<CardValues>(() => ({ ...sample.value, expiry_date: '31-12-2027', qr: isStudent.value ? 'STU0001' : 'ST0001' }))
+const labels = computed<CardValues>(() => ({ ...sample.value, expiry_date: '31-12-2027', qr: isCertificate.value ? 'NTS-000232' : isStudent.value ? 'STU0001' : 'ST0001' }))
 const placeholder = (field: CardField) => fieldLabel(field.type)
 const thumbScale = (design: StaffCardDesign) => Math.min(150 / design.width_mm, 150 / design.height_mm)
 const thumbValues = (design: StaffCardDesign): CardValues => ({ ...labels.value, logo: design.school_logo_url, signature: design.signature_url })
@@ -57,7 +57,9 @@ onMounted(() => void fetch())
 
 <template>
   <div>
-    <p class="mb-4 text-sm text-neutral-500">{{ isStudent ? t('admin.staffCards.studentPageSubtitle') : t('admin.staffCards.pageSubtitle') }}</p>
+    <p class="mb-4 text-sm text-neutral-500">
+      {{ isCertificate ? t('admin.staffCards.certificatePageSubtitle') : isStudent ? t('admin.staffCards.studentPageSubtitle') : t('admin.staffCards.pageSubtitle') }}
+    </p>
 
     <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
       <input
@@ -66,14 +68,14 @@ onMounted(() => void fetch())
         class="block w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200 sm:max-w-sm"
         @input="onSearch(($event.target as HTMLInputElement).value)"
       />
-      <BaseButton v-if="canCreate" :to="`${base}/new`">{{ t('admin.staffCards.add') }}</BaseButton>
+      <BaseButton v-if="canCreate" :to="`${base}/new`">{{ t(textKey('add')) }}</BaseButton>
     </div>
 
     <BaseAlert v-if="error || deleteError" variant="danger" class="mb-4">{{ error || deleteError }}</BaseAlert>
 
     <div v-if="loading && !items.length" class="flex justify-center py-16"><BaseSpinner /></div>
     <div v-else-if="!items.length" class="rounded-[--radius-card] border border-dashed border-neutral-300 py-12 text-center text-sm text-neutral-500">
-      {{ t('admin.staffCards.empty') }}
+      {{ isCertificate ? t('admin.staffCards.certificateEmpty') : t('admin.staffCards.empty') }}
     </div>
     <div v-else class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
       <div v-for="design in items" :key="design.id" class="flex flex-col rounded-[--radius-card] border border-neutral-200 bg-white p-4 shadow-[--shadow-card]">
@@ -100,7 +102,9 @@ onMounted(() => void fetch())
             <p v-if="design.updated_at" class="text-xs text-neutral-400">{{ t('admin.staffCards.updatedOn', { date: formatDate(design.updated_at) }) }}</p>
           </div>
           <div class="flex shrink-0 items-center gap-3">
-            <RouterLink :to="`${base}/${design.id}/print`" class="text-sm font-medium text-primary-700 hover:underline">{{ t('admin.staffCards.printCards') }}</RouterLink>
+            <RouterLink :to="isCertificate ? '/admin/exams/certificate' : `${base}/${design.id}/print`" class="text-sm font-medium text-primary-700 hover:underline">
+              {{ isCertificate ? t('admin.staffCards.printCertificates') : t('admin.staffCards.printCards') }}
+            </RouterLink>
             <RouterLink v-if="canUpdate" :to="`${base}/${design.id}/edit`" class="text-sm font-medium text-primary-700 hover:underline">{{ t('admin.staffCards.design') }}</RouterLink>
             <button v-if="canDelete" type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(design)">{{ t('admin.staffCards.delete') }}</button>
           </div>

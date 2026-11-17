@@ -29,7 +29,7 @@ const tabs = computed(() => examinationTabs.filter((tab) => tab.permission.some(
       :to="tab.to"
       class="flex shrink-0 items-center whitespace-nowrap border-b-2 px-1 text-sm font-medium"
       :class="
-        route.path === tab.to
+        route.path === tab.to || (tab.prefix && route.path.startsWith(tab.prefix))
           ? 'border-primary-600 text-primary-700'
           : 'border-transparent text-neutral-500 hover:border-neutral-300 hover:text-neutral-700'
       "
