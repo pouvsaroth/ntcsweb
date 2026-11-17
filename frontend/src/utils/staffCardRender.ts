@@ -333,14 +333,14 @@ export async function addWatermark(page: Blob, text: string): Promise<Blob> {
   ctx.rotate(angle)
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
-  let size = canvas.width / 6
+  let size = canvas.width / 12
   ctx.font = `${size}px "Moul", "Noto Sans Khmer", sans-serif`
   const width = ctx.measureText(text).width
   if (width > diagonal * 0.8) {
     size *= (diagonal * 0.8) / width
     ctx.font = `${size}px "Moul", "Noto Sans Khmer", sans-serif`
   }
-  ctx.fillStyle = 'rgba(200, 30, 30, 0.22)'
+  ctx.fillStyle = 'rgba(200, 30, 30, 0.15)'
   ctx.fillText(text, 0, 0)
   ctx.restore()
   return toBlob(canvas)
