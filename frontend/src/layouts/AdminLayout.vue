@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRoute } from 'vue-router'
 
 import AdminHeader from '@/components/layout/AdminHeader.vue'
 import AdminSidebar from '@/components/layout/AdminSidebar.vue'
 import MobileBottomNav from '@/components/layout/MobileBottomNav.vue'
+import ParentChildPicker from '@/components/layout/ParentChildPicker.vue'
 import AdminBillingBanner from '@/components/admin/AdminBillingBanner.vue'
 import MonthlyPaymentAlertModal from '@/components/admin/MonthlyPaymentAlertModal.vue'
 import SupportViewBar from '@/components/admin/SupportViewBar.vue'
@@ -12,6 +14,7 @@ import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 import ImagePreviewDialog from '@/components/ui/ImagePreviewDialog.vue'
 import { useAdminUiStore } from '@/stores/adminUi'
 import { useAuthStore } from '@/stores/auth'
+import { useParentChildStore } from '@/stores/parentChild'
 import { applyTranslationOverrides, setOrganizationWords } from '@/i18n'
 import { loadTranslationOverrides } from '@/services/translationOverrides'
 import { useSiteStore } from '@/stores/site'
@@ -19,6 +22,8 @@ import { useSiteStore } from '@/stores/site'
 const sidebarOpen = ref(false)
 const adminUi = useAdminUiStore()
 const auth = useAuthStore()
+const route = useRoute()
+const parentChild = useParentChildStore()
 const site = useSiteStore()
 const { t } = useI18n()
 
@@ -88,7 +93,9 @@ onBeforeUnmount(() => {
            pages with no pagination, just a little empty space at the end. Below lg
            the bar sits above MobileBottomNav, so the space is larger there. -->
       <main class="flex-1 p-4 pb-44 sm:p-6 sm:pb-36 lg:pb-20">
-        <RouterView />
+        <!-- Parent portal: whose page this is; the page reloads for the child picked. -->
+        <ParentChildPicker v-if="route.meta.parentPage && route.name !== 'admin.my-children' && auth.hasRole('parent')" />
+        <RouterView :key="route.meta.parentPage ? `child-${parentChild.selected?.id ?? 0}` : undefined" />
       </main>
     </div>
 

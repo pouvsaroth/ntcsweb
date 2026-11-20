@@ -47,6 +47,8 @@ export interface AdminNavItem {
   studentOnly?: boolean
   /** Hidden from the Student role — e.g. an item their own flat menu already has. */
   hiddenForStudent?: boolean
+  /** Only for a Parent login (Parent portal: their children's pages). */
+  parentOnly?: boolean
   /**
    * Also shown to a member of any Approval Flow group, even without
    * `permission` — being in a flow's group is enough to approve its step
@@ -120,6 +122,19 @@ export const adminNav: AdminNavGroup[] = [
       { labelKey: 'adminNav.items.myRequests', icon: 'inbox', to: '/admin/approvals/my-requests', studentOnly: true },
       { labelKey: 'adminNav.items.notifications', icon: 'bell', to: '/admin/notifications', studentOnly: true },
       ...documentLinks.map((item) => ({ ...item, studentOnly: true })),
+    ],
+  },
+  {
+    // Parent portal: a parent's children (the child is picked at the top of each page).
+    labelKey: 'parentPortal.menu',
+    icon: 'userGroup',
+    flat: true,
+    items: [
+      { labelKey: 'parentPortal.title', icon: 'userGroup', to: '/admin/my-children', parentOnly: true },
+      { labelKey: 'parentPortal.scores', icon: 'chartBar', to: '/admin/my-scores', parentOnly: true },
+      { labelKey: 'parentPortal.attendance', icon: 'checkCircle', to: '/admin/my-attendance', parentOnly: true },
+      { labelKey: 'parentPortal.invoices', icon: 'document', to: '/admin/my-child-invoices', parentOnly: true },
+      { labelKey: 'parentPortal.leave', icon: 'calendar', to: '/admin/my-child-leave', parentOnly: true },
     ],
   },
   {
@@ -394,6 +409,7 @@ export function isNavItemVisible(item: AdminNavItem, access: AdminNavAccess): bo
   if (item.superAdminOnly && !access.isSuperAdmin) return false
   if (item.studentOnly && !access.hasRole('student')) return false
   if (item.hiddenForStudent && access.hasRole('student')) return false
+  if (item.parentOnly && !access.hasRole('parent')) return false
   if (item.module && access.hasModule && !access.hasModule(item.module)) return false
   if (item.permission) {
     const required = Array.isArray(item.permission) ? item.permission : [item.permission]

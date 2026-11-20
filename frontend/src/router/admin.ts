@@ -19,6 +19,7 @@ import { timetableTabs } from '@/router/timetableTabs'
 import { lessonTabs } from '@/router/lessonTabs'
 import { examinationTabs } from '@/router/examinationTabs'
 import { useAuthStore } from '@/stores/auth'
+import { useParentChildStore } from '@/stores/parentChild'
 
 const authRoutes: RouteRecordRaw[] = [
   // The bare domain root has no route of its own — send it to the login
@@ -400,13 +401,13 @@ const adminRoutes: RouteRecordRaw[] = [
     path: 'my-scores',
     name: 'admin.my-scores',
     component: () => import('@/pages/admin/MyScores.vue'),
-    meta: { titleKey: 'studentNav.score', studentAllowed: true },
+    meta: { titleKey: 'studentNav.score', studentAllowed: true, parentPage: true },
   },
   {
     path: 'my-attendance',
     name: 'admin.my-attendance',
     component: () => import('@/pages/admin/MyAttendance.vue'),
-    meta: { titleKey: 'studentNav.attendant', studentAllowed: true },
+    meta: { titleKey: 'studentNav.attendant', studentAllowed: true, parentPage: true },
   },
   {
     path: 'my-feedback',
@@ -431,6 +432,25 @@ const adminRoutes: RouteRecordRaw[] = [
     name: 'admin.my-videos',
     component: () => import('@/pages/admin/MyVideos.vue'),
     meta: { titleKey: 'studentNav.video', studentAllowed: true },
+  },
+  // Parent portal: a parent's children (picked at the top of each page, sent as X-Child).
+  {
+    path: 'my-children',
+    name: 'admin.my-children',
+    component: () => import('@/pages/admin/parent/MyChildren.vue'),
+    meta: { titleKey: 'parentPortal.title', parentPage: true },
+  },
+  {
+    path: 'my-child-invoices',
+    name: 'admin.my-child-invoices',
+    component: () => import('@/pages/admin/parent/MyChildInvoices.vue'),
+    meta: { titleKey: 'parentPortal.invoices', parentPage: true },
+  },
+  {
+    path: 'my-child-leave',
+    name: 'admin.my-child-leave',
+    component: () => import('@/pages/admin/parent/MyChildLeave.vue'),
+    meta: { titleKey: 'parentPortal.leave', parentPage: true },
   },
   {
     path: 'student-feedback',
@@ -1381,6 +1401,18 @@ router.beforeEach(async (to) => {
 
   if (to.meta.requiresAuth && !auth.isAuthenticated) {
     return { name: 'login', query: { redirect: to.fullPath } }
+  }
+
+  // Parent portal: a parent login only reaches its children's pages (and its
+  // own account / notifications); the picked child goes with each request.
+  if (to.meta.requiresAuth && auth.hasRole('parent')) {
+    const children = useParentChildStore()
+    await children.load(auth.user?.id ?? null)
+    const parentOnly = !auth.hasRole('student') && auth.permissions.length === 0
+    if (parentOnly && !to.meta.parentPage && to.name !== 'admin.account' && to.name !== 'admin.notifications') {
+      return { name: 'admin.my-children' }
+    }
+    children.setOnParentPage(to.meta.parentPage === true)
   }
 
   // A student account only has permissions for its own handful of

@@ -25,6 +25,20 @@ export const http: AxiosInstance = axios.create({
 // A back office support view that ended (time up, or staff pressed End):
 // the server has already signed this browser out. Say so plainly instead of
 // leaving the page half-broken.
+/**
+ * Parent portal: the child a parent is looking at, sent as X-Child while a
+ * parent page is open (see stores/parentChild.ts). The server only accepts
+ * one of the parent's own children.
+ */
+let childHeader: number | null = null
+export function setChildHeader(id: number | null): void {
+  childHeader = id
+}
+http.interceptors.request.use((config) => {
+  if (childHeader !== null) config.headers.set('X-Child', String(childHeader))
+  return config
+})
+
 http.interceptors.response.use(undefined, (error: unknown) => {
   if (isAxiosError<ApiError>(error) && error.response?.status === 401 && error.response.data?.error?.code === 'SUPPORT_VIEW_ENDED') {
     window.location.assign('/support-view?ended=1')

@@ -352,6 +352,11 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         // Student record (docs/academics/student-record.md).
         Route::get('students/{student}/record', [StudentRecordController::class, 'show'])->name('students.record');
         Route::post('students/{student}/status', [StudentRecordController::class, 'changeStatus'])->name('students.status');
+        // Parent portal logins for a student's guardians.
+        Route::get('students/{student}/parent-access', [\App\Http\Controllers\Api\V1\Admin\ParentAccessController::class, 'index'])->name('students.parent-access.index');
+        Route::post('students/{student}/parent-access', [\App\Http\Controllers\Api\V1\Admin\ParentAccessController::class, 'store'])->name('students.parent-access.store');
+        Route::delete('students/{student}/parent-access/{user}', [\App\Http\Controllers\Api\V1\Admin\ParentAccessController::class, 'destroy'])->whereNumber('user')->name('students.parent-access.destroy');
+        Route::post('students/{student}/parent-access/{user}/reset-password', [\App\Http\Controllers\Api\V1\Admin\ParentAccessController::class, 'resetPassword'])->whereNumber('user')->name('students.parent-access.reset-password');
         Route::post('classes/{class}/assign-students', [StudentRecordController::class, 'assignToClass'])->name('classes.assign-students');
         Route::apiResource('students', StudentController::class);
         // Students > Export: students studying now, picked columns, total + female.
@@ -1181,6 +1186,10 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::post('asset-maintenance/{asset_maintenance}/complete', [AssetMaintenanceController::class, 'complete'])->name('asset-maintenance.complete');
         Route::post('asset-maintenance/{asset_maintenance}/cancel', [AssetMaintenanceController::class, 'cancel'])->name('asset-maintenance.cancel');
 
+        // Parent portal: the parent's own children, then the student pages
+        // below show the child they picked (SelectParentChild, header X-Child).
+        Route::get('my-children', [\App\Http\Controllers\Api\V1\MyChildrenController::class, 'index'])->name('my-children.index');
+        Route::middleware('parent.child')->group(function () {
         // Student self-service — identity-gated (User::student()), not
         // permission-gated. See MyInvoiceController's docblock.
         Route::get('my-invoices', [MyInvoiceController::class, 'index'])->name('my-invoices.index');
@@ -1209,6 +1218,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('my-leave-requests', [MyLeaveRequestController::class, 'index'])->name('my-leave-requests.index');
         Route::post('my-leave-requests', [MyLeaveRequestController::class, 'store'])->name('my-leave-requests.store');
         Route::delete('my-leave-requests/{leaveRequest}', [MyLeaveRequestController::class, 'destroy'])->whereNumber('leaveRequest')->name('my-leave-requests.destroy');
+        });
 
         // Staff self-service — identity-gated, same pattern as my-leave-requests.
         Route::get('my-resignation-requests/profile', [MyResignationRequestController::class, 'profile'])->name('my-resignation-requests.profile');

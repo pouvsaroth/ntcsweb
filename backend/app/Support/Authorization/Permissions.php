@@ -2405,6 +2405,8 @@ final class Permissions
                 ...$frontOfficeDesk,
             ],
             Role::STUDENT => [],
+            // Parent portal: own children only, identity-gated like the student portal.
+            Role::PARENT => [],
         ];
     }
 }

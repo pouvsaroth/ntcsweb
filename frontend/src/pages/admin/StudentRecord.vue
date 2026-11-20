@@ -10,6 +10,7 @@ import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
 import BaseSpinner from '@/components/ui/BaseSpinner.vue'
+import StudentParentAccess from '@/components/admin/StudentParentAccess.vue'
 import { studentRecordService, type StudentRecord, type StudentStatus } from '@/services/students'
 import { useAuthStore } from '@/stores/auth'
 import { ApiRequestError } from '@/types/api'
@@ -143,11 +144,8 @@ onMounted(load)
         </section>
         <section class="rounded-[--radius-card] border border-neutral-200 bg-white p-4 shadow-[--shadow-card]">
           <h2 class="mb-2 text-sm font-semibold text-neutral-800">{{ t('studentRecord.guardians') }}</h2>
-          <p v-if="data.student.guardians.length === 0" class="text-sm text-neutral-500">{{ t('studentRecord.noGuardians') }}</p>
-          <div v-for="(g, i) in data.student.guardians" :key="i" class="border-b border-neutral-100 py-1.5 text-sm last:border-0">
-            <p class="font-medium text-neutral-800">{{ g.name }} <span v-if="g.type" class="font-normal text-neutral-500">({{ g.type }})</span></p>
-            <p class="text-xs text-neutral-500">{{ [g.phone, g.email, g.address].filter(Boolean).join(' · ') || '—' }}</p>
-          </div>
+          <!-- With each guardian's Parent portal login. -->
+          <StudentParentAccess :student-id="data.student.id" :can-update="canUpdate" />
         </section>
       </div>
 

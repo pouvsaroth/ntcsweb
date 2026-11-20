@@ -28,7 +28,7 @@ const router = useRouter()
 const { openRequests } = useSupportChat()
 const { ticketsUnread, refreshTicketsUnread } = useSupportTickets()
 
-const allowed = computed(() => auth.isAuthenticated && !auth.isSuperAdmin && auth.tenantName !== null && !auth.hasRole('student'))
+const allowed = computed(() => auth.isAuthenticated && !auth.isSuperAdmin && auth.tenantName !== null && !auth.hasRole('student', 'parent'))
 /** Inside a back office support view everything is read-only. */
 const readOnly = computed(() => auth.supportView !== null)
 const canHelp = computed(() => auth.can('help-support.view'))

@@ -1,4 +1,4 @@
-import { apiDownload, apiGet, apiGetWithMeta, apiPost } from '@/services/http'
+import { apiDelete, apiDownload, apiGet, apiGetWithMeta, apiPost } from '@/services/http'
 import type { PaginatedQuery } from '@/composables/usePaginatedResource'
 import type { LengthAwarePaginationMeta, PaginatedResult } from '@/types/api'
 
@@ -171,6 +171,34 @@ export const studentRecordService = {
   changeStatus: (id: number, input: { status: StudentStatus; effective_date: string; reason: string | null; to_school: string | null; end_classes: boolean }) =>
     apiPost<{ status: StudentStatus; ended_classes: number }>(`/students/${id}/status`, input),
   assignToClass: (classId: number, studentIds: number[]) => apiPost<{ added: number; skipped: number }>(`/classes/${classId}/assign-students`, { student_ids: studentIds }),
+}
+
+/** Parent portal login of a guardian (Students > a student > Guardians). */
+export interface ParentLogin {
+  id: number
+  name: string
+  phone: string | null
+  email: string | null
+  status: string
+  /** How many children this login sees (siblings share one login). */
+  children_count: number
+  last_login_at: string | null
+  /** Also a staff login: its password is reset in Settings > Users. */
+  staff_login: boolean
+}
+
+export interface ParentAccessOverview {
+  guardians: { id: number; name: string; type: string | null; phone: string | null; email: string | null; can_give: boolean; parent: ParentLogin | null }[]
+  /** Logins linked to the student that no guardian phone matches any more. */
+  others: ParentLogin[]
+}
+
+export const parentAccessService = {
+  overview: (studentId: number) => apiGet<ParentAccessOverview>(`/students/${studentId}/parent-access`),
+  give: (studentId: number, guardianId: number) =>
+    apiPost<{ parent: ParentLogin; temporary_password: string | null; new_login: boolean; children: number }>(`/students/${studentId}/parent-access`, { guardian_id: guardianId }),
+  remove: (studentId: number, userId: number) => apiDelete(`/students/${studentId}/parent-access/${userId}`),
+  resetPassword: (studentId: number, userId: number) => apiPost<{ temporary_password: string }>(`/students/${studentId}/parent-access/${userId}/reset-password`),
 }
 
 /** Columns the Students > Export can include, in display order (No. is always first). */

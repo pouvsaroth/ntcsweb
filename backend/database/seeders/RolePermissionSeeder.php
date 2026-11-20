@@ -74,6 +74,7 @@ class RolePermissionSeeder extends Seeder
             Role::TEACHER => 'Teacher',
             Role::STAFF => 'Staff',
             Role::STUDENT => 'Student',
+            Role::PARENT => 'Parent',
         ];
 
         foreach (Permissions::defaultsForSystemRoles() as $slug => $defaultSlugs) {

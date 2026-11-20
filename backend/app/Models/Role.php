@@ -50,6 +50,9 @@ class Role extends Model
 
     public const STUDENT = 'student';
 
+    /** A student's parent / guardian: sees their own children only (Parent portal). */
+    public const PARENT = 'parent';
+
     /** Data view: every class and its students. */
     public const SCOPE_ALL = 'all';
 
@@ -81,6 +84,7 @@ class Role extends Model
         self::TEACHER => 50,
         self::STAFF => 40,
         self::STUDENT => 10,
+        self::PARENT => 10,
     ];
 
     protected function casts(): array

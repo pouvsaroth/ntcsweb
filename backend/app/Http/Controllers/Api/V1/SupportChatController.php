@@ -106,7 +106,7 @@ final class SupportChatController extends Controller
     {
         /** @var User $user */
         $user = $request->user();
-        abort_if($user->tenant_id === null || $user->hasRole(Role::STUDENT), 403, __('The support chat is for staff.'));
+        abort_if($user->tenant_id === null || $user->hasRole(Role::STUDENT) || $user->hasRole(Role::PARENT), 403, __('The support chat is for staff.'));
 
         return $user;
     }

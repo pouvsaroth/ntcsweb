@@ -148,6 +148,12 @@ class Student extends Model
         return $this->hasMany(StudentGuardian::class);
     }
 
+    /** Parent portal logins that may see this student (parent_students). */
+    public function parentLinks(): HasMany
+    {
+        return $this->hasMany(ParentStudent::class);
+    }
+
     /**
      * `village_code` is stored as free text, not a real FK (see the
      * migration that added it), but a custom-keyed belongsTo still lets the

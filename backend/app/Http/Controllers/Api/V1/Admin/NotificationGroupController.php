@@ -49,7 +49,7 @@ final class NotificationGroupController extends Controller
     {
         $this->allowed($request, Permissions::TELEGRAM_GROUPS_VIEW);
         $users = User::query()->inTenant($this->tenantId())->active()
-            ->whereDoesntHave('roles', fn ($q) => $q->where('slug', Role::STUDENT))
+            ->whereDoesntHave('roles', fn ($q) => $q->whereIn('slug', [Role::STUDENT, Role::PARENT]))
             ->orderBy('name')->get(['id', 'name', 'email']);
 
         return ApiResponse::success($users->map(fn (User $u) => $u->only(['id', 'name', 'email']))->values());
