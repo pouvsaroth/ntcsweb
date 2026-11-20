@@ -47,6 +47,7 @@ class Signup extends Model
             'expires_at' => 'datetime',
             'paid_at' => 'datetime',
             'last_checked_at' => 'datetime',
+            'pay_later_at' => 'datetime',
         ];
     }
 

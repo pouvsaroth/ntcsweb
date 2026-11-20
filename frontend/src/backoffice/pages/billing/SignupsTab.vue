@@ -144,7 +144,10 @@ onMounted(() => fetch())
               <p class="truncate font-medium text-neutral-900">{{ row.school_name }}</p>
               <p class="font-mono text-xs text-neutral-500">{{ row.slug }}</p>
             </div>
-            <BaseBadge :variant="variant[row.status]">{{ t(`bo.billing.signups.statuses.${row.status}`) }}</BaseBadge>
+            <div class="flex shrink-0 flex-wrap justify-end gap-1">
+              <BaseBadge :variant="variant[row.status]">{{ t(`bo.billing.signups.statuses.${row.status}`) }}</BaseBadge>
+              <BaseBadge v-if="row.pay_later" variant="warning">{{ t('bo.billing.signups.payLater') }}</BaseBadge>
+            </div>
           </div>
           <p class="mt-1 text-sm text-neutral-700">{{ planLabel(row) }} · {{ money(row) }}</p>
           <p class="mt-1 text-xs break-all text-neutral-500">{{ row.owner_name }} · {{ row.owner_email }} · {{ row.owner_phone }}</p>
@@ -198,6 +201,7 @@ onMounted(() => fetch())
         </template>
         <template #cell-status="{ row }">
           <BaseBadge :variant="variant[row.status]">{{ t(`bo.billing.signups.statuses.${row.status}`) }}</BaseBadge>
+          <BaseBadge v-if="row.pay_later" variant="warning" class="ml-1">{{ t('bo.billing.signups.payLater') }}</BaseBadge>
           <p v-if="row.failure" class="mt-1 text-xs text-red-600">{{ row.failure }}</p>
           <p v-if="row.bakong_hash" class="mt-1 font-mono text-[11px] break-all text-neutral-400">{{ row.bakong_hash }}</p>
           <button v-if="canManage && row.can_confirm" type="button" class="mt-1 block text-sm font-medium text-green-700 hover:underline" @click="openConfirm(row)">

@@ -98,6 +98,15 @@ final class SignupController extends Controller
         return ApiResponse::success($this->present($signup));
     }
 
+    /** "Pay later" on the payment step: the account is made now, unpaid, with 7 days to pay. */
+    public function payLater(string $token): JsonResponse
+    {
+        $this->websiteOnly();
+        $signup = Signup::query()->with(['plan', 'tenant'])->where('token', $token)->firstOrFail();
+
+        return ApiResponse::success($this->present($this->signups->payLater($signup)));
+    }
+
     /** @return array<string, mixed> */
     private function present(Signup $signup): array
     {
@@ -127,6 +136,14 @@ final class SignupController extends Controller
             // The KHQR to scan while unpaid; null when online payment is not set up (then: contact us).
             'khqr' => $paying ? $signup->khqr : null,
             'paid_at' => $signup->paid_at?->toIso8601String(),
+            // A payment that arrived but was not the price asked (the visitor is told what came in).
+            'paid_amount' => $status === Signup::FAILED && $signup->paid_at !== null ? $signup->paid_amount : null,
+            'paid_currency' => $status === Signup::FAILED && $signup->paid_at !== null ? $signup->paid_currency : null,
+            // "Pay later": offered while unpaid; once chosen, the last day to pay.
+            'can_pay_later' => $signup->kind === Signup::KIND_PAID && $signup->tenant_id === null && $signup->owner_password !== null
+                && in_array($status, [Signup::PENDING_PAYMENT, Signup::EXPIRED], true),
+            'pay_later' => $signup->pay_later_at !== null,
+            'pay_by' => $signup->pay_later_at?->copy()->addDays(Signups::PAY_LATER_DAYS - 1)->toDateString(),
             'receipt_number' => $signup->payment_id ? \App\Platform\Models\SchoolPayment::query()->whereKey($signup->payment_id)->value('receipt_number') : null,
             // provisioning → active (ready to sign in) · failed (we fix it and tell them)
             'school_status' => $tenant?->status,

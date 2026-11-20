@@ -1406,6 +1406,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('signup/slug', [PublicSignupController::class, 'slug'])->middleware('throttle:signup-checks')->name('signup.slug');
         Route::post('signup', [PublicSignupController::class, 'store'])->middleware('throttle:signups')->name('signup.store');
         Route::get('signup/{token}', [PublicSignupController::class, 'show'])->whereUuid('token')->middleware('throttle:signup-checks')->name('signup.show');
+        // "Pay later" on the payment step: the account now, 7 days to pay.
+        Route::post('signup/{token}/pay-later', [PublicSignupController::class, 'payLater'])->whereUuid('token')->middleware('throttle:signups')->name('signup.pay-later');
         // Try the demo (docs/backoffice/stage-12-demo.md): start one, or continue your own.
         Route::post('demo', [PublicDemoController::class, 'store'])->middleware('throttle:demos')->name('demo.store');
         Route::post('demo/{token}/enter', [PublicDemoController::class, 'resume'])->whereUuid('token')->middleware('throttle:signup-checks')->name('demo.resume');

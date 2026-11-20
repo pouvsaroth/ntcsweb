@@ -7,13 +7,16 @@ import { RouterLink, useRoute } from 'vue-router'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import { signupService, type SignupState } from '@/services/signup'
+import { ApiRequestError } from '@/types/api'
 import { formatMoney } from '@/utils/currency'
+import { formatDate } from '@/utils/date'
 
 /**
  * After the sign-up form (/signup/{token}, docs/backoffice/stage-8-signup.md):
  * the school being set up, then "ready — sign in". A paid plan waits here for
  * its payment (8c): the KHQR for the exact amount, a countdown, and a check
  * every few seconds — Bakong is asked by our server, never from here.
+ * "Pay later" makes the account now, unpaid, with 7 days to pay.
  */
 const { t, te } = useI18n()
 const route = useRoute()
@@ -68,6 +71,27 @@ const view = computed(() => {
   return 'pay'
 })
 const amount = computed(() => (state.value ? formatMoney(Number(state.value.amount), state.value.currency).replace(/\.00$/, '') : ''))
+/** A payment that arrived but was not the price. */
+const underpaid = computed(() =>
+  state.value?.paid_amount != null && state.value.paid_currency ? formatMoney(Number(state.value.paid_amount), state.value.paid_currency).replace(/\.00$/, '') : null,
+)
+
+const payingLater = ref(false)
+const payLaterError = ref<string | null>(null)
+async function payLater(): Promise<void> {
+  if (!state.value) return
+  payingLater.value = true
+  payLaterError.value = null
+  clearTimeout(timer)
+  try {
+    state.value = await signupService.payLater(state.value.token)
+  } catch (e) {
+    payLaterError.value = e instanceof ApiRequestError ? (e.fieldError('signup') ?? e.message) : w('signupPage.payLaterFailed')
+  } finally {
+    payingLater.value = false
+    void load()
+  }
+}
 </script>
 
 <template>
@@ -91,6 +115,7 @@ const amount = computed(() => (state.value ? formatMoney(Number(state.value.amou
           <p class="text-5xl" aria-hidden="true">🎉</p>
           <h1 class="mt-3 text-xl font-bold text-neutral-900">{{ w('signupPage.ready', { name: state.school_name }) }}</h1>
           <p class="mt-2 text-sm text-neutral-600">{{ w('signupPage.readyText') }}</p>
+          <p v-if="state.pay_later && state.pay_by" class="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900">{{ w('signupPage.payLaterReady', { date: formatDate(state.pay_by) }) }}</p>
           <dl class="mx-auto mt-4 max-w-xs space-y-1 rounded-xl bg-neutral-50 p-4 text-left text-sm">
             <div class="flex justify-between gap-3">
               <dt class="text-neutral-500">{{ w('signupPage.slug') }}</dt>
@@ -107,7 +132,9 @@ const amount = computed(() => (state.value ? formatMoney(Number(state.value.amou
 
         <template v-else-if="view === 'failed'">
           <h1 class="text-xl font-bold text-neutral-900">{{ w('signupPage.failedTitle') }}</h1>
-          <p class="mt-2 text-sm text-neutral-600">{{ state.paid_at ? w('signupPage.failedPaidText') : w('signupPage.failedText') }}</p>
+          <p class="mt-2 text-sm text-neutral-600">
+            {{ underpaid ? w('signupPage.underpaidText', { paid: underpaid, price: amount }) : state.paid_at ? w('signupPage.failedPaidText') : w('signupPage.failedText') }}
+          </p>
           <RouterLink to="/contact" class="mt-4 inline-block text-sm font-medium text-secondary-700 hover:underline">{{ t('servicesPage.contactUs') }}</RouterLink>
         </template>
 
@@ -115,6 +142,11 @@ const amount = computed(() => (state.value ? formatMoney(Number(state.value.amou
           <h1 class="text-xl font-bold text-neutral-900">{{ w('signupPage.expired') }}</h1>
           <p class="mt-2 text-sm text-neutral-600">{{ w('signupPage.expiredText') }}</p>
           <BaseButton to="/plans" class="mt-4">{{ w('signupPage.backToPlans') }}</BaseButton>
+          <div v-if="state.can_pay_later" class="mt-5 border-t border-neutral-100 pt-4">
+            <BaseButton variant="outline" :loading="payingLater" @click="payLater">{{ w('signupPage.payLaterButton') }}</BaseButton>
+            <p class="mt-1.5 text-xs text-neutral-500">{{ w('signupPage.payLaterHint') }}</p>
+            <p v-if="payLaterError" class="mt-1.5 text-sm text-red-600">{{ payLaterError }}</p>
+          </div>
         </template>
 
         <!-- Pay: the KHQR for this amount. -->
@@ -132,6 +164,11 @@ const amount = computed(() => (state.value ? formatMoney(Number(state.value.amou
             <BaseSpinner class="h-4 w-4" />{{ w('signupPage.waitingPayment') }}
           </p>
           <p class="mt-4 text-xs text-neutral-400">{{ w('signupPage.payKeepOpen') }}</p>
+          <div v-if="state.can_pay_later" class="mt-5 border-t border-neutral-100 pt-4">
+            <BaseButton variant="outline" :loading="payingLater" @click="payLater">{{ w('signupPage.payLaterButton') }}</BaseButton>
+            <p class="mt-1.5 text-xs text-neutral-500">{{ w('signupPage.payLaterHint') }}</p>
+            <p v-if="payLaterError" class="mt-1.5 text-sm text-red-600">{{ payLaterError }}</p>
+          </div>
         </template>
 
         <!-- Online payment not set up yet: we take it from here. -->
@@ -140,6 +177,11 @@ const amount = computed(() => (state.value ? formatMoney(Number(state.value.amou
           <p class="mt-2 text-3xl font-bold text-neutral-900">{{ amount }}</p>
           <p class="mt-2 text-sm text-neutral-600">{{ w('signupPage.payLater') }}</p>
           <RouterLink to="/contact" class="mt-4 inline-block text-sm font-medium text-secondary-700 hover:underline">{{ t('servicesPage.contactUs') }}</RouterLink>
+          <div v-if="state.can_pay_later" class="mt-5 border-t border-neutral-100 pt-4">
+            <BaseButton variant="outline" :loading="payingLater" @click="payLater">{{ w('signupPage.payLaterButton') }}</BaseButton>
+            <p class="mt-1.5 text-xs text-neutral-500">{{ w('signupPage.payLaterHint') }}</p>
+            <p v-if="payLaterError" class="mt-1.5 text-sm text-red-600">{{ payLaterError }}</p>
+          </div>
         </template>
       </div>
     </div>

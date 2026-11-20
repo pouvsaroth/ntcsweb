@@ -145,6 +145,80 @@ class SignupPaymentTest extends TestCase
         $this->postJson('/api/v1/platform/billing/signups/'.$row['id'].'/retry')->assertStatus(409);
     }
 
+    public function test_the_visitor_is_told_what_arrived_when_the_amount_is_wrong(): void
+    {
+        $s = $this->signUp();
+        $this->bakongPaid(10.0);
+
+        $state = $this->stateOf($s['token']);
+        $this->assertSame('failed', $state['status']);
+        $this->assertEquals(10, $state['paid_amount']);
+        $this->assertSame('USD', $state['paid_currency']);
+    }
+
+    public function test_pay_later_makes_the_account_now_with_seven_days_to_pay_then_suspends_it(): void
+    {
+        $this->bakongNotYet();
+        $s = $this->signUp();
+        $this->assertTrue($this->stateOf($s['token'])['can_pay_later']);
+
+        $state = $this->withHeader('X-Tenant', 'newtech')->postJson("/api/v1/public/signup/{$s['token']}/pay-later")->assertOk()->json('data');
+        $this->assertSame('created', $state['status']);
+        $this->assertTrue($state['pay_later']);
+        $this->assertSame('2026-10-26', $state['pay_by']);
+        $this->assertFalse($state['can_pay_later']);
+        $this->assertNull($state['khqr']);
+
+        $tenant = Tenant::query()->where('slug', 'angkor')->firstOrFail();
+        $sub = SchoolSubscription::query()->where('tenant_id', $tenant->id)->firstOrFail();
+        $this->assertSame(SchoolSubscription::TRIAL, $sub->status);
+        $this->assertTrue($sub->awaiting_payment);
+        $this->assertSame('growth', $sub->plan->code);
+        $this->assertSame(['2026-10-20', '2026-10-26'], [$sub->start_on->toDateString(), $sub->end_on->toDateString()]);
+
+        // A second press does nothing more.
+        $this->withHeader('X-Tenant', 'newtech')->postJson("/api/v1/public/signup/{$s['token']}/pay-later")->assertJsonValidationErrors('signup');
+
+        // Still usable on its last day; suspended the day after (no grace days).
+        Carbon::setTestNow(Carbon::parse('2026-10-26 03:00:00', 'UTC'));
+        $this->artisan('platform:billing-tick')->assertSuccessful();
+        $this->assertSame(Tenant::STATUS_ACTIVE, $tenant->fresh()->status);
+        Carbon::setTestNow(Carbon::parse('2026-10-27 03:00:00', 'UTC'));
+        $this->artisan('platform:billing-tick')->assertSuccessful();
+        $this->assertSame(Tenant::STATUS_SUSPENDED, $tenant->fresh()->status);
+    }
+
+    public function test_paying_a_pay_later_account_makes_it_active_from_the_day_paid(): void
+    {
+        $this->bakongNotYet();
+        $s = $this->signUp(['periods' => 1]);
+        $this->withHeader('X-Tenant', 'newtech')->postJson("/api/v1/public/signup/{$s['token']}/pay-later")->assertOk();
+        $tenant = Tenant::query()->where('slug', 'angkor')->firstOrFail();
+
+        Carbon::setTestNow(Carbon::parse('2026-10-23 03:00:00', 'UTC'));
+        app(\App\Platform\Billing\Payments::class)->record($tenant, ['periods' => 1, 'method' => 'cash'], $this->platformStaff());
+
+        $sub = SchoolSubscription::query()->where('tenant_id', $tenant->id)->firstOrFail();
+        $this->assertSame(SchoolSubscription::ACTIVE, $sub->status);
+        $this->assertFalse($sub->awaiting_payment);
+        $payment = SchoolPayment::query()->where('tenant_id', $tenant->id)->firstOrFail();
+        // The unpaid days were free: one month from the day paid.
+        $this->assertSame(['2026-10-23', '2026-11-22'], [$payment->covered_from->toDateString(), $sub->end_on->toDateString()]);
+    }
+
+    public function test_a_free_trial_cannot_be_paid_later(): void
+    {
+        $s = $this->withHeader('X-Tenant', 'newtech')->postJson('/api/v1/public/signup', [
+            'plan' => 'trial', 'school_name' => 'សាលាអង្គរ', 'slug' => 'angkor',
+            'owner_name' => 'Sok Dara', 'owner_email' => 'dara@example.com', 'owner_phone' => '012345678',
+            'password' => 'secret-pass-1', 'password_confirmation' => 'secret-pass-1',
+        ])->json('data');
+        if (! isset($s['token'])) {
+            $this->markTestSkipped('No free trial in this setup.');
+        }
+        $this->withHeader('X-Tenant', 'newtech')->postJson("/api/v1/public/signup/{$s['token']}/pay-later")->assertJsonValidationErrors('signup');
+    }
+
     public function test_staff_confirm_a_payment_the_bank_kept_to_itself(): void
     {
         $this->bakongNotYet(); // e.g. ACLEDA app to an ACLEDA QR: Bakong never sees it

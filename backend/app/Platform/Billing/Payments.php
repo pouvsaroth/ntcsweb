@@ -89,6 +89,7 @@ final class Payments
                 'status' => SchoolSubscription::ACTIVE,
                 'end_on' => $to?->toDateString() ?? $sub->end_on,
                 'ended_at' => null,
+                'awaiting_payment' => false,
             ])->save();
 
             $this->audit->record('billing.payment_recorded', $payment, new: [

@@ -44,7 +44,9 @@ final class BillingNotice
             if ($sub->isLive() && $days !== null && $days >= 0 && $days <= $settings->warning_days) {
                 $notice['plan'] = [
                     'kind' => 'ending',
-                    'trial' => $sub->status === SchoolSubscription::TRIAL,
+                    'trial' => $sub->status === SchoolSubscription::TRIAL && ! $sub->awaiting_payment,
+                    // Website "Pay later": the plan is not paid yet.
+                    'pay_later' => (bool) $sub->awaiting_payment,
                     'plan' => $sub->plan?->name,
                     'end_on' => $sub->end_on->toDateString(),
                     'days_left' => $days,
@@ -52,11 +54,12 @@ final class BillingNotice
             } elseif ($sub->status === SchoolSubscription::EXPIRED || ($sub->isLive() && $days !== null && $days < 0)) {
                 $notice['plan'] = [
                     'kind' => 'ended',
-                    'trial' => $sub->status === SchoolSubscription::TRIAL,
+                    'trial' => $sub->status === SchoolSubscription::TRIAL && ! $sub->awaiting_payment,
+                    'pay_later' => (bool) $sub->awaiting_payment,
                     'plan' => $sub->plan?->name,
                     'end_on' => $sub->end_on->toDateString(),
-                    // The first day it is suspended (see BillingSuspensions::tick).
-                    'suspend_on' => $sub->end_on->copy()->addDays($settings->grace_days + 1)->toDateString(),
+                    // The first day it is suspended (see BillingSuspensions::tick); "Pay later" has no grace.
+                    'suspend_on' => $sub->end_on->copy()->addDays($sub->awaiting_payment ? 1 : $settings->grace_days + 1)->toDateString(),
                 ];
             }
         }

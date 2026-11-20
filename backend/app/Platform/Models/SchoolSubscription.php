@@ -45,6 +45,8 @@ class SchoolSubscription extends Model
             'start_on' => 'date',
             'end_on' => 'date',
             'ended_at' => 'datetime',
+            // Website sign-up "Pay later": unpaid, suspended the day after end_on (no grace).
+            'awaiting_payment' => 'boolean',
         ];
     }
 

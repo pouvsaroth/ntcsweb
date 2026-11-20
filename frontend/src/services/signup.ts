@@ -44,6 +44,14 @@ export interface SignupState {
   /** provisioning → active · failed; null until the school exists. */
   school_status: 'provisioning' | 'active' | 'failed' | string | null
   sign_in_url: string | null
+  /** A payment that arrived but was not the price asked (status failed). */
+  paid_amount?: string | number | null
+  paid_currency?: 'USD' | 'KHR' | null
+  /** "Pay later" is offered (unpaid paid plan, no account yet). */
+  can_pay_later?: boolean
+  /** "Pay later" was chosen; pay_by is the last day to pay (yyyy-mm-dd). */
+  pay_later?: boolean
+  pay_by?: string | null
 }
 
 export interface SignupOrganizationType {
@@ -58,4 +66,6 @@ export const signupService = {
     apiGet<{ slug: string; available: boolean; message: string | null }>('/public/signup/slug', { params: { slug, email: email || undefined } }),
   start: (form: SignupForm) => apiPost<SignupState>('/public/signup', form),
   show: (token: string) => apiGet<SignupState>(`/public/signup/${token}`),
+  /** Make the account now, unpaid, with 7 days to pay. */
+  payLater: (token: string) => apiPost<SignupState>(`/public/signup/${token}/pay-later`),
 }

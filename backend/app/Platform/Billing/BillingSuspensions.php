@@ -63,7 +63,9 @@ final class BillingSuspensions
         SchoolSubscription::query()
             ->whereIn('id', $latestIds)
             ->where('status', SchoolSubscription::EXPIRED)
-            ->whereDate('end_on', '<=', $lastDayOfGrace)
+            // "Pay later" (website sign-up) has no grace: suspended the day after its last day.
+            ->where(fn ($q) => $q->whereDate('end_on', '<=', $lastDayOfGrace)
+                ->orWhere(fn ($q) => $q->where('awaiting_payment', true)->whereDate('end_on', '<', $today->toDateString())))
             ->whereNotExists(fn ($q) => $q->selectRaw('1')->from('bo_school_subscriptions as other')
                 ->whereColumn('other.tenant_id', 'bo_school_subscriptions.tenant_id')
                 ->whereIn('other.status', SchoolSubscription::LIVE))

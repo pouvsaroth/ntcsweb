@@ -709,6 +709,7 @@ const en = {
       confirmedInvite: 'Done — the school is being set up. The password the owner chose had expired: send them the invite link from the customer page (Owner).',
       retry: 'Create the school again',
       statuses: { pending_payment: 'Waiting for payment', paid: 'Paid', created: 'School created', expired: 'Expired', failed: 'Failed' },
+      payLater: 'Pay later — not paid yet',
     },
     payments: {
       record: 'Record payment',

@@ -289,6 +289,46 @@ final class Signups
         return $this->createPaidSchool($signup->fresh(), (string) ($data['method'] ?? 'khqr'), $staff);
     }
 
+    /** Days a "Pay later" account has to pay before it is suspended. */
+    public const PAY_LATER_DAYS = 7;
+
+    /**
+     * "Pay later" on the payment step: the account is made now on the chosen
+     * plan, unpaid. It may be used for PAY_LATER_DAYS days (the subscription is
+     * awaiting_payment, like a trial on that plan); unpaid after that it is
+     * suspended the next day. Staff record the payment in Billing as usual.
+     */
+    public function payLater(Signup $signup): Signup
+    {
+        if ($signup->kind !== Signup::KIND_PAID || $signup->tenant_id !== null
+            || ! in_array($signup->status, [Signup::PENDING_PAYMENT, Signup::EXPIRED], true) || $signup->owner_password === null) {
+            throw ValidationException::withMessages(['signup' => __('This sign-up can no longer be paid later. Please start again.')]);
+        }
+        if (Tenant::query()->withTrashed()->where('slug', $signup->slug)->exists()) {
+            throw ValidationException::withMessages(['signup' => __('Its code :slug is now used by another customer. Please start again.', ['slug' => $signup->slug])]);
+        }
+        $plan = $signup->plan ?? throw ValidationException::withMessages(['signup' => __('This plan is not available.')]);
+
+        $signup->forceFill(['pay_later_at' => now()])->save();
+        $this->audit->record('signup.pay_later', $signup, new: ['plan' => $plan->code, 'amount' => $signup->amount, 'currency' => $signup->currency]);
+
+        try {
+            return $this->createSchool($signup, function (Tenant $tenant) use ($plan) {
+                $today = SchoolSubscription::today();
+                $sub = $this->subscriptions->subscribe(
+                    $tenant, $plan, SchoolSubscription::TRIAL, $today, $today->copy()->addDays(self::PAY_LATER_DAYS - 1),
+                    __('Signed up on the website: pay later.'), null,
+                );
+                $sub->forceFill(['awaiting_payment' => true])->save();
+            }, $plan);
+        } catch (\Throwable $e) {
+            report($e);
+            Signup::query()->whereKey($signup->getKey())->update(['status' => Signup::FAILED, 'failure' => 'Pay later: the account could not be created: '.$e->getMessage()]);
+
+            return $signup->fresh();
+        }
+    }
+
     /**
      * The sign-up becomes a school (setup runs in the background).
      *
