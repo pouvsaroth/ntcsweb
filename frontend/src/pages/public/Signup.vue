@@ -8,6 +8,7 @@ import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
 import BaseSpinner from '@/components/ui/BaseSpinner.vue'
+import { swapOrganizationText } from '@/i18n/orgWords'
 import { publicPlansService, type PublicPlan, type PublicPlans } from '@/services/plans'
 import { signupService, type SignupForm, type SignupOrganizationType } from '@/services/signup'
 import { ApiRequestError } from '@/types/api'
@@ -81,9 +82,22 @@ onMounted(async () => {
 const km = computed(() => locale.value === 'km')
 /** Not the school system: "organization" words (signupPage.org.*) where there are any. */
 const org = computed(() => plans.value !== null && !plans.value.system.is_school)
+/** The type picked (Party, Company…); none or School keeps the school words. */
+const pickedType = computed(() => {
+  const type = orgTypes.value.find((o) => o.id === form.value.organization_type_id)
+  return type && type.code !== 'school' && type.words.en ? type : null
+})
 function w(key: string, values?: Record<string, unknown>): string {
   const orgKey = key.replace('signupPage.', 'signupPage.org.')
-  return org.value && te(orgKey) ? t(orgKey, values ?? {}) : t(key, values ?? {})
+  const text = org.value && te(orgKey) ? t(orgKey, values ?? {}) : t(key, values ?? {})
+  const type = pickedType.value
+  if (!type) return text
+  // "School name" → "Party name"; on another system's page "Organization name" → "Party name" too.
+  let out = swapOrganizationText(text, locale.value, type.words)
+  if (org.value && type.code !== 'organization' && key !== 'signupPage.schoolNameHint') {
+    out = locale.value === 'km' ? (type.words.km ? out.replace(/អង្គការ/g, type.words.km) : out) : out.replace(/\borganization\b/gi, (m) => (m[0] === 'O' ? type.words.en : type.words.en.toLowerCase()))
+  }
+  return out
 }
 const systemName = computed(() => (plans.value ? (km.value ? plans.value.system.name_km || plans.value.system.name : plans.value.system.name) : ''))
 const planName = (p: PublicPlan) => ((km.value ? p.name_km || p.name : p.name) ?? '').trim()
