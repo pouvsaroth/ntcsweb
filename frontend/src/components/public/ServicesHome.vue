@@ -23,6 +23,7 @@ const cards = computed(() =>
     titleKm: card.title_km.trim(),
     titleEn: card.title_en.trim(),
     text: pickText(card, 'text', locale.value),
+    badge: pickText(card, 'badge', locale.value).trim(),
     to:
       card.kind === 'school' ? '/computer-school' : card.kind === 'downloads' ? '/downloads' : card.kind === 'plans' ? (card.product_code && card.product_code !== 'school' ? `/plans/${card.product_code}` : '/plans') : `/services/${card.slug}`,
     external: card.kind === 'link',
@@ -42,8 +43,13 @@ const cards = computed(() =>
           v-for="c in cards"
           :key="c.card.id"
           v-bind="c.external ? { href: c.card.link_url, target: '_blank', rel: 'noopener' } : { to: c.to }"
-          class="group flex w-max max-w-full min-w-40 flex-col overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:outline-none"
+          class="group relative flex w-max max-w-full min-w-40 flex-col overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:outline-none"
         >
+          <!-- The card's badge (e.g. "For Sale !"), a ribbon across the top-right corner. -->
+          <span
+            v-if="c.badge"
+            class="pointer-events-none absolute top-3 -right-9 z-10 w-36 rotate-45 bg-red-600 py-0.5 text-center text-[11px] font-bold tracking-wide whitespace-nowrap text-white shadow"
+          >{{ c.badge }}</span>
           <!-- A fixed height: an uploaded logo is shown whole, never stretching the card. -->
           <div class="flex h-24 items-center justify-center bg-neutral-50 p-2">
             <img v-if="c.card.image_url" :src="c.card.image_url" :alt="c.titleEn || c.titleKm" class="h-full max-w-full object-contain" />

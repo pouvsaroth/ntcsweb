@@ -225,6 +225,19 @@ class WebsiteAdminTest extends TestCase
             ->assertOk()->assertJsonPath('data.link_url', '')->assertJsonPath('data.slug', 'online-shop');
     }
 
+    public function test_a_card_can_carry_a_short_badge(): void
+    {
+        $this->manager();
+
+        $this->addCard(['title_en' => 'Mobile App', 'badge_en' => str_repeat('x', 41)])->assertUnprocessable()->assertJsonValidationErrors('badge_en');
+        $id = $this->addCard(['title_en' => 'School Management System', 'badge_en' => 'For Sale !'])
+            ->assertCreated()->assertJsonPath('data.badge_en', 'For Sale !')->assertJsonPath('data.badge_km', '')->json('data.id');
+
+        // Cleared, the badge goes.
+        $this->post("/api/v1/platform/website/services/cards/{$id}", ['_method' => 'PUT', 'kind' => 'page', 'status' => 'active', 'title_en' => 'School Management System', 'badge_en' => ''])
+            ->assertOk()->assertJsonPath('data.badge_en', '');
+    }
+
     public function test_one_card_can_open_the_downloads_page(): void
     {
         $this->manager();

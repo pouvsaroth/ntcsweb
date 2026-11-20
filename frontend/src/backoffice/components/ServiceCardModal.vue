@@ -43,6 +43,8 @@ const blank = (): ServiceCardInput => ({
   title_en: '',
   text_km: '',
   text_en: '',
+  badge_km: '',
+  badge_en: '',
   heading_km: '',
   heading_en: '',
   description_km: '',
@@ -163,6 +165,14 @@ const langLabel = (l: 'km' | 'en') => t(`bo.website.services.lang.${l}`)
             <span class="mb-1.5 block text-sm font-medium text-neutral-700">{{ t('bo.website.services.cardText') }} · {{ langLabel(l) }}</span>
             <textarea v-model="form[`text_${l}`]" rows="2" :class="textarea" />
           </label>
+          <BaseInput
+            v-for="l in langs"
+            :key="`badge-${l}`"
+            v-model="form[`badge_${l}`]"
+            :label="`${t('bo.website.services.badge')} · ${langLabel(l)}`"
+            :hint="t('bo.website.services.badgeHint')"
+            :error="fieldError(`badge_${l}`)"
+          />
         </div>
         <div>
           <p class="mb-1.5 text-sm font-medium text-neutral-700">{{ t('bo.website.picture') }}</p>

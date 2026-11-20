@@ -1161,6 +1161,8 @@ const en = {
       lang: { km: 'Khmer', en: 'English' },
       cardTitle: 'Title',
       cardText: 'Short text',
+      badge: 'Badge',
+      badgeHint: 'Optional ribbon on the card, e.g. For Sale !',
       linkUrl: 'Web address',
       linkUrlHint: 'Opens in a new tab, e.g. https://example.com',
       itsPage: 'Its page',

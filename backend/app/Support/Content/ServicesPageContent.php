@@ -54,8 +54,8 @@ final class ServicesPageContent
 
     public const STATUS_INACTIVE = 'inactive';
 
-    /** Fields every card has, each with a _km and an _en version. */
-    public const CARD_TEXT = ['title', 'text'];
+    /** Fields every card has, each with a _km and an _en version. `badge`: a short ribbon on the card, e.g. "For Sale !". */
+    public const CARD_TEXT = ['title', 'text', 'badge'];
 
     /** Fields of a card's own page, each with a _km and an _en version. */
     public const PAGE_TEXT = ['heading', 'description', 'features', 'button_label'];
@@ -124,6 +124,7 @@ final class ServicesPageContent
             $max = match ($field) {
                 'title', 'heading' => 255,
                 'button_label' => 60,
+                'badge' => 40,
                 'text' => 1000,
                 default => 5000,
             };

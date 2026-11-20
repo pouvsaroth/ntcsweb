@@ -1163,6 +1163,8 @@ const km: BackofficeMessages = {
       lang: { km: 'ខ្មែរ', en: 'អង់គ្លេស' },
       cardTitle: 'ចំណងជើង',
       cardText: 'អត្ថបទខ្លី',
+      badge: 'ស្លាក',
+      badgeHint: 'ស្លាកលើកាត (មិនចាំបាច់) ឧ. For Sale !',
       linkUrl: 'អាសយដ្ឋានគេហទំព័រ',
       linkUrlHint: 'បើកក្នុងផ្ទាំងថ្មី ឧ. https://example.com',
       itsPage: 'ទំព័ររបស់វា',

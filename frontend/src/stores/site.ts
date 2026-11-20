@@ -56,6 +56,9 @@ export interface ServiceCard {
   title_en: string
   text_km: string
   text_en: string
+  /** A short ribbon on the card, e.g. "For Sale !"; empty = none. */
+  badge_km: string
+  badge_en: string
   image_url: string | null
   heading_km: string
   heading_en: string

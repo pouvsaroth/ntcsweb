@@ -142,6 +142,7 @@ const opens = (c: ServiceCard) =>
               <div class="min-w-0">
                 <h3 v-if="card.title_km" class="truncate font-semibold text-neutral-900">{{ card.title_km }}</h3>
                 <p v-if="card.title_en" class="truncate text-sm font-semibold text-neutral-700">{{ card.title_en }}</p>
+                <span v-if="card.badge_en || card.badge_km" class="mt-1 inline-block rounded bg-red-600 px-1.5 py-0.5 text-[11px] font-bold text-white">{{ card.badge_en || card.badge_km }}</span>
                 <h3 v-if="!card.title_km && !card.title_en" class="font-semibold text-neutral-400">—</h3>
               </div>
               <BaseBadge :variant="card.status === 'active' ? 'success' : 'neutral'">
