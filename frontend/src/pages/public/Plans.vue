@@ -14,6 +14,8 @@ import { formatMoney } from '@/utils/currency'
  * (docs/backoffice/stage-8-signup.md, 8a): a Free trial card, then each
  * plan shown on the website — price, a short line, its features. Khmer to
  * Khmer visitors, English to the rest, each falling back to the other.
+ * With both monthly and yearly plans, a Monthly / Yearly switch shows one
+ * set at a time; one-time and other-period plans show under both.
  */
 const { t, locale } = useI18n()
 
@@ -50,8 +52,21 @@ const width = 'w-full sm:w-[calc(50%-0.625rem)] lg:w-[calc(25%-0.9375rem)]'
 const button = 'mt-5 inline-flex w-full items-center justify-center rounded-lg px-4 py-2.5 text-sm font-semibold shadow-sm'
 const pick = (kmText: string | null, enText: string | null) => ((km.value ? kmText || enText : enText || kmText) ?? '').trim()
 
+type Billing = 'monthly' | 'yearly'
+const billing = ref<Billing>('monthly')
+const billingOf = (p: PublicPlan): Billing | null => (p.period_months === 1 ? 'monthly' : p.period_months === 12 ? 'yearly' : null)
+/** The switch shows only when there are both monthly and yearly plans. */
+const hasSwitch = computed(() => {
+  const kinds = new Set((data.value?.plans ?? []).map(billingOf))
+  return kinds.has('monthly') && kinds.has('yearly')
+})
+const shownPlans = computed(() => {
+  const plans = data.value?.plans ?? []
+  return hasSwitch.value ? plans.filter((p) => billingOf(p) === null || billingOf(p) === billing.value) : plans
+})
+
 const cards = computed(() =>
-  (data.value?.plans ?? []).map((p: PublicPlan) => ({
+  shownPlans.value.map((p: PublicPlan) => ({
     plan: p,
     name: pick(p.name_km, p.name) || p.name,
     tagline: pick(p.tagline_km, p.tagline_en),
@@ -105,13 +120,31 @@ const cards = computed(() =>
       </div>
       <DemoDialog v-model="demoOpen" />
 
+      <!-- Monthly / Yearly: only when the system has both kinds of plan. -->
+      <div v-if="data && hasSwitch" class="mt-8 flex justify-center">
+        <div role="radiogroup" :aria-label="t('plansPage.billingChoice')" class="inline-flex rounded-full border border-neutral-200 bg-white p-1 shadow-sm">
+          <button
+            v-for="b in ['monthly', 'yearly'] as const"
+            :key="b"
+            type="button"
+            role="radio"
+            :aria-checked="billing === b"
+            class="rounded-full px-5 py-1.5 text-sm font-semibold transition"
+            :class="billing === b ? 'bg-secondary-700 text-white shadow' : 'text-neutral-600 hover:text-neutral-900'"
+            @click="billing = b"
+          >
+            {{ b === 'monthly' ? t('plansPage.billMonthly') : t('plansPage.billYearly') }}
+          </button>
+        </div>
+      </div>
+
       <div v-if="!data && !failed" class="flex justify-center py-16"><BaseSpinner /></div>
       <p v-else-if="failed || (data && data.plans.length === 0 && data.trial_days < 1)" class="py-16 text-center text-neutral-500">
         {{ t('plansPage.none') }}
       </p>
 
       <!-- Centred, so two or three plans do not sit to one side. -->
-      <div v-else-if="data" class="mt-10 flex flex-wrap items-stretch justify-center gap-5">
+      <div v-else-if="data" class="flex flex-wrap items-stretch justify-center gap-5" :class="hasSwitch ? 'mt-8' : 'mt-10'">
         <!-- Free trial: its length from back office → Billing → Settings. -->
         <article v-if="data.trial_days > 0" :class="width" class="flex flex-col rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
           <h2 class="text-lg font-semibold text-neutral-900">{{ t('plansPage.trial') }}</h2>
