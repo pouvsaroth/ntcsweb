@@ -79,7 +79,7 @@ class PlatformSchoolsTest extends TestCase
         $this->assertSame('dara@angkor.edu.kh', $owner->email);
         $this->assertSame(User::STATUS_INVITED, $owner->status);
         $this->assertTrue($owner->roles->contains('slug', Role::SCHOOL_ADMIN));
-        $this->assertSame(4, Role::query()->withoutGlobalScopes()->where('tenant_id', $id)->count());
+        $this->assertSame(5, Role::query()->withoutGlobalScopes()->where('tenant_id', $id)->count());
         $this->assertNotNull($school->invite_sent_at);
         Notification::assertSentTo($owner, SchoolOwnerInviteNotification::class);
 

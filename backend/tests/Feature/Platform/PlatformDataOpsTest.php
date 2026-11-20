@@ -321,7 +321,7 @@ class PlatformDataOpsTest extends TestCase
         $this->assertSame('ok', $run->status, (string) $run->error);
         $this->assertSame(['nodb'], $this->database->created);
         $this->assertSame(Tenant::STATUS_ACTIVE, $tenant->fresh()->status);
-        $this->assertSame(4, \App\Models\Role::query()->withoutGlobalScopes()->where('tenant_id', $tenant->id)->count());
+        $this->assertSame(5, \App\Models\Role::query()->withoutGlobalScopes()->where('tenant_id', $tenant->id)->count());
 
         // Now it has one: refused.
         $this->postJson("/api/v1/platform/data/schools/{$tenant->id}/create-database")->assertUnprocessable();
