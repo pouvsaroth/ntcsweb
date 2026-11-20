@@ -36,6 +36,20 @@ class SignupTest extends TestCase
         Tenant::factory()->create(['slug' => 'other']);
     }
 
+    public function test_with_the_free_trial_switched_off_there_is_no_trial_card_and_no_trial_sign_up(): void
+    {
+        \App\Platform\Models\BillingSettings::current()->update(['website_trial' => false, 'trial_days' => 15]);
+
+        $this->withHeader('X-Tenant', 'newtech')->getJson('/api/v1/public/plans')->assertOk()->assertJsonPath('data.trial_days', 0);
+        $this->signUp()->assertJsonValidationErrors('plan');
+        $this->assertFalse(Tenant::query()->where('slug', 'angkor')->exists());
+
+        // Staff switch it back on in Billing > Settings.
+        $this->actingAsStaff($this->platformStaff());
+        $this->putJson('/api/v1/platform/billing/settings', ['website_trial' => true])->assertOk()->assertJsonPath('data.website_trial', true);
+        $this->withHeader('X-Tenant', 'newtech')->getJson('/api/v1/public/plans')->assertJsonPath('data.trial_days', 15);
+    }
+
     private function form(array $overrides = []): array
     {
         return $overrides + [

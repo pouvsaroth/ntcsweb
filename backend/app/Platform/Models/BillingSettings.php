@@ -20,6 +20,8 @@ class BillingSettings extends Model
     {
         return [
             'trial_days' => 'integer',
+            // Free trial card + free-trial sign-up on the website.
+            'website_trial' => 'boolean',
             'grace_days' => 'integer',
             'warning_days' => 'integer',
             // Stage 8c: never shown back, never in an audit row.

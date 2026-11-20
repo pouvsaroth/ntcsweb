@@ -20,7 +20,7 @@ use Illuminate\Validation\Rule;
 final class BillingSettingsController extends Controller
 {
     private const FIELDS = [
-        'trial_days', 'grace_days', 'warning_days', 'trial_plan_id',
+        'trial_days', 'grace_days', 'warning_days', 'trial_plan_id', 'website_trial',
         'company_name', 'company_address', 'company_phone', 'company_email', 'company_tax_number', 'company_logo',
     ];
 
@@ -134,6 +134,7 @@ final class BillingSettingsController extends Controller
             'grace_days' => ['sometimes', 'integer', 'between:0,90'],
             'warning_days' => ['sometimes', 'integer', 'between:1,90'],
             'trial_plan_id' => ['sometimes', 'nullable', 'integer', Rule::exists($connection.'.bo_plans', 'id')->where('status', Plan::STATUS_ACTIVE)],
+            'website_trial' => ['sometimes', 'boolean'],
             'company_name' => ['sometimes', 'nullable', 'string', 'max:255'],
             'company_address' => ['sometimes', 'nullable', 'string', 'max:255'],
             'company_phone' => ['sometimes', 'nullable', 'string', 'max:50'],

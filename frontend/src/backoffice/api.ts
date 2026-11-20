@@ -560,6 +560,8 @@ export interface BillingSettingsRow {
   grace_days: number
   warning_days: number
   trial_plan_id: number | null
+  /** Free trial card and free-trial sign-up on the website. */
+  website_trial: boolean
   company_name: string | null
   company_address: string | null
   company_phone: string | null

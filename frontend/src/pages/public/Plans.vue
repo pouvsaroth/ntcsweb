@@ -48,7 +48,10 @@ const km = computed(() => locale.value === 'km')
 /** The system's name as the page title (falls back to the usual title). */
 const title = computed(() => (data.value ? (km.value ? data.value.system.name_km || data.value.system.name : data.value.system.name) : t('plansPage.title')))
 const signupQuery = (plan: string) => (data.value && !data.value.system.is_school ? { system: data.value.system.code, plan } : { plan })
-const width = 'w-full sm:w-[calc(50%-0.625rem)] lg:w-[calc(25%-0.9375rem)]'
+// Four across with the Free trial card, three across without it.
+const width = computed(() =>
+  (data.value?.trial_days ?? 0) > 0 ? 'w-full sm:w-[calc(50%-0.625rem)] lg:w-[calc(25%-0.9375rem)]' : 'w-full sm:w-[calc(50%-0.625rem)] lg:w-[calc(33.333%-0.8334rem)]',
+)
 const button = 'mt-5 inline-flex w-full items-center justify-center rounded-lg px-4 py-2.5 text-sm font-semibold shadow-sm'
 const pick = (kmText: string | null, enText: string | null) => ((km.value ? kmText || enText : enText || kmText) ?? '').trim()
 

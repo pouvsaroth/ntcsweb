@@ -90,7 +90,7 @@ final class Signups
                 ?? throw ValidationException::withMessages(['plan' => __('This plan is not available.')]);
             // A one-time plan is bought once.
             $periods = $plan->period_months === null ? 1 : (int) ($data['periods'] ?? 1);
-        } elseif ($product->freeTrialPlan() === null) {
+        } elseif (! BillingSettings::current()->website_trial || $product->freeTrialPlan() === null) {
             throw ValidationException::withMessages(['plan' => __('This system has no free trial. Please choose a plan.')]);
         } elseif (Signup::query()->where('kind', Signup::KIND_TRIAL)->where('product_id', $product->id)->where('owner_email', $email)->where('status', Signup::CREATED)->exists()) {
             throw ValidationException::withMessages(['owner_email' => __('This email has already had a free trial. Please choose a plan.')]);

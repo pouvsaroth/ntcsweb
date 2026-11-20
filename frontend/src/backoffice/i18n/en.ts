@@ -877,6 +877,8 @@ const en = {
       trialDaysHint: 'How long a new school can try the system before paying.',
       trialPlan: 'Trial plan',
       trialPlanHint: 'The plan a new school tries.',
+      websiteTrial: 'Free trial on the website',
+      websiteTrialHint: 'Show the Free trial card on the plans pages. Off: visitors use Try the demo or choose a plan.',
       legacyDefault: 'Legacy (everything)',
       warningDays: 'Warn before the end (days)',
       warningHint: 'The school owner sees a reminder this many days before the plan ends.',

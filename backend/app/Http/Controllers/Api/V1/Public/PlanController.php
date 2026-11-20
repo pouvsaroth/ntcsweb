@@ -55,8 +55,8 @@ final class PlanController extends Controller
                 'logo_url' => $product->logoUrl(),
                 'is_school' => $product->code === Product::SCHOOL,
             ],
-            // No free-trial plan for this system = no Free trial card.
-            'trial_days' => $product->freeTrialPlan() !== null ? BillingSettings::current()->trial_days : 0,
+            // No free-trial plan for this system, or the free trial switched off = no Free trial card.
+            'trial_days' => BillingSettings::current()->website_trial && $product->freeTrialPlan() !== null ? BillingSettings::current()->trial_days : 0,
             'plans' => $plans->map(fn (Plan $p) => [
                 'code' => $p->code,
                 'name' => $p->name,

@@ -23,6 +23,7 @@ const plans = ref<Plan[]>([])
 const form = ref({
   trial_days: '15',
   trial_plan_id: '',
+  website_trial: true,
   warning_days: '14',
   grace_days: '7',
   company_name: '',
@@ -79,6 +80,7 @@ async function load(): Promise<void> {
   form.value = {
     trial_days: String(settings.trial_days),
     trial_plan_id: settings.trial_plan_id === null ? '' : String(settings.trial_plan_id),
+    website_trial: settings.website_trial,
     warning_days: String(settings.warning_days),
     grace_days: String(settings.grace_days),
     company_name: settings.company_name ?? '',
@@ -99,6 +101,7 @@ async function save(): Promise<void> {
     await billingApi.saveSettings({
       trial_days: Number(f.trial_days),
       trial_plan_id: f.trial_plan_id === '' ? null : Number(f.trial_plan_id),
+      website_trial: f.website_trial,
       warning_days: Number(f.warning_days),
       grace_days: Number(f.grace_days),
       company_name: f.company_name.trim() || null,
@@ -144,6 +147,13 @@ onMounted(load)
             :hint="t('bo.billing.settings.trialPlanHint')"
             :error="error?.fieldError('trial_plan_id')"
           />
+          <label class="flex items-start gap-2 sm:col-span-2">
+            <input v-model="form.website_trial" type="checkbox" class="mt-0.5 rounded border-neutral-300 text-primary-600 focus:ring-primary-500" />
+            <span>
+              <span class="block text-sm font-medium text-neutral-800">{{ t('bo.billing.settings.websiteTrial') }}</span>
+              <span class="block text-xs text-neutral-500">{{ t('bo.billing.settings.websiteTrialHint') }}</span>
+            </span>
+          </label>
           <BaseInput
             v-model="form.warning_days"
             type="number"
