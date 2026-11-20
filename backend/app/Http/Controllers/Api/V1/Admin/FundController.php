@@ -144,6 +144,7 @@ final class FundController extends Controller
             'type' => ['required', Rule::in(FundTransaction::TYPES)],
             'amount' => ['required', 'numeric', 'gt:0', 'max:9999999999'],
             'transacted_on' => ['required', 'date'],
+            'for_month' => ['nullable', 'date_format:Y-m'],
             'cash_account_id' => ['required', 'integer', $this->cashAccountRule()],
             'party' => ['nullable', 'string', 'max:255'],
             // Money in only: a provider from Fund > Providers.
@@ -154,6 +155,31 @@ final class FundController extends Controller
         $entry = $this->funds->record($fund, $this->withProvider($data), $request->user());
 
         return ApiResponse::created(new FundEntryResource($entry->load(['cashAccount', 'creator'])));
+    }
+
+    /**
+     * Copy: money in from several providers at once, each with its own
+     * amount, pay date and For month. All are saved, or none.
+     */
+    public function recordMany(Request $request, Fund $fund): JsonResponse
+    {
+        $this->authorize('record', $fund);
+
+        $data = $request->validate([
+            'entries' => ['required', 'array', 'min:1', 'max:500'],
+            'entries.*.amount' => ['required', 'numeric', 'gt:0', 'max:9999999999'],
+            'entries.*.transacted_on' => ['required', 'date'],
+            'entries.*.for_month' => ['required', 'date_format:Y-m'],
+            'entries.*.cash_account_id' => ['required', 'integer', $this->cashAccountRule()],
+            'entries.*.party' => ['nullable', 'string', 'max:255'],
+            'entries.*.fund_provider_id' => ['nullable', 'integer', $this->providerRule()],
+            'entries.*.remark' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $rows = array_map(fn (array $row) => $this->withProvider($row), array_values($data['entries']));
+        $saved = $this->funds->recordMany($fund, $rows, $request->user());
+
+        return ApiResponse::created(['count' => count($saved), 'fund' => $this->full($fund)]);
     }
 
     /** An active provider. */

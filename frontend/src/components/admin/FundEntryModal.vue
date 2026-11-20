@@ -12,6 +12,7 @@ import { accountsService, type Account } from '@/services/accounting'
 import { fundsService, type Fund, type FundEntry, type FundEntryType } from '@/services/funds'
 import { ApiRequestError } from '@/types/api'
 import { formatMoney } from '@/utils/currency'
+import { thisMonth } from '@/utils/date'
 
 /** Fund > Funds: record money into, or out of, one fund (from / paid to, remark). */
 const props = defineProps<{ modelValue: boolean; fund: Fund | null; type: FundEntryType }>()
@@ -27,7 +28,7 @@ function today(): string {
 const accounts = ref<Account[]>([])
 const accountOptions = computed(() => accounts.value.map((a) => ({ value: String(a.id), label: `${a.code} — ${a.name}` })))
 
-const form = reactive({ amount: '', transacted_on: '', cash_account_id: '', party: '', fund_provider_id: '', remark: '' })
+const form = reactive({ amount: '', transacted_on: '', for_month: '', cash_account_id: '', party: '', fund_provider_id: '', remark: '' })
 const errors = ref<Record<string, string[]>>({})
 const saveError = ref<string | null>(null)
 const saving = ref(false)
@@ -41,7 +42,7 @@ watch(
   () => [props.modelValue, props.fund] as const,
   async ([open]) => {
     if (!open) return
-    Object.assign(form, { amount: '', transacted_on: today(), cash_account_id: form.cash_account_id, party: '', fund_provider_id: '', remark: '' })
+    Object.assign(form, { amount: '', transacted_on: today(), for_month: thisMonth(), cash_account_id: form.cash_account_id, party: '', fund_provider_id: '', remark: '' })
     errors.value = {}
     saveError.value = null
     if (accounts.value.length === 0) {
@@ -65,6 +66,7 @@ async function save() {
       type: props.type,
       amount: Number(form.amount || 0),
       transacted_on: form.transacted_on,
+      for_month: form.for_month || null,
       cash_account_id: Number(form.cash_account_id),
       // Money in: the provider picked; money out: who it was paid to.
       party: isOut.value ? form.party.trim() || null : null,
@@ -92,6 +94,7 @@ async function save() {
       <div class="grid gap-4 sm:grid-cols-2">
         <BaseInput v-model="form.amount" type="number" required :label="t('admin.funds.amount')" :error="errors.amount?.[0]" />
         <BaseInput v-model="form.transacted_on" type="date" required :label="t('admin.funds.date')" :error="errors.transacted_on?.[0]" />
+        <BaseInput v-model="form.for_month" type="month" :label="t('admin.funds.forMonth')" :error="errors.for_month?.[0]" />
       </div>
       <SearchableSelect
         v-model="form.cash_account_id"

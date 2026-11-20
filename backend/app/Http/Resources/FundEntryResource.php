@@ -21,6 +21,8 @@ class FundEntryResource extends JsonResource
             'type' => $this->type,
             'amount' => (float) $this->amount,
             'transacted_on' => $this->transacted_on?->toDateString(),
+            // 'YYYY-MM': the month this money is for.
+            'for_month' => $this->for_month?->format('Y-m'),
             'party' => $this->party,
             'fund_provider_id' => $this->fund_provider_id,
             'remark' => $this->remark,

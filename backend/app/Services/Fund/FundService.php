@@ -38,7 +38,7 @@ final class FundService
      */
     public function create(array $data, ?array $opening, User $actor): Fund
     {
-        return DB::transaction(function () use ($data, $opening, $actor) {
+        return DB::connection('tenant')->transaction(function () use ($data, $opening, $actor) {
             $fund = Fund::query()->create([...$data, 'created_by' => $actor->getKey()]);
 
             if ($opening !== null) {
@@ -58,11 +58,11 @@ final class FundService
     }
 
     /**
-     * @param  array{type: string, amount: float|int|string, transacted_on: string, cash_account_id: int, party?: string|null, fund_provider_id?: int|null, remark?: string|null}  $data
+     * @param  array{type: string, amount: float|int|string, transacted_on: string, for_month?: string|null, cash_account_id: int, party?: string|null, fund_provider_id?: int|null, remark?: string|null}  $data
      */
     public function record(Fund $fund, array $data, User $actor): FundTransaction
     {
-        return DB::transaction(function () use ($fund, $data, $actor) {
+        return DB::connection('tenant')->transaction(function () use ($fund, $data, $actor) {
             /** @var Fund $fund */
             $fund = Fund::query()->whereKey($fund->getKey())->lockForUpdate()->firstOrFail();
 
@@ -83,6 +83,7 @@ final class FundService
                 'type' => $data['type'],
                 'amount' => $amount,
                 'transacted_on' => $data['transacted_on'],
+                'for_month' => $this->forMonth($data['for_month'] ?? null, $data['transacted_on']),
                 'party' => $data['party'] ?? null,
                 'fund_provider_id' => $data['type'] === FundTransaction::IN ? ($data['fund_provider_id'] ?? null) : null,
                 'remark' => $data['remark'] ?? null,
@@ -108,10 +109,38 @@ final class FundService
         });
     }
 
+    /**
+     * Copy: several money in at once (e.g. last month's providers again for
+     * this month). All are saved, or none.
+     *
+     * @param  list<array{amount: float|int|string, transacted_on: string, for_month?: string|null, cash_account_id: int, party?: string|null, fund_provider_id?: int|null, remark?: string|null}>  $rows
+     * @return list<FundTransaction>
+     */
+    public function recordMany(Fund $fund, array $rows, User $actor): array
+    {
+        return DB::connection('tenant')->transaction(function () use ($fund, $rows, $actor) {
+            $saved = [];
+            foreach ($rows as $i => $row) {
+                try {
+                    $saved[] = $this->record($fund, [...$row, 'type' => FundTransaction::IN], $actor);
+                } catch (ValidationException $e) {
+                    // Point the error at the row it belongs to.
+                    $messages = [];
+                    foreach ($e->errors() as $field => $errors) {
+                        $messages[$field === 'status' ? 'status' : "entries.{$i}.{$field}"] = $errors;
+                    }
+                    throw ValidationException::withMessages($messages);
+                }
+            }
+
+            return $saved;
+        });
+    }
+
     /** Undo an entry: its ledger entry is reversed. Money in that later money out relied on cannot go. */
     public function remove(FundTransaction $entry, User $actor): Fund
     {
-        return DB::transaction(function () use ($entry, $actor) {
+        return DB::connection('tenant')->transaction(function () use ($entry, $actor) {
             $fund = Fund::query()->whereKey($entry->fund_id)->lockForUpdate()->firstOrFail();
 
             if ($entry->type === FundTransaction::IN) {
@@ -128,6 +157,14 @@ final class FundService
 
             return $fund;
         });
+    }
+
+    /** First day of the For month ('YYYY-MM'); when none is given, the month of the date. */
+    private function forMonth(?string $forMonth, string $date): string
+    {
+        $value = $forMonth !== null && $forMonth !== '' ? (strlen($forMonth) === 7 ? $forMonth.'-01' : $forMonth) : $date;
+
+        return Carbon::parse($value)->startOfMonth()->toDateString();
     }
 
     public function balance(Fund $fund): float

@@ -14,6 +14,8 @@ export interface FundEntry {
   amount: number
   /** yyyy-mm-dd */
   transacted_on: string
+  /** 'YYYY-MM': the month this money is for. */
+  for_month?: string | null
   party: string | null
   /** Money in: the provider picked (Fund > Providers); their name is in `party`. */
   fund_provider_id?: number | null
@@ -96,10 +98,23 @@ export interface FundEntryInput {
   type: FundEntryType
   amount: number
   transacted_on: string
+  /** 'YYYY-MM'; left out, the month of the date. */
+  for_month?: string | null
   cash_account_id: number
   party: string | null
   /** Money in only. */
   fund_provider_id?: number | null
+  remark: string | null
+}
+
+/** Copy: one money in of several saved at once. */
+export interface FundCopyRow {
+  amount: number
+  transacted_on: string
+  for_month: string
+  cash_account_id: number
+  party: string | null
+  fund_provider_id: number | null
   remark: string | null
 }
 
@@ -118,5 +133,7 @@ export const fundsService = {
   update: (id: number, input: Partial<FundInput & { status: FundStatus }>) => apiPut<Fund>(`/funds/${id}`, input),
   remove: (id: number) => apiDelete(`/funds/${id}`),
   record: (id: number, input: FundEntryInput) => apiPost<FundEntry>(`/funds/${id}/entries`, input),
+  /** Copy: several money in at once (all saved, or none). */
+  copyEntries: (id: number, entries: FundCopyRow[]) => apiPost<{ count: number; fund: Fund }>(`/funds/${id}/entries/copy`, { entries }),
   removeEntry: (entryId: number) => apiDelete<Fund>(`/fund-entries/${entryId}`),
 }

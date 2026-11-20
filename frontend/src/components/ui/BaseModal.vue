@@ -5,7 +5,7 @@ import { useI18n } from 'vue-i18n'
 interface Props {
   modelValue: boolean
   title?: string
-  size?: 'sm' | 'md' | 'lg' | 'full'
+  size?: 'sm' | 'md' | 'lg' | 'xl' | 'full'
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -21,6 +21,7 @@ const sizes = {
   sm: 'max-w-sm',
   md: 'max-w-lg',
   lg: 'max-w-2xl',
+  xl: 'max-w-4xl',
   full: 'max-w-none w-[calc(100vw-2rem)] h-[calc(100vh-2rem)]',
 } as const
 

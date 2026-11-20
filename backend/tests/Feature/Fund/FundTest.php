@@ -7,6 +7,8 @@ namespace Tests\Feature\Fund;
 use App\Models\CurrencyRate;
 use App\Models\FinancialTransaction;
 use App\Models\Fund;
+use App\Models\FundProvider;
+use App\Models\FundTransaction;
 use App\Models\LookupCategory;
 use App\Models\LookupValue;
 use App\Support\Accounting\TransactionType;
@@ -81,6 +83,35 @@ class FundTest extends TestCase
         $this->assertSame('Funds', $posted->creditAccount->name);
         $this->assertSame('EQUITY', $posted->creditAccount->type);
         $this->assertEquals(1000, $this->cash());
+    }
+
+    public function test_for_month_defaults_to_the_month_of_the_date_or_takes_the_one_given(): void
+    {
+        $fund = $this->create(['opened_on' => '2026-01-05', 'opening_amount' => null, 'cash_account_id' => null]);
+        $this->entry($fund['id'], 'in', 10, '2026-02-14')->assertCreated()->assertJsonPath('data.for_month', '2026-02');
+        $this->postJson("/api/v1/funds/{$fund['id']}/entries", [
+            'type' => 'in', 'amount' => 10, 'transacted_on' => '2026-03-02', 'for_month' => '2026-02', 'cash_account_id' => $this->cashAccount->id,
+        ])->assertCreated()->assertJsonPath('data.for_month', '2026-02');
+    }
+
+    public function test_copy_saves_money_in_for_several_providers_at_once_or_none(): void
+    {
+        $fund = $this->create(['opened_on' => '2026-01-05', 'opening_amount' => null, 'cash_account_id' => null]);
+        $sok = FundProvider::factory()->create(['name' => 'Sok Dara']);
+        $row = fn (array $extra = []) => ['amount' => 50, 'transacted_on' => '2026-03-05', 'for_month' => '2026-03', 'cash_account_id' => $this->cashAccount->id, 'fund_provider_id' => $sok->id, ...$extra];
+
+        $this->postJson("/api/v1/funds/{$fund['id']}/entries/copy", ['entries' => [$row(), $row(['amount' => 20, 'fund_provider_id' => null, 'party' => 'Chan', 'remark' => 'March'])]])
+            ->assertCreated()->assertJsonPath('data.count', 2)->assertJsonPath('data.fund.balance', 70);
+
+        $saved = FundTransaction::query()->where('fund_id', $fund['id'])->orderBy('id')->get();
+        $this->assertSame(['Sok Dara', 'Chan'], $saved->pluck('party')->all());
+        $this->assertSame(['2026-03-01', '2026-03-01'], $saved->map(fn ($e) => $e->for_month->toDateString())->all());
+        $this->assertSame(2, FinancialTransaction::query()->where('type', TransactionType::FUND)->count());
+
+        // One bad row (before the fund started): nothing is saved, the error names the row.
+        $this->postJson("/api/v1/funds/{$fund['id']}/entries/copy", ['entries' => [$row(), $row(['transacted_on' => '2025-12-01'])]])
+            ->assertJsonValidationErrors('entries.1.transacted_on');
+        $this->assertSame(2, FundTransaction::query()->where('fund_id', $fund['id'])->count());
     }
 
     public function test_the_type_must_come_from_the_list(): void
