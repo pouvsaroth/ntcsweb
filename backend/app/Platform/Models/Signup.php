@@ -71,9 +71,11 @@ class Signup extends Model
         return $this->belongsTo(Tenant::class);
     }
 
-    /** Unpaid and still holding its web address. */
+    /** Unpaid and still holding its web address (a "Pay later" one holds it while staff wait for the money). */
     public function scopeHolding(Builder $query): void
     {
-        $query->where('status', self::PENDING_PAYMENT)->where('expires_at', '>', now());
+        $query->where(fn ($q) => $q->where(fn ($q) => $q->where('status', self::PENDING_PAYMENT)->where('expires_at', '>', now()))
+            ->orWhere(fn ($q) => $q->where('status', self::EXPIRED)->whereNull('tenant_id')
+                ->where('pay_later_at', '>', now()->subDays(\App\Platform\Signup\Signups::PAY_LATER_HOLD_DAYS))));
     }
 }

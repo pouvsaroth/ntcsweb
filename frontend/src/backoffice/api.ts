@@ -648,7 +648,7 @@ export interface SignupRow {
   can_retry: boolean
   /** Paid plan with no school yet: staff may confirm the payment by hand. */
   can_confirm: boolean
-  /** Chose "Pay later": the account was made unpaid, with 7 days to pay (record it in Billing > Payments). */
+  /** Chose "Pay later": no account until staff press Confirm payment. */
   pay_later?: boolean
   created_at: string
 }

@@ -49,9 +49,8 @@ export interface SignupState {
   paid_currency?: 'USD' | 'KHR' | null
   /** "Pay later" is offered (unpaid paid plan, no account yet). */
   can_pay_later?: boolean
-  /** "Pay later" was chosen; pay_by is the last day to pay (yyyy-mm-dd). */
+  /** "Pay later" was chosen and it is not paid yet: no account until staff confirm the payment. */
   pay_later?: boolean
-  pay_by?: string | null
 }
 
 export interface SignupOrganizationType {

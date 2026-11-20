@@ -83,8 +83,8 @@ final class SignupController extends Controller
             'can_confirm' => $s->kind === Signup::KIND_PAID && $s->tenant_id === null && in_array($s->status, Signups::CONFIRMABLE, true),
             'can_retry' => $s->status === Signup::FAILED && $s->bakong_hash !== null && $s->tenant_id === null
                 && $s->paid_currency === $s->currency && (float) $s->paid_amount + 0.001 >= (float) $s->amount,
-            // Chose "Pay later" on the website: the account exists but is not paid yet.
-            'pay_later' => $s->pay_later_at !== null,
+            // Chose "Pay later" on the website: waiting for the money; Confirm payment makes the account.
+            'pay_later' => $s->pay_later_at !== null && $s->tenant_id === null,
             'created_at' => $s->created_at?->toIso8601String(),
         ]);
 

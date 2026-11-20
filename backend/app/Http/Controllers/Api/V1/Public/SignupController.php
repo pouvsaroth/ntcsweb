@@ -98,7 +98,7 @@ final class SignupController extends Controller
         return ApiResponse::success($this->present($signup));
     }
 
-    /** "Pay later" on the payment step: the account is made now, unpaid, with 7 days to pay. */
+    /** "Pay later" on the payment step: only recorded for staff; no account until the payment is confirmed. */
     public function payLater(string $token): JsonResponse
     {
         $this->websiteOnly();
@@ -139,11 +139,10 @@ final class SignupController extends Controller
             // A payment that arrived but was not the price asked (the visitor is told what came in).
             'paid_amount' => $status === Signup::FAILED && $signup->paid_at !== null ? $signup->paid_amount : null,
             'paid_currency' => $status === Signup::FAILED && $signup->paid_at !== null ? $signup->paid_currency : null,
-            // "Pay later": offered while unpaid; once chosen, the last day to pay.
+            // "Pay later": offered while unpaid; once chosen, the account waits for the payment.
             'can_pay_later' => $signup->kind === Signup::KIND_PAID && $signup->tenant_id === null && $signup->owner_password !== null
-                && in_array($status, [Signup::PENDING_PAYMENT, Signup::EXPIRED], true),
-            'pay_later' => $signup->pay_later_at !== null,
-            'pay_by' => $signup->pay_later_at?->copy()->addDays(Signups::PAY_LATER_DAYS - 1)->toDateString(),
+                && $signup->pay_later_at === null && in_array($status, [Signup::PENDING_PAYMENT, Signup::EXPIRED], true),
+            'pay_later' => $signup->pay_later_at !== null && $signup->tenant_id === null,
             'receipt_number' => $signup->payment_id ? \App\Platform\Models\SchoolPayment::query()->whereKey($signup->payment_id)->value('receipt_number') : null,
             // provisioning → active (ready to sign in) · failed (we fix it and tell them)
             'school_status' => $tenant?->status,

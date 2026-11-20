@@ -20,14 +20,7 @@ const lines = computed(() => {
   const out: { text: string; urgent: boolean }[] = []
 
   const plan = notice.plan
-  if (plan?.pay_later) {
-    // Signed up with "Pay later": not paid yet.
-    const key = plan.kind === 'ended' ? 'payLaterEnded' : plan.days_left === 0 ? 'payLaterToday' : 'payLaterEnding'
-    out.push({
-      text: t(`billingBanner.${key}`, { plan: plan.plan ?? '', date: formatDate(plan.end_on), days: plan.kind === 'ending' ? plan.days_left : 0, suspend: plan.kind === 'ended' ? formatDate(plan.suspend_on) : '' }),
-      urgent: plan.kind === 'ended' || plan.days_left <= 3,
-    })
-  } else if (plan?.kind === 'ending') {
+  if (plan?.kind === 'ending') {
     const key = plan.days_left === 0 ? (plan.trial ? 'trialEndsToday' : 'endsToday') : plan.trial ? 'trialEnding' : 'ending'
     out.push({ text: t(`billingBanner.${key}`, { date: formatDate(plan.end_on), days: plan.days_left }), urgent: plan.days_left <= 3 })
   } else if (plan?.kind === 'ended') {

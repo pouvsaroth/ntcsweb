@@ -156,54 +156,47 @@ class SignupPaymentTest extends TestCase
         $this->assertSame('USD', $state['paid_currency']);
     }
 
-    public function test_pay_later_makes_the_account_now_with_seven_days_to_pay_then_suspends_it(): void
+    public function test_pay_later_only_records_the_sign_up_and_makes_no_account(): void
     {
         $this->bakongNotYet();
         $s = $this->signUp();
         $this->assertTrue($this->stateOf($s['token'])['can_pay_later']);
 
         $state = $this->withHeader('X-Tenant', 'newtech')->postJson("/api/v1/public/signup/{$s['token']}/pay-later")->assertOk()->json('data');
-        $this->assertSame('created', $state['status']);
         $this->assertTrue($state['pay_later']);
-        $this->assertSame('2026-10-26', $state['pay_by']);
         $this->assertFalse($state['can_pay_later']);
         $this->assertNull($state['khqr']);
-
-        $tenant = Tenant::query()->where('slug', 'angkor')->firstOrFail();
-        $sub = SchoolSubscription::query()->where('tenant_id', $tenant->id)->firstOrFail();
-        $this->assertSame(SchoolSubscription::TRIAL, $sub->status);
-        $this->assertTrue($sub->awaiting_payment);
-        $this->assertSame('growth', $sub->plan->code);
-        $this->assertSame(['2026-10-20', '2026-10-26'], [$sub->start_on->toDateString(), $sub->end_on->toDateString()]);
+        $this->assertNull($state['sign_in_url']);
+        $this->assertFalse(Tenant::query()->where('slug', 'angkor')->exists(), 'no account until paid');
+        $this->assertDatabaseHas('bo_audit_logs', ['action' => 'signup.pay_later']);
 
         // A second press does nothing more.
         $this->withHeader('X-Tenant', 'newtech')->postJson("/api/v1/public/signup/{$s['token']}/pay-later")->assertJsonValidationErrors('signup');
-
-        // Still usable on its last day; suspended the day after (no grace days).
-        Carbon::setTestNow(Carbon::parse('2026-10-26 03:00:00', 'UTC'));
-        $this->artisan('platform:billing-tick')->assertSuccessful();
-        $this->assertSame(Tenant::STATUS_ACTIVE, $tenant->fresh()->status);
-        Carbon::setTestNow(Carbon::parse('2026-10-27 03:00:00', 'UTC'));
-        $this->artisan('platform:billing-tick')->assertSuccessful();
-        $this->assertSame(Tenant::STATUS_SUSPENDED, $tenant->fresh()->status);
+        // Its code stays held for it.
+        $this->withHeader('X-Tenant', 'newtech')->getJson('/api/v1/public/signup/slug?slug=angkor&email=other@example.com')->assertJsonPath('data.available', false);
     }
 
-    public function test_paying_a_pay_later_account_makes_it_active_from_the_day_paid(): void
+    public function test_staff_confirm_a_pay_later_sign_up_weeks_later_and_the_account_is_made(): void
     {
         $this->bakongNotYet();
-        $s = $this->signUp(['periods' => 1]);
+        $s = $this->signUp();
         $this->withHeader('X-Tenant', 'newtech')->postJson("/api/v1/public/signup/{$s['token']}/pay-later")->assertOk();
+        $id = Signup::query()->value('id');
+
+        // Past the usual 7 days: the password is still kept.
+        Carbon::setTestNow(now()->addDays(10));
+        $this->artisan('platform:signups-tick')->assertSuccessful();
+        $this->assertNotNull(Signup::query()->whereKey($id)->value('owner_password'));
+
+        $this->actingAsStaff($this->platformStaff());
+        $this->getJson('/api/v1/platform/billing/signups')->assertJsonPath('data.0.pay_later', true)->assertJsonPath('data.0.can_confirm', true);
+        $this->postJson("/api/v1/platform/billing/signups/{$id}/confirm-payment", ['method' => 'cash'])->assertOk()
+            ->assertJsonPath('data.status', 'created')
+            ->assertJsonPath('data.owner_needs_invite', false);
+
         $tenant = Tenant::query()->where('slug', 'angkor')->firstOrFail();
-
-        Carbon::setTestNow(Carbon::parse('2026-10-23 03:00:00', 'UTC'));
-        app(\App\Platform\Billing\Payments::class)->record($tenant, ['periods' => 1, 'method' => 'cash'], $this->platformStaff());
-
-        $sub = SchoolSubscription::query()->where('tenant_id', $tenant->id)->firstOrFail();
-        $this->assertSame(SchoolSubscription::ACTIVE, $sub->status);
-        $this->assertFalse($sub->awaiting_payment);
-        $payment = SchoolPayment::query()->where('tenant_id', $tenant->id)->firstOrFail();
-        // The unpaid days were free: one month from the day paid.
-        $this->assertSame(['2026-10-23', '2026-11-22'], [$payment->covered_from->toDateString(), $sub->end_on->toDateString()]);
+        $this->assertSame(SchoolSubscription::ACTIVE, SchoolSubscription::query()->where('tenant_id', $tenant->id)->value('status'));
+        $this->assertFalse($this->stateOf($s['token'])['pay_later']);
     }
 
     public function test_a_free_trial_cannot_be_paid_later(): void

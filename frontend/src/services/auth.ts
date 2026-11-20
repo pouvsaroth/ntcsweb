@@ -5,8 +5,8 @@ import type { UserPreferences } from '@/utils/appearance'
 /** See backend App\Platform\Billing\BillingNotice. */
 export interface BillingNotice {
   plan?:
-    | { kind: 'ending'; trial: boolean; pay_later?: boolean; plan: string | null; end_on: string; days_left: number }
-    | { kind: 'ended'; trial: boolean; pay_later?: boolean; plan: string | null; end_on: string; suspend_on: string }
+    | { kind: 'ending'; trial: boolean; plan: string | null; end_on: string; days_left: number }
+    | { kind: 'ended'; trial: boolean; plan: string | null; end_on: string; suspend_on: string }
   students?: { active: number; limit: number; full: boolean }
 }
 

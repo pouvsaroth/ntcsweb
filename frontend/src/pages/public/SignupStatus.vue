@@ -9,14 +9,13 @@ import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import { signupService, type SignupState } from '@/services/signup'
 import { ApiRequestError } from '@/types/api'
 import { formatMoney } from '@/utils/currency'
-import { formatDate } from '@/utils/date'
 
 /**
  * After the sign-up form (/signup/{token}, docs/backoffice/stage-8-signup.md):
  * the school being set up, then "ready — sign in". A paid plan waits here for
  * its payment (8c): the KHQR for the exact amount, a countdown, and a check
  * every few seconds — Bakong is asked by our server, never from here.
- * "Pay later" makes the account now, unpaid, with 7 days to pay.
+ * "Pay later" only records the sign-up for our staff: no account until it is paid.
  */
 const { t, te } = useI18n()
 const route = useRoute()
@@ -67,6 +66,7 @@ const view = computed(() => {
   if (s.school_status === 'active') return 'ready'
   if (s.school_status === 'failed' || s.status === 'failed') return 'failed'
   if (s.school_status === 'provisioning' || s.status === 'paid') return 'building'
+  if (s.pay_later) return 'payLater'
   if (s.status === 'expired') return 'expired'
   return 'pay'
 })
@@ -115,7 +115,6 @@ async function payLater(): Promise<void> {
           <p class="text-5xl" aria-hidden="true">🎉</p>
           <h1 class="mt-3 text-xl font-bold text-neutral-900">{{ w('signupPage.ready', { name: state.school_name }) }}</h1>
           <p class="mt-2 text-sm text-neutral-600">{{ w('signupPage.readyText') }}</p>
-          <p v-if="state.pay_later && state.pay_by" class="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900">{{ w('signupPage.payLaterReady', { date: formatDate(state.pay_by) }) }}</p>
           <dl class="mx-auto mt-4 max-w-xs space-y-1 rounded-xl bg-neutral-50 p-4 text-left text-sm">
             <div class="flex justify-between gap-3">
               <dt class="text-neutral-500">{{ w('signupPage.slug') }}</dt>
@@ -135,6 +134,14 @@ async function payLater(): Promise<void> {
           <p class="mt-2 text-sm text-neutral-600">
             {{ underpaid ? w('signupPage.underpaidText', { paid: underpaid, price: amount }) : state.paid_at ? w('signupPage.failedPaidText') : w('signupPage.failedText') }}
           </p>
+          <RouterLink to="/contact" class="mt-4 inline-block text-sm font-medium text-secondary-700 hover:underline">{{ t('servicesPage.contactUs') }}</RouterLink>
+        </template>
+
+        <!-- Pay later: saved for our staff; no account until paid. -->
+        <template v-else-if="view === 'payLater'">
+          <h1 class="text-xl font-bold text-neutral-900">{{ w('signupPage.payLaterTitle') }}</h1>
+          <p class="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-sm font-medium text-amber-900">{{ w('signupPage.payLaterBlocked') }}</p>
+          <p class="mt-3 text-sm text-neutral-600">{{ w('signupPage.payLaterText', { amount }) }}</p>
           <RouterLink to="/contact" class="mt-4 inline-block text-sm font-medium text-secondary-700 hover:underline">{{ t('servicesPage.contactUs') }}</RouterLink>
         </template>
 
