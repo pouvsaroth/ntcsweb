@@ -156,11 +156,15 @@ final class PlanController extends Controller
         return $data;
     }
 
-    /** One plan at most carries the Recommended mark: marking one clears the others. */
+    /** One plan per system and period carries the Recommended mark: marking one clears the others of that system and period. */
     private function onlyRecommended(Plan $plan): void
     {
+        // One Recommended plan per system and period (e.g. Standard monthly and Standard yearly).
         if ($plan->recommended) {
-            Plan::query()->whereKeyNot($plan->getKey())->where('recommended', true)->update(['recommended' => false]);
+            Plan::query()->whereKeyNot($plan->getKey())->where('recommended', true)
+                ->where('product_id', $plan->product_id)
+                ->where(fn ($q) => $plan->period_months === null ? $q->whereNull('period_months') : $q->where('period_months', $plan->period_months))
+                ->update(['recommended' => false]);
         }
     }
 

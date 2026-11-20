@@ -58,6 +58,34 @@ class SignupPlansTest extends TestCase
         $this->assertFalse($first->fresh()->recommended);
         $this->patchJson("/api/v1/platform/billing/plans/{$first->id}", ['recommended' => true])->assertOk();
         $this->assertFalse(Plan::query()->find($id)->recommended);
+
+        // A yearly plan has its own Recommended: the monthly one keeps its mark.
+        $yearly = $this->plan(['period_months' => 12]);
+        $this->patchJson("/api/v1/platform/billing/plans/{$yearly->id}", ['recommended' => true])->assertOk();
+        $this->assertTrue($first->fresh()->recommended);
+        $this->assertTrue($yearly->fresh()->recommended);
+    }
+
+    public function test_the_lineup_update_adds_the_six_plans_once_and_shows_them_on_the_website(): void
+    {
+        $migration = require base_path('database/migrations/2026_11_20_120000_add_starter_standard_premium_plans.php');
+        $older = $this->plan(['recommended' => true, 'code' => 'older']);
+
+        $migration->addPlans();
+        $migration->addPlans(); // A second run adds nothing.
+
+        $plans = Plan::query()->where('code', 'like', '%-monthly')->orWhere('code', 'like', '%-yearly')->orderBy('website_order')->get()->keyBy('code');
+        $this->assertSame(['starter-monthly', 'standard-monthly', 'premium-monthly', 'starter-yearly', 'standard-yearly', 'premium-yearly'], $plans->keys()->all());
+        $this->assertEquals([19, 49, 99, 190, 490, 990], $plans->pluck('price')->map(fn ($p) => (float) $p)->all());
+        $this->assertSame([300, 1000, null], [$plans['starter-yearly']->max_students, $plans['standard-yearly']->max_students, $plans['premium-yearly']->max_students]);
+        $this->assertSame(['academics', 'finance', 'front-office'], $plans['starter-monthly']->modules);
+        $this->assertSame(\App\Platform\Models\Product::school()->modules, $plans['premium-monthly']->modules);
+        $this->assertTrue($plans['standard-monthly']->recommended && $plans['standard-yearly']->recommended);
+        $this->assertFalse($older->fresh()->recommended);
+        $this->assertStringContainsString('2 months free', (string) $plans['premium-yearly']->features_en);
+
+        $shown = $this->withHeader('X-Tenant', 'newtech')->getJson('/api/v1/public/plans')->assertOk()->json('data.plans');
+        $this->assertContains('standard-yearly', array_column($shown, 'code'));
     }
 
     public function test_the_legacy_plan_cannot_be_shown_on_the_website(): void

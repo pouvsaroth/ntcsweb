@@ -822,7 +822,7 @@ const en = {
         featuresEn: 'Features (English)',
         featuresHint: 'One per line.',
         recommended: 'Recommended (ណែនាំ)',
-        recommendedHint: 'One plan at most — marking this one clears the others.',
+        recommendedHint: 'One plan per system and period (monthly, yearly …) — marking this one clears the others.',
         order: 'Order on the website',
         shown: 'On the website',
         legacyNo: 'The Legacy plan is not shown on the website.',
