@@ -3,7 +3,7 @@ import type { PaginatedQuery } from '@/composables/usePaginatedResource'
 import type { LengthAwarePaginationMeta, PaginatedResult } from '@/types/api'
 import type { ApprovalFlowProgress } from '@/services/approvalFlows'
 
-/** `cancelled` — a student's request a holiday added later covers entirely. */
+/** `cancelled` — a student's request a holiday added later covers entirely, or an approved one staff took back. */
 export type LeaveRequestStatus = 'pending' | 'approved' | 'rejected' | 'cancelled'
 
 /** A staff request's full day, or a morning/afternoon half of one date. */
@@ -169,6 +169,8 @@ export const leaveRequestsService = {
   get: (id: number) => apiGetWithMeta<LeaveRequest>(`/leave-requests/${id}`).then((r) => r.data),
   approve: (id: number) => apiPost<LeaveRequest>(`/leave-requests/${id}/approve`),
   reject: (id: number, reason: string) => apiPost<LeaveRequest>(`/leave-requests/${id}/reject`, { reason }),
+  /** Take back an approved student permission — its Excused marks are removed. */
+  cancel: (id: number, reason: string) => apiPost<LeaveRequest>(`/leave-requests/${id}/cancel`, { reason }),
 
   /** HR files one for a staff member — checked like their own, minus the notice period. */
   createForStaff: (staffId: number, input: LeaveRequestInput) => {

@@ -247,6 +247,58 @@ final class LeaveRequestService
         return $request;
     }
 
+    /**
+     * Staff take back an approved student permission — the student came back
+     * early, say. It becomes Cancelled with the reason, the Excused marks its
+     * approval wrote are removed (a mark a teacher has since changed stays),
+     * so those days stop counting as missed and the student can ask again
+     * for the days they really were away. A staff request has a leave
+     * balance and payroll behind it, so it can't be cancelled here.
+     */
+    public function cancel(LeaveRequest $request, string $reason, User $admin): LeaveRequest
+    {
+        $request = DB::transaction(function () use ($request, $reason, $admin) {
+            /** @var LeaveRequest $request */
+            $request = LeaveRequest::query()->whereKey($request->getKey())->lockForUpdate()->firstOrFail();
+
+            if ($request->student_id === null) {
+                throw ValidationException::withMessages(['status' => 'Only a student permission can be cancelled.']);
+            }
+            if ($request->status !== LeaveRequest::STATUS_APPROVED) {
+                throw ValidationException::withMessages(['status' => 'Only an approved request can be cancelled.']);
+            }
+
+            $this->removeExcusedMarks($request, $this->datesBetween($request->from_date->toDateString(), $request->to_date->toDateString()));
+            $request->update([
+                'status' => LeaveRequest::STATUS_CANCELLED,
+                'decision_reason' => $reason,
+                'decided_by' => $admin->getKey(),
+                'decided_at' => now(),
+            ]);
+
+            return $request->fresh();
+        });
+
+        // The same people the approval told — the Excused marks they saw are gone.
+        $student = $request->student;
+        $recipients = collect($student?->user !== null ? [$student->user] : []);
+        if ($student !== null) {
+            $teacherUserIds = Staff::query()->whereIn('id', $student->teacherIds())->pluck('user_id')->filter();
+            $recipients = $recipients->merge(User::query()->whereIn('id', $teacherUserIds)->get());
+        }
+        $recipients = $recipients->merge($this->notifications->usersWithRole(Role::STAFF));
+
+        $this->notifications->notifyMany($recipients, NotificationType::LEAVE_REQUEST_CANCELLED_BY_SCHOOL, [
+            'student_id' => $request->student_id,
+            'staff_id' => null,
+            'student_name' => $request->requesterName(),
+            'leave_request_id' => $request->id,
+            'reason' => $reason,
+        ], link: '/admin/approvals/my-requests');
+
+        return $request;
+    }
+
     public function destroyAttachment(LeaveRequest $request, int $attachmentId): void
     {
         $attachment = $request->attachments()->whereKey($attachmentId)->firstOrFail();

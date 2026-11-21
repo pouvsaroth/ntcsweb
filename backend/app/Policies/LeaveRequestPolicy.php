@@ -36,4 +36,10 @@ class LeaveRequestPolicy
     {
         return $user->hasPermission(Permissions::LEAVE_REQUESTS_REJECT);
     }
+
+    /** Taking back an approved permission is the same say as rejecting one. */
+    public function cancel(User $user, LeaveRequest $leaveRequest): bool
+    {
+        return $user->hasPermission(Permissions::LEAVE_REQUESTS_REJECT);
+    }
 }

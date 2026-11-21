@@ -226,6 +226,40 @@ function canReject(row: MergedRow): boolean {
   return row.flow ? row.flow.can_act : auth.can(rejectPermission[row.kind])
 }
 
+/** An approved student permission can be taken back — the student came back early, say (same say as rejecting one). */
+function canCancelLeave(row: MergedRow): boolean {
+  return row.kind === 'leave' && row.status === 'approved' && !!row.leave?.student && auth.can('leave-requests.reject')
+}
+
+const cancelTarget = ref<MergedRow | null>(null)
+const cancelOpen = ref(false)
+const cancelSubmitting = ref(false)
+const cancelError = ref<string | null>(null)
+
+function openCancelLeave(row: MergedRow) {
+  cancelTarget.value = row
+  cancelError.value = null
+  cancelOpen.value = true
+}
+
+async function confirmCancelLeave(reason: string) {
+  const row = cancelTarget.value
+  if (!row) return
+
+  cancelSubmitting.value = true
+  cancelError.value = null
+  try {
+    await leaveRequestsService.cancel(row.id, reason)
+    cancelOpen.value = false
+    detail.value = null
+    await load()
+  } catch (e) {
+    cancelError.value = e instanceof ApiRequestError ? e.message : t('admin.approvals.actionFailed')
+  } finally {
+    cancelSubmitting.value = false
+  }
+}
+
 // --- Exam application edit (see ExamApplicationFormModal — the same
 // Student Information + Examination Information layout the applicant's own
 // "Apply for an exam" form uses, but with the exam-day fields editable too,
@@ -675,6 +709,9 @@ function leaveSubject(r: LeaveRequest): string {
           <BaseButton v-if="canApprove(row)" size="sm" :loading="approving" @click="approve(row)">{{ approveLabel(row) }}</BaseButton>
           <BaseButton v-if="canReject(row)" size="sm" variant="danger" @click="openReject(row)">{{ t('admin.approvals.reject') }}</BaseButton>
         </div>
+        <div v-else-if="canCancelLeave(row)" class="mt-3 flex justify-end border-t border-neutral-100 pt-3">
+          <BaseButton size="sm" variant="outline" @click="openCancelLeave(row)">{{ t('admin.approvals.cancelLeave') }}</BaseButton>
+        </div>
       </div>
     </div>
 
@@ -700,6 +737,7 @@ function leaveSubject(r: LeaveRequest): string {
             <BaseButton v-if="canApprove(row)" size="sm" :loading="approving" @click="approve(row)">{{ approveLabel(row) }}</BaseButton>
             <BaseButton v-if="canReject(row)" size="sm" variant="danger" @click="openReject(row)">{{ t('admin.approvals.reject') }}</BaseButton>
           </div>
+          <BaseButton v-else-if="canCancelLeave(row)" size="sm" variant="outline" @click="openCancelLeave(row)">{{ t('admin.approvals.cancelLeave') }}</BaseButton>
           <span v-else class="text-xs text-neutral-400">—</span>
         </template>
       </DataTable>
@@ -858,6 +896,7 @@ function leaveSubject(r: LeaveRequest): string {
           <BaseButton v-if="canReject(detail)" variant="danger" @click="openReject(detail)">{{ t('admin.approvals.reject') }}</BaseButton>
           <BaseButton v-if="canApprove(detail)" :loading="approving" @click="approve(detail)">{{ approveLabel(detail) }}</BaseButton>
         </template>
+        <BaseButton v-else-if="detail && canCancelLeave(detail)" variant="danger" @click="openCancelLeave(detail)">{{ t('admin.approvals.cancelLeave') }}</BaseButton>
       </template>
     </BaseModal>
 
@@ -882,6 +921,18 @@ function leaveSubject(r: LeaveRequest): string {
       :submitting="rejectSubmitting"
       :error="rejectError"
       @confirm="confirmReject"
+    />
+
+    <ConfirmReasonModal
+      v-model="cancelOpen"
+      :title="t('admin.approvals.cancelLeave')"
+      :hint="t('admin.approvals.cancelLeaveHint')"
+      :label="t('admin.approvals.cancelLeaveReason')"
+      :confirm-label="t('admin.approvals.cancelLeave')"
+      danger
+      :submitting="cancelSubmitting"
+      :error="cancelError"
+      @confirm="confirmCancelLeave"
     />
 
     <ExamApplicationFormModal v-model="examFormModalOpen" :initial-enrollment-code="editingEnrollmentCode" @saved="load" />

@@ -6,6 +6,7 @@ return [
     'leave_request_submitted' => ':student_name បានដាក់ស្នើសំណើសុំច្បាប់',
     'leave_request_approved' => 'សំណើសុំច្បាប់សម្រាប់ :student_name ត្រូវបានអនុម័ត',
     'leave_request_rejected' => 'សំណើសុំច្បាប់សម្រាប់ :student_name ត្រូវបានបដិសេធ៖ :reason',
+    'leave_request_cancelled_by_school' => 'ច្បាប់ដែលបានអនុម័តសម្រាប់ :student_name ត្រូវបានលុបចោល៖ :reason',
     'resignation_request_submitted' => ':staff_name បានដាក់ស្នើសំណើលាឈប់',
     'resignation_request_approved' => 'សំណើលាឈប់សម្រាប់ :staff_name ត្រូវបានអនុម័ត',
     'resignation_request_rejected' => 'សំណើលាឈប់សម្រាប់ :staff_name ត្រូវបានបដិសេធ៖ :reason',

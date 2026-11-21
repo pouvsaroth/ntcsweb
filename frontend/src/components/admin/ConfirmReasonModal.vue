@@ -18,6 +18,8 @@ const props = defineProps<{
   title: string
   label: string
   confirmLabel: string
+  /** Optional line above the reason box saying what confirming does. */
+  hint?: string
   danger?: boolean
   submitting?: boolean
   error?: string | null
@@ -46,6 +48,7 @@ function submit() {
   <BaseModal :model-value="modelValue" :title="title" size="sm" @update:model-value="emit('update:modelValue', $event)">
     <form class="space-y-4" @submit.prevent="submit">
       <BaseAlert v-if="error" variant="danger">{{ error }}</BaseAlert>
+      <p v-if="hint" class="text-sm text-neutral-600">{{ hint }}</p>
 
       <div>
         <label class="mb-1.5 block text-sm font-medium text-neutral-700">

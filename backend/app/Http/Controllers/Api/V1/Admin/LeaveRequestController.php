@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\V1\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\V1\Admin\CancelLeaveRequestRequest;
 use App\Http\Requests\Api\V1\Admin\RejectLeaveRequestRequest;
 use App\Http\Requests\Api\V1\Admin\StoreStaffLeaveRequestRequest;
 use App\Http\Resources\LeaveRequestResource;
@@ -115,5 +116,13 @@ final class LeaveRequestController extends Controller
         $leaveRequest = $this->leaveRequests->reject($leaveRequest, $request->validated('reason'), $request->user());
 
         return ApiResponse::success(new LeaveRequestResource($leaveRequest->load(['student', 'staff', 'decidedBy'])));
+    }
+
+    /** Take back an approved student permission — see LeaveRequestService::cancel(). */
+    public function cancel(CancelLeaveRequestRequest $request, LeaveRequest $leaveRequest): JsonResponse
+    {
+        $leaveRequest = $this->leaveRequests->cancel($leaveRequest, $request->validated('reason'), $request->user());
+
+        return ApiResponse::success(new LeaveRequestResource($leaveRequest->load(['student', 'staff', 'decidedBy', 'leaveType'])));
     }
 }

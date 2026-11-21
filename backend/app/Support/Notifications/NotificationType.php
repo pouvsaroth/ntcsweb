@@ -19,6 +19,9 @@ final class NotificationType
 
     public const LEAVE_REQUEST_CANCELLED = 'leave_request_cancelled';
 
+    /** An approved student permission staff took back — see LeaveRequestService::cancel(). */
+    public const LEAVE_REQUEST_CANCELLED_BY_SCHOOL = 'leave_request_cancelled_by_school';
+
     public const RESIGNATION_REQUEST_SUBMITTED = 'resignation_request_submitted';
 
     public const RESIGNATION_REQUEST_APPROVED = 'resignation_request_approved';

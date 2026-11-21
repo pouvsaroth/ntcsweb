@@ -513,6 +513,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::apiResource('leave-requests', LeaveRequestController::class)->only(['index', 'show', 'store']);
         Route::post('leave-requests/{leave_request}/approve', [LeaveRequestController::class, 'approve'])->name('leave-requests.approve');
         Route::post('leave-requests/{leave_request}/reject', [LeaveRequestController::class, 'reject'])->name('leave-requests.reject');
+        Route::post('leave-requests/{leave_request}/cancel', [LeaveRequestController::class, 'cancel'])->name('leave-requests.cancel');
 
         // Staff-submitted resignation requests — see ResignationRequestService.
         Route::apiResource('resignation-requests', ResignationRequestController::class)->only(['index', 'show']);
