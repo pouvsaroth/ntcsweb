@@ -16,6 +16,7 @@ export type NotificationTypeValue =
   | 'leave_request_approved'
   | 'leave_request_rejected'
   | 'leave_request_cancelled_by_school'
+  | 'student_completed_add_discount'
   | 'leave_request_cancelled'
   | 'resignation_request_submitted'
   | 'resignation_request_approved'

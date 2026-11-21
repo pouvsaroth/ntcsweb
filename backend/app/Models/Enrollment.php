@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Models\Concerns\Auditable;
 use App\Services\Academic\StudentAccessService;
+use App\Services\Billing\DiscountFollowUpNotifier;
 use App\Support\Audit\AuditAction;
 use App\Support\Billing\InvoiceStatus;
 use Database\Factories\EnrollmentFactory;
@@ -44,7 +45,7 @@ use Illuminate\Support\Facades\DB;
  */
 #[Fillable([
     'student_id', 'class_id', 'table_id', 'course_package_id', 'academic_program_id',
-    'enrolled_at', 'start_study_on', 'status', 'enrollments_code', 'note',
+    'enrolled_at', 'start_study_on', 'completed_on', 'discount_follow_up', 'status', 'enrollments_code', 'note',
 ])]
 class Enrollment extends Model
 {
@@ -75,6 +76,13 @@ class Enrollment extends Model
      * for the set that actually appears in that menu.
      */
     public const STATUS_DROPPED = 'dropped';
+
+    /** discount_follow_up — see the 2026_11_21_100000 migration and DiscountCodeController::followUps(). */
+    public const FOLLOW_UP_WAITING = 'waiting';
+
+    public const FOLLOW_UP_GIVEN = 'given';
+
+    public const FOLLOW_UP_SKIPPED = 'skipped';
 
     /**
      * Finished enrollments: the student may be enrolled into the same class
@@ -127,6 +135,7 @@ class Enrollment extends Model
         return [
             'enrolled_at' => 'date',
             'start_study_on' => 'date',
+            'completed_on' => 'date',
         ];
     }
 
@@ -143,6 +152,28 @@ class Enrollment extends Model
         static::creating(function (self $enrollment): void {
             if ($enrollment->start_study_on === null) {
                 $enrollment->start_study_on = $enrollment->enrolled_at;
+            }
+        });
+
+        // Students to add discount: a course that just turned Completed waits
+        // for a discount code (once — given/skipped stays); one that turns
+        // back before anyone acted leaves the list. Not on create, so
+        // imported history never floods the list.
+        static::updating(function (self $enrollment): void {
+            if (! $enrollment->isDirty('status')) {
+                return;
+            }
+            if ($enrollment->status === self::STATUS_COMPLETED) {
+                $enrollment->completed_on = now()->toDateString();
+                $enrollment->discount_follow_up ??= self::FOLLOW_UP_WAITING;
+            } elseif ($enrollment->discount_follow_up === self::FOLLOW_UP_WAITING) {
+                $enrollment->discount_follow_up = null;
+            }
+        });
+
+        static::updated(function (self $enrollment): void {
+            if ($enrollment->wasChanged('status') && $enrollment->status === self::STATUS_COMPLETED && $enrollment->discount_follow_up === self::FOLLOW_UP_WAITING) {
+                DB::connection('tenant')->afterCommit(fn () => app(DiscountFollowUpNotifier::class)->completed($enrollment));
             }
         });
 

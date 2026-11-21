@@ -26,6 +26,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Invoices > Discount codes: add, edit and delete discount (main) codes, and
@@ -364,6 +365,143 @@ final class DiscountCodeController extends Controller
      *
      * @param  list<int>  $studentIds
      */
+    /**
+     * GET /discount-codes/follow-ups — Students to add discount: every
+     * enrollment that turned Completed and still waits for a code (oldest
+     * finish first), plus the main codes that can be given now.
+     */
+    public function followUps(Request $request): JsonResponse
+    {
+        $this->authorize('update', new DiscountCode);
+
+        $rows = Enrollment::query()
+            ->where('discount_follow_up', Enrollment::FOLLOW_UP_WAITING)
+            ->where('status', Enrollment::STATUS_COMPLETED)
+            ->with(['student', 'coursePackage', 'schoolClass'])
+            ->orderBy('completed_on')
+            ->orderBy('id')
+            ->get()
+            ->map(fn (Enrollment $e) => [
+                'enrollment_id' => $e->id,
+                'student' => $e->student === null ? null : ['id' => $e->student->id, 'student_code' => $e->student->student_code, 'name' => $e->student->fullName()],
+                'course' => $e->coursePackage?->name,
+                'class' => $e->schoolClass?->name,
+                'start_study_on' => $e->start_study_on?->toDateString(),
+                'completed_on' => $e->completed_on?->toDateString(),
+            ])
+            ->values();
+
+        $today = now()->toDateString();
+        $codes = DiscountCode::query()
+            ->whereNull('parent_id')
+            ->where('status', DiscountCode::STATUS_ACTIVE)
+            ->where(fn ($q) => $q->whereNull('expires_on')->orWhereDate('expires_on', '>=', $today))
+            ->orderBy('code')
+            ->get()
+            ->map(fn (DiscountCode $c) => [
+                'id' => $c->id,
+                'code' => $c->code,
+                'name' => $c->name,
+                'discount_type' => $c->discount_type,
+                'value' => (float) $c->value,
+                'currency' => $c->currency,
+                'starts_on' => $c->starts_on?->toDateString(),
+                'expires_on' => $c->expires_on?->toDateString(),
+            ])
+            ->values();
+
+        return ApiResponse::success(['rows' => $rows, 'codes' => $codes], meta: ['total' => $rows->count()]);
+    }
+
+    /**
+     * POST /discount-codes/follow-ups — give the picked students their code
+     * (the same as Assign: each gets their own STUDENTCODE_CODE_ddmmyy) and
+     * take them off the list. Only the rows sent are touched.
+     */
+    public function saveFollowUps(Request $request, DiscountCodeService $discounts): JsonResponse
+    {
+        $this->authorize('update', new DiscountCode);
+
+        $data = $request->validate([
+            'rows' => ['required', 'array', 'min:1'],
+            'rows.*.enrollment_id' => ['required', 'integer', 'distinct'],
+            'rows.*.discount_code_id' => ['required', 'integer', Rule::exists('tenant.discount_codes', 'id')->whereNull('parent_id')],
+            'rows.*.expires_on' => ['nullable', 'date'],
+        ]);
+
+        $enrollments = Enrollment::query()
+            ->whereIn('id', array_column($data['rows'], 'enrollment_id'))
+            ->where('discount_follow_up', Enrollment::FOLLOW_UP_WAITING)
+            ->get()
+            ->keyBy('id');
+
+        $groups = collect($data['rows'])
+            ->filter(fn (array $r) => $enrollments->has((int) $r['enrollment_id']))
+            ->groupBy('discount_code_id');
+
+        // Check every expiry first, so nothing is given when one is wrong.
+        foreach ($groups as $codeId => $rows) {
+            $main = DiscountCode::query()->findOrFail((int) $codeId);
+            foreach ($rows as $row) {
+                if (! empty($row['expires_on']) && $main->starts_on !== null && Carbon::parse($row['expires_on'])->toDateString() < $main->starts_on->toDateString()) {
+                    throw ValidationException::withMessages([
+                        'expires_on' => __('The expiry date cannot be before the code starts (:date).', ['date' => $main->starts_on->format('d-m-Y')]),
+                    ]);
+                }
+            }
+        }
+
+        $made = DB::connection('tenant')->transaction(function () use ($groups, $enrollments, $discounts, $request) {
+            $made = [];
+            foreach ($groups as $codeId => $rows) {
+                $main = DiscountCode::query()->findOrFail((int) $codeId);
+                $studentIds = [];
+                $expiries = [];
+                foreach ($rows as $row) {
+                    $studentId = (int) $enrollments[(int) $row['enrollment_id']]->student_id;
+                    $studentIds[] = $studentId;
+                    if (! empty($row['expires_on'])) {
+                        $expiries[$studentId] = Carbon::parse($row['expires_on'])->toDateString();
+                    }
+                }
+
+                array_push($made, ...$discounts->assign($main, array_values(array_unique($studentIds)), $request->user(), $expiries));
+                // A student who already held this code counts as given too.
+                Enrollment::query()->whereIn('id', $rows->pluck('enrollment_id')->map(fn ($id) => (int) $id))
+                    ->update(['discount_follow_up' => Enrollment::FOLLOW_UP_GIVEN]);
+            }
+
+            return $made;
+        });
+
+        foreach ($made as $code) {
+            $this->notifyGiven($code, [(int) $code->students()->value('students.id')]);
+        }
+
+        return ApiResponse::success([
+            'given' => $groups->flatten(1)->count(),
+            'codes' => array_map(fn (DiscountCode $c) => $c->code, $made),
+        ]);
+    }
+
+    /** POST /discount-codes/follow-ups/skip — no discount for these: take them off the list. */
+    public function skipFollowUps(Request $request): JsonResponse
+    {
+        $this->authorize('update', new DiscountCode);
+
+        $data = $request->validate([
+            'enrollment_ids' => ['required', 'array', 'min:1'],
+            'enrollment_ids.*' => ['integer'],
+        ]);
+
+        $skipped = Enrollment::query()
+            ->whereIn('id', $data['enrollment_ids'])
+            ->where('discount_follow_up', Enrollment::FOLLOW_UP_WAITING)
+            ->update(['discount_follow_up' => Enrollment::FOLLOW_UP_SKIPPED]);
+
+        return ApiResponse::success(['skipped' => $skipped]);
+    }
+
     private function notifyGiven(DiscountCode $code, array $studentIds): void
     {
         $code->refresh();

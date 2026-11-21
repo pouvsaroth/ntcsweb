@@ -14,7 +14,7 @@ import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import DataTable from '@/components/ui/DataTable.vue'
 import EditIconButton from '@/components/ui/EditIconButton.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
-import { discountCodesService, type DiscountCode, type DiscountEffectiveStatus } from '@/services/discountCodes'
+import { discountCodesService, discountFollowUpsService, type DiscountCode, type DiscountEffectiveStatus } from '@/services/discountCodes'
 import { useAuthStore } from '@/stores/auth'
 import { useConfirmDialogStore } from '@/stores/confirmDialog'
 import { ApiRequestError } from '@/types/api'
@@ -96,7 +96,21 @@ async function remove(row: DiscountCode) {
   }
 }
 
-onMounted(() => fetch())
+// Students to add discount: how many completed students wait for a code.
+const waitingCount = ref(0)
+async function loadWaiting() {
+  if (!canUpdate.value) return
+  try {
+    waitingCount.value = (await discountFollowUpsService.list()).total
+  } catch {
+    // The button still works; it just shows no count.
+  }
+}
+
+onMounted(() => {
+  fetch()
+  void loadWaiting()
+})
 </script>
 
 <template>
@@ -116,6 +130,14 @@ onMounted(() => fetch())
       <div v-if="canCreate || canUpdate" class="flex shrink-0 flex-wrap gap-2">
         <BaseButton v-if="canCreate" @click="open(null)">{{ t('admin.discountCodes.add') }}</BaseButton>
         <BaseButton v-if="canUpdate" variant="outline" @click="assignOpen = true">{{ t('admin.discountCodes.assign.open') }}</BaseButton>
+        <RouterLink
+          v-if="canUpdate"
+          to="/admin/invoices/discount-codes/students"
+          class="relative inline-flex items-center justify-center rounded-lg border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 shadow-sm hover:bg-neutral-50"
+        >
+          {{ t('admin.discountFollowUps.title') }}
+          <span v-if="waitingCount > 0" class="ml-2 rounded-full bg-danger-600 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white">{{ waitingCount }}</span>
+        </RouterLink>
       </div>
     </div>
 

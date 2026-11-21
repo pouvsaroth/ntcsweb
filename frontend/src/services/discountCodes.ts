@@ -170,3 +170,38 @@ export const myDiscountCodesService = {
   list: () => apiGet<{ codes: MyDiscountCode[]; invoices: Invoice[] }>('/my-discount-codes'),
   apply: (invoiceId: number, code: string) => apiPost<Invoice>(`/my-invoices/${invoiceId}/discount-code`, { discount_code: code }),
 }
+
+/** Students to add discount: one completed course waiting for a code. */
+export interface DiscountFollowUpRow {
+  enrollment_id: number
+  student: DiscountCodeStudent | null
+  course: string | null
+  class: string | null
+  start_study_on: string | null
+  /** The day the course turned Completed. */
+  completed_on: string | null
+}
+
+/** A main code that can be given today. */
+export interface DiscountFollowUpCode {
+  id: number
+  code: string
+  name: string | null
+  discount_type: DiscountType
+  value: number
+  currency: string | null
+  starts_on: string | null
+  expires_on: string | null
+}
+
+export const discountFollowUpsService = {
+  async list(): Promise<{ rows: DiscountFollowUpRow[]; codes: DiscountFollowUpCode[]; total: number }> {
+    const result = await apiGetWithMeta<{ rows: DiscountFollowUpRow[]; codes: DiscountFollowUpCode[] }>('/discount-codes/follow-ups')
+    return { ...result.data, total: Number((result.meta as { total?: number } | undefined)?.total ?? result.data.rows.length) }
+  },
+  /** Give each row's student their own code; rows not sent stay waiting. */
+  save: (rows: { enrollment_id: number; discount_code_id: number; expires_on: string | null }[]) =>
+    apiPost<{ given: number; codes: string[] }>('/discount-codes/follow-ups', { rows }),
+  /** No discount for these: take them off the list. */
+  skip: (enrollmentIds: number[]) => apiPost<{ skipped: number }>('/discount-codes/follow-ups/skip', { enrollment_ids: enrollmentIds }),
+}

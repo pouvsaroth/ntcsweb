@@ -1012,6 +1012,10 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::apiResource('currency-rates', CurrencyRateController::class);
         Route::apiResource('companies', CompanyController::class);
         Route::get('discount-codes/options', [DiscountCodeController::class, 'options'])->name('discount-codes.options');
+        // Students to add discount: completed courses waiting for a code.
+        Route::get('discount-codes/follow-ups', [DiscountCodeController::class, 'followUps'])->name('discount-codes.follow-ups');
+        Route::post('discount-codes/follow-ups', [DiscountCodeController::class, 'saveFollowUps'])->name('discount-codes.follow-ups.save');
+        Route::post('discount-codes/follow-ups/skip', [DiscountCodeController::class, 'skipFollowUps'])->name('discount-codes.follow-ups.skip');
         Route::post('discount-codes/check', [DiscountCodeController::class, 'check'])->middleware('throttle:60,1')->name('discount-codes.check');
         Route::get('discount-codes/available', [DiscountCodeController::class, 'available'])->name('discount-codes.available');
         Route::post('discount-codes/check-invoice', [DiscountCodeController::class, 'checkInvoice'])->middleware('throttle:60,1')->name('discount-codes.check-invoice');

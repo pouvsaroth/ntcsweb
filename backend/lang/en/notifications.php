@@ -9,6 +9,7 @@ return [
     'leave_request_approved' => 'The permission request for :student_name was approved',
     'leave_request_rejected' => 'The permission request for :student_name was rejected: :reason',
     'leave_request_cancelled_by_school' => 'The approved permission for :student_name was cancelled: :reason',
+    'student_completed_add_discount' => ':student_name completed :course. Add a discount code.',
     'resignation_request_submitted' => ':staff_name submitted a resignation request',
     'resignation_request_approved' => 'The resignation request for :staff_name was approved',
     'resignation_request_rejected' => 'The resignation request for :staff_name was rejected: :reason',

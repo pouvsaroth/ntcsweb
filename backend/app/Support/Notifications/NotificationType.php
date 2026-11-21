@@ -22,6 +22,9 @@ final class NotificationType
     /** An approved student permission staff took back — see LeaveRequestService::cancel(). */
     public const LEAVE_REQUEST_CANCELLED_BY_SCHOOL = 'leave_request_cancelled_by_school';
 
+    /** A student completed a course — give them a discount code (DiscountFollowUpNotifier). */
+    public const STUDENT_COMPLETED_ADD_DISCOUNT = 'student_completed_add_discount';
+
     public const RESIGNATION_REQUEST_SUBMITTED = 'resignation_request_submitted';
 
     public const RESIGNATION_REQUEST_APPROVED = 'resignation_request_approved';

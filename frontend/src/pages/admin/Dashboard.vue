@@ -14,6 +14,7 @@ import { enrollmentsService } from '@/services/enrollments'
 import { marketingReportService, type MarketingSummary } from '@/services/marketingReport'
 import { examApplicationsService } from '@/services/examApplications'
 import { type Invoice, invoicesService, type InvoiceStatusValue } from '@/services/invoices'
+import { discountFollowUpsService } from '@/services/discountCodes'
 import { leaveRequestsService } from '@/services/leaveRequests'
 import { makeUpClassCourseLabel, makeUpClassRequestsService } from '@/services/makeUpClassRequests'
 import type { MonthlyInvoice } from '@/services/monthlyInvoices'
@@ -132,6 +133,13 @@ const quickAccessItems: QuickAccessItem[] = [
     to: '/admin/approvals/queue',
     permission: ['approval-requests.view', 'leave-requests.view', 'resignation-requests.view', 'make-up-class-requests.view', 'exam-applications.view'],
     icon: 'M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
+  },
+  {
+    // Like Approvals: the page's own permission, with a red count of students waiting.
+    labelKey: 'admin.discountFollowUps.title',
+    to: '/admin/invoices/discount-codes/students',
+    permission: 'discount-codes.update',
+    icon: 'M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3zM6 6h.008v.008H6V6z',
   },
 ]
 
@@ -401,8 +409,21 @@ async function loadPendingApprovals(): Promise<void> {
   pendingApprovalsCount.value = results.reduce((sum, r) => sum + (r.status === 'fulfilled' ? (r.value.pagination?.total ?? 0) : 0), 0)
 }
 
+/** Students to add discount: completed students still waiting for a code. */
+const discountWaitingCount = ref(0)
+
+async function loadDiscountWaiting(): Promise<void> {
+  if (!auth.can('discount-codes.update')) return
+  try {
+    discountWaitingCount.value = (await discountFollowUpsService.list()).total
+  } catch {
+    // The tile still opens the page; it just shows no count.
+  }
+}
+
 async function loadStats(): Promise<void> {
   void loadPendingApprovals()
+  void loadDiscountWaiting()
 
   if (auth.can('dashboard.finance.view')) {
     try {
@@ -629,6 +650,12 @@ onBeforeUnmount(() => {
             :title="t('admin.approvals.tabNew')"
           >
             {{ pendingApprovalsCount }}
+          </span>
+          <span
+            v-if="item.to === '/admin/invoices/discount-codes/students' && discountWaitingCount > 0"
+            class="absolute right-2 top-2 rounded-full bg-danger-600 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white"
+          >
+            {{ discountWaitingCount }}
           </span>
           <span class="flex h-10 w-10 items-center justify-center rounded-full bg-primary-100 text-primary-700">
             <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
