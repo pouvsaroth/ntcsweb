@@ -17,6 +17,7 @@ const tabs = [
   { to: '/admin/invoices', labelKey: 'admin.invoices.title' },
   { to: '/admin/invoices/monthly', labelKey: 'admin.invoices.monthlyTab' },
   { to: '/admin/invoices/discount-codes', labelKey: 'admin.discountCodes.tab', permission: 'discount-codes.view' },
+  { to: '/admin/invoices/discount-students', labelKey: 'admin.discountStudents.tab', permission: 'discount-codes.view' },
 ]
 </script>
 

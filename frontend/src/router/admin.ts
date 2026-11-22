@@ -1049,6 +1049,13 @@ const adminRoutes: RouteRecordRaw[] = [
     meta: { permission: 'discount-codes.view', titleKey: 'adminNav.items.invoices' },
   },
   {
+    // Students with discount: students holding a code usable today.
+    path: 'invoices/discount-students',
+    name: 'admin.invoices.discount-students',
+    component: () => import('@/pages/admin/DiscountStudents.vue'),
+    meta: { permission: 'discount-codes.view', titleKey: 'adminNav.items.invoices' },
+  },
+  {
     // Students to add discount: completed courses waiting for a code.
     path: 'invoices/discount-codes/students',
     name: 'admin.invoices.discount-follow-ups',

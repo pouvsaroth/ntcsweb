@@ -1012,6 +1012,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::apiResource('currency-rates', CurrencyRateController::class);
         Route::apiResource('companies', CompanyController::class);
         Route::get('discount-codes/options', [DiscountCodeController::class, 'options'])->name('discount-codes.options');
+        // Invoices > Students with discount: students holding a code usable today.
+        Route::get('discount-codes/students', [DiscountCodeController::class, 'studentsWithDiscount'])->name('discount-codes.students');
         // Students to add discount: completed courses waiting for a code.
         Route::get('discount-codes/follow-ups', [DiscountCodeController::class, 'followUps'])->name('discount-codes.follow-ups');
         Route::post('discount-codes/follow-ups', [DiscountCodeController::class, 'saveFollowUps'])->name('discount-codes.follow-ups.save');

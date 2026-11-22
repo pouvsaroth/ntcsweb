@@ -366,6 +366,67 @@ final class DiscountCodeController extends Controller
      * @param  list<int>  $studentIds
      */
     /**
+     * GET /discount-codes/students — Invoices > Students with discount:
+     * every student holding a code that is usable today (on, started, not
+     * expired), one row per student and code, with what it gives, its end
+     * date, how often they used it and their studying courses.
+     */
+    public function studentsWithDiscount(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', DiscountCode::class);
+        $today = app(DiscountCodeService::class)->today();
+
+        $codes = DiscountCode::query()
+            ->where('status', DiscountCode::STATUS_ACTIVE)
+            ->whereDate('starts_on', '<=', $today)
+            ->where(fn ($q) => $q->whereNull('expires_on')->orWhereDate('expires_on', '>=', $today))
+            ->whereHas('students')
+            ->with(['parent:id,code,name', 'students' => fn ($q) => $q->with(['enrollments' => fn ($e) => $e->active()->with(['schoolClass:id,name', 'coursePackage:id,name'])])])
+            ->get();
+
+        $uses = DiscountCodeRedemption::query()
+            ->whereIn('discount_code_id', $codes->pluck('id'))
+            ->where('status', DiscountCodeRedemption::STATUS_APPLIED)
+            ->select('discount_code_id', 'student_id', DB::raw('COUNT(*) as uses'), DB::raw('MAX(created_at) as last_used_at'))
+            ->groupBy('discount_code_id', 'student_id')
+            ->get()
+            ->keyBy(fn ($r) => $r->discount_code_id.'|'.$r->student_id);
+
+        $rows = $codes->flatMap(fn (DiscountCode $code) => $code->students->map(function (Student $student) use ($code, $uses) {
+            $use = $uses->get($code->id.'|'.$student->id);
+
+            return [
+                'key' => $code->id.'-'.$student->id,
+                'student' => ['id' => $student->id, 'student_code' => $student->student_code, 'name' => $student->fullName(), 'phone' => $student->phone],
+                'courses' => $student->enrollments->map(fn (Enrollment $e) => array_filter([
+                    'course' => $e->coursePackage?->name,
+                    'class' => $e->schoolClass?->name,
+                ]))->values(),
+                'code' => [
+                    'id' => $code->id,
+                    'code' => $code->code,
+                    // The main code it was given from (the code itself for an older personal code).
+                    'main_id' => $code->parent_id ?? $code->id,
+                    'main_code' => $code->parent?->code ?? $code->code,
+                    'name' => $code->parent?->name ?? $code->name,
+                    'discount_type' => $code->discount_type,
+                    'value' => (float) $code->value,
+                    'max_discount' => $code->max_discount !== null ? (float) $code->max_discount : null,
+                    'currency' => $code->currency,
+                    'starts_on' => $code->starts_on->toDateString(),
+                    'expires_on' => $code->expires_on?->toDateString(),
+                ],
+                'uses' => (int) ($use->uses ?? 0),
+                'last_used_at' => $use?->last_used_at !== null ? Carbon::parse($use->last_used_at)->toIso8601String() : null,
+            ];
+        }))
+            ->sortBy(fn (array $r) => [$r['code']['expires_on'] === null ? 1 : 0, $r['code']['expires_on'] ?? '', $r['student']['name']])
+            ->values();
+
+        return ApiResponse::success($rows, meta: ['total' => $rows->count(), 'students' => $rows->pluck('student.id')->unique()->count()]);
+    }
+
+    /**
      * GET /discount-codes/follow-ups — Students to add discount: every
      * enrollment that turned Completed and still waits for a code (oldest
      * finish first), plus the main codes that can be given now.

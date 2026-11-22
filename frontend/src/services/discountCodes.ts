@@ -205,3 +205,35 @@ export const discountFollowUpsService = {
   /** No discount for these: take them off the list. */
   skip: (enrollmentIds: number[]) => apiPost<{ skipped: number }>('/discount-codes/follow-ups/skip', { enrollment_ids: enrollmentIds }),
 }
+
+/** Invoices > Students with discount: one student holding a code usable today. */
+export interface StudentWithDiscount {
+  key: string
+  student: { id: number; student_code: string | null; name: string; phone: string | null }
+  /** Their studying courses. */
+  courses: { course?: string; class?: string }[]
+  code: {
+    id: number
+    code: string
+    /** The main code it was given from. */
+    main_id: number
+    main_code: string
+    name: string | null
+    discount_type: 'percent' | 'amount'
+    value: number
+    max_discount: number | null
+    currency: string | null
+    starts_on: string
+    expires_on: string | null
+  }
+  /** Times this student used it. */
+  uses: number
+  last_used_at: string | null
+}
+
+export const studentsWithDiscountService = {
+  async list(): Promise<{ rows: StudentWithDiscount[]; students: number }> {
+    const result = await apiGetWithMeta<StudentWithDiscount[]>('/discount-codes/students')
+    return { rows: result.data, students: Number((result.meta as { students?: number } | undefined)?.students ?? 0) }
+  },
+}

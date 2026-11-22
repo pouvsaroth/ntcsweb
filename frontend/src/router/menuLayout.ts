@@ -121,6 +121,7 @@ export const TAB_CATALOG: TabBar[] = [
     { to: '/admin/invoices', labelKey: 'admin.invoices.title', permission: 'invoices.view' },
     { to: '/admin/invoices/monthly', labelKey: 'admin.invoices.monthlyTab', permission: 'invoices.view' },
     { to: '/admin/invoices/discount-codes', labelKey: 'admin.discountCodes.tab', permission: 'discount-codes.view' },
+    { to: '/admin/invoices/discount-students', labelKey: 'admin.discountStudents.tab', permission: 'discount-codes.view' },
   ]),
   bar('adminNav.items.expenses', expenseTabs),
   bar('adminNav.groups.frontOffice', frontOfficeTabs),

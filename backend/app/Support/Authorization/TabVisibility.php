@@ -143,6 +143,7 @@ final class TabVisibility
         'hide-tab.invoices' => 'Invoices > Invoices',
         'hide-tab.invoices.monthly' => 'Invoices > Monthly Invoice',
         'hide-tab.invoices.discount-codes' => 'Invoices > Discount codes',
+        'hide-tab.invoices.discount-students' => 'Invoices > Students with discount',
         'hide-tab.borrowings.loans' => 'Borrowings > Loans',
         'hide-tab.borrowings.repayments' => 'Borrowings > Repayments',
         'hide-tab.borrowings.lenders' => 'Borrowings > Lenders',
