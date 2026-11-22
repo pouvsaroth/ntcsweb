@@ -11,6 +11,7 @@ use App\Services\Approvals\ApprovalFlow;
 use App\Services\Notifications\NotificationService;
 use App\Support\Authorization\Permissions;
 use App\Support\Notifications\NotificationType;
+use App\Support\Tenancy\TenantContext;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -27,6 +28,7 @@ final class MakeUpClassRequestService
     public function __construct(
         private readonly NotificationService $notifications,
         private readonly ApprovalFlow $flow,
+        private readonly TenantContext $context,
     ) {}
 
     /**
@@ -34,6 +36,15 @@ final class MakeUpClassRequestService
      */
     public function submit(Student $student, array $data): MakeUpClassRequest
     {
+        // Asked before the make-up class starts, never during or after it.
+        $now = Carbon::now($this->context->get()?->timezone ?: 'Asia/Phnom_Penh');
+        $starts = substr((string) $data['from_date'], 0, 10).' '.substr((string) $data['from_time'], 0, 5);
+        if ($now->format('Y-m-d H:i') >= $starts) {
+            throw ValidationException::withMessages([
+                'from_date' => __('Ask for a make-up class before it starts. This time has already started or passed.'),
+            ]);
+        }
+
         $request = DB::transaction(function () use ($student, $data) {
             // Serialises two submits from the same student so both can't
             // pass the overlap check below at once.

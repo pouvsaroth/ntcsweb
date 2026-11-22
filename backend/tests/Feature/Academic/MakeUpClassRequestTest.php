@@ -15,6 +15,7 @@ use App\Models\UserNotification;
 use App\Services\Academic\MakeUpClassRequestService;
 use App\Support\Authorization\Permissions;
 use App\Support\Notifications\NotificationType;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\HasAcademicAdmin;
 use Tests\TestCase;
@@ -22,6 +23,13 @@ use Tests\TestCase;
 class MakeUpClassRequestTest extends TestCase
 {
     use HasAcademicAdmin, RefreshDatabase;
+
+    /** 07:30 in Phnom Penh (00:30 UTC, the same date): today's 08:00 make-up class has not started yet. */
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->travelTo(CarbonImmutable::parse('2027-03-10 07:30', 'Asia/Phnom_Penh'));
+    }
 
     private function studentWithUser(): array
     {
@@ -127,7 +135,7 @@ class MakeUpClassRequestTest extends TestCase
 
         // A range of days that includes the booked day, same time.
         $this->postJson('/api/v1/my-make-up-class-requests', $this->withOverrides($payload, [
-            'from_date' => now()->subDay()->toDateString(),
+            'from_date' => now()->toDateString(),
             'to_date' => now()->addDay()->toDateString(),
         ]))->assertUnprocessable()->assertJsonValidationErrors(['from_time']);
 
@@ -369,5 +377,23 @@ class MakeUpClassRequestTest extends TestCase
             1,
             UserNotification::where('recipient_id', $studentUser->id)->where('type', NotificationType::MAKE_UP_CLASS_REQUEST_REJECTED)->count(),
         );
+    }
+
+    public function test_a_make_up_class_that_has_started_or_passed_cannot_be_asked_for(): void
+    {
+        $this->actingAsAdminWithPermissions([]);
+        [$student, $user] = $this->studentWithUser();
+        $payload = $this->payload($student);
+        $this->actingAsTenantUser($user);
+
+        // It is 07:30: a 07:00 class has started, yesterday's has passed.
+        foreach ([['from_time' => '07:00', 'to_time' => '09:00'], ['from_date' => now()->subDay()->toDateString(), 'to_date' => now()->subDay()->toDateString()]] as $override) {
+            $this->postJson('/api/v1/my-make-up-class-requests', $this->withOverrides($payload, $override))
+                ->assertUnprocessable()->assertJsonValidationErrors(['from_date']);
+        }
+        $this->assertSame(0, MakeUpClassRequest::where('student_id', $student->id)->count());
+
+        // 08:00 today is still ahead.
+        $this->postJson('/api/v1/my-make-up-class-requests', $payload)->assertCreated();
     }
 }

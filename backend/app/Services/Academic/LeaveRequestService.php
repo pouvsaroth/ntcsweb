@@ -73,6 +73,7 @@ final class LeaveRequestService
                 ]);
             }
 
+            $this->guardNotStarted($student, $data);
             $this->guardAbsenceLimit($student, $data['enrollment_id'] ?? null, $data['from_date'], $data['to_date']);
         }
 
@@ -466,6 +467,57 @@ final class LeaveRequestService
                 }
             })
             ->delete();
+    }
+
+    /**
+     * A student asks before class, never during or after it: no past date,
+     * and for today only until the class starts (the time in on the form,
+     * else the class's start time today). A day the class doesn't meet
+     * today can still be asked for.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function guardNotStarted(Student $student, array $data): void
+    {
+        $now = CarbonImmutable::now($this->context->get()?->timezone ?: 'Asia/Phnom_Penh');
+        $from = substr((string) $data['from_date'], 0, 10);
+        $refuse = fn () => throw ValidationException::withMessages([
+            'from_date' => __('Ask for permission before class starts. This class has already started or ended.'),
+        ]);
+
+        if ($from < $now->toDateString()) {
+            $refuse();
+        }
+        if ($from > $now->toDateString()) {
+            return;
+        }
+
+        $start = filled($data['from_time'] ?? null) ? substr((string) $data['from_time'], 0, 5) : $this->classStartToday($student, $data['enrollment_id'] ?? null, $now);
+        if ($start !== null && $now->format('H:i') >= $start) {
+            $refuse();
+        }
+    }
+
+    /** 'H:i' the student's class (this course, else any active one) starts today, or null when none meets today. */
+    private function classStartToday(Student $student, mixed $enrollmentId, CarbonImmutable $now): ?string
+    {
+        $enrollments = $student->enrollments()->active()
+            ->when($enrollmentId !== null, fn ($query) => $query->whereKey($enrollmentId))
+            ->with('transferHistories')
+            ->get();
+
+        $starts = [];
+        foreach ($enrollments as $enrollment) {
+            $classId = $enrollment->placementOn($now->toDateString())['class_id'];
+            $class = $classId !== null ? SchoolClass::query()->with('schedules')->find($classId) : null;
+            foreach ($class?->schedules ?? [] as $schedule) {
+                if ((int) $schedule->day_of_week === $now->isoWeekday()) {
+                    $starts[] = substr((string) $schedule->start_time, 0, 5);
+                }
+            }
+        }
+
+        return $starts === [] ? null : min($starts);
     }
 
     /** Missed hours (absent + permission + late) a student may reach; a request that would go above it is refused. */

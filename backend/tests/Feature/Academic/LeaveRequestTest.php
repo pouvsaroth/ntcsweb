@@ -21,6 +21,7 @@ use App\Support\Academic\AttendanceStatus;
 use App\Support\Authorization\Permissions;
 use App\Support\Notifications\NotificationType;
 use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -441,10 +442,52 @@ class LeaveRequestTest extends TestCase
 
     public function test_a_day_already_marked_absent_is_not_counted_twice(): void
     {
-        // 6 hours missed, then asking leave for one of those absent Mondays: still 6.
-        [, $enrollment] = $this->studentWhoMissed(0);
+        // 4 hours missed, and next Monday already marked absent (6): leave for that Monday stays at 6.
+        [, $enrollment] = $this->studentWhoMissed(0, [AttendanceStatus::ABSENT, AttendanceStatus::ABSENT]);
+        AttendanceRecord::factory()->forEnrollment($enrollment)
+            ->onDate(Carbon::now()->next(Carbon::MONDAY)->toDateString())->status(AttendanceStatus::ABSENT)->create();
 
-        $this->askForLeave($enrollment, date: Carbon::now()->previous(Carbon::MONDAY)->toDateString())->assertCreated();
+        $this->askForLeave($enrollment)->assertCreated();
+    }
+
+    /** A 2-hour class every day 18:00–20:00 (Phnom Penh), the student signed in. */
+    private function studentInAnEveningClass(): Enrollment
+    {
+        $this->actingAsAdminWithPermissions([]);
+        [$student, $user] = $this->studentWithUser();
+        $class = SchoolClass::factory()->create();
+        foreach (range(1, 7) as $day) {
+            ClassSchedule::factory()->forClass($class)->onDay($day)->at('18:00:00', '20:00:00')->create();
+        }
+        $enrollment = Enrollment::factory()->forClass($class)->forStudent($student)->create();
+        $this->actingAsTenantUser($user);
+
+        return $enrollment;
+    }
+
+    public function test_a_student_asks_before_class_starts_not_during_or_after_it(): void
+    {
+        // 17:30 in Phnom Penh (10:30 UTC, the same date).
+        $this->travelTo(CarbonImmutable::parse('2027-03-10 17:30', 'Asia/Phnom_Penh'));
+        $enrollment = $this->studentInAnEveningClass();
+        $today = '2027-03-10';
+
+        // Before today's 18:00 class: fine.
+        $this->askForLeave($enrollment, date: $today)->assertCreated();
+
+        // Yesterday: refused.
+        $this->askForLeave($enrollment, date: '2027-03-09')
+            ->assertUnprocessable()->assertJsonValidationErrors('from_date');
+
+        // During today's class, and after it: refused.
+        foreach (['2027-03-10 18:30', '2027-03-10 21:00'] as $time) {
+            $this->travelTo(CarbonImmutable::parse($time, 'Asia/Phnom_Penh'));
+            $this->askForLeave($enrollment, date: $today)
+                ->assertUnprocessable()->assertJsonValidationErrors('from_date');
+        }
+
+        // Tomorrow is still fine.
+        $this->askForLeave($enrollment, date: '2027-03-11')->assertCreated();
     }
 
     public function test_a_student_with_more_than_six_hours_absent_permission_and_late_cannot_ask_for_leave(): void
