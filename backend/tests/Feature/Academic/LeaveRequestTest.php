@@ -360,10 +360,11 @@ class LeaveRequestTest extends TestCase
     }
 
     /**
-     * A 2-hour Monday class: 2 absent + 1 permission = 6 hours missed, then
-     * $lateMinutes more on a late day.
+     * A 2-hour Monday class with these marks on past Mondays (2 hours each),
+     * then $lateMinutes more on a late day. The default is 2 absent + 1
+     * permission = 6 hours missed.
      */
-    private function studentWhoMissed(int $lateMinutes): array
+    private function studentWhoMissed(int $lateMinutes, array $marks = [AttendanceStatus::ABSENT, AttendanceStatus::ABSENT, AttendanceStatus::EXCUSED]): array
     {
         $this->actingAsAdminWithPermissions([]);
         [$student, $user] = $this->studentWithUser();
@@ -372,13 +373,13 @@ class LeaveRequestTest extends TestCase
         $enrollment = Enrollment::factory()->forClass($class)->forStudent($student)->create();
 
         $monday = Carbon::now()->previous(Carbon::MONDAY);
-        foreach ([AttendanceStatus::ABSENT, AttendanceStatus::ABSENT, AttendanceStatus::EXCUSED] as $weeksAgo => $status) {
+        foreach ($marks as $weeksAgo => $status) {
             AttendanceRecord::factory()->forEnrollment($enrollment)
                 ->onDate($monday->copy()->subWeeks($weeksAgo)->toDateString())->status($status)->create();
         }
         if ($lateMinutes > 0) {
             AttendanceRecord::factory()->forEnrollment($enrollment)
-                ->onDate($monday->copy()->subWeeks(3)->toDateString())->status(AttendanceStatus::LATE)
+                ->onDate($monday->copy()->subWeeks(count($marks))->toDateString())->status(AttendanceStatus::LATE)
                 ->create(['late_minutes' => $lateMinutes]);
         }
         $this->actingAsTenantUser($user);
@@ -386,30 +387,71 @@ class LeaveRequestTest extends TestCase
         return [$student, $enrollment];
     }
 
-    private function askForLeave(Enrollment $enrollment)
+    /** Leave for the Monday $weeksAhead weeks from now (a class day), or for any other day. */
+    private function askForLeave(Enrollment $enrollment, int $weeksAhead = 0, ?string $date = null)
     {
+        $date ??= Carbon::now()->next(Carbon::MONDAY)->addWeeks($weeksAhead)->toDateString();
+
         return $this->postJson('/api/v1/my-leave-requests', [
             'enrollment_id' => $enrollment->id,
-            'from_date' => Carbon::now()->next(Carbon::MONDAY)->toDateString(),
-            'to_date' => Carbon::now()->next(Carbon::MONDAY)->toDateString(),
+            'from_date' => $date,
+            'to_date' => $date,
             'reason' => 'Sick',
         ]);
     }
 
-    public function test_a_student_with_six_hours_missed_can_still_ask_for_leave(): void
+    private function assertAbsenceLimit($response): void
     {
+        $response->assertUnprocessable()
+            ->assertJsonPath('errors.absence_limit.0', 'អ្នកមិនអាចសច្បាប់បន្តបានទេ បើនៅតែបន្តអវត្តមានសាលានឹងបញ្ឈប់ការសិក្សាតែម្តង');
+    }
+
+    public function test_missed_hours_plus_the_requested_hours_may_reach_six_but_not_go_above(): void
+    {
+        // 4 hours missed + a 2-hour class day = 6: allowed.
+        [$student, $enrollment] = $this->studentWhoMissed(0, [AttendanceStatus::ABSENT, AttendanceStatus::ABSENT]);
+        $this->askForLeave($enrollment)->assertCreated();
+
+        // The waiting request counts too: 4 + 2 + 2 more = 8: refused.
+        $this->assertAbsenceLimit($this->askForLeave($enrollment, 1));
+        $this->assertSame(1, LeaveRequest::where('student_id', $student->id)->count());
+    }
+
+    public function test_four_hours_missed_and_a_request_for_four_more_is_refused(): void
+    {
+        // 4 hours missed, then two class days asked at once (2 + 2 hours) = 8: refused.
+        [$student, $enrollment] = $this->studentWhoMissed(0, [AttendanceStatus::ABSENT, AttendanceStatus::ABSENT]);
+        $this->assertAbsenceLimit($this->postJson('/api/v1/my-leave-requests', [
+            'enrollment_id' => $enrollment->id,
+            'from_date' => Carbon::now()->next(Carbon::MONDAY)->toDateString(),
+            'to_date' => Carbon::now()->next(Carbon::MONDAY)->addWeek()->toDateString(),
+            'reason' => 'Sick',
+        ]));
+        $this->assertSame(0, LeaveRequest::where('student_id', $student->id)->count());
+    }
+
+    public function test_a_student_with_six_hours_missed_cannot_ask_for_a_class_day_but_can_for_a_day_without_class(): void
+    {
+        [$student, $enrollment] = $this->studentWhoMissed(0);
+
+        $this->assertAbsenceLimit($this->askForLeave($enrollment));
+        // No class on Tuesday: nothing more would be missed.
+        $this->askForLeave($enrollment, date: Carbon::now()->next(Carbon::TUESDAY)->toDateString())->assertCreated();
+    }
+
+    public function test_a_day_already_marked_absent_is_not_counted_twice(): void
+    {
+        // 6 hours missed, then asking leave for one of those absent Mondays: still 6.
         [, $enrollment] = $this->studentWhoMissed(0);
 
-        $this->askForLeave($enrollment)->assertCreated();
+        $this->askForLeave($enrollment, date: Carbon::now()->previous(Carbon::MONDAY)->toDateString())->assertCreated();
     }
 
     public function test_a_student_with_more_than_six_hours_absent_permission_and_late_cannot_ask_for_leave(): void
     {
         [$student, $enrollment] = $this->studentWhoMissed(30);
 
-        $this->askForLeave($enrollment)
-            ->assertUnprocessable()
-            ->assertJsonPath('errors.absence_limit.0', 'អ្នកមិនអាចសច្បាប់បន្តបានទេ បើនៅតែបន្តអវត្តមានសាលានឹងបញ្ឈប់ការសិក្សាតែម្តង');
+        $this->assertAbsenceLimit($this->askForLeave($enrollment, date: Carbon::now()->next(Carbon::TUESDAY)->toDateString()));
         $this->assertSame(0, LeaveRequest::where('student_id', $student->id)->count());
     }
 }

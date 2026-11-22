@@ -19,6 +19,7 @@ use App\Support\Academic\AttendanceStatus;
 use App\Support\Authorization\Permissions;
 use App\Support\Notifications\NotificationType;
 use App\Support\Tenancy\TenantContext;
+use Carbon\CarbonImmutable;
 use Carbon\CarbonPeriod;
 use Illuminate\Support\Collection;
 use Illuminate\Http\UploadedFile;
@@ -72,7 +73,7 @@ final class LeaveRequestService
                 ]);
             }
 
-            $this->guardAbsenceLimit($student, $data['enrollment_id'] ?? null);
+            $this->guardAbsenceLimit($student, $data['enrollment_id'] ?? null, $data['from_date'], $data['to_date']);
         }
 
         $request = DB::transaction(function () use ($student, $staff, $data, $byHr) {
@@ -467,16 +468,18 @@ final class LeaveRequestService
             ->delete();
     }
 
-    /** Missed hours (absent + permission + late) above which a student may not ask for more leave. */
+    /** Missed hours (absent + permission + late) a student may reach; a request that would go above it is refused. */
     public const STUDENT_ABSENCE_LIMIT_HOURS = 6;
 
     /**
-     * Refuse a student's request once the course they picked already has
-     * more than STUDENT_ABSENCE_LIMIT_HOURS missed — absent + permission
-     * sessions plus late minutes, the same total as the home screen's
-     * "absent hours" card (MyAttendanceController::hoursSummary()).
+     * Refuse a student's request when the course they picked would go above
+     * STUDENT_ABSENCE_LIMIT_HOURS missed: what is already missed — absent +
+     * permission sessions plus late minutes, the same total as the home
+     * screen's "absent hours" card (MyAttendanceController::hoursSummary()) —
+     * plus the class hours this request and their other waiting requests
+     * would excuse. E.g. 4 hours missed + a 3-hour request = 7: refused.
      */
-    private function guardAbsenceLimit(Student $student, mixed $enrollmentId): void
+    private function guardAbsenceLimit(Student $student, mixed $enrollmentId, string $from, string $to): void
     {
         if ($enrollmentId === null) {
             return;
@@ -490,12 +493,82 @@ final class LeaveRequestService
         }
 
         $missed = $row['permission_hours'] + $row['absent_hours'] + $row['late_minutes'] / 60;
+        $asked = $this->requestedMinutes($student, (int) $enrollmentId, $from, $to) / 60;
 
-        if ($missed > self::STUDENT_ABSENCE_LIMIT_HOURS) {
+        if ($missed + $asked > self::STUDENT_ABSENCE_LIMIT_HOURS + 0.001) {
             throw ValidationException::withMessages([
                 'absence_limit' => 'អ្នកមិនអាចសច្បាប់បន្តបានទេ បើនៅតែបន្តអវត្តមានសាលានឹងបញ្ឈប់ការសិក្សាតែម្តង',
             ]);
         }
+    }
+
+    /**
+     * Class minutes a new request (from–to) and the student's waiting
+     * requests for this course would excuse once approved, counted as
+     * applyToAttendance() marks them: each date once, only days the class
+     * meets, not holidays, and not days already marked Absent or Excused
+     * (those are already in the missed hours).
+     */
+    private function requestedMinutes(Student $student, int $enrollmentId, string $from, string $to): int
+    {
+        $enrollment = $student->enrollments()->with('transferHistories')->whereKey($enrollmentId)->first();
+        if ($enrollment === null) {
+            return 0;
+        }
+
+        $ranges = LeaveRequest::query()
+            ->where('student_id', $student->id)
+            ->where('enrollment_id', $enrollmentId)
+            ->where('status', LeaveRequest::STATUS_PENDING)
+            ->get(['from_date', 'to_date'])
+            ->map(fn (LeaveRequest $r) => [$r->from_date->toDateString(), $r->to_date->toDateString()])
+            ->push([substr($from, 0, 10), substr($to, 0, 10)]);
+
+        $dates = [];
+        foreach ($ranges as [$start, $end]) {
+            if ($end < $start || CarbonPeriod::create($start, $end)->count() > 366) {
+                continue;
+            }
+            $holidays = $this->holidayDates($start, $end);
+            foreach ($this->datesBetween($start, $end) as $date) {
+                if (! in_array($date, $holidays, true)) {
+                    $dates[$date] = true;
+                }
+            }
+        }
+        if ($dates === []) {
+            return 0;
+        }
+
+        $alreadyMissed = AttendanceRecord::query()
+            ->where('enrollment_id', $enrollmentId)
+            ->whereIn('status', [AttendanceStatus::ABSENT, AttendanceStatus::EXCUSED])
+            ->whereIn('date', array_keys($dates))
+            ->pluck('date')
+            ->map(fn ($date) => substr((string) $date, 0, 10))
+            ->all();
+
+        /** @var array<int, SchoolClass|null> $classes */
+        $classes = [];
+        $minutes = 0;
+        foreach (array_keys($dates) as $date) {
+            if (in_array($date, $alreadyMissed, true)) {
+                continue;
+            }
+            // The class the student was in that day, if it meets that weekday.
+            $classId = $enrollment->placementOn($date)['class_id'];
+            if ($classId === null) {
+                continue;
+            }
+            $class = $classes[$classId] ??= SchoolClass::query()->with('schedules')->find($classId);
+            $weekday = CarbonImmutable::parse($date)->isoWeekday();
+            if ($class === null || ! in_array($weekday, $class->schedules->pluck('day_of_week')->all(), true)) {
+                continue;
+            }
+            $minutes += $class->minutesOn($weekday);
+        }
+
+        return $minutes;
     }
 
     /**
