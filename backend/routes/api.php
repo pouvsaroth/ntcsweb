@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\Admin\FundController;
 use App\Http\Controllers\Api\V1\Admin\FundProviderController;
 use App\Http\Controllers\Api\V1\Admin\FundTypeController;
 use App\Http\Controllers\Api\V1\Admin\FundReportController;
+use App\Http\Controllers\Api\V1\Admin\FundProvidersByMonthController;
 use App\Support\Staff\StaffRecordKinds;
 use App\Http\Controllers\Api\V1\Admin\AcademicProgramController;
 use App\Http\Controllers\Api\V1\Admin\AcademicReportController;
@@ -1071,6 +1072,9 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('funds/staff-options', [FundController::class, 'staffOptions'])->name('funds.staff-options');
         // Fund > Reports: in / out and balances for a period, by type and by fund.
         Route::get('fund-reports', FundReportController::class)->name('fund-reports.index');
+        // Fund > Providers by month: money in per provider / staff member, one column per month.
+        Route::get('fund-reports/providers-by-month', [FundProvidersByMonthController::class, 'index'])->name('fund-reports.providers-by-month');
+        Route::get('fund-reports/providers-by-month/excel', [FundProvidersByMonthController::class, 'excel'])->name('fund-reports.providers-by-month.excel');
         Route::apiResource('funds', FundController::class);
         // Fund > Providers: the people who give money to the funds.
         Route::apiResource('fund-providers', FundProviderController::class);

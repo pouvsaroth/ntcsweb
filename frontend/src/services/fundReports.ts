@@ -1,4 +1,4 @@
-import { apiGet } from '@/services/http'
+import { apiDownload, apiGet } from '@/services/http'
 
 type Currency = 'USD' | 'KHR'
 
@@ -63,4 +63,58 @@ export interface FundReport {
 
 export const fundReportsService = {
   get: (params: { from?: string; to?: string; fund_type?: string }) => apiGet<FundReport>('/fund-reports', { params }),
+}
+
+// Fund > Providers by month: money in per provider / staff member, one
+// column per month (by For month; without one, the month of its date).
+
+export interface FundProvidersByMonthRow {
+  key: string
+  provider_id: number | null
+  staff_id: number | null
+  code: string | null
+  /** null: money in saved without a provider or staff member. */
+  name: string | null
+  currency: Currency
+  /** 'YYYY-MM' -> amount, every month of the period. */
+  months: Record<string, number>
+  total: number
+  entries: number
+}
+
+export interface FundProvidersByMonthTotal {
+  currency: Currency
+  months: Record<string, number>
+  total: number
+  /** Named providers / staff with money in. */
+  people: number
+}
+
+export interface FundProvidersByMonth {
+  from_month: string
+  to_month: string
+  months: string[]
+  rows: FundProvidersByMonthRow[]
+  /** One per currency, USD first. */
+  totals: FundProvidersByMonthTotal[]
+}
+
+/** who: '' everyone, 'providers', 'staff', 'provider:<id>', 'staff:<id>'. */
+export interface FundProvidersByMonthFilters {
+  from_month?: string
+  to_month?: string
+  who?: string
+  fund_type?: string
+}
+
+const byMonthParams = (filters: FundProvidersByMonthFilters): Record<string, string> =>
+  Object.fromEntries(Object.entries(filters).filter(([, v]) => v)) as Record<string, string>
+
+export const fundProvidersByMonthService = {
+  get: (filters: FundProvidersByMonthFilters) => apiGet<FundProvidersByMonth>('/fund-reports/providers-by-month', { params: byMonthParams(filters) }),
+  excel: (filters: FundProvidersByMonthFilters) =>
+    apiDownload(
+      `/fund-reports/providers-by-month/excel?${new URLSearchParams(byMonthParams(filters)).toString()}`,
+      `fund-providers-by-month-${new Date().toISOString().slice(0, 10)}.xlsx`,
+    ),
 }

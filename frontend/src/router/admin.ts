@@ -1160,6 +1160,13 @@ const adminRoutes: RouteRecordRaw[] = [
     meta: { permission: 'funds.view', titleKey: 'admin.fundReports.title' },
   },
   {
+    // Fund > Providers by month: money in per provider / staff member, one column per month.
+    path: 'fund-providers-by-month',
+    name: 'admin.fund-providers-by-month',
+    component: () => import('@/pages/admin/fund/FundProvidersByMonth.vue'),
+    meta: { permission: 'funds.view', titleKey: 'admin.fundByMonth.title' },
+  },
+  {
     // Loan > Savings: accounts list, and one account statement (print).
     path: 'savings',
     name: 'admin.savings',
