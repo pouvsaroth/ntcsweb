@@ -82,16 +82,17 @@ const typeRows = computed(() => {
 
 // By provider: money in in USD and in KHR, whatever the fund's currency.
 const providerRows = computed(() => {
-  const byProvider = new Map<string, { key: string; provider_id: number | null; code: string | null; name: string | null; entries: number; money_in_usd: number; money_in_khr: number }>()
+  // A provider or a staff member (HRM > Staff); no one named as one row.
+  const byProvider = new Map<string, { key: string; named: boolean; staff: boolean; code: string | null; name: string | null; entries: number; money_in_usd: number; money_in_khr: number }>()
   for (const row of report.value?.providers ?? []) {
-    const key = String(row.provider_id ?? 'none')
-    const into = byProvider.get(key) ?? { key, provider_id: row.provider_id, code: row.code, name: row.name, entries: 0, money_in_usd: 0, money_in_khr: 0 }
+    const key = row.provider_id !== null ? `p${row.provider_id}` : row.staff_id != null ? `s${row.staff_id}` : 'none'
+    const into = byProvider.get(key) ?? { key, named: key !== 'none', staff: key.startsWith('s'), code: row.code, name: row.name, entries: 0, money_in_usd: 0, money_in_khr: 0 }
     into.entries += row.entries
     into.money_in_usd += row.money_in_usd
     into.money_in_khr += row.money_in_khr
     byProvider.set(key, into)
   }
-  return [...byProvider.values()].sort((a, b) => Number(a.provider_id === null) - Number(b.provider_id === null) || b.money_in_usd - a.money_in_usd)
+  return [...byProvider.values()].sort((a, b) => Number(!a.named) - Number(!b.named) || b.money_in_usd - a.money_in_usd)
 })
 
 const goal = (target: number | null, closing: number) => (target ? `${Math.max(0, Math.min(100, Math.round((closing / target) * 100)))}%` : '')
@@ -248,7 +249,7 @@ onMounted(() => {
             <div class="space-y-2 sm:hidden print:hidden">
               <div v-for="row in providerRows" :key="row.key" class="rounded-lg border border-neutral-200 bg-white p-3 text-sm">
                 <div class="flex justify-between gap-2">
-                  <p class="font-medium text-neutral-900">{{ row.name ?? t('admin.fundReports.noProvider') }}</p>
+                  <p class="font-medium text-neutral-900">{{ row.name ?? t('admin.fundReports.noProvider') }}<span v-if="row.staff" class="ml-1 text-xs font-normal text-neutral-500">({{ t('admin.funds.staffTag') }})</span></p>
                   <p class="text-right font-semibold tabular-nums text-green-700">{{ formatMoney(row.money_in_usd, 'USD') }}<br />{{ formatMoney(row.money_in_khr, 'KHR') }}</p>
                 </div>
                 <p class="mt-1 text-xs text-neutral-500"><template v-if="row.code">{{ row.code }} · </template>{{ t('admin.fundReports.timesGiven', { n: row.entries }) }}</p>
@@ -268,7 +269,9 @@ onMounted(() => {
                 <tbody class="divide-y divide-neutral-100">
                   <tr v-for="row in providerRows" :key="row.key">
                     <td class="px-4 py-2 tabular-nums text-neutral-600">{{ row.code ?? '—' }}</td>
-                    <td class="px-4 py-2" :class="row.name ? '' : 'italic text-neutral-500'">{{ row.name ?? t('admin.fundReports.noProvider') }}</td>
+                    <td class="px-4 py-2" :class="row.name ? '' : 'italic text-neutral-500'">
+                      {{ row.name ?? t('admin.fundReports.noProvider') }}<span v-if="row.staff" class="ml-1 text-xs text-neutral-500">({{ t('admin.funds.staffTag') }})</span>
+                    </td>
                     <td class="px-4 py-2 text-right tabular-nums">{{ row.entries }}</td>
                     <td class="whitespace-nowrap px-4 py-2 text-right font-semibold tabular-nums text-green-700">{{ formatMoney(row.money_in_usd, 'USD') }}</td>
                     <td class="whitespace-nowrap px-4 py-2 text-right font-semibold tabular-nums text-green-700">{{ formatMoney(row.money_in_khr, 'KHR') }}</td>

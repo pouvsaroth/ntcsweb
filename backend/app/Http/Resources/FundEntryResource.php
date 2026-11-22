@@ -25,6 +25,8 @@ class FundEntryResource extends JsonResource
             'for_month' => $this->for_month?->format('Y-m'),
             'party' => $this->party,
             'fund_provider_id' => $this->fund_provider_id,
+            // Money in from a staff member (HRM > Staff).
+            'staff_id' => $this->staff_id,
             'remark' => $this->remark,
             'cash_account' => $this->whenLoaded('cashAccount', fn () => $this->cashAccount ? ['id' => $this->cashAccount->id, 'code' => $this->cashAccount->code, 'name' => $this->cashAccount->name] : null),
             'created_by' => $this->whenLoaded('creator', fn () => $this->creator?->name),

@@ -12,7 +12,7 @@ import BaseSelect from '@/components/ui/BaseSelect.vue'
 import LookupSelect from '@/components/ui/LookupSelect.vue'
 import SearchableSelect from '@/components/ui/SearchableSelect.vue'
 import { accountsService, type Account } from '@/services/accounting'
-import { fundsService, type Fund, type FundCurrency, type NewFundType } from '@/services/funds'
+import { fundsService, providedByIds, type Fund, type FundCurrency, type NewFundType } from '@/services/funds'
 import { useAuthStore } from '@/stores/auth'
 import { ApiRequestError } from '@/types/api'
 
@@ -58,7 +58,7 @@ const form = reactive({
   opening_amount: '',
   cash_account_id: '',
   party: '',
-  fund_provider_id: '',
+  provided_by: '',
   remark: '',
 })
 const errors = ref<Record<string, string[]>>({})
@@ -80,7 +80,7 @@ watch(
       opening_amount: '',
       cash_account_id: '',
       party: '',
-      fund_provider_id: '',
+      provided_by: '',
       remark: '',
     })
     errors.value = {}
@@ -122,7 +122,8 @@ async function save() {
         opening_amount: hasOpening ? opening : null,
         cash_account_id: hasOpening && form.cash_account_id ? Number(form.cash_account_id) : null,
         party: null,
-        fund_provider_id: hasOpening && form.fund_provider_id ? Number(form.fund_provider_id) : null,
+        // A staff member (HRM > Staff) or a provider (Fund > Providers).
+        ...providedByIds(hasOpening ? form.provided_by : ''),
         remark: hasOpening ? form.remark.trim() || null : null,
       })
     }
@@ -173,7 +174,7 @@ async function save() {
             :placeholder="t('admin.funds.selectAccount')"
             :error="errors.cash_account_id?.[0]"
           />
-          <FundProviderPicker v-model="form.fund_provider_id" :error="errors.fund_provider_id?.[0]" />
+          <FundProviderPicker v-model="form.provided_by" :error="errors.fund_provider_id?.[0] ?? errors.staff_id?.[0]" />
           <BaseInput v-model="form.remark" :label="t('admin.funds.remark')" :error="errors.remark?.[0]" />
         </div>
       </div>

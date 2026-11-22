@@ -12,6 +12,7 @@ use App\Models\Fund;
 use App\Models\FundProvider;
 use App\Models\FundTransaction;
 use App\Models\LookupValue;
+use App\Models\Staff;
 use App\Services\Fund\FundService;
 use App\Support\Query\ApiQuery;
 use Closure;
@@ -82,12 +83,13 @@ final class FundController extends Controller
             'cash_account_id' => ['required_with:opening_amount', 'nullable', 'integer', $this->cashAccountRule()],
             'party' => ['nullable', 'string', 'max:255'],
             'fund_provider_id' => ['nullable', 'integer', $this->providerRule()],
+            'staff_id' => ['nullable', 'integer', 'prohibits:fund_provider_id', $this->staffRule()],
             'remark' => ['nullable', 'string', 'max:500'],
         ]);
         $data = $this->withProvider($data);
 
         $opening = isset($data['opening_amount'])
-            ? ['amount' => $data['opening_amount'], 'cash_account_id' => (int) $data['cash_account_id'], 'party' => $data['party'] ?? null, 'fund_provider_id' => $data['fund_provider_id'] ?? null, 'remark' => $data['remark'] ?? null]
+            ? ['amount' => $data['opening_amount'], 'cash_account_id' => (int) $data['cash_account_id'], 'party' => $data['party'] ?? null, 'fund_provider_id' => $data['fund_provider_id'] ?? null, 'staff_id' => $data['staff_id'] ?? null, 'remark' => $data['remark'] ?? null]
             : null;
         $fund = $this->funds->create(collect($data)->only(['name', 'fund_type', 'currency', 'opened_on', 'target_amount', 'description'])->all(), $opening, $request->user());
 
@@ -147,8 +149,9 @@ final class FundController extends Controller
             'for_month' => ['nullable', 'date_format:Y-m'],
             'cash_account_id' => ['required', 'integer', $this->cashAccountRule()],
             'party' => ['nullable', 'string', 'max:255'],
-            // Money in only: a provider from Fund > Providers.
+            // Money in only: a provider from Fund > Providers, or a staff member from HRM > Staff.
             'fund_provider_id' => ['nullable', 'integer', 'prohibited_if:type,out', $this->providerRule()],
+            'staff_id' => ['nullable', 'integer', 'prohibited_if:type,out', 'prohibits:fund_provider_id', $this->staffRule()],
             'remark' => ['nullable', 'string', 'max:500'],
         ]);
 
@@ -173,6 +176,7 @@ final class FundController extends Controller
             'entries.*.cash_account_id' => ['required', 'integer', $this->cashAccountRule()],
             'entries.*.party' => ['nullable', 'string', 'max:255'],
             'entries.*.fund_provider_id' => ['nullable', 'integer', $this->providerRule()],
+            'entries.*.staff_id' => ['nullable', 'integer', 'prohibits:entries.*.fund_provider_id', $this->staffRule()],
             'entries.*.remark' => ['nullable', 'string', 'max:500'],
         ]);
 
@@ -182,6 +186,27 @@ final class FundController extends Controller
         return ApiResponse::created(['count' => count($saved), 'fund' => $this->full($fund)]);
     }
 
+    /**
+     * "Provided by": active staff (HRM > Staff), for the box that lists them
+     * with Fund > Providers.
+     */
+    public function staffOptions(): JsonResponse
+    {
+        $this->authorize('viewAny', Fund::class);
+
+        $staff = Staff::query()->active()->orderBy('first_name')->orderBy('last_name')
+            ->get(['id', 'first_name', 'last_name', 'employee_code'])
+            ->map(fn (Staff $s) => ['id' => $s->id, 'name' => $s->fullName(), 'employee_code' => $s->employee_code]);
+
+        return ApiResponse::success($staff);
+    }
+
+    /** An active staff member who is not deleted. */
+    private function staffRule(): Exists
+    {
+        return Rule::exists('tenant.staff', 'id')->where('status', Staff::STATUS_ACTIVE)->whereNull('deleted_at');
+    }
+
     /** An active provider. */
     private function providerRule(): Exists
     {
@@ -189,7 +214,7 @@ final class FundController extends Controller
     }
 
     /**
-     * A picked provider's name goes into `party` (the "from" on statements).
+     * A picked provider's or staff member's name goes into `party` (the "from" on statements).
      *
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
@@ -198,6 +223,8 @@ final class FundController extends Controller
     {
         if (! empty($data['fund_provider_id'])) {
             $data['party'] = FundProvider::query()->whereKey($data['fund_provider_id'])->value('name');
+        } elseif (! empty($data['staff_id'])) {
+            $data['party'] = Staff::query()->find($data['staff_id'])?->fullName();
         }
 
         return $data;

@@ -1065,6 +1065,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
 
         // Fund > Funds: pots of the school's money; money in / out posts to the ledger.
         Route::get('funds/summary', [FundController::class, 'summary'])->name('funds.summary');
+        // "Provided by": HRM > Staff, listed with Fund > Providers.
+        Route::get('funds/staff-options', [FundController::class, 'staffOptions'])->name('funds.staff-options');
         // Fund > Reports: in / out and balances for a period, by type and by fund.
         Route::get('fund-reports', FundReportController::class)->name('fund-reports.index');
         Route::apiResource('funds', FundController::class);

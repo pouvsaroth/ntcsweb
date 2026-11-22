@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * Tenant-owned. Fund > Funds: one money in or money out, with who it came
  * from / was paid to (`party`) and a remark.
  */
-#[Fillable(['fund_id', 'type', 'amount', 'transacted_on', 'for_month', 'party', 'fund_provider_id', 'remark', 'cash_account_id', 'transaction_id', 'created_by'])]
+#[Fillable(['fund_id', 'type', 'amount', 'transacted_on', 'for_month', 'party', 'fund_provider_id', 'staff_id', 'remark', 'cash_account_id', 'transaction_id', 'created_by'])]
 class FundTransaction extends Model
 {
     use Auditable;
@@ -55,6 +55,16 @@ class FundTransaction extends Model
     public function provider(): BelongsTo
     {
         return $this->belongsTo(FundProvider::class, 'fund_provider_id');
+    }
+
+    /**
+     * Money in: the staff member picked (HRM > Staff; their name is also in `party`).
+     *
+     * @return BelongsTo<Staff, $this>
+     */
+    public function staff(): BelongsTo
+    {
+        return $this->belongsTo(Staff::class);
     }
 
     /** @return BelongsTo<Account, $this> */

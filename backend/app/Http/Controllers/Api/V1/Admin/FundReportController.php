@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\DB;
  * Fund > Reports: for a period, per currency (USD and KHR never added
  * together): balance at the start, money in, money out and balance at the
  * end, then the same by fund type and by fund, and money in by provider
- * (Fund > Providers). Optional fund type filter.
+ * (Fund > Providers) or staff member (HRM > Staff). Optional fund type filter.
  *
  * Every figure also comes as `<field>_usd` and `<field>_khr`, so USD and
  * KHR funds can be read (and added up, in `all`) side by side: money in and
@@ -145,27 +145,37 @@ final class FundReportController extends Controller
         $types = array_map($round, array_values($types));
         usort($types, fn ($a, $b) => [$a['currency'], -$a['closing']] <=> [$b['currency'], -$b['closing']]);
 
-        // Money in during the period by who provided it (unnamed money in as one row).
+        // Money in during the period by who provided it: a provider (Fund >
+        // Providers) or a staff member (HRM > Staff); unnamed money in as one row.
         $providers = FundTransaction::query()
             ->join('funds', 'funds.id', '=', 'fund_transactions.fund_id')
             ->leftJoin('fund_providers', 'fund_providers.id', '=', 'fund_transactions.fund_provider_id')
+            ->leftJoin('staff', 'staff.id', '=', 'fund_transactions.staff_id')
             ->where('fund_transactions.type', FundTransaction::IN)
             ->whereBetween('fund_transactions.transacted_on', [$from, $to])
             ->when($data['fund_type'] ?? null, fn ($q, $type) => $q->where('funds.fund_type', $type))
-            ->groupBy('fund_providers.id', 'fund_providers.code', 'fund_providers.name', 'funds.currency', 'fund_transactions.transacted_on')
+            ->groupBy(
+                'fund_providers.id', 'fund_providers.code', 'fund_providers.name',
+                'staff.id', 'staff.employee_code', 'staff.first_name', 'staff.last_name',
+                'funds.currency', 'fund_transactions.transacted_on',
+            )
             ->get([
-                'fund_providers.id', 'fund_providers.code', 'fund_providers.name', 'funds.currency', 'fund_transactions.transacted_on',
+                'fund_providers.id', 'fund_providers.code', 'fund_providers.name',
+                'staff.id as staff_id', 'staff.employee_code', 'staff.first_name', 'staff.last_name',
+                'funds.currency', 'fund_transactions.transacted_on',
                 DB::raw('COUNT(*) as entries'), DB::raw('SUM(fund_transactions.amount) as money_in'),
             ])
-            ->groupBy(fn ($r) => ($r->id ?? 'none').'|'.$r->currency)
+            ->groupBy(fn ($r) => ($r->id !== null ? 'p'.$r->id : ($r->staff_id !== null ? 's'.$r->staff_id : 'none')).'|'.$r->currency)
             ->map(function ($days) {
                 $first = $days->first();
                 $pairs = $days->map(fn ($d) => Money::pairOn($d->money_in, $d->currency, Carbon::parse($d->transacted_on)->toDateString()));
+                $isStaff = $first->id === null && $first->staff_id !== null;
 
                 return [
                     'provider_id' => $first->id !== null ? (int) $first->id : null,
-                    'code' => $first->code,
-                    'name' => $first->name,
+                    'staff_id' => $isStaff ? (int) $first->staff_id : null,
+                    'code' => $isStaff ? $first->employee_code : $first->code,
+                    'name' => $isStaff ? trim("{$first->first_name} {$first->last_name}") : $first->name,
                     'currency' => $first->currency,
                     'entries' => (int) $days->sum('entries'),
                     'money_in' => round((float) $days->sum('money_in'), 2),
@@ -173,7 +183,7 @@ final class FundReportController extends Controller
                     'money_in_khr' => round((float) $pairs->sum(fn ($p) => $p['KHR'] ?? 0)),
                 ];
             })
-            ->sortBy(fn ($r) => [$r['currency'], $r['provider_id'] === null ? 1 : 0, -$r['money_in']])
+            ->sortBy(fn ($r) => [$r['currency'], $r['provider_id'] === null && $r['staff_id'] === null ? 1 : 0, -$r['money_in']])
             ->values()
             ->all();
 

@@ -36,9 +36,11 @@ export interface FundReportFund extends FundReportMoney, FundReportBoth {
   target_amount: number | null
 }
 
-/** Money in during the period by who gave it; provider_id null = money in with no provider named. */
+/** Money in during the period by who gave it: a provider or a staff member; both null = no one named. */
 export interface FundReportProvider {
   provider_id: number | null
+  /** A staff member (HRM > Staff); `code` is then their employee code. */
+  staff_id: number | null
   code: string | null
   name: string | null
   currency: Currency

@@ -7516,7 +7516,7 @@ const zh: MessageSchema = {
     },
     funds: {
       newType: '+ 新基金类型', newTypeTitle: '新基金类型', typeNameEn: '名称（英文）', typeNameKm: '名称（高棉文）', typeNameKmHint: '留空则使用英文名称。', typeSaveFailed: '无法添加基金类型。',
-      providedBy: '提供者', selectProvider: '选择提供者', newProvider: '+ 新提供者',
+      providedBy: '提供者', staffTag: '员工', selectProvider: '选择提供者', newProvider: '+ 新提供者',
       forMonth: '所属月份', filterMonth: '月份', allMonths: '全部月份', select: '选择', selectAllIn: '全选收入', copyPicked: '复制 ({n})', copyTip: '勾选收入行，然后点击复制，即可为其他月份再次录入。', copyTitle: '复制收入 — {name}', copyHint: '上方的付款日期和所属月份会应用到每一行。可修改金额、日期或月份，或删除行，然后保存。', payDate: '付款日期', copyEmpty: '没有可保存的行。', copyTotal: '{n} 笔合计', copySave: '保存 {n} 笔',
       title: '基金',
       subtitle: '单独存放的学校资金，例如建设基金或奖学金基金。资金进出记入账目。',

@@ -7521,7 +7521,7 @@ const en = {
     },
     funds: {
       newType: '+ New fund type', newTypeTitle: 'New fund type', typeNameEn: 'Name (English)', typeNameKm: 'Name (Khmer)', typeNameKmHint: 'Left empty, the English name is used.', typeSaveFailed: 'Could not add the fund type.',
-      providedBy: 'Provided by', selectProvider: 'Select a provider', newProvider: '+ New provider',
+      providedBy: 'Provided by', staffTag: 'Staff', selectProvider: 'Select staff or a provider', newProvider: '+ New provider',
       forMonth: 'For month', filterMonth: 'Month', allMonths: 'All months', select: 'Select', selectAllIn: 'Select all money in', copyPicked: 'Copy ({n})', copyTip: 'Tick money in rows, then Copy to add them again for another month.', copyTitle: 'Copy money in — {name}', copyHint: 'Pay date and For month above set every row. Change any amount, date or month, remove a row, then Save.', payDate: 'Pay date', copyEmpty: 'No rows left to save.', copyTotal: 'Total of {n}', copySave: 'Save {n}',
       title: 'Funds',
       subtitle: 'Separate pots of school money, such as a Building or Scholarship fund. Money in and out goes to the accounts.',

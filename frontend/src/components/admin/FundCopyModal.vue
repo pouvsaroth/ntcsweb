@@ -28,6 +28,7 @@ interface Row {
   key: number
   party: string
   fund_provider_id: number | null
+  staff_id: number | null
   amount: string
   transacted_on: string
   for_month: string
@@ -75,6 +76,7 @@ watch(
       key: i,
       party: entry.party ?? '',
       fund_provider_id: entry.fund_provider_id ?? null,
+      staff_id: entry.staff_id ?? null,
       amount: String(entry.amount),
       transacted_on: all.transacted_on,
       for_month: all.for_month,
@@ -115,9 +117,10 @@ async function save() {
         transacted_on: row.transacted_on,
         for_month: row.for_month,
         cash_account_id: Number(all.cash_account_id),
-        // A provider keeps their link; a typed "from" stays as text.
+        // A provider or staff member keeps their link; a typed "from" stays as text.
         fund_provider_id: row.fund_provider_id,
-        party: row.fund_provider_id ? null : row.party.trim() || null,
+        staff_id: row.fund_provider_id ? null : row.staff_id,
+        party: row.fund_provider_id || row.staff_id ? null : row.party.trim() || null,
         remark: row.remark.trim() || null,
       })),
     )

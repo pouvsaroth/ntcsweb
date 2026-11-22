@@ -19,6 +19,8 @@ export interface FundEntry {
   party: string | null
   /** Money in: the provider picked (Fund > Providers); their name is in `party`. */
   fund_provider_id?: number | null
+  /** Money in: the staff member picked (HRM > Staff); their name is in `party`. */
+  staff_id?: number | null
   remark: string | null
   cash_account: { id: number; code: string; name: string } | null
   created_by?: string | null
@@ -84,6 +86,7 @@ export interface CreateFundInput extends FundInput {
   cash_account_id: number | null
   party: string | null
   fund_provider_id: number | null
+  staff_id: number | null
   remark: string | null
 }
 
@@ -104,6 +107,7 @@ export interface FundEntryInput {
   party: string | null
   /** Money in only. */
   fund_provider_id?: number | null
+  staff_id?: number | null
   remark: string | null
 }
 
@@ -115,10 +119,38 @@ export interface FundCopyRow {
   cash_account_id: number
   party: string | null
   fund_provider_id: number | null
+  staff_id: number | null
   remark: string | null
 }
 
+/** "Provided by": a staff member from HRM > Staff. */
+export interface FundStaffOption {
+  id: number
+  name: string
+  employee_code: string | null
+}
+
+/**
+ * "Provided by" picks a staff member or a provider; the box's value is
+ * 'staff:12' or 'provider:3' ('' = none). These turn it into the API's ids.
+ */
+export function providedByIds(value: string): { fund_provider_id: number | null; staff_id: number | null } {
+  const [kind, id] = value.split(':')
+  return {
+    fund_provider_id: kind === 'provider' && id ? Number(id) : null,
+    staff_id: kind === 'staff' && id ? Number(id) : null,
+  }
+}
+
+export function providedByValue(entry: { fund_provider_id?: number | null; staff_id?: number | null }): string {
+  if (entry.fund_provider_id) return `provider:${entry.fund_provider_id}`
+  if (entry.staff_id) return `staff:${entry.staff_id}`
+  return ''
+}
+
 export const fundsService = {
+  /** "Provided by": active staff (HRM > Staff). */
+  staffOptions: () => apiGet<FundStaffOption[]>('/funds/staff-options'),
   /** The "+" beside Fund type: add a FUND_TYPE Base Data value (needs Add funds). */
   addType: (input: { name: string; name_km: string | null }) => apiPost<NewFundType>('/fund-types', input),
   async list(query: PaginatedQuery): Promise<PaginatedResult<Fund>> {

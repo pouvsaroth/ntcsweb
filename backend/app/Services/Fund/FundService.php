@@ -34,7 +34,7 @@ final class FundService
 
     /**
      * @param  array<string, mixed>  $data
-     * @param  array{amount: float|int|string, cash_account_id: int, party?: string|null, fund_provider_id?: int|null, remark?: string|null}|null  $opening
+     * @param  array{amount: float|int|string, cash_account_id: int, party?: string|null, fund_provider_id?: int|null, staff_id?: int|null, remark?: string|null}|null  $opening
      */
     public function create(array $data, ?array $opening, User $actor): Fund
     {
@@ -49,6 +49,7 @@ final class FundService
                     'cash_account_id' => $opening['cash_account_id'],
                     'party' => $opening['party'] ?? null,
                     'fund_provider_id' => $opening['fund_provider_id'] ?? null,
+                    'staff_id' => $opening['staff_id'] ?? null,
                     'remark' => $opening['remark'] ?? null,
                 ], $actor);
             }
@@ -58,7 +59,7 @@ final class FundService
     }
 
     /**
-     * @param  array{type: string, amount: float|int|string, transacted_on: string, for_month?: string|null, cash_account_id: int, party?: string|null, fund_provider_id?: int|null, remark?: string|null}  $data
+     * @param  array{type: string, amount: float|int|string, transacted_on: string, for_month?: string|null, cash_account_id: int, party?: string|null, fund_provider_id?: int|null, staff_id?: int|null, remark?: string|null}  $data
      */
     public function record(Fund $fund, array $data, User $actor): FundTransaction
     {
@@ -86,6 +87,7 @@ final class FundService
                 'for_month' => $this->forMonth($data['for_month'] ?? null, $data['transacted_on']),
                 'party' => $data['party'] ?? null,
                 'fund_provider_id' => $data['type'] === FundTransaction::IN ? ($data['fund_provider_id'] ?? null) : null,
+                'staff_id' => $data['type'] === FundTransaction::IN ? ($data['staff_id'] ?? null) : null,
                 'remark' => $data['remark'] ?? null,
                 'cash_account_id' => $data['cash_account_id'],
                 'created_by' => $actor->getKey(),
@@ -113,7 +115,7 @@ final class FundService
      * Copy: several money in at once (e.g. last month's providers again for
      * this month). All are saved, or none.
      *
-     * @param  list<array{amount: float|int|string, transacted_on: string, for_month?: string|null, cash_account_id: int, party?: string|null, fund_provider_id?: int|null, remark?: string|null}>  $rows
+     * @param  list<array{amount: float|int|string, transacted_on: string, for_month?: string|null, cash_account_id: int, party?: string|null, fund_provider_id?: int|null, staff_id?: int|null, remark?: string|null}>  $rows
      * @return list<FundTransaction>
      */
     public function recordMany(Fund $fund, array $rows, User $actor): array
