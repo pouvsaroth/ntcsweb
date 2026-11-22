@@ -3672,6 +3672,9 @@ const en = {
       emptyTitle: 'No videos yet',
       emptyMessage: 'Videos will appear here once your teacher publishes them for a course you are studying.',
       loadFailed: 'Could not load your videos.',
+      lockedBadge: 'Locked',
+      lockedTitle: 'Videos locked',
+      lockedMessage: 'You pay this course by month, so its videos are locked. Students who pay by term can watch every lesson — ask the office to change how you pay.',
     },
     studentFeedback: {
       title: 'Student Feedback',

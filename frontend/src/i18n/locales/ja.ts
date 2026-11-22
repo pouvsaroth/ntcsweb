@@ -3668,6 +3668,9 @@ const ja: MessageSchema = {
       emptyTitle: '動画はまだありません',
       emptyMessage: '受講中のコースに動画が公開されるとここに表示されます。',
       loadFailed: '動画を読み込めませんでした。',
+      lockedBadge: 'ロック中',
+      lockedTitle: '動画はロックされています',
+      lockedMessage: 'このコースを月払いしているため、動画はロックされています。学期払いの生徒はすべてのレッスンを視聴できます。支払い方法の変更は事務所にご相談ください。',
     },
     studentFeedback: {
       title: '生徒フィードバック',

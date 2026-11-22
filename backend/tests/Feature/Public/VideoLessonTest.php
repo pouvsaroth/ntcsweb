@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Tests\Feature\Public;
 
 use App\Models\Enrollment;
+use App\Models\Invoice;
+use App\Models\InvoiceItem;
 use App\Models\Role;
 use App\Models\Student;
 use App\Models\User;
@@ -164,5 +166,27 @@ class VideoLessonTest extends TestCase
         $titles = collect($response->json('data.0.videos'))->pluck('title');
         $this->assertTrue($titles->contains('Published lesson'));
         $this->assertFalse($titles->contains('Draft lesson'));
+    }
+
+    public function test_a_student_paying_by_month_only_gets_the_free_previews(): void
+    {
+        $this->actingAsAdminWithPermissions([]);
+        $this->setUpAcademicCatalog();
+        $this->msWordPackage->update(['show_videos' => true]);
+        $this->createVideos(5);
+
+        $user = User::factory()->forTenant($this->tenant)->create();
+        $student = Student::factory()->create(['user_id' => $user->id]);
+        $enrollment = Enrollment::factory()->forStudent($student)->forClass($this->computerEveningClass)
+            ->state(['course_package_id' => $this->msWordPackage->id])->create();
+        $invoice = Invoice::factory()->create(['student_id' => $student->id, 'payment_type' => 'monthly']);
+        InvoiceItem::factory()->forInvoice($invoice)->create(['reference_type' => Enrollment::class, 'reference_id' => $enrollment->id]);
+
+        $videos = collect($this->actingAs($user)->withHeader('X-Tenant', $this->tenant->slug)
+            ->getJson('/api/v1/public/video-lessons')->assertOk()->json('data.0.videos'));
+
+        // Same as a visitor: the first 3 free previews, the rest locked.
+        $this->assertSame([false, false, false, true, true], $videos->pluck('is_locked')->all());
+        $this->assertNull($videos->last()['embed_url']);
     }
 }

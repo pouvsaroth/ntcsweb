@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Models\Concerns\Auditable;
 use App\Support\Audit\AuditAction;
+use App\Support\Billing\EnrollmentPaymentTypes;
 use App\Support\Tenancy\TenantContext;
 use Database\Factories\StudentFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -116,6 +117,31 @@ class Student extends Model
     public function enrollments(): HasMany
     {
         return $this->hasMany(Enrollment::class);
+    }
+
+    /** Paying by month: the course's videos stay locked (MyVideoController, VideoLessonController). */
+    public const MONTHLY_PAYMENT_TYPES = ['monthly', 'monthly_online'];
+
+    /**
+     * Course packages the student is actively studying, split by whether
+     * they may watch the course's videos: `watch` unless every active
+     * enrollment in that course is paid by month (EnrollmentPaymentTypes,
+     * same as Term study alerts). Payment type unknown counts as `watch`.
+     *
+     * @return array{watch: list<int>, monthly: list<int>}
+     */
+    public function videoCourseIds(): array
+    {
+        $enrollments = $this->enrollments()->active()->whereNotNull('course_package_id')->with('invoiceItems.invoice')->get();
+        $types = EnrollmentPaymentTypes::resolve($enrollments);
+        $byPackage = $enrollments
+            ->groupBy('course_package_id')
+            ->map(fn ($group) => $group->contains(fn (Enrollment $e) => ! in_array($types[$e->id] ?? null, self::MONTHLY_PAYMENT_TYPES, true)));
+
+        return [
+            'watch' => $byPackage->filter()->keys()->map(fn ($id) => (int) $id)->values()->all(),
+            'monthly' => $byPackage->reject(fn ($ok) => $ok)->keys()->map(fn ($id) => (int) $id)->values()->all(),
+        ];
     }
 
     /**

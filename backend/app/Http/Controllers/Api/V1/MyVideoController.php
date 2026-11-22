@@ -16,10 +16,12 @@ use Illuminate\Validation\ValidationException;
  * Student self-service: the courses they're actively studying, each with
  * its own video list — "click a course, see its videos," unlike the public
  * Video Lesson page (see VideoLessonController), which lists every course
- * and locks the ones a visitor isn't enrolled in. Nothing is locked here:
- * every course returned is one of the student's own active enrollments, so
- * every video in it is already theirs to watch. Identity-gated through
- * `$user->student`, same pattern as MyAttendanceController.
+ * and locks the ones a visitor isn't enrolled in. Every course returned is
+ * one of the student's own active enrollments; its videos are theirs to
+ * watch unless they pay that course by month (Student::videoCourseIds()):
+ * then the course is `locked` and no video has an `embed_url` — enforced
+ * here, not only hidden in the UI. Identity-gated through `$user->student`,
+ * same pattern as MyAttendanceController.
  */
 final class MyVideoController extends Controller
 {
@@ -27,7 +29,8 @@ final class MyVideoController extends Controller
     {
         $student = $this->studentOrFail($request);
 
-        $packageIds = $student->enrollments()->active()->pluck('course_package_id');
+        $courses = $student->videoCourseIds();
+        $packageIds = [...$courses['watch'], ...$courses['monthly']];
 
         $packages = CoursePackage::query()
             ->whereIn('id', $packageIds)
@@ -37,19 +40,26 @@ final class MyVideoController extends Controller
             ->ordered()
             ->get();
 
-        return ApiResponse::success($packages->map(fn (CoursePackage $package) => [
-            'id' => $package->id,
-            'name' => $package->name,
-            'thumbnail_url' => $package->thumbnailUrl(),
-            'video_count' => $package->videos->count(),
-            'videos' => $package->videos->map(fn (Video $video) => [
-                'id' => $video->id,
-                'title' => $video->title,
-                'description' => $video->description,
-                'thumbnail_url' => $video->thumbnailUrl(),
-                'embed_url' => $video->embedUrl(),
-            ]),
-        ]));
+        return ApiResponse::success($packages->map(function (CoursePackage $package) use ($courses) {
+            $locked = ! in_array($package->id, $courses['watch'], true);
+
+            return [
+                'id' => $package->id,
+                'name' => $package->name,
+                'thumbnail_url' => $package->thumbnailUrl(),
+                'video_count' => $package->videos->count(),
+                // 'monthly': paid by month, so no video may be watched.
+                'locked' => $locked ? 'monthly' : null,
+                'videos' => $package->videos->map(fn (Video $video) => [
+                    'id' => $video->id,
+                    'title' => $video->title,
+                    'description' => $video->description,
+                    'thumbnail_url' => $video->thumbnailUrl(),
+                    'is_locked' => $locked,
+                    'embed_url' => $locked ? null : $video->embedUrl(),
+                ]),
+            ];
+        }));
     }
 
     private function studentOrFail(Request $request)

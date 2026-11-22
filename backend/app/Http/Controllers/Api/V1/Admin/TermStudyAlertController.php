@@ -8,11 +8,10 @@ use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponse;
 use App\Models\Enrollment;
 use App\Models\Invoice;
-use App\Models\InvoiceItem;
 use App\Models\Tenant;
+use App\Support\Billing\EnrollmentPaymentTypes;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Collection;
 
 /**
  * The dashboard's "term students studying too long" list: every Studying
@@ -21,7 +20,7 @@ use Illuminate\Support\Collection;
  * (Tenant::termStudyAlertDays(), default 31). Days are counted from
  * enrolled_at to today.
  *
- * Payment type of an enrollment (see paymentTypes()):
+ * Payment type of an enrollment (see EnrollmentPaymentTypes):
  * 1. the payment type on its own invoice;
  * 2. else, the one on the student's previous dropped enrollment — before
  *    2026-09-23 a class/course change closed the old enrollment and opened a
@@ -58,7 +57,7 @@ final class TermStudyAlertController extends Controller
             ->orderBy('enrolled_at')
             ->get();
 
-        $types = $this->paymentTypes($enrollments);
+        $types = EnrollmentPaymentTypes::resolve($enrollments);
 
         $rows = $enrollments
             ->filter(fn (Enrollment $e) => $types[$e->id] === null || in_array($types[$e->id], self::TERM_PAYMENT_TYPES, true))
@@ -79,78 +78,5 @@ final class TermStudyAlertController extends Controller
             ]);
 
         return ApiResponse::success(['days' => $days, 'items' => $rows]);
-    }
-
-    /**
-     * @param  Collection<int, Enrollment>  $enrollments  with invoiceItems.invoice loaded
-     * @return array<int, string|null> payment type per enrollment id
-     */
-    private function paymentTypes(Collection $enrollments): array
-    {
-        $types = [];
-        $missing = [];
-
-        foreach ($enrollments as $enrollment) {
-            $types[$enrollment->id] = $this->ownType($enrollment);
-            if ($types[$enrollment->id] === null) {
-                $missing[] = $enrollment;
-            }
-        }
-
-        if ($missing === []) {
-            return $types;
-        }
-
-        // The students' earlier dropped enrollments, newest first.
-        $previous = Enrollment::query()
-            ->whereIn('student_id', array_map(fn (Enrollment $e) => $e->student_id, $missing))
-            ->where('status', Enrollment::STATUS_DROPPED)
-            ->with('invoiceItems.invoice')
-            ->orderByDesc('id')
-            ->get()
-            ->groupBy('student_id');
-
-        foreach ($missing as $enrollment) {
-            foreach ($previous->get($enrollment->student_id, collect()) as $earlier) {
-                if ($earlier->id >= $enrollment->id) {
-                    continue;
-                }
-                $type = $this->ownType($earlier);
-                if ($type !== null) {
-                    $types[$enrollment->id] = $type;
-                    break;
-                }
-            }
-        }
-
-        // Invoices whose enrollment was deleted: newest payment type per student.
-        $stillMissing = array_filter($missing, fn (Enrollment $e) => $types[$e->id] === null);
-        if ($stillMissing !== []) {
-            $orphaned = InvoiceItem::query()
-                ->where('reference_type', Enrollment::class)
-                ->whereNotIn('reference_id', Enrollment::query()->select('id'))
-                ->whereHas('invoice', fn ($q) => $q
-                    ->whereIn('student_id', array_map(fn (Enrollment $e) => $e->student_id, $stillMissing))
-                    ->whereNotNull('payment_type'))
-                ->with('invoice')
-                ->orderByDesc('id')
-                ->get()
-                ->groupBy(fn (InvoiceItem $item) => $item->invoice->student_id);
-
-            foreach ($stillMissing as $enrollment) {
-                $types[$enrollment->id] = $orphaned->get($enrollment->student_id)?->first()?->invoice?->payment_type;
-            }
-        }
-
-        return $types;
-    }
-
-    /** The newest payment type on the enrollment's own invoices, if any. */
-    private function ownType(Enrollment $enrollment): ?string
-    {
-        return $enrollment->invoiceItems
-            ->sortByDesc('id')
-            ->map(fn (InvoiceItem $item) => $item->invoice?->payment_type)
-            ->first(fn (?string $type) => $type !== null);
     }
 }

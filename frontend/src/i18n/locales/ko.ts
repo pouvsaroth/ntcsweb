@@ -3668,6 +3668,9 @@ const ko: MessageSchema = {
       emptyTitle: '아직 동영상이 없습니다',
       emptyMessage: '수강 중인 과정에 동영상이 게시되면 여기에 표시됩니다.',
       loadFailed: '동영상을 불러올 수 없습니다.',
+      lockedBadge: '잠김',
+      lockedTitle: '동영상 잠김',
+      lockedMessage: '이 과정을 월별로 납부하고 있어 동영상이 잠겨 있습니다. 학기별로 납부하는 학생은 모든 수업을 볼 수 있습니다. 납부 방식 변경은 사무실에 문의하세요.',
     },
     studentFeedback: {
       title: '학생 피드백',

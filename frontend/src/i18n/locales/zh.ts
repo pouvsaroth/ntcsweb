@@ -3667,6 +3667,9 @@ const zh: MessageSchema = {
       emptyTitle: '暂无视频',
       emptyMessage: '老师为您正在学习的课程发布视频后，会显示在这里。',
       loadFailed: '无法加载您的视频。',
+      lockedBadge: '已锁定',
+      lockedTitle: '视频已锁定',
+      lockedMessage: '你按月缴纳这门课程，所以视频已锁定。按学期缴费的学生可以观看所有课程——请联系办公室更改缴费方式。',
     },
     studentFeedback: {
       title: '学生反馈',

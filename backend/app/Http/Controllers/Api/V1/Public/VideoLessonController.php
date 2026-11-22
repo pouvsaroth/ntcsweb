@@ -24,7 +24,7 @@ use Illuminate\Http\Request;
  *
  * Access rule: a signed-in School Admin sees every video, full stop. A
  * signed-in student sees every video in a course they're actively enrolled
- * in. Everyone else (a guest, or a student browsing a course they're not
+ * in, unless they pay it by month (Student::videoCourseIds()). Everyone else (a guest, or a student browsing a course they're not
  * enrolled in) only gets the tenant-wide first 3 videos (by course name,
  * then video sort order) as free previews. A "locked" video's `embed_url`
  * is deliberately omitted from the response — the lock is enforced here,
@@ -42,7 +42,7 @@ final class VideoLessonController extends Controller
         $isSchoolAdmin = $user?->hasRole(Role::SCHOOL_ADMIN) ?? false;
 
         $enrolledPackageIds = $user?->student !== null
-            ? $user->student->enrollments()->active()->pluck('course_package_id')->all()
+            ? $user->student->videoCourseIds()['watch']
             : [];
 
         $freeVideoIds = Video::query()->active()
