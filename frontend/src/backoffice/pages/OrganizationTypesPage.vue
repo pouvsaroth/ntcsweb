@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { RouterLink } from 'vue-router'
 
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
@@ -145,10 +146,14 @@ onMounted(load)
           <p class="mt-2 text-sm text-neutral-700">{{ type.words.en }} / {{ type.words.en_plural }} · {{ type.words.km }}</p>
           <p class="text-sm text-neutral-500">{{ otherWords(type) }}</p>
           <p class="mt-2 text-xs text-neutral-500">{{ t('bo.orgTypes.customers', { n: type.customers_count }) }}</p>
-          <div v-if="canWrite" class="mt-3 flex flex-wrap gap-2 border-t border-neutral-100 pt-3">
+          <p v-if="type.has_menu_layout" class="mt-1 text-xs text-primary-700">{{ t('bo.orgTypes.ownMenu') }}</p>
+          <div class="mt-3 flex flex-wrap gap-2 border-t border-neutral-100 pt-3">
+            <RouterLink :to="`/organization-types/${type.id}/menu-layout`" class="inline-flex"><BaseButton size="sm" variant="outline">{{ t('bo.orgTypes.menuLayout') }}</BaseButton></RouterLink>
+            <template v-if="canWrite">
             <BaseButton size="sm" variant="outline" @click="openForm(type)">{{ t('bo.orgTypes.edit') }}</BaseButton>
             <BaseButton v-if="type.status === 'inactive'" size="sm" variant="outline" @click="reactivate(type)">{{ t('bo.orgTypes.reactivate') }}</BaseButton>
             <BaseButton v-else-if="type.code !== 'school'" size="sm" variant="ghost" @click="remove(type)">{{ t('bo.orgTypes.remove') }}</BaseButton>
+            </template>
           </div>
         </section>
       </div>
@@ -164,7 +169,7 @@ onMounted(load)
               <th class="px-4 py-3">ខ្មែរ</th>
               <th class="px-4 py-3">中文 · 日本語 · 한국어</th>
               <th class="px-4 py-3 text-right">{{ t('bo.orgTypes.customersCol') }}</th>
-              <th v-if="canWrite" class="px-4 py-3" />
+              <th class="px-4 py-3" />
             </tr>
           </thead>
           <tbody class="divide-y divide-neutral-100">
@@ -172,16 +177,20 @@ onMounted(load)
               <td class="px-4 py-3 font-medium text-neutral-900">
                 {{ organizationTypeName(type, locale) }}
                 <BaseBadge v-if="type.status === 'inactive'" variant="warning" class="ml-2">{{ t('bo.orgTypes.inactive') }}</BaseBadge>
+                <BaseBadge v-if="type.has_menu_layout" variant="primary" class="ml-2">{{ t('bo.orgTypes.ownMenu') }}</BaseBadge>
               </td>
               <td class="px-4 py-3 font-mono text-xs text-neutral-500">{{ type.code }}</td>
               <td class="px-4 py-3 text-neutral-700">{{ type.words.en }} / {{ type.words.en_plural }}</td>
               <td class="px-4 py-3 text-neutral-700">{{ type.words.km }}</td>
               <td class="px-4 py-3 text-neutral-700">{{ otherWords(type) }}</td>
               <td class="px-4 py-3 text-right text-neutral-700">{{ type.customers_count }}</td>
-              <td v-if="canWrite" class="px-4 py-3 text-right whitespace-nowrap">
-                <BaseButton size="sm" variant="outline" @click="openForm(type)">{{ t('bo.orgTypes.edit') }}</BaseButton>
+              <td class="px-4 py-3 text-right whitespace-nowrap">
+                <RouterLink :to="`/organization-types/${type.id}/menu-layout`" class="inline-flex"><BaseButton size="sm" variant="outline">{{ t('bo.orgTypes.menuLayout') }}</BaseButton></RouterLink>
+                <template v-if="canWrite">
+                <BaseButton size="sm" variant="outline" class="ml-2" @click="openForm(type)">{{ t('bo.orgTypes.edit') }}</BaseButton>
                 <BaseButton v-if="type.status === 'inactive'" size="sm" variant="outline" class="ml-2" @click="reactivate(type)">{{ t('bo.orgTypes.reactivate') }}</BaseButton>
                 <BaseButton v-else-if="type.code !== 'school'" size="sm" variant="ghost" class="ml-2" @click="remove(type)">{{ t('bo.orgTypes.remove') }}</BaseButton>
+                </template>
               </td>
             </tr>
           </tbody>

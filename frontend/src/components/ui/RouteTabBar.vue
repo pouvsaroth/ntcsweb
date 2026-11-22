@@ -16,8 +16,9 @@ const { t } = useI18n()
 const route = useRoute()
 const auth = useAuthStore()
 
-// Tabs a role hid in Settings > Roles never show (see router/tabVisibility.ts).
-const shownTabs = computed(() => props.tabs.filter((tab) => !auth.tabHidden(tab.to)))
+// Tabs a role hid in Settings > Roles never show (see router/tabVisibility.ts); the menu
+// layout (router/menuLayout.ts) orders them and can take one out as a menu item.
+const shownTabs = computed(() => auth.orderTabs(props.tabs).filter((tab) => auth.tabInBar(tab.to)))
 
 // The tab whose path is the current page or the closest parent of it, so a
 // detail page under a tab (Help articles > one article) keeps its tab lit.

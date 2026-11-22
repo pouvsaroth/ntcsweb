@@ -1,4 +1,5 @@
 import { apiGetWithMeta, apiPatch, apiPost, primeCsrfCookie } from '@/services/http'
+import type { MenuLayout } from '@/router/menuLayout'
 import type { User } from '@/types/models'
 import type { UserPreferences } from '@/utils/appearance'
 
@@ -67,7 +68,12 @@ export interface MeResult {
     /** The systems the customer has live (stage 9). */
     systems?: { code: string; name: string; name_km: string | null }[]
     /** School, Company, Organization…: its word for "school" in each language (i18n/orgWords.ts). */
-    organization?: { code: string; words: { en: string; en_plural?: string; km?: string; zh?: string; ja?: string; ko?: string } }
+    organization?: {
+      code: string
+      words: { en: string; en_plural?: string; km?: string; zh?: string; ja?: string; ko?: string }
+      /** The type's own sidebar (Back office > Organization types > Menu layout); null = the standard menu. */
+      menu_layout?: MenuLayout | null
+    }
     /** The owner's billing banner (plan ending/ended, student limit); null for everyone else or when all is well. */
     billing_notice: BillingNotice | null
     /** The school's own public website's hostname — see AdminHeader.vue's "Go to website" link, needed now that the admin app is a separate origin from it. */

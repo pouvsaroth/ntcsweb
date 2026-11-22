@@ -44,6 +44,7 @@ const routes: RouteRecordRaw[] = [
       { path: 'schools', component: () => import('./pages/SchoolsPage.vue'), meta: { permission: 'platform.school.read' } },
       { path: 'schools/:id(\\d+)', component: () => import('./pages/SchoolDetailPage.vue'), meta: { permission: 'platform.school.read' } },
       { path: 'organization-types', component: () => import('./pages/OrganizationTypesPage.vue'), meta: { permission: 'platform.school.read' } },
+      { path: 'organization-types/:id(\\d+)/menu-layout', component: () => import('./pages/MenuLayoutPage.vue'), meta: { permission: 'platform.school.read' } },
       {
         path: 'billing',
         component: () => import('./pages/billing/BillingLayout.vue'),

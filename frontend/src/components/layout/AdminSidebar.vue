@@ -4,7 +4,9 @@ import { useI18n } from 'vue-i18n'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
 import NavIcon from '@/components/layout/NavIcon.vue'
-import { adminNav, isNavItemVisible, type AdminNavGroup, type AdminNavItem } from '@/router/adminNav'
+import { useAdminNav } from '@/composables/useAdminNav'
+import { isNavItemVisible } from '@/router/adminNav'
+import type { LaidOutGroup as AdminNavGroup, LaidOutItem as AdminNavItem } from '@/router/menuLayout'
 import { swapOrganizationText } from '@/i18n/orgWords'
 import { useAdminUiStore } from '@/stores/adminUi'
 import { useAuthStore } from '@/stores/auth'
@@ -20,6 +22,8 @@ const adminUi = useAdminUiStore()
 const site = useSiteStore()
 const route = useRoute()
 const router = useRouter()
+// The menu as the organization type lays it out (Back office > Menu layout).
+const { nav, groupLabel, itemLabel } = useAdminNav()
 
 /** Shown under your name in the sidebar's bottom profile row — the first role is enough context; a user rarely holds more than one in practice. */
 // Role names are stored in English; a Company's "School Admin" reads "Company Admin".
@@ -38,7 +42,7 @@ async function handleLogout() {
 }
 
 const visibleGroups = computed(() =>
-  adminNav
+  nav.value
     .map((group) => ({
       ...group,
       // An external document link (`urlKey`) is filtered out entirely when
@@ -61,7 +65,7 @@ function loadStoredExpanded(): string[] {
 }
 
 function groupContainingCurrentRoute(): string | undefined {
-  return adminNav.find((group) => group.items.some((item) => item.to === route.path))?.labelKey
+  return nav.value.find((group) => group.items.some((item) => item.to === route.path))?.labelKey
 }
 
 // A returning visitor's manual choices win; a first-time visitor instead
@@ -70,7 +74,7 @@ function groupContainingCurrentRoute(): string | undefined {
 const stored = loadStoredExpanded()
 const expanded = reactive<Record<string, boolean>>(
   Object.fromEntries(
-    adminNav.map((group) => [
+    nav.value.map((group) => [
       group.labelKey,
       stored.length > 0 ? stored.includes(group.labelKey) : group.labelKey === groupContainingCurrentRoute(),
     ]),
@@ -163,8 +167,8 @@ function groupActive(group: AdminNavGroup): boolean {
 const railEntries = computed(() =>
   visibleGroups.value.flatMap((group) =>
     group.standalone || group.flat
-      ? group.items.map((item) => ({ key: `${group.labelKey}:${item.to ?? item.urlKey}`, icon: item.icon, title: t(item.labelKey), single: item as AdminNavItem | undefined, group }))
-      : [{ key: group.labelKey, icon: group.icon, title: t(group.labelKey), single: undefined as AdminNavItem | undefined, group }],
+      ? group.items.map((item) => ({ key: `${group.labelKey}:${item.to ?? item.urlKey}`, icon: item.icon, title: itemLabel(item), single: item as AdminNavItem | undefined, group }))
+      : [{ key: group.labelKey, icon: group.icon, title: groupLabel(group), single: undefined as AdminNavItem | undefined, group }],
   ),
 )
 
@@ -257,7 +261,7 @@ watch(
                 class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
               >
                 <NavIcon :name="item.icon" />
-                {{ t(item.labelKey) }}
+                {{ itemLabel(item) }}
               </a>
               <RouterLink
                 v-else
@@ -267,7 +271,7 @@ watch(
                 @click="emit('close')"
               >
                 <NavIcon :name="item.icon" />
-                {{ t(item.labelKey) }}
+                {{ itemLabel(item) }}
               </RouterLink>
             </template>
           </div>
@@ -281,7 +285,7 @@ watch(
               @click="emit('close')"
             >
               <NavIcon :name="item.icon" />
-              {{ t(item.labelKey) }}
+              {{ itemLabel(item) }}
             </RouterLink>
           </template>
           <template v-else>
@@ -291,7 +295,7 @@ watch(
               :aria-expanded="expanded[group.labelKey]"
               @click="toggleGroup(group.labelKey)"
             >
-              <span class="flex items-center gap-3"><NavIcon :name="group.icon" />{{ t(group.labelKey) }}</span>
+              <span class="flex items-center gap-3"><NavIcon :name="group.icon" />{{ groupLabel(group) }}</span>
               <svg
                 class="h-4 w-4 shrink-0 transition-transform duration-200"
                 :class="expanded[group.labelKey] ? 'rotate-180' : ''"
@@ -319,7 +323,7 @@ watch(
                       class="flex items-center gap-3 rounded-lg py-2 pl-5 pr-3 text-sm font-medium text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
                     >
                       <NavIcon :name="item.icon" size="h-4 w-4" />
-                      {{ t(item.labelKey) }}
+                      {{ itemLabel(item) }}
                     </a>
                     <RouterLink
                       v-else
@@ -329,7 +333,7 @@ watch(
                       @click="emit('close')"
                     >
                       <NavIcon :name="item.icon" size="h-4 w-4" />
-                      {{ t(item.labelKey) }}
+                      {{ itemLabel(item) }}
                     </RouterLink>
                   </template>
                 </div>
@@ -447,7 +451,7 @@ watch(
             role="menuitem"
             @click="closeFlyout"
           >
-            <NavIcon :name="item.icon" size="h-4 w-4" />{{ t(item.labelKey) }}
+            <NavIcon :name="item.icon" size="h-4 w-4" />{{ itemLabel(item) }}
           </a>
           <RouterLink
             v-else
@@ -457,7 +461,7 @@ watch(
             role="menuitem"
             @click="closeFlyout"
           >
-            <NavIcon :name="item.icon" size="h-4 w-4" />{{ t(item.labelKey) }}
+            <NavIcon :name="item.icon" size="h-4 w-4" />{{ itemLabel(item) }}
           </RouterLink>
         </template>
       </template>

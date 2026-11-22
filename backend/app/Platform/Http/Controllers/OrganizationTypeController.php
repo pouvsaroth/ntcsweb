@@ -7,6 +7,7 @@ namespace App\Platform\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponse;
 use App\Platform\Models\OrganizationType;
+use App\Platform\Support\MenuLayout;
 use App\Platform\Support\PlatformAudit;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -56,6 +57,27 @@ final class OrganizationTypeController extends Controller
         });
 
         return ApiResponse::success($this->present($organizationType->loadCount('tenants')));
+    }
+
+    /** Menu layout: the type's own sidebar (null = the standard menu). */
+    public function menuLayout(OrganizationType $organizationType): JsonResponse
+    {
+        return ApiResponse::success(['menu_layout' => $organizationType->menu_layout]);
+    }
+
+    /** Saves the type's sidebar; `menu_layout: null` puts back the standard menu. */
+    public function updateMenuLayout(Request $request, OrganizationType $organizationType): JsonResponse
+    {
+        $request->validate(['menu_layout' => ['present', 'nullable', 'array']]);
+        $layout = $request->input('menu_layout') === null ? null : MenuLayout::normalize($request->input('menu_layout'));
+
+        DB::connection($organizationType->getConnectionName())->transaction(function () use ($organizationType, $layout) {
+            $old = $organizationType->menu_layout;
+            $organizationType->update(['menu_layout' => $layout]);
+            $this->audit->record('organization_type.menu_layout_updated', $organizationType, ['menu_layout' => $old], ['menu_layout' => $layout]);
+        });
+
+        return ApiResponse::success(['menu_layout' => $organizationType->menu_layout]);
     }
 
     /** Deletes a type no customer uses; otherwise turns it off (its customers keep it). */
@@ -120,6 +142,7 @@ final class OrganizationTypeController extends Controller
             'words' => $type->words,
             'sort_order' => $type->sort_order,
             'status' => $type->status,
+            'has_menu_layout' => $type->menu_layout !== null,
             'customers_count' => (int) ($type->tenants_count ?? 0),
         ];
     }

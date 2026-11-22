@@ -1,5 +1,6 @@
 import axios, { type AxiosRequestConfig, isAxiosError } from 'axios'
 
+import type { MenuLayout } from '@/router/menuLayout'
 import { ApiRequestError, type ApiError, type ApiSuccess, type LengthAwarePaginationMeta, type PaginatedResult } from '@/types/api'
 
 /**
@@ -383,6 +384,8 @@ export interface OrganizationType {
   words: OrganizationWords
   sort_order: number
   status: 'active' | 'inactive'
+  /** It has its own sidebar (Menu layout). */
+  has_menu_layout: boolean
   customers_count: number
 }
 
@@ -393,6 +396,10 @@ export const organizationTypesApi = {
   create: (body: OrganizationTypeInput) => send<OrganizationType>('post', '/organization-types', body),
   update: (id: number, body: OrganizationTypeInput) => send<OrganizationType>('patch', `/organization-types/${id}`, body),
   remove: (id: number) => send<{ deleted: boolean }>('delete', `/organization-types/${id}`),
+  /** The type's own sidebar; null = the standard menu. */
+  menuLayout: (id: number) => get<{ menu_layout: MenuLayout | null }>(`/organization-types/${id}/menu-layout`),
+  saveMenuLayout: (id: number, layout: MenuLayout | null) =>
+    send<{ menu_layout: MenuLayout | null }>('put', `/organization-types/${id}/menu-layout`, { menu_layout: layout }),
 }
 
 /** A type's name in the staff member's language. */

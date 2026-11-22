@@ -1,4 +1,5 @@
 import { hideTabSlug } from '@/router/hideTabSlug'
+import { orderTabs as orderTabsBy, takenOutTabs, type MenuLayout } from '@/router/menuLayout'
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 
@@ -48,6 +49,24 @@ export const useAuthStore = defineStore('auth', () => {
   function tabHidden(to: string): boolean {
     if (isSuperAdmin.value) return false
     return (permissions.value as string[]).includes(hideTabSlug(to))
+  }
+
+  /** The organization type's own sidebar (Back office > Menu layout); null = the standard menu. */
+  const menuLayout = computed<MenuLayout | null>(() => tenantOrganization.value?.menu_layout ?? null)
+  const tabsTakenOut = computed(() => takenOutTabs(menuLayout.value))
+
+  /**
+   * Shown in its page's tab bar: not hidden for this role and not taken out
+   * of the page by the menu layout (then it is a menu item of its own, and
+   * still opens: only tabHidden blocks a tab).
+   */
+  function tabInBar(to: string): boolean {
+    return !tabHidden(to) && !tabsTakenOut.value.has(to)
+  }
+
+  /** A page's tabs in the menu layout's order. */
+  function orderTabs<T extends { to: string }>(tabs: readonly T[]): T[] {
+    return orderTabsBy(tabs, menuLayout.value)
   }
 
   /**
@@ -246,6 +265,9 @@ export const useAuthStore = defineStore('auth', () => {
     permissions,
     isSuperAdmin,
     tabHidden,
+    menuLayout,
+    tabInBar,
+    orderTabs,
     tenantName,
     tenantDefaultCurrency,
     khrPerUsdRate,

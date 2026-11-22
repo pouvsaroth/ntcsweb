@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property array<string, string> $words
  * @property int $sort_order
  * @property string $status
+ * @property array<string, mixed>|null $menu_layout
  */
 class OrganizationType extends Model
 {
@@ -37,6 +38,7 @@ class OrganizationType extends Model
     {
         return [
             'words' => 'array',
+            'menu_layout' => 'array',
             'sort_order' => 'integer',
         ];
     }
@@ -54,10 +56,14 @@ class OrganizationType extends Model
     /** The words the admin screens use for this tenant (a School when it has no type). */
     public static function wordsFor(?Tenant $tenant): array
     {
-        $type = $tenant?->organization_type_id ? static::query()->find($tenant->organization_type_id) : null;
+        // No type set (older customers) is a School: it gets the School type's words and menu layout too.
+        $type = ($tenant?->organization_type_id ? static::query()->find($tenant->organization_type_id) : null)
+            ?? static::query()->where('code', self::SCHOOL)->first();
 
         return [
             'code' => $type?->code ?? self::SCHOOL,
+            // The type's own sidebar (Menu layout); null = the standard menu.
+            'menu_layout' => $type?->menu_layout,
             'words' => $type?->words ?? ['en' => 'School', 'en_plural' => 'Schools', 'km' => 'សាលា', 'zh' => '学校', 'ja' => '学校', 'ko' => '학교'],
         ];
     }

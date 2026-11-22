@@ -136,6 +136,8 @@ Route::middleware('platform.staff')->group(function () {
     Route::get('organization-types', [OrganizationTypeController::class, 'index'])->middleware('platform.can:platform.school.read')->name('organization-types.index');
     Route::post('organization-types', [OrganizationTypeController::class, 'store'])->middleware('platform.can:platform.school.write')->name('organization-types.store');
     Route::patch('organization-types/{organizationType}', [OrganizationTypeController::class, 'update'])->middleware('platform.can:platform.school.write')->name('organization-types.update');
+    Route::get('organization-types/{organizationType}/menu-layout', [OrganizationTypeController::class, 'menuLayout'])->middleware('platform.can:platform.school.read')->name('organization-types.menu-layout');
+    Route::put('organization-types/{organizationType}/menu-layout', [OrganizationTypeController::class, 'updateMenuLayout'])->middleware('platform.can:platform.school.write')->name('organization-types.menu-layout.update');
     Route::delete('organization-types/{organizationType}', [OrganizationTypeController::class, 'destroy'])->middleware('platform.can:platform.school.write')->name('organization-types.destroy');
 
     // Billing (stage 5): plans, each school's subscription, settings.
