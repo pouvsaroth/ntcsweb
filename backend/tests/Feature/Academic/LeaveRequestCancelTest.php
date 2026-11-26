@@ -93,6 +93,51 @@ class LeaveRequestCancelTest extends TestCase
         $this->postJson("/api/v1/leave-requests/{$leave->id}/cancel", ['reason' => 'x'])->assertForbidden();
     }
 
+    /** A mistyped year (2056 for 2026) once made a 30-year request; at most 7 days now. */
+    public function test_a_student_can_ask_for_at_most_seven_days(): void
+    {
+        $this->actingAsAdminWithPermissions([]);
+        [$student, $user] = $this->studentWithUser();
+        $enrollment = $this->mondayClass($student)[0];
+        $this->actingAsTenantUser($user);
+        $from = Carbon::now()->addDays(2)->startOfDay();
+
+        $this->postJson('/api/v1/my-leave-requests', [
+            'enrollment_id' => $enrollment->id,
+            'from_date' => $from->toDateString(),
+            'to_date' => $from->copy()->addYears(30)->toDateString(),
+            'reason' => 'Typo in the year',
+        ])->assertUnprocessable()->assertJsonValidationErrors('to_date');
+
+        $this->postJson('/api/v1/my-leave-requests', [
+            'enrollment_id' => $enrollment->id,
+            'from_date' => $from->toDateString(),
+            'to_date' => $from->copy()->addDays(7)->toDateString(),
+            'reason' => 'Eight days',
+        ])->assertUnprocessable()->assertJsonValidationErrors('to_date');
+
+        $this->assertSame(0, LeaveRequest::query()->where('student_id', $student->id)->count());
+    }
+
+    /** An approval cut off part-way left Excused marks on a still-waiting request; rejecting it clears them. */
+    public function test_rejecting_removes_marks_a_failed_approval_left_behind(): void
+    {
+        $this->actingAsAdminWithPermissions(self::ADMIN);
+        [$student] = $this->studentWithUser();
+        [$enrollment, $first, $second] = $this->mondayClass($student);
+        $leave = LeaveRequest::factory()->forStudent($student)->create(['from_date' => $first, 'to_date' => $second]);
+        AttendanceRecord::query()->create([
+            'enrollment_id' => $enrollment->id, 'class_id' => $enrollment->class_id, 'student_id' => $student->id,
+            'date' => $first, 'status' => AttendanceStatus::EXCUSED, 'remarks' => "Approved leave request #{$leave->id}: left over",
+        ]);
+
+        $this->postJson("/api/v1/leave-requests/{$leave->id}/reject", ['reason' => 'Ask again with the right dates'])
+            ->assertOk()
+            ->assertJsonPath('data.status', LeaveRequest::STATUS_REJECTED);
+
+        $this->assertSame(0, AttendanceRecord::query()->where('enrollment_id', $enrollment->id)->count());
+    }
+
     /** @return array{0: Student, 1: User} */
     private function studentWithUser(): array
     {

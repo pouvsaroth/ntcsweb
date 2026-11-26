@@ -64,6 +64,9 @@ final class LeaveRequestService
         // reports the days it skips (approval leaves those days alone).
         $holidayDates = null;
         if ($student !== null) {
+            // First, before anything walks the dates: a mistyped year (2056
+            // for 2026) once made a 30-year request whose approval timed out.
+            $this->guardMaxDays($data['from_date'], $data['to_date']);
             $holidayDates = $this->holidayDates($data['from_date'], $data['to_date']);
             if (count($holidayDates) === count($this->datesBetween($data['from_date'], $data['to_date']))) {
                 throw ValidationException::withMessages([
@@ -77,7 +80,7 @@ final class LeaveRequestService
             $this->guardAbsenceLimit($student, $data['enrollment_id'] ?? null, $data['from_date'], $data['to_date']);
         }
 
-        $request = DB::transaction(function () use ($student, $staff, $data, $byHr) {
+        $request = DB::connection('tenant')->transaction(function () use ($student, $staff, $data, $byHr) {
             $leave = ['leave_type_id' => null, 'day_part' => null, 'days' => null];
             if ($staff !== null) {
                 $staff = Staff::query()->whereKey($staff->id)->lockForUpdate()->firstOrFail();
@@ -146,7 +149,7 @@ final class LeaveRequestService
 
     public function approve(LeaveRequest $request, User $admin): LeaveRequest
     {
-        $request = DB::transaction(function () use ($request, $admin) {
+        $request = DB::connection('tenant')->transaction(function () use ($request, $admin) {
             /** @var LeaveRequest $request */
             $request = LeaveRequest::query()->whereKey($request->getKey())->lockForUpdate()->firstOrFail();
 
@@ -215,12 +218,18 @@ final class LeaveRequestService
 
     public function reject(LeaveRequest $request, string $reason, User $admin): LeaveRequest
     {
-        $request = DB::transaction(function () use ($request, $reason, $admin) {
+        $request = DB::connection('tenant')->transaction(function () use ($request, $reason, $admin) {
             /** @var LeaveRequest $request */
             $request = LeaveRequest::query()->whereKey($request->getKey())->lockForUpdate()->firstOrFail();
 
             if ($request->status !== LeaveRequest::STATUS_PENDING) {
                 throw ValidationException::withMessages(['status' => 'This leave request has already been decided.']);
+            }
+
+            // Nothing should be marked for a request that was never approved,
+            // but an approval cut off part-way once left Excused marks behind.
+            if ($request->student_id !== null) {
+                $this->removeExcusedMarks($request, $this->datesBetween($request->from_date->toDateString(), $request->to_date->toDateString()));
             }
 
             $request->update([
@@ -259,7 +268,7 @@ final class LeaveRequestService
      */
     public function cancel(LeaveRequest $request, string $reason, User $admin): LeaveRequest
     {
-        $request = DB::transaction(function () use ($request, $reason, $admin) {
+        $request = DB::connection('tenant')->transaction(function () use ($request, $reason, $admin) {
             /** @var LeaveRequest $request */
             $request = LeaveRequest::query()->whereKey($request->getKey())->lockForUpdate()->firstOrFail();
 
@@ -381,7 +390,7 @@ final class LeaveRequestService
 
         $cancelled = [];
         foreach ($affected as $id) {
-            $result = DB::transaction(function () use ($id, $holiday, $admin, $from, $to) {
+            $result = DB::connection('tenant')->transaction(function () use ($id, $holiday, $admin, $from, $to) {
                 /** @var LeaveRequest|null $request */
                 $request = LeaveRequest::query()->whereKey($id)->lockForUpdate()->first();
                 if ($request === null || ! in_array($request->status, [LeaveRequest::STATUS_PENDING, LeaveRequest::STATUS_APPROVED], true)) {
@@ -522,6 +531,25 @@ final class LeaveRequestService
 
     /** Missed hours (absent + permission + late) a student may reach; a request that would go above it is refused. */
     public const STUDENT_ABSENCE_LIMIT_HOURS = 6;
+
+    /** The longest a student may ask permission for in one request, in days (from and to counted). */
+    public const STUDENT_MAX_DAYS = 7;
+
+    private function guardMaxDays(string $from, string $to): void
+    {
+        $start = CarbonImmutable::parse(substr($from, 0, 10));
+        $end = CarbonImmutable::parse(substr($to, 0, 10));
+
+        if ($end->lt($start)) {
+            throw ValidationException::withMessages(['to_date' => __('The end date must be on or after the start date.')]);
+        }
+
+        if ($start->diffInDays($end) + 1 > self::STUDENT_MAX_DAYS) {
+            throw ValidationException::withMessages([
+                'to_date' => __('A permission can cover at most :days days. Please check the dates.', ['days' => self::STUDENT_MAX_DAYS]),
+            ]);
+        }
+    }
 
     /**
      * Refuse a student's request when the course they picked would go above

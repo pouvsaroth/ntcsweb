@@ -422,10 +422,12 @@ class LeaveRequestTest extends TestCase
     {
         // 4 hours missed, then two class days asked at once (2 + 2 hours) = 8: refused.
         [$student, $enrollment] = $this->studentWhoMissed(0, [AttendanceStatus::ABSENT, AttendanceStatus::ABSENT]);
+        // A second class day in the same week, so both fit in one 7-day request.
+        ClassSchedule::factory()->forClass($enrollment->schoolClass)->onDay(ClassSchedule::WEDNESDAY)->at('18:00:00', '20:00:00')->create();
         $this->assertAbsenceLimit($this->postJson('/api/v1/my-leave-requests', [
             'enrollment_id' => $enrollment->id,
             'from_date' => Carbon::now()->next(Carbon::MONDAY)->toDateString(),
-            'to_date' => Carbon::now()->next(Carbon::MONDAY)->addWeek()->toDateString(),
+            'to_date' => Carbon::now()->next(Carbon::MONDAY)->addDays(2)->toDateString(),
             'reason' => 'Sick',
         ]));
         $this->assertSame(0, LeaveRequest::where('student_id', $student->id)->count());

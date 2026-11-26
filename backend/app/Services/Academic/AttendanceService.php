@@ -169,7 +169,7 @@ final class AttendanceService
      */
     public function recordForClass(SchoolClass $class, string $date, array $entries, User $actor): Collection
     {
-        return DB::transaction(function () use ($class, $date, $entries, $actor) {
+        return DB::connection('tenant')->transaction(function () use ($class, $date, $entries, $actor) {
             $enrollmentIds = collect($entries)->pluck('enrollment_id')->all();
 
             // In this class on THIS date — attendance for an earlier day is
