@@ -887,6 +887,15 @@ final class Permissions
     // Political Party > Locations: search Cambodia's provinces, districts, communes and villages.
     public const PARTY_LOCATIONS_VIEW = 'party-locations.view';
 
+    // Political Party > Branches: the party's branches / offices, each at a place.
+    public const PARTY_BRANCHES_VIEW = 'party-branches.view';
+
+    public const PARTY_BRANCHES_CREATE = 'party-branches.create';
+
+    public const PARTY_BRANCHES_UPDATE = 'party-branches.update';
+
+    public const PARTY_BRANCHES_DELETE = 'party-branches.delete';
+
     // Loan > Customers: people who keep savings with the owner or borrow from them.
     public const LOAN_CUSTOMERS_VIEW = 'loan-customers.view';
 
@@ -1780,6 +1789,10 @@ final class Permissions
             ],
             'Political Party' => [
                 self::PARTY_LOCATIONS_VIEW => 'Search provinces, districts, communes and villages',
+                self::PARTY_BRANCHES_VIEW => 'View party branches and offices (and export them)',
+                self::PARTY_BRANCHES_CREATE => 'Add party branches',
+                self::PARTY_BRANCHES_UPDATE => 'Update party branches',
+                self::PARTY_BRANCHES_DELETE => 'Delete party branches',
             ],
             'Fund' => [
                 self::FUNDS_VIEW => 'View funds and their statements',
@@ -2293,6 +2306,7 @@ final class Permissions
                 self::REFERRALS_VIEW, self::REFERRALS_UPDATE,
                 self::BROADCASTS_VIEW, self::BROADCASTS_CREATE, self::BROADCASTS_DELETE,
                 self::PARTY_LOCATIONS_VIEW,
+                self::PARTY_BRANCHES_VIEW, self::PARTY_BRANCHES_CREATE, self::PARTY_BRANCHES_UPDATE, self::PARTY_BRANCHES_DELETE,
             ],
             // Read-only across the board, with a few write exceptions: the
             // teaching catalog itself (who teaches what, in which room) stays

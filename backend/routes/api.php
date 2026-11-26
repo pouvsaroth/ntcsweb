@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Api\V1\Admin\FundController;
+use App\Http\Controllers\Api\V1\Admin\PartyBranchController;
 use App\Http\Controllers\Api\V1\Admin\PartyLocationController;
 use App\Http\Controllers\Api\V1\Admin\FundProviderController;
 use App\Http\Controllers\Api\V1\Admin\FundTypeController;
@@ -1083,6 +1084,9 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::post('fund-types', [FundTypeController::class, 'store'])->name('fund-types.store');
         // Political Party > Locations: provinces, districts, communes, villages by name or code.
         Route::get('party/locations', [PartyLocationController::class, 'index'])->name('party.locations.index');
+        // Political Party > Branches: branches / offices at a province, district, commune or village.
+        Route::get('party-branches/excel', [PartyBranchController::class, 'excel'])->name('party-branches.excel');
+        Route::apiResource('party-branches', PartyBranchController::class);
         Route::post('funds/{fund}/entries', [FundController::class, 'record'])->name('funds.entries.store');
         // Copy: several money in at once (last month's providers for a new month).
         Route::post('funds/{fund}/entries/copy', [FundController::class, 'recordMany'])->name('funds.entries.copy');

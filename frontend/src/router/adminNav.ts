@@ -314,10 +314,11 @@ export const adminNav: AdminNavGroup[] = [
     ],
   },
   {
-    // Political Party: party work by place (Locations: Cambodia's provinces, districts, communes, villages).
+    // Political Party: branches / offices by place, and Locations (Cambodia's provinces, districts, communes, villages).
     labelKey: 'adminNav.groups.politicalParty',
     icon: 'userGroup',
     items: [
+      { labelKey: 'adminNav.items.partyBranches', icon: 'building', to: '/admin/party/branches', permission: 'party-branches.view' },
       { labelKey: 'adminNav.items.partyLocations', icon: 'location', to: '/admin/party/locations', permission: 'party-locations.view' },
     ],
   },
