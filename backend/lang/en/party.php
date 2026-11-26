@@ -28,6 +28,15 @@ return [
         'notFound' => ':level ":name" was not found (check the spelling, or use its code).',
         'nothing' => 'No rows found. Use the template: Province, District, Commune, then Office code + Office name, or Seats.',
     ],
+    'members' => [
+        'chooseCommune' => 'Choose a commune.',
+        'alreadyOn' => 'This staff member is already on the list of :commune for :year.',
+        'staffNotFound' => 'No staff member has employee code ":code".',
+        'staffTwice' => 'Employee code :code is in the file twice.',
+        'typeUnknown' => 'Type must be Full or Reserve.',
+        'noNumber' => 'No. must be a number from 1.',
+        'nothing' => 'No rows found. Use the template: Province, District, Commune, Employee code, Type, No.',
+    ],
     'levels' => [
         'province' => 'Province',
         'district' => 'District',

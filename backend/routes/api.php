@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Api\V1\Admin\FundController;
+use App\Http\Controllers\Api\V1\Admin\CommuneMemberController;
 use App\Http\Controllers\Api\V1\Admin\ElectionOfficeController;
 use App\Http\Controllers\Api\V1\Admin\PartyBranchController;
 use App\Http\Controllers\Api\V1\Admin\PartyLocationController;
@@ -1096,6 +1097,12 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::put('election-seats', [ElectionOfficeController::class, 'saveSeats'])->name('election-seats.save');
         Route::delete('election-seats/{seat}', [ElectionOfficeController::class, 'deleteSeats'])->name('election-seats.destroy');
         Route::apiResource('election-offices', ElectionOfficeController::class)->except('show');
+        // Political Party > Commune members: each commune's full and reserve members (HRM staff), per election year.
+        Route::get('commune-members/years', [CommuneMemberController::class, 'years'])->name('commune-members.years');
+        Route::get('commune-members/staff-options', [CommuneMemberController::class, 'staffOptions'])->name('commune-members.staff-options');
+        Route::get('commune-members/template', [CommuneMemberController::class, 'template'])->name('commune-members.template');
+        Route::post('commune-members/import', [CommuneMemberController::class, 'import'])->name('commune-members.import');
+        Route::apiResource('commune-members', CommuneMemberController::class)->except('show');
         Route::post('funds/{fund}/entries', [FundController::class, 'record'])->name('funds.entries.store');
         // Copy: several money in at once (last month's providers for a new month).
         Route::post('funds/{fund}/entries/copy', [FundController::class, 'recordMany'])->name('funds.entries.copy');

@@ -1147,6 +1147,13 @@ const adminRoutes: RouteRecordRaw[] = [
     meta: { permission: 'party-branches.view', titleKey: 'adminNav.items.partyBranches' },
   },
   {
+    // Political Party > Commune members: each commune's full and reserve members (HRM staff), per election year.
+    path: 'party/commune-members',
+    name: 'admin.party.communeMembers',
+    component: () => import('@/pages/admin/party/CommuneMembers.vue'),
+    meta: { permission: 'commune-members.view', titleKey: 'adminNav.items.communeMembers' },
+  },
+  {
     // Political Party > Election offices: a commune's council seats, election offices and voters, per election year.
     path: 'party/election-offices',
     name: 'admin.party.electionOffices',

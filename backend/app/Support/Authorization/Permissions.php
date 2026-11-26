@@ -905,6 +905,15 @@ final class Permissions
 
     public const ELECTION_OFFICES_DELETE = 'election-offices.delete';
 
+    // Political Party > Commune members: each commune's full and reserve members (HRM staff), per election year.
+    public const COMMUNE_MEMBERS_VIEW = 'commune-members.view';
+
+    public const COMMUNE_MEMBERS_CREATE = 'commune-members.create';
+
+    public const COMMUNE_MEMBERS_UPDATE = 'commune-members.update';
+
+    public const COMMUNE_MEMBERS_DELETE = 'commune-members.delete';
+
     // Loan > Customers: people who keep savings with the owner or borrow from them.
     public const LOAN_CUSTOMERS_VIEW = 'loan-customers.view';
 
@@ -1806,6 +1815,10 @@ final class Permissions
                 self::ELECTION_OFFICES_CREATE => 'Add election offices and commune seats',
                 self::ELECTION_OFFICES_UPDATE => 'Update election offices and commune seats',
                 self::ELECTION_OFFICES_DELETE => 'Delete election offices and commune seats',
+                self::COMMUNE_MEMBERS_VIEW => 'View commune full and reserve members',
+                self::COMMUNE_MEMBERS_CREATE => 'Add commune members (import too)',
+                self::COMMUNE_MEMBERS_UPDATE => 'Change commune members (full / reserve, order)',
+                self::COMMUNE_MEMBERS_DELETE => 'Remove commune members',
             ],
             'Fund' => [
                 self::FUNDS_VIEW => 'View funds and their statements',
@@ -2321,6 +2334,7 @@ final class Permissions
                 self::PARTY_LOCATIONS_VIEW,
                 self::PARTY_BRANCHES_VIEW, self::PARTY_BRANCHES_CREATE, self::PARTY_BRANCHES_UPDATE, self::PARTY_BRANCHES_DELETE,
                 self::ELECTION_OFFICES_VIEW, self::ELECTION_OFFICES_CREATE, self::ELECTION_OFFICES_UPDATE, self::ELECTION_OFFICES_DELETE,
+                self::COMMUNE_MEMBERS_VIEW, self::COMMUNE_MEMBERS_CREATE, self::COMMUNE_MEMBERS_UPDATE, self::COMMUNE_MEMBERS_DELETE,
             ],
             // Read-only across the board, with a few write exceptions: the
             // teaching catalog itself (who teaches what, in which room) stays

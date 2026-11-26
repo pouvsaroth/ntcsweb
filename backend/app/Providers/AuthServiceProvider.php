@@ -47,6 +47,7 @@ use App\Models\FormCategory;
 use App\Models\FormTemplate;
 use App\Models\Fund;
 use App\Models\FundProvider;
+use App\Models\CommuneMember;
 use App\Models\ElectionOffice;
 use App\Models\PartyBranch;
 use App\Models\GradeCorrection;
@@ -155,6 +156,7 @@ use App\Policies\FormCategoryPolicy;
 use App\Policies\FormTemplatePolicy;
 use App\Policies\FundPolicy;
 use App\Policies\FundProviderPolicy;
+use App\Policies\CommuneMemberPolicy;
 use App\Policies\ElectionOfficePolicy;
 use App\Policies\PartyBranchPolicy;
 use App\Policies\GradeCorrectionPolicy;
@@ -309,6 +311,7 @@ class AuthServiceProvider extends ServiceProvider
         FundProvider::class => FundProviderPolicy::class,
         PartyBranch::class => PartyBranchPolicy::class,
         ElectionOffice::class => ElectionOfficePolicy::class,
+        CommuneMember::class => CommuneMemberPolicy::class,
         CustomerLoan::class => CustomerLoanPolicy::class,
         DiscountCode::class => DiscountCodePolicy::class,
         RepairShop::class => RepairShopPolicy::class,
