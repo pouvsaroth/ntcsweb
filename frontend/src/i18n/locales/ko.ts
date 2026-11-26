@@ -6678,6 +6678,8 @@ const ko: MessageSchema = {
         employerPaid: "학교 부담",
         working: "계산 내역",
         shiftPay: "근무조별 지급",
+        joined: "기간 중 입사",
+        joinedPaid: "{total}일 중 {days}일 지급 ({date}부터)",
         shiftRate: "{days}일 · 일당 {daily} · 시급 {hourly}",
         taxInSecondHalf: "16일–말일 급여에서 한 달 전체 기준으로 공제",
         rate: "환율",

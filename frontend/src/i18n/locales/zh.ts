@@ -6677,6 +6677,8 @@ const zh: MessageSchema = {
         employerPaid: "学校支付",
         working: "计算方式",
         shiftPay: "按班次计薪",
+        joined: "本期内入职",
+        joinedPaid: "按 {total} 天中的 {days} 天计薪（自 {date} 起）",
         shiftRate: "{days} 天 · 日薪 {daily} · 时薪 {hourly}",
         taxInSecondHalf: "在16日至月末的工资单中按整月扣除",
         rate: "汇率",

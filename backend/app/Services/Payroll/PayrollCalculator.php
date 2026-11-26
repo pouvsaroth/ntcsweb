@@ -41,6 +41,10 @@ use Illuminate\Validation\ValidationException;
  * Tax and NSSF are monthly: a 1st–15th run takes none, and the 16th–end
  * run works them out on the whole month — its own pay plus the first
  * half's (when that run exists and isn't cancelled/rejected).
+ *
+ * Someone hired after the period's first day is paid for the calendar days
+ * from their hire date: basic and recurring items × days ÷ the period's
+ * days (one-time items in full).
  */
 final class PayrollCalculator
 {
@@ -108,11 +112,19 @@ final class PayrollCalculator
 
         $run->payslips()->delete();
 
+        $periodDays = (int) $from->diffInDays($to) + 1;
+
         foreach ($staff as $member) {
+            // Hired inside the period: only the calendar days from the hire date are paid.
+            $hired = $member->hire_date !== null ? CarbonImmutable::parse($member->hire_date->toDateString()) : null;
+            $prorated = $hired !== null && $hired->greaterThan($from)
+                ? ['from' => $hired->toDateString(), 'days' => (int) $hired->diffInDays($to) + 1, 'period_days' => $periodDays]
+                : null;
+
             $slip = $this->slip(
                 $member,
                 $salaries[$member->id],
-                $factor,
+                $prorated !== null ? $factor * $prorated['days'] / $periodDays : $factor,
                 $from,
                 $to,
                 $taxed,
@@ -129,6 +141,7 @@ final class PayrollCalculator
                 $salaries[$member->id]->shifts->isNotEmpty()
                     ? $this->attendance->rateBook($salaries[$member->id], $schedules->get($member->work_schedule_id) ?? $defaultSchedule, $shifts, $to)['shifts']
                     : [],
+                $prorated,
             );
             $run->payslips()->create($slip);
         }
@@ -173,6 +186,7 @@ final class PayrollCalculator
         float $adjustment,
         ?string $adjustmentNote,
         array $shiftRates = [],
+        ?array $prorated = null,
     ): array {
         $currency = $salary->currency;
         $monthly = (float) $salary->basic_salary;
@@ -321,6 +335,8 @@ final class PayrollCalculator
                 'structure' => $salary->salary_structure_id !== null ? $structures->get($salary->salary_structure_id)?->name : null,
                 // "Pay by shift": each shift's amount, days that month and rates.
                 'shift_pay' => $shiftRates,
+                // Hired inside the period: paid `days` of `period_days`, from `from`.
+                'prorated' => $prorated,
             ],
             'payment_method' => $salary->payment_method,
             'bank_name' => $salary->bank_name,

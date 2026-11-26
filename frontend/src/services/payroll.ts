@@ -468,6 +468,8 @@ export interface Payslip {
     structure?: string | null
     /** "Pay by shift": each shift's monthly amount, its days that month and rates. */
     shift_pay?: { shift_id: number; name: string | null; amount: number; days: number; hours: number; daily_rate: number | null; hourly_rate: number | null }[]
+    /** Hired inside the period: paid `days` of `period_days` calendar days, from `from` (yyyy-mm-dd). */
+    prorated?: { from: string; days: number; period_days: number } | null
   } | null
   payment_method: PaymentMethod | null
   bank_name: string | null

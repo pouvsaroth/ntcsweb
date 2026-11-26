@@ -97,6 +97,46 @@ class PayrollRunTest extends TestCase
         $this->assertSame($loan->id, collect($slip['lines']['deductions'])->firstWhere('type', 'loan')['loan_id']);
     }
 
+    public function test_a_staff_member_hired_mid_period_is_paid_for_the_calendar_days_from_the_hire_date(): void
+    {
+        $transport = PayrollComponent::factory()->create(['code' => 'TR', 'affects_tax' => false, 'affects_social_security' => false]);
+        $bonus = PayrollComponent::factory()->create(['code' => 'BN', 'kind' => PayrollComponent::KIND_BONUS, 'affects_tax' => false, 'affects_social_security' => false]);
+        $start = CarbonImmutable::parse($this->month.'-01');
+        $days = $start->daysInMonth;
+        $hired = $start->addDays(20); // the 21st: paid the 21st to the month's end
+
+        $staff = Staff::factory()->create(['hire_date' => $hired->toDateString()]);
+        StaffSalary::factory()->create(['staff_id' => $staff->id, 'basic_salary' => 3000000, 'currency' => Tenant::CURRENCY_KHR, 'effective_from' => $hired->toDateString()]);
+        StaffPayComponent::factory()->create(['staff_id' => $staff->id, 'payroll_component_id' => $transport->id, 'amount' => 300000, 'starts_on' => $hired->toDateString()]);
+        StaffPayComponent::factory()->create(['staff_id' => $staff->id, 'payroll_component_id' => $bonus->id, 'amount' => 100000, 'recurrence' => 'once', 'starts_on' => $hired->toDateString()]);
+        $veteran = $this->staffOnTwoMillion();
+
+        $run = $this->createRun();
+        $paid = $days - 20;
+        $slip = collect($run['payslips'])->firstWhere('staff.id', $staff->id);
+        $this->assertSame(round(3000000 * $paid / $days), (float) $slip['basic_pay']);
+        // Recurring allowance cut the same way; a one-time bonus is paid in full.
+        $this->assertSame(round(300000 * $paid / $days), (float) $slip['allowances']);
+        $this->assertSame(100000.0, (float) $slip['bonuses']);
+        $this->assertSame(2000000.0, (float) collect($run['payslips'])->firstWhere('staff.id', $veteran->id)['basic_pay']);
+
+        $details = $this->getJson("/api/v1/payslips/{$slip['id']}")->assertOk()->json('data.details.prorated');
+        $this->assertSame(['from' => $hired->toDateString(), 'days' => $paid, 'period_days' => $days], $details);
+        $this->assertNull($this->getJson('/api/v1/payslips/'.collect($run['payslips'])->firstWhere('staff.id', $veteran->id)['id'])->json('data.details.prorated'));
+
+        // The payslip PDF says how many days were paid.
+        $model = PayrollRun::query()->findOrFail($run['id']);
+        $html = view('pdf.payslips', ['run' => $model, 'slips' => $model->payslips()->with(['staff.position', 'staff.department'])->get(), 'signers' => [], 'tenant' => $this->tenant, 'logoDataUri' => null, 'khmerFontRegular' => '', 'khmerFontBold' => ''])->render();
+        $this->assertStringContainsString("{$paid} of {$days} days, from ".$hired->format('d-m-Y'), $html);
+        $this->assertSame(1, substr_count($html, 'Paid days'));
+
+        // A 16th–end run: the days from the hire date out of that half's days.
+        $this->postJson("/api/v1/payroll-runs/{$run['id']}/cancel")->assertSuccessful();
+        $half = collect($this->createRun('second_half')['payslips'])->firstWhere('staff.id', $staff->id);
+        $halfDays = $days - 15;
+        $this->assertSame(round(3000000 * 0.5 * $paid / $halfDays), (float) $half['basic_pay']);
+    }
+
     public function test_a_pay_by_shift_payslip_shows_a_line_per_shift(): void
     {
         $weekday = Shift::factory()->create(['name' => 'Evening', 'start_time' => '16:00', 'end_time' => '19:00', 'break_minutes' => 0]);

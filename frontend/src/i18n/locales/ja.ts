@@ -6678,6 +6678,8 @@ const ja: MessageSchema = {
         employerPaid: "学校負担",
         working: "計算の内訳",
         shiftPay: "シフト別支給",
+        joined: "期間中に入社",
+        joinedPaid: "{total}日中{days}日分を支給（{date}から）",
         shiftRate: "{days}日 · 日額 {daily} · 時給 {hourly}",
         taxInSecondHalf: "16日〜月末の給与計算で1か月分まとめて控除",
         rate: "為替レート",

@@ -6682,6 +6682,8 @@ const en = {
         employerPaid: "Paid by the school",
         working: "How it was worked out",
         shiftPay: "Pay by shift",
+        joined: "Joined in this period",
+        joinedPaid: "{days} of {total} days paid, from {date}",
         shiftRate: "{days} days · {daily} a day · {hourly} an hour",
         taxInSecondHalf: "Taken in the 16th–end payroll, on the whole month",
         rate: "Currency rate",

@@ -9,6 +9,8 @@ return [
     'position' => 'តួនាទី',
     'pay_date' => 'ថ្ងៃបើកប្រាក់',
     'payment' => 'បើកតាម',
+    'paid_days' => 'ថ្ងៃបើកប្រាក់',
+    'paid_days_value' => 'បើក :days ថ្ងៃ ក្នុង :total ថ្ងៃ ចាប់ពី :date',
     'cash' => 'សាច់ប្រាក់',
     'earnings' => 'ប្រាក់ចំណូល',
     'deductions' => 'ការកាត់ប្រាក់',

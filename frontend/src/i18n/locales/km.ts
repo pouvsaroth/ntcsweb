@@ -6678,6 +6678,8 @@ const km: MessageSchema = {
         employerPaid: "សាលាបង់",
         working: "របៀបគណនា",
         shiftPay: "បើកប្រាក់តាមវេន",
+        joined: "ចូលធ្វើការក្នុងគ្រានេះ",
+        joinedPaid: "បើក {days} ថ្ងៃ ក្នុង {total} ថ្ងៃ ចាប់ពី {date}",
         shiftRate: "{days} ថ្ងៃ · {daily} ក្នុងមួយថ្ងៃ · {hourly} ក្នុងមួយម៉ោង",
         taxInSecondHalf: "កាត់ក្នុងបញ្ជីប្រាក់ខែថ្ងៃទី១៦–ចុងខែ លើពេញមួយខែ",
         rate: "អត្រាប្តូរប្រាក់",

@@ -10,6 +10,8 @@ return [
     'position' => 'Position',
     'pay_date' => 'Pay date',
     'payment' => 'Paid by',
+    'paid_days' => 'Paid days',
+    'paid_days_value' => ':days of :total days, from :date',
     'cash' => 'Cash',
     'earnings' => 'Earnings',
     'deductions' => 'Deductions',

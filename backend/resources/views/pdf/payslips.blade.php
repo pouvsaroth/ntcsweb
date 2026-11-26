@@ -80,6 +80,9 @@
                 <th>{{ __('payslip.pay_date') }}</th><td>{{ $run->pay_date?->format('d-m-Y') }}</td>
             </tr>
             <tr><th>{{ __('payslip.payment') }}</th><td colspan="3">{{ $bank }}</td></tr>
+            @if (! empty($slip->details['prorated']))
+                <tr><th>{{ __('payslip.paid_days') }}</th><td colspan="3">{{ __('payslip.paid_days_value', ['days' => $slip->details['prorated']['days'], 'total' => $slip->details['prorated']['period_days'], 'date' => \Illuminate\Support\Carbon::parse($slip->details['prorated']['from'])->format('d-m-Y')]) }}</td></tr>
+            @endif
         </table>
 
         <div class="cols">

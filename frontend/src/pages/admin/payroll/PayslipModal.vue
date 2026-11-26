@@ -118,6 +118,10 @@ const overtime = computed(() => slip.value?.details?.overtime?.minutes ?? null)
       <details class="mt-4 text-sm">
         <summary class="cursor-pointer font-medium text-primary-700">{{ t('admin.payroll.payslip.working') }}</summary>
         <dl class="mt-2 grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-1 rounded-lg bg-neutral-50 p-3">
+          <template v-if="slip.details?.prorated">
+            <dt class="text-neutral-500">{{ t('admin.payroll.payslip.joined') }}</dt>
+            <dd>{{ t('admin.payroll.payslip.joinedPaid', { days: slip.details.prorated.days, total: slip.details.prorated.period_days, date: formatDate(slip.details.prorated.from) }) }}</dd>
+          </template>
           <template v-if="slip.details?.structure"><dt class="text-neutral-500">{{ t('admin.payroll.salaries.structure') }}</dt><dd>{{ slip.details.structure }}</dd></template>
           <template v-for="line in slip.details?.shift_pay ?? []" :key="line.shift_id">
             <dt class="text-neutral-500">{{ t('admin.payroll.payslip.shiftPay') }}: {{ line.name ?? '—' }} ({{ money(line.amount) }})</dt>
