@@ -167,7 +167,7 @@ final class CommuneMemberImport
         $writer = new Writer;
         $writer->openToFile($path);
         $writer->getCurrentSheet()->setName($km ? 'សមាជិក' : 'Members');
-        $writer->addRow(Row::fromValues($headings, (new Style)->withFontBold(true)));
+        $writer->addRow(Row::fromValues($headings, (new Style)->setFontBold()));
         $writer->addRow(Row::fromValues(['Battambang', 'Sangkae', 'Anlong Vil', 'EMP0001', $km ? 'ពេញសិទ្ធិ' : 'Full', 1, '']));
         $writer->addRow(Row::fromValues(['Battambang', 'Sangkae', 'Anlong Vil', 'EMP0002', $km ? 'បម្រុង' : 'Reserve', 1, '']));
         $writer->close();

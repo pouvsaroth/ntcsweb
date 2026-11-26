@@ -1188,6 +1188,13 @@ const adminRoutes: RouteRecordRaw[] = [
     meta: { permission: 'funds.view', titleKey: 'admin.fundReports.title' },
   },
   {
+    // Fund > Money in & out: every entry of every fund, money out first; totals and Excel.
+    path: 'fund-entries',
+    name: 'admin.fund-entries',
+    component: () => import('@/pages/admin/fund/FundEntries.vue'),
+    meta: { permission: 'funds.view', titleKey: 'adminNav.items.fundEntries' },
+  },
+  {
     // Fund > Providers by month: money in per provider / staff member, one column per month.
     path: 'fund-providers-by-month',
     name: 'admin.fund-providers-by-month',

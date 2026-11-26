@@ -122,6 +122,12 @@ class CommuneMemberTest extends TestCase
         $this->assertSame([], $this->names('reserve', $this->norea));
     }
 
+    public function test_the_excel_template_downloads(): void
+    {
+        $this->get('/api/v1/commune-members/template')->assertOk()
+            ->assertHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    }
+
     public function test_view_only_users_cannot_change_members(): void
     {
         $staff = Staff::factory()->create();

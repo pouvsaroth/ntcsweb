@@ -1,4 +1,4 @@
-import { apiDelete, apiGet, apiGetWithMeta, apiPost, apiPut } from '@/services/http'
+import { apiDelete, apiDownload, apiGet, apiGetWithMeta, apiPost, apiPut } from '@/services/http'
 import type { PaginatedQuery } from '@/composables/usePaginatedResource'
 import type { LengthAwarePaginationMeta, PaginatedResult } from '@/types/api'
 
@@ -149,6 +149,48 @@ export function providedByValue(entry: { fund_provider_id?: number | null; staff
   if (entry.fund_provider_id) return `provider:${entry.fund_provider_id}`
   if (entry.staff_id) return `staff:${entry.staff_id}`
   return ''
+}
+
+/** Fund > Money in & out: one entry of any fund, with its fund and the amount in USD and KHR at its date's rate. */
+export interface FundEntryRow extends FundEntry {
+  fund: { id: number; fund_no: string; name: string; currency: FundCurrency; status: FundStatus; fund_type: string } | null
+}
+
+/** Everything the filters keep (not only the page); USD / KHR are null when a day has no exchange rate. */
+export interface FundEntryTotals {
+  count: number
+  in_count: number
+  in_usd: number | null
+  in_khr: number | null
+  out_count: number
+  out_usd: number | null
+  out_khr: number | null
+}
+
+/** Filters for Money in & out ('' = any). */
+export interface FundEntryFilters {
+  type: '' | FundEntryType
+  date_from: string
+  date_to: string
+  for_month: string
+  fund_id: string
+  fund_type: string
+}
+
+const entryParams = (filters: Partial<FundEntryFilters>, search?: string) => {
+  const params: Record<string, string> = {}
+  for (const [key, value] of Object.entries(filters)) if (value) params[key] = String(value)
+  if (search) params.search = search
+  return params
+}
+
+export const fundEntriesService = {
+  async list(query: PaginatedQuery): Promise<PaginatedResult<FundEntryRow> & { totals: FundEntryTotals }> {
+    const result = await apiGetWithMeta<FundEntryRow[]>('/fund-entries', { params: { page: query.page, per_page: query.per_page, ...entryParams(query.filter ?? {}, query.search) } })
+    return { data: result.data, pagination: result.meta?.pagination as LengthAwarePaginationMeta, totals: result.meta?.totals as FundEntryTotals }
+  },
+  excel: (filters: Partial<FundEntryFilters>, search: string) =>
+    apiDownload(`/fund-entries/excel?${new URLSearchParams(entryParams(filters, search)).toString()}`, `fund-money-in-out-${new Date().toISOString().slice(0, 10)}.xlsx`),
 }
 
 export const fundsService = {

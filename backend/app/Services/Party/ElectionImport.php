@@ -161,7 +161,7 @@ final class ElectionImport
         $offices = $km ? ['ខេត្ត', 'ស្រុក', 'ឃុំ', 'ភូមិ', 'លេខការិយាល័យ', 'ឈ្មោះការិយាល័យ', 'ទីតាំង', 'ចំនួនអ្នកបោះឆ្នោត']
             : ['Province', 'District', 'Commune', 'Village', 'Office code', 'Office name', 'Location', 'Voters'];
         $seats = $km ? ['ខេត្ត', 'ស្រុក', 'ឃុំ', 'ចំនួនអាសនៈ'] : ['Province', 'District', 'Commune', 'Seats'];
-        $bold = (new Style)->withFontBold(true);
+        $bold = (new Style)->setFontBold();
 
         $path = tempnam(sys_get_temp_dir(), 'election');
         $writer = new Writer;

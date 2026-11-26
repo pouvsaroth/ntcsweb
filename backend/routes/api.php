@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Api\V1\Admin\FundController;
+use App\Http\Controllers\Api\V1\Admin\FundEntryListController;
 use App\Http\Controllers\Api\V1\Admin\CommuneMemberController;
 use App\Http\Controllers\Api\V1\Admin\ElectionOfficeController;
 use App\Http\Controllers\Api\V1\Admin\PartyBranchController;
@@ -1072,6 +1073,9 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
 
         // Fund > Funds: pots of the school's money; money in / out posts to the ledger.
         Route::get('funds/summary', [FundController::class, 'summary'])->name('funds.summary');
+        // Fund > Money in & out: every entry of every fund, filtered, with totals and Excel.
+        Route::get('fund-entries', [FundEntryListController::class, 'index'])->name('fund-entries.index');
+        Route::get('fund-entries/excel', [FundEntryListController::class, 'excel'])->name('fund-entries.excel');
         // "Provided by": HRM > Staff, listed with Fund > Providers.
         Route::get('funds/staff-options', [FundController::class, 'staffOptions'])->name('funds.staff-options');
         // Fund > Reports: in / out and balances for a period, by type and by fund.

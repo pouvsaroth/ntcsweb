@@ -103,6 +103,12 @@ class ElectionOfficeTest extends TestCase
         $this->assertSame(0, ElectionOffice::query()->count());
     }
 
+    public function test_the_excel_template_downloads(): void
+    {
+        $this->get('/api/v1/election-offices/template')->assertOk()
+            ->assertHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    }
+
     public function test_view_only_users_cannot_change_anything(): void
     {
         $this->actingAsAdminWithPermissions([Permissions::ELECTION_OFFICES_VIEW]);

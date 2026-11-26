@@ -224,6 +224,35 @@ class FundTest extends TestCase
         $this->deleteJson("/api/v1/funds/{$empty['id']}")->assertNoContent();
     }
 
+    public function test_money_in_and_out_lists_every_funds_entries_with_totals_and_excel(): void
+    {
+        CurrencyRate::factory()->create(['effective_date' => '2020-01-01', 'khr_per_usd' => 4000]);
+        $usd = $this->create(); // 1,000 in, 10 days ago
+        $khr = $this->create(['name' => 'Scholarship fund', 'fund_type' => 'SCHOLARSHIP', 'currency' => 'KHR', 'opening_amount' => 400000]);
+        $this->entry($usd['id'], 'out', 200, null, 'Builder', 'Cement')->assertCreated();
+        $this->entry($khr['id'], 'out', 40000, null, 'Shop', 'Books')->assertCreated();
+
+        $out = $this->getJson('/api/v1/fund-entries?type=out')->assertOk();
+        $this->assertSame(['Shop', 'Builder'], array_column($out->json('data'), 'party'));
+        $this->assertSame('Scholarship fund', $out->json('data.0.fund.name'));
+        $this->assertEquals([10, 40000], [$out->json('data.0.amount_usd'), $out->json('data.0.amount_khr')]);
+        $this->assertEquals([2, 210, 840000], [$out->json('meta.totals.out_count'), $out->json('meta.totals.out_usd'), $out->json('meta.totals.out_khr')]);
+        $this->assertEquals(0, $out->json('meta.totals.in_count'));
+
+        $all = $this->getJson('/api/v1/fund-entries')->assertOk();
+        $this->assertSame(4, $all->json('meta.totals.count'));
+        $this->assertEquals([1100, 4400000], [$all->json('meta.totals.in_usd'), $all->json('meta.totals.in_khr')]);
+
+        $this->assertCount(1, $this->getJson('/api/v1/fund-entries?search=cement')->json('data'));
+        $this->assertCount(1, $this->getJson("/api/v1/fund-entries?type=out&fund_id={$usd['id']}")->json('data'));
+        $this->assertCount(1, $this->getJson('/api/v1/fund-entries?type=out&fund_type=SCHOLARSHIP')->json('data'));
+        $this->assertCount(0, $this->getJson('/api/v1/fund-entries?type=out&date_to='.now()->subDays(1)->toDateString())->json('data'));
+        $this->assertCount(2, $this->getJson('/api/v1/fund-entries?for_month='.now()->format('Y-m').'&type=out')->json('data'));
+
+        $this->get('/api/v1/fund-entries/excel?type=out')->assertOk()
+            ->assertHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    }
+
     public function test_list_filters_summary_and_cash_flow(): void
     {
         $this->create(['opened_on' => now()->toDateString()]);
