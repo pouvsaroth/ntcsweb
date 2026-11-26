@@ -6,6 +6,7 @@ namespace Tests\Feature\Auth;
 
 use App\Models\Permission;
 use App\Models\Role;
+use App\Models\User;
 use App\Support\Authorization\Permissions;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\HasAcademicAdmin;
@@ -72,13 +73,11 @@ class RoleControllerTest extends TestCase
     }
 
     /**
-     * A system role's permissions/description ARE editable (this is the
-     * whole point of the Roles screen for the four built-in roles), but its
-     * name/slug/level are locked — those are referenced by slug across the
-     * codebase (auto-provisioning, hierarchy levels) — so a name/level
-     * submitted alongside the edit is silently dropped, not applied.
+     * A built-in role can be renamed and its permissions/description edited,
+     * but its slug and level stay: the code finds it by slug (auto-provisioning,
+     * hierarchy levels), so a level sent with the edit is silently dropped.
      */
-    public function test_a_system_roles_permissions_and_description_can_be_edited_but_not_its_name_or_level(): void
+    public function test_a_system_role_can_be_renamed_but_keeps_its_slug_and_level(): void
     {
         $admin = $this->actingAsAdminWithPermissions([Permissions::ROLES_UPDATE]);
         $admin->cachedRoles()->first()->update(['level' => 90]);
@@ -86,20 +85,56 @@ class RoleControllerTest extends TestCase
         $systemRole = Role::factory()->forTenant($this->tenant)->system()->create(['name' => 'Staff', 'slug' => 'staff', 'level' => 40]);
 
         $response = $this->putJson("/api/v1/roles/{$systemRole->id}", [
-            'name' => 'Renamed',
+            'name' => 'Office team',
             'level' => 5,
             'description' => 'Front-desk and registration duties.',
             'permissions' => [Permissions::STUDENTS_VIEW],
         ]);
 
         $response->assertOk();
-        $response->assertJsonPath('data.name', 'Staff');
+        $response->assertJsonPath('data.name', 'Office team');
         $response->assertJsonPath('data.description', 'Front-desk and registration duties.');
-        $this->assertDatabaseHas('roles', ['id' => $systemRole->id, 'name' => 'Staff', 'slug' => 'staff', 'level' => 40]);
+        $this->assertDatabaseHas('roles', ['id' => $systemRole->id, 'name' => 'Office team', 'slug' => 'staff', 'level' => 40]);
         $this->assertEqualsCanonicalizing(
             [Permissions::STUDENTS_VIEW],
             $systemRole->fresh()->permissions()->pluck('slug')->all(),
         );
+    }
+
+    /** A renamed built-in role keeps its old slug, so names are compared as well as slugs. */
+    public function test_role_names_stay_unique_after_a_built_in_role_is_renamed(): void
+    {
+        $admin = $this->actingAsAdminWithPermissions([Permissions::ROLES_CREATE, Permissions::ROLES_UPDATE]);
+        $admin->cachedRoles()->first()->update(['level' => 90]);
+        $admin->forgetPermissionCache();
+        $teacher = Role::factory()->forTenant($this->tenant)->system()->create(['name' => 'Teacher', 'slug' => 'teacher', 'level' => 50]);
+        $staff = Role::factory()->forTenant($this->tenant)->system()->create(['name' => 'Staff', 'slug' => 'staff', 'level' => 40]);
+
+        $this->putJson("/api/v1/roles/{$teacher->id}", ['name' => 'Lecturer'])->assertOk();
+
+        // A new role may take neither the new name nor the name its kept slug stands for.
+        $this->postJson('/api/v1/roles', ['name' => 'lecturer', 'level' => 30])->assertJsonValidationErrors('name');
+        $this->postJson('/api/v1/roles', ['name' => 'Teacher', 'level' => 30])->assertJsonValidationErrors('name');
+        // Another built-in role may not take it either; saving a role under its own name is fine.
+        $this->putJson("/api/v1/roles/{$staff->id}", ['name' => 'Lecturer'])->assertJsonValidationErrors('name');
+        $this->putJson("/api/v1/roles/{$teacher->id}", ['name' => 'Lecturer'])->assertOk();
+    }
+
+    public function test_a_custom_role_can_be_deleted_only_when_no_one_uses_it(): void
+    {
+        $admin = $this->actingAsAdminWithPermissions([Permissions::ROLES_DELETE]);
+        $admin->cachedRoles()->first()->update(['level' => 90]);
+        $admin->forgetPermissionCache();
+        $role = Role::factory()->forTenant($this->tenant)->create(['name' => 'Accountant', 'slug' => 'accountant', 'level' => 30]);
+        $holder = User::factory()->forTenant($this->tenant)->create();
+        $role->users()->attach($holder->id);
+
+        $this->deleteJson("/api/v1/roles/{$role->id}")->assertUnprocessable()->assertJsonValidationErrors('role');
+        $this->assertDatabaseHas('roles', ['id' => $role->id]);
+
+        $role->users()->detach($holder->id);
+        $this->deleteJson("/api/v1/roles/{$role->id}")->assertNoContent();
+        $this->assertDatabaseMissing('roles', ['id' => $role->id]);
     }
 
     /**

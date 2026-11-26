@@ -7,7 +7,6 @@ namespace App\Http\Requests\Api\V1\Admin;
 use App\Models\Role;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class StoreRoleRequest extends FormRequest
@@ -29,12 +28,7 @@ class StoreRoleRequest extends FormRequest
             'name' => [
                 'required', 'string', 'max:255',
                 function (string $attribute, mixed $value, \Closure $fail) use ($tenantId) {
-                    $exists = Role::query()
-                        ->where('tenant_id', $tenantId)
-                        ->where('slug', Str::slug($value))
-                        ->exists();
-
-                    if ($exists) {
+                    if (Role::nameTaken($tenantId, (string) $value)) {
                         $fail(__('A role with this name already exists.'));
                     }
                 },

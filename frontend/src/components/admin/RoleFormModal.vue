@@ -853,8 +853,8 @@ async function submit() {
         <BaseInput
           v-model="form.name"
           required
-          :disabled="isSystemRole"
           :label="t('admin.roles.roleName')"
+          :hint="isSystemRole ? t('admin.roles.builtInNameHint') : undefined"
           :error="errors.name?.[0]"
         />
         <BaseInput

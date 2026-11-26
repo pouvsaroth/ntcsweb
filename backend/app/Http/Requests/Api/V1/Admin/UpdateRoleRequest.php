@@ -7,7 +7,6 @@ namespace App\Http\Requests\Api\V1\Admin;
 use App\Models\Role;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class UpdateRoleRequest extends FormRequest
@@ -25,12 +24,23 @@ class UpdateRoleRequest extends FormRequest
         /** @var Role $role */
         $role = $this->route('role');
 
-        // A system role's name/slug/level are locked — see RolePolicy::update()
-        // for why. No rule for a key means FormRequest::validated() simply
-        // never returns it, so a `name`/`level` submitted alongside a system
-        // role edit is silently dropped rather than applied or rejected.
+        $tenantId = app(TenantContext::class)->idOrFail();
+        $name = [
+            'sometimes', 'required', 'string', 'max:255',
+            function (string $attribute, mixed $value, \Closure $fail) use ($tenantId, $role) {
+                if (Role::nameTaken($tenantId, (string) $value, $role->getKey())) {
+                    $fail(__('A role with this name already exists.'));
+                }
+            },
+        ];
+
+        // A built-in role may be renamed, but its slug and level stay — the
+        // code finds it by slug (see RolePolicy::update()). No rule for a key
+        // means FormRequest::validated() never returns it, so a `level` sent
+        // with a built-in role edit is silently dropped.
         if ($role->is_system) {
             return [
+                'name' => $name,
                 'description' => ['nullable', 'string', 'max:1000'],
                 // School Admin always sees everything; the other built-in roles may be limited.
                 ...($role->slug === Role::SCHOOL_ADMIN ? [] : ['data_scope' => ['sometimes', Rule::in([Role::SCOPE_ALL, Role::SCOPE_ASSIGNED])]]),
@@ -39,23 +49,8 @@ class UpdateRoleRequest extends FormRequest
             ];
         }
 
-        $tenantId = app(TenantContext::class)->idOrFail();
-
         return [
-            'name' => [
-                'sometimes', 'required', 'string', 'max:255',
-                function (string $attribute, mixed $value, \Closure $fail) use ($tenantId, $role) {
-                    $exists = Role::query()
-                        ->where('tenant_id', $tenantId)
-                        ->where('slug', Str::slug($value))
-                        ->whereKeyNot($role->getKey())
-                        ->exists();
-
-                    if ($exists) {
-                        $fail(__('A role with this name already exists.'));
-                    }
-                },
-            ],
+            'name' => $name,
             'description' => ['nullable', 'string', 'max:1000'],
             'data_scope' => ['sometimes', Rule::in([Role::SCOPE_ALL, Role::SCOPE_ASSIGNED])],
             'level' => [

@@ -33,12 +33,12 @@ class RolePolicy
             return false;
         }
 
-        // A system role's name/slug/level are locked (RoleController::update()
-        // silently drops those fields via UpdateRoleRequest) — they're
-        // referenced by slug across the codebase (auto-provisioning,
-        // hierarchy levels), and rewriting them would break those
-        // assumptions. Only description/permissions are actually editable
-        // here, so the "must strictly outrank" guard below doesn't apply the
+        // A system role's slug/level are locked (UpdateRoleRequest drops
+        // `level`, and RoleController::update() keeps the slug when it is
+        // renamed) — they're referenced by slug across the codebase
+        // (auto-provisioning, hierarchy levels), and rewriting them would
+        // break those assumptions. Only its name, description and
+        // permissions are editable, so the "must strictly outrank" guard below doesn't apply the
         // same way: nobody outranks their own highest-held role, which would
         // otherwise make it impossible for a School Admin to ever adjust the
         // School Admin role's own permissions.

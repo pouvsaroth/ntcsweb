@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 /**
  * Tenant-owned, with one exception: tenant_id IS NULL marks a platform role,
@@ -162,5 +163,19 @@ class Role extends Model
     public function auditModule(): string
     {
         return 'Roles';
+    }
+
+    /**
+     * Whether another role of the school already uses this name. Compares the
+     * slug (what a new role is stored under) and the name itself, because a
+     * renamed built-in role keeps its original slug.
+     */
+    public static function nameTaken(int $tenantId, string $name, ?int $exceptId = null): bool
+    {
+        return self::query()
+            ->where('tenant_id', $tenantId)
+            ->when($exceptId !== null, fn (Builder $q) => $q->whereKeyNot($exceptId))
+            ->where(fn (Builder $q) => $q->where('slug', Str::slug($name))->orWhereRaw('LOWER(name) = ?', [mb_strtolower(trim($name))]))
+            ->exists();
     }
 }

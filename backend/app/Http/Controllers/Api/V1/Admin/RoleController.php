@@ -17,6 +17,7 @@ use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 final class RoleController extends Controller
 {
@@ -66,7 +67,8 @@ final class RoleController extends Controller
     {
         $role->fill($request->safe()->only(['name', 'description', 'level', 'data_scope']));
 
-        if ($request->safe()->has('name')) {
+        // A built-in role keeps its slug when renamed: the code looks it up by slug.
+        if ($request->safe()->has('name') && ! $role->is_system) {
             $role->forceFill(['slug' => Str::slug($request->validated('name'))]);
         }
 
@@ -82,6 +84,16 @@ final class RoleController extends Controller
     public function destroy(Role $role): JsonResponse
     {
         $this->authorize('delete', $role);
+
+        // Refuse while the role is in use: deleting would silently strip it
+        // from its users, and positions point at it without a foreign key.
+        $users = $role->users()->count();
+        $positions = $role->positions()->count();
+        if ($users > 0 || $positions > 0) {
+            throw ValidationException::withMessages([
+                'role' => __('This role is still used by :users users and :positions positions. Give them another role first.', ['users' => $users, 'positions' => $positions]),
+            ]);
+        }
 
         $role->delete();
 
