@@ -433,6 +433,7 @@ const MODULES: ModuleEntry[] = [
   // Add = add funds and record money in / out; Update = edit or close; Delete = entries and empty funds.
   { name: 'Funds', group: 'Fund', actions: crud('funds') },
   { name: 'Branches', group: 'Political Party', actions: crud('party-branches') },
+  { name: 'Election offices', group: 'Political Party', actions: crud('election-offices') },
   { name: 'Locations', group: 'Political Party', actions: { view: 'party-locations.view' } },
   { name: 'Borrowings', group: 'Loan', parent: 'Borrowings', menu: true, actions: { view: 'borrowings.view' } },
   tab('Loan', 'Borrowings', 'Loans', '/admin/borrowings/loans', ['borrowings.view'], tabCud('borrowing-loans')),

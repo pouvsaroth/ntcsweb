@@ -6,11 +6,8 @@ namespace App\Http\Controllers\Api\V1\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponse;
-use App\Models\Commune;
-use App\Models\District;
 use App\Models\PartyBranch;
-use App\Models\Province;
-use App\Models\Village;
+use App\Support\Geography\Places;
 use App\Support\Query\ApiQuery;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
@@ -154,13 +151,7 @@ final class PartyBranchController extends Controller
             'remark' => ['nullable', 'string', 'max:2000'],
         ]);
 
-        $id = (int) $data['location_id'];
-        $places = match ($data['level']) {
-            'province' => ($p = Province::query()->find($id)) ? ['province_id' => $p->id, 'district_id' => null, 'commune_id' => null, 'village_id' => null] : null,
-            'district' => ($d = District::query()->find($id)) ? ['province_id' => $d->province_id, 'district_id' => $d->id, 'commune_id' => null, 'village_id' => null] : null,
-            'commune' => ($c = Commune::query()->with('district')->find($id)) ? ['province_id' => $c->district->province_id, 'district_id' => $c->district_id, 'commune_id' => $c->id, 'village_id' => null] : null,
-            'village' => ($v = Village::query()->with('commune.district')->find($id)) ? ['province_id' => $v->commune->district->province_id, 'district_id' => $v->commune->district_id, 'commune_id' => $v->commune_id, 'village_id' => $v->id] : null,
-        };
+        $places = Places::ancestry($data['level'], (int) $data['location_id']);
         if ($places === null) {
             throw ValidationException::withMessages(['location_id' => __('Choose the :level of this branch.', ['level' => $data['level']])]);
         }
@@ -178,26 +169,14 @@ final class PartyBranchController extends Controller
      */
     private function present(Collection $branches): Collection
     {
-        $load = function (string $model, string $key) use ($branches) {
-            $ids = $branches->pluck($key)->filter()->unique()->values();
-
-            return $ids->isEmpty() ? collect() : $model::query()->whereIn('id', $ids)->get(['id', 'code', 'name_km', 'name_latin'])->keyBy('id');
-        };
-        $provinces = $load(Province::class, 'province_id');
-        $districts = $load(District::class, 'district_id');
-        $communes = $load(Commune::class, 'commune_id');
-        $villages = $load(Village::class, 'village_id');
-        $brief = fn ($m) => $m === null ? null : ['id' => $m->id, 'code' => $m->code, 'name_km' => $m->name_km, 'name_latin' => $m->name_latin];
+        $names = Places::namer($branches);
 
         return $branches->map(fn (PartyBranch $b) => [
             'id' => $b->id,
             'code' => $b->code,
             'name' => $b->name,
             'level' => $b->level,
-            'province' => $brief($provinces->get($b->province_id)),
-            'district' => $b->district_id ? $brief($districts->get($b->district_id)) : null,
-            'commune' => $b->commune_id ? $brief($communes->get($b->commune_id)) : null,
-            'village' => $b->village_id ? $brief($villages->get($b->village_id)) : null,
+            ...$names($b),
             'leader_name' => $b->leader_name,
             'leader_phone' => $b->leader_phone,
             'address' => $b->address,

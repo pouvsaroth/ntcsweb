@@ -896,6 +896,15 @@ final class Permissions
 
     public const PARTY_BRANCHES_DELETE = 'party-branches.delete';
 
+    // Political Party > Election offices: offices per election year and each commune's council seats.
+    public const ELECTION_OFFICES_VIEW = 'election-offices.view';
+
+    public const ELECTION_OFFICES_CREATE = 'election-offices.create';
+
+    public const ELECTION_OFFICES_UPDATE = 'election-offices.update';
+
+    public const ELECTION_OFFICES_DELETE = 'election-offices.delete';
+
     // Loan > Customers: people who keep savings with the owner or borrow from them.
     public const LOAN_CUSTOMERS_VIEW = 'loan-customers.view';
 
@@ -1793,6 +1802,10 @@ final class Permissions
                 self::PARTY_BRANCHES_CREATE => 'Add party branches',
                 self::PARTY_BRANCHES_UPDATE => 'Update party branches',
                 self::PARTY_BRANCHES_DELETE => 'Delete party branches',
+                self::ELECTION_OFFICES_VIEW => 'View election offices and commune seats',
+                self::ELECTION_OFFICES_CREATE => 'Add election offices and commune seats',
+                self::ELECTION_OFFICES_UPDATE => 'Update election offices and commune seats',
+                self::ELECTION_OFFICES_DELETE => 'Delete election offices and commune seats',
             ],
             'Fund' => [
                 self::FUNDS_VIEW => 'View funds and their statements',
@@ -2307,6 +2320,7 @@ final class Permissions
                 self::BROADCASTS_VIEW, self::BROADCASTS_CREATE, self::BROADCASTS_DELETE,
                 self::PARTY_LOCATIONS_VIEW,
                 self::PARTY_BRANCHES_VIEW, self::PARTY_BRANCHES_CREATE, self::PARTY_BRANCHES_UPDATE, self::PARTY_BRANCHES_DELETE,
+                self::ELECTION_OFFICES_VIEW, self::ELECTION_OFFICES_CREATE, self::ELECTION_OFFICES_UPDATE, self::ELECTION_OFFICES_DELETE,
             ],
             // Read-only across the board, with a few write exceptions: the
             // teaching catalog itself (who teaches what, in which room) stays

@@ -1147,6 +1147,13 @@ const adminRoutes: RouteRecordRaw[] = [
     meta: { permission: 'party-branches.view', titleKey: 'adminNav.items.partyBranches' },
   },
   {
+    // Political Party > Election offices: a commune's council seats, election offices and voters, per election year.
+    path: 'party/election-offices',
+    name: 'admin.party.electionOffices',
+    component: () => import('@/pages/admin/party/ElectionOffices.vue'),
+    meta: { permission: 'election-offices.view', titleKey: 'adminNav.items.electionOffices' },
+  },
+  {
     // Political Party > Locations: search provinces, districts, communes, villages.
     path: 'party/locations',
     name: 'admin.party.locations',

@@ -11,13 +11,15 @@ import type { PlacePick } from '@/services/partyBranches'
  * (type into any of them to find a name). `depth` is how many levels show
  * (1 = province only … 4 = down to the village). With `allLabel` each list
  * starts with that choice (a filter); without it a list is a required pick
- * (a form). Picking a level clears every level under it.
+ * (a form); `optionalFrom` (a depth) makes that level and the ones under it
+ * optional, with a "—" choice. Picking a level clears every level under it.
  */
-const props = withDefaults(defineProps<{ modelValue: PlacePick; depth?: number; allLabel?: string; errors?: Partial<Record<keyof PlacePick, string>>; required?: boolean }>(), {
+const props = withDefaults(defineProps<{ modelValue: PlacePick; depth?: number; allLabel?: string; errors?: Partial<Record<keyof PlacePick, string>>; required?: boolean; optionalFrom?: number }>(), {
   depth: 4,
   allLabel: undefined,
   errors: () => ({}),
   required: false,
+  optionalFrom: 99,
 })
 const emit = defineEmits<{ 'update:modelValue': [value: PlacePick] }>()
 
@@ -28,15 +30,15 @@ const districts = ref<GeographyOption[]>([])
 const communes = ref<GeographyOption[]>([])
 const villages = ref<GeographyOption[]>([])
 
-const options = (rows: GeographyOption[]) => [
-  ...(props.allLabel ? [{ value: '', label: props.allLabel }] : []),
+const options = (rows: GeographyOption[], depth = 1) => [
+  ...(props.allLabel ? [{ value: '', label: props.allLabel }] : depth >= props.optionalFrom ? [{ value: '', label: '—' }] : []),
   ...rows.map((row) => ({ value: String(row.id), label: `${row.name_km} — ${row.name_latin}` })),
 ]
 const lists = computed(() => [
-  { key: 'province_id' as const, label: t('admin.partyLocations.levels.province'), options: options(provinces.value), disabled: false },
-  { key: 'district_id' as const, label: t('admin.partyLocations.levels.district'), options: options(districts.value), disabled: !props.modelValue.province_id },
-  { key: 'commune_id' as const, label: t('admin.partyLocations.levels.commune'), options: options(communes.value), disabled: !props.modelValue.district_id },
-  { key: 'village_id' as const, label: t('admin.partyLocations.levels.village'), options: options(villages.value), disabled: !props.modelValue.commune_id },
+  { key: 'province_id' as const, label: t('admin.partyLocations.levels.province'), options: options(provinces.value, 1), disabled: false },
+  { key: 'district_id' as const, label: t('admin.partyLocations.levels.district'), options: options(districts.value, 2), disabled: !props.modelValue.province_id },
+  { key: 'commune_id' as const, label: t('admin.partyLocations.levels.commune'), options: options(communes.value, 3), disabled: !props.modelValue.district_id },
+  { key: 'village_id' as const, label: t('admin.partyLocations.levels.village'), options: options(villages.value, 4), disabled: !props.modelValue.commune_id },
 ].slice(0, props.depth))
 
 // Load each list for the ids already picked (also when a form opens on a saved place).
@@ -74,12 +76,12 @@ function pick(key: keyof PlacePick, value: string) {
 
 <template>
   <SearchableSelect
-    v-for="list in lists"
+    v-for="(list, index) in lists"
     :key="list.key"
     :model-value="modelValue[list.key]"
     :options="list.options"
     :label="list.label"
-    :required="required"
+    :required="required && index + 1 < optionalFrom"
     :disabled="list.disabled"
     :error="errors[list.key]"
     @update:model-value="pick(list.key, $event)"

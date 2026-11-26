@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Api\V1\Admin\FundController;
+use App\Http\Controllers\Api\V1\Admin\ElectionOfficeController;
 use App\Http\Controllers\Api\V1\Admin\PartyBranchController;
 use App\Http\Controllers\Api\V1\Admin\PartyLocationController;
 use App\Http\Controllers\Api\V1\Admin\FundProviderController;
@@ -1087,6 +1088,14 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         // Political Party > Branches: branches / offices at a province, district, commune or village.
         Route::get('party-branches/excel', [PartyBranchController::class, 'excel'])->name('party-branches.excel');
         Route::apiResource('party-branches', PartyBranchController::class);
+        // Political Party > Election offices: offices per election year + each commune's council seats.
+        Route::get('election-offices/years', [ElectionOfficeController::class, 'years'])->name('election-offices.years');
+        Route::get('election-offices/template', [ElectionOfficeController::class, 'template'])->name('election-offices.template');
+        Route::post('election-offices/import', [ElectionOfficeController::class, 'import'])->name('election-offices.import');
+        Route::get('election-seats', [ElectionOfficeController::class, 'seats'])->name('election-seats.index');
+        Route::put('election-seats', [ElectionOfficeController::class, 'saveSeats'])->name('election-seats.save');
+        Route::delete('election-seats/{seat}', [ElectionOfficeController::class, 'deleteSeats'])->name('election-seats.destroy');
+        Route::apiResource('election-offices', ElectionOfficeController::class)->except('show');
         Route::post('funds/{fund}/entries', [FundController::class, 'record'])->name('funds.entries.store');
         // Copy: several money in at once (last month's providers for a new month).
         Route::post('funds/{fund}/entries/copy', [FundController::class, 'recordMany'])->name('funds.entries.copy');
