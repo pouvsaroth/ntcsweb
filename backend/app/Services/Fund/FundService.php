@@ -23,7 +23,8 @@ use Illuminate\Validation\ValidationException;
  *  - Money out: debit Funds, credit Cash/Bank.
  * A fund can never go below zero on any day, so money out (or removing
  * money in) that would overdraw it is refused. Removing an entry posts a
- * reversal; nothing posted is edited.
+ * reversal; editing one reverses its ledger entry and posts a new one, so
+ * nothing posted is changed in place.
  */
 final class FundService
 {
@@ -97,18 +98,83 @@ final class FundService
                 $this->assertNeverOverdrawn($fund, add: $entry);
             }
             $entry->save();
-
-            $cash = Account::query()->findOrFail($entry->cash_account_id);
-            $funds = $this->fundsAccount();
-            $label = trim($fund->name.' '.$fund->fund_no);
-            $date = $entry->transacted_on->toDateString();
-            $transaction = $entry->type === FundTransaction::OUT
-                ? $this->transactions->postFund($funds, $cash, $amount, $fund->currency, $date, "Fund money out — {$label}", $entry->getMorphClass(), $entry->id, $actor)
-                : $this->transactions->postFund($cash, $funds, $amount, $fund->currency, $date, "Fund money in — {$label}", $entry->getMorphClass(), $entry->id, $actor);
-            $entry->forceFill(['transaction_id' => $transaction->id])->save();
+            $this->post($fund, $entry, $actor);
 
             return $entry;
         });
+    }
+
+    /**
+     * Edit money in / out: amount, date, For month, account, from / paid to,
+     * remark (in stays in, out stays out). The old ledger entry is reversed
+     * and a new one posted; the fund must never go below zero afterwards.
+     *
+     * @param  array{amount: float|int|string, transacted_on: string, for_month?: string|null, cash_account_id: int, party?: string|null, fund_provider_id?: int|null, staff_id?: int|null, remark?: string|null}  $data
+     */
+    public function update(FundTransaction $entry, array $data, User $actor): FundTransaction
+    {
+        return DB::connection('tenant')->transaction(function () use ($entry, $data, $actor) {
+            /** @var Fund $fund */
+            $fund = Fund::query()->whereKey($entry->fund_id)->lockForUpdate()->firstOrFail();
+            /** @var FundTransaction $entry */
+            $entry = FundTransaction::query()->whereKey($entry->getKey())->lockForUpdate()->firstOrFail();
+
+            if ($fund->status !== 'active') {
+                throw ValidationException::withMessages(['status' => __('This fund is closed.')]);
+            }
+            if (Carbon::parse($data['transacted_on'])->lt($fund->opened_on)) {
+                throw ValidationException::withMessages(['transacted_on' => __('The date is before the fund was started.')]);
+            }
+
+            $amount = round((float) $data['amount'], $fund->currency === 'KHR' ? 0 : 2);
+            if ($amount <= 0) {
+                throw ValidationException::withMessages(['amount' => __('The amount must be greater than zero.')]);
+            }
+
+            $isIn = $entry->type === FundTransaction::IN;
+            $entry->fill([
+                'amount' => $amount,
+                'transacted_on' => $data['transacted_on'],
+                'for_month' => $this->forMonth($data['for_month'] ?? null, $data['transacted_on']),
+                'party' => $data['party'] ?? null,
+                'fund_provider_id' => $isIn ? ($data['fund_provider_id'] ?? null) : null,
+                'staff_id' => $isIn ? ($data['staff_id'] ?? null) : null,
+                'remark' => $data['remark'] ?? null,
+                'cash_account_id' => $data['cash_account_id'],
+            ]);
+
+            // Check the fund with this entry as edited in place of the saved one.
+            $this->assertNeverOverdrawn($fund, add: $entry, without: $entry);
+
+            $ledgerChanged = $entry->isDirty(['amount', 'transacted_on', 'for_month', 'cash_account_id']);
+            $entry->save();
+
+            if ($ledgerChanged || $entry->transaction_id === null) {
+                if ($entry->transaction_id) {
+                    $old = FinancialTransaction::query()->find($entry->transaction_id);
+                    if ($old && $old->status === TransactionStatus::POSTED) {
+                        $this->transactions->reverse($old, TransactionType::FUND, $actor);
+                    }
+                }
+                $this->post($fund, $entry, $actor);
+            }
+
+            return $entry;
+        });
+    }
+
+    /** Post an entry to the ledger: Cash/Bank <-> Funds. */
+    private function post(Fund $fund, FundTransaction $entry, User $actor): void
+    {
+        $cash = Account::query()->findOrFail($entry->cash_account_id);
+        $funds = $this->fundsAccount();
+        $label = trim($fund->name.' '.$fund->fund_no);
+        $date = $entry->transacted_on->toDateString();
+        $amount = (float) $entry->amount;
+        $transaction = $entry->type === FundTransaction::OUT
+            ? $this->transactions->postFund($funds, $cash, $amount, $fund->currency, $date, "Fund money out — {$label}", $entry->getMorphClass(), $entry->id, $actor)
+            : $this->transactions->postFund($cash, $funds, $amount, $fund->currency, $date, "Fund money in — {$label}", $entry->getMorphClass(), $entry->id, $actor);
+        $entry->forceFill(['transaction_id' => $transaction->id])->save();
     }
 
     /**

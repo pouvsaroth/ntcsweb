@@ -7629,6 +7629,10 @@ const ko: MessageSchema = {
       totalOut: '총 출금',
       noEntries: '아직 입출금이 없습니다.',
       removeEntry: '삭제',
+      editEntry: '수정',
+      editMoneyIn: '입금 수정',
+      editMoneyOut: '출금 수정',
+      saveChanges: '변경 저장',
       statuses: {
         active: '활성',
         closed: '닫힘',

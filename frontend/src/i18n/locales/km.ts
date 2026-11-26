@@ -7629,6 +7629,10 @@ const km: MessageSchema = {
       totalOut: 'សរុបចេញ',
       noEntries: 'មិនទាន់មានប្រាក់ចូល ឬចេញទេ។',
       removeEntry: 'លុប',
+      editEntry: 'កែ',
+      editMoneyIn: 'កែប្រាក់ចូល',
+      editMoneyOut: 'កែប្រាក់ចេញ',
+      saveChanges: 'រក្សាទុកការកែ',
       statuses: {
         active: 'សកម្ម',
         closed: 'បានបិទ',

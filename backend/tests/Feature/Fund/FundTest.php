@@ -161,6 +161,54 @@ class FundTest extends TestCase
         $this->assertEquals(100, $this->cash());
     }
 
+    public function test_editing_an_entry_reverses_its_ledger_entry_and_posts_the_new_amount(): void
+    {
+        $fund = $this->create(['opening_amount' => 100]);
+        $in = $this->entry($fund['id'], 'in', 50, party: 'Parents')->assertCreated()->json('data');
+
+        $shown = $this->putJson("/api/v1/fund-entries/{$in['id']}", [
+            'amount' => 80, 'transacted_on' => now()->toDateString(), 'for_month' => now()->format('Y-m'),
+            'cash_account_id' => $this->cashAccount->id, 'party' => 'Board', 'remark' => 'Fixed amount',
+        ])->assertOk()->json('data');
+
+        $this->assertEquals(180, $shown['balance']);
+        $edited = collect($shown['statement'])->firstWhere('id', $in['id']);
+        $this->assertEquals(80, $edited['amount']);
+        $this->assertSame('Board', $edited['party']);
+        $this->assertSame('Fixed amount', $edited['remark']);
+        $this->assertEquals(180, $this->cash());
+
+        $entry = FundTransaction::query()->findOrFail($in['id']);
+        $this->assertSame('POSTED', FinancialTransaction::query()->findOrFail($entry->transaction_id)->status);
+        $this->assertEquals(80, FinancialTransaction::query()->findOrFail($entry->transaction_id)->amount);
+        $this->assertSame(1, FinancialTransaction::query()->where('reference_id', $entry->id)->where('status', 'REVERSED')->count());
+
+        // Only the remark changed: the ledger is left alone.
+        $count = FinancialTransaction::query()->count();
+        $this->putJson("/api/v1/fund-entries/{$in['id']}", [
+            'amount' => 80, 'transacted_on' => now()->toDateString(), 'for_month' => now()->format('Y-m'),
+            'cash_account_id' => $this->cashAccount->id, 'party' => 'Board', 'remark' => 'Only the remark',
+        ])->assertOk();
+        $this->assertSame($count, FinancialTransaction::query()->count());
+    }
+
+    public function test_an_edit_that_would_overdraw_the_fund_is_refused(): void
+    {
+        $fund = $this->create(['opening_amount' => 100]);
+        $in = $this->entry($fund['id'], 'in', 50)->assertCreated()->json('data');
+        $out = $this->entry($fund['id'], 'out', 120)->assertCreated()->json('data');
+        $row = fn (array $o = []) => ['amount' => 50, 'transacted_on' => now()->toDateString(), 'cash_account_id' => $this->cashAccount->id, ...$o];
+
+        // Money in made smaller than later money out needs.
+        $this->putJson("/api/v1/fund-entries/{$in['id']}", $row(['amount' => 10]))->assertJsonValidationErrors('amount');
+        // Money out made bigger than the balance.
+        $this->putJson("/api/v1/fund-entries/{$out['id']}", $row(['amount' => 151]))->assertJsonValidationErrors('amount');
+        // Money out cannot take a provider.
+        $this->putJson("/api/v1/fund-entries/{$out['id']}", $row(['amount' => 100, 'fund_provider_id' => 1]))->assertJsonValidationErrors('fund_provider_id');
+        $this->putJson("/api/v1/fund-entries/{$out['id']}", $row(['amount' => 150, 'party' => 'Shop']))->assertOk()->assertJsonPath('data.balance', 0);
+        $this->assertEquals(0, $this->cash());
+    }
+
     public function test_closing_needs_a_zero_balance_and_a_fund_with_entries_cannot_be_deleted(): void
     {
         $fund = $this->create();

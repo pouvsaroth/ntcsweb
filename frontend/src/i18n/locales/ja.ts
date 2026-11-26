@@ -7629,6 +7629,10 @@ const ja: MessageSchema = {
       totalOut: '出金合計',
       noEntries: '入出金はまだありません。',
       removeEntry: '削除',
+      editEntry: '編集',
+      editMoneyIn: '入金を編集',
+      editMoneyOut: '出金を編集',
+      saveChanges: '変更を保存',
       statuses: {
         active: '有効',
         closed: '終了',

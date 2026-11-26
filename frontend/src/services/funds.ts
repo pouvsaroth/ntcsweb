@@ -167,5 +167,7 @@ export const fundsService = {
   record: (id: number, input: FundEntryInput) => apiPost<FundEntry>(`/funds/${id}/entries`, input),
   /** Copy: several money in at once (all saved, or none). */
   copyEntries: (id: number, entries: FundCopyRow[]) => apiPost<{ count: number; fund: Fund }>(`/funds/${id}/entries/copy`, { entries }),
+  /** Edit a money in / out row (in stays in, out stays out); returns the fund with its statement. */
+  updateEntry: (entryId: number, input: Omit<FundEntryInput, 'type'>) => apiPut<Fund>(`/fund-entries/${entryId}`, input),
   removeEntry: (entryId: number) => apiDelete<Fund>(`/fund-entries/${entryId}`),
 }

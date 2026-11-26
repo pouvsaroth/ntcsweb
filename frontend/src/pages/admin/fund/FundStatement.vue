@@ -24,6 +24,7 @@ import { formatDate, formatMonth } from '@/utils/date'
  * came from / was paid to, the remark and the balance after it. Print
  * prints only the statement (.print-area). Month shows one For month; tick
  * money in rows and Copy adds them again (e.g. the same providers next month).
+ * Edit on a row changes it (its ledger entry is reversed and posted again).
  */
 const { t, locale } = useI18n()
 const route = useRoute()
@@ -83,10 +84,18 @@ async function load() {
 
 const entryModal = ref(false)
 const entryType = ref<FundEntryType>('in')
+const editingEntry = ref<FundEntry | null>(null)
 function record(type: FundEntryType) {
+  editingEntry.value = null
   entryType.value = type
   entryModal.value = true
 }
+function editEntry(entry: FundEntry) {
+  editingEntry.value = entry
+  entryType.value = entry.type
+  entryModal.value = true
+}
+const rowActions = computed(() => (canUpdate.value || canDelete.value) && isActive.value)
 const editOpen = ref(false)
 
 function failed(e: unknown, fallback: string) {
@@ -221,7 +230,10 @@ onMounted(async () => {
             </div>
             <div class="mt-1 flex items-center justify-between text-xs text-neutral-500">
               <span>{{ t('admin.funds.balance') }}: <span class="font-medium text-neutral-800">{{ moneyOrDash(entry.balance_usd, 'USD') }} / {{ moneyOrDash(entry.balance_khr, 'KHR') }}</span></span>
-              <button v-if="canDelete && isActive" type="button" class="font-medium text-danger-600 hover:text-red-700" @click="removeEntry(entry)">{{ t('admin.funds.removeEntry') }}</button>
+              <span v-if="rowActions" class="flex gap-3">
+                <button v-if="canUpdate" type="button" class="font-medium text-primary-600 hover:text-primary-700" @click="editEntry(entry)">{{ t('admin.funds.editEntry') }}</button>
+                <button v-if="canDelete" type="button" class="font-medium text-danger-600 hover:text-red-700" @click="removeEntry(entry)">{{ t('admin.funds.removeEntry') }}</button>
+              </span>
             </div>
           </div>
         </div>
@@ -240,7 +252,7 @@ onMounted(async () => {
                 <th class="py-2 pr-3 text-right font-medium">{{ t('admin.funds.moneyIn') }}</th>
                 <th class="py-2 pr-3 text-right font-medium">{{ t('admin.funds.moneyOut') }}</th>
                 <th class="py-2 pr-3 text-right font-medium">{{ t('admin.funds.balance') }}</th>
-                <th v-if="canDelete && isActive" class="py-2 print:hidden"></th>
+                <th v-if="rowActions" class="py-2 print:hidden"></th>
               </tr>
             </thead>
             <tbody>
@@ -255,8 +267,9 @@ onMounted(async () => {
                 <td class="whitespace-nowrap py-2 pr-3 text-right tabular-nums text-green-700"><template v-if="entry.type === 'in'">{{ moneyOrDash(entry.amount_usd, 'USD') }}<span class="block text-xs font-normal text-neutral-500">{{ moneyOrDash(entry.amount_khr, 'KHR') }}</span></template></td>
                 <td class="whitespace-nowrap py-2 pr-3 text-right tabular-nums text-amber-700"><template v-if="entry.type === 'out'">{{ moneyOrDash(entry.amount_usd, 'USD') }}<span class="block text-xs font-normal text-neutral-500">{{ moneyOrDash(entry.amount_khr, 'KHR') }}</span></template></td>
                 <td class="whitespace-nowrap py-2 pr-3 text-right font-medium tabular-nums">{{ moneyOrDash(entry.balance_usd, 'USD') }}<span class="block text-xs font-normal text-neutral-500">{{ moneyOrDash(entry.balance_khr, 'KHR') }}</span></td>
-                <td v-if="canDelete && isActive" class="py-2 text-right print:hidden">
-                  <button type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="removeEntry(entry)">{{ t('admin.funds.removeEntry') }}</button>
+                <td v-if="rowActions" class="whitespace-nowrap py-2 text-right print:hidden">
+                  <button v-if="canUpdate" type="button" class="text-sm font-medium text-primary-600 hover:text-primary-700" @click="editEntry(entry)">{{ t('admin.funds.editEntry') }}</button>
+                  <button v-if="canDelete" type="button" class="ml-3 text-sm font-medium text-danger-600 hover:text-red-700" @click="removeEntry(entry)">{{ t('admin.funds.removeEntry') }}</button>
                 </td>
               </tr>
             </tbody>
@@ -265,7 +278,7 @@ onMounted(async () => {
       </template>
     </div>
 
-    <FundEntryModal v-model="entryModal" :fund="fund" :type="entryType" @saved="load" />
+    <FundEntryModal v-model="entryModal" :fund="fund" :type="entryType" :entry="editingEntry" @saved="load" />
     <FundCopyModal v-model="copyOpen" :fund="fund" :entries="picked" @saved="copied" />
     <FundFormModal v-model="editOpen" :fund="fund" @saved="load" />
   </div>

@@ -1083,6 +1083,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::post('funds/{fund}/entries', [FundController::class, 'record'])->name('funds.entries.store');
         // Copy: several money in at once (last month's providers for a new month).
         Route::post('funds/{fund}/entries/copy', [FundController::class, 'recordMany'])->name('funds.entries.copy');
+        Route::put('fund-entries/{entry}', [FundController::class, 'updateEntry'])->name('fund-entries.update');
         Route::delete('fund-entries/{entry}', [FundController::class, 'removeEntry'])->name('fund-entries.destroy');
         // Loan > Owe: money lent to customers, paid back as principal + interest.
         Route::get('customer-loans/schedule-preview', [CustomerLoanController::class, 'preview'])->name('customer-loans.preview');

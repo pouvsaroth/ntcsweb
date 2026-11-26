@@ -230,6 +230,29 @@ final class FundController extends Controller
         return $data;
     }
 
+    /** Edit a money in / out row; its ledger entry is reversed and posted again. */
+    public function updateEntry(Request $request, FundTransaction $entry): JsonResponse
+    {
+        $fund = Fund::query()->findOrFail($entry->fund_id);
+        $this->authorize('update', $fund);
+
+        $isOut = $entry->type === FundTransaction::OUT;
+        $data = $request->validate([
+            'amount' => ['required', 'numeric', 'gt:0', 'max:9999999999'],
+            'transacted_on' => ['required', 'date'],
+            'for_month' => ['nullable', 'date_format:Y-m'],
+            'cash_account_id' => ['required', 'integer', $this->cashAccountRule()],
+            'party' => ['nullable', 'string', 'max:255'],
+            'fund_provider_id' => $isOut ? ['prohibited'] : ['nullable', 'integer', $this->providerRule()],
+            'staff_id' => $isOut ? ['prohibited'] : ['nullable', 'integer', 'prohibits:fund_provider_id', $this->staffRule()],
+            'remark' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $this->funds->update($entry, $this->withProvider($data), $request->user());
+
+        return ApiResponse::success($this->full($fund));
+    }
+
     public function removeEntry(Request $request, FundTransaction $entry): JsonResponse
     {
         $fund = Fund::query()->findOrFail($entry->fund_id);

@@ -7628,6 +7628,10 @@ const zh: MessageSchema = {
       totalOut: '流出合计',
       noEntries: '还没有资金进出。',
       removeEntry: '删除',
+      editEntry: '编辑',
+      editMoneyIn: '编辑存入',
+      editMoneyOut: '编辑支出',
+      saveChanges: '保存更改',
       statuses: {
         active: '有效',
         closed: '已关闭',

@@ -7633,6 +7633,10 @@ const en = {
       totalOut: 'Total out',
       noEntries: 'No money in or out yet.',
       removeEntry: 'Remove',
+      editEntry: 'Edit',
+      editMoneyIn: 'Edit money in',
+      editMoneyOut: 'Edit money out',
+      saveChanges: 'Save changes',
       statuses: {
         active: 'Active',
         closed: 'Closed',
