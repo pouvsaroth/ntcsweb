@@ -7542,6 +7542,7 @@ const zh: MessageSchema = {
       exportFailed: '无法导出报表。',
     },
     fundReports: {
+      tabs: { summary: '汇总', moneyInOut: '收支明细', byMonth: '按月提供者' },
       byProvider: '按提供者的收入', noProvider: '未注明提供者', noProviderMoney: '此期间没有收入。', times: '次数', timesGiven: '已提供 {n} 次',
       title: '基金报表',
       subtitle: '某期间内每个基金的收入和支出，按币种显示。',

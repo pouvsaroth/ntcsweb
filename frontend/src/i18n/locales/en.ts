@@ -7547,6 +7547,7 @@ const en = {
       exportFailed: 'Could not export the report.',
     },
     fundReports: {
+      tabs: { summary: 'Summary', moneyInOut: 'Money in & out', byMonth: 'Providers by month' },
       byProvider: 'Money in by provider', noProvider: 'No provider named', noProviderMoney: 'No money in during this period.', times: 'Times', timesGiven: 'Given {n} times',
       title: 'Fund reports',
       subtitle: 'Money in and out of every fund for a period, in USD and KHR.',

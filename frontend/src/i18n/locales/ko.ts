@@ -7543,6 +7543,7 @@ const ko: MessageSchema = {
       exportFailed: '보고서를 내보낼 수 없습니다.',
     },
     fundReports: {
+      tabs: { summary: '요약', moneyInOut: '입출금', byMonth: '월별 제공자' },
       byProvider: '제공자별 입금', noProvider: '제공자 미지정', noProviderMoney: '이 기간에 입금이 없습니다.', times: '횟수', timesGiven: '{n}회 제공',
       title: '기금 보고서',
       subtitle: '기간 동안 각 기금의 입금과 출금을 통화별로 보여줍니다.',

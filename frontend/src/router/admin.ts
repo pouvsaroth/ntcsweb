@@ -7,6 +7,7 @@ import { attendanceRecordTabs, attendanceTabs } from '@/router/attendanceTabs'
 import { expenseTabs } from '@/router/expenseTabs'
 import { leaveTabs } from '@/router/leaveTabs'
 import { borrowingsTabs } from '@/router/borrowingsTabs'
+import { fundReportTabs } from '@/router/fundReportTabs'
 import { payrollTabs } from '@/router/payrollTabs'
 import { performanceTabs } from '@/router/performanceTabs'
 import { canOpenProfessionalDevelopmentTab, professionalDevelopmentTabs } from '@/router/professionalDevelopmentTabs'
@@ -1181,26 +1182,28 @@ const adminRoutes: RouteRecordRaw[] = [
     meta: { permission: 'funds.view', titleKey: 'admin.fundProviders.title' },
   },
   {
-    // Fund > Reports: in / out and balances for a period, by type and by fund.
+    // Fund > Reports: tabs as child routes (see FundReportsLayout.vue / fundReportTabs.ts) —
+    // Summary (in / out and balances for a period), Money in & out (every entry), Providers by month.
     path: 'fund-reports',
-    name: 'admin.fund-reports',
-    component: () => import('@/pages/admin/fund/FundReports.vue'),
-    meta: { permission: 'funds.view', titleKey: 'admin.fundReports.title' },
+    component: () => import('@/pages/admin/fund/FundReportsLayout.vue'),
+    meta: { permission: 'funds.view', titleKey: 'adminNav.items.fundReports' },
+    children: [
+      {
+        path: '',
+        name: 'admin.fund-reports',
+        redirect: () => {
+          const auth = useAuthStore()
+          return (auth.orderTabs(fundReportTabs).find((tab) => auth.tabInBar(tab.to) && auth.can(tab.permission)) ?? fundReportTabs[0]!).to
+        },
+      },
+      { path: 'summary', name: 'admin.fund-reports.summary', component: () => import('@/pages/admin/fund/FundReports.vue'), meta: { titleKey: 'admin.fundReports.title' } },
+      { path: 'money-in-out', name: 'admin.fund-reports.money-in-out', component: () => import('@/pages/admin/fund/FundEntries.vue'), meta: { titleKey: 'adminNav.items.fundEntries' } },
+      { path: 'providers-by-month', name: 'admin.fund-reports.providers-by-month', component: () => import('@/pages/admin/fund/FundProvidersByMonth.vue'), meta: { titleKey: 'admin.fundByMonth.title' } },
+    ],
   },
-  {
-    // Fund > Money in & out: every entry of every fund, money out first; totals and Excel.
-    path: 'fund-entries',
-    name: 'admin.fund-entries',
-    component: () => import('@/pages/admin/fund/FundEntries.vue'),
-    meta: { permission: 'funds.view', titleKey: 'adminNav.items.fundEntries' },
-  },
-  {
-    // Fund > Providers by month: money in per provider / staff member, one column per month.
-    path: 'fund-providers-by-month',
-    name: 'admin.fund-providers-by-month',
-    component: () => import('@/pages/admin/fund/FundProvidersByMonth.vue'),
-    meta: { permission: 'funds.view', titleKey: 'admin.fundByMonth.title' },
-  },
+  // Old links (these were menu items of their own before 2026-11-26).
+  { path: 'fund-entries', redirect: '/admin/fund-reports/money-in-out' },
+  { path: 'fund-providers-by-month', redirect: '/admin/fund-reports/providers-by-month' },
   {
     // Loan > Savings: accounts list, and one account statement (print).
     path: 'savings',

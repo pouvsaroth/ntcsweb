@@ -7543,6 +7543,7 @@ const km: MessageSchema = {
       exportFailed: 'មិនអាចនាំចេញរបាយការណ៍បានទេ។',
     },
     fundReports: {
+      tabs: { summary: 'សង្ខេប', moneyInOut: 'ប្រាក់ចូល និងចេញ', byMonth: 'អ្នកផ្តល់តាមខែ' },
       byProvider: 'ប្រាក់ចូលតាមអ្នកផ្តល់', noProvider: 'មិនបានបញ្ជាក់អ្នកផ្តល់', noProviderMoney: 'គ្មានប្រាក់ចូលក្នុងរយៈពេលនេះទេ។', times: 'ចំនួនដង', timesGiven: 'បានផ្តល់ {n} ដង',
       title: 'របាយការណ៍មូលនិធិ',
       subtitle: 'ប្រាក់ចូល និងចេញពីមូលនិធិនីមួយៗ សម្រាប់រយៈពេលមួយ ជាដុល្លារ និងរៀល។',

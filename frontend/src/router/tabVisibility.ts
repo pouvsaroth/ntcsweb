@@ -12,6 +12,7 @@ import { attendanceRecordTabs, attendanceTabs } from '@/router/attendanceTabs'
 import { borrowingsTabs } from '@/router/borrowingsTabs'
 import { examinationTabs } from '@/router/examinationTabs'
 import { frontOfficeTabs } from '@/router/frontOfficeTabs'
+import { fundReportTabs } from '@/router/fundReportTabs'
 import { leaveTabs } from '@/router/leaveTabs'
 import { lessonTabs } from '@/router/lessonTabs'
 import { organizationTabs } from '@/router/organizationTabs'
@@ -36,6 +37,7 @@ export const TAB_BARS: string[][] = [
   borrowingsTabs,
   examinationTabs,
   frontOfficeTabs,
+  fundReportTabs,
   leaveTabs,
   lessonTabs,
   organizationTabs,

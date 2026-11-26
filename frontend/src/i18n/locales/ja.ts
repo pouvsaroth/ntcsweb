@@ -7543,6 +7543,7 @@ const ja: MessageSchema = {
       exportFailed: 'レポートをエクスポートできませんでした。',
     },
     fundReports: {
+      tabs: { summary: '概要', moneyInOut: '入出金一覧', byMonth: '提供者別（月次）' },
       byProvider: '提供者別の入金', noProvider: '提供者の記載なし', noProviderMoney: 'この期間の入金はありません。', times: '回数', timesGiven: '{n} 回提供',
       title: '基金レポート',
       subtitle: '期間中の各基金の入金と出金を通貨ごとに表示します。',
