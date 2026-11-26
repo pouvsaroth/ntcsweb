@@ -6302,6 +6302,7 @@ const ko: MessageSchema = {
       },
     },
     payroll: {
+      tabGroups: { setup: "설정", rules: "규칙", run: "실행" },
       tabs: {
         salaryStructures: "급여 구조",
         basicSalary: "기본급",

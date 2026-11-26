@@ -6306,6 +6306,7 @@ const en = {
       },
     },
     payroll: {
+      tabGroups: { setup: "Setup", rules: "Rules", run: "Run" },
       tabs: {
         salaryStructures: "Salary structure",
         basicSalary: "Basic salary",

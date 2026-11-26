@@ -6302,6 +6302,7 @@ const km: MessageSchema = {
       },
     },
     payroll: {
+      tabGroups: { setup: "រៀបចំ", rules: "ច្បាប់", run: "បើកប្រាក់ខែ" },
       tabs: {
         salaryStructures: "រចនាសម្ព័ន្ធប្រាក់ខែ",
         basicSalary: "ប្រាក់ខែគោល",

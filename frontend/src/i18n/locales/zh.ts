@@ -6301,6 +6301,7 @@ const zh: MessageSchema = {
       },
     },
     payroll: {
+      tabGroups: { setup: "设置", rules: "规则", run: "发放" },
       tabs: {
         salaryStructures: "薪资结构",
         basicSalary: "基本工资",

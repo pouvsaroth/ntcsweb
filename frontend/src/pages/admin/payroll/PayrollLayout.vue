@@ -2,13 +2,13 @@
 import { computed } from 'vue'
 
 import RouteTabBar from '@/components/ui/RouteTabBar.vue'
-import { payrollTabs } from '@/router/payrollTabs'
+import { payrollTabGroups, payrollTabs } from '@/router/payrollTabs'
 import { useAuthStore } from '@/stores/auth'
 
 /**
  * HRM > Payroll — one sidebar link, each section a tab rendered into the
  * <RouterView> below as a child route (see router/admin.ts), same as Leave
- * Management.
+ * Management. On phones the 14 tabs show in three groups (Setup, Rules, Run).
  */
 const auth = useAuthStore()
 
@@ -17,7 +17,7 @@ const tabs = computed(() => payrollTabs.filter((tab) => auth.can(tab.permission)
 
 <template>
   <div>
-    <RouteTabBar :tabs="tabs" />
+    <RouteTabBar :tabs="tabs" :groups="payrollTabGroups" />
 
     <!-- Keyed: Allowances, Bonuses and Deductions are one page (PayComponents.vue), so it must remount between them. -->
     <RouterView :key="$route.path" />

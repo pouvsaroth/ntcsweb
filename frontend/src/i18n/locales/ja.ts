@@ -6302,6 +6302,7 @@ const ja: MessageSchema = {
       },
     },
     payroll: {
+      tabGroups: { setup: "設定", rules: "ルール", run: "実行" },
       tabs: {
         salaryStructures: "給与体系",
         basicSalary: "基本給",
