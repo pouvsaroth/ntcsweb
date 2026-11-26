@@ -884,6 +884,9 @@ final class Permissions
 
     public const FUNDS_DELETE = 'funds.delete';
 
+    // Political Party > Locations: search Cambodia's provinces, districts, communes and villages.
+    public const PARTY_LOCATIONS_VIEW = 'party-locations.view';
+
     // Loan > Customers: people who keep savings with the owner or borrow from them.
     public const LOAN_CUSTOMERS_VIEW = 'loan-customers.view';
 
@@ -1775,6 +1778,9 @@ final class Permissions
                 self::LENDERS_UPDATE => 'Update lenders',
                 self::LENDERS_DELETE => 'Delete lenders',
             ],
+            'Political Party' => [
+                self::PARTY_LOCATIONS_VIEW => 'Search provinces, districts, communes and villages',
+            ],
             'Fund' => [
                 self::FUNDS_VIEW => 'View funds and their statements',
                 self::FUNDS_CREATE => 'Add funds and record money in and out',
@@ -2286,6 +2292,7 @@ final class Permissions
                 self::DASHBOARD_CARDS_MARKETING,
                 self::REFERRALS_VIEW, self::REFERRALS_UPDATE,
                 self::BROADCASTS_VIEW, self::BROADCASTS_CREATE, self::BROADCASTS_DELETE,
+                self::PARTY_LOCATIONS_VIEW,
             ],
             // Read-only across the board, with a few write exceptions: the
             // teaching catalog itself (who teaches what, in which room) stays

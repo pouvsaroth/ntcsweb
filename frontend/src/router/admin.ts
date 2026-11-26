@@ -1140,6 +1140,13 @@ const adminRoutes: RouteRecordRaw[] = [
     meta: { permission: 'funds.view', titleKey: 'adminNav.items.funds' },
   },
   {
+    // Political Party > Locations: search provinces, districts, communes, villages.
+    path: 'party/locations',
+    name: 'admin.party.locations',
+    component: () => import('@/pages/admin/party/PartyLocations.vue'),
+    meta: { permission: 'party-locations.view', titleKey: 'adminNav.items.partyLocations' },
+  },
+  {
     path: 'funds/:id',
     name: 'admin.funds.statement',
     component: () => import('@/pages/admin/fund/FundStatement.vue'),

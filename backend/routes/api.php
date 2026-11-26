@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Api\V1\Admin\FundController;
+use App\Http\Controllers\Api\V1\Admin\PartyLocationController;
 use App\Http\Controllers\Api\V1\Admin\FundProviderController;
 use App\Http\Controllers\Api\V1\Admin\FundTypeController;
 use App\Http\Controllers\Api\V1\Admin\FundReportController;
@@ -1080,6 +1081,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::apiResource('fund-providers', FundProviderController::class);
         // The "+" beside Fund type: add a FUND_TYPE Base Data value.
         Route::post('fund-types', [FundTypeController::class, 'store'])->name('fund-types.store');
+        // Political Party > Locations: provinces, districts, communes, villages by name or code.
+        Route::get('party/locations', [PartyLocationController::class, 'index'])->name('party.locations.index');
         Route::post('funds/{fund}/entries', [FundController::class, 'record'])->name('funds.entries.store');
         // Copy: several money in at once (last month's providers for a new month).
         Route::post('funds/{fund}/entries/copy', [FundController::class, 'recordMany'])->name('funds.entries.copy');
