@@ -7653,6 +7653,7 @@ const ja: MessageSchema = {
       levels: { province: '州', district: '郡', commune: 'コミューン', village: '村' },
     },
     funds: {
+      total: '合計',
       newType: '+ 新しい基金種類', newTypeTitle: '新しい基金種類', typeNameEn: '名前（英語）', typeNameKm: '名前（クメール語）', typeNameKmHint: '空欄の場合は英語名を使います。', typeSaveFailed: '基金種類を追加できませんでした。',
       providedBy: '提供者', staffTag: '職員', selectProvider: '提供者を選択', newProvider: '+ 新しい提供者',
       forMonth: '対象月', filterMonth: '月', allMonths: 'すべての月', select: '選択', selectAllIn: '入金をすべて選択', copyPicked: 'コピー ({n})', copyTip: '入金の行にチェックを入れ、コピーで別の月に再登録します。', copyTitle: '入金をコピー — {name}', copyHint: '上の支払日と対象月はすべての行に反映されます。金額・日付・月を変更、または行を削除してから保存してください。', payDate: '支払日', copyEmpty: '保存する行がありません。', copyTotal: '{n}件の合計', copySave: '{n}件を保存',

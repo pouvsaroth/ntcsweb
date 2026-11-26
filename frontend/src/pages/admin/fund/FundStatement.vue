@@ -47,6 +47,15 @@ const allEntries = computed<FundEntry[]>(() => fund.value?.statement ?? [])
 const monthOf = (entry: FundEntry) => entry.for_month ?? entry.transacted_on.slice(0, 7)
 const monthFilter = ref('')
 const entries = computed<FundEntry[]>(() => (monthFilter.value ? allEntries.value.filter((e) => monthOf(e) === monthFilter.value) : allEntries.value))
+/** Money in / out of the rows shown, in USD and KHR (each row already at its own date's rate); null when a row has no rate. */
+const shownTotals = computed(() => {
+  const sum = (type: FundEntryType, key: 'amount_usd' | 'amount_khr') => {
+    const rows = entries.value.filter((e) => e.type === type)
+    if (rows.some((e) => e[key] == null)) return null
+    return Math.round(rows.reduce((n, e) => n + Number(e[key]), 0) * 100) / 100
+  }
+  return { in_usd: sum('in', 'amount_usd'), in_khr: sum('in', 'amount_khr'), out_usd: sum('out', 'amount_usd'), out_khr: sum('out', 'amount_khr') }
+})
 
 // Copy: money in rows ticked (only those shown count).
 const selected = ref<Set<number>>(new Set())
@@ -215,6 +224,10 @@ onMounted(async () => {
             <input type="checkbox" class="h-4 w-4 rounded border-neutral-300" :checked="allPicked" @change="toggleAll" />
             {{ t('admin.funds.selectAllIn') }}
           </label>
+          <div class="grid grid-cols-2 gap-2 rounded-lg bg-neutral-50 p-3 text-sm">
+            <div><p class="text-xs text-neutral-500">{{ t('admin.funds.totalIn') }}<template v-if="monthFilter"> · {{ formatMonth(monthFilter) }}</template></p><p class="font-semibold tabular-nums text-green-700">{{ moneyOrDash(shownTotals.in_usd, 'USD') }}<span class="block text-xs font-normal text-neutral-500">{{ moneyOrDash(shownTotals.in_khr, 'KHR') }}</span></p></div>
+            <div><p class="text-xs text-neutral-500">{{ t('admin.funds.totalOut') }}<template v-if="monthFilter"> · {{ formatMonth(monthFilter) }}</template></p><p class="font-semibold tabular-nums text-amber-700">{{ moneyOrDash(shownTotals.out_usd, 'USD') }}<span class="block text-xs font-normal text-neutral-500">{{ moneyOrDash(shownTotals.out_khr, 'KHR') }}</span></p></div>
+          </div>
           <div v-for="entry in entries" :key="entry.id" class="rounded-lg border border-neutral-200 p-3">
             <div class="flex items-start justify-between gap-2">
               <input v-if="canCopy && entry.type === 'in'" type="checkbox" class="mt-0.5 h-4 w-4 shrink-0 rounded border-neutral-300" :checked="selected.has(entry.id)" :aria-label="t('admin.funds.select')" @change="toggle(entry)" />
@@ -273,6 +286,16 @@ onMounted(async () => {
                 </td>
               </tr>
             </tbody>
+            <tfoot>
+              <tr class="border-t-2 border-neutral-300 font-semibold">
+                <td v-if="canCopy" class="print:hidden"></td>
+                <td colspan="4" class="py-2 pr-3">{{ t('admin.funds.total') }}<template v-if="monthFilter"> · {{ formatMonth(monthFilter) }}</template></td>
+                <td class="whitespace-nowrap py-2 pr-3 text-right tabular-nums text-green-700">{{ moneyOrDash(shownTotals.in_usd, 'USD') }}<span class="block text-xs font-normal text-neutral-500">{{ moneyOrDash(shownTotals.in_khr, 'KHR') }}</span></td>
+                <td class="whitespace-nowrap py-2 pr-3 text-right tabular-nums text-amber-700">{{ moneyOrDash(shownTotals.out_usd, 'USD') }}<span class="block text-xs font-normal text-neutral-500">{{ moneyOrDash(shownTotals.out_khr, 'KHR') }}</span></td>
+                <td class="py-2 pr-3"></td>
+                <td v-if="rowActions" class="print:hidden"></td>
+              </tr>
+            </tfoot>
           </table>
         </div>
       </template>

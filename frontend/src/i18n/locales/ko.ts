@@ -7653,6 +7653,7 @@ const ko: MessageSchema = {
       levels: { province: '주', district: '군', commune: '코뮌', village: '마을' },
     },
     funds: {
+      total: '합계',
       newType: '+ 새 기금 유형', newTypeTitle: '새 기금 유형', typeNameEn: '이름 (영어)', typeNameKm: '이름 (크메르어)', typeNameKmHint: '비워 두면 영어 이름을 사용합니다.', typeSaveFailed: '기금 유형을 추가할 수 없습니다.',
       providedBy: '제공자', staffTag: '직원', selectProvider: '제공자 선택', newProvider: '+ 새 제공자',
       forMonth: '해당 월', filterMonth: '월', allMonths: '모든 월', select: '선택', selectAllIn: '입금 모두 선택', copyPicked: '복사 ({n})', copyTip: '입금 행을 선택한 후 복사를 눌러 다른 달로 다시 등록하세요.', copyTitle: '입금 복사 — {name}', copyHint: '위의 지급일과 해당 월이 모든 행에 적용됩니다. 금액, 날짜, 월을 바꾸거나 행을 삭제한 후 저장하세요.', payDate: '지급일', copyEmpty: '저장할 행이 없습니다.', copyTotal: '{n}건 합계', copySave: '{n}건 저장',

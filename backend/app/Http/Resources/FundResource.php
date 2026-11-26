@@ -50,6 +50,11 @@ class FundResource extends JsonResource
                 ...Money::fields('amount', $row['entry']->amount, $this->currency, $row['entry']->transacted_on),
                 ...Money::fields('balance', $row['balance'], $this->currency, $row['entry']->transacted_on),
             ], $this->statement ?? [])),
+            // List: total in / out in USD and KHR at today's rate (the statement uses each entry's date instead).
+            ...($this->statement !== null ? [] : [
+                ...Money::fields('total_in', $in, $this->currency, null),
+                ...Money::fields('total_out', $out, $this->currency, null),
+            ]),
             ...($this->statement === null ? [] : [
                 ...Money::sumFields('total_in', collect($this->statement)->filter(fn (array $row) => $row['entry']->type !== 'out')->map(fn (array $row) => [$row['entry']->amount, $row['entry']->transacted_on]), $this->currency),
                 ...Money::sumFields('total_out', collect($this->statement)->filter(fn (array $row) => $row['entry']->type === 'out')->map(fn (array $row) => [$row['entry']->amount, $row['entry']->transacted_on]), $this->currency),

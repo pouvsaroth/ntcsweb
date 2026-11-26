@@ -62,7 +62,9 @@ const columns = computed(() => [
   { key: 'fund_no', label: t('admin.funds.fundNo') },
   { key: 'name', label: t('admin.funds.name') },
   { key: 'type', label: t('admin.funds.type') },
-  // The balance now, in USD and KHR at today's rate.
+  // Total in / out and the balance now, in USD and KHR at today's rate.
+  { key: 'total_in', label: t('admin.funds.totalIn'), align: 'text-right' },
+  { key: 'total_out', label: t('admin.funds.totalOut'), align: 'text-right' },
   { key: 'balance', label: `${t('admin.funds.balance')} (USD)`, align: 'text-right' },
   { key: 'balance_khr', label: `${t('admin.funds.balance')} (KHR)`, align: 'text-right' },
   { key: 'last_entry_on', label: t('admin.funds.lastEntry') },
@@ -110,6 +112,10 @@ onMounted(() => {
         <p class="text-xs font-medium uppercase tracking-wide text-neutral-500">{{ t('admin.funds.heldIn', { currency: row.currency }) }}</p>
         <p class="mt-1 text-2xl font-semibold tabular-nums text-neutral-900">{{ formatMoney(row.balance, row.currency) }}</p>
         <p class="mt-0.5 text-xs text-neutral-500">{{ t('admin.funds.activeFunds', { n: row.funds }) }}</p>
+        <dl class="mt-3 grid grid-cols-2 gap-3 border-t border-neutral-100 pt-3 text-sm">
+          <div><dt class="text-xs text-neutral-500">{{ t('admin.funds.totalIn') }}</dt><dd class="font-semibold tabular-nums text-green-700">{{ formatMoney(row.total_in, row.currency) }}</dd></div>
+          <div><dt class="text-xs text-neutral-500">{{ t('admin.funds.totalOut') }}</dt><dd class="font-semibold tabular-nums text-amber-700">{{ formatMoney(row.total_out, row.currency) }}</dd></div>
+        </dl>
       </div>
     </div>
 
@@ -146,6 +152,10 @@ onMounted(() => {
               <BaseBadge v-if="row.status === 'closed'" variant="neutral">{{ t('admin.funds.statuses.closed') }}</BaseBadge>
             </div>
           </button>
+          <dl class="mt-2 grid grid-cols-2 gap-2 text-xs">
+            <div><dt class="text-neutral-500">{{ t('admin.funds.totalIn') }}</dt><dd class="tabular-nums text-green-700">{{ moneyOrDash(row.total_in_usd, 'USD') }} · {{ moneyOrDash(row.total_in_khr, 'KHR') }}</dd></div>
+            <div><dt class="text-neutral-500">{{ t('admin.funds.totalOut') }}</dt><dd class="tabular-nums text-amber-700">{{ moneyOrDash(row.total_out_usd, 'USD') }} · {{ moneyOrDash(row.total_out_khr, 'KHR') }}</dd></div>
+          </dl>
           <div class="mt-2 flex items-center justify-end gap-3">
             <template v-if="canCreate && row.status === 'active'">
               <button type="button" class="text-sm font-medium text-green-700 hover:text-green-800" @click="record(row, 'in')">{{ t('admin.funds.moneyIn') }}</button>
@@ -164,6 +174,14 @@ onMounted(() => {
         <p class="text-xs text-neutral-500">{{ row.currency }}</p>
       </template>
       <template #cell-type="{ row }">{{ typeName(row.fund_type) }}</template>
+      <template #cell-total_in="{ row }">
+        <p class="whitespace-nowrap tabular-nums text-green-700">{{ moneyOrDash(row.total_in_usd, 'USD') }}</p>
+        <p class="whitespace-nowrap text-xs tabular-nums text-neutral-500">{{ moneyOrDash(row.total_in_khr, 'KHR') }}</p>
+      </template>
+      <template #cell-total_out="{ row }">
+        <p class="whitespace-nowrap tabular-nums text-amber-700">{{ moneyOrDash(row.total_out_usd, 'USD') }}</p>
+        <p class="whitespace-nowrap text-xs tabular-nums text-neutral-500">{{ moneyOrDash(row.total_out_khr, 'KHR') }}</p>
+      </template>
       <template #cell-balance="{ row }"><span class="whitespace-nowrap font-semibold tabular-nums">{{ moneyOrDash(row.balance_usd, 'USD') }}</span></template>
       <template #cell-balance_khr="{ row }"><span class="whitespace-nowrap font-semibold tabular-nums">{{ moneyOrDash(row.balance_khr, 'KHR') }}</span></template>
       <template #cell-last_entry_on="{ row }">{{ row.last_entry_on ? formatDate(row.last_entry_on) : '—' }}</template>

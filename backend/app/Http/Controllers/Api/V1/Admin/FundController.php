@@ -64,6 +64,8 @@ final class FundController extends Controller
             $summary[] = [
                 'currency' => $currency,
                 'funds' => $mine->count(),
+                'total_in' => round($mine->sum(fn ($f) => (float) $f->total_in), 2),
+                'total_out' => round($mine->sum(fn ($f) => (float) $f->total_out), 2),
                 'balance' => round($mine->sum(fn ($f) => (float) $f->total_in - (float) $f->total_out), 2),
             ];
         }

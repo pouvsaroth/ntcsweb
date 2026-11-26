@@ -234,7 +234,10 @@ class FundTest extends TestCase
         $this->getJson('/api/v1/funds?filter[fund_type]=BUILDING')->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.name', 'Building fund');
         $this->getJson('/api/v1/funds/summary')->assertOk()
             ->assertJsonPath('data.0.currency', 'USD')->assertJsonPath('data.0.balance', 1000)
-            ->assertJsonPath('data.1.currency', 'KHR')->assertJsonPath('data.1.balance', 30000);
+            ->assertJsonPath('data.1.currency', 'KHR')->assertJsonPath('data.1.balance', 30000)
+            ->assertJsonPath('data.1.total_in', 40000)->assertJsonPath('data.1.total_out', 10000);
+        $kh = $this->getJson('/api/v1/funds?search=scholar')->json('data.0');
+        $this->assertEquals([40000, 10000], [$kh['total_in_khr'], $kh['total_out_khr']]);
 
         $today = now()->toDateString();
         $flow = $this->getJson("/api/v1/accounting/reports/cash-flow?date_from={$today}&date_to={$today}")->assertOk()->json('data');

@@ -50,7 +50,7 @@ export interface Fund {
   target_amount_khr?: number | null
   description: string | null
   total_in: number
-  /** Statement: money in / out summed entry by entry, each at its own date's rate. */
+  /** Statement: money in / out summed entry by entry, each at its own date's rate; list: at today's rate. */
   total_in_usd?: number | null
   total_in_khr?: number | null
   total_out_usd?: number | null
@@ -69,6 +69,9 @@ export interface Fund {
 export interface FundSummaryRow {
   currency: FundCurrency
   funds: number
+  /** Money in / out of the active funds in this currency (never mixed with the other one). */
+  total_in: number
+  total_out: number
   balance: number
 }
 
