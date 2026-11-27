@@ -719,6 +719,8 @@ const ko: MessageSchema = {
       attendance_correction_approved: '{date} 근태 정정이 승인되었습니다',
       attendance_correction_rejected: '{date} 근태 정정이 반려되었습니다: {reason}',
       attendance_not_taken: '{class_name}의 {date} 출석이 입력되지 않았습니다 (수업 종료 {end_time})',
+      teacher_on_leave_class: '{teacher_name} 선생님이 오늘 휴가이며 {date} {start_time}에 {class_name} 수업이 있습니다. 대체 교사를 지정하세요.',
+      teacher_not_checked_in_class: '{teacher_name} 선생님이 아직 출근 체크를 하지 않았고 {class_name} 수업이 {start_time}에 시작했습니다({date}). 결근이면 대체 교사를 지정하세요.',
       discount_code_given: '할인 코드가 있습니다: {code} ({discount} 할인), {expires_on}까지 사용 가능',
     },
   },

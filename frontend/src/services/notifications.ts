@@ -57,6 +57,8 @@ export type NotificationTypeValue =
   | 'website_inquiry_received'
   | 'attendance_not_taken'
   | 'discount_code_given'
+  | 'teacher_on_leave_class'
+  | 'teacher_not_checked_in_class'
 
 export interface AppNotification {
   id: number

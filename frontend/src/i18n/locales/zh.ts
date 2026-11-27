@@ -719,6 +719,8 @@ const zh: MessageSchema = {
       attendance_correction_approved: '你 {date} 的考勤更正已批准',
       attendance_correction_rejected: '你 {date} 的考勤更正被拒绝：{reason}',
       attendance_not_taken: '{class_name} 在 {date} 的考勤尚未录入（课程已于 {end_time} 结束）',
+      teacher_on_leave_class: '{teacher_name} 今天请假，{date} {start_time} 有 {class_name} 的课。请安排代课老师。',
+      teacher_not_checked_in_class: '{teacher_name} 尚未打卡，{class_name} 已于 {start_time} 开始（{date}）。如其缺勤，请安排代课老师。',
       discount_code_given: '您获得了一个折扣码：{code}（优惠 {discount}），有效期至 {expires_on}',
     },
   },

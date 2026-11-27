@@ -158,6 +158,12 @@ final class NotificationType
     // A class ended and nobody saved its attendance (class teachers + school admins told).
     public const ATTENDANCE_NOT_TAKEN = 'attendance_not_taken';
 
+    // Teacher away from a class today: on leave with no substitute, or not
+    // checked in after the class started (whoever arranges substitutes told).
+    public const TEACHER_ON_LEAVE_CLASS = 'teacher_on_leave_class';
+
+    public const TEACHER_NOT_CHECKED_IN_CLASS = 'teacher_not_checked_in_class';
+
     // Invoices > Discount codes: a student was given a personal code.
     public const DISCOUNT_CODE_GIVEN = 'discount_code_given';
 }

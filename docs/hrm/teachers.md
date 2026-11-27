@@ -24,3 +24,20 @@ Tables (school tables, `SchoolTables::secure`): `teacher_qualifications`,
 Permissions: `teachers.view`, `teachers.manage` (HRM module menu
 `teachers`), school admin by default (backfilled by
 2026_10_21_110000_grant_teacher_permissions_to_school_admin_role).
+
+## Teacher absence alert
+
+`teachers:alert-absent` (every 5 minutes, `TeacherAbsenceAlertService`) tells
+whoever can arrange substitutes (`teacher-substitutes.create`; the school
+admins when nobody can) when a teacher with a class session today:
+
+- is on approved leave (`teacher_on_leave_class`), as soon as it is seen, or
+- has not checked in 10 minutes after the session started
+  (`teacher_not_checked_in_class`) — only for teachers who checked in at
+  least once in the last 30 days, so schools not using check-in get none.
+
+Not sent when a Substitute row already covers the teacher (or the class is not
+held), student attendance is already saved today, it is a day off, the class
+has no students, or the session has ended. Once per class, teacher, day and
+session. The link opens Teachers → Substitute with the form filled in
+(`?class_id&date&absent_staff_id&start_time&end_time`).

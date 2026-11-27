@@ -50,5 +50,7 @@ return [
     'attendance_correction_approved' => 'ការកែវត្តមានថ្ងៃ :date របស់អ្នកត្រូវបានអនុម័ត',
     'attendance_correction_rejected' => 'ការកែវត្តមានថ្ងៃ :date របស់អ្នកត្រូវបានបដិសេធ៖ :reason',
     'attendance_not_taken' => 'មិនទាន់បានបញ្ចូលវត្តមានសម្រាប់ថ្នាក់ :class_name ថ្ងៃ :date ទេ (ថ្នាក់បានបញ្ចប់នៅម៉ោង :end_time)',
+    'teacher_on_leave_class' => ':teacher_name ឈប់សម្រាកថ្ងៃនេះ ហើយមានថ្នាក់ :class_name ម៉ោង :start_time (:date)។ សូមកំណត់គ្រូជំនួស។',
+    'teacher_not_checked_in_class' => ':teacher_name មិនទាន់ចុះវត្តមាន ហើយថ្នាក់ :class_name បានចាប់ផ្តើមម៉ោង :start_time (:date)។ សូមកំណត់គ្រូជំនួស ប្រសិនបើគាត់អវត្តមាន។',
     'discount_code_given' => 'អ្នកមានកូដបញ្ចុះតម្លៃ៖ :code (បញ្ចុះ :discount) ប្រើបានរហូតដល់ :expires_on',
 ];

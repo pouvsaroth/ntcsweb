@@ -719,6 +719,8 @@ const ja: MessageSchema = {
       attendance_correction_approved: '{date} の勤怠修正が承認されました',
       attendance_correction_rejected: '{date} の勤怠修正が却下されました：{reason}',
       attendance_not_taken: '{class_name} の {date} の出席が入力されていません（授業は {end_time} に終了）',
+      teacher_on_leave_class: '{teacher_name} は本日休暇で、{date} {start_time} に {class_name} の授業があります。代講を設定してください。',
+      teacher_not_checked_in_class: '{teacher_name} はまだ出勤打刻しておらず、{class_name} は {start_time} に開始しました（{date}）。不在の場合は代講を設定してください。',
       discount_code_given: '割引コードが届きました: {code}（{discount} 割引）、{expires_on} まで有効',
     },
   },

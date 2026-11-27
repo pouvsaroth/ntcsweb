@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRoute, useRouter } from 'vue-router'
 
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
@@ -23,6 +24,8 @@ import { formatDate } from '@/utils/date'
 const { t } = useI18n()
 const auth = useAuthStore()
 const confirmDialog = useConfirmDialogStore()
+const route = useRoute()
+const router = useRouter()
 const canCreate = computed(() => auth.can('teacher-substitutes.create'))
 const canDelete = computed(() => auth.can('teacher-substitutes.delete'))
 /** Any row action (edit or delete). */
@@ -109,6 +112,32 @@ function open() {
   formOpen.value = true
 }
 
+/** Teacher picked by the link a teacher-absence alert opens with (see openFromLink). */
+let presetAbsent = ''
+
+/**
+ * A teacher-absence alert links here with ?class_id&date&absent_staff_id&start_time&end_time:
+ * show that week and open the form filled in.
+ */
+function openFromLink() {
+  const q = route.query
+  if (!canCreate.value || typeof q.class_id !== 'string' || typeof q.date !== 'string') return
+  const [y, m, d] = q.date.split('-').map(Number)
+  if (y && m && d) weekStart.value = monday(new Date(y, m - 1, d))
+  open()
+  presetAbsent = typeof q.absent_staff_id === 'string' ? q.absent_staff_id : ''
+  form.start_time = typeof q.start_time === 'string' ? q.start_time : ''
+  form.end_time = typeof q.end_time === 'string' ? q.end_time : ''
+  form.class_id = q.class_id
+  form.date = q.date
+  void router.replace({ query: {} })
+}
+// Clicking an alert while already on this page: same component, new query.
+watch(
+  () => route.query.class_id,
+  () => openFromLink(),
+)
+
 /** Class + day (+ time): who is away, who can cover. */
 async function check() {
   if (!form.class_id || !form.date) return
@@ -118,7 +147,8 @@ async function check() {
     candidates.value = c
     if (!form.start_time && c.start_time) form.start_time = c.start_time
     if (!form.end_time && c.end_time) form.end_time = c.end_time
-    const away = c.class_teachers.find((x) => x.away) ?? c.class_teachers[0]
+    const away = c.class_teachers.find((x) => String(x.id) === presetAbsent) ?? c.class_teachers.find((x) => x.away) ?? c.class_teachers[0]
+    presetAbsent = ''
     form.absent_staff_id = away ? String(away.id) : ''
     if (form.substitute_staff_id !== NOT_HELD && !c.available.some((x) => String(x.id) === form.substitute_staff_id)) form.substitute_staff_id = ''
   } catch (e) {
@@ -161,6 +191,7 @@ async function save() {
 
 onMounted(async () => {
   options.value = await teachersService.options().catch(() => options.value)
+  openFromLink()
   await load()
 })
 </script>
