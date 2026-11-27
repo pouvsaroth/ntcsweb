@@ -1,6 +1,6 @@
 # HRM > Teacher
 
-One sidebar item, **HRM → Teachers**, with seven tabs. A teacher is a Staff
+One sidebar item, **HRM → Teachers**, with eight tabs. A teacher is a Staff
 member whose **position carries the Teacher role** (HRM → Staff, Positions);
 there is no separate teacher record.
 
@@ -14,6 +14,7 @@ there is no separate teacher record.
 | Teaching Load | Teachers → Teaching load | class hours/week from the weekly schedules of the upcoming/active classes they teach, assigned hours, classes, homeroom |
 | Teacher Availability | Teachers → Availability | weekly slots or dates they cannot teach; their approved leave (Leave Management); class times that clash |
 | Substitute Teacher | Teachers → Substitute | per class and day: who is away (leave / unavailable) and who is free (not away, not teaching or covering another class then) |
+| Class sessions | Teachers → Class sessions | each scheduled session in a period (up to 93 days) and what happened: taught (student attendance saved; late when the teacher checked in after the start), covered (Substitute row with a substitute; the substitute gets a covering row), not held (Substitute row with no substitute), missed (no attendance and on leave / no check-in / no teacher), no record (checked in, no attendance). Per-teacher totals, Excel/PDF. Skips holidays, closing days, days outside the class dates, days with no students and sessions not ended yet. `ClassSessionReport`, nothing stored |
 | Teacher Documents | Teachers → Documents | private files on the `local` disk, downloaded through the API only; type, expiry date |
 
 Tables (school tables, `SchoolTables::secure`): `teacher_qualifications`,

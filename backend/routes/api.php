@@ -48,6 +48,7 @@ use App\Http\Controllers\Api\V1\Admin\BuildingController;
 use App\Http\Controllers\Api\V1\Admin\CandidateSelectionController;
 use App\Http\Controllers\Api\V1\Admin\ClassChangeRequestController;
 use App\Http\Controllers\Api\V1\Admin\ClassroomController;
+use App\Http\Controllers\Api\V1\Admin\ClassSessionController;
 use App\Http\Controllers\Api\V1\Admin\ClassroomTableController;
 use App\Http\Controllers\Api\V1\Admin\CoursePackageController;
 use App\Http\Controllers\Api\V1\Admin\CurrencyRateController;
@@ -730,6 +731,9 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::get('substitutions/candidates', [TeacherScheduleController::class, 'candidates'])->name('substitutions.candidates');
             Route::post('substitutions', [TeacherScheduleController::class, 'storeSubstitution'])->name('substitutions.store');
             Route::delete('substitutions/{substitution}', [TeacherScheduleController::class, 'destroySubstitution'])->name('substitutions.destroy');
+            Route::get('sessions', [ClassSessionController::class, 'index'])->name('sessions.index');
+            Route::get('sessions/excel', [ClassSessionController::class, 'excel'])->name('sessions.excel');
+            Route::get('sessions/pdf', [ClassSessionController::class, 'pdf'])->name('sessions.pdf');
             Route::get('documents', [TeacherDocumentController::class, 'index'])->name('documents.index');
             Route::post('documents', [TeacherDocumentController::class, 'store'])->name('documents.store');
             Route::get('documents/{document}/file', [TeacherDocumentController::class, 'download'])->name('documents.download');

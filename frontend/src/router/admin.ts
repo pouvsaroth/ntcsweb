@@ -784,6 +784,7 @@ const adminRoutes: RouteRecordRaw[] = [
       { path: 'load', name: 'admin.teachers.load', component: () => import('@/pages/admin/teachers/TeachingLoad.vue') },
       { path: 'availability', name: 'admin.teachers.availability', component: () => import('@/pages/admin/teachers/Availability.vue') },
       { path: 'substitutes', name: 'admin.teachers.substitutes', component: () => import('@/pages/admin/teachers/Substitutes.vue') },
+      { path: 'sessions', name: 'admin.teachers.sessions', component: () => import('@/pages/admin/teachers/ClassSessions.vue') },
       { path: 'documents', name: 'admin.teachers.documents', component: () => import('@/pages/admin/teachers/Documents.vue') },
     ],
   },

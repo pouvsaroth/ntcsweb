@@ -19,6 +19,50 @@ export interface TeacherOptions {
   academic_years: { id: number; name: string; is_current: boolean }[]
 }
 
+export const CLASS_SESSION_STATUSES = ['taught', 'covered', 'not_held', 'missed', 'no_record', 'covering'] as const
+export type ClassSessionStatus = (typeof CLASS_SESSION_STATUSES)[number]
+/** One scheduled session for one teacher (HRM > Teachers > Class sessions). */
+export interface ClassSession {
+  date: string
+  start_time: string
+  end_time: string
+  minutes: number
+  class_id: number
+  class: string
+  subject: string | null
+  attendance_taken: boolean
+  staff_id: number | null
+  teacher: string | null
+  status: ClassSessionStatus
+  why: 'leave' | 'no_check_in' | 'no_teacher' | null
+  /** The substitute (covered) or the teacher away (covering). */
+  other_teacher: string | null
+  check_in: string | null
+  late_minutes: number
+}
+export interface ClassSessionSummary {
+  staff_id: number
+  teacher: string
+  planned: number
+  taught: number
+  late: number
+  late_minutes: number
+  covered: number
+  not_held: number
+  missed: number
+  no_record: number
+  covering: number
+  taught_minutes: number
+  taught_percent: number | null
+}
+export interface ClassSessionQuery {
+  from: string
+  to: string
+  staff_id?: number
+  class_id?: number
+  status?: ClassSessionStatus
+}
+
 export const QUALIFICATION_TYPES = ['degree', 'certificate', 'skill'] as const
 export const QUALIFICATION_LEVELS = ['high_school', 'diploma', 'bachelor', 'master', 'doctorate', 'other'] as const
 export interface Qualification {
@@ -177,6 +221,14 @@ export const teachersService = {
     apiGet<SubstitutionCandidates>('/teachers/substitutions/candidates', { params: clean({ class_id: classId, date, start_time: start, end_time: end }) }),
   createSubstitution: (input: SubstitutionInput) => apiPost<Substitution>('/teachers/substitutions', input),
   removeSubstitution: (id: number) => apiDelete(`/teachers/substitutions/${id}`),
+
+  sessions: (query: ClassSessionQuery) =>
+    apiGet<{ from: string; to: string; rows: ClassSession[]; summary: ClassSessionSummary[] }>('/teachers/sessions', { params: clean(query) }),
+  downloadSessions: (format: 'excel' | 'pdf', query: ClassSessionQuery) =>
+    apiDownload(
+      `/teachers/sessions/${format}?${new URLSearchParams(Object.entries(clean(query)).map(([k, v]) => [k, String(v)])).toString()}`,
+      `class-sessions-${query.from}-to-${query.to}.${format === 'excel' ? 'xlsx' : 'pdf'}`,
+    ),
 
   documents: (staffId?: number) => apiGet<TeacherDocument[]>('/teachers/documents', { params: clean({ staff_id: staffId }) }),
   uploadDocument(input: { staff_id: number; type: string; title: string; expires_on: string | null; note: string | null; file: File }): Promise<TeacherDocument> {

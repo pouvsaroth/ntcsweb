@@ -149,6 +149,12 @@ final class AttendanceService
      * @param  Builder<Enrollment>  $query
      * @return Collection<int, Enrollment>
      */
+    /** The class had active students on that date — a day with none needs no attendance (see missedClassDayBefore()). */
+    public function hasStudentsOn(SchoolClass $class, string $date): bool
+    {
+        return $this->enrollmentsInClassOn($class, $date, Enrollment::query()->active())->isNotEmpty();
+    }
+
     private function enrollmentsInClassOn(SchoolClass $class, string $date, Builder $query): Collection
     {
         return $query

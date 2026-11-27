@@ -285,6 +285,7 @@ const MODULES: ModuleEntry[] = [
   tab('Staff', 'Teachers', 'Teaching load', '/admin/teachers/load', ['teachers.view']),
   tab('Staff', 'Teachers', 'Availability', '/admin/teachers/availability', ['teachers.view'], tabCud('teacher-availability')),
   tab('Staff', 'Teachers', 'Substitute', '/admin/teachers/substitutes', ['teachers.view'], { create: 'teacher-substitutes.create', delete: 'teacher-substitutes.delete' }),
+  tab('Staff', 'Teachers', 'Class sessions', '/admin/teachers/sessions', ['teachers.view']),
   tab('Staff', 'Teachers', 'Documents', '/admin/teachers/documents', ['teachers.view'], { create: 'teacher-documents.create', delete: 'teacher-documents.delete' }),
   { name: 'Staff status history', group: 'Staff', actions: { view: 'staff.view' } },
   // Branch … Hierarchy tabs follow these.

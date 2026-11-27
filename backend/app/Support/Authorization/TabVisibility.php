@@ -71,6 +71,7 @@ final class TabVisibility
         'hide-tab.teachers.load' => 'Teachers > Teaching load',
         'hide-tab.teachers.availability' => 'Teachers > Availability',
         'hide-tab.teachers.substitutes' => 'Teachers > Substitute',
+        'hide-tab.teachers.sessions' => 'Teachers > Class sessions',
         'hide-tab.teachers.documents' => 'Teachers > Documents',
         'hide-tab.organization.school' => 'Organization Management > School',
         'hide-tab.organization.branches' => 'Organization Management > Branch',

@@ -1,0 +1,48 @@
+<?php
+
+// Labels for the Excel/PDF of HRM > Teachers > Class sessions.
+return [
+    'title' => 'Class sessions',
+    'summary' => 'Summary',
+    'sessions' => 'Sessions',
+    'empty' => 'No class sessions in this period.',
+    'generated' => 'Printed',
+    'covered_by' => 'Covered by :name',
+    'covering_for' => 'Covering for :name',
+    'no_record_hint' => 'Checked in, no student attendance saved',
+    'columns' => [
+        'no' => 'No.',
+        'teacher' => 'Teacher',
+        'planned' => 'Planned',
+        'taught' => 'Taught',
+        'late' => 'Late',
+        'covered' => 'Covered by others',
+        'not_held' => 'Not held',
+        'missed' => 'Missed',
+        'no_record' => 'No record',
+        'covering' => 'Covered for others',
+        'taught_hours' => 'Hours taught',
+        'taught_percent' => 'Taught %',
+        'date' => 'Date',
+        'time' => 'Time',
+        'class' => 'Class',
+        'subject' => 'Subject',
+        'status' => 'Status',
+        'detail' => 'Detail',
+        'check_in' => 'Check-in',
+        'late_minutes' => 'Late (min)',
+    ],
+    'status' => [
+        'taught' => 'Taught',
+        'covered' => 'Covered',
+        'not_held' => 'Not held',
+        'missed' => 'Missed',
+        'no_record' => 'No record',
+        'covering' => 'Covering',
+    ],
+    'why' => [
+        'leave' => 'On leave, no substitute set',
+        'no_check_in' => 'Did not check in',
+        'no_teacher' => 'Class has no teacher',
+    ],
+];

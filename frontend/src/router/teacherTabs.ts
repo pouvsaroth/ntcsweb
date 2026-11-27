@@ -16,5 +16,6 @@ export const teacherTabs: TeacherTab[] = [
   { to: '/admin/teachers/load', labelKey: 'teacherMgmt.tabs.load', permission: 'teachers.view' },
   { to: '/admin/teachers/availability', labelKey: 'teacherMgmt.tabs.availability', permission: 'teachers.view' },
   { to: '/admin/teachers/substitutes', labelKey: 'teacherMgmt.tabs.substitutes', permission: 'teachers.view' },
+  { to: '/admin/teachers/sessions', labelKey: 'teacherMgmt.tabs.sessions', permission: 'teachers.view' },
   { to: '/admin/teachers/documents', labelKey: 'teacherMgmt.tabs.documents', permission: 'teachers.view' },
 ]
