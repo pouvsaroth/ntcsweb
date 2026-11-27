@@ -9,6 +9,7 @@ return [
     'generated' => 'បោះពុម្ព',
     'covered_by' => 'បង្រៀនជំនួសដោយ :name',
     'covering_for' => 'បង្រៀនជំនួស :name',
+    'makeup' => 'រៀនសង',
     'no_record_hint' => 'បានចុះវត្តមាន តែមិនទាន់កត់វត្តមានសិស្ស',
     'columns' => [
         'no' => 'ល.រ',

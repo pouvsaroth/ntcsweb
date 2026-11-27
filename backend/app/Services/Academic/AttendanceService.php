@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Academic;
 
 use App\Models\AttendanceRecord;
+use App\Models\ClassMakeupSession;
 use App\Models\ClassroomTable;
 use App\Models\Enrollment;
 use App\Models\SchoolClass;
@@ -52,9 +53,10 @@ final class AttendanceService
      * teacher can always go back and fill in an earlier day.
      *
      * The previous class day is the last day before $date that the class's
-     * schedule meets on, skipping holidays, School Calendar closing days, days the class was
-     * not held (Teacher > Substitute with no substitute) and days before the class
-     * started. A day with no students in the class doesn't need attendance
+     * schedule meets on or has a make-up session (Teacher > Substitute),
+     * skipping holidays, School Calendar closing days, days the class was not
+     * held (Teacher > Substitute with no substitute, and no make-up that day)
+     * and days before the class started. A day with no students in the class doesn't need attendance
      * (there is nobody to mark), so it never blocks.
      */
     public function missedClassDayBefore(SchoolClass $class, string $date): ?string
@@ -65,11 +67,14 @@ final class AttendanceService
         }
 
         $weekdays = $class->schedules()->pluck('day_of_week')->map(fn ($day) => (int) $day)->unique();
-        if ($weekdays->isEmpty()) {
+        $earliest = Carbon::parse($date)->subDays(self::LOCK_LOOKBACK_DAYS);
+        $makeupDays = ClassMakeupSession::query()->where('class_id', $class->getKey())
+            ->whereDate('date', '>=', $earliest->toDateString())->whereDate('date', '<', $date)
+            ->pluck('date')->map(fn ($d) => Carbon::parse($d)->toDateString())->all();
+        if ($weekdays->isEmpty() && $makeupDays === []) {
             return null;
         }
 
-        $earliest = Carbon::parse($date)->subDays(self::LOCK_LOOKBACK_DAYS);
         $daysOff = SchoolDaysOff::between($earliest->toDateString(), Carbon::parse($date)->subDay()->toDateString());
 
         for ($day = Carbon::parse($date)->subDay(); $day->gte($earliest); $day->subDay()) {
@@ -78,7 +83,9 @@ final class AttendanceService
             }
 
             $ymd = $day->toDateString();
-            if (! $weekdays->contains($day->dayOfWeekIso) || SchoolDaysOff::covers($daysOff, $ymd) || ClassNotHeld::on($class, $ymd)) {
+            $makeup = in_array($ymd, $makeupDays, true);
+            if (SchoolDaysOff::covers($daysOff, $ymd)
+                || (! $makeup && (! $weekdays->contains($day->dayOfWeekIso) || ClassNotHeld::on($class, $ymd)))) {
                 continue;
             }
 

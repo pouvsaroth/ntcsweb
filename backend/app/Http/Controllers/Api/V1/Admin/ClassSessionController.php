@@ -125,16 +125,18 @@ final class ClassSessionController extends Controller
         );
     }
 
-    /** "Covered by X", "Covering for X", "On leave", … */
+    /** "Covered by X", "Covering for X", "On leave", … ("Make-up class" first on a make-up session). */
     private function detail(array $r): string
     {
-        return match (true) {
+        $text = match (true) {
             $r['status'] === ClassSessionReport::COVERED => __('class_sessions.covered_by', ['name' => $r['other_teacher']]),
             $r['status'] === ClassSessionReport::COVERING => __('class_sessions.covering_for', ['name' => $r['other_teacher']]),
             $r['why'] !== null => __('class_sessions.why.'.$r['why']),
             $r['status'] === ClassSessionReport::NO_RECORD => __('class_sessions.no_record_hint'),
             default => '',
         };
+
+        return ($r['makeup'] ?? false) ? trim(__('class_sessions.makeup').' · '.$text, ' ·') : $text;
     }
 
     private function period(array $report): string

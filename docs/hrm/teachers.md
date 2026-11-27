@@ -65,3 +65,10 @@ default) and told when it is removed (`class_makeup_cancelled`, only if they
 were told). The make-up teacher can take the class's attendance that day
 (`ClassAccess`), and it shows on their Timetable → Teacher week. Removing the
 not-held row removes its make-up too.
+
+A make-up session counts as a class session: the "attendance not taken"
+reminder goes out 30 minutes after it ends and tells its teacher too (and
+still goes out when the class's own sessions that day were not held); the
+attendance lock treats its day as a class day; and Class sessions lists it as
+a session of its own (`makeup` true) for its teacher — taught when the class's
+attendance was saved that day, else missed / no record.

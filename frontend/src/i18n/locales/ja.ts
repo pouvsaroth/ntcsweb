@@ -1908,6 +1908,7 @@ const ja: MessageSchema = {
       coveredBy: 'Covered by {name}',
       coveringFor: 'Covering for {name}',
       noRecordHint: 'Checked in, no student attendance saved',
+      makeup: '補講',
       noTeacher: 'No teacher',
       rangeHint: 'Up to 93 days. Sessions that have not ended yet are not counted.',
       status: {

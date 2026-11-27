@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Academic;
 
+use App\Models\ClassMakeupSession;
 use App\Models\ClassSchedule;
 use App\Models\LeaveRequest;
 use App\Models\SchoolClass;
@@ -29,6 +30,10 @@ use Illuminate\Support\Facades\DB;
  *              check in that day (`why`: leave / no_check_in / no_teacher).
  * - no_record: no attendance, but the teacher checked in — maybe taught and
  *              forgot to take attendance.
+ *
+ * A make-up session (Teachers > Substitute, for a not-held one) is a session
+ * of its own (`makeup` true) for the teacher who teaches it: taught when the
+ * class's attendance was saved that day, else missed / no record as above.
  *
  * Skipped: holidays and School Calendar closing days, days outside the
  * class's start/end dates, cancelled classes, days with no students in the
@@ -78,10 +83,18 @@ final class ClassSessionReport
             ->when($classId !== null, fn ($q) => $q->whereKey($classId))
             ->where(fn ($q) => $q->whereNull('start_date')->orWhereDate('start_date', '<=', $to))
             ->where(fn ($q) => $q->whereNull('end_date')->orWhereDate('end_date', '>=', $from))
-            ->whereHas('schedules')
+            ->where(fn ($q) => $q->whereHas('schedules')->orWhereIn('id', ClassMakeupSession::query()
+                ->whereDate('date', '>=', $from)->whereDate('date', '<=', $to)->select('class_id')))
             ->with(['schedules.book:id,title', 'teachers:id'])
             ->orderBy('name')
             ->get();
+
+        $makeups = ClassMakeupSession::query()
+            ->whereDate('date', '>=', $from)->whereDate('date', '<=', $to)
+            ->when($classId !== null, fn ($q) => $q->where('class_id', $classId))
+            ->orderBy('start_time')
+            ->get()
+            ->groupBy(fn (ClassMakeupSession $m) => $m->class_id.'|'.$m->date->toDateString());
 
         $subs = TeacherSubstitution::query()
             ->whereDate('date', '>=', $from)->whereDate('date', '<=', $to)
@@ -102,6 +115,7 @@ final class ClassSessionReport
             ->merge($classes->flatMap(fn (SchoolClass $c) => $c->schedules->pluck('staff_id')))
             ->merge($subs->flatten()->pluck('absent_staff_id'))
             ->merge($subs->flatten()->pluck('substitute_staff_id'))
+            ->merge($makeups->flatten()->pluck('staff_id'))
             ->filter()->unique()->values()->all();
         $staff = Staff::withTrashed()->whereIn('id', $staffIds)->get()->keyBy('id');
 
@@ -151,6 +165,7 @@ final class ClassSessionReport
                         'class' => $class->name,
                         'subject' => $session->book?->title,
                         'attendance_taken' => $attendance !== null,
+                        'makeup' => false,
                     ];
 
                     $notHeld = $daySubs->contains(fn (TeacherSubstitution $s) => $s->substitute_staff_id === null && $this->contains($s, $start, $end));
@@ -193,7 +208,7 @@ final class ClassSessionReport
 
                     // Nobody to teach that day: no session to count.
                     if ($needsStudents && ! ($hasStudents[$class->id.'|'.$ymd] ??= $this->attendance->hasStudentsOn($class, $ymd))) {
-                        $rows = array_values(array_filter($rows, fn (array $r) => ! ($r['class_id'] === $class->id && $r['date'] === $ymd && $r['start_time'] === $start)));
+                        $rows = array_values(array_filter($rows, fn (array $r) => ! ($r['class_id'] === $class->id && $r['date'] === $ymd && $r['start_time'] === $start && ! $r['makeup'])));
 
                         continue;
                     }
@@ -212,8 +227,54 @@ final class ClassSessionReport
                         }
                     }
                 }
+
+                // Make-up sessions of the class that day.
+                foreach ($makeups->get($class->id.'|'.$ymd, collect()) as $makeup) {
+                    $start = substr((string) $makeup->start_time, 0, 5);
+                    $end = substr((string) $makeup->end_time, 0, 5);
+                    if ($ymd === $today && $end > $nowHm) {
+                        continue;
+                    }
+                    $teacherId = $makeup->staff_id !== null ? (int) $makeup->staff_id : null;
+                    $checkIn = $teacherId === null ? null : $checkIns->get($teacherId.'|'.$ymd);
+                    $row = [
+                        'date' => $ymd,
+                        'start_time' => $start,
+                        'end_time' => $end,
+                        'minutes' => $this->minutes($start, $end),
+                        'class_id' => $class->id,
+                        'class' => $class->name,
+                        'subject' => null,
+                        'attendance_taken' => $attendance !== null,
+                        'makeup' => true,
+                        'staff_id' => $teacherId,
+                        'teacher' => $teacherId === null ? null : $staff->get($teacherId)?->fullName(),
+                        'status' => self::TAUGHT,
+                        'why' => null,
+                        'other_teacher' => null,
+                        'check_in' => $checkIn,
+                        'late_minutes' => 0,
+                    ];
+                    if ($attendance !== null) {
+                        $row['late_minutes'] = $checkIn !== null && $checkIn > $start ? $this->minutes($start, $checkIn) : 0;
+                    } else {
+                        if (! ($hasStudents[$class->id.'|'.$ymd] ??= $this->attendance->hasStudentsOn($class, $ymd))) {
+                            continue;
+                        }
+                        $onLeave = $teacherId !== null && ($leaves->get($teacherId) ?? collect())->contains(fn (LeaveRequest $l) => $l->from_date->toDateString() <= $ymd && $l->to_date->toDateString() >= $ymd);
+                        [$row['status'], $row['why']] = match (true) {
+                            $teacherId === null => [self::MISSED, 'no_teacher'],
+                            $onLeave => [self::MISSED, 'leave'],
+                            $checkIn === null => [self::MISSED, 'no_check_in'],
+                            default => [self::NO_RECORD, null],
+                        };
+                    }
+                    $rows[] = $row;
+                }
             }
         }
+
+        usort($rows, fn (array $a, array $b) => [$a['date'], $a['start_time'], $a['class']] <=> [$b['date'], $b['start_time'], $b['class']]);
 
         if ($staffId !== null) {
             $rows = array_values(array_filter($rows, fn (array $r) => $r['staff_id'] === $staffId));

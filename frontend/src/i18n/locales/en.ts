@@ -1911,6 +1911,7 @@ const en = {
       coveredBy: 'Covered by {name}',
       coveringFor: 'Covering for {name}',
       noRecordHint: 'Checked in, no student attendance saved',
+      makeup: 'Make-up class',
       noTeacher: 'No teacher',
       rangeHint: 'Up to 93 days. Sessions that have not ended yet are not counted.',
       status: {

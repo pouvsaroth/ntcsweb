@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Academic;
 
 use App\Models\AttendanceRecord;
+use App\Models\ClassMakeupSession;
 use App\Models\ClassSchedule;
 use App\Models\Enrollment;
 use App\Models\Role;
@@ -25,7 +26,9 @@ use Illuminate\Support\Carbon;
  * GRACE_MINUTES ago and nobody has saved attendance for it, its teachers
  * (main + assistant) and the school admins are told — once per class per
  * day. Run every 15 minutes by `attendance:remind-not-taken`, inside one
- * school's tenant context.
+ * school's tenant context. A make-up session that day (Teacher > Substitute)
+ * counts as a session: its end can be the last one, its teacher is told, and
+ * it needs attendance even when the class's own sessions were not held.
  */
 final class AttendanceReminderService
 {
@@ -49,26 +52,41 @@ final class AttendanceReminderService
             ->active()
             ->where(fn (Builder $q) => $q->whereNull('start_date')->orWhereDate('start_date', '<=', $today))
             ->where(fn (Builder $q) => $q->whereNull('end_date')->orWhereDate('end_date', '>=', $today))
-            ->whereHas('schedules', fn (Builder $q) => $q->where('day_of_week', $now->dayOfWeekIso))
+            ->where(fn (Builder $q) => $q
+                ->whereHas('schedules', fn (Builder $q) => $q->where('day_of_week', $now->dayOfWeekIso))
+                ->orWhereIn('id', ClassMakeupSession::query()->whereDate('date', $today)->select('class_id')))
             ->with(['schedules', 'teachingStaff.user'])
             ->get();
+
+        $makeups = ClassMakeupSession::query()->with('staff.user')->whereDate('date', $today)->get()->groupBy('class_id');
 
         $admins = null;
         $reminded = 0;
 
         foreach ($classes as $class) {
-            $endTime = $class->schedules
-                ->filter(fn (ClassSchedule $s) => (int) $s->day_of_week === $now->dayOfWeekIso)
-                ->max(fn (ClassSchedule $s) => substr((string) $s->end_time, 0, 5));
+            $classMakeups = $makeups->get($class->id, collect());
+            // Teacher away and nobody covers (Teacher > Substitute): no class, no
+            // attendance — unless a make-up session is on today.
+            $notHeld = ClassNotHeld::on($class, $today);
+            if ($notHeld && $classMakeups->isEmpty()) {
+                continue;
+            }
 
-            if ($now->lt(Carbon::parse("{$today} {$endTime}", $now->timezone)->addMinutes(self::GRACE_MINUTES))) {
+            $ends = $classMakeups->map(fn (ClassMakeupSession $m) => substr((string) $m->end_time, 0, 5));
+            if (! $notHeld) {
+                $ends = $ends->merge($class->schedules
+                    ->filter(fn (ClassSchedule $s) => (int) $s->day_of_week === $now->dayOfWeekIso)
+                    ->map(fn (ClassSchedule $s) => substr((string) $s->end_time, 0, 5)));
+            }
+            $endTime = $ends->max();
+
+            if ($endTime === null || $now->lt(Carbon::parse("{$today} {$endTime}", $now->timezone)->addMinutes(self::GRACE_MINUTES))) {
                 continue;
             }
 
             $key = "{$class->id}:{$today}";
 
-            // Teacher away and nobody covers (Teacher > Substitute): no class, no attendance.
-            if ($this->alreadyHandled($class, $today, $key) || ClassNotHeld::on($class, $today)) {
+            if ($this->alreadyHandled($class, $today, $key)) {
                 continue;
             }
 
@@ -79,6 +97,8 @@ final class AttendanceReminderService
 
             $recipients = $class->teachingStaff->toBase()
                 ->merge($substitutes)
+                // And whoever teaches today's make-up session.
+                ->merge($classMakeups->map(fn (ClassMakeupSession $m) => $m->staff))
                 ->filter()
                 ->map(fn (Staff $staff) => $staff->user)
                 ->filter(fn ($user) => $user !== null && $user->isActive())

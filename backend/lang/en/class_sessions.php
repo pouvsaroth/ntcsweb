@@ -9,6 +9,7 @@ return [
     'generated' => 'Printed',
     'covered_by' => 'Covered by :name',
     'covering_for' => 'Covering for :name',
+    'makeup' => 'Make-up class',
     'no_record_hint' => 'Checked in, no student attendance saved',
     'columns' => [
         'no' => 'No.',

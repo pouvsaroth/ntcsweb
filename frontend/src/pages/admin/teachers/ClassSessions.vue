@@ -100,6 +100,7 @@ const tone: Record<ClassSessionStatus, 'success' | 'primary' | 'neutral' | 'warn
 }
 function detail(r: ClassSession): string {
   const parts: string[] = []
+  if (r.makeup) parts.push(t('teacherMgmt.sessions.makeup'))
   if (r.status === 'covered') parts.push(t('teacherMgmt.sessions.coveredBy', { name: r.other_teacher ?? '—' }))
   else if (r.status === 'covering') parts.push(t('teacherMgmt.sessions.coveringFor', { name: r.other_teacher ?? '—' }))
   else if (r.why) parts.push(t(`teacherMgmt.sessions.why.${r.why}`))

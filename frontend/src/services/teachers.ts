@@ -31,6 +31,8 @@ export interface ClassSession {
   class: string
   subject: string | null
   attendance_taken: boolean
+  /** A whole-class make-up session (Teachers > Substitute). */
+  makeup: boolean
   staff_id: number | null
   teacher: string | null
   status: ClassSessionStatus

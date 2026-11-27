@@ -1908,6 +1908,7 @@ const km: MessageSchema = {
       coveredBy: 'បង្រៀនជំនួសដោយ {name}',
       coveringFor: 'បង្រៀនជំនួស {name}',
       noRecordHint: 'បានចុះវត្តមាន តែមិនទាន់កត់វត្តមានសិស្ស',
+      makeup: 'រៀនសង',
       noTeacher: 'គ្មានគ្រូ',
       rangeHint: 'យ៉ាងច្រើន 93 ថ្ងៃ។ វគ្គដែលមិនទាន់ចប់ មិនរាប់ទេ។',
       status: {
