@@ -49,5 +49,7 @@ return [
     'attendance_not_taken' => 'Attendance was not added for :class_name on :date (class ended at :end_time)',
     'teacher_on_leave_class' => ':teacher_name is on leave today and has :class_name at :start_time (:date). Set a substitute.',
     'teacher_not_checked_in_class' => ':teacher_name has not checked in and :class_name started at :start_time (:date). Set a substitute if they are away.',
+    'class_not_held' => ':class_name is not held on :date :time. No need to come to this class.',
+    'class_back_on' => ':class_name is on again on :date :time.',
     'discount_code_given' => 'You have a discount code: :code (:discount off), valid until :expires_on',
 ];

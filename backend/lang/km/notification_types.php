@@ -52,5 +52,7 @@ return [
     'attendance_not_taken' => 'មិនទាន់បានបញ្ចូលវត្តមានសម្រាប់ថ្នាក់ :class_name ថ្ងៃ :date ទេ (ថ្នាក់បានបញ្ចប់នៅម៉ោង :end_time)',
     'teacher_on_leave_class' => ':teacher_name ឈប់សម្រាកថ្ងៃនេះ ហើយមានថ្នាក់ :class_name ម៉ោង :start_time (:date)។ សូមកំណត់គ្រូជំនួស។',
     'teacher_not_checked_in_class' => ':teacher_name មិនទាន់ចុះវត្តមាន ហើយថ្នាក់ :class_name បានចាប់ផ្តើមម៉ោង :start_time (:date)។ សូមកំណត់គ្រូជំនួស ប្រសិនបើគាត់អវត្តមាន។',
+    'class_not_held' => 'ថ្នាក់ :class_name ឈប់រៀននៅថ្ងៃ :date :time។ មិនចាំបាច់មករៀនថ្នាក់នេះទេ។',
+    'class_back_on' => 'ថ្នាក់ :class_name រៀនវិញធម្មតានៅថ្ងៃ :date :time។',
     'discount_code_given' => 'អ្នកមានកូដបញ្ចុះតម្លៃ៖ :code (បញ្ចុះ :discount) ប្រើបានរហូតដល់ :expires_on',
 ];

@@ -41,3 +41,13 @@ held), student attendance is already saved today, it is a day off, the class
 has no students, or the session has ended. Once per class, teacher, day and
 session. The link opens Teachers → Substitute with the form filled in
 (`?class_id&date&absent_staff_id&start_time&end_time`).
+
+## Class not held: students and parents told
+
+Saving a Substitute row with no substitute (class not held) for today or later
+tells the class's active students (their login) and their parent portal
+logins (`class_not_held`; students link to My attendance, parents to My
+children). The form's "Tell students and parents" tick (shown only for not
+held, on by default) turns it off. Removing such a row tells the same people
+the class is on again (`class_back_on`), only when they were told it was off.
+`ClassNotHeldNotifier`.

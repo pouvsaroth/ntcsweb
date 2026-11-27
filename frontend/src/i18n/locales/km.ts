@@ -721,6 +721,8 @@ const km: MessageSchema = {
       attendance_not_taken: 'មិនទាន់បានបញ្ចូលវត្តមានសម្រាប់ថ្នាក់ {class_name} ថ្ងៃ {date} ទេ (ថ្នាក់បានបញ្ចប់នៅម៉ោង {end_time})',
       teacher_on_leave_class: '{teacher_name} ឈប់សម្រាកថ្ងៃនេះ ហើយមានថ្នាក់ {class_name} ម៉ោង {start_time} ({date})។ សូមកំណត់គ្រូជំនួស។',
       teacher_not_checked_in_class: '{teacher_name} មិនទាន់ចុះវត្តមាន ហើយថ្នាក់ {class_name} បានចាប់ផ្តើមម៉ោង {start_time} ({date})។ សូមកំណត់គ្រូជំនួស ប្រសិនបើគាត់អវត្តមាន។',
+      class_not_held: 'ថ្នាក់ {class_name} ឈប់រៀននៅថ្ងៃ {date} {time}។ មិនចាំបាច់មករៀនថ្នាក់នេះទេ។',
+      class_back_on: 'ថ្នាក់ {class_name} រៀនវិញធម្មតានៅថ្ងៃ {date} {time}។',
       discount_code_given: 'អ្នកមានកូដបញ្ចុះតម្លៃ៖ {code} (បញ្ចុះ {discount}) ប្រើបានរហូតដល់ {expires_on}',
     },
   },
@@ -1858,6 +1860,9 @@ const km: MessageSchema = {
       noSubstitute: 'គ្មានគ្រូជំនួស – មិនបង្រៀន',
       notHeld: 'មិនបានបង្រៀន',
       notHeldHint: 'គ្មានគ្រូជំនួស៖ ថ្នាក់មិនបង្រៀនពេលនោះទេ។ មិនចាំបាច់បញ្ចូលវត្តមានសិស្ស ហើយមិនមានការរំលឹកទេ។',
+      notifyStudents: 'ប្រាប់សិស្ស និងអាណាព្យាបាល',
+      notifyStudentsHint: 'សិស្សក្នុងថ្នាក់ និងគណនីអាណាព្យាបាលរបស់ពួកគេ នឹងទទួលបានការជូនដំណឹង។',
+      toldN: 'បានប្រាប់សិស្ស និងអាណាព្យាបាល {count} នាក់។',
       deleteConfirm: 'លុបគ្រូជំនួសនេះ?',
       why: {
         leave: 'ឈប់សម្រាក',

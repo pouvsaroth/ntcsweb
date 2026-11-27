@@ -169,6 +169,8 @@ export interface SubstitutionInput {
   end_time: string | null
   book_id: number | null
   reason: string | null
+  /** Class not held: tell its students and their parents (default true). */
+  notify_students?: boolean
 }
 
 export const DOCUMENT_TYPES = ['contract', 'certificate', 'id_card', 'cv', 'other'] as const
@@ -219,7 +221,7 @@ export const teachersService = {
   substitutions: (from: string, to: string) => apiGet<Substitution[]>('/teachers/substitutions', { params: { from, to } }),
   candidates: (classId: number, date: string, start?: string, end?: string) =>
     apiGet<SubstitutionCandidates>('/teachers/substitutions/candidates', { params: clean({ class_id: classId, date, start_time: start, end_time: end }) }),
-  createSubstitution: (input: SubstitutionInput) => apiPost<Substitution>('/teachers/substitutions', input),
+  createSubstitution: (input: SubstitutionInput) => apiPost<Substitution & { notified: number }>('/teachers/substitutions', input),
   removeSubstitution: (id: number) => apiDelete(`/teachers/substitutions/${id}`),
 
   sessions: (query: ClassSessionQuery) =>

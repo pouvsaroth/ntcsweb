@@ -78,7 +78,9 @@ async function remove(s: Substitution) {
 
 // --- Form ----------------------------------------------------------------------
 const formOpen = ref(false)
-const form = reactive({ class_id: '', date: iso(new Date()), start_time: '', end_time: '', absent_staff_id: '', substitute_staff_id: '', book_id: '', reason: '' })
+const form = reactive({ class_id: '', date: iso(new Date()), start_time: '', end_time: '', absent_staff_id: '', substitute_staff_id: '', book_id: '', reason: '', notify_students: true })
+/** After saving a not-held class: how many students and parents were told. */
+const told = ref<number | null>(null)
 const candidates = ref<SubstitutionCandidates | null>(null)
 const checking = ref(false)
 const errors = ref<Record<string, string[]>>({})
@@ -107,6 +109,7 @@ function open() {
   form.substitute_staff_id = ''
   form.book_id = ''
   form.reason = ''
+  form.notify_students = true
   candidates.value = null
   errors.value = {}
   formOpen.value = true
@@ -169,7 +172,7 @@ async function save() {
   saving.value = true
   errors.value = {}
   try {
-    await teachersService.createSubstitution({
+    const saved = await teachersService.createSubstitution({
       class_id: Number(form.class_id),
       absent_staff_id: Number(form.absent_staff_id),
       substitute_staff_id: form.substitute_staff_id === NOT_HELD ? null : Number(form.substitute_staff_id),
@@ -178,7 +181,9 @@ async function save() {
       end_time: form.end_time || null,
       book_id: form.book_id ? Number(form.book_id) : null,
       reason: form.reason.trim() || null,
+      notify_students: form.substitute_staff_id === NOT_HELD ? form.notify_students : false,
     })
+    told.value = saved.class_not_held && saved.notified > 0 ? saved.notified : null
     formOpen.value = false
     await load()
   } catch (e) {
@@ -209,6 +214,7 @@ onMounted(async () => {
     </div>
 
     <BaseAlert v-if="error" variant="danger" class="mb-4">{{ error }}</BaseAlert>
+    <BaseAlert v-if="told !== null" variant="success" class="mb-4">{{ t('teacherMgmt.subs.toldN', { count: told }) }}</BaseAlert>
 
     <!-- Cards on a phone (below sm) -->
     <div class="space-y-2 sm:hidden">
@@ -272,6 +278,13 @@ onMounted(async () => {
             :hint="form.substitute_staff_id === NOT_HELD ? t('teacherMgmt.subs.notHeldHint') : t('teacherMgmt.subs.freeN', { count: candidates.available.length })"
             :error="errors.substitute_staff_id?.[0]"
           />
+          <label v-if="form.substitute_staff_id === NOT_HELD" class="flex items-start gap-2 text-sm text-neutral-700">
+            <input v-model="form.notify_students" type="checkbox" class="mt-0.5 rounded border-neutral-300 text-primary-600 focus:ring-primary-500" />
+            <span>
+              {{ t('teacherMgmt.subs.notifyStudents') }}
+              <span class="block text-xs text-neutral-500">{{ t('teacherMgmt.subs.notifyStudentsHint') }}</span>
+            </span>
+          </label>
           <details v-if="candidates.not_available.length" class="text-xs text-neutral-500">
             <summary class="cursor-pointer">{{ t('teacherMgmt.subs.notFreeN', { count: candidates.not_available.length }) }}</summary>
             <p v-for="x in candidates.not_available" :key="x.id" class="mt-1">{{ x.name }} — {{ x.busy_class ? t('teacherMgmt.subs.busyIn', { class: x.busy_class }) : awayText(x.why) }}</p>

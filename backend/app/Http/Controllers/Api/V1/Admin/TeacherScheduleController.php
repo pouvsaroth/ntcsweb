@@ -12,6 +12,7 @@ use App\Models\SchoolClass;
 use App\Models\Staff;
 use App\Models\TeacherSubstitution;
 use App\Models\TeacherUnavailability;
+use App\Services\Academic\ClassNotHeldNotifier;
 use App\Support\Authorization\Permissions;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -184,7 +185,11 @@ final class TeacherScheduleController extends Controller
             'end_time' => ['nullable', 'date_format:H:i', 'after:start_time'],
             'book_id' => ['nullable', 'integer', Rule::exists('tenant.books', 'id')],
             'reason' => ['nullable', 'string', 'max:255'],
+            // Class not held: tell its students and their parents (default yes).
+            'notify_students' => ['nullable', 'boolean'],
         ]);
+        $notify = $data['notify_students'] ?? true;
+        unset($data['notify_students']);
 
         $same = TeacherSubstitution::query()->where('class_id', $data['class_id'])->whereDate('date', $data['date'])
             ->where('absent_staff_id', $data['absent_staff_id'])
@@ -195,13 +200,17 @@ final class TeacherScheduleController extends Controller
         }
 
         $sub = TeacherSubstitution::query()->create($data + ['created_by' => $request->user()->getKey()]);
+        $sub->load(['schoolClass:id,name', 'absentStaff', 'substituteStaff', 'book:id,title']);
+        $told = $notify ? app(ClassNotHeldNotifier::class)->notHeld($sub) : 0;
 
-        return ApiResponse::created($this->substitution($sub->load(['schoolClass:id,name', 'absentStaff', 'substituteStaff', 'book:id,title'])));
+        return ApiResponse::created($this->substitution($sub) + ['notified' => $told]);
     }
 
     public function destroySubstitution(Request $request, TeacherSubstitution $substitution): JsonResponse
     {
         $this->can($request, Permissions::TEACHER_SUBSTITUTES_DELETE);
+        // A not-held class that students were told about is on again.
+        app(ClassNotHeldNotifier::class)->backOn($substitution->load('schoolClass:id,name'));
         $substitution->delete();
 
         return ApiResponse::noContent();

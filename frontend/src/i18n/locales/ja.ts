@@ -721,6 +721,8 @@ const ja: MessageSchema = {
       attendance_not_taken: '{class_name} の {date} の出席が入力されていません（授業は {end_time} に終了）',
       teacher_on_leave_class: '{teacher_name} は本日休暇で、{date} {start_time} に {class_name} の授業があります。代講を設定してください。',
       teacher_not_checked_in_class: '{teacher_name} はまだ出勤打刻しておらず、{class_name} は {start_time} に開始しました（{date}）。不在の場合は代講を設定してください。',
+      class_not_held: '{class_name} は {date} {time} 休講です。この授業に来る必要はありません。',
+      class_back_on: '{class_name} は {date} {time} に通常どおり授業があります。',
       discount_code_given: '割引コードが届きました: {code}（{discount} 割引）、{expires_on} まで有効',
     },
   },
@@ -1858,6 +1860,9 @@ const ja: MessageSchema = {
       noSubstitute: '代講なし – 休講',
       notHeld: '休講',
       notHeldHint: '代わりの先生がいません：その時間は休講です。生徒の出席入力は不要で、リマインダーも送信されません。',
+      notifyStudents: '生徒と保護者に知らせる',
+      notifyStudentsHint: 'クラスの生徒と保護者アカウントに通知が届きます。',
+      toldN: '{count} 人の生徒と保護者に知らせました。',
       deleteConfirm: 'Delete this substitute?',
       why: {
         leave: 'on leave',

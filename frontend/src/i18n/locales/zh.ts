@@ -721,6 +721,8 @@ const zh: MessageSchema = {
       attendance_not_taken: '{class_name} 在 {date} 的考勤尚未录入（课程已于 {end_time} 结束）',
       teacher_on_leave_class: '{teacher_name} 今天请假，{date} {start_time} 有 {class_name} 的课。请安排代课老师。',
       teacher_not_checked_in_class: '{teacher_name} 尚未打卡，{class_name} 已于 {start_time} 开始（{date}）。如其缺勤，请安排代课老师。',
+      class_not_held: '{class_name} 在 {date} {time} 停课，无需前来上课。',
+      class_back_on: '{class_name} 在 {date} {time} 恢复上课。',
       discount_code_given: '您获得了一个折扣码：{code}（优惠 {discount}），有效期至 {expires_on}',
     },
   },
@@ -1857,6 +1859,9 @@ const zh: MessageSchema = {
       noSubstitute: '无代课 – 停课',
       notHeld: '停课',
       notHeldHint: '无人代课：该时段停课。无需录入学生考勤，也不会发送提醒。',
+      notifyStudents: '通知学生和家长',
+      notifyStudentsHint: '该班学生及其家长账号会收到通知。',
+      toldN: '已通知 {count} 位学生和家长。',
       deleteConfirm: 'Delete this substitute?',
       why: {
         leave: 'on leave',

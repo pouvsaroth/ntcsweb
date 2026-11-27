@@ -721,6 +721,8 @@ const ko: MessageSchema = {
       attendance_not_taken: '{class_name}의 {date} 출석이 입력되지 않았습니다 (수업 종료 {end_time})',
       teacher_on_leave_class: '{teacher_name} 선생님이 오늘 휴가이며 {date} {start_time}에 {class_name} 수업이 있습니다. 대체 교사를 지정하세요.',
       teacher_not_checked_in_class: '{teacher_name} 선생님이 아직 출근 체크를 하지 않았고 {class_name} 수업이 {start_time}에 시작했습니다({date}). 결근이면 대체 교사를 지정하세요.',
+      class_not_held: '{class_name} 수업이 {date} {time}에 휴강합니다. 이 수업에 오지 않아도 됩니다.',
+      class_back_on: '{class_name} 수업이 {date} {time}에 다시 진행됩니다.',
       discount_code_given: '할인 코드가 있습니다: {code} ({discount} 할인), {expires_on}까지 사용 가능',
     },
   },
@@ -1858,6 +1860,9 @@ const ko: MessageSchema = {
       noSubstitute: '대체 교사 없음 – 수업 없음',
       notHeld: '수업 없음',
       notHeldHint: '대신할 교사가 없습니다: 그 시간 수업은 없습니다. 학생 출석 입력이 필요 없으며 알림도 보내지 않습니다.',
+      notifyStudents: '학생과 학부모에게 알리기',
+      notifyStudentsHint: '반 학생과 학부모 계정에 알림이 전송됩니다.',
+      toldN: '학생과 학부모 {count}명에게 알렸습니다.',
       deleteConfirm: 'Delete this substitute?',
       why: {
         leave: 'on leave',

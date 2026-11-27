@@ -164,6 +164,12 @@ final class NotificationType
 
     public const TEACHER_NOT_CHECKED_IN_CLASS = 'teacher_not_checked_in_class';
 
+    // Teachers > Substitute with no substitute: the class's students and
+    // parents told it is not held, and told again if that is undone.
+    public const CLASS_NOT_HELD = 'class_not_held';
+
+    public const CLASS_BACK_ON = 'class_back_on';
+
     // Invoices > Discount codes: a student was given a personal code.
     public const DISCOUNT_CODE_GIVEN = 'discount_code_given';
 }
