@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api\V1\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponse;
+use App\Models\ClassMakeupSession;
 use App\Models\LeaveRequest;
 use App\Models\Position;
 use App\Models\SchoolClass;
@@ -106,7 +107,7 @@ final class TeacherScheduleController extends Controller
         $this->can($request, Permissions::TEACHERS_VIEW);
         $request->validate(['from' => ['required', 'date'], 'to' => ['required', 'date', 'after_or_equal:from']]);
 
-        $rows = TeacherSubstitution::query()->with(['schoolClass:id,name', 'absentStaff', 'substituteStaff', 'book:id,title'])
+        $rows = TeacherSubstitution::query()->with(['schoolClass:id,name', 'absentStaff', 'substituteStaff', 'book:id,title', 'makeup.staff'])
             ->whereDate('date', '>=', (string) $request->input('from'))->whereDate('date', '<=', (string) $request->input('to'))
             ->orderBy('date')->orderBy('start_time')->get();
 
@@ -216,7 +217,90 @@ final class TeacherScheduleController extends Controller
         return ApiResponse::noContent();
     }
 
+    // --- Make-up class (a not-held row) -------------------------------------------
+
+    /**
+     * Set (or change) the whole-class make-up session of a not-held row: the
+     * date and time the class studies instead, and who teaches it (default:
+     * the teacher who was away). Refused when that teacher is away then or
+     * teaching another class. Tells the students and parents by default.
+     */
+    public function saveMakeup(Request $request, TeacherSubstitution $substitution): JsonResponse
+    {
+        $this->can($request, Permissions::TEACHER_SUBSTITUTES_CREATE);
+        if ($substitution->substitute_staff_id !== null) {
+            throw ValidationException::withMessages(['date' => __('Only a class that is not held can have a make-up class.')]);
+        }
+
+        $data = $request->validate([
+            'date' => ['required', 'date', 'after_or_equal:'.$substitution->date->toDateString()],
+            'start_time' => ['required', 'date_format:H:i'],
+            'end_time' => ['required', 'date_format:H:i', 'after:start_time'],
+            'staff_id' => ['nullable', 'integer', Rule::exists('tenant.staff', 'id')->whereIn('position_id', Position::teacherPositionIds())->whereNull('deleted_at')],
+            'note' => ['nullable', 'string', 'max:255'],
+            'notify_students' => ['nullable', 'boolean'],
+        ]);
+        $staffId = isset($data['staff_id']) ? (int) $data['staff_id'] : (int) $substitution->absent_staff_id;
+        $date = Carbon::parse($data['date']);
+
+        $why = $this->awayOn([$staffId], $date, $data['start_time'], $data['end_time'])[$staffId] ?? null;
+        $busy = $this->busyClass($staffId, $date, $data['start_time'], $data['end_time'], $substitution->class_id, $substitution->makeup?->id);
+        if ($why !== null || $busy !== null) {
+            throw ValidationException::withMessages(['staff_id' => $busy !== null
+                ? __('This teacher teaches :class at that time.', ['class' => $busy])
+                : __('This teacher is away at that time (leave or unavailable).')]);
+        }
+
+        $makeup = ClassMakeupSession::query()->updateOrCreate(['teacher_substitution_id' => $substitution->id], [
+            'class_id' => $substitution->class_id,
+            'date' => $date->toDateString(),
+            'start_time' => $data['start_time'],
+            'end_time' => $data['end_time'],
+            'staff_id' => $staffId,
+            'note' => $data['note'] ?? null,
+            'created_by' => $request->user()->getKey(),
+        ]);
+        $makeup->load('schoolClass:id,name');
+        $told = ($data['notify_students'] ?? true) ? app(ClassNotHeldNotifier::class)->makeupSet($makeup) : 0;
+
+        $substitution->load(['schoolClass:id,name', 'absentStaff', 'substituteStaff', 'book:id,title', 'makeup.staff']);
+
+        return ApiResponse::success($this->substitution($substitution) + ['notified' => $told]);
+    }
+
+    public function destroyMakeup(Request $request, TeacherSubstitution $substitution): JsonResponse
+    {
+        $this->can($request, Permissions::TEACHER_SUBSTITUTES_DELETE);
+        $makeup = $substitution->makeup()->with('schoolClass:id,name')->first();
+        if ($makeup !== null) {
+            app(ClassNotHeldNotifier::class)->makeupCancelled($makeup);
+            $makeup->delete();
+        }
+
+        return ApiResponse::noContent();
+    }
+
     // --- Helpers -------------------------------------------------------------------
+
+    /** The class a teacher teaches or covers at that day/time (other than $classId), or null. */
+    private function busyClass(int $staffId, Carbon $date, string $start, string $end, int $classId, ?int $exceptMakeupId): ?string
+    {
+        foreach ($this->classTimes([$staffId]) as $s) {
+            if ((int) $s->class_id !== $classId && (int) $s->day_of_week === $date->dayOfWeekIso && $this->overlaps($start, $end, $s->start_time, $s->end_time)) {
+                return $s->name;
+            }
+        }
+        $cover = TeacherSubstitution::query()->with('schoolClass:id,name')->whereDate('date', $date->toDateString())->where('substitute_staff_id', $staffId)->get()
+            ->first(fn (TeacherSubstitution $sub) => $sub->start_time === null || $this->overlaps($start, $end, $sub->start_time, $sub->end_time));
+        if ($cover !== null) {
+            return $cover->schoolClass?->name;
+        }
+        $other = ClassMakeupSession::query()->with('schoolClass:id,name')->whereDate('date', $date->toDateString())->where('staff_id', $staffId)
+            ->when($exceptMakeupId !== null, fn ($q) => $q->whereKeyNot($exceptMakeupId))->get()
+            ->first(fn (ClassMakeupSession $m) => $this->overlaps($start, $end, $m->start_time, $m->end_time));
+
+        return $other?->schoolClass?->name;
+    }
 
     private function can(Request $request, string $permission): void
     {
@@ -340,6 +424,14 @@ final class TeacherScheduleController extends Controller
             'class_not_held' => $s->substitute_staff_id === null,
             'subject' => $s->book?->title,
             'reason' => $s->reason,
+            'makeup' => $s->relationLoaded('makeup') && $s->makeup !== null ? [
+                'date' => $s->makeup->date->toDateString(),
+                'start_time' => substr((string) $s->makeup->start_time, 0, 5),
+                'end_time' => substr((string) $s->makeup->end_time, 0, 5),
+                'staff_id' => $s->makeup->staff_id,
+                'teacher' => $s->makeup->staff?->fullName(),
+                'note' => $s->makeup->note,
+            ] : null,
         ];
     }
 }

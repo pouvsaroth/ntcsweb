@@ -170,6 +170,11 @@ final class NotificationType
 
     public const CLASS_BACK_ON = 'class_back_on';
 
+    // A whole-class make-up session for a not-held class: set / removed.
+    public const CLASS_MAKEUP_SET = 'class_makeup_set';
+
+    public const CLASS_MAKEUP_CANCELLED = 'class_makeup_cancelled';
+
     // Invoices > Discount codes: a student was given a personal code.
     public const DISCOUNT_CODE_GIVEN = 'discount_code_given';
 }

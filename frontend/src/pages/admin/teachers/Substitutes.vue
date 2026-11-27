@@ -10,7 +10,7 @@ import BaseModal from '@/components/ui/BaseModal.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
 import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import DataTable from '@/components/ui/DataTable.vue'
-import { teachersService, type Substitution, type SubstitutionCandidates, type TeacherOptions } from '@/services/teachers'
+import { teachersService, type Substitution, type SubstitutionCandidates, type Teacher, type TeacherOptions } from '@/services/teachers'
 import { useAuthStore } from '@/stores/auth'
 import { useConfirmDialogStore } from '@/stores/confirmDialog'
 import { ApiRequestError } from '@/types/api'
@@ -73,6 +73,62 @@ const columns = computed(() => [
 async function remove(s: Substitution) {
   if (!(await confirmDialog.confirm({ message: t('teacherMgmt.subs.deleteConfirm'), danger: true }))) return
   await teachersService.removeSubstitution(s.id).catch(() => undefined)
+  await load()
+}
+
+// --- Make-up class (a not-held row) ----------------------------------------------
+const teachers = ref<Teacher[]>([])
+const makeupFor = ref<Substitution | null>(null)
+const makeupOpen = computed({
+  get: () => makeupFor.value !== null,
+  set: (open: boolean) => {
+    if (!open) makeupFor.value = null
+  },
+})
+const makeup = reactive({ date: '', start_time: '', end_time: '', staff_id: '', note: '', notify_students: true })
+const makeupErrors = ref<Record<string, string[]>>({})
+const makeupSaving = ref(false)
+const teacherOptions = computed(() => teachers.value.map((x) => ({ value: String(x.id), label: x.name })))
+const makeupText = (s: Substitution) =>
+  s.makeup ? t('teacherMgmt.subs.makeupOn', { date: formatDate(s.makeup.date), time: `${s.makeup.start_time}–${s.makeup.end_time}` }) + (s.makeup.teacher ? ` · ${s.makeup.teacher}` : '') : ''
+
+async function openMakeup(s: Substitution) {
+  if (teachers.value.length === 0) teachers.value = await teachersService.list().catch(() => [])
+  makeup.date = s.makeup?.date ?? s.date
+  makeup.start_time = s.makeup?.start_time ?? s.start_time ?? ''
+  makeup.end_time = s.makeup?.end_time ?? s.end_time ?? ''
+  makeup.staff_id = String(s.makeup?.staff_id ?? s.absent_staff_id)
+  makeup.note = s.makeup?.note ?? ''
+  makeup.notify_students = true
+  makeupErrors.value = {}
+  makeupFor.value = s
+}
+async function saveMakeup() {
+  if (!makeupFor.value) return
+  makeupSaving.value = true
+  makeupErrors.value = {}
+  try {
+    const saved = await teachersService.saveMakeup(makeupFor.value.id, {
+      date: makeup.date,
+      start_time: makeup.start_time,
+      end_time: makeup.end_time,
+      staff_id: makeup.staff_id ? Number(makeup.staff_id) : null,
+      note: makeup.note.trim() || null,
+      notify_students: makeup.notify_students,
+    })
+    told.value = saved.notified > 0 ? saved.notified : null
+    makeupFor.value = null
+    await load()
+  } catch (e) {
+    if (e instanceof ApiRequestError && e.errors) makeupErrors.value = e.errors
+    else makeupErrors.value = { date: [e instanceof ApiRequestError ? e.message : t('teacherMgmt.saveFailed')] }
+  } finally {
+    makeupSaving.value = false
+  }
+}
+async function removeMakeup(s: Substitution) {
+  if (!(await confirmDialog.confirm({ message: t('teacherMgmt.subs.removeMakeupConfirm'), danger: true }))) return
+  await teachersService.removeMakeup(s.id).catch(() => undefined)
   await load()
 }
 
@@ -223,7 +279,10 @@ onMounted(async () => {
         <p class="text-sm font-semibold text-neutral-800">{{ row.class }} · {{ formatDate(row.date) }} {{ time(row) }}</p>
         <p class="text-xs text-neutral-500">{{ row.absent }} → <span class="font-medium" :class="row.class_not_held ? 'text-warning-600' : 'text-neutral-800'">{{ who(row) }}</span></p>
         <p v-if="row.reason || row.subject" class="text-xs text-neutral-500">{{ [row.subject, row.reason].filter(Boolean).join(' · ') }}</p>
-        <div v-if="canManage" class="mt-2 flex justify-end">
+        <p v-if="row.makeup" class="text-xs font-medium text-primary-700">{{ makeupText(row) }}</p>
+        <div v-if="canManage || (canCreate && row.class_not_held)" class="mt-2 flex flex-wrap justify-end gap-3">
+          <button v-if="canCreate && row.class_not_held" type="button" class="text-sm font-medium text-primary-600" @click="openMakeup(row)">{{ row.makeup ? t('teacherMgmt.subs.changeMakeup') : t('teacherMgmt.subs.setMakeup') }}</button>
+          <button v-if="canDelete && row.makeup" type="button" class="text-sm font-medium text-danger-600" @click="removeMakeup(row)">{{ t('teacherMgmt.subs.removeMakeup') }}</button>
           <button v-if="canDelete" type="button" class="text-sm font-medium text-danger-600" @click="remove(row)">{{ t('teacherMgmt.delete') }}</button>
         </div>
       </div>
@@ -242,10 +301,19 @@ onMounted(async () => {
         <template #cell-absent="{ row }">{{ row.absent }}</template>
         <template #cell-substitute="{ row }">
           <span class="font-medium" :class="row.class_not_held ? 'text-warning-600' : 'text-neutral-800'">{{ who(row as Substitution) }}</span>
+          <p v-if="row.makeup" class="text-xs font-medium text-primary-700">{{ makeupText(row as Substitution) }}</p>
+          <button v-if="canCreate && row.class_not_held" type="button" class="block text-xs font-medium text-primary-600 hover:text-primary-700" @click="openMakeup(row as Substitution)">
+            {{ row.makeup ? t('teacherMgmt.subs.changeMakeup') : t('teacherMgmt.subs.setMakeup') }}
+          </button>
         </template>
         <template #cell-reason="{ row }">{{ row.reason || '—' }}</template>
         <template #cell-actions="{ row }">
-          <button v-if="canDelete" type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row as Substitution)">{{ t('teacherMgmt.delete') }}</button>
+          <div class="flex justify-end gap-3">
+            <button v-if="canDelete && row.makeup" type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="removeMakeup(row as Substitution)">
+              {{ t('teacherMgmt.subs.removeMakeup') }}
+            </button>
+            <button v-if="canDelete" type="button" class="text-sm font-medium text-danger-600 hover:text-red-700" @click="remove(row as Substitution)">{{ t('teacherMgmt.delete') }}</button>
+          </div>
         </template>
       </DataTable>
     </div>
@@ -298,6 +366,33 @@ onMounted(async () => {
       <template #footer>
         <BaseButton variant="outline" @click="formOpen = false">{{ t('common.close') }}</BaseButton>
         <BaseButton :loading="saving" :disabled="!form.absent_staff_id || !form.substitute_staff_id" @click="save">{{ t('common.save') }}</BaseButton>
+      </template>
+    </BaseModal>
+
+    <BaseModal v-model="makeupOpen" :title="t('teacherMgmt.subs.setMakeup')">
+      <form class="space-y-4" @submit.prevent="saveMakeup">
+        <p v-if="makeupFor" class="text-sm text-neutral-600">
+          {{ makeupFor.class }} · {{ formatDate(makeupFor.date) }} {{ time(makeupFor) }} — {{ t('teacherMgmt.subs.notHeld') }}
+        </p>
+        <p class="text-xs text-neutral-500">{{ t('teacherMgmt.subs.makeupHint') }}</p>
+        <div class="grid gap-4 sm:grid-cols-3">
+          <BaseInput v-model="makeup.date" type="date" required :label="t('teacherMgmt.date')" :error="makeupErrors.date?.[0]" />
+          <BaseInput v-model="makeup.start_time" type="time" required :label="t('teacherMgmt.startTime')" :error="makeupErrors.start_time?.[0]" />
+          <BaseInput v-model="makeup.end_time" type="time" required :label="t('teacherMgmt.endTime')" :error="makeupErrors.end_time?.[0]" />
+        </div>
+        <BaseSelect v-model="makeup.staff_id" :options="teacherOptions" required :label="t('teacherMgmt.subs.makeupTeacher')" :error="makeupErrors.staff_id?.[0]" />
+        <BaseInput v-model="makeup.note" :label="t('teacherMgmt.note')" :error="makeupErrors.note?.[0]" />
+        <label class="flex items-start gap-2 text-sm text-neutral-700">
+          <input v-model="makeup.notify_students" type="checkbox" class="mt-0.5 rounded border-neutral-300 text-primary-600 focus:ring-primary-500" />
+          <span>
+            {{ t('teacherMgmt.subs.notifyStudents') }}
+            <span class="block text-xs text-neutral-500">{{ t('teacherMgmt.subs.notifyStudentsHint') }}</span>
+          </span>
+        </label>
+      </form>
+      <template #footer>
+        <BaseButton variant="outline" @click="makeupOpen = false">{{ t('common.close') }}</BaseButton>
+        <BaseButton :loading="makeupSaving" :disabled="!makeup.date || !makeup.start_time || !makeup.end_time || !makeup.staff_id" @click="saveMakeup">{{ t('common.save') }}</BaseButton>
       </template>
     </BaseModal>
   </div>

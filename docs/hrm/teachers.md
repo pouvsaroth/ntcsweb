@@ -51,3 +51,17 @@ children). The form's "Tell students and parents" tick (shown only for not
 held, on by default) turns it off. Removing such a row tells the same people
 the class is on again (`class_back_on`), only when they were told it was off.
 `ClassNotHeldNotifier`.
+
+## Make-up class (whole class)
+
+A not-held row on Teachers → Substitute can get one make-up session
+(`class_makeup_sessions`, `ClassMakeupSession`): date (not before the
+not-held day), start/end time, teacher (default the teacher who was away),
+note. Refused when that teacher is on leave / unavailable then, or teaches,
+covers or has another make-up at that time. `PUT|DELETE
+/teachers/substitutions/{id}/makeup` (`teacher-substitutes.create` /
+`.delete`). Students and parents are told (`class_makeup_set`, tick on by
+default) and told when it is removed (`class_makeup_cancelled`, only if they
+were told). The make-up teacher can take the class's attendance that day
+(`ClassAccess`), and it shows on their Timetable → Teacher week. Removing the
+not-held row removes its make-up too.

@@ -46,6 +46,8 @@ export interface TimetableOptions {
 export interface TeacherWeek {
   week_start: string
   slots: TimetableSlot[]
+  /** Make-up sessions they teach that week. */
+  makeups?: { id: number; date: string; day_of_week: number; start_time: string; end_time: string; class: string | null }[]
   substitutions: { id: number; date: string; day_of_week: number; start_time: string | null; end_time: string | null; class: string | null; role: 'covering' | 'away'; other: string | null; not_held?: boolean }[]
   hours_per_week: number
 }

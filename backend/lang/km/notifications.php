@@ -49,5 +49,7 @@ return [
     'teacher_not_checked_in_class' => ':teacher_name មិនទាន់ចុះវត្តមាន ហើយថ្នាក់ :class_name បានចាប់ផ្តើមម៉ោង :start_time (:date)។ សូមកំណត់គ្រូជំនួស ប្រសិនបើគាត់អវត្តមាន។',
     'class_not_held' => 'ថ្នាក់ :class_name ឈប់រៀននៅថ្ងៃ :date :time។ មិនចាំបាច់មករៀនថ្នាក់នេះទេ។',
     'class_back_on' => 'ថ្នាក់ :class_name រៀនវិញធម្មតានៅថ្ងៃ :date :time។',
+    'class_makeup_set' => 'ថ្នាក់ :class_name មានរៀនសងនៅថ្ងៃ :date :time។',
+    'class_makeup_cancelled' => 'ការរៀនសងរបស់ថ្នាក់ :class_name ថ្ងៃ :date :time ត្រូវបានលុបចោល។',
     'discount_code_given' => 'អ្នកមានកូដបញ្ចុះតម្លៃ៖ :code (បញ្ចុះ :discount) ប្រើបានរហូតដល់ :expires_on',
 ];

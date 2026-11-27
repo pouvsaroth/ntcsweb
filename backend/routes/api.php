@@ -731,6 +731,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::get('substitutions/candidates', [TeacherScheduleController::class, 'candidates'])->name('substitutions.candidates');
             Route::post('substitutions', [TeacherScheduleController::class, 'storeSubstitution'])->name('substitutions.store');
             Route::delete('substitutions/{substitution}', [TeacherScheduleController::class, 'destroySubstitution'])->name('substitutions.destroy');
+            Route::put('substitutions/{substitution}/makeup', [TeacherScheduleController::class, 'saveMakeup'])->name('substitutions.makeup.save');
+            Route::delete('substitutions/{substitution}/makeup', [TeacherScheduleController::class, 'destroyMakeup'])->name('substitutions.makeup.destroy');
             Route::get('sessions', [ClassSessionController::class, 'index'])->name('sessions.index');
             Route::get('sessions/excel', [ClassSessionController::class, 'excel'])->name('sessions.excel');
             Route::get('sessions/pdf', [ClassSessionController::class, 'pdf'])->name('sessions.pdf');

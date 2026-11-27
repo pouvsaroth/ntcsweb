@@ -61,6 +61,8 @@ export type NotificationTypeValue =
   | 'teacher_not_checked_in_class'
   | 'class_not_held'
   | 'class_back_on'
+  | 'class_makeup_set'
+  | 'class_makeup_cancelled'
 
 export interface AppNotification {
   id: number

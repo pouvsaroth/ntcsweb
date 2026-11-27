@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Api\V1\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponse;
 use App\Models\Book;
+use App\Models\ClassMakeupSession;
 use App\Models\Classroom;
 use App\Models\ClassSchedule;
 use App\Models\Position;
@@ -86,12 +87,25 @@ final class TimetableController extends Controller
                 // Away with nobody covering: the class is not held then.
                 'not_held' => $s->substitute_staff_id === null,
             ])->values();
+        // Make-up sessions they teach that week (a not-held class studying another time).
+        $makeups = ClassMakeupSession::query()->with('schoolClass:id,name')->where('staff_id', $staffId)
+            ->whereDate('date', '>=', $monday->toDateString())->whereDate('date', '<=', $monday->copy()->addDays(6)->toDateString())
+            ->orderBy('date')->orderBy('start_time')->get()
+            ->map(fn (ClassMakeupSession $m) => [
+                'id' => $m->id,
+                'date' => $m->date->toDateString(),
+                'day_of_week' => $m->date->dayOfWeekIso,
+                'start_time' => substr((string) $m->start_time, 0, 5),
+                'end_time' => substr((string) $m->end_time, 0, 5),
+                'class' => $m->schoolClass?->name,
+            ])->values();
         $minutes = $slots->sum(fn ($s) => (strtotime($s['end_time']) - strtotime($s['start_time'])) / 60);
 
         return ApiResponse::success([
             'week_start' => $monday->toDateString(),
             'slots' => $slots,
             'substitutions' => $subs,
+            'makeups' => $makeups,
             'hours_per_week' => round($minutes / 60, 2),
         ]);
     }

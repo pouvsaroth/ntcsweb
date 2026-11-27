@@ -51,5 +51,7 @@ return [
     'teacher_not_checked_in_class' => ':teacher_name has not checked in and :class_name started at :start_time (:date). Set a substitute if they are away.',
     'class_not_held' => ':class_name is not held on :date :time. No need to come to this class.',
     'class_back_on' => ':class_name is on again on :date :time.',
+    'class_makeup_set' => ':class_name has a make-up class on :date :time.',
+    'class_makeup_cancelled' => 'The make-up class of :class_name on :date :time is cancelled.',
     'discount_code_given' => 'You have a discount code: :code (:discount off), valid until :expires_on',
 ];

@@ -76,6 +76,9 @@ const extras = computed(() => {
           : t('timetable.away', { time, class: s.class ?? '', who: s.other ?? '' })
     ;(out[s.day_of_week] ??= []).push({ key: `s${s.id}`, text, tone: s.role })
   }
+  for (const m of week.value?.makeups ?? []) {
+    ;(out[m.day_of_week] ??= []).push({ key: `m${m.id}`, text: t('timetable.makeup', { time: `${m.start_time}–${m.end_time}`, class: m.class ?? '' }), tone: 'covering' })
+  }
   return out
 })
 

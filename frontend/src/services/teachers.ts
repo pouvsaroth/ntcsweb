@@ -150,7 +150,26 @@ export interface Substitution {
   class_not_held: boolean
   subject: string | null
   reason: string | null
+  /** The whole-class make-up session of a not-held row. */
+  makeup: SubstitutionMakeup | null
 }
+export interface SubstitutionMakeup {
+  date: string
+  start_time: string
+  end_time: string
+  staff_id: number | null
+  teacher: string | null
+  note: string | null
+}
+export interface MakeupInput {
+  date: string
+  start_time: string
+  end_time: string
+  staff_id: number | null
+  note: string | null
+  notify_students: boolean
+}
+
 export interface SubstitutionCandidates {
   date: string
   start_time: string | null
@@ -223,6 +242,8 @@ export const teachersService = {
     apiGet<SubstitutionCandidates>('/teachers/substitutions/candidates', { params: clean({ class_id: classId, date, start_time: start, end_time: end }) }),
   createSubstitution: (input: SubstitutionInput) => apiPost<Substitution & { notified: number }>('/teachers/substitutions', input),
   removeSubstitution: (id: number) => apiDelete(`/teachers/substitutions/${id}`),
+  saveMakeup: (id: number, input: MakeupInput) => apiPut<Substitution & { notified: number }>(`/teachers/substitutions/${id}/makeup`, input),
+  removeMakeup: (id: number) => apiDelete(`/teachers/substitutions/${id}/makeup`),
 
   sessions: (query: ClassSessionQuery) =>
     apiGet<{ from: string; to: string; rows: ClassSession[]; summary: ClassSessionSummary[] }>('/teachers/sessions', { params: clean(query) }),

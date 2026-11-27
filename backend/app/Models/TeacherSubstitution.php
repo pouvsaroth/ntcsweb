@@ -8,6 +8,7 @@ use App\Models\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * Tenant-owned. Who covers a class on a day its teacher is away (HRM > Teacher > Substitute).
@@ -49,6 +50,12 @@ class TeacherSubstitution extends Model
     public function book(): BelongsTo
     {
         return $this->belongsTo(Book::class, 'book_id');
+    }
+
+    /** The make-up session of a not-held row, if one was set. @return HasOne<ClassMakeupSession, $this> */
+    public function makeup(): HasOne
+    {
+        return $this->hasOne(ClassMakeupSession::class, 'teacher_substitution_id');
     }
 
     public function auditModule(): string

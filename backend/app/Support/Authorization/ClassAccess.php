@@ -8,8 +8,9 @@ use App\Models\Role;
 use App\Models\SchoolClass;
 use App\Models\Student;
 use App\Models\User;
-use Illuminate\Database\Eloquent\Builder;
 use App\Support\Tenancy\TenantContext;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -59,7 +60,7 @@ final class ClassAccess
     /**
      * Limit a classes query (or any query with a class id column) to what the user sees.
      *
-     * @param  Builder<\Illuminate\Database\Eloquent\Model>  $query
+     * @param  Builder<Model>  $query
      */
     public function limit(Builder $query, User $user, string $column = 'id'): void
     {
@@ -91,7 +92,7 @@ final class ClassAccess
 
     /**
      * Taking attendance: the user's own classes, or a class they cover as a
-     * substitute (Teacher > Substitute) on that date.
+     * substitute (Teacher > Substitute) or teach a make-up session of on that date.
      */
     public function canTakeAttendance(User $user, SchoolClass $class, string $date): bool
     {
@@ -101,11 +102,17 @@ final class ClassAccess
         $db = DB::connection('tenant');
         $staffIds = $db->table('staff')->where('user_id', $user->getKey())->pluck('id');
 
-        return $staffIds->isNotEmpty() && $db->table('teacher_substitutions')
+        return $staffIds->isNotEmpty() && ($db->table('teacher_substitutions')
             ->where('class_id', $class->getKey())
             ->whereIn('substitute_staff_id', $staffIds)
             ->whereDate('date', $date)
-            ->exists();
+            ->exists()
+            // Teaching the class's make-up session that day (Teacher > Substitute).
+            || $db->table('class_makeup_sessions')
+                ->where('class_id', $class->getKey())
+                ->whereIn('staff_id', $staffIds)
+                ->whereDate('date', $date)
+                ->exists());
     }
 
     /** @return list<int> */
@@ -121,7 +128,9 @@ final class ClassAccess
                 ->merge($db->table('classes')->whereIn('homeroom_staff_id', $staffIds)->pluck('id'))
                 ->merge($db->table('teacher_assignments')->whereIn('staff_id', $staffIds)->pluck('class_id'))
                 // Covering a class as a substitute today (Teacher > Substitute).
-                ->merge($db->table('teacher_substitutions')->whereIn('substitute_staff_id', $staffIds)->whereDate('date', $this->schoolToday())->pluck('class_id'));
+                ->merge($db->table('teacher_substitutions')->whereIn('substitute_staff_id', $staffIds)->whereDate('date', $this->schoolToday())->pluck('class_id'))
+                // Teaching a make-up session of a class today.
+                ->merge($db->table('class_makeup_sessions')->whereIn('staff_id', $staffIds)->whereDate('date', $this->schoolToday())->pluck('class_id'));
         }
 
         return $ids->map(fn ($v) => (int) $v)->unique()->sort()->values()->all();
