@@ -111,6 +111,7 @@ const form = reactive({
   late_amount_usd: '',
   late_amount_khr: '',
   deduct_early_leave: true,
+  deduct_missed_sessions: false,
 })
 const errors = ref<Record<string, string[]>>({})
 const saveError = ref<string | null>(null)
@@ -126,6 +127,7 @@ function openForm() {
   form.late_amount_usd = String(s.late_amount_usd)
   form.late_amount_khr = String(s.late_amount_khr)
   form.deduct_early_leave = s.deduct_early_leave
+  form.deduct_missed_sessions = s.deduct_missed_sessions
   errors.value = {}
   saveError.value = null
   formOpen.value = true
@@ -145,6 +147,7 @@ async function save() {
         late_amount_usd: Number(form.late_amount_usd || 0),
         late_amount_khr: Number(form.late_amount_khr || 0),
         deduct_early_leave: form.deduct_early_leave,
+        deduct_missed_sessions: form.deduct_missed_sessions,
       })
     ).settings
     formOpen.value = false
@@ -173,11 +176,12 @@ onMounted(() => {
         </div>
         <BaseButton v-if="canManage && settings" size="sm" variant="outline" @click="openForm">{{ t('admin.payroll.edit') }}</BaseButton>
       </div>
-      <dl v-if="settings" class="grid grid-cols-1 gap-3 text-sm sm:grid-cols-4">
+      <dl v-if="settings" class="grid grid-cols-1 gap-3 text-sm sm:grid-cols-5">
         <div><dt class="text-neutral-500">{{ t('admin.payroll.deductionRules.absence') }}</dt><dd class="font-semibold text-neutral-900">{{ yesNo(settings.deduct_absence) }}</dd></div>
         <div><dt class="text-neutral-500">{{ t('admin.payroll.deductionRules.unpaidLeave') }}</dt><dd class="font-semibold text-neutral-900">{{ yesNo(settings.deduct_unpaid_leave) }}</dd></div>
         <div><dt class="text-neutral-500">{{ t('admin.payroll.deductionRules.late') }}</dt><dd class="font-semibold text-neutral-900">{{ lateRule }}</dd></div>
         <div><dt class="text-neutral-500">{{ t('admin.payroll.deductionRules.earlyLeave') }}</dt><dd class="font-semibold text-neutral-900">{{ settings.deduct_early_leave ? t('admin.payroll.deductionRules.sameAsLate') : t('admin.payroll.no') }}</dd></div>
+        <div><dt class="text-neutral-500">{{ t('admin.payroll.deductionRules.missedSessions') }}</dt><dd class="font-semibold text-neutral-900">{{ yesNo(settings.deduct_missed_sessions) }}</dd></div>
       </dl>
     </section>
 
@@ -282,6 +286,10 @@ onMounted(() => {
         <label class="flex items-center gap-2 text-sm text-neutral-700">
           <input v-model="form.deduct_early_leave" type="checkbox" class="rounded border-neutral-300 text-primary-600 focus:ring-primary-500" />
           {{ t('admin.payroll.deductionRules.deductEarlyLeave') }}
+        </label>
+        <label class="flex items-start gap-2 text-sm text-neutral-700">
+          <input v-model="form.deduct_missed_sessions" type="checkbox" class="mt-0.5 rounded border-neutral-300 text-primary-600 focus:ring-primary-500" />
+          {{ t('admin.payroll.deductionRules.deductMissedSessions') }}
         </label>
       </form>
       <template #footer>

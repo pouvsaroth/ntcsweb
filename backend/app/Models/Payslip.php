@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * fixed once it's sent for approval.
  */
 #[Fillable([
-    'payroll_run_id', 'staff_id', 'currency', 'monthly_basic', 'basic_pay', 'allowances', 'bonuses', 'overtime_pay', 'gross_pay',
+    'payroll_run_id', 'staff_id', 'currency', 'monthly_basic', 'basic_pay', 'allowances', 'bonuses', 'overtime_pay', 'cover_pay', 'gross_pay',
     'attendance_deduction', 'other_deductions', 'social_security_employee', 'social_security_employer', 'tax', 'loan_deduction',
     'adjustment', 'adjustment_note', 'net_pay', 'lines', 'details',
     'payment_method', 'bank_name', 'bank_account_name', 'bank_account_number',
@@ -27,7 +27,7 @@ class Payslip extends Model
 
     /** The money columns, for totals. */
     public const AMOUNTS = [
-        'basic_pay', 'allowances', 'bonuses', 'overtime_pay', 'gross_pay', 'attendance_deduction', 'other_deductions',
+        'basic_pay', 'allowances', 'bonuses', 'overtime_pay', 'cover_pay', 'gross_pay', 'attendance_deduction', 'other_deductions',
         'social_security_employee', 'social_security_employer', 'tax', 'loan_deduction', 'adjustment', 'net_pay',
     ];
 

@@ -13,6 +13,7 @@ use App\Models\Staff;
 use App\Models\StaffSalary;
 use App\Models\Tenant;
 use App\Models\WorkSchedule;
+use App\Services\Academic\ClassSessionReport;
 use App\Services\Leave\LeaveBalanceService;
 use App\Services\StaffAttendance\StaffAttendanceService;
 use Carbon\CarbonImmutable;
@@ -29,7 +30,12 @@ use Illuminate\Support\Collection;
  *   rate, and late / early-leave minutes past the grace period, per minute
  *   at the hourly rate or a fixed amount each time — as PayrollSetting says.
  *
- * Both use the basic salary in effect at the end of the period, in its own
+ * - Class sessions (Teachers > Class sessions), when the school turns them
+ *   on: sessions a teacher covers for someone else are paid at the hourly
+ *   rate × class_cover_rate; every missed session comes off at the hourly
+ *   rate (also on a day already deducted as absent — the school's choice).
+ *
+ * All use the basic salary in effect at the end of the period, in its own
  * currency. A staff member with no salary is listed with no amount; one
  * whose salary has "Deduct for attendance" off has their counts listed but
  * nothing deducted (`deducted` false).
@@ -48,7 +54,59 @@ final class PayrollAttendance
         private readonly PayrollRules $rules,
         private readonly StaffAttendanceService $attendance,
         private readonly LeaveBalanceService $leave,
+        private readonly ClassSessionReport $sessions,
     ) {}
+
+    /**
+     * Covered and missed class sessions in the period (up to today), and what
+     * they come to. Nothing is worked out while both settings are off.
+     *
+     * @param  Collection<int, Staff>  $staff
+     * @return Collection<int, array<string, mixed>> keyed by staff id
+     */
+    public function classSessions(Collection $staff, CarbonImmutable $from, CarbonImmutable $to): Collection
+    {
+        $settings = $this->rules->settings();
+        $none = ['cover_sessions' => 0, 'cover_minutes' => 0, 'missed_sessions' => 0, 'missed_minutes' => 0, 'cover_amount' => 0.0, 'missed_amount' => 0.0];
+        if (! $settings->pay_class_cover && ! $settings->deduct_missed_sessions) {
+            return $staff->mapWithKeys(fn (Staff $member) => [$member->id => $none]);
+        }
+
+        $end = min($to->toDateString(), CarbonImmutable::now(date_default_timezone_get())->toDateString());
+        $rows = $end < $from->toDateString() ? [] : $this->sessions->build($from->toDateString(), $end)['rows'];
+        $byStaff = collect($rows)->filter(fn (array $r) => $r['staff_id'] !== null)->groupBy('staff_id');
+        $salaries = $this->salaries($staff, $to);
+        $schedules = WorkSchedule::query()->get()->keyBy('id');
+        $default = $schedules->firstWhere('is_default', true);
+        $shifts = Shift::query()->with('days')->get()->keyBy('id');
+
+        return $staff->mapWithKeys(function (Staff $member) use ($none, $settings, $byStaff, $salaries, $schedules, $default, $shifts, $to) {
+            $salary = $salaries->get($member->id);
+            $book = $salary !== null ? $this->rateBook($salary, $schedules->get($member->work_schedule_id) ?? $default, $shifts, $to) : null;
+            $out = $none;
+            $coverPay = 0.0;
+            $missedPay = 0.0;
+            foreach ($byStaff->get($member->id, collect()) as $row) {
+                $hourly = $book !== null ? $book['hourly'](CarbonImmutable::parse($row['date'])) : 0.0;
+                if ($row['status'] === ClassSessionReport::MISSED) {
+                    $out['missed_sessions']++;
+                    $out['missed_minutes'] += $row['minutes'];
+                    $missedPay += $row['minutes'] * $hourly / 60;
+                } elseif ($row['cover'] && in_array($row['status'], [ClassSessionReport::TAUGHT, ClassSessionReport::COVERING], true)) {
+                    $out['cover_sessions']++;
+                    $out['cover_minutes'] += $row['minutes'];
+                    $coverPay += $row['minutes'] * $hourly / 60 * $settings->class_cover_rate;
+                }
+            }
+            if ($salary !== null) {
+                $out['cover_amount'] = $settings->pay_class_cover ? $this->round($coverPay, $salary->currency) : 0.0;
+                // "Deduct for attendance" off on their salary: counted, not taken off.
+                $out['missed_amount'] = $settings->deduct_missed_sessions && $salary->deduct_attendance ? $this->round($missedPay, $salary->currency) : 0.0;
+            }
+
+            return [$member->id => $out];
+        });
+    }
 
     /**
      * @param  Collection<int, Staff>  $staff

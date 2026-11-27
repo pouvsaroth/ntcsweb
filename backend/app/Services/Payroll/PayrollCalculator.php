@@ -85,6 +85,7 @@ final class PayrollCalculator
 
         $overtime = $this->attendance->overtime($staff, $from, $to);
         $deductions = $this->attendance->deductions($staff, $from, $to);
+        $sessions = $this->attendance->classSessions($staff, $from, $to);
         $profiles = StaffPayrollProfile::query()->whereIn('staff_id', $staff->modelKeys())->get()->keyBy('staff_id');
         $structures = SalaryStructure::query()->with('items.component')->whereIn('id', $salaries->pluck('salary_structure_id')->filter())->get()->keyBy('id');
         $assignments = StaffPayComponent::query()
@@ -142,6 +143,7 @@ final class PayrollCalculator
                     ? $this->attendance->rateBook($salaries[$member->id], $schedules->get($member->work_schedule_id) ?? $defaultSchedule, $shifts, $to)['shifts']
                     : [],
                 $prorated,
+                $sessions[$member->id],
             );
             $run->payslips()->create($slip);
         }
@@ -187,6 +189,7 @@ final class PayrollCalculator
         ?string $adjustmentNote,
         array $shiftRates = [],
         ?array $prorated = null,
+        array $sessions = [],
     ): array {
         $currency = $salary->currency;
         $monthly = (float) $salary->basic_salary;
@@ -240,12 +243,15 @@ final class PayrollCalculator
         }
 
         $overtimePay = (float) ($overtime['amount'] ?? 0);
-        $attendance = (float) ($deduction['amount'] ?? 0);
-        $gross = $this->round($basic + $totals['allowance'] + $totals['bonus'] + $overtimePay, $currency);
+        // Class sessions covered for others (paid) and missed (taken off with attendance).
+        $coverPay = (float) ($sessions['cover_amount'] ?? 0);
+        $missedPay = (float) ($sessions['missed_amount'] ?? 0);
+        $attendance = $this->round((float) ($deduction['amount'] ?? 0) + $missedPay, $currency);
+        $gross = $this->round($basic + $totals['allowance'] + $totals['bonus'] + $overtimePay + $coverPay, $currency);
 
-        // Basic and overtime always count toward tax and NSSF; attendance deductions come off both.
-        $taxablePay = $basic + $overtimePay + $taxable - $attendance;
-        $nssfPay = $basic + $overtimePay + $nssfable - $attendance;
+        // Basic, overtime and cover pay always count toward tax and NSSF; attendance deductions come off both.
+        $taxablePay = $basic + $overtimePay + $coverPay + $taxable - $attendance;
+        $nssfPay = $basic + $overtimePay + $coverPay + $nssfable - $attendance;
 
         $nssf = ['lines' => [], 'employee' => 0.0, 'employer' => 0.0, 'reduces_taxable' => 0.0];
         $tax = ['taxable' => 0.0, 'allowances' => 0.0, 'base' => 0.0, 'tax' => 0.0];
@@ -277,6 +283,9 @@ final class PayrollCalculator
                 $deductionLines[] = ['type' => 'attendance', 'code' => $key, 'name' => $key, 'amount' => $amount];
             }
         }
+        if ($missedPay > 0) {
+            $deductionLines[] = ['type' => 'attendance', 'code' => 'missed_sessions', 'name' => 'missed_sessions', 'amount' => $missedPay];
+        }
         $deductionLines = [...$deductionLines, ...$componentDeductions];
         if ($nssfEmployee > 0) {
             $deductionLines[] = ['type' => 'social_security', 'code' => 'nssf', 'name' => 'nssf', 'amount' => $nssfEmployee];
@@ -288,6 +297,9 @@ final class PayrollCalculator
         $earningLines = [...$this->basicLines($salary, $basic, $factor), ...$earnings];
         if ($overtimePay > 0) {
             $earningLines[] = ['type' => 'overtime', 'code' => 'overtime', 'name' => 'overtime', 'amount' => $overtimePay];
+        }
+        if ($coverPay > 0) {
+            $earningLines[] = ['type' => 'class_cover', 'code' => 'class_cover', 'name' => 'class_cover', 'amount' => $coverPay];
         }
 
         $lines = [
@@ -304,6 +316,7 @@ final class PayrollCalculator
             'allowances' => $this->round($totals['allowance'], $currency),
             'bonuses' => $this->round($totals['bonus'], $currency),
             'overtime_pay' => $overtimePay,
+            'cover_pay' => $coverPay,
             'gross_pay' => $gross,
             'attendance_deduction' => $attendance,
             'other_deductions' => $this->round($totals['deduction'], $currency),
@@ -321,6 +334,8 @@ final class PayrollCalculator
                 'attendance' => collect($deduction)->only(['absent_days', 'unpaid_leave_days', 'late_times', 'late_minutes', 'early_leave_times', 'early_leave_minutes'])->all(),
                 // False: "Deduct for attendance" is off on their salary — counted, not taken off.
                 'attendance_deducted' => $deduction['deducted'] ?? true,
+                // Teachers > Class sessions: counted when the school pays cover / takes off missed sessions.
+                'class_sessions' => collect($sessions)->only(['cover_sessions', 'cover_minutes', 'missed_sessions', 'missed_minutes'])->all(),
                 // What this period adds to the month's tax / NSSF — the 16th–end run reads the first half's.
                 'taxable_pay' => round($taxablePay, 2),
                 'nssf_pay' => round($nssfPay, 2),

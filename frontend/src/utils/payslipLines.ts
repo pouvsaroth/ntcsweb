@@ -11,6 +11,8 @@ export function payslipLineLabel(line: PayslipLine, t: (key: string) => string):
       return line.code === 'shift' ? `${t('admin.payroll.lines.basic')}: ${line.name}` : t('admin.payroll.lines.basic')
     case 'overtime':
       return t('admin.payroll.lines.overtime')
+    case 'class_cover':
+      return t('admin.payroll.lines.class_cover')
     case 'social_security':
       return t('admin.payroll.lines.nssf')
     case 'tax':

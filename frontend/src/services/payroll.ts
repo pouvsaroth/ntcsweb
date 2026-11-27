@@ -216,6 +216,11 @@ export interface PayrollSettings {
   late_amount_usd: number
   late_amount_khr: number
   deduct_early_leave: boolean
+  /** Pay teachers for class sessions they cover (Teachers > Class sessions), hourly rate × class_cover_rate. */
+  pay_class_cover: boolean
+  class_cover_rate: number
+  /** Take missed class sessions off at the hourly rate. */
+  deduct_missed_sessions: boolean
   /** Riel a month. */
   tax_spouse_allowance: number
   tax_child_allowance: number
@@ -412,6 +417,7 @@ export interface PayrollTotals {
   allowances: number
   bonuses: number
   overtime_pay: number
+  cover_pay: number
   gross_pay: number
   attendance_deduction: number
   other_deductions: number
@@ -424,7 +430,7 @@ export interface PayrollTotals {
 }
 
 export interface PayslipLine {
-  /** basic | allowance | bonus | overtime | adjustment (earnings); attendance | deduction | social_security | tax | loan | adjustment (deductions) */
+  /** basic | allowance | bonus | overtime | class_cover | adjustment (earnings); attendance | deduction | social_security | tax | loan | adjustment (deductions) */
   type: string
   /** For basic: `basic`, or `shift` (one line per shift on a "pay by shift" salary, name = the shift's). */
   code: string
@@ -445,6 +451,7 @@ export interface Payslip {
   allowances: number
   bonuses: number
   overtime_pay: number
+  cover_pay: number
   gross_pay: number
   attendance_deduction: number
   other_deductions: number
@@ -470,6 +477,8 @@ export interface Payslip {
     shift_pay?: { shift_id: number; name: string | null; amount: number; days: number; hours: number; daily_rate: number | null; hourly_rate: number | null }[]
     /** Hired inside the period: paid `days` of `period_days` calendar days, from `from` (yyyy-mm-dd). */
     prorated?: { from: string; days: number; period_days: number } | null
+    /** Teachers > Class sessions covered for others and missed in the period (empty counts when the school does not use them). */
+    class_sessions?: { cover_sessions?: number; cover_minutes?: number; missed_sessions?: number; missed_minutes?: number }
   } | null
   payment_method: PaymentMethod | null
   bank_name: string | null

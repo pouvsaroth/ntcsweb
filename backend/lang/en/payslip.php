@@ -32,6 +32,8 @@ return [
         'absence' => 'Absence',
         'unpaid_leave' => 'Unpaid leave',
         'late' => 'Late',
+        'class_cover' => 'Class cover',
+        'missed_sessions' => 'Missed class sessions',
         'early_leave' => 'Early leave',
         'adjustment' => 'Adjustment',
         'loan' => 'Loan',

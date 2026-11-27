@@ -31,6 +31,8 @@ return [
         'absence' => 'អវត្តមាន',
         'unpaid_leave' => 'ច្បាប់គ្មានប្រាក់ខែ',
         'late' => 'មកយឺត',
+        'class_cover' => 'បង្រៀនជំនួស',
+        'missed_sessions' => 'ខកខានម៉ោងបង្រៀន',
         'early_leave' => 'ចេញមុនម៉ោង',
         'adjustment' => 'ការកែតម្រូវ',
         'loan' => 'ប្រាក់កម្ចី',

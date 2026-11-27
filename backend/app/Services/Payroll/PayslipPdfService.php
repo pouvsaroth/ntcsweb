@@ -135,9 +135,10 @@ final class PayslipPdfService
         return match ($type) {
             'basic' => $code === 'shift' ? __('payslip.lines.basic').': '.$name : __('payslip.lines.basic'),
             'overtime' => __('payslip.lines.overtime'),
+            'class_cover' => __('payslip.lines.class_cover'),
             'social_security' => __('payslip.lines.nssf'),
             'tax' => __('payslip.lines.tax'),
-            'attendance', 'loan' => in_array($code, ['absence', 'unpaid_leave', 'late', 'early_leave', 'loan', 'advance'], true) ? __('payslip.lines.'.$code) : $name,
+            'attendance', 'loan' => in_array($code, ['absence', 'unpaid_leave', 'late', 'early_leave', 'missed_sessions', 'loan', 'advance'], true) ? __('payslip.lines.'.$code) : $name,
             'adjustment' => $name === 'adjustment' ? __('payslip.lines.adjustment') : __('payslip.lines.adjustment').': '.$name,
             default => $name,
         };

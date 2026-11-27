@@ -83,7 +83,7 @@ const totals = computed(() => {
 // --- Rules form ---------------------------------------------------------------------
 
 const formOpen = ref(false)
-const form = reactive({ working_days_per_month: '', hours_per_day: '', overtime_normal_rate: '', overtime_rest_day_rate: '', overtime_holiday_rate: '' })
+const form = reactive({ working_days_per_month: '', hours_per_day: '', overtime_normal_rate: '', overtime_rest_day_rate: '', overtime_holiday_rate: '', pay_class_cover: false, class_cover_rate: '' })
 const errors = ref<Record<string, string[]>>({})
 const saveError = ref<string | null>(null)
 const saving = ref(false)
@@ -95,6 +95,8 @@ function openForm() {
   form.overtime_normal_rate = String(settings.value.overtime_normal_rate)
   form.overtime_rest_day_rate = String(settings.value.overtime_rest_day_rate)
   form.overtime_holiday_rate = String(settings.value.overtime_holiday_rate)
+  form.pay_class_cover = settings.value.pay_class_cover
+  form.class_cover_rate = String(settings.value.class_cover_rate)
   errors.value = {}
   saveError.value = null
   formOpen.value = true
@@ -112,6 +114,8 @@ async function save() {
         overtime_normal_rate: Number(form.overtime_normal_rate),
         overtime_rest_day_rate: Number(form.overtime_rest_day_rate),
         overtime_holiday_rate: Number(form.overtime_holiday_rate),
+        pay_class_cover: form.pay_class_cover,
+        class_cover_rate: Number(form.class_cover_rate || 1),
       })
     ).settings
     formOpen.value = false
@@ -149,6 +153,7 @@ onMounted(() => {
         <div><dt class="text-neutral-500">{{ t('admin.payroll.overtime.normalDay') }}</dt><dd class="font-semibold text-neutral-900">{{ percent(settings.overtime_normal_rate) }}</dd></div>
         <div><dt class="text-neutral-500">{{ t('admin.payroll.overtime.restDay') }}</dt><dd class="font-semibold text-neutral-900">{{ percent(settings.overtime_rest_day_rate) }}</dd></div>
         <div><dt class="text-neutral-500">{{ t('admin.payroll.overtime.holiday') }}</dt><dd class="font-semibold text-neutral-900">{{ percent(settings.overtime_holiday_rate) }}</dd></div>
+        <div><dt class="text-neutral-500">{{ t('admin.payroll.overtime.classCover') }}</dt><dd class="font-semibold text-neutral-900">{{ settings.pay_class_cover ? percent(settings.class_cover_rate) : t('admin.payroll.no') }}</dd></div>
       </dl>
     </section>
 
@@ -221,6 +226,11 @@ onMounted(() => {
           <BaseInput v-model="form.overtime_rest_day_rate" type="number" required :label="t('admin.payroll.overtime.restDay')" :error="errors.overtime_rest_day_rate?.[0]" />
           <BaseInput v-model="form.overtime_holiday_rate" type="number" required :label="t('admin.payroll.overtime.holiday')" :error="errors.overtime_holiday_rate?.[0]" />
         </div>
+        <label class="flex items-center gap-2 text-sm text-neutral-700">
+          <input v-model="form.pay_class_cover" type="checkbox" class="rounded border-neutral-300 text-primary-600 focus:ring-primary-500" />
+          {{ t('admin.payroll.overtime.payClassCover') }}
+        </label>
+        <BaseInput v-if="form.pay_class_cover" v-model="form.class_cover_rate" type="number" required :label="t('admin.payroll.overtime.classCoverRate')" :hint="t('admin.payroll.overtime.classCoverHint')" :error="errors.class_cover_rate?.[0]" />
       </form>
       <template #footer>
         <BaseButton variant="outline" @click="formOpen = false">{{ t('common.close') }}</BaseButton>

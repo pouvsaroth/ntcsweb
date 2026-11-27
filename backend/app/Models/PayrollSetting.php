@@ -12,13 +12,16 @@ use Illuminate\Database\Eloquent\Model;
  * Tenant-owned, one row (see current()). HRM > Payroll's rules: working days
  * a month and hours a day — a monthly salary's daily and hourly rate —
  * overtime multipliers, what attendance deducts, and Tax on Salary's
- * dependant allowances (riel a month) and non-resident rate.
+ * dependant allowances (riel a month) and non-resident rate. Teachers' class
+ * sessions (Teachers > Class sessions): pay covered sessions at the hourly
+ * rate × class_cover_rate, and take off missed ones — both off by default.
  */
 #[Fillable([
     'working_days_per_month', 'hours_per_day',
     'overtime_normal_rate', 'overtime_rest_day_rate', 'overtime_holiday_rate',
     'deduct_absence', 'deduct_unpaid_leave', 'late_deduction_mode', 'late_grace_minutes', 'late_amount_usd', 'late_amount_khr', 'deduct_early_leave',
     'tax_spouse_allowance', 'tax_child_allowance', 'tax_non_resident_rate',
+    'pay_class_cover', 'class_cover_rate', 'deduct_missed_sessions',
 ])]
 class PayrollSetting extends Model
 {
@@ -51,6 +54,9 @@ class PayrollSetting extends Model
             'tax_spouse_allowance' => 'float',
             'tax_child_allowance' => 'float',
             'tax_non_resident_rate' => 'float',
+            'pay_class_cover' => 'boolean',
+            'class_cover_rate' => 'float',
+            'deduct_missed_sessions' => 'boolean',
         ];
     }
 

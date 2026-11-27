@@ -35,9 +35,13 @@ use Illuminate\Support\Facades\DB;
  * of its own (`makeup` true) for the teacher who teaches it: taught when the
  * class's attendance was saved that day, else missed / no record as above.
  *
+ * `cover` is true on a row where the teacher teaches for someone else: a
+ * `covering` row, or a make-up session taught by another teacher than the
+ * one who was away — HRM > Payroll can pay those (PayrollAttendance).
+ *
  * Skipped: holidays and School Calendar closing days, days outside the
  * class's start/end dates, cancelled classes, days with no students in the
- * class, and sessions that have not ended yet.
+ * class, and sessions that have not ended yet (later days too).
  *
  * Student attendance is per class per day, so a class with two sessions on a
  * day counts both as taught when attendance was saved once.
@@ -89,7 +93,7 @@ final class ClassSessionReport
             ->orderBy('name')
             ->get();
 
-        $makeups = ClassMakeupSession::query()
+        $makeups = ClassMakeupSession::query()->with('substitution:id,absent_staff_id')
             ->whereDate('date', '>=', $from)->whereDate('date', '<=', $to)
             ->when($classId !== null, fn ($q) => $q->where('class_id', $classId))
             ->orderBy('start_time')
@@ -134,7 +138,7 @@ final class ClassSessionReport
         $hasStudents = [];
         $rows = [];
 
-        for ($day = CarbonImmutable::parse($from); $day->toDateString() <= $to; $day = $day->addDay()) {
+        for ($day = CarbonImmutable::parse($from); $day->toDateString() <= $to && $day->toDateString() <= $today; $day = $day->addDay()) {
             $ymd = $day->toDateString();
             if (SchoolDaysOff::covers($daysOff, $ymd)) {
                 continue;
@@ -178,6 +182,7 @@ final class ClassSessionReport
                         $row = $base + [
                             'staff_id' => $teacherId,
                             'teacher' => $teacherId === null ? null : $staff->get($teacherId)?->fullName(),
+                            'cover' => false,
                             'status' => null,
                             'why' => null,
                             'other_teacher' => null,
@@ -218,6 +223,7 @@ final class ClassSessionReport
                             $rows[] = $base + [
                                 'staff_id' => (int) $sub->substitute_staff_id,
                                 'teacher' => $staff->get($sub->substitute_staff_id)?->fullName(),
+                                'cover' => true,
                                 'status' => self::COVERING,
                                 'why' => null,
                                 'other_teacher' => $staff->get($sub->absent_staff_id)?->fullName(),
@@ -249,6 +255,7 @@ final class ClassSessionReport
                         'makeup' => true,
                         'staff_id' => $teacherId,
                         'teacher' => $teacherId === null ? null : $staff->get($teacherId)?->fullName(),
+                        'cover' => $teacherId !== null && $makeup->substitution !== null && (int) $makeup->substitution->absent_staff_id !== $teacherId,
                         'status' => self::TAUGHT,
                         'why' => null,
                         'other_teacher' => null,

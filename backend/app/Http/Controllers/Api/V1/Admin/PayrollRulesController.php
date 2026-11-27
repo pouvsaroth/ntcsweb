@@ -39,7 +39,7 @@ final class PayrollRulesController extends Controller
         return match (true) {
             str_starts_with($field, 'tax_') => self::SETTING_TABS['tax'],
             str_starts_with($field, 'deduct_'), str_starts_with($field, 'late_') => self::SETTING_TABS['attendance-deduction'],
-            default => self::SETTING_TABS['overtime'], // working days, hours per day, overtime rates
+            default => self::SETTING_TABS['overtime'], // working days, hours per day, overtime rates, class cover pay
         };
     }
 
@@ -75,6 +75,9 @@ final class PayrollRulesController extends Controller
             'tax_spouse_allowance' => ['sometimes', 'numeric', 'min:0', 'max:1000000000'],
             'tax_child_allowance' => ['sometimes', 'numeric', 'min:0', 'max:1000000000'],
             'tax_non_resident_rate' => ['sometimes', 'numeric', 'min:0', 'max:100'],
+            'pay_class_cover' => ['sometimes', 'boolean'],
+            'class_cover_rate' => ['sometimes', 'numeric', 'min:0', 'max:5'],
+            'deduct_missed_sessions' => ['sometimes', 'boolean'],
         ]);
         // Each field is on one tab (Overtime, Attendance deduction, Tax) and needs that tab's Update.
         foreach (array_keys($data) as $field) {
@@ -248,6 +251,9 @@ final class PayrollRulesController extends Controller
                 'tax_spouse_allowance' => $settings->tax_spouse_allowance,
                 'tax_child_allowance' => $settings->tax_child_allowance,
                 'tax_non_resident_rate' => $settings->tax_non_resident_rate,
+                'pay_class_cover' => $settings->pay_class_cover,
+                'class_cover_rate' => $settings->class_cover_rate,
+                'deduct_missed_sessions' => $settings->deduct_missed_sessions,
             ],
             'tax_brackets' => TaxBracket::query()->orderBy('min_amount')->get(['id', 'min_amount', 'max_amount', 'rate']),
             'social_security_schemes' => SocialSecurityScheme::query()->orderBy('id')->get(['id', 'code', 'name', 'employee_rate', 'employer_rate', 'min_wage', 'max_wage', 'reduces_taxable', 'is_active']),

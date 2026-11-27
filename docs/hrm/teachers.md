@@ -72,3 +72,15 @@ still goes out when the class's own sessions that day were not held); the
 attendance lock treats its day as a class day; and Class sessions lists it as
 a session of its own (`makeup` true) for its teacher — taught when the class's
 attendance was saved that day, else missed / no record.
+
+Payroll link (HRM > Payroll, both off until the school turns them on):
+- Overtime tab, "Pay teachers for classes they cover": a teacher covering a
+  class for someone else (a Substitute row, or another teacher's make-up
+  class) is paid the session's hours at their own hourly rate times the
+  Cover pay rate (1 = 100%). Payslip line "Class cover", column cover_pay;
+  counts toward tax and NSSF like overtime.
+- Attendance deduction tab, "Deduct missed class sessions": every missed
+  session comes off at the hourly rate, also on a day already deducted as
+  absent (the school's choice). Not taken off when the salary's "Deduct for
+  attendance" is off. Payslip line "Missed class sessions".
+Only days up to today count; Class sessions never lists days still to come.

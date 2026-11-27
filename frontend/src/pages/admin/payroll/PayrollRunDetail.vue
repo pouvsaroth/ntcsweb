@@ -283,7 +283,7 @@ onMounted(() => load())
                   <p class="text-xs text-neutral-500">{{ slip.staff?.employee_code }} · {{ slip.currency }}</p>
                 </td>
                 <td class="px-3 py-2.5 text-right tabular-nums">{{ money(slip, slip.basic_pay) }}</td>
-                <td class="px-3 py-2.5 text-right tabular-nums">{{ money(slip, slip.allowances + slip.bonuses + slip.overtime_pay) }}</td>
+                <td class="px-3 py-2.5 text-right tabular-nums">{{ money(slip, slip.allowances + slip.bonuses + slip.overtime_pay + (slip.cover_pay ?? 0)) }}</td>
                 <td class="px-3 py-2.5 text-right tabular-nums">{{ money(slip, slip.gross_pay) }}</td>
                 <td class="px-3 py-2.5 text-right tabular-nums">
                   {{ money(slip, deductionsOf(slip)) }}
