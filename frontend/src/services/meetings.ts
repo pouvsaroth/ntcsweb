@@ -1,4 +1,4 @@
-import { apiDelete, apiGet, apiGetWithMeta, apiPost, apiPut } from '@/services/http'
+import { apiDelete, apiDownload, apiGet, apiGetWithMeta, apiPost, apiPut } from '@/services/http'
 import type { PaginatedQuery } from '@/composables/usePaginatedResource'
 import type { StaffOption } from '@/services/inquiries'
 import type { LengthAwarePaginationMeta, PaginatedResult } from '@/types/api'
@@ -47,6 +47,26 @@ export interface MeetingInput {
   minutes?: string | null
 }
 
+/** Front Office > Meeting arrangement > Attendance report. */
+export interface MeetingAttendanceReport {
+  from: string
+  to: string
+  summary: {
+    staff_id: number
+    name: string
+    employee_code: string | null
+    meetings: number
+    present: number
+    late: number
+    absent: number
+    excused: number
+    not_marked: number
+    /** Present or late, out of the meetings that were marked; null when none were. */
+    attended_percent: number | null
+  }[]
+  meetings: { id: number; date: string; time: string; title: string; people: { name: string; guest: boolean; attendance: MeetingAttendance | null }[] }[]
+}
+
 export interface MeetingSummary {
   today: number
   upcoming: number
@@ -74,6 +94,9 @@ export const meetingsService = {
   get: (id: number) => apiGet<Meeting>(`/meetings/${id}`),
   create: (input: MeetingInput) => apiPost<Meeting>('/meetings', input),
   update: (id: number, input: Partial<MeetingInput>) => apiPut<Meeting>(`/meetings/${id}`, input),
+  attendanceReport: (range: { from: string; to: string }) => apiGet<MeetingAttendanceReport>('/meetings/attendance-report', { params: range }),
+  downloadAttendanceReport: (range: { from: string; to: string }) =>
+    apiDownload(`/meetings/attendance-report/excel?${new URLSearchParams(range).toString()}`, `meeting-attendance-${range.from}-to-${range.to}.xlsx`),
   /** Mark who came; only the people sent change, null clears a mark. */
   saveAttendance: (
     id: number,

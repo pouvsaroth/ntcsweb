@@ -95,10 +95,10 @@ async function saveAttendance() {
 }
 
 const markClass: Record<MeetingAttendance, string> = {
-  present: 'border-success-500 bg-success-50 text-success-700',
-  late: 'border-warning-500 bg-warning-50 text-warning-700',
-  absent: 'border-danger-500 bg-danger-50 text-danger-700',
-  excused: 'border-primary-500 bg-primary-50 text-primary-700',
+  present: 'border-success-600 bg-success-500 text-white',
+  late: 'border-warning-600 bg-warning-500 text-white',
+  absent: 'border-danger-600 bg-danger-500 text-white',
+  excused: 'border-primary-600 bg-primary-500 text-secondary-900',
 }
 const markVariant: Record<MeetingAttendance, 'success' | 'warning' | 'danger' | 'primary'> = { present: 'success', late: 'warning', absent: 'danger', excused: 'primary' }
 

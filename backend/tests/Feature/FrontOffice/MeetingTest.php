@@ -203,4 +203,42 @@ Ms. Sokha"]);
         $this->actingAsAdminWithPermissions([Permissions::MEETINGS_VIEW]);
         $this->putJson($url, ['participants' => [['staff_id' => $a->id, 'attendance' => 'absent']]])->assertForbidden();
     }
+    public function test_attendance_report_counts_each_staff_member_and_exports_excel(): void
+    {
+        $this->desk();
+        $a = $this->staffWithUser();
+        $b = $this->staffWithUser();
+        $day = now()->subDays(2)->toDateString();
+        $one = $this->arrange(['meeting_date' => $day, 'participant_ids' => [$a->id, $b->id], 'guests' => 'Mr. Dara']);
+        $two = $this->arrange(['title' => 'Second', 'meeting_date' => $day, 'participant_ids' => [$a->id]]);
+        $dropped = $this->arrange(['title' => 'Called off', 'meeting_date' => $day, 'participant_ids' => [$a->id]]);
+        $this->putJson("/api/v1/meetings/{$dropped['id']}", ['status' => 'cancelled'])->assertOk();
+
+        $this->putJson("/api/v1/meetings/{$one['id']}/attendance", [
+            'participants' => [['staff_id' => $a->id, 'attendance' => 'present'], ['staff_id' => $b->id, 'attendance' => 'absent']],
+            'guests' => [['name' => 'Mr. Dara', 'attendance' => 'present']],
+        ])->assertOk();
+        $this->putJson("/api/v1/meetings/{$two['id']}/attendance", ['participants' => [['staff_id' => $a->id, 'attendance' => 'late']]])->assertOk();
+
+        $range = 'from='.now()->subDays(7)->toDateString().'&to='.now()->toDateString();
+        $data = $this->getJson("/api/v1/meetings/attendance-report?$range")->assertOk()->json('data');
+
+        $rows = collect($data['summary'])->keyBy('staff_id');
+        $this->assertSame(2, $rows[$a->id]['meetings']); // the cancelled one is left out
+        $this->assertSame(1, $rows[$a->id]['present']);
+        $this->assertSame(1, $rows[$a->id]['late']);
+        $this->assertEquals(100, $rows[$a->id]['attended_percent']);
+        $this->assertSame(1, $rows[$b->id]['absent']);
+        $this->assertEquals(0, $rows[$b->id]['attended_percent']);
+        $this->assertCount(2, $data['meetings']);
+        $guest = collect($data['meetings'][0]['people'])->firstWhere('guest', true) ?? collect($data['meetings'][1]['people'])->firstWhere('guest', true);
+        $this->assertSame(['name' => 'Mr. Dara', 'guest' => true, 'attendance' => 'present'], $guest);
+
+        $this->get("/api/v1/meetings/attendance-report/excel?$range")->assertOk()
+            ->assertHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+
+        $this->getJson('/api/v1/meetings/attendance-report?from='.now()->toDateString().'&to='.now()->subDay()->toDateString())->assertUnprocessable();
+        $this->actingAsAdminWithPermissions([]);
+        $this->getJson("/api/v1/meetings/attendance-report?$range")->assertForbidden();
+    }
 }

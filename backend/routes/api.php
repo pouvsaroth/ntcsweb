@@ -109,6 +109,7 @@ use App\Http\Controllers\Api\V1\Admin\MarketingBroadcastController;
 use App\Http\Controllers\Api\V1\Admin\MarketingCampaignController;
 use App\Http\Controllers\Api\V1\Admin\MarketingReportController;
 use App\Http\Controllers\Api\V1\Admin\ReferralController;
+use App\Http\Controllers\Api\V1\Admin\MeetingAttendanceController;
 use App\Http\Controllers\Api\V1\Admin\MeetingController;
 use App\Http\Controllers\Api\V1\Admin\AppointmentController;
 use App\Http\Controllers\Api\V1\Admin\VisitorController;
@@ -556,6 +557,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         // Front Office > Meetings — see MeetingController.
         Route::get('meetings/summary', [MeetingController::class, 'summary'])->name('meetings.summary');
         Route::get('meetings/staff-options', [MeetingController::class, 'staffOptions'])->name('meetings.staff-options');
+        Route::get('meetings/attendance-report', [MeetingAttendanceController::class, 'index'])->name('meetings.attendance-report');
+        Route::get('meetings/attendance-report/excel', [MeetingAttendanceController::class, 'excel'])->name('meetings.attendance-report.excel');
         Route::put('meetings/{meeting}/attendance', [MeetingController::class, 'attendance'])->name('meetings.attendance');
         Route::apiResource('meetings', MeetingController::class);
 

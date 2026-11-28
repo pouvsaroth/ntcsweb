@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import MeetingAttendanceReportModal from '@/components/admin/MeetingAttendanceReportModal.vue'
 import MeetingDetailModal from '@/components/admin/MeetingDetailModal.vue'
 import MeetingFormModal from '@/components/admin/MeetingFormModal.vue'
 import BaseAlert from '@/components/ui/BaseAlert.vue'
@@ -109,6 +110,7 @@ const guestCount = (row: Meeting) => (row.guests ?? '').split('\n').filter((g) =
 
 // --- Popups -----------------------------------------------------------------
 const formOpen = ref(false)
+const reportOpen = ref(false)
 const editing = ref<Meeting | null>(null)
 const detailOpen = ref(false)
 const detailId = ref<number | null>(null)
@@ -197,7 +199,8 @@ onMounted(async () => {
         <input type="checkbox" class="h-4 w-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-200" :checked="mine" @change="toggleMine" />
         {{ t('frontOffice.meetings.onlyMine') }}
       </label>
-      <BaseButton v-if="canCreate" class="sm:ml-auto" @click="openCreate">{{ t('frontOffice.meetings.add') }}</BaseButton>
+      <BaseButton variant="outline" class="sm:ml-auto" @click="reportOpen = true">{{ t('frontOffice.meetings.attendanceReport') }}</BaseButton>
+      <BaseButton v-if="canCreate" @click="openCreate">{{ t('frontOffice.meetings.add') }}</BaseButton>
     </div>
 
     <BaseAlert v-if="error || actionError" variant="danger" class="mb-4">{{ error || actionError }}</BaseAlert>
@@ -262,6 +265,7 @@ onMounted(async () => {
 
     <BasePagination v-if="meta" :meta="meta" sticky class="mt-4" @update:page="setPage" />
 
+    <MeetingAttendanceReportModal v-model="reportOpen" />
     <MeetingFormModal v-model="formOpen" :meeting="editing" :staff="staff" @saved="onSaved" />
     <MeetingDetailModal v-model="detailOpen" :meeting-id="detailId" @changed="refresh" @edit="openEdit" />
   </div>
