@@ -5,6 +5,7 @@ import { useRoute } from 'vue-router'
 
 import AssignStudentsModal from '@/components/admin/AssignStudentsModal.vue'
 import ChangeTableModal from '@/components/admin/ChangeTableModal.vue'
+import ClassStudentsImageModal from '@/components/admin/ClassStudentsImageModal.vue'
 import ClassNotesModal from '@/components/admin/ClassNotesModal.vue'
 import EnrollmentStatusModal from '@/components/admin/EnrollmentStatusModal.vue'
 import EnrollmentTransferModal from '@/components/admin/EnrollmentTransferModal.vue'
@@ -364,6 +365,25 @@ async function exportExcel() {
   }
 }
 
+// --- Export image ---------------------------------------------------------
+// Pick the fields first; the checked students, else everyone shown.
+
+const imageOpen = ref(false)
+const imageRows = computed(() => {
+  const checked = sortedRoster.value.filter((row) => selectedIds.value.includes(row.id))
+  return checked.length ? checked : sortedRoster.value
+})
+const imageTitle = computed(() => (schoolClass.value ? `${t('admin.classStudents.title')} — ${schoolClass.value.name}` : t('admin.classStudents.title')))
+const imageSubtitle = computed(() => {
+  if (!schoolClass.value) return ''
+  const teachers = schoolClass.value.teachers.map((teacher) => teacher.name).join(', ')
+  return [teachers && `${t('admin.classStudents.teacher')}: ${teachers}`, scheduleSummary.value].filter(Boolean).join('  ·  ')
+})
+const imageFileName = computed(() => `${(schoolClass.value?.name ?? 'class-students').replace(/[\\/:*?"<>|]+/g, '-').trim() || 'class-students'}.png`)
+function statusLabel(code: string): string {
+  return statusLookup.value.find((option) => option.code === code)?.name ?? code
+}
+
 const allShownSelected = computed(() => sortedRoster.value.length > 0 && sortedRoster.value.every((row) => selectedIds.value.includes(row.id)))
 function toggleAllShown() {
   selectedIds.value = allShownSelected.value ? [] : sortedRoster.value.map((row) => row.id)
@@ -439,6 +459,9 @@ onMounted(() => {
           </BaseButton>
           <BaseButton variant="outline" :disabled="selectedIds.length === 0" :loading="exporting" :title="t('admin.classStudents.exportExcelHint')" @click="exportExcel">
             {{ t('admin.classStudents.exportExcel') }}<template v-if="selectedIds.length > 0"> ({{ selectedIds.length }})</template>
+          </BaseButton>
+          <BaseButton variant="outline" :disabled="sortedRoster.length === 0" @click="imageOpen = true">
+            {{ t('admin.classStudents.exportImage') }}<template v-if="selectedIds.length > 0"> ({{ selectedIds.length }})</template>
           </BaseButton>
         </div>
         <div class="flex w-full flex-wrap items-center gap-2 sm:w-auto">
@@ -612,5 +635,14 @@ onMounted(() => {
     <SendToExamModal v-model="sendToExamModalOpen" :enrollment-ids="selectedIds" @saved="onSentToExam" />
     <ClassNotesModal v-model="notesModalOpen" :enrollments="noteTargets" @saved="onNotesSaved" />
     <AssignStudentsModal v-if="schoolClass" v-model="assignOpen" :class-id="schoolClass.id" :class-name="schoolClass.name" @saved="onAssigned" />
+    <ClassStudentsImageModal
+      v-model="imageOpen"
+      :rows="imageRows"
+      :title="imageTitle"
+      :subtitle="imageSubtitle"
+      :file-name="imageFileName"
+      :payment-type-label="paymentTypeLabel"
+      :status-label="statusLabel"
+    />
   </div>
 </template>
