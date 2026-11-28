@@ -165,13 +165,30 @@ final class MyLeaveRequestController extends Controller
             'from_date' => ['required', 'date'],
             'to_date' => ['required', 'date', 'after_or_equal:from_date'],
             'day_part' => ['nullable', Rule::in(LeaveRequest::DAY_PARTS)],
+            'shift_ids' => ['nullable', 'array', 'max:20'],
+            'shift_ids.*' => ['integer'],
         ]);
 
         $from = CarbonImmutable::parse($data['from_date']);
         $to = CarbonImmutable::parse($data['to_date']);
         abort_if($from->diffInDays($to) > 366, 422, 'Pick a shorter range.');
 
-        return ApiResponse::success(['days' => $this->balances->countDays($staff, $from, $to, $data['day_part'] ?? LeaveRequest::DAY_FULL)]);
+        $dayPart = $data['day_part'] ?? LeaveRequest::DAY_FULL;
+        $shiftIds = array_map('intval', $data['shift_ids'] ?? []);
+        if ($dayPart === LeaveRequest::DAY_SHIFTS && $shiftIds === []) {
+            return ApiResponse::success(['days' => 0]);
+        }
+
+        return ApiResponse::success(['days' => $this->balances->countDays($staff, $from, $to, $dayPart, $shiftIds)]);
+    }
+
+    /** GET /my-leave-requests/shifts — active shifts to take leave from, mine first. */
+    public function shifts(Request $request): JsonResponse
+    {
+        [, $staff] = $this->requesterOrFail($request);
+        abort_if($staff === null, 404);
+
+        return ApiResponse::success($this->balances->shiftOptions($staff));
     }
 
     /**

@@ -16,7 +16,7 @@ import DataTable from '@/components/ui/DataTable.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import { myApprovalRequestsService, type ApprovalRequest, type ApprovalRequestStatus } from '@/services/approvalRequests'
 import { classChangeLabel, myClassChangeRequestsService, type ClassChangeRequest } from '@/services/classChangeRequests'
-import { myLeaveRequestsService, type LeaveRequest } from '@/services/leaveRequests'
+import { leavePartSuffix, myLeaveRequestsService, type LeaveRequest } from '@/services/leaveRequests'
 import { formatDays } from '@/services/leaveManagement'
 import { makeUpClassCourseLabel, myMakeUpClassRequestsService, type MakeUpClassRequest, type MakeUpClassRequestStatus } from '@/services/makeUpClassRequests'
 import { examPaymentLabelKey, myExamApplicationsService, type MyExamApplication } from '@/services/myExamApplications'
@@ -393,7 +393,7 @@ function leaveSubject(r: LeaveRequest): string {
         <dl class="grid gap-y-2 text-sm">
           <div v-if="detail.leave.course_package || detail.leave.school_class"><dt class="text-neutral-500">{{ t('makeUpClassRequest.course') }}</dt><dd class="font-medium text-neutral-900">{{ makeUpClassCourseLabel(detail.leave) }}</dd></div>
           <div v-if="detail.leave.leave_type"><dt class="text-neutral-500">{{ t('admin.leaveManagement.policies.leaveType') }}</dt><dd class="font-medium text-neutral-900">{{ detail.leave.leave_type.name }}</dd></div>
-          <div><dt class="text-neutral-500">{{ t('admin.leaveRequests.columnDates') }}</dt><dd class="font-medium text-neutral-900">{{ formatDate(detail.leave.from_date) }} – {{ formatDate(detail.leave.to_date) }}<template v-if="detail.leave.day_part === 'morning' || detail.leave.day_part === 'afternoon'"> ({{ t(detail.leave.day_part === 'morning' ? 'leaveRequest.dayMorning' : 'leaveRequest.dayAfternoon') }})</template></dd></div>
+          <div><dt class="text-neutral-500">{{ t('admin.leaveRequests.columnDates') }}</dt><dd class="font-medium text-neutral-900">{{ formatDate(detail.leave.from_date) }} – {{ formatDate(detail.leave.to_date) }}{{ leavePartSuffix(detail.leave, t) }}</dd></div>
           <div v-if="detail.leave.days != null"><dt class="text-neutral-500">{{ t('admin.leaveManagement.requests.days') }}</dt><dd class="font-medium text-neutral-900">{{ formatDays(detail.leave.days) }}</dd></div>
           <div><dt class="text-neutral-500">{{ t('admin.leaveRequests.columnReason') }}</dt><dd class="font-medium text-neutral-900">{{ detail.leave.reason }}</dd></div>
           <div v-if="detail.leave.decision_reason"><dt class="text-neutral-500">{{ t('admin.leaveRequests.decisionReason') }}</dt><dd class="font-medium text-neutral-900">{{ detail.leave.decision_reason }}</dd></div>

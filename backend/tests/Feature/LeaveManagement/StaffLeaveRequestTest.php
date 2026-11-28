@@ -215,4 +215,48 @@ class StaffLeaveRequestTest extends TestCase
         $this->actingAsAdminWithPermissions([Permissions::LEAVE_MANAGEMENT_VIEW, Permissions::LEAVE_TYPES_CREATE, Permissions::LEAVE_TYPES_UPDATE, Permissions::LEAVE_TYPES_DELETE, Permissions::LEAVE_POLICIES_CREATE, Permissions::LEAVE_POLICIES_UPDATE, Permissions::LEAVE_POLICIES_DELETE, Permissions::LEAVE_BALANCES_CREATE, Permissions::LEAVE_BALANCES_DELETE, Permissions::LEAVE_CARRY_FORWARD_RUN, Permissions::LEAVE_REQUESTS_CREATE]);
         $this->deleteJson("/api/v1/leave-types/{$this->annual->id}")->assertUnprocessable();
     }
+    public function test_leave_by_shift_counts_the_shifts_hours_and_different_shifts_dont_clash(): void
+    {
+        $morning = Shift::factory()->create(['name' => 'Morning', 'start_time' => '07:00', 'end_time' => '11:00', 'break_minutes' => 0]);
+        $evening = Shift::factory()->create(['name' => 'Evening', 'start_time' => '17:00', 'end_time' => '21:00', 'break_minutes' => 0]);
+        $off = Shift::factory()->create(['name' => 'Old', 'is_active' => false]);
+
+        // Their own shifts (the work schedule's) come first.
+        $options = $this->getJson('/api/v1/my-leave-requests/shifts')->assertOk()->json('data');
+        $this->assertTrue($options[0]['mine']);
+        $this->assertNotContains($off->id, array_column($options, 'id'));
+
+        // One 4-hour shift = half a day; two = one day; per working date.
+        $this->getJson("/api/v1/my-leave-requests/quote?from_date=2026-10-07&to_date=2026-10-07&day_part=shifts&shift_ids[]={$morning->id}")
+            ->assertOk()->assertJsonPath('data.days', 0.5);
+        $this->ask(['from_date' => '2026-10-07', 'to_date' => '2026-10-07', 'day_part' => 'shifts', 'shift_ids' => [$morning->id]])
+            ->assertCreated()
+            ->assertJsonPath('data.days', 0.5)
+            ->assertJsonPath('data.shift_ids', [$morning->id])
+            ->assertJsonPath('data.shifts.0.name', 'Morning');
+        $this->ask(['from_date' => '2026-10-12', 'to_date' => '2026-10-13', 'day_part' => 'shifts', 'shift_ids' => [$morning->id, $evening->id]])
+            ->assertCreated()->assertJsonPath('data.days', 2);
+
+        // Another shift the same day is fine; the same shift again, or a whole day, clashes.
+        $this->ask(['from_date' => '2026-10-07', 'to_date' => '2026-10-07', 'day_part' => 'shifts', 'shift_ids' => [$evening->id]])->assertCreated();
+        $this->ask(['from_date' => '2026-10-07', 'to_date' => '2026-10-07', 'day_part' => 'shifts', 'shift_ids' => [$morning->id]])
+            ->assertUnprocessable()->assertJsonValidationErrors(['from_date']);
+        $this->ask(['from_date' => '2026-10-07', 'to_date' => '2026-10-07'])->assertUnprocessable()->assertJsonValidationErrors(['from_date']);
+
+        // Shifts must be picked and active; a whole-days-only type refuses half a day.
+        $this->ask(['from_date' => '2026-10-08', 'to_date' => '2026-10-08', 'day_part' => 'shifts'])->assertUnprocessable()->assertJsonValidationErrors(['shift_ids']);
+        $this->ask(['from_date' => '2026-10-08', 'to_date' => '2026-10-08', 'day_part' => 'shifts', 'shift_ids' => [$off->id]])->assertUnprocessable()->assertJsonValidationErrors(['shift_ids']);
+        $this->annual->update(['allow_half_day' => false]);
+        $this->ask(['from_date' => '2026-10-08', 'to_date' => '2026-10-08', 'day_part' => 'shifts', 'shift_ids' => [$morning->id]])->assertUnprocessable()->assertJsonValidationErrors(['shift_ids']);
+        $this->ask(['from_date' => '2026-10-08', 'to_date' => '2026-10-08', 'day_part' => 'shifts', 'shift_ids' => [$morning->id, $evening->id]])->assertCreated()->assertJsonPath('data.days', 1);
+    }
+
+    public function test_hr_sees_a_staff_members_shift_options(): void
+    {
+        $other = Staff::factory()->create();
+        $this->getJson("/api/v1/leave-requests/shift-options?staff_id={$other->id}")->assertForbidden();
+
+        $this->actingAsAdminWithPermissions([Permissions::LEAVE_REQUESTS_CREATE]);
+        $this->getJson("/api/v1/leave-requests/shift-options?staff_id={$other->id}")->assertOk()->assertJsonPath('data.0.mine', true);
+    }
 }

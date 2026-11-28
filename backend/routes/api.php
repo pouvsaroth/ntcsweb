@@ -518,6 +518,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
 
         // Student-submitted leave/permission requests — approving one syncs
         // into AttendanceRecord (status Excused) via LeaveRequestService.
+        Route::get('leave-requests/shift-options', [LeaveRequestController::class, 'shiftOptions'])->name('leave-requests.shift-options');
         Route::apiResource('leave-requests', LeaveRequestController::class)->only(['index', 'show', 'store']);
         Route::post('leave-requests/{leave_request}/approve', [LeaveRequestController::class, 'approve'])->name('leave-requests.approve');
         Route::post('leave-requests/{leave_request}/reject', [LeaveRequestController::class, 'reject'])->name('leave-requests.reject');
@@ -1266,6 +1267,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('my-leave-requests/enrollments', [MyLeaveRequestController::class, 'enrollments'])->name('my-leave-requests.enrollments');
         Route::get('my-leave-requests/types', [MyLeaveRequestController::class, 'types'])->name('my-leave-requests.types');
         Route::get('my-leave-requests/quote', [MyLeaveRequestController::class, 'quote'])->name('my-leave-requests.quote');
+        Route::get('my-leave-requests/shifts', [MyLeaveRequestController::class, 'shifts'])->name('my-leave-requests.shifts');
         Route::get('my-leave-requests', [MyLeaveRequestController::class, 'index'])->name('my-leave-requests.index');
         Route::post('my-leave-requests', [MyLeaveRequestController::class, 'store'])->name('my-leave-requests.store');
         Route::delete('my-leave-requests/{leaveRequest}', [MyLeaveRequestController::class, 'destroy'])->whereNumber('leaveRequest')->name('my-leave-requests.destroy');

@@ -9,7 +9,9 @@ use App\Models\LeaveBalanceEntry;
 use App\Models\LeavePolicy;
 use App\Models\LeaveRequest;
 use App\Models\LeaveType;
+use App\Models\Shift;
 use App\Models\Staff;
+use App\Models\StaffSalary;
 use App\Models\User;
 use App\Models\WorkSchedule;
 use Carbon\CarbonImmutable;
@@ -33,6 +35,12 @@ use Illuminate\Validation\ValidationException;
  */
 final class LeaveBalanceService
 {
+    /** Leave by shift: a shift's hours ÷ this = its days. */
+    public const HOURS_PER_DAY = 8;
+
+    /** @var array<int, Shift|null> */
+    private array $shifts = [];
+
     /** @var array<int, WorkSchedule|null> */
     private array $schedules = [];
 
@@ -63,12 +71,74 @@ final class LeaveBalanceService
         return $dates;
     }
 
-    /** Working days a request takes — a half day is 0.5. */
-    public function countDays(Staff $staff, CarbonImmutable $from, CarbonImmutable $to, string $dayPart = LeaveRequest::DAY_FULL): float
+    /**
+     * Working days a request takes — a half day is 0.5; by shift, each date
+     * takes its shifts' hours ÷ 8 (see shiftDays()).
+     *
+     * @param  list<int>  $shiftIds
+     */
+    public function countDays(Staff $staff, CarbonImmutable $from, CarbonImmutable $to, string $dayPart = LeaveRequest::DAY_FULL, array $shiftIds = []): float
     {
-        $days = count($this->workingDates($staff, $from, $to));
+        $dates = $this->workingDates($staff, $from, $to);
 
-        return $dayPart === LeaveRequest::DAY_FULL ? (float) $days : $days * 0.5;
+        if ($dayPart === LeaveRequest::DAY_SHIFTS) {
+            return (float) array_sum(array_map(fn (string $date) => $this->shiftDays(CarbonImmutable::parse($date), $shiftIds), $dates));
+        }
+
+        return $dayPart === LeaveRequest::DAY_FULL ? (float) count($dates) : count($dates) * 0.5;
+    }
+
+    /**
+     * Leave by shift on one date: the shifts' working hours that weekday ÷ 8,
+     * to the nearest half day and at least half a day. Two 4-hour shifts = 1.
+     *
+     * @param  list<int>  $shiftIds
+     */
+    public function shiftDays(CarbonImmutable $date, array $shiftIds): float
+    {
+        $minutes = 0;
+        foreach ($shiftIds as $id) {
+            $shift = $this->shifts[$id] ??= Shift::query()->with('days')->find($id);
+            $minutes += $shift?->workMinutesOn($date) ?? 0;
+        }
+
+        return max(0.5, round($minutes / 60 / self::HOURS_PER_DAY * 2) / 2);
+    }
+
+    /**
+     * Active shifts for a leave request, the staff member's own first (their
+     * work schedule's and their by-shift salary's) — they can work several.
+     *
+     * @return list<array{id: int, name: string, code: string|null, start_time: string, end_time: string, hours: float, mine: bool}>
+     */
+    public function shiftOptions(Staff $staff): array
+    {
+        $mine = [];
+        $schedule = WorkSchedule::forStaff($staff);
+        if ($schedule !== null) {
+            foreach (['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as $day) {
+                if ($schedule->{$day.'_shift_id'} !== null) {
+                    $mine[] = (int) $schedule->{$day.'_shift_id'};
+                }
+            }
+        }
+        $salary = StaffSalary::query()->where('staff_id', $staff->id)->effectiveOn(now()->toDateString())->with('shifts')->first();
+        foreach ($salary?->shifts ?? [] as $row) {
+            $mine[] = (int) $row->shift_id;
+        }
+
+        return Shift::query()->where('is_active', true)->orderBy('start_time')->orderBy('name')->get()
+            ->map(fn (Shift $s) => [
+                'id' => $s->id,
+                'name' => $s->name,
+                'code' => $s->code,
+                'start_time' => substr((string) $s->start_time, 0, 5),
+                'end_time' => substr((string) $s->end_time, 0, 5),
+                'hours' => round($s->workMinutes() / 60, 2),
+                'mine' => in_array($s->id, $mine, true),
+            ])
+            ->sortBy(fn (array $s) => $s['mine'] ? 0 : 1)
+            ->values()->all();
     }
 
     /** The first day this policy lets them take leave — hire date + the months of service it asks for. */
@@ -259,8 +329,8 @@ final class LeaveBalanceService
      * works out its days. `$byHr`: HR filing it on their behalf — the notice
      * period doesn't apply (it's often sick leave after the fact).
      *
-     * @param  array{leave_type_id?: int|null, from_date: string, to_date: string, day_part?: string|null, has_attachment?: bool}  $data
-     * @return array{leave_type_id: int|null, day_part: string|null, days: float|null}
+     * @param  array{leave_type_id?: int|null, from_date: string, to_date: string, day_part?: string|null, shift_ids?: list<int>|null, has_attachment?: bool}  $data
+     * @return array{leave_type_id: int|null, day_part: string|null, shift_ids: list<int>|null, days: float|null}
      *
      * @throws ValidationException
      */
@@ -274,7 +344,7 @@ final class LeaveBalanceService
                 throw ValidationException::withMessages(['leave_type_id' => 'Choose a leave type.']);
             }
 
-            return ['leave_type_id' => null, 'day_part' => null, 'days' => null];
+            return ['leave_type_id' => null, 'day_part' => null, 'shift_ids' => null, 'days' => null];
         }
 
         $type = LeaveType::query()->find($typeId);
@@ -285,12 +355,25 @@ final class LeaveBalanceService
         $from = CarbonImmutable::parse($data['from_date'])->startOfDay();
         $to = CarbonImmutable::parse($data['to_date'])->startOfDay();
         $dayPart = $data['day_part'] ?? LeaveRequest::DAY_FULL;
+        $shiftIds = [];
+        if ($dayPart === LeaveRequest::DAY_SHIFTS) {
+            $shiftIds = array_values(array_unique(array_map('intval', $data['shift_ids'] ?? [])));
+            if ($shiftIds === [] || Shift::query()->whereIn('id', $shiftIds)->where('is_active', true)->count() !== count($shiftIds)) {
+                throw ValidationException::withMessages(['shift_ids' => 'Pick the shifts you will be away from.']);
+            }
+            sort($shiftIds);
+        }
 
         if ($from->year !== $to->year) {
             throw ValidationException::withMessages(['to_date' => 'A leave request must stay within one year. Make one request up to 31 December and another from 1 January.']);
         }
 
-        if ($dayPart !== LeaveRequest::DAY_FULL) {
+        if ($dayPart === LeaveRequest::DAY_SHIFTS) {
+            // Only whole days unless the type allows half days.
+            if (! $type->allow_half_day && fmod($this->shiftDays($from, $shiftIds), 1.0) !== 0.0) {
+                throw ValidationException::withMessages(['shift_ids' => 'This leave type can only be taken in whole days.']);
+            }
+        } elseif ($dayPart !== LeaveRequest::DAY_FULL) {
             if (! $type->allow_half_day) {
                 throw ValidationException::withMessages(['day_part' => 'This leave type can only be taken in whole days.']);
             }
@@ -303,7 +386,7 @@ final class LeaveBalanceService
             throw ValidationException::withMessages(['attachments' => 'This leave type needs a supporting file (e.g. a medical certificate).']);
         }
 
-        $days = $this->countDays($staff, $from, $to, $dayPart);
+        $days = $this->countDays($staff, $from, $to, $dayPart, $shiftIds);
         if ($days <= 0) {
             throw ValidationException::withMessages(['from_date' => 'These dates are all days off or holidays — there is nothing to take leave from.']);
         }
@@ -315,9 +398,13 @@ final class LeaveBalanceService
             ->whereDate('to_date', '>=', $from->toDateString())
             ->get()
             // Two halves of the same day (morning + afternoon) don't clash.
-            ->reject(fn (LeaveRequest $other) => $dayPart !== LeaveRequest::DAY_FULL
+            ->reject(fn (LeaveRequest $other) => ($dayPart !== LeaveRequest::DAY_FULL
                 && in_array($other->day_part, [LeaveRequest::DAY_MORNING, LeaveRequest::DAY_AFTERNOON], true)
+                && in_array($dayPart, [LeaveRequest::DAY_MORNING, LeaveRequest::DAY_AFTERNOON], true)
                 && $other->day_part !== $dayPart)
+                // Different shifts on the same dates don't clash either.
+                || ($dayPart === LeaveRequest::DAY_SHIFTS && $other->day_part === LeaveRequest::DAY_SHIFTS
+                    && array_intersect($shiftIds, array_map('intval', $other->shift_ids ?? [])) === []))
             ->isNotEmpty();
         if ($overlaps) {
             throw ValidationException::withMessages(['from_date' => 'There is already a leave request for some of these dates.']);
@@ -349,7 +436,7 @@ final class LeaveBalanceService
             }
         }
 
-        return ['leave_type_id' => $type->id, 'day_part' => $dayPart, 'days' => $days];
+        return ['leave_type_id' => $type->id, 'day_part' => $dayPart, 'shift_ids' => $dayPart === LeaveRequest::DAY_SHIFTS ? $shiftIds : null, 'days' => $days];
     }
 
     private function genderAllows(Staff $staff, LeaveType $type): bool

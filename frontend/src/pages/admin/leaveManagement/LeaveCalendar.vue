@@ -102,7 +102,14 @@ const days = computed<Day[]>(() => {
 const busyDays = computed(() => days.value.filter((day) => day.inMonth && (day.leaves.length > 0 || day.holiday)))
 
 function chipLabel(leave: CalendarLeave): string {
-  const half = leave.day_part === 'morning' ? ` (${t('leaveRequest.dayMorning')})` : leave.day_part === 'afternoon' ? ` (${t('leaveRequest.dayAfternoon')})` : ''
+  const half =
+    leave.day_part === 'morning'
+      ? ` (${t('leaveRequest.dayMorning')})`
+      : leave.day_part === 'afternoon'
+        ? ` (${t('leaveRequest.dayAfternoon')})`
+        : leave.day_part === 'shifts'
+          ? ` (${t('leaveRequest.dayShifts')})`
+          : ''
   return `${leave.staff?.name ?? '—'}${half}`
 }
 

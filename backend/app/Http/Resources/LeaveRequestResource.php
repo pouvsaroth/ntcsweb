@@ -47,6 +47,12 @@ class LeaveRequestResource extends JsonResource
                 'color' => $this->leaveType->color,
             ] : null),
             'day_part' => $this->day_part,
+            // By shift: the shifts they are off, with names for display.
+            'shift_ids' => $this->shift_ids,
+            'shifts' => $this->shift_ids ? \App\Models\Shift::query()->whereIn('id', $this->shift_ids)->orderBy('start_time')
+                ->get(['id', 'name', 'start_time', 'end_time'])
+                ->map(fn ($s) => ['id' => $s->id, 'name' => $s->name, 'start_time' => substr((string) $s->start_time, 0, 5), 'end_time' => substr((string) $s->end_time, 0, 5)])
+                ->values() : [],
             'days' => $this->days,
             'from_date' => $this->from_date?->toDateString(),
             'to_date' => $this->to_date?->toDateString(),

@@ -34,6 +34,8 @@ class StoreMyLeaveRequestRequest extends FormRequest
             'enrollment_id' => $student ? ['required', 'integer', Rule::in($enrollmentIds)] : ['prohibited'],
             'leave_type_id' => $student ? ['prohibited'] : ['nullable', 'integer'],
             'day_part' => $student ? ['prohibited'] : ['nullable', Rule::in(LeaveRequest::DAY_PARTS)],
+            'shift_ids' => $student ? ['prohibited'] : ['nullable', 'array', 'max:20'],
+            'shift_ids.*' => ['integer'],
             'from_date' => ['required', 'date'],
             'to_date' => ['required', 'date', 'after_or_equal:from_date'],
             'from_time' => ['nullable', 'date_format:H:i'],

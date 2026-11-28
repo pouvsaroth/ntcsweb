@@ -9,12 +9,13 @@ import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import BasePagination from '@/components/ui/BasePagination.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
+import LeaveShiftPicker from '@/components/leave/LeaveShiftPicker.vue'
 import BaseSpinner from '@/components/ui/BaseSpinner.vue'
 import DataTable from '@/components/ui/DataTable.vue'
 import SearchableSelect from '@/components/ui/SearchableSelect.vue'
 import { usePaginatedResource } from '@/composables/usePaginatedResource'
 import { formatDays, leaveTypesService, type LeaveType } from '@/services/leaveManagement'
-import { leaveRequestsService, type LeaveDayPart, type LeaveRequest, type LeaveRequestStatus } from '@/services/leaveRequests'
+import { leavePartSuffix, leaveRequestsService, type LeaveDayPart, type LeaveRequest, type LeaveRequestStatus, type LeaveShiftOption } from '@/services/leaveRequests'
 import { staffService, type Staff } from '@/services/staff'
 import { useAuthStore } from '@/stores/auth'
 import { ApiRequestError } from '@/types/api'
@@ -74,7 +75,7 @@ watch([year, typeFilter, statusFilter], () => void fetch())
 
 function dates(row: LeaveRequest): string {
   const range = row.from_date === row.to_date ? formatDate(row.from_date) : `${formatDate(row.from_date)} – ${formatDate(row.to_date)}`
-  return row.day_part === 'morning' || row.day_part === 'afternoon' ? `${range} (${t(`leaveRequest.day${row.day_part === 'morning' ? 'Morning' : 'Afternoon'}`)})` : range
+  return range + leavePartSuffix(row, t)
 }
 
 const columns = computed(() => [
@@ -92,14 +93,21 @@ const detail = ref<LeaveRequest | null>(null)
 const staff = ref<Staff[]>([])
 const staffOptions = computed(() => staff.value.map((s) => ({ value: String(s.id), label: s.full_name, hint: s.employee_code })))
 const activeTypeOptions = computed(() => leaveTypes.value.filter((type) => type.is_active).map((type) => ({ value: String(type.id), label: type.name })))
+const shifts = ref<LeaveShiftOption[]>([])
+// Morning / Afternoon: one date, a type that allows half days. By shift: any dates, when the school has shifts.
 const dayPartOptions = computed(() => [
   { value: 'full', label: t('leaveRequest.dayFull') },
-  { value: 'morning', label: t('leaveRequest.dayMorning') },
-  { value: 'afternoon', label: t('leaveRequest.dayAfternoon') },
+  ...(canHalfDay.value
+    ? [
+        { value: 'morning', label: t('leaveRequest.dayMorning') },
+        { value: 'afternoon', label: t('leaveRequest.dayAfternoon') },
+      ]
+    : []),
+  ...(shifts.value.length ? [{ value: 'shifts', label: t('leaveRequest.dayShifts') }] : []),
 ])
 
 const formOpen = ref(false)
-const form = reactive({ staff_id: '', leave_type_id: '', from_date: '', to_date: '', day_part: 'full' as LeaveDayPart, reason: '' })
+const form = reactive({ staff_id: '', leave_type_id: '', from_date: '', to_date: '', day_part: 'full' as LeaveDayPart, shift_ids: [] as number[], reason: '' })
 const attachments = ref<File[]>([])
 const errors = ref<Record<string, string[]>>({})
 const saveError = ref<string | null>(null)
@@ -108,11 +116,21 @@ const saving = ref(false)
 const formType = computed(() => leaveTypes.value.find((type) => String(type.id) === form.leave_type_id) ?? null)
 const canHalfDay = computed(() => form.from_date !== '' && (form.to_date === '' || form.to_date === form.from_date) && (formType.value?.allow_half_day ?? false))
 watch(canHalfDay, (allowed) => {
-  if (!allowed) form.day_part = 'full'
+  if (!allowed && (form.day_part === 'morning' || form.day_part === 'afternoon')) form.day_part = 'full'
 })
 
+// The picked staff member's shifts first.
+watch(
+  () => form.staff_id,
+  async (id) => {
+    form.shift_ids = []
+    shifts.value = id ? await leaveRequestsService.shiftOptions(Number(id)).catch(() => []) : []
+    if (!shifts.value.length && form.day_part === 'shifts') form.day_part = 'full'
+  },
+)
+
 async function openForm() {
-  Object.assign(form, { staff_id: '', leave_type_id: '', from_date: '', to_date: '', day_part: 'full', reason: '' })
+  Object.assign(form, { staff_id: '', leave_type_id: '', from_date: '', to_date: '', day_part: 'full', shift_ids: [], reason: '' })
   attachments.value = []
   errors.value = {}
   saveError.value = null
@@ -134,6 +152,7 @@ async function save() {
     await leaveRequestsService.createForStaff(Number(form.staff_id), {
       leave_type_id: form.leave_type_id ? Number(form.leave_type_id) : null,
       day_part: form.day_part,
+      shift_ids: form.day_part === 'shifts' ? form.shift_ids : undefined,
       from_date: form.from_date,
       to_date: form.to_date || form.from_date,
       from_time: null,
@@ -265,13 +284,14 @@ onMounted(async () => {
           <BaseInput v-model="form.to_date" type="date" :label="t('leaveRequest.toDate')" :hint="t('leaveRequest.toDateHint')" :error="errors.to_date?.[0]" />
         </div>
         <BaseSelect
-          v-if="canHalfDay"
+          v-if="dayPartOptions.length > 1"
           :model-value="form.day_part"
           :options="dayPartOptions"
           :label="t('leaveRequest.dayPart')"
           :error="errors.day_part?.[0]"
           @update:model-value="form.day_part = $event as LeaveDayPart"
         />
+        <LeaveShiftPicker v-if="form.day_part === 'shifts'" v-model="form.shift_ids" :shifts="shifts" :error="errors.shift_ids?.[0] ?? errors['shift_ids.0']?.[0]" />
         <BaseInput v-model="form.reason" required :label="t('leaveRequest.reason')" :error="errors.reason?.[0]" />
         <div>
           <label class="mb-1.5 block text-sm font-medium text-neutral-700">

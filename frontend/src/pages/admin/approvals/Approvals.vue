@@ -15,7 +15,7 @@ import EmptyState from '@/components/ui/EmptyState.vue'
 import { approvalRequestsService, type ApprovalRequest, type ApprovalRequestStatus } from '@/services/approvalRequests'
 import { examApplicationsService, type ExamApplication } from '@/services/examApplications'
 import { examPaymentLabelKey } from '@/services/myExamApplications'
-import { leaveRequestsService, type LeaveRequest } from '@/services/leaveRequests'
+import { leavePartSuffix, leaveRequestsService, type LeaveRequest } from '@/services/leaveRequests'
 import { formatDays } from '@/services/leaveManagement'
 import { makeUpClassCourseLabel, makeUpClassRequestsService, type MakeUpClassRequest, type MakeUpClassRequestStatus } from '@/services/makeUpClassRequests'
 import { manpowerRequestsService, type ManpowerRequest } from '@/services/manpowerRequests'
@@ -754,7 +754,7 @@ function leaveSubject(r: LeaveRequest): string {
         </dl>
         <dl v-else-if="detail.kind === 'leave' && detail.leave" class="grid gap-y-2 text-sm">
           <div v-if="detail.leave.leave_type"><dt class="text-neutral-500">{{ t('admin.leaveManagement.policies.leaveType') }}</dt><dd class="font-medium text-neutral-900">{{ detail.leave.leave_type.name }}</dd></div>
-          <div><dt class="text-neutral-500">{{ t('admin.leaveRequests.columnDates') }}</dt><dd class="font-medium text-neutral-900">{{ formatDate(detail.leave.from_date) }} – {{ formatDate(detail.leave.to_date) }}<template v-if="detail.leave.day_part === 'morning' || detail.leave.day_part === 'afternoon'"> ({{ t(detail.leave.day_part === 'morning' ? 'leaveRequest.dayMorning' : 'leaveRequest.dayAfternoon') }})</template></dd></div>
+          <div><dt class="text-neutral-500">{{ t('admin.leaveRequests.columnDates') }}</dt><dd class="font-medium text-neutral-900">{{ formatDate(detail.leave.from_date) }} – {{ formatDate(detail.leave.to_date) }}{{ leavePartSuffix(detail.leave, t) }}</dd></div>
           <div v-if="detail.leave.days != null"><dt class="text-neutral-500">{{ t('admin.leaveManagement.requests.days') }}</dt><dd class="font-medium text-neutral-900">{{ formatDays(detail.leave.days) }}</dd></div>
           <div><dt class="text-neutral-500">{{ t('admin.leaveRequests.columnReason') }}</dt><dd class="font-medium text-neutral-900">{{ detail.leave.reason }}</dd></div>
           <div v-if="detail.leave.attachments.length > 0">

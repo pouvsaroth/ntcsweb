@@ -152,7 +152,7 @@ export interface CalendarLeave {
   leave_type: LeaveTypeRef | null
   from_date: string
   to_date: string
-  day_part: 'full' | 'morning' | 'afternoon' | null
+  day_part: 'full' | 'morning' | 'afternoon' | 'shifts' | null
   days: number | null
   status: 'pending' | 'approved' | 'rejected'
 }

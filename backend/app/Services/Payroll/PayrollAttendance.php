@@ -229,6 +229,9 @@ final class PayrollAttendance
                 $end = CarbonImmutable::parse(min($request->to_date->toDateString(), $to->toDateString()));
                 $part = $request->day_part !== null && $request->day_part !== LeaveRequest::DAY_FULL ? 0.5 : 1.0;
                 foreach ($this->leave->workingDates($member, $start, $end) as $date) {
+                    if ($request->day_part === LeaveRequest::DAY_SHIFTS) {
+                        $part = $this->leave->shiftDays(CarbonImmutable::parse($date), array_map('intval', $request->shift_ids ?? []));
+                    }
                     $unpaidDays += $part;
                     $unpaidPay += $book !== null ? $part * $book['daily'](CarbonImmutable::parse($date)) : 0.0;
                 }

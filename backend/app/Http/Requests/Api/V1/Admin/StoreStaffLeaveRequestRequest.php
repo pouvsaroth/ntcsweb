@@ -27,6 +27,8 @@ class StoreStaffLeaveRequestRequest extends FormRequest
             'staff_id' => ['required', 'integer', Rule::exists('tenant.staff', 'id')->whereIn('status', Staff::STATUSES_WORKING)->whereNull('deleted_at')],
             'leave_type_id' => ['nullable', 'integer'],
             'day_part' => ['nullable', Rule::in(LeaveRequest::DAY_PARTS)],
+            'shift_ids' => ['nullable', 'array', 'max:20'],
+            'shift_ids.*' => ['integer'],
             'from_date' => ['required', 'date'],
             'to_date' => ['required', 'date', 'after_or_equal:from_date'],
             'reason' => ['required', 'string', 'max:1000'],

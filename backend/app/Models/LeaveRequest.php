@@ -30,7 +30,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int|null $staff_id
  * @property string $status
  */
-#[Fillable(['student_id', 'staff_id', 'enrollment_id', 'leave_type_id', 'from_date', 'to_date', 'from_time', 'to_time', 'day_part', 'days', 'reason', 'status', 'decision_reason', 'decided_by', 'decided_at'])]
+#[Fillable(['student_id', 'staff_id', 'enrollment_id', 'leave_type_id', 'from_date', 'to_date', 'from_time', 'to_time', 'day_part', 'shift_ids', 'days', 'reason', 'status', 'decision_reason', 'decided_by', 'decided_at'])]
 class LeaveRequest extends Model
 {
     use Auditable, HasFactory, SoftDeletes;
@@ -60,7 +60,10 @@ class LeaveRequest extends Model
 
     public const DAY_AFTERNOON = 'afternoon';
 
-    public const DAY_PARTS = [self::DAY_FULL, self::DAY_MORNING, self::DAY_AFTERNOON];
+    /** Off for some shifts (`shift_ids`) on each date — a staff member can work several. */
+    public const DAY_SHIFTS = 'shifts';
+
+    public const DAY_PARTS = [self::DAY_FULL, self::DAY_MORNING, self::DAY_AFTERNOON, self::DAY_SHIFTS];
 
     protected $connection = 'tenant';
 
@@ -71,6 +74,7 @@ class LeaveRequest extends Model
     protected function casts(): array
     {
         return [
+            'shift_ids' => 'array',
             'from_date' => 'date',
             'to_date' => 'date',
             'decided_at' => 'datetime',

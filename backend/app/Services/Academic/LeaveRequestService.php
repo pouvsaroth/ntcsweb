@@ -55,7 +55,7 @@ final class LeaveRequestService
      * requests sent at once can't both spend the same balance. `$byHr`: HR
      * filing it on their behalf (HRM > Leave Management > Leave request).
      *
-     * @param  array{leave_type_id?:int|null, day_part?:string|null, from_date:string, to_date:string, from_time?:string|null, to_time?:string|null, reason:string, attachments?:list<UploadedFile>}  $data
+     * @param  array{leave_type_id?:int|null, day_part?:string|null, shift_ids?:list<int>|null, from_date:string, to_date:string, from_time?:string|null, to_time?:string|null, reason:string, attachments?:list<UploadedFile>}  $data
      */
     public function submit(?Student $student, ?Staff $staff, array $data, bool $byHr = false): LeaveRequest
     {
@@ -81,7 +81,7 @@ final class LeaveRequestService
         }
 
         $request = DB::connection('tenant')->transaction(function () use ($student, $staff, $data, $byHr) {
-            $leave = ['leave_type_id' => null, 'day_part' => null, 'days' => null];
+            $leave = ['leave_type_id' => null, 'day_part' => null, 'shift_ids' => null, 'days' => null];
             if ($staff !== null) {
                 $staff = Staff::query()->whereKey($staff->id)->lockForUpdate()->firstOrFail();
                 $leave = $this->balances->check($staff, [...$data, 'has_attachment' => ($data['attachments'] ?? []) !== []], $byHr);

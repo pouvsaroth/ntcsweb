@@ -6,8 +6,30 @@ import type { ApprovalFlowProgress } from '@/services/approvalFlows'
 /** `cancelled` — a student's request a holiday added later covers entirely, or an approved one staff took back. */
 export type LeaveRequestStatus = 'pending' | 'approved' | 'rejected' | 'cancelled'
 
-/** A staff request's full day, or a morning/afternoon half of one date. */
-export type LeaveDayPart = 'full' | 'morning' | 'afternoon'
+/** A staff request's full day, a morning/afternoon half of one date, or some shifts (`shift_ids`) on each date. */
+export type LeaveDayPart = 'full' | 'morning' | 'afternoon' | 'shifts'
+
+/** A shift a staff member can take leave from — `mine`: on their work schedule or by-shift salary. */
+export interface LeaveShiftOption {
+  id: number
+  name: string
+  code: string | null
+  start_time: string
+  end_time: string
+  hours: number
+  mine: boolean
+}
+
+/** " (Morning)", " (Shift A 07:00–11:00, …)" or "" — after a leave's dates. */
+export function leavePartSuffix(leave: Pick<LeaveRequest, 'day_part' | 'shifts'>, t: (key: string) => string): string {
+  if (leave.day_part === 'morning') return ` (${t('leaveRequest.dayMorning')})`
+  if (leave.day_part === 'afternoon') return ` (${t('leaveRequest.dayAfternoon')})`
+  if (leave.day_part === 'shifts') {
+    const names = (leave.shifts ?? []).map((s) => `${s.name} ${s.start_time}–${s.end_time}`)
+    return ` (${names.length ? names.join(', ') : t('leaveRequest.dayShifts')})`
+  }
+  return ''
+}
 
 export interface LeaveRequestAttachment {
   id: number
@@ -40,6 +62,9 @@ export interface LeaveRequest {
   /** Staff requests only (HRM > Leave Management); null on a student's and on older staff ones. */
   leave_type?: { id: number; code: string; name: string; color: string | null } | null
   day_part: LeaveDayPart | null
+  /** By shift: the shifts they are off. */
+  shift_ids?: number[] | null
+  shifts?: { id: number; name: string; start_time: string; end_time: string }[]
   /** Working days it takes off the balance, in half days — null when not counted. */
   days: number | null
   from_date: string
@@ -75,6 +100,8 @@ export interface LeaveRequestInput {
   leave_type_id?: number | null
   /** Staff only. */
   day_part?: LeaveDayPart | null
+  /** Staff only, with day_part `shifts`. */
+  shift_ids?: number[]
   from_date: string
   to_date: string
   from_time: string | null
@@ -88,6 +115,7 @@ function toFormData(input: LeaveRequestInput): FormData {
   if (input.enrollment_id) form.append('enrollment_id', String(input.enrollment_id))
   if (input.leave_type_id) form.append('leave_type_id', String(input.leave_type_id))
   if (input.day_part) form.append('day_part', input.day_part)
+  if (input.day_part === 'shifts') (input.shift_ids ?? []).forEach((id) => form.append('shift_ids[]', String(id)))
   form.append('from_date', input.from_date)
   form.append('to_date', input.to_date)
   if (input.from_time) form.append('from_time', input.from_time)
@@ -118,8 +146,11 @@ export const myLeaveRequestsService = {
   types: (year?: number) => apiGetWithMeta<MyLeaveType[]>('/my-leave-requests/types', { params: year ? { year } : {} }).then((r) => r.data),
 
   /** Working days these dates take for the signed-in staff member. */
-  quote: (params: { from_date: string; to_date: string; day_part?: LeaveDayPart }) =>
+  quote: (params: { from_date: string; to_date: string; day_part?: LeaveDayPart; shift_ids?: number[] }) =>
     apiGetWithMeta<{ days: number }>('/my-leave-requests/quote', { params }).then((r) => r.data.days),
+
+  /** Active shifts to take leave from, mine first. */
+  shifts: () => apiGetWithMeta<LeaveShiftOption[]>('/my-leave-requests/shifts').then((r) => r.data),
 }
 
 /** One leave type's year: total = entitlement + carried forward (minus what lapsed) + adjustments; available = total − used − pending. */
@@ -173,6 +204,9 @@ export const leaveRequestsService = {
   cancel: (id: number, reason: string) => apiPost<LeaveRequest>(`/leave-requests/${id}/cancel`, { reason }),
 
   /** HR files one for a staff member — checked like their own, minus the notice period. */
+  /** HR filing for a staff member: active shifts, theirs first. */
+  shiftOptions: (staffId: number) => apiGetWithMeta<LeaveShiftOption[]>('/leave-requests/shift-options', { params: { staff_id: staffId } }).then((r) => r.data),
+
   createForStaff: (staffId: number, input: LeaveRequestInput) => {
     const form = toFormData(input)
     form.append('staff_id', String(staffId))

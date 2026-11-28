@@ -7,8 +7,9 @@ import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
+import LeaveShiftPicker from '@/components/leave/LeaveShiftPicker.vue'
 import { formatDays } from '@/services/leaveManagement'
-import { myLeaveRequestsService, type LeaveDayPart, type MyLeaveEnrollment, type MyLeaveType } from '@/services/leaveRequests'
+import { myLeaveRequestsService, type LeaveDayPart, type LeaveShiftOption, type MyLeaveEnrollment, type MyLeaveType } from '@/services/leaveRequests'
 import { makeUpClassCourseLabel } from '@/services/makeUpClassRequests'
 import { useAuthStore } from '@/stores/auth'
 import { ApiRequestError } from '@/types/api'
@@ -41,7 +42,7 @@ const { t } = useI18n()
 const auth = useAuthStore()
 const isStudent = computed(() => auth.hasRole('student'))
 
-const form = reactive({ enrollment_id: '', leave_type_id: '', day_part: 'full' as LeaveDayPart, from_date: '', to_date: '', from_time: '', to_time: '', reason: '' })
+const form = reactive({ enrollment_id: '', leave_type_id: '', day_part: 'full' as LeaveDayPart, shift_ids: [] as number[], from_date: '', to_date: '', from_time: '', to_time: '', reason: '' })
 
 // --- Student: course, and the class's times for the From date -----------------------
 const enrollments = ref<MyLeaveEnrollment[]>([])
@@ -75,29 +76,37 @@ const selectedType = computed(() => leaveTypes.value.find((type) => String(type.
 const typeOptions = computed(() => leaveTypes.value.map((type) => ({ value: String(type.id), label: type.name })))
 const oneDay = computed(() => form.from_date !== '' && (form.to_date === '' || form.to_date === form.from_date))
 const canHalfDay = computed(() => oneDay.value && (selectedType.value?.allow_half_day ?? false))
+const shifts = ref<LeaveShiftOption[]>([])
+// Morning / Afternoon: one date, a type that allows half days. By shift: any dates, when the school has shifts.
 const dayPartOptions = computed(() => [
   { value: 'full', label: t('leaveRequest.dayFull') },
-  { value: 'morning', label: t('leaveRequest.dayMorning') },
-  { value: 'afternoon', label: t('leaveRequest.dayAfternoon') },
+  ...(canHalfDay.value
+    ? [
+        { value: 'morning', label: t('leaveRequest.dayMorning') },
+        { value: 'afternoon', label: t('leaveRequest.dayAfternoon') },
+      ]
+    : []),
+  ...(shifts.value.length ? [{ value: 'shifts', label: t('leaveRequest.dayShifts') }] : []),
 ])
 
 const days = ref<number | null>(null)
 let quoteTimer: ReturnType<typeof setTimeout> | undefined
 
 watch(canHalfDay, (allowed) => {
-  if (!allowed) form.day_part = 'full'
+  if (!allowed && (form.day_part === 'morning' || form.day_part === 'afternoon')) form.day_part = 'full'
 })
 
 watch(
-  () => [staffMode.value, form.from_date, form.to_date, form.day_part] as const,
+  () => [staffMode.value, form.from_date, form.to_date, form.day_part, form.shift_ids.join(',')] as const,
   ([staff, from, to, dayPart]) => {
     clearTimeout(quoteTimer)
     days.value = null
     const end = to || from
     if (!staff || !from || end < from) return
+    if (dayPart === 'shifts' && form.shift_ids.length === 0) return
     quoteTimer = setTimeout(async () => {
       try {
-        days.value = await myLeaveRequestsService.quote({ from_date: from, to_date: end, day_part: dayPart })
+        days.value = await myLeaveRequestsService.quote({ from_date: from, to_date: end, day_part: dayPart, shift_ids: dayPart === 'shifts' ? form.shift_ids : undefined })
       } catch {
         days.value = null
       }
@@ -125,6 +134,7 @@ watch(
     form.enrollment_id = ''
     form.leave_type_id = ''
     form.day_part = 'full'
+    form.shift_ids = []
     form.from_date = ''
     form.to_date = ''
     form.from_time = ''
@@ -154,7 +164,11 @@ watch(
 
     myLeaveRequestsService
       .types()
-      .then((types) => (leaveTypes.value = types))
+      .then((types) => {
+        leaveTypes.value = types
+        // Staff only: the shifts they can take leave from.
+        if (types.length) myLeaveRequestsService.shifts().then((list) => (shifts.value = list)).catch(() => (shifts.value = []))
+      })
       .catch(() => (leaveTypes.value = []))
   },
 )
@@ -181,6 +195,7 @@ async function submit() {
       enrollment_id: isStudent.value && form.enrollment_id ? Number(form.enrollment_id) : null,
       leave_type_id: staffMode.value && form.leave_type_id ? Number(form.leave_type_id) : null,
       day_part: staffMode.value ? form.day_part : null,
+      shift_ids: staffMode.value && form.day_part === 'shifts' ? form.shift_ids : undefined,
       from_date: form.from_date,
       // One date for a staff member's day: the To date may be left empty.
       to_date: staffMode.value && !form.to_date ? form.from_date : form.to_date,
@@ -261,13 +276,14 @@ async function submit() {
 
       <template v-if="staffMode">
         <BaseSelect
-          v-if="canHalfDay"
+          v-if="dayPartOptions.length > 1"
           :model-value="form.day_part"
           :options="dayPartOptions"
           :label="t('leaveRequest.dayPart')"
           :error="errors.day_part?.[0]"
           @update:model-value="form.day_part = $event as LeaveDayPart"
         />
+        <LeaveShiftPicker v-if="form.day_part === 'shifts'" v-model="form.shift_ids" :shifts="shifts" :error="errors.shift_ids?.[0] ?? errors['shift_ids.0']?.[0]" />
         <p v-if="days !== null" class="rounded-lg px-3 py-2 text-sm" :class="overBalance ? 'bg-red-50 text-red-700' : 'bg-neutral-50 text-neutral-700'">
           {{ t('leaveRequest.daysTaken', { days: formatDays(days) }) }}
           <template v-if="overBalance"> — {{ t('leaveRequest.overBalance') }}</template>

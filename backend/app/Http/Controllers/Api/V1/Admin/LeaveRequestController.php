@@ -13,6 +13,7 @@ use App\Http\Responses\ApiResponse;
 use App\Models\LeaveRequest;
 use App\Models\Staff;
 use App\Services\Academic\LeaveRequestService;
+use App\Services\Leave\LeaveBalanceService;
 use App\Services\Approvals\ApprovalFlow;
 use App\Support\Approvals\DocumentType;
 use App\Support\Authorization\Permissions;
@@ -82,6 +83,15 @@ final class LeaveRequestController extends Controller
      * balance, except the notice period — and waits in Approvals like any
      * other.
      */
+    /** GET /leave-requests/shift-options?staff_id= — shifts HR can file leave against, that staff member's first. */
+    public function shiftOptions(Request $request, LeaveBalanceService $balances): JsonResponse
+    {
+        abort_unless($request->user()->hasPermission(Permissions::LEAVE_REQUESTS_CREATE), 403);
+        $staff = Staff::query()->findOrFail($request->integer('staff_id'));
+
+        return ApiResponse::success($balances->shiftOptions($staff));
+    }
+
     public function store(StoreStaffLeaveRequestRequest $request): JsonResponse
     {
         abort_unless($request->user()->hasPermission(Permissions::LEAVE_REQUESTS_CREATE), 403);
