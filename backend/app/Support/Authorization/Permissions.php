@@ -914,6 +914,15 @@ final class Permissions
 
     public const COMMUNE_MEMBERS_DELETE = 'commune-members.delete';
 
+    // Political Party > Documents: the party's private files in folders (never published).
+    public const PARTY_DOCUMENTS_VIEW = 'party-documents.view';
+
+    public const PARTY_DOCUMENTS_CREATE = 'party-documents.create';
+
+    public const PARTY_DOCUMENTS_UPDATE = 'party-documents.update';
+
+    public const PARTY_DOCUMENTS_DELETE = 'party-documents.delete';
+
     // Loan > Customers: people who keep savings with the owner or borrow from them.
     public const LOAN_CUSTOMERS_VIEW = 'loan-customers.view';
 
@@ -1819,6 +1828,10 @@ final class Permissions
                 self::COMMUNE_MEMBERS_CREATE => 'Add commune members (import too)',
                 self::COMMUNE_MEMBERS_UPDATE => 'Change commune members (full / reserve, order)',
                 self::COMMUNE_MEMBERS_DELETE => 'Remove commune members',
+                self::PARTY_DOCUMENTS_VIEW => 'View and download party documents',
+                self::PARTY_DOCUMENTS_CREATE => 'Upload party documents and add folders',
+                self::PARTY_DOCUMENTS_UPDATE => 'Rename and move party documents and folders',
+                self::PARTY_DOCUMENTS_DELETE => 'Delete party documents and folders',
             ],
             'Fund' => [
                 self::FUNDS_VIEW => 'View funds and their statements',
@@ -2335,6 +2348,7 @@ final class Permissions
                 self::PARTY_BRANCHES_VIEW, self::PARTY_BRANCHES_CREATE, self::PARTY_BRANCHES_UPDATE, self::PARTY_BRANCHES_DELETE,
                 self::ELECTION_OFFICES_VIEW, self::ELECTION_OFFICES_CREATE, self::ELECTION_OFFICES_UPDATE, self::ELECTION_OFFICES_DELETE,
                 self::COMMUNE_MEMBERS_VIEW, self::COMMUNE_MEMBERS_CREATE, self::COMMUNE_MEMBERS_UPDATE, self::COMMUNE_MEMBERS_DELETE,
+                self::PARTY_DOCUMENTS_VIEW, self::PARTY_DOCUMENTS_CREATE, self::PARTY_DOCUMENTS_UPDATE, self::PARTY_DOCUMENTS_DELETE,
             ],
             // Read-only across the board, with a few write exceptions: the
             // teaching catalog itself (who teaches what, in which room) stays

@@ -439,6 +439,7 @@ const MODULES: ModuleEntry[] = [
   tab('Fund', 'Reports', 'Providers by month', '/admin/fund-reports/providers-by-month', ['funds.view']),
   { name: 'Branches', group: 'Political Party', actions: crud('party-branches') },
   { name: 'Commune members', group: 'Political Party', actions: crud('commune-members') },
+  { name: 'Documents', group: 'Political Party', actions: crud('party-documents') },
   { name: 'Election offices', group: 'Political Party', actions: crud('election-offices') },
   { name: 'Locations', group: 'Political Party', actions: { view: 'party-locations.view' } },
   { name: 'Borrowings', group: 'Loan', parent: 'Borrowings', menu: true, actions: { view: 'borrowings.view' } },

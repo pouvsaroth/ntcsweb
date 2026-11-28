@@ -319,6 +319,7 @@ export const adminNav: AdminNavGroup[] = [
     items: [
       { labelKey: 'adminNav.items.partyBranches', icon: 'building', to: '/admin/party/branches', permission: 'party-branches.view' },
       { labelKey: 'adminNav.items.communeMembers', icon: 'users', to: '/admin/party/commune-members', permission: 'commune-members.view' },
+      { labelKey: 'adminNav.items.partyDocuments', icon: 'folder', to: '/admin/party/documents', permission: 'party-documents.view' },
       { labelKey: 'adminNav.items.electionOffices', icon: 'clipboardCheck', to: '/admin/party/election-offices', permission: 'election-offices.view' },
       { labelKey: 'adminNav.items.partyLocations', icon: 'location', to: '/admin/party/locations', permission: 'party-locations.view' },
     ],

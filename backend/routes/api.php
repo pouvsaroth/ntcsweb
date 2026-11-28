@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\Api\V1\Admin\FundController;
 use App\Http\Controllers\Api\V1\Admin\FundEntryListController;
 use App\Http\Controllers\Api\V1\Admin\CommuneMemberController;
+use App\Http\Controllers\Api\V1\Admin\PartyDocumentController;
 use App\Http\Controllers\Api\V1\Admin\ElectionOfficeController;
 use App\Http\Controllers\Api\V1\Admin\PartyBranchController;
 use App\Http\Controllers\Api\V1\Admin\PartyLocationController;
@@ -1118,6 +1119,17 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('commune-members/template', [CommuneMemberController::class, 'template'])->name('commune-members.template');
         Route::post('commune-members/import', [CommuneMemberController::class, 'import'])->name('commune-members.import');
         Route::apiResource('commune-members', CommuneMemberController::class)->except('show');
+        // Political Party > Documents: private files in folders (never published) — see PartyDocumentController.
+        Route::get('party-documents', [PartyDocumentController::class, 'index'])->name('party-documents.index');
+        Route::get('party-documents/folder-tree', [PartyDocumentController::class, 'tree'])->name('party-documents.tree');
+        Route::post('party-documents', [PartyDocumentController::class, 'store'])->name('party-documents.store');
+        Route::patch('party-documents/{id}', [PartyDocumentController::class, 'update'])->whereNumber('id')->name('party-documents.update');
+        Route::delete('party-documents/{id}', [PartyDocumentController::class, 'destroy'])->whereNumber('id')->name('party-documents.destroy');
+        Route::get('party-documents/{id}/file', [PartyDocumentController::class, 'download'])->whereNumber('id')->name('party-documents.file');
+        Route::post('party-document-folders', [PartyDocumentController::class, 'storeFolder'])->name('party-document-folders.store');
+        Route::patch('party-document-folders/{id}', [PartyDocumentController::class, 'updateFolder'])->whereNumber('id')->name('party-document-folders.update');
+        Route::delete('party-document-folders/{id}', [PartyDocumentController::class, 'destroyFolder'])->whereNumber('id')->name('party-document-folders.destroy');
+        Route::get('party-document-folders/{id}/zip', [PartyDocumentController::class, 'zip'])->whereNumber('id')->name('party-document-folders.zip');
         Route::post('funds/{fund}/entries', [FundController::class, 'record'])->name('funds.entries.store');
         // Copy: several money in at once (last month's providers for a new month).
         Route::post('funds/{fund}/entries/copy', [FundController::class, 'recordMany'])->name('funds.entries.copy');

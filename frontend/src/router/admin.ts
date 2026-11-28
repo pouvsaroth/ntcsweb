@@ -1156,6 +1156,13 @@ const adminRoutes: RouteRecordRaw[] = [
     meta: { permission: 'commune-members.view', titleKey: 'adminNav.items.communeMembers' },
   },
   {
+    // Political Party > Documents: private files in folders (never published); ?folder= is the open folder.
+    path: 'party/documents',
+    name: 'admin.party.documents',
+    component: () => import('@/pages/admin/party/PartyDocuments.vue'),
+    meta: { permission: 'party-documents.view', titleKey: 'adminNav.items.partyDocuments' },
+  },
+  {
     // Political Party > Election offices: a commune's council seats, election offices and voters, per election year.
     path: 'party/election-offices',
     name: 'admin.party.electionOffices',
