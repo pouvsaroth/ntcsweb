@@ -5382,6 +5382,7 @@ const ja: MessageSchema = {
       noCodes: '現在、割引コードはありません。',
       used: '使用済み',
       usedOn: '{date} に使用（{amount}）',
+      usedAlready: '使用済み',
       off: '{discount} 割引',
       justForYou: 'あなた専用',
       useIt: 'このコードを使う',

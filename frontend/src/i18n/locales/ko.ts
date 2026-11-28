@@ -5382,6 +5382,7 @@ const ko: MessageSchema = {
       noCodes: '현재 할인 코드가 없습니다.',
       used: '사용함',
       usedOn: '{date}에 사용 ({amount})',
+      usedAlready: '사용됨',
       off: '{discount} 할인',
       justForYou: '나만을 위한 코드',
       useIt: '이 코드 사용',

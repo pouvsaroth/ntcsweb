@@ -5386,6 +5386,7 @@ const en = {
       noCodes: 'You have no discount codes right now.',
       used: 'Used',
       usedOn: 'Used on {date} ({amount})',
+      usedAlready: 'Used already',
       off: '{discount} off',
       justForYou: 'Just for you',
       useIt: 'Use this code',

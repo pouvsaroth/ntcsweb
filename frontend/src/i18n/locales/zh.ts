@@ -5381,6 +5381,7 @@ const zh: MessageSchema = {
       noCodes: '您目前没有折扣码。',
       used: '已使用',
       usedOn: '于 {date} 使用（{amount}）',
+      usedAlready: '已使用',
       off: '优惠 {discount}',
       justForYou: '专属于您',
       useIt: '使用此折扣码',

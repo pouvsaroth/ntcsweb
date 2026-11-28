@@ -5382,6 +5382,7 @@ const km: MessageSchema = {
       noCodes: 'អ្នកមិនទាន់មានកូដបញ្ចុះតម្លៃនៅពេលនេះទេ។',
       used: 'បានប្រើ',
       usedOn: 'បានប្រើនៅថ្ងៃ {date} ({amount})',
+      usedAlready: 'បានប្រើហើយ',
       off: 'បញ្ចុះ {discount}',
       justForYou: 'សម្រាប់អ្នកតែម្នាក់',
       useIt: 'ប្រើកូដនេះ',

@@ -115,7 +115,8 @@ onMounted(load)
           >
             <div class="flex items-start justify-between gap-2">
               <p class="font-mono text-lg font-bold tracking-wide text-neutral-900">{{ row.code }}</p>
-              <BaseBadge :variant="stateVariant[row.state]">{{ stateLabel(row.state) }}</BaseBadge>
+              <BaseBadge v-if="row.used_at" variant="neutral">{{ t('admin.myDiscountCodes.usedAlready') }}</BaseBadge>
+              <BaseBadge v-else :variant="stateVariant[row.state]">{{ stateLabel(row.state) }}</BaseBadge>
             </div>
             <p class="mt-0.5 text-sm text-neutral-600">{{ row.name }}</p>
             <p class="mt-2 text-base font-semibold text-primary-700">{{ t('admin.myDiscountCodes.off', { discount: discountText(row) }) }}</p>

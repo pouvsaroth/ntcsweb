@@ -593,13 +593,17 @@ onBeforeUnmount(() => {
           <li v-for="code in myCodes" :key="code.id" class="rounded-lg border border-dashed border-primary-300 bg-primary-50 p-3">
             <div class="flex items-start justify-between gap-2">
               <p class="font-mono text-sm font-semibold break-all text-primary-800">{{ code.code }}</p>
-              <BaseBadge :variant="code.state === 'active' ? 'success' : 'primary'">{{ t(`admin.discountCodes.effective.${code.state}`) }}</BaseBadge>
+              <BaseBadge v-if="code.used_at" variant="neutral">{{ t('admin.myDiscountCodes.usedAlready') }}</BaseBadge>
+              <BaseBadge v-else :variant="code.state === 'active' ? 'success' : 'primary'">{{ t(`admin.discountCodes.effective.${code.state}`) }}</BaseBadge>
             </div>
             <p class="mt-1 text-lg font-semibold text-neutral-900">{{ t('admin.myDiscountCodes.off', { discount: codeDiscount(code) }) }}</p>
             <p v-if="code.name" class="text-xs text-neutral-600">{{ code.name }}</p>
             <p class="mt-1 text-xs text-neutral-500">
               <template v-if="code.state === 'scheduled'">{{ t('admin.discountCodes.startsOn') }}: {{ formatDate(code.starts_on) }} · </template>
               {{ t('admin.discountCodes.expiresOn') }}: {{ code.expires_on ? formatDate(code.expires_on) : t('admin.discountCodes.noEnd') }}
+            </p>
+            <p v-if="code.used_at" class="text-xs text-neutral-500">
+              {{ t('admin.myDiscountCodes.usedOn', { date: formatDate(code.used_at), amount: code.used_amount != null ? formatMoney(code.used_amount, code.currency) : '' }) }}
             </p>
           </li>
         </ul>
