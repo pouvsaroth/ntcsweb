@@ -388,7 +388,7 @@ export const adminNav: AdminNavGroup[] = [
     icon: 'clipboardCheck',
     items: [
       { labelKey: 'adminNav.items.forms', icon: 'document', to: '/admin/approvals/forms', permission: 'forms.view' },
-      { labelKey: 'adminNav.items.myRequests', icon: 'inbox', to: '/admin/approvals/my-requests', permission: 'my-requests.view' },
+      // Staff open My Request from HRM > Request Leave (removed here so it isn't twice).
       // Pending student self-registrations are decided here too (they used
       // to have their own Students > Registrations page).
       { labelKey: 'adminNav.items.approvals', icon: 'clipboardCheck', to: '/admin/approvals/queue', permission: ['approval-requests.view', 'leave-requests.view', 'make-up-class-requests.view', 'class-change-requests.view', 'students.approve-registration', 'gradebook.approve'], flowApprover: true },
