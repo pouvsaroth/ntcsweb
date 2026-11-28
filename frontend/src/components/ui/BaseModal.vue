@@ -116,7 +116,7 @@ onUnmounted(() => {
             <slot />
           </div>
 
-          <div v-if="$slots.footer" class="flex shrink-0 justify-end gap-3 border-t border-neutral-100 p-6 pt-4">
+          <div v-if="$slots.footer" class="flex shrink-0 flex-wrap justify-end gap-3 border-t border-neutral-100 p-6 pt-4">
             <slot name="footer" />
           </div>
         </div>
