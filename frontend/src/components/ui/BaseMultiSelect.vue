@@ -22,6 +22,8 @@ interface Props {
   error?: string
   hint?: string
   disabled?: boolean
+  /** Show a "Select all" row at the top of the list. */
+  selectAll?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -30,6 +32,7 @@ const props = withDefaults(defineProps<Props>(), {
   error: undefined,
   hint: undefined,
   disabled: false,
+  selectAll: false,
 })
 
 const emit = defineEmits<{ 'update:modelValue': [value: string[]] }>()
@@ -50,6 +53,13 @@ function toggle(value: string) {
   const next = new Set(props.modelValue)
   next.has(value) ? next.delete(value) : next.add(value)
   emit('update:modelValue', Array.from(next))
+}
+
+const allSelected = computed(() => props.options.length > 0 && props.options.every((option) => props.modelValue.includes(option.value)))
+
+/** Tick every option, or untick them all when they are already all ticked. */
+function toggleAll() {
+  emit('update:modelValue', allSelected.value ? [] : props.options.map((option) => option.value))
 }
 
 function clear() {
@@ -89,6 +99,19 @@ onUnmounted(() => document.removeEventListener('click', onDocumentClick))
 
       <div v-show="open" class="absolute z-20 mt-1 w-full overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-lg">
         <ul class="max-h-60 overflow-auto py-1 text-sm">
+          <li
+            v-if="selectAll && options.length > 1"
+            class="flex cursor-pointer items-center gap-2 border-b border-neutral-100 px-3 py-2 font-medium hover:bg-neutral-50"
+            @mousedown.prevent="toggleAll"
+          >
+            <input
+              type="checkbox"
+              class="h-4 w-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+              :checked="allSelected"
+              @click.stop.prevent
+            />
+            <span class="text-neutral-800">{{ t('common.selectAll') }}</span>
+          </li>
           <li
             v-for="option in options"
             :key="option.value"

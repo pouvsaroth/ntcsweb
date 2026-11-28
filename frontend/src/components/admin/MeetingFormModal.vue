@@ -130,6 +130,7 @@ async function save() {
       <BaseMultiSelect
         v-model="form.participant_ids"
         :options="participantOptions"
+        select-all
         :label="t('frontOffice.meetings.participants')"
         :placeholder="t('frontOffice.meetings.participantsPlaceholder')"
         :hint="t('frontOffice.meetings.participantsHint')"
