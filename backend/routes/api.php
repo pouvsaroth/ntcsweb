@@ -556,6 +556,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         // Front Office > Meetings — see MeetingController.
         Route::get('meetings/summary', [MeetingController::class, 'summary'])->name('meetings.summary');
         Route::get('meetings/staff-options', [MeetingController::class, 'staffOptions'])->name('meetings.staff-options');
+        Route::put('meetings/{meeting}/attendance', [MeetingController::class, 'attendance'])->name('meetings.attendance');
         Route::apiResource('meetings', MeetingController::class);
 
         // Front Office > Appointments and Visitors — see AppointmentController / VisitorController.

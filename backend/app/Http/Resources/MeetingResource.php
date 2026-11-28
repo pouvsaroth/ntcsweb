@@ -28,11 +28,14 @@ class MeetingResource extends JsonResource
             'organizer_staff_id' => $this->organizer_staff_id,
             'organizer' => $this->whenLoaded('organizer', fn () => $this->organizer ? ['id' => $this->organizer->id, 'name' => $this->organizer->fullName()] : null),
             'guests' => $this->guests,
+            // Who came, by guest name (only names still in `guests`).
+            'guest_attendance' => (object) array_intersect_key($this->guest_attendance ?? [], array_flip($this->guestNames())),
             'participants_count' => $this->whenCounted('participants'),
             'participants' => $this->whenLoaded('participants', fn () => $this->participants->map(fn ($s) => [
                 'id' => $s->id,
                 'name' => $s->fullName(),
                 'employee_code' => $s->employee_code,
+                'attendance' => $s->pivot?->attendance,
             ])->values()),
             'created_at' => $this->created_at?->toIso8601String(),
         ];

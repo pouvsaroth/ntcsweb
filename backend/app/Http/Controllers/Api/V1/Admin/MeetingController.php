@@ -18,6 +18,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Front Office > Meetings: schedule a meeting (date, time, place, agenda),
@@ -145,6 +147,62 @@ class MeetingController extends Controller
         }
 
         return ApiResponse::success(new MeetingResource($meeting->load('organizer', 'participants')));
+    }
+
+    /**
+     * PUT /meetings/{meeting}/attendance — who came: present / late / absent
+     * / excused (or null to clear) for staff participants and guests. Only
+     * the people sent are changed.
+     */
+    public function attendance(Request $request, Meeting $meeting): JsonResponse
+    {
+        $this->authorize('update', $meeting);
+
+        $data = $request->validate([
+            'participants' => ['array'],
+            'participants.*.staff_id' => ['required', 'integer'],
+            'participants.*.attendance' => ['nullable', 'string', Rule::in(Meeting::ATTENDANCE)],
+            'guests' => ['array'],
+            'guests.*.name' => ['required', 'string', 'max:255'],
+            'guests.*.attendance' => ['nullable', 'string', Rule::in(Meeting::ATTENDANCE)],
+        ]);
+
+        if ($meeting->status === 'cancelled') {
+            throw ValidationException::withMessages(['participants' => __('A cancelled meeting has no attendance.')]);
+        }
+
+        $participantIds = $meeting->participants()->pluck('staff.id')->map(fn ($id) => (int) $id)->all();
+        $guestNames = $meeting->guestNames();
+        foreach ($data['participants'] ?? [] as $i => $row) {
+            if (! in_array((int) $row['staff_id'], $participantIds, true)) {
+                throw ValidationException::withMessages(["participants.$i.staff_id" => __('This person is not a participant of the meeting.')]);
+            }
+        }
+        foreach ($data['guests'] ?? [] as $i => $row) {
+            if (! in_array(trim($row['name']), $guestNames, true)) {
+                throw ValidationException::withMessages(["guests.$i.name" => __('This guest is not in the meeting.')]);
+            }
+        }
+
+        DB::connection('tenant')->transaction(function () use ($meeting, $data) {
+            foreach ($data['participants'] ?? [] as $row) {
+                $meeting->participants()->updateExistingPivot((int) $row['staff_id'], ['attendance' => $row['attendance'] ?? null]);
+            }
+            if (isset($data['guests'])) {
+                $marks = $meeting->guest_attendance ?? [];
+                foreach ($data['guests'] as $row) {
+                    $name = trim($row['name']);
+                    if (($row['attendance'] ?? null) === null) {
+                        unset($marks[$name]);
+                    } else {
+                        $marks[$name] = $row['attendance'];
+                    }
+                }
+                $meeting->update(['guest_attendance' => $marks === [] ? null : $marks]);
+            }
+        });
+
+        return ApiResponse::success(new MeetingResource($meeting->refresh()->load('organizer', 'participants')));
     }
 
     public function destroy(Meeting $meeting): JsonResponse

@@ -6,6 +6,10 @@ import type { LengthAwarePaginationMeta, PaginatedResult } from '@/types/api'
 /** Front Office > Meetings — see backend MeetingController. */
 export const MEETING_STATUSES = ['scheduled', 'completed', 'cancelled'] as const
 export type MeetingStatus = (typeof MEETING_STATUSES)[number]
+/** Who came to a meeting (a staff participant or a guest). */
+export const MEETING_ATTENDANCE = ['present', 'late', 'absent', 'excused'] as const
+export type MeetingAttendance = (typeof MEETING_ATTENDANCE)[number]
+
 export type MeetingWhen = 'upcoming' | 'past' | ''
 
 export interface Meeting {
@@ -23,7 +27,9 @@ export interface Meeting {
   /** Outside guests, one per line. */
   guests: string | null
   participants_count?: number
-  participants?: StaffOption[]
+  participants?: (StaffOption & { attendance?: MeetingAttendance | null })[]
+  /** Who came, by guest name. */
+  guest_attendance?: Record<string, MeetingAttendance>
   created_at: string
 }
 
@@ -68,5 +74,13 @@ export const meetingsService = {
   get: (id: number) => apiGet<Meeting>(`/meetings/${id}`),
   create: (input: MeetingInput) => apiPost<Meeting>('/meetings', input),
   update: (id: number, input: Partial<MeetingInput>) => apiPut<Meeting>(`/meetings/${id}`, input),
+  /** Mark who came; only the people sent change, null clears a mark. */
+  saveAttendance: (
+    id: number,
+    input: {
+      participants: { staff_id: number; attendance: MeetingAttendance | null }[]
+      guests: { name: string; attendance: MeetingAttendance | null }[]
+    },
+  ) => apiPut<Meeting>(`/meetings/${id}/attendance`, input),
   remove: (id: number) => apiDelete(`/meetings/${id}`),
 }

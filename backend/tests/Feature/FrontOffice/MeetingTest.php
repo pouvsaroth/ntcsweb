@@ -158,4 +158,49 @@ class MeetingTest extends TestCase
         $this->getJson('/api/v1/meetings')->assertOk();
         $this->postJson('/api/v1/meetings', ['title' => 'x', 'meeting_date' => now()->toDateString(), 'start_time' => '09:00'])->assertForbidden();
     }
+    public function test_attendance_is_recorded_for_participants_and_guests(): void
+    {
+        $this->desk();
+        $a = $this->staffWithUser();
+        $b = $this->staffWithUser();
+        $outsider = $this->staffWithUser();
+        $meeting = $this->arrange(['participant_ids' => [$a->id, $b->id], 'guests' => "Mr. Dara
+Ms. Sokha"]);
+        $url = "/api/v1/meetings/{$meeting['id']}/attendance";
+
+        $data = $this->putJson($url, [
+            'participants' => [['staff_id' => $a->id, 'attendance' => 'present'], ['staff_id' => $b->id, 'attendance' => 'excused']],
+            'guests' => [['name' => 'Mr. Dara', 'attendance' => 'late']],
+        ])->assertOk()->json('data');
+
+        $marks = collect($data['participants'])->pluck('attendance', 'id');
+        $this->assertSame('present', $marks[$a->id]);
+        $this->assertSame('excused', $marks[$b->id]);
+        $this->assertSame(['Mr. Dara' => 'late'], $data['guest_attendance']);
+
+        // Only the people sent change; null clears a mark.
+        $data = $this->putJson($url, ['participants' => [['staff_id' => $b->id, 'attendance' => null]], 'guests' => [['name' => 'Ms. Sokha', 'attendance' => 'absent']]])
+            ->assertOk()->json('data');
+        $marks = collect($data['participants'])->pluck('attendance', 'id');
+        $this->assertSame('present', $marks[$a->id]);
+        $this->assertNull($marks[$b->id]);
+        $this->assertSame(['Mr. Dara' => 'late', 'Ms. Sokha' => 'absent'], $data['guest_attendance']);
+
+        // Editing the meeting keeps the marks of people still in it.
+        $this->putJson("/api/v1/meetings/{$meeting['id']}", ['participant_ids' => [$a->id], 'guests' => 'Mr. Dara'])->assertOk();
+        $data = $this->getJson("/api/v1/meetings/{$meeting['id']}")->assertOk()->json('data');
+        $this->assertSame('present', $data['participants'][0]['attendance']);
+        $this->assertSame(['Mr. Dara' => 'late'], $data['guest_attendance']);
+
+        // Not in the meeting, or a bad mark.
+        $this->putJson($url, ['participants' => [['staff_id' => $outsider->id, 'attendance' => 'present']]])->assertUnprocessable()->assertJsonValidationErrors('participants.0.staff_id');
+        $this->putJson($url, ['guests' => [['name' => 'Someone else', 'attendance' => 'present']]])->assertUnprocessable()->assertJsonValidationErrors('guests.0.name');
+        $this->putJson($url, ['participants' => [['staff_id' => $a->id, 'attendance' => 'asleep']]])->assertUnprocessable()->assertJsonValidationErrors('participants.0.attendance');
+
+        // Cancelled meetings take no attendance; view-only users cannot mark it.
+        $this->putJson("/api/v1/meetings/{$meeting['id']}", ['status' => 'cancelled'])->assertOk();
+        $this->putJson($url, ['participants' => [['staff_id' => $a->id, 'attendance' => 'absent']]])->assertUnprocessable();
+        $this->actingAsAdminWithPermissions([Permissions::MEETINGS_VIEW]);
+        $this->putJson($url, ['participants' => [['staff_id' => $a->id, 'attendance' => 'absent']]])->assertForbidden();
+    }
 }

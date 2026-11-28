@@ -15,12 +15,15 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
  * staff participants (meeting_participants) and outside guests, and the
  * note written about it.
  */
-#[Fillable(['title', 'meeting_date', 'start_time', 'end_time', 'location', 'agenda', 'minutes', 'status', 'organizer_staff_id', 'guests', 'created_by'])]
+#[Fillable(['title', 'meeting_date', 'start_time', 'end_time', 'location', 'agenda', 'minutes', 'status', 'organizer_staff_id', 'guests', 'guest_attendance', 'created_by'])]
 class Meeting extends Model
 {
     use Auditable;
 
     public const STATUSES = ['scheduled', 'completed', 'cancelled'];
+
+    /** Who came: per staff participant (pivot `attendance`) and per guest. */
+    public const ATTENDANCE = ['present', 'late', 'absent', 'excused'];
 
     protected $connection = 'tenant';
 
@@ -32,6 +35,7 @@ class Meeting extends Model
     {
         return [
             'meeting_date' => 'date',
+            'guest_attendance' => 'array',
         ];
     }
 
@@ -42,7 +46,15 @@ class Meeting extends Model
 
     public function participants(): BelongsToMany
     {
-        return $this->belongsToMany(Staff::class, 'meeting_participants')->withTimestamps()->withTrashed();
+        return $this->belongsToMany(Staff::class, 'meeting_participants')->withPivot('attendance')->withTimestamps()->withTrashed();
+    }
+
+    /** @return list<string> the guest names, one per line of `guests` */
+    public function guestNames(): array
+    {
+        $lines = preg_split('/\R/', (string) $this->guests) ?: [];
+
+        return array_values(array_unique(array_filter(array_map('trim', $lines), fn (string $g) => $g !== '')));
     }
 
     public function auditModule(): string
